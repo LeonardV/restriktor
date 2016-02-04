@@ -1,0 +1,30 @@
+# only when we have src code
+# useDynLib("restriktor")
+
+importFrom("lavaan",
+           lavParseModelString,
+           lav_constraints_parse)
+
+importFrom("MASS",
+           lqs,
+           psi.bisquare)
+
+importFrom("mvtnorm",
+           pmvnorm)
+
+importFrom("quadprog",
+           solve.QP)
+
+importFrom("boot",
+           boot,
+           boot.ci)
+
+# export ordinary functions defined in this package
+export("restriktor", "conLM.lm", "conLM.default",
+       "conTest_F_lm", "conTest_LRT_lm",
+       "conTestEq",
+       "print.conLM", "print.conTest", "coef.conLM",
+       "con_constraints_ceq_amat",
+       "con_constraints_cin_amat",
+       "con_constraints_con_amat",
+       "lav_partable")

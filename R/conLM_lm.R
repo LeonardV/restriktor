@@ -162,10 +162,10 @@ conLM.lm <- function(model, constraints, se = "default",
 
 
   if (ncol(Y) == 1L) {
-    class(OUT) <- c("conLM")
+    class(OUT) <- c("conLM","lm")
   }
   else if (ncol(Y) > 1L) {
-    class(OUT) <- c("conMLM")
+    class(OUT) <- c("conMLM","mlm")
   }
     return(OUT)
 }

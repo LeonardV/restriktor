@@ -76,6 +76,6 @@ conLM.default <- function(model, constraints, se = "default",
         ### R2
         out$R2 <- model[1,2:(g+1)]%*%t(t(out$b.constr))/var.y
     }
-    class(out) <- "conLM"
+    class(out) <- c("conLM","lm")
     out
 }

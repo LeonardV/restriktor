@@ -1,14 +1,14 @@
 # computes the F- or LRT-statistic
 # To do: implement E-bar test statistic.
 
-conTest_F_lm <- function(object, type = "A", boot = "none", meq.alt = 0,
-                         control = NULL, tol = sqrt(.Machine$double.eps)) {
+conTestF_lm <- function(object, type = "A", boot = "none", meq.alt = 0,
+                        control = NULL, tol = sqrt(.Machine$double.eps)) {
 
   # housekeeping
   type <- toupper(type)
   #test <- tolower(test)
 
-  if (class(object) != "conLM") {
+  if (!("conLM" %in% class(object))) {
     stop("object must be of class conLM().")
   }
   if(!(type %in% c("A","B","C"))) {
@@ -151,14 +151,14 @@ conTest_F_lm <- function(object, type = "A", boot = "none", meq.alt = 0,
 
 
 
-conTest_LRT_lm <- function(object, type = "A", boot = "none", meq.alt = 0,
+conTestLRT_lm <- function(object, type = "A", boot = "none", meq.alt = 0,
                            control = NULL, tol = sqrt(.Machine$double.eps)) {
 
   # housekeeping
   type <- toupper(type)
   #test <- tolower(test)
 
-  if (class(object) != "conLM") {
+  if (!("conLM" %in% class(object))) {
     stop("object must be of class conLM().")
   }
   if(!(type %in% c("A","B","C"))) {

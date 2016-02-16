@@ -79,10 +79,10 @@ con_pvalue_boot_parametric_lm <- function(X, Ts.org = NULL, type = "A",
     boot_conLM <- restriktor(lm(DATA), constraints, bvec = bvec, meq = meq, control = control)
 
     if (test == "Fbar") {
-      boot_conTest_LM <- conTestF_lm(boot_conLM, type = type, meq.alt = meq.alt,
+      boot_conTest_LM <- conTestF.lm(boot_conLM, type = type, meq.alt = meq.alt,
                                       control = control)
     } else if (test == "LRT") {
-      boot_conTest_LM <- conTestLRT_lm(boot_conLM, type = type, meq.alt = meq.alt,
+      boot_conTest_LM <- conTestLRT.lm(boot_conLM, type = type, meq.alt = meq.alt,
                                         control = control)
     }
 
@@ -215,9 +215,9 @@ con_pvalue_boot_model_based_lm <- function(model, Ts.org = NULL, type = "A",
       boot_conLM <- restriktor(boot_model, constraints = constraints, bvec = bvec, meq = meq)
 
       if (test == "Fbar") {
-        boot_conTest_LM <- conTestF_lm(boot_conLM, type = type, meq.alt = meq.alt, control = control)
+        boot_conTest_LM <- conTestF.lm(boot_conLM, type = type, meq.alt = meq.alt, control = control)
       } else if (test == "LRT") {
-        boot_conTest_LM <- conTestLRT_lm(boot_conLM, type = type, meq.alt = meq.alt, control = control)
+        boot_conTest_LM <- conTestLRT.lm(boot_conLM, type = type, meq.alt = meq.alt, control = control)
       }
 
       Ts <- boot_conTest_LM$Ts

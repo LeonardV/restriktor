@@ -1,7 +1,7 @@
 # computes the F- or LRT-statistic
 # To do: implement E-bar test statistic.
 
-conTestF_lm <- function(object, type = "A", boot = "none", meq.alt = 0,
+conTestF.lm <- function(object, type = "A", boot = "none", meq.alt = 0,
                         control = NULL, tol = sqrt(.Machine$double.eps)) {
 
   # housekeeping
@@ -27,15 +27,15 @@ conTestF_lm <- function(object, type = "A", boot = "none", meq.alt = 0,
   model.org <- object$model.org
   X <- model.matrix(model.org)[,,drop=FALSE]
   Y <- model.org$model[, attr(model.org$terms, "response")]
-  n <- dim(X)[1]
+  #n <- dim(X)[1]
   cov <- object$Sigma
   b.unconstr <- object$b.unconstr
   vnames <- names(b.unconstr)
   b.constr <- object$b.constr
   b.eqconstr <- NULL
   b.constr.alt <- NULL
-  iact <- NULL
-  s2 <- NULL
+  #iact <- NULL
+  #s2 <- NULL
   Ts <- as.numeric(NA)
     names(Ts) <- "Fbar"
   Amat <- object$Amat
@@ -151,7 +151,9 @@ conTestF_lm <- function(object, type = "A", boot = "none", meq.alt = 0,
 
 
 
-conTestLRT_lm <- function(object, type = "A", boot = "none", meq.alt = 0,
+
+
+conTestLRT.lm <- function(object, type = "A", boot = "none", meq.alt = 0,
                            control = NULL, tol = sqrt(.Machine$double.eps)) {
 
   # housekeeping
@@ -176,7 +178,7 @@ conTestLRT_lm <- function(object, type = "A", boot = "none", meq.alt = 0,
   constraints <- object$constraints
   model.org <- object$model.org
   X <- model.matrix(model.org)[,,drop=FALSE]
-  n <- dim(X)[1]
+#  n <- dim(X)[1]
   Y <- cbind(model.org$model[, attr(model.org$terms, "response")])
   cov <- object$Sigma
   b.unconstr <- object$b.unconstr
@@ -184,7 +186,7 @@ conTestLRT_lm <- function(object, type = "A", boot = "none", meq.alt = 0,
   b.constr <- object$b.constr
   b.eqconstr <- NULL
   b.constr.alt <- NULL
-  iact <- NULL
+ # iact <- NULL
   s2 <- NULL
   Ts <- as.numeric(NA)
     names(Ts) <- "LRT"

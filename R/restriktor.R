@@ -31,9 +31,9 @@ restriktor <- function(model, constraints, se = "default",
     print(CON)
   }
 
-  if ("lm" %in% class(model)) {
+  if ("lm" %in% class(model)[1]) {
     UseMethod("conLM")
-  } else if ("rlm" %in% class(model)) {
+  } else if ("rlm" %in% class(model)[1]) {
       UseMethod("conRLM")
   }
   

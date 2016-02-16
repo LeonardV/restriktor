@@ -26,6 +26,7 @@ con_boot_lm <- function(model, B = 1000, fixed = FALSE, constraints, bvec, meq, 
         bootout <- boot(data.frame(DATA, fit = fit, e = e), con_boot_fixed_lm,
                         B, constraints = constraints, bvec = bvec, meq = meq)
     }
+    
     bootout
 }
 

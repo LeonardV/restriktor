@@ -26,8 +26,7 @@ print.conLM <- function(x, digits = max(3, getOption("digits") - 3),
                                    c("Estimate", "Std. Error", "t value", "Pr(>|t|)"))
     print(coefficients, digits = digits, scientific = FALSE, print.gap = 2L, quote = FALSE)
     cat("\nConstrained model: R2 reduced from", x$R2.org, "to", x$R2.reduced,"\n")
-  }
-  else if (length(x$b.constr) && !is.null(x$bootout)) {
+  } else if (length(x$b.constr) && !is.null(x$bootout)) {
     if (bootCIs) {
       cis <- matrix(0, length(x$b.constr), 2)
       colnames(cis) <- c("lower", "upper")
@@ -54,9 +53,9 @@ print.conLM <- function(x, digits = max(3, getOption("digits") - 3),
 
 #    print(x$bootout, digits = digits, scientific = FALSE)
     cat("\nConstrained model: R2 reduced from", x$R2.org, "to", x$R2.reduced,"\n")
-  }
-
-  else cat("No coefficients\n")
+  } else {
+    cat("No coefficients\n")
+  }  
   cat("\n")
   invisible(x)
 }

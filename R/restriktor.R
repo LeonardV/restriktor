@@ -18,13 +18,13 @@ restriktor <- function(model, constraints, se = "default",
     bvecw <- con_constraints_rhs_bvec(model, constraints=constraints)
     # inequality constraints
     Amatw <- con_constraints_con_amat(model, constraints = constraints)
+  }  else if (is.vector(constraints) | is.matrix(constraints)) {
+      Amatw <- constraints
+      bvecw <- if (is.null(bvec)) { rep(0L, nrow(Amatw)) } else { bvec }
+      meqw  <- if (is.null(meq)) { 0L } else { meq }
+  } else { 
+    stop("no constraints specified.") 
   }
-  else if (is.vector(constraints) | is.matrix(constraints)) {
-        Amatw <- constraints
-        bvecw <- if (is.null(bvec)) { rep(0L, nrow(Amatw)) } else { bvec }
-        meqw  <- if (is.null(meq)) { 0L } else { meq }
-  }
-  else { stop("no constraints specified.") }
 
   if (debug && is.character(constraints)) {
     print(as.data.frame(lavpartable, stringsAsFactors = FALSE))
@@ -33,9 +33,8 @@ restriktor <- function(model, constraints, se = "default",
 
   if ("lm" %in% class(model)) {
     UseMethod("conLM")
-  }
-  else if ("rlm" %in% class(model)) {
-    UseMethod("conRLM")
+  } else if ("rlm" %in% class(model)) {
+      UseMethod("conRLM")
   }
   
 }

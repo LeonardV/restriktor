@@ -21,7 +21,9 @@ conLM.lm <- function(model, constraints, se = "default",
   bvec <- bvecw
   meq <- meqw
 
-  if(is.null(bvec)) { bvec <- rep(0L, nrow(Amat)) }
+  if (is.null(bvec)) { 
+    bvec <- rep(0L, nrow(Amat)) 
+  }
 
   # acknowledgement: code taken from ic.infer package (Ulrike Groemping)
   if (nrow(Amat) - meq - 2 > 2) {
@@ -82,8 +84,7 @@ conLM.lm <- function(model, constraints, se = "default",
                 Amat = Amat, bvec = bvec, meq = meq, iact = NULL, bootout = NULL)
 
   #  if(is.null(Amat)) { OUT$CON <- CON }
-  }
-  else {
+  } else {
     # compute constrained estimates for lm() and mlm() - FIXME for weights
     out.qp <- con_solver_lm(b.unconstr, X = X, y = Y, Amat = Amat,
                             bvec = bvec, meq = meq, tol = tol,
@@ -114,8 +115,7 @@ conLM.lm <- function(model, constraints, se = "default",
       if (!(attr(model$terms, "intercept") | is.null(weights(model))))
         R2.reduced <- 1 - sum(weights(model) * residuals^2)/sum(weights(model) * Y^2)
 
-    } # mlm()
-    else {
+    } else {
       s2 <- NULL
       s2.ml <- NULL
       residuals <- Y - (X %*% b.constr)

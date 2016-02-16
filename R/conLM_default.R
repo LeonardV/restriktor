@@ -7,19 +7,17 @@ conLM.default <- function(model, constraints, se = "default",
     ## check model
     if (!(is.matrix(model))) {
         stop("ERROR: model must be of class lm or a covariance matrix.")
-    }  
-    else if (!(nrow(model)==ncol(model))) {
-        stop("ERROR: If it is not a linear model, model must be a quadratic matrix.")
-    }  
-    else if (!(all(eigen(model,TRUE,only.values=TRUE)$values>0))) {
-        stop("ERROR: matrix model must be positive definite.")
+    } else if (!(nrow(model)==ncol(model))) {
+       stop("ERROR: If it is not a linear model, model must be a quadratic matrix.")
+    } else if (!(all(eigen(model,TRUE,only.values=TRUE)$values>0))) {
+       stop("ERROR: matrix model must be positive definite.")
     }
     g <- nrow(model)-1
     if (is.null(df.error)) {
-        stop("ERROR: df.error is required, when working from a covariance matrix.")
+      stop("ERROR: df.error is required, when working from a covariance matrix.")
     }
     if (!(df.error > 2)) {
-        stop("ERROR: df.error must be at least 2.")
+      stop("ERROR: df.error must be at least 2.")
     }
 
     Amat <- constraints
@@ -58,8 +56,7 @@ conLM.default <- function(model, constraints, se = "default",
                     df.error = df.error, s2 = s2, Sigma = s2*V,
                     origmodel = NULL, Amat = Amat, bvec = bvec, iact = NULL,
                     meq = meq, bootout = NULL)
-    }
-    else {
+    } else {
         ## equality constraints involved or some inequality constraints violated
         ## calculate restricted estimate
         out <- con_my_solve_QP_lm(Dmat = solve(V), dvec = solve(V, b),

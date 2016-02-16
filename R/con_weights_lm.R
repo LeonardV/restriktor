@@ -3,10 +3,12 @@ con_weights_lm <- function (corr, ...) {
     ## ... given to pmvnorm, should contain algorithm information only
     ## changed to ... in order to stay tuned with updates in mvtnorm
     ## and be also compatible with old versions (e.g. 2.5.0)
-    if (!(is.matrix(corr) & nrow(corr) == ncol(corr)))
+    if (!(is.matrix(corr) & nrow(corr) == ncol(corr))) {
         stop("corr must be a square matrix.")
-    if (!(all(eigen(corr)$value > 0)))
+    }  
+    if (!(all(eigen(corr)$value > 0))) {
         stop("corr must be positive definite.")
+    }  
     g <- nrow(corr)
     liste <- 1:g
     ## weights in the order of highest to lowest dimension
@@ -19,14 +21,17 @@ con_weights_lm <- function (corr, ...) {
         g), sigma = solve(corr), ...)
     ## prevent lengthy calculations
     ## if longest vector too long for available storage
-    if (g > 4){
-    if (!is.numeric(try(matrix(0, floor((g-2)/2), choose(g, floor((g-2)/2))),
-        silent = TRUE)))
-        stop(paste("ic.weights will not work, corr too large, \n",
-            "interim matrix with ", floor((g-2)/2) * choose(g, floor((g-2)/2)),
-            " elements cannot be created.", sep = ""))
+    if (g > 4) {
+      if (!is.numeric(try(matrix(0, floor((g-2)/2), choose(g, floor((g-2)/2))),
+          silent = TRUE))) {
+          stop(paste("ic.weights will not work, corr too large, \n",
+              "interim matrix with ", floor((g-2)/2) * choose(g, floor((g-2)/2)),
+              " elements cannot be created.", sep = ""))
+      }  
     }
-    if (g==2) weights[2] <- 1-sum(weights)
+    if (g==2) { 
+      weights[2] <- 1-sum(weights)
+    }  
     if (g==3) {
         weights[2] <- 0.5 - weights[4]
         weights[3] <- 0.5 - weights[1]
@@ -73,20 +78,17 @@ con_weights_lm <- function (corr, ...) {
         if (g/4 == floor(g/4)) {
           weights[g/2 + 1] <- 0.5 - even.sum ## even weights
           weights[g/2 + 2] <- 0.5 - odd.sum ## odd weights
-        }
-        else {
+        } else {
           weights[g/2 + 1] <- 0.5 - odd.sum ## odd weights
           weights[g/2 + 2] <- 0.5 - even.sum ## even weights
         }
-    }
-    else {
+    } else {
         even.sum <- sum(weights[2*(((g+1)/2):1)])
         odd.sum <- sum(weights[2*(((g+1)/2):1)-1])
         if ((g+1)/4 == floor((g+1)/4)) {
           weights[(g + 1)/2] <- 0.5 - even.sum ## even weights
           weights[(g + 3)/2] <- 0.5 - odd.sum ## odd weights
-        }
-        else {
+        } else {
           weights[(g + 1)/2] <- 0.5 - odd.sum ## odd weights
           weights[(g + 3)/2] <- 0.5 - even.sum ## even weights
         }

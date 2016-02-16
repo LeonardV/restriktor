@@ -13,15 +13,13 @@ con_solver_lm <- function(b.unconstr, X, y, Amat, bvec, meq,
 
     if(out$status == -1) {
       stop("constraints are inconsistent, no solution!")
-    }
-    else if (out$status == -2) {
+    } else if (out$status == -2) {
       stop("matrix D in quadratic function is not positive definite!")
     }
 
     if (abs(out$value - val) <= tol) {
       break
-    }
-    else {
+    } else {
       val <- out$value
     }
     if (i == maxit & abs(out$value - val) > tol)

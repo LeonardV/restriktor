@@ -14,15 +14,13 @@ con_pvalue_default_lm <- function(cov, Ts.org, df.residual, type = "type A",
     # p value based on F-distribution or chi-square distribution
     pvalue <- con_pmvnorm(Ts = Ts.org, df1 = df.bar, df2 = df.residual,
                           weights = rev(wt.bar))
-  }
-  else if (type == "B") {
+  } else if (type == "B") {
     # compute df
     df.bar <- (meq - meq.alt):(nrow(Amat) - meq.alt)#meq:nrow(Amat)
     # p value based on F-distribution or chi-square distribution
     pvalue <- con_pmvnorm(Ts = Ts.org, df1 = df.bar, df2 = df.residual,
                           weights = wt.bar)
-  }
-  else if (type == "C") {
+  } else if (type == "C") {
     # t-distribution
     pvalue <- 1 - pt(Ts.org, df.residual)
     names(pvalue) <- "pt.value"
@@ -42,35 +40,38 @@ con_pvalue_boot_parametric_lm <- function(X, Ts.org = NULL, type = "A",
                                           verbose = FALSE, ...) {
 
   p.distr <- tolower(p.distr)
-  if (type == "C") { stop("type C is based on a t-distribution. Set boot = \"none\" ") }
+  if (type == "C") { 
+    stop("type C is based on a t-distribution. Set boot = \"none\" ") 
+  }
   n <- dim(X)[1]
 
   #parallel housekeeping
   have_mc <- have_snow <- FALSE
   if (parallel != "no" && ncpus > 1L) {
-    if (parallel == "multicore")
+    if (parallel == "multicore") {
       have_mc <- .Platform$OS.type != "windows"
-    else if (parallel == "snow")
+    } else if (parallel == "snow") {
       have_snow <- TRUE
-    if (!have_mc && !have_snow)
+    }  
+    if (!have_mc && !have_snow) {
       ncpus <- 1L
+    }  
   }
 
   Ts.boot <- vector("numeric", R)
    fn <- function(b) {
-    if (!is.null(seed))
+    if (!is.null(seed)) {
 	    set.seed(seed + b)
+    }  
     if (!exists(".Random.seed", envir = .GlobalEnv))
       runif(1)
       RNGstate <- .Random.seed
 
     if (p.distr == "n") {
       Yboot <- rnorm(n = n, 0, 1)
-    }
-    else if (p.distr == "t") {
+    } else if (p.distr == "t") {
       Yboot <- rt(n = n, df = df)
-    }
-    else if (p.distr == "chi") {
+    } else if (p.distr == "chi") {
       Yboot <- rchisq(n = n, df = df)
     }
 
@@ -108,17 +109,14 @@ con_pvalue_boot_parametric_lm <- function(X, Ts.org = NULL, type = "A",
                                       fn)
            parallel::stopCluster(cl)
            res
-         }
-         else parallel::parLapply(cl, seq_len(RR), fn)
+         } else parallel::parLapply(cl, seq_len(RR), fn)
        }
-     }
-     else lapply(seq_len(RR), fn)
+     } else lapply(seq_len(RR), fn)
      error.idx <- integer(0)
      for (b in seq_len(RR)) {
        if (!is.null(res[[b]])) {
          Ts.boot[b] <- res[[b]]
-       }
-       else {
+       } else {
          error.idx <- c(error.idx, b)
        }
      }
@@ -146,11 +144,13 @@ con_pvalue_boot_model_based_lm <- function(model, Ts.org = NULL, type = "A",
                                            cl = NULL, seed = NULL, control = NULL,
                                            verbose = FALSE, ...) {
 
-  if (type == "C") { stop("type C is based on a t-distribution. Set boot = \"none\" ") }
+  if (type == "C") { 
+    stop("type C is based on a t-distribution. Set boot = \"none\" ") 
+  }
   model.org <- model$model.org
   X <- model.matrix(model.org)[,,drop=FALSE]
-  Y <- model.org$model[, attr(model.org$terms, "response")]
-  n <- dim(X)[1]
+  #Y <- model.org$model[, attr(model.org$terms, "response")]
+  #n <- dim(X)[1]
 
   constraints <- model$constraints
   Amat <- model$Amat
@@ -159,31 +159,32 @@ con_pvalue_boot_model_based_lm <- function(model, Ts.org = NULL, type = "A",
 
   have_mc <- have_snow <- FALSE
   if (parallel != "no" && ncpus > 1L) {
-    if (parallel == "multicore")
+    if (parallel == "multicore") {
       have_mc <- .Platform$OS.type != "windows"
-    else if (parallel == "snow")
+    } else if (parallel == "snow") {
       have_snow <- TRUE
-    if (!have_mc && !have_snow)
+    }  
+    if (!have_mc && !have_snow) {
       ncpus <- 1L
+    }  
   }
 
 
-  if(type == "A") {
+  if (type == "A") {
 #    call.my <- list(constraints = Amat, bvec = bvec, meq = nrow(Amat), control = control)
     call.my <- list(constraints = Amat, bvec = bvec, meq = nrow(Amat), control = control)
     call.lm <- list(model = model.org)
     CALL <- c(call.lm, call.my)
-    if(any(duplicated(CALL))) {
+    if (any(duplicated(CALL))) {
       stop("duplicated elements in CALL.list")
     }
     fit <- do.call("restriktor", CALL)
-  }
-  else if(type == "B") {
+  } else if (type == "B") {
 #      call.my <- list(constraints = Amat, meq = meq, bvec = bvec, control = control)
       call.my <- list(constraints = constraints, control = control)
       call.lm <- list(model = model.org)
       CALL <- c(call.lm, call.my)
-      if(any(duplicated(CALL))) {
+      if (any(duplicated(CALL))) {
         stop("duplicated elements in CALL.list")
       }
       fit <- do.call("restriktor", CALL)
@@ -232,8 +233,7 @@ con_pvalue_boot_model_based_lm <- function(model, Ts.org = NULL, type = "A",
     res <- if (ncpus > 1L && (have_mc || have_snow)) {
       if (have_mc) {
         parallel::mclapply(seq_len(RR), fn, mc.cores = ncpus)
-      }
-      else if (have_snow) {
+      } else if (have_snow) {
         if (is.null(cl)) {
           cl <- parallel::makePSOCKcluster(rep("localhost",
                                                ncpus))
@@ -243,11 +243,9 @@ con_pvalue_boot_model_based_lm <- function(model, Ts.org = NULL, type = "A",
                                      fn)
           parallel::stopCluster(cl)
           res
-        }
-        else parallel::parLapply(cl, seq_len(RR), fn)
+        } else parallel::parLapply(cl, seq_len(RR), fn)
       }
-    }
-    else lapply(seq_len(RR), fn)
+    } else { lapply(seq_len(RR), fn) }
     error.idx <- integer(0)
     for (b in seq_len(RR)) {
       if (!is.null(res[[b]])) {

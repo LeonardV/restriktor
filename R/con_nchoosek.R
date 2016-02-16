@@ -1,12 +1,14 @@
-con_nchoosek <- function (n, k) {
 # function for calculating all subsets of size k from n objects
 # taken from package vsn (provided by Wolfgang Huber under LGPL)
 # slightly modified to also work for n=k=2 by Ulrike Groemping (ic.infer package)
+con_nchoosek <- function (n, k) {
     if (!is.numeric(n) || !is.numeric(k) || is.na(n) || is.na(k) ||
-        length(n) != 1 || length(k) != 1)
-        stop("arguments must be non-NA numeric scalars.")
-    if (k > n || k < 0)
-        stop("Arguments must satisfy 0 <= k <= n.")
+        length(n) != 1 || length(k) != 1) {
+      stop("arguments must be non-NA numeric scalars.")
+    }  
+    if (k > n || k < 0) {
+      stop("Arguments must satisfy 0 <= k <= n.")
+    }  
     nck = choose(n, k)
     res = matrix(NA, nrow = k, ncol = nck)
     res[, 1] = 1:k

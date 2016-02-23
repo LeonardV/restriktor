@@ -4,7 +4,7 @@ con_augmented_hessian <- function(model, type, b.constr, constraints, bvec, meq)
   b.unconstr <- coef(model)
   A <- constraints
   #Sigma <- 1/s2 * crossprod(X)
-  Sigma <- solve(sandwich(model, type = type))
+  Sigma <- solve(vcovHC(model, type = type))
   
 #  if (!isSymmetric(Sigma)) {
 #    stop("Information matrix Sigma is not symmetric.")

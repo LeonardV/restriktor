@@ -9,10 +9,12 @@ conLM.lm <- function(model, constraints, se = "default",
 
   # If "default", conventional standard errors are computed based on inverting
   # the expected augmented information matrix.
-  if(!(se %in% c("default","standard","boot.residual","boot.model.based","boot.standard")))
-    stop("ERROR: se must be \"standard\", \"boot.model.based\" or \"boot.standard\"")
+  if(!(se %in% c("default","HC3","const", "HC", "HC0", "HC1", "HC2", "HC4", 
+                 "HC4m", "HC5","boot.residual","boot.model.based","boot.standard")))
+    stop("ERROR: se must be \"HC3\", \"const\", \"HC\", \"HC0\", \"HC1\", 
+         \"HC2\", \"HC4\", \"HC4m\", \"HC5\", \"boot.model.based\" or \"boot.standard\"")
   if (se == "default") {
-    se <- "standard"
+    se <- "const"
   } else if (se == "boot.residual") {
     se <- "boot.model.based"
   }
@@ -65,8 +67,7 @@ conLM.lm <- function(model, constraints, se = "default",
     ll <- ll.out$loglik
     s2.ml <- ll.out$Sigma
     s2 <- summary(model)$sigma^2
-
-    b.constr = b.unconstr
+    b.constr <- b.unconstr
 
     OUT <- list(CON = NULL,
                 constraints = constraints,
@@ -143,10 +144,9 @@ conLM.lm <- function(model, constraints, se = "default",
   OUT$model.org <- model
   OUT$CON <- if (is.character(constraints)) { CON }
 
-  if (se == "standard") {
-    OUT$se <- sqrt(diag(con_augmented_hessian(b.unconstr, b.constr, X = X,
-                                              s2 = as.numeric(s2), constraints = Amat,
-                                              bvec, meq)))
+  if (!(se %in% c("boot.model.based","boot.standard"))) {
+    OUT$se <- sqrt(diag(con_augmented_hessian(model = model, type = se, b.constr, 
+                                              constraints = Amat, bvec, meq)))
   } else if (se == "boot.model.based") {
     OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),
                                                             999, control$B),

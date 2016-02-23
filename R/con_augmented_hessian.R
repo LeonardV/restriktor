@@ -1,25 +1,28 @@
-con_augmented_hessian <- function(b.unconstr, b.constr, X, s2, constraints, bvec, meq) {
+con_augmented_hessian <- function(model, type, b.constr, constraints, bvec, meq) {
 
+  X <- model.matrix(model)[,,drop = FALSE]
+  b.unconstr <- coef(model)
   A <- constraints
-  Sigma <- 1/s2 * (t(X)%*%X)
-
-  if(!isSymmetric(Sigma)) {
-    stop("Information matrix Sigma is not symmetric.")
-  }
+  #Sigma <- 1/s2 * crossprod(X)
+  Sigma <- solve(vcovHC(model, type = type))
+  
+#  if (!isSymmetric(Sigma)) {
+#    stop("Information matrix Sigma is not symmetric.")
+#  }
 
   # lagrangean coefs
   L <- as.numeric(solve(A%*%solve(t(X)%*%X)%*%t(A)) %*% (A%*%b.unconstr-bvec))
 
   inactive.idx <- A %*% b.unconstr - bvec >= 0 * bvec
-  if(meq > 0L) {
+  if (meq > 0L) {
     inactive.idx[1:meq] <- FALSE
   }
   active.idx <- !inactive.idx
-  if(meq > 0L) {
+  if (meq > 0L) {
     active.idx[1:meq] <- FALSE
   }
   #equality constraints
-  if(meq > 0L) {
+  if (meq > 0L) {
     G <- rbind(A[1:meq,])
   } else {
     G <- matrix(0L, 1, nrow(Sigma))
@@ -35,10 +38,10 @@ con_augmented_hessian <- function(b.unconstr, b.constr, X, s2, constraints, bvec
     slacks[abs(slacks) < sqrt(.Machine$double.eps)] <- 0L
   # diagonal matrix with slack parameters for the inactive constraints
   Z <-
-    if(sum(inactive.idx) == 1L) {
+    if (sum(inactive.idx) == 1L) {
       as.matrix(slacks[inactive.idx])
   } else {
-      diag(slacks[inactive.idx])
+    diag(slacks[inactive.idx])
   }
 
   #A <- A[!inactive.idx,,drop=FALSE]
@@ -74,14 +77,13 @@ con_augmented_hessian <- function(b.unconstr, b.constr, X, s2, constraints, bvec
                cbind(   H.IA, t(H26),    2*Z, t(H46), t(H56),     H66)
   )
 
-
   #augmented hessian matrix
   p <- ncol(Sigma)
   aug.H <- MASS::ginv(E3)[1:p,1:p, drop = FALSE]
     aug.H[abs(aug.H) < sqrt(.Machine$double.eps)] <- 0L
 
   OUT <- aug.H
-
+  
   OUT
 }
 

@@ -140,7 +140,9 @@ conTestF.lm <- function(object, type = "A", boot = "none", meq.alt = 0,
               model.org = model.org)
 
 
-  if(type == "A") { OUT$b.eqconstr <- b.eqconstr }
+  if (type == "A") { 
+    OUT$b.eqconstr <- b.eqconstr 
+  }
 
   class(OUT) <- "conTest"
 

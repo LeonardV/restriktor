@@ -70,6 +70,7 @@ conLM.lm <- function(model, constraints, se = "default",
     b.constr <- b.unconstr
 
     OUT <- list(CON = NULL,
+                partable = NULL,
                 constraints = constraints,
                 b.unconstr = b.unconstr,
                 b.constr = b.unconstr,
@@ -126,6 +127,7 @@ conLM.lm <- function(model, constraints, se = "default",
     }
 
     OUT <- list(CON = NULL,
+                partable = NULL,
                 constraints = constraints,
                 b.constr = b.constr, b.unconstr = b.unconstr,
                 residuals = residuals,
@@ -143,10 +145,13 @@ conLM.lm <- function(model, constraints, se = "default",
 
   OUT$model.org <- model
   OUT$CON <- if (is.character(constraints)) { CON }
-
+  OUT$partable <- if (is.character(constraints)) { partable }
+  
   if (!(se %in% c("boot.model.based","boot.standard"))) {
-    OUT$se <- sqrt(diag(con_augmented_hessian(model = model, type = se, b.constr, 
-                                              constraints = Amat, bvec, meq)))
+    con.aug <- con_augmented_hessian(model = model, type = se, b.constr, 
+                                     constraints = Amat, bvec, meq)
+    OUT$se <- sqrt(diag(con.aug))
+    attr(OUT$se, "se") <- se
   } else if (se == "boot.model.based") {
     OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),
                                                             999, control$B),

@@ -7,10 +7,10 @@ restriktor <- function(model, constraints, se = "default",
   
   if (is.character(constraints) && class(model) %in% c("lm", "rlm", "glm", "mlm")) {
     # build a bare-bones parameter table for this model
-    lavpartable <- lav_partable(model, est = TRUE, label = TRUE)
+    partable <- lav_partable(model, est = TRUE, label = TRUE)
     # parse the constraints
     CON <- lav_constraints_parse(constraints = constraints,
-                                 partable = lavpartable,
+                                 partable = partable,
                                  debug = debug)
     # equality constraints
     meqw  <- nrow(con_constraints_ceq_amat(model, constraints = constraints))

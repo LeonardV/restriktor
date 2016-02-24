@@ -20,7 +20,7 @@ importFrom("boot",
            boot.ci)
 
 importFrom("sandwich",
-           sandwich)
+           vcovHC)
 
 # export ordinary functions defined in this package
 export("restriktor", "conLM.lm", "conLM.default",

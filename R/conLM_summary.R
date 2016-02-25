@@ -1,5 +1,6 @@
 summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
-                          bootCIs = TRUE, bty = "basic", level = 0.95, ...) {
+                          bootCIs = TRUE, bty = "basic", level = 0.95, 
+                          signif.stars = getOption("show.signif.stars"), ...) {
 
   # bty = "stud" needs bootstrap variances
   if (bootCIs & !is.null(x$bootout) & !bty %in% c("norm", "basic", "perc", "bca")) {
@@ -12,9 +13,11 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
   cat("\nRestriktor: constrained linear model:\n\n")
 
   cat("Residuals:\n")
-  sr <- summary(c(x$residuals))
-  print(sr[c(1,2,3,5,6)], digits = digits, scientific = FALSE, print.gap = 2L,
-                quote = FALSE)
+  resid <- x$residuals
+  nam <- c("Min", "1Q", "Median", "3Q", "Max")
+  rq <- quantile(resid)
+   names(rq) <- nam
+  print(rq, digits, ...)
   cat("\n")
 
   if (length(x$b.constr) && is.null(x$bootout)) {
@@ -25,8 +28,15 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
     dimnames(coefficients) <- list(names(x$model.org$coefficients),
                                    c("Estimate", "Std. Error", "t value", "Pr(>|t|)"))
     coefficients[,4][coefficients[,4] < 2e-16] <- 2e-16
-    print(coefficients, digits = digits, scientific = FALSE, print.gap = 2L, quote = FALSE)
-    cat("\nConstrained model: R2 reduced from", round(x$R2.org,3), "to", round(x$R2.reduced, 3),"\n")
+#    print(coefficients, digits = digits, scientific = FALSE, print.gap = 2L, quote = FALSE)
+    printCoefmat(coefficients, digits = digits, signif.stars = signif.stars, na.print = "NA", ...)
+    cat("\n")
+    if (attr(x$se, "se") == "const") {
+      cat("Homoskedastic standard errors\n")
+    } else {
+      cat("Heteroskedastic standard errors:", attr(x$se, "se"),"\n")
+    }
+    cat("Constrained model: R2 reduced from", round(x$R2.org,3), "to", round(x$R2.reduced, 3),"\n")
   } else if (length(x$b.constr) && !is.null(x$bootout)) {
     if (bootCIs) {
       cis <- matrix(0, length(x$b.constr), 2)

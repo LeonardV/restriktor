@@ -26,10 +26,10 @@ importFrom("sandwich",
 export("restriktor", "conLM.lm", "conLM.default",
        "conTestF","conTestLRT",
        "conTestF.lm", "conTestLRT.lm",
-       #"conTestF.rlm",
        "conTestEq",
-       "print.conLM", "summary.conLM", "print.conTest", "coef.conLM",
+       "print.conLM", "summary.conLM", 
+       "print.conTest", "summary.conTest", "coef.conLM",
        "con_constraints_ceq_amat",
        "con_constraints_cin_amat",
        "con_constraints_con_amat",
-       "lav_partable")
+       "lav_partable", "pchibar", "pfbar")

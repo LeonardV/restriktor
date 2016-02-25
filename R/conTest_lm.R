@@ -84,20 +84,15 @@ conTestF.lm <- function(object, type = "A", boot = "none", meq.alt = 0,
       Ts <- as.vector(min((Amat %*% b.unconstr - bvec) /
                             sqrt(diag(Amat %*%cov%*% t(Amat)))))
       names(Ts) <- "Tbar"
-    }
-    else {
+    } else {
       stop("test not applicable with equality constraints.")
     }
   }
 
-  #Ts[abs(Ts) < sqrt(.Machine$double.eps)] <- 0L
-
-
   if (boot == "none") {
-    pvalue <- con_pvalue_default_lm(cov, Ts.org = Ts, object$df.residual, type = type,
-                                    Amat, bvec, meq, meq.alt)
-  }
-  else if (boot == "parametric") {
+    pvalue <- con_pvalue_Fbar_lm(cov, Ts.org = Ts, object$df.residual, type = type,
+                                 Amat, bvec, meq, meq.alt)
+  } else if (boot == "parametric") {
     pvalue <- con_pvalue_boot_parametric_lm(X = X, Ts.org = Ts, type = type, test = "Fbar",
                                             constraints = constraints, bvec = bvec, meq = meq, meq.alt = meq.alt,
                                             R = ifelse(is.null(control$B), 9999, control$B),
@@ -108,8 +103,7 @@ conTestF.lm <- function(object, type = "A", boot = "none", meq.alt = 0,
                                             cl = ifelse(is.null(control$cl), NULL, control$cl),
                                             seed = ifelse(is.null(control$seed), 1234, control$seed),
                                             verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
-  }
-  else if (boot == "model.based") {
+  } else if (boot == "model.based") {
     pvalue <- con_pvalue_boot_model_based_lm(object, Ts.org = Ts, type = type, test = "Fbar",
                                              meq.alt = meq.alt,
                                              R = ifelse(is.null(control$B), 9999, control$B),

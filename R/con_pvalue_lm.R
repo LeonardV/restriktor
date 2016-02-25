@@ -1,9 +1,8 @@
-con_pvalue_default_lm <- function(cov, Ts.org, df.residual, type = "type A",
-                                  Amat, bvec, meq = 0L, meq.alt = 0L) {
-
+con_pvalue_Fbar_lm <- function(cov, Ts.org, df.residual, type = "type A",
+                               Amat, bvec, meq = 0L, meq.alt = 0L) {
   #check
   if ((qr(Amat)$rank < nrow(Amat))) {
-    stop(paste("constraint matrix must have full row-rank"))
+    stop("constraint matrix must have full row-rank")
   }
   #compute weights
   wt.bar <- con_wt_lm(Amat%*%cov%*%t(Amat), meq=meq)
@@ -12,20 +11,50 @@ con_pvalue_default_lm <- function(cov, Ts.org, df.residual, type = "type A",
     # compute df
     df.bar <- 0:(nrow(Amat) - meq)
     # p value based on F-distribution or chi-square distribution
-    pvalue <- con_pmvnorm(Ts = Ts.org, df1 = df.bar, df2 = df.residual,
-                          weights = rev(wt.bar))
+    pvalue <- 1- pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
+                       wt = rev(wt.bar))
   } else if (type == "B") {
     # compute df
     df.bar <- (meq - meq.alt):(nrow(Amat) - meq.alt)#meq:nrow(Amat)
     # p value based on F-distribution or chi-square distribution
-    pvalue <- con_pmvnorm(Ts = Ts.org, df1 = df.bar, df2 = df.residual,
-                          weights = wt.bar)
+    pvalue <- 1- pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
+                       wt = wt.bar)
   } else if (type == "C") {
     # t-distribution
     pvalue <- 1 - pt(Ts.org, df.residual)
     names(pvalue) <- "pt.value"
   }
 
+  pvalue
+}
+
+
+
+con_pvalue_Chibar_lm <- function(cov, Ts.org, df.residual, type = "type A",
+                               Amat, bvec, meq = 0L, meq.alt = 0L) {
+  #check
+  if ((qr(Amat)$rank < nrow(Amat))) {
+    stop("constraint matrix must have full row-rank")
+  }
+  #compute weights
+  wt.bar <- con_wt_lm(Amat%*%cov%*%t(Amat), meq=meq)
+  
+  if(type == "A") {
+    # compute df
+    df.bar <- 0:(nrow(Amat) - meq)
+    # p value based on F-distribution or chi-square distribution
+    pvalue <- pchibar(Ts.org, df1 = df.bar, wt = rev(wt.bar))
+  } else if (type == "B") {
+    # compute df
+    df.bar <- (meq - meq.alt):(nrow(Amat) - meq.alt)#meq:nrow(Amat)
+    # p value based on F-distribution or chi-square distribution
+    pvalue <- pchibar(Ts.org, df1 = df.bar, wt = wt.bar)
+  } else if (type == "C") {
+    # t-distribution
+    pvalue <- 1 - pt(Ts.org, df.residual)
+    names(pvalue) <- "pt.value"
+  }
+  
   pvalue
 }
 

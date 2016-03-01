@@ -34,7 +34,7 @@ con_augmented_information <- function(X, b.unconstr, b.constr, s2, constraints, 
   slacks <- H %*% b.constr - bvec
   slacks[abs(slacks) < sqrt(.Machine$double.eps)] <- 0L
   # diagonal matrix with slack parameters for the inactive constraints
-  
+  Z <- matrix(, nrow = 0, ncol = 0)
   if (length(inactive.idx) == 1L) {
     Z <- diag(slacks[inactive.idx,,drop=FALSE])  
   }

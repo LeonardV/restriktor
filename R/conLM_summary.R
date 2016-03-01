@@ -26,7 +26,7 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
     std.error <-
     if (se == "const" | se == "default") {
       npar <- length(coef(x))
-      covar <- try( MASS::ginv(x$information)[,,drop = FALSE], silent = TRUE)
+      covar <- x$information
       sqrt(diag(covar))
     } else {
       sqrt(diag(sandwich(x, bread.=bread.lm(x), meat.=meatHC(x, type = se))))

@@ -145,8 +145,9 @@ conLM.lm <- function(model, constraints, se = "default",
   OUT$se <- se
   if (!(se %in% c("boot.model.based","boot.standard"))) {
     information <- con_augmented_information(X = X, b.unconstr = b.unconstr, 
+                                             b.constr = b.constr,
                                              s2 = s2, constraints = Amat, 
-                                             bvec = bvec)
+                                             bvec = bvec, meq = meq)
     OUT$information <- information
   } else if (se == "boot.model.based") {
     OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),

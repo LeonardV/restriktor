@@ -1,4 +1,4 @@
-conLM.lm <- function(model, constraints, se = "default", 
+conLM.lm <- function(model, constraints, se = "default",
                      bvec = NULL, meq = 0L, control = NULL,
                      tol = sqrt(.Machine$double.eps), debug = FALSE, ...) {
  
@@ -65,7 +65,7 @@ conLM.lm <- function(model, constraints, se = "default",
     # compute log-likelihood
     ll.out <- con_loglik_lm(X = X, y = Y, b = b.unconstr, detU = 1)
     ll <- ll.out$loglik
-    s2.ml <- ll.out$Sigma
+    s2.ml <- as.numeric(ll.out$Sigma)
     s2 <- summary(model)$sigma^2
     b.constr <- b.unconstr
 
@@ -97,11 +97,11 @@ conLM.lm <- function(model, constraints, se = "default",
 
     ll.out <- con_loglik_lm(X = X, y = Y, b = b.constr, detU = 1)
     ll <- ll.out$loglik
-    s2.ml <- ll.out$Sigma
+    s2.ml <- as.numeric(ll.out$Sigma)
 
     # lm()
     if (ncol(Y) == 1L) {
-      residuals <- t(Y - (X %*% b.constr))
+      residuals <- as.numeric(t(Y - (X %*% b.constr)))
       s2 <- as.numeric(sum(residuals^2) / (n-p))
       fitted <- t(X%*%b.constr)
       b.constr <- c(b.constr)
@@ -148,10 +148,12 @@ conLM.lm <- function(model, constraints, se = "default",
   OUT$partable <- if (is.character(constraints)) { partable }
   
   if (!(se %in% c("boot.model.based","boot.standard"))) {
-    con.aug <- con_augmented_hessian(model = model, type = se, b.constr, 
-                                     constraints = Amat, bvec, meq)
-    OUT$se <- sqrt(diag(con.aug))
-    attr(OUT$se, "se") <- se
+    information <- con_augmented_information(model = model, s2 = s2,
+                                             type = se, b.constr = b.constr, 
+                                             constraints = Amat, bvec, 
+                                             meq = meq)
+    OUT$information <- information
+    attr(OUT$information, "se") <- se
   } else if (se == "boot.model.based") {
     OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),
                                                             999, control$B),

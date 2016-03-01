@@ -22,8 +22,11 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
 
   if (length(x$b.constr) && is.null(x$bootout)) {
     cat("Coefficients:\n")
-    tval <- ifelse(x$se != 0, x$b.constr/x$se, 0L)
-    coefficients <- cbind(x$b.constr, x$se, tval, 2 * pt(abs(tval),
+    se <- attr(x$information, "se")
+    information <- MASS:::ginv(x$information)
+    std.error <- sqrt(diag(information))
+    tval <- ifelse(std.error != 0, x$b.constr/std.error, 0L)
+    coefficients <- cbind(x$b.constr, std.error, tval, 2 * pt(abs(tval),
                                                     x$df.residual, lower.tail = FALSE))
     dimnames(coefficients) <- list(names(x$model.org$coefficients),
                                    c("Estimate", "Std. Error", "t value", "Pr(>|t|)"))
@@ -31,10 +34,10 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
 #    print(coefficients, digits = digits, scientific = FALSE, print.gap = 2L, quote = FALSE)
     printCoefmat(coefficients, digits = digits, signif.stars = signif.stars, na.print = "NA", ...)
     cat("\n")
-    if (attr(x$se, "se") == "const") {
+    if (se == "defaults") {
       cat("Homoskedastic standard errors\n")
     } else {
-      cat("Heteroskedastic standard errors:", attr(x$se, "se"),"\n")
+      cat("Heteroskedastic standard errors:", se ,"\n")
     }
     cat("Constrained model: R2 reduced from", round(x$R2.org,3), "to", round(x$R2.reduced, 3),"\n")
   } else if (length(x$b.constr) && !is.null(x$bootout)) {

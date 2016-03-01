@@ -1,18 +1,12 @@
-con_augmented_information <- function(model, s2, type, b.constr, constraints, 
-                                      bvec, meq) {
+con_augmented_information <- function(X, b.unconstr, s2, constraints, bvec) {
 
-  X <- model.matrix(model)[,,drop = FALSE]
-  b.unconstr <- coef(model)
   H <- constraints
-  information <- 1/fit.con$s2 * crossprod(X) #1/fit.con$s2 * crossprod(X) vcov(model)
+  information <- 1/s2 * crossprod(X) #1/fit.con$s2 * crossprod(X) vcov(model)
   npar <- ncol(information)
   
-  #information <- 
-  #solve(vcovHC(model, type = type, adjust = TRUE))
-  
-#  if (!isSymmetric(information)) {
-#    stop("Information matrix information is not symmetric.")
-#  }
+  if (!isSymmetric(information)) {
+    stop("Information matrix information is not symmetric.")
+  }
 
   # lagrangean coefs
   lambda <- as.numeric(solve(H%*%solve(t(X)%*%X)%*%t(H)) %*% (H%*%b.unconstr-bvec))

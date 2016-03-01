@@ -22,9 +22,14 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
 
   if (length(x$b.constr) && is.null(x$bootout)) {
     cat("Coefficients:\n")
-    se <- attr(x$information, "se")
-    information <- MASS:::ginv(x$information)
-    std.error <- sqrt(diag(information))
+    se <- x$se
+    std.error <-
+    if (se == "const" | se == "default") {
+      #information <- MASS:::ginv(x$information)
+      sqrt(diag(x$information))
+    } else {
+      sqrt(diag(sandwich(x, bread.=bread.lm(x), meat.=meatHC(x, type = se))))
+    }  
     tval <- ifelse(std.error != 0, x$b.constr/std.error, 0L)
     coefficients <- cbind(x$b.constr, std.error, tval, 2 * pt(abs(tval),
                                                     x$df.residual, lower.tail = FALSE))

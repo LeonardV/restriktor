@@ -8,11 +8,11 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     out.test <- c(x$Ts, if (x$pvalue < 1e-04) { "<0.0001" } else { x$pvalue })
       names(out.test) <- c(" Test statistic", "p-value")
   } else if (x$test == "F") {
-    cat("\nConstrained hypothesis test type\n\n")
+    cat("\nConstrained hypothesis test\n\n")
     out.test <- c(x$Ts, x$df, x$df.residual, if (x$pvalue < 1e-04) { "<0.0001" } else { x$pvalue})
       names(out.test) <- c(" Test statistic", "df", "df.residual", "p-value")
   } else if (x$test == "Wald") {
-    cat("\nConstrained hypothesis test type\n\n")
+    cat("\nConstrained hypothesis test\n\n")
     out.test <- c(x$Ts, x$df, if (x$pvalue < 1e-04) { "<0.0001" } else { x$pvalue})
     names(out.test) <- c(" Test statistic", "df", "p-value")
   } 

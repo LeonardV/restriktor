@@ -2,7 +2,7 @@
 # To do: implement E-bar test statistic.
 
 conTestF.lm <- function(object, type = "A", boot = "none", meq.alt = 0,
-                        control = NULL, tol = sqrt(.Machine$double.eps)) {
+                        control = NULL, tol = sqrt(.Machine$double.eps), ...) {
 
   # housekeeping
   type <- toupper(type)
@@ -150,7 +150,7 @@ conTestF.lm <- function(object, type = "A", boot = "none", meq.alt = 0,
 
 
 conTestLRT.lm <- function(object, type = "A", boot = "none", meq.alt = 0,
-                           control = NULL, tol = sqrt(.Machine$double.eps)) {
+                           control = NULL, tol = sqrt(.Machine$double.eps), ...) {
 
   # housekeeping
   type <- toupper(type)
@@ -262,8 +262,8 @@ conTestLRT.lm <- function(object, type = "A", boot = "none", meq.alt = 0,
   }
 
   if (boot == "none") {
-    pvalue <- con_pvalue_default_lm(cov, Ts.org = Ts, object$df.residual, type = type,
-                                    Amat, bvec, meq, meq.alt)
+    pvalue <- con_pvalue_Chibar_lm(cov, Ts.org = Ts, object$df.residual, type = type,
+                                   Amat, bvec, meq, meq.alt)
   }
   else if (boot == "parametric") {
     pvalue <- con_pvalue_boot_parametric_lm(X = X, Ts.org = Ts, type = type, test = "LRT",

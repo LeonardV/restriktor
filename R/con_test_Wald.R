@@ -22,9 +22,9 @@ con_test_Wald <- function(VCOV, JAC, theta.r) {
     Wald.pvalue <- 1 - pchisq(Wald, df=Wald.df)
 
     OUT <- list(test = "Wald",
-                stat = Wald,
+                Ts = Wald,
                 df = Wald.df,
-                p.value = Wald.pvalue)
+                pvalue = Wald.pvalue)
 
     OUT
 }

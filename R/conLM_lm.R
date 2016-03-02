@@ -9,11 +9,11 @@ conLM.lm <- function(model, constraints, se = "default",
   }
   # If "default", conventional standard errors are computed based on inverting
   # the expected augmented information matrix.
-  if(!(se %in% c("default","HC3","const", "HC", "HC0", "HC1", "HC2", "HC4", 
+  if(!(se %in% c("default","standard","HC3","const", "HC", "HC0", "HC1", "HC2", "HC4", 
                  "HC4m", "HC5","boot.residual","boot.model.based","boot.standard")))
     stop("ERROR: se must be \"HC3\", \"const\", \"HC\", \"HC0\", \"HC1\", 
          \"HC2\", \"HC4\", \"HC4m\", \"HC5\", \"boot.model.based\" or \"boot.standard\"")
-  if (se == "default") {
+  if (se == "default" | se == "standard") {
     se <- "const"
   } else if (se == "boot.residual") {
     se <- "boot.model.based"

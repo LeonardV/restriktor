@@ -1,8 +1,9 @@
-conTestEq <- function(object, test = "default", ...) {
+conTestEq.lm <- function(object, test = "default", ...) {
 
 #  CON <- object$CON
 #  if (is.null(CON)) { stop("not (yet) possible when constraints input is numerical.") }
 
+  test <- tolower(test)
   if (#length(CON$ceq.linear.idx)     > 0  && # some linear eq. constraints
   #length(CON$ceq.nonlinear.idx) == 0L && # no nonlinear eq. constraints
   #length(CON$cin.linear.idx)    == 0L && # no inequality constraints
@@ -18,6 +19,11 @@ conTestEq <- function(object, test = "default", ...) {
       OUT <- con_test_Wald(VCOV    = vcov(object$model.org, labels = FALSE),
                            JAC     = object$Amat, #CON$ceq.JAC,
                            theta.r = c(object$Amat %*% coef(object$model.org)) )#CON$ceq.theta)
+      OUT$Amat <- object$Amat
+      OUT$bvec <- object$bvec
+      OUT$meq <- object$meq
+      OUT$b.constr <- object$b.constr
+      OUT$b.unconstr <- object$b.unconstr
     } else if (test == "f" || test == "ftest") {
       Wald <- con_test_Wald(VCOV    = vcov(object$model.org, labels = FALSE),
                             JAC     = object$Amat, #CON$ceq.JAC,
@@ -25,13 +31,18 @@ conTestEq <- function(object, test = "default", ...) {
       # convert Wald to F
       OUT <- list()
       OUT$test <- "F"
-      OUT$stat <- Wald$stat / Wald$df
+      OUT$Ts <- Wald$Ts / Wald$df
       OUT$df   <- Wald$df
       X <- model.matrix(object$model.org)[,,drop=FALSE]
       OUT$df.residual <- nrow(X)-ncol(X)#df.residual(object)
-      OUT$p.value <- 1 - pf(OUT$stat, OUT$df, OUT$df.residual)
+      OUT$pvalue <- 1 - pf(OUT$Ts, OUT$df, OUT$df.residual)
+      OUT$Amat <- object$Amat
+      OUT$bvec <- object$bvec
+      OUT$meq <- object$meq
+      OUT$b.constr <- object$b.constr
+      OUT$b.unconstr <- object$b.unconstr
     } else {
-      stop("restriktor ERROR: test ", sQuote(test), " not implemented.")
+      stop("restriktor ERROR: test ", sQuote(test), " not (yet) implemented. Choose \"F\" or \"Wald\"")
     }
   } else if (#length(CON$ceq.nonlinear.idx) == 0L &&
             #length(CON$cin.linear.idx)     > 0L && # some inequalities constr.
@@ -44,5 +55,7 @@ conTestEq <- function(object, test = "default", ...) {
     stop("ERROR: can not handle (yet) nonlinear (in)equality constraints")
   }
 
+  class(OUT) <- "conTest"
+  
   OUT
 }

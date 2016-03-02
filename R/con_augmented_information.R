@@ -94,4 +94,4 @@ con_augmented_information <- function(X, b.unconstr, b.constr, s2, constraints, 
 
   OUT
 }
-
+ 

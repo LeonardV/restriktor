@@ -24,9 +24,9 @@ importFrom("sandwich",
 
 # export ordinary functions defined in this package
 export("restriktor", "conLM.lm", "conLM.default",
-       "conTestF","conTestLRT",
+       "conTest", #"conTestF","conTestLRT",
        "conTestF.lm", "conTestLRT.lm",
-       "conTestEq",
+       "conTestEq.lm",
        "print.conLM", "summary.conLM", 
        "print.conTest", "summary.conTest", "coef.conLM",
        "con_constraints_ceq_amat",

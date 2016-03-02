@@ -25,7 +25,6 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
     se <- x$se
     std.error <-
     if (se == "const" | se == "default") {
-      npar <- length(coef(x))
       covar <- x$information
       sqrt(diag(covar))
     } else {
@@ -40,7 +39,7 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
 #    print(coefficients, digits = digits, scientific = FALSE, print.gap = 2L, quote = FALSE)
     printCoefmat(coefficients, digits = digits, signif.stars = signif.stars, na.print = "NA", ...)
     cat("\n")
-    if (se == "defaults") {
+    if (se == "const") {
       cat("Homoskedastic standard errors\n")
     } else {
       cat("Heteroskedastic standard errors:", se ,"\n")

@@ -16,15 +16,13 @@ con_boot_lm <- function(model, B = 1000, fixed = FALSE, constraints, bvec, meq, 
     if (is.null(wt))
         wt <- rep(1/nrow(DATA), nrow(DATA))
     if (!fixed)
-#        bootout <- boot(cbind(wt = wt, DATA), con_bootdata_lm, B,
-#                        constraints = constraints, bvec = bvec, meq = meq)
       bootout <- boot(cbind(DATA), con_bootdata_lm, B,
-                      constraints = constraints, bvec = bvec, meq = meq)
+                      model = model, constraints = constraints, bvec = bvec, meq = meq)
     else {
         e <- model$residuals
         fit <- model$fitted.values
         bootout <- boot(data.frame(DATA, fit = fit, e = e), con_boot_fixed_lm,
-                        B, constraints = constraints, bvec = bvec, meq = meq)
+                        B, model = model, constraints = constraints, bvec = bvec, meq = meq)
     }
     
     bootout

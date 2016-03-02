@@ -1,11 +1,16 @@
 # acknowledgement: code taken from ic.infer package
 con_boot_fixed_lm <- function(data, indices, ...) {
-
+    l <- list(...)
+    model <- l$model
     e <- data$e[indices]
     dat <- cbind(data$fit+e, data[,2:(ncol(data)-2), drop=FALSE])
     dat <- as.data.frame(dat)
-      colnames(dat) <- colnames(data[,1:(ncol(data)-2)])
-    out <- restriktor(lm(dat), ...)$b.constr
+    colnames(dat) <- colnames(data[,1:(ncol(data)-2)])
+    l$model <- lm(formula(model), data = dat)
+    out <- do.call("restriktor", l)  
+    out <- out$b.constr
+#      out <- restriktor(...)$b.constr   
+#    out <- restriktor(lm(dat), ...)$b.constr
     return(out)
 }
 

@@ -12,14 +12,14 @@ sandwich <- function(x, bread. = bread, meat. = meat, ...)
 bread.lm <- function(x, ...)
 {
   if(!is.null(x$na.action)) class(x$na.action) <- "omit"
-  X <- model.matrix(x$model.org)[,,drop=FALSE]
-  s2 <- x$s2
+#  X <- model.matrix(x$model.org)[,,drop=FALSE]
+#  s2 <- x$s2
   cov <- 1/x$s2 * x$information #solve(t(X) %*% X)
   return(cov * as.vector(sum(summary(x$model.org)$df[1:2])))
 }
 
 
-estfun.lm <- function(x, ...)
+estfun <- function(x, ...)
 {
   xmat <- model.matrix(x$model.org)
   xmat <- naresid(x$model.org$na.action, xmat)
@@ -30,7 +30,7 @@ estfun.lm <- function(x, ...)
   rval <- as.vector(res) * wts * xmat
   attr(rval, "assign") <- NULL
   attr(rval, "contrasts") <- NULL
-  if(is.zoo(res)) rval <- zoo(rval, index(res), attr(res, "frequency"))
+  if(zoo:::is.zoo(res)) rval <- zoo(rval, index(res), attr(res, "frequency"))
   if(is.ts(res)) rval <- ts(rval, start = start(res), frequency = frequency(res))
   return(rval)
 }

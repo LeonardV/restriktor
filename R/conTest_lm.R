@@ -37,7 +37,7 @@ conTestF.lm <- function(object, type = "A", boot = "none", meq.alt = 0,
   #iact <- NULL
   #s2 <- NULL
   Ts <- as.numeric(NA)
-    names(Ts) <- "Fbar"
+    names(Ts) <- "F"
   Amat <- object$Amat
   bvec <- object$bvec
   meq <- object$meq
@@ -93,7 +93,7 @@ conTestF.lm <- function(object, type = "A", boot = "none", meq.alt = 0,
     pvalue <- con_pvalue_Fbar_lm(cov, Ts.org = Ts, object$df.residual, type = type,
                                  Amat, bvec, meq, meq.alt)
   } else if (boot == "parametric") {
-    pvalue <- con_pvalue_boot_parametric_lm(X = X, Ts.org = Ts, type = type, test = "Fbar",
+    pvalue <- con_pvalue_boot_parametric_lm(object, Ts.org = Ts, type = type, test = "F",
                                             constraints = constraints, bvec = bvec, meq = meq, meq.alt = meq.alt,
                                             R = ifelse(is.null(control$B), 9999, control$B),
                                             p.distr = ifelse(is.null(control$p.distr), "N", control$p.distr),
@@ -104,7 +104,7 @@ conTestF.lm <- function(object, type = "A", boot = "none", meq.alt = 0,
                                             seed = ifelse(is.null(control$seed), 1234, control$seed),
                                             verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   } else if (boot == "model.based") {
-    pvalue <- con_pvalue_boot_model_based_lm(object, Ts.org = Ts, type = type, test = "Fbar",
+    pvalue <- con_pvalue_boot_model_based_lm(object, Ts.org = Ts, type = type, test = "F",
                                              meq.alt = meq.alt,
                                              R = ifelse(is.null(control$B), 9999, control$B),
                                              parallel = ifelse(is.null(control$parallel), "no", control$parallel),
@@ -266,7 +266,7 @@ conTestLRT.lm <- function(object, type = "A", boot = "none", meq.alt = 0,
                                    Amat, bvec, meq, meq.alt)
   }
   else if (boot == "parametric") {
-    pvalue <- con_pvalue_boot_parametric_lm(X = X, Ts.org = Ts, type = type, test = "LRT",
+    pvalue <- con_pvalue_boot_parametric_lm(object, Ts.org = Ts, type = type, test = "LRT",
                                             constraints = constraints, meq.alt = meq.alt,
                                             R = ifelse(is.null(control$B), 9999, control$B),
                                             p.distr = ifelse(is.null(control$p.distr), "N", control$p.distr),

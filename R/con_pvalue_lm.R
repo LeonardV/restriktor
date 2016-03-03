@@ -60,8 +60,8 @@ con_pvalue_Chibar_lm <- function(cov, Ts.org, df.residual, type = "type A",
 
 
 ################################################################################
-con_pvalue_boot_parametric_lm <- function(X, Ts.org = NULL, type = "A",
-                                          test = "Fbar", constraints, bvec = NULL,
+con_pvalue_boot_parametric_lm <- function(model, Ts.org = NULL, type = "A",
+                                          test = "F", constraints, bvec = NULL,
                                           meq = NULL, meq.alt = 0,
                                           R = 9999, p.distr = "N", df = 7,
                                           parallel = "no", ncpus = 1L, cl = NULL,
@@ -72,8 +72,16 @@ con_pvalue_boot_parametric_lm <- function(X, Ts.org = NULL, type = "A",
   if (type == "C") { 
     stop("type C is based on a t-distribution. Set boot = \"none\" ") 
   }
+  
+  model.org <- model$model.org
+  X <- model.matrix(model.org)[,,drop=FALSE]
   n <- dim(X)[1]
-
+  
+  constraints <- model$constraints
+  Amat <- model$Amat
+  bvec <- model$bvec
+  meq <- model$meq
+  
   #parallel housekeeping
   have_mc <- have_snow <- FALSE
   if (parallel != "no" && ncpus > 1L) {
@@ -97,25 +105,34 @@ con_pvalue_boot_parametric_lm <- function(X, Ts.org = NULL, type = "A",
       RNGstate <- .Random.seed
 
     if (p.distr == "n") {
-      Yboot <- rnorm(n = n, 0, 1)
+      ystar <- rnorm(n = n, 0, 1)
     } else if (p.distr == "t") {
-      Yboot <- rt(n = n, df = df)
+      ystar <- rt(n = n, df = df)
     } else if (p.distr == "chi") {
-      Yboot <- rchisq(n = n, df = df)
+      ystar <- rchisq(n = n, df = df)
     }
 
-    DATA <- as.data.frame(cbind(Yboot, X[,-1]))
-    boot_conLM <- restriktor(lm(DATA), constraints, bvec = bvec, meq = meq, control = control)
+      
+    xcol <- which(rowSums(attr(model.org$terms, "factors")) > 0)
+    terms <- attr(model.org$terms , "term.labels")
+    DATA <- data.frame(ystar, model.org$model[,xcol])
+    colnames(DATA) <- c(as.character("ystar"), terms)  
+    form <- formula(model.org)
+    form[[2]] <- as.name("ystar")
+    boot_model <- update(model.org, formula = form, data = DATA)
+    CALL <- list(boot_model, constraints = constraints, rhs = bvec, neq = meq, control = control, se = "none")
+    boot_conLM <- do.call("restriktor", CALL)  
+    
+    #boot_conLM <- restriktor(lm(DATA), constraints = constraints, rhs = bvec, neq = meq, control = control, se = "none")
 
-    if (test == "Fbar") {
-      boot_conTest_LM <- conTestF.lm(boot_conLM, type = type, meq.alt = meq.alt,
-                                      control = control)
-    } else if (test == "LRT") {
-      boot_conTest_LM <- conTestLRT.lm(boot_conLM, type = type, meq.alt = meq.alt,
-                                        control = control)
-    }
+  #  if (test == "Fbar") {
+    boot_conTest <- conTest(boot_conLM, type = type, test = test, meq.alt = meq.alt, control = control)
+#    } else if (test == "LRT") {
+#      boot_conTest_LM <- conTestLRT.lm(boot_conLM, type = type, test = test, meq.alt = meq.alt,
+#                                        control = control)
+#    }
 
-    OUT <- boot_conTest_LM$Ts
+    OUT <- boot_conTest$Ts
 
     if (verbose) {
       cat("iteration =", b, "...Ts =", OUT, "\n")
@@ -158,7 +175,8 @@ con_pvalue_boot_parametric_lm <- function(X, Ts.org = NULL, type = "A",
        Ts.boot <- Ts.boot[-idx.unique, ]
      }
 
-    pvalue <- sum(Ts.boot > Ts.org) / Rboot.tot
+    # > or >= ??? 
+    pvalue <- sum(Ts.boot >= Ts.org) / Rboot.tot
 
     OUT <- pvalue
 
@@ -166,9 +184,9 @@ con_pvalue_boot_parametric_lm <- function(X, Ts.org = NULL, type = "A",
 }
 
 
-##################################
+###################################################################################
 con_pvalue_boot_model_based_lm <- function(model, Ts.org = NULL, type = "A",
-                                           test = "Fbar", meq.alt = 0,
+                                           test = "F", meq.alt = 0,
                                            R = 9999, parallel = "no", ncpus = 1L,
                                            cl = NULL, seed = NULL, control = NULL,
                                            verbose = FALSE, ...) {
@@ -178,9 +196,7 @@ con_pvalue_boot_model_based_lm <- function(model, Ts.org = NULL, type = "A",
   }
   model.org <- model$model.org
   X <- model.matrix(model.org)[,,drop=FALSE]
-  #Y <- model.org$model[, attr(model.org$terms, "response")]
-  #n <- dim(X)[1]
-
+  
   constraints <- model$constraints
   Amat <- model$Amat
   bvec <- model$bvec
@@ -200,8 +216,7 @@ con_pvalue_boot_model_based_lm <- function(model, Ts.org = NULL, type = "A",
 
 
   if (type == "A") {
-#    call.my <- list(constraints = Amat, bvec = bvec, meq = nrow(Amat), control = control)
-    call.my <- list(constraints = Amat, bvec = bvec, meq = nrow(Amat), control = control)
+    call.my <- list(constraints = Amat, rhs = bvec, neq = nrow(Amat), control = control, se ="none")
     call.lm <- list(model = model.org)
     CALL <- c(call.lm, call.my)
     if (any(duplicated(CALL))) {
@@ -209,8 +224,7 @@ con_pvalue_boot_model_based_lm <- function(model, Ts.org = NULL, type = "A",
     }
     fit <- do.call("restriktor", CALL)
   } else if (type == "B") {
-#      call.my <- list(constraints = Amat, meq = meq, bvec = bvec, control = control)
-      call.my <- list(constraints = constraints, control = control)
+      call.my <- list(constraints = Amat, rhs = bvec, neq = meq, control = control, se = "none")
       call.lm <- list(model = model.org)
       CALL <- c(call.lm, call.my)
       if (any(duplicated(CALL))) {
@@ -237,19 +251,18 @@ con_pvalue_boot_model_based_lm <- function(model, Ts.org = NULL, type = "A",
       DATA <- data.frame(ystar, model.org$model[,xcol])
       colnames(DATA) <- c(as.character("ystar"), terms)
       simData <- as.data.frame(DATA)
-      formula <- formula(model.org)
-      formula[[2]] <- as.name("ystar")
+      form <- formula(model.org)
+      form[[2]] <- as.name("ystar")
 
-      boot_model <- update(model.org, formula=formula, data=simData)
-      boot_conLM <- restriktor(boot_model, constraints = constraints, bvec = bvec, meq = meq)
+      boot_model <- update(model.org, formula = form, data = simData)
+      boot_conLM <- restriktor(boot_model, constraints = constraints, bvec = bvec, meq = meq, se = "none")
 
-      if (test == "Fbar") {
-        boot_conTest_LM <- conTestF.lm(boot_conLM, type = type, meq.alt = meq.alt, control = control)
-      } else if (test == "LRT") {
-        boot_conTest_LM <- conTestLRT.lm(boot_conLM, type = type, meq.alt = meq.alt, control = control)
-      }
-
-      Ts <- boot_conTest_LM$Ts
+#      if (test == "Fbar") {
+      boot_conTest <- conTest(boot_conLM, type = type, test = test, meq.alt = meq.alt, control = control)
+#      } else if (test == "LRT") {
+#        boot_conTest_LM <- conTestLRT.lm(boot_conLM, type = type, meq.alt = meq.alt, control = control)
+#      }
+      Ts <- boot_conTest$Ts
 
       OUT <- Ts
       if (verbose) {
@@ -292,8 +305,8 @@ con_pvalue_boot_model_based_lm <- function(model, Ts.org = NULL, type = "A",
     if (length(idx.unique) > 0) {
       Ts.boot <- Ts.boot[-idx.unique, ]
     }
-
-    pvalue <- sum(Ts.boot > Ts.org) / Rboot.tot
+    # > or >= ???
+    pvalue <- sum(Ts.boot >= Ts.org) / Rboot.tot
 
     OUT <- pvalue
 
@@ -355,17 +368,17 @@ mix.boot <- function(object, R = 999, p.distr = c("N", "t", "Chi"), df = 7,
       runif(1)
     RNGstate <- .Random.seed
     if (p.distr == "N") {
-      Yboot <- rnorm(n, 0, 1)
+      ystar <- rnorm(n, 0, 1)
     }
     else if (p.distr == "t") {
-      Yboot <- rt(n, df = df)
+      ystar <- rt(n, df = df)
     }
     else if (p.distr == "Chi") {
-      Yboot <- rchisq(n, df = df)
+      ystar <- rchisq(n, df = df)
     }
 
     beta.constr <- constr.solve(beta.unconstr = beta.unconstr, x = X,
-                                y = cbind(Yboot),
+                                y = cbind(ystar),
                                 Amat = Amatw, bvec = bvec, meq = 0L)$solution
     beta.constr[abs(beta.constr) < sqrt(.Machine$double.eps)] <- 0L
     OUT <- beta.constr[idx]

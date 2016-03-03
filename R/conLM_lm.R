@@ -153,13 +153,13 @@ conLM.lm <- function(model, constraints, se = "default",
     } else if (se == "boot.model.based") {
       OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),
                                                               999, control$B), 
-                                 fixed = TRUE, constraints = constraints,
-                                 bvec = bvec, meq = meq, se = "none")
+                                 fixed = TRUE, constraints = Amat,
+                                 rhs = bvec, neq = meq, se = "none")
     } else if (se == "boot.standard") {
       OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),
                                                            999, control$B),
-                                 fixed = FALSE, constraints = constraints,
-                                 bvec = bvec, meq = meq, se = "none")
+                                 fixed = FALSE, constraints = Amat,
+                                 rhs = bvec, neq = meq, se = "none")
     }
   }
   if (ncol(Y) == 1L) {

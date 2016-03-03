@@ -1,6 +1,6 @@
 #acknowledgement: code taken from ic.infer package
 #slightly adapted by LV
-con_boot_lm <- function(model, B = 1000, fixed = FALSE, constraints, bvec, meq, ...) {
+con_boot_lm <- function(model, B = 1000, fixed = FALSE, ...) { #constraints, bvec, meq
     ## check for admissible model
     if (!("lm" %in% class(model)))
         stop("ERROR: model must be of class lm.")
@@ -17,12 +17,12 @@ con_boot_lm <- function(model, B = 1000, fixed = FALSE, constraints, bvec, meq, 
         wt <- rep(1/nrow(DATA), nrow(DATA))
     if (!fixed)
       bootout <- boot(cbind(DATA), con_bootdata_lm, B,
-                      model = model, constraints = constraints, bvec = bvec, meq = meq)
+                      model = model, ...)
     else {
         e <- model$residuals
         fit <- model$fitted.values
         bootout <- boot(data.frame(DATA, fit = fit, e = e), con_boot_fixed_lm,
-                        B, model = model, constraints = constraints, bvec = bvec, meq = meq)
+                        B, model = model, ...)
     }
     
     bootout

@@ -9,10 +9,10 @@ conLM.lm <- function(model, constraints, se = "default",
   }
   # If "default", conventional standard errors are computed based on inverting
   # the expected augmented information matrix.
-  if(!(se %in% c("default","standard","HC3","const", "HC", "HC0", "HC1", "HC2", "HC4", 
-                 "HC4m", "HC5","boot.residual","boot.model.based","boot.standard")))
-    stop("ERROR: se must be \"HC3\", \"const\", \"HC\", \"HC0\", \"HC1\", 
-         \"HC2\", \"HC4\", \"HC4m\", \"HC5\", \"boot.model.based\" or \"boot.standard\"")
+#  if(!(se %in% c("default","standard","HC3","const", "HC", "HC0", "HC1", "HC2", "HC4", 
+#                 "HC4m", "HC5","boot.residual","boot.model.based","boot.standard")))
+#    stop("ERROR: se must be \"HC3\", \"const\", \"HC\", \"HC0\", \"HC1\", 
+#         \"HC2\", \"HC4\", \"HC4m\", \"HC5\", \"boot.model.based\" or \"boot.standard\"")
   if (se == "default" | se == "standard") {
     se <- "const"
   } else if (se == "boot.residual") {
@@ -143,24 +143,25 @@ conLM.lm <- function(model, constraints, se = "default",
   OUT$CON <- if (is.character(constraints)) { CON }
   OUT$partable <- if (is.character(constraints)) { partable }
   OUT$se <- se
-  if (!(se %in% c("boot.model.based","boot.standard"))) {
-    information <- con_augmented_information(X = X, b.unconstr = b.unconstr, 
-                                             b.constr = b.constr,
-                                             s2 = s2, constraints = Amat, 
-                                             bvec = bvec, meq = meq)
-    OUT$information <- information
-  } else if (se == "boot.model.based") {
-    OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),
-                                                            999, control$B), 
-                               fixed = TRUE, constraints = constraints,
-                               bvec = bvec, meq = meq)
-  } else if (se == "boot.standard") {
-    OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),
-                                                         999, control$B),
-                               fixed = FALSE, constraints = constraints,
-                               bvec = bvec, meq = meq)
+  if (se != "none") {
+    if (!(se %in% c("boot.model.based","boot.standard"))) {
+      information <- con_augmented_information(X = X, b.unconstr = b.unconstr, 
+                                               b.constr = b.constr,
+                                               s2 = s2, constraints = Amat, 
+                                               bvec = bvec, meq = meq)
+      OUT$information <- information
+    } else if (se == "boot.model.based") {
+      OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),
+                                                              999, control$B), 
+                                 fixed = TRUE, constraints = constraints,
+                                 bvec = bvec, meq = meq, se = "none")
+    } else if (se == "boot.standard") {
+      OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),
+                                                           999, control$B),
+                                 fixed = FALSE, constraints = constraints,
+                                 bvec = bvec, meq = meq, se = "none")
+    }
   }
-
   if (ncol(Y) == 1L) {
     class(OUT) <- c("conLM","lm")
   } else if (ncol(Y) > 1L) {

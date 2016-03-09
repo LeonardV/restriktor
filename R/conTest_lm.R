@@ -1,7 +1,7 @@
 # computes the F- or LRT-statistic
 # To do: implement E-bar test statistic.
 
-conTestF.lm <- function(object, type = "A", boot = "none", meq.alt = 0,
+conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                         control = NULL, tol = sqrt(.Machine$double.eps), ...) {
 
   # housekeeping
@@ -15,7 +15,7 @@ conTestF.lm <- function(object, type = "A", boot = "none", meq.alt = 0,
     stop("type must be \"A\", \"B\" or \"C\"")
   }
 
-  if(!(boot %in% c("none", "residual", "model.based", "parametric"))) {
+  if(!(boot %in% c("no", "residual", "model.based", "parametric"))) {
     stop("ERROR: boot method unknown.")
   }
 
@@ -89,7 +89,7 @@ conTestF.lm <- function(object, type = "A", boot = "none", meq.alt = 0,
     }
   }
 
-  if (boot == "none") {
+  if (boot == "no") {
     pvalue <- con_pvalue_Fbar_lm(cov, Ts.org = Ts, object$df.residual, type = type,
                                  Amat, bvec, meq, meq.alt)
   } else if (boot == "parametric") {
@@ -149,7 +149,7 @@ conTestF.lm <- function(object, type = "A", boot = "none", meq.alt = 0,
 
 
 
-conTestLRT.lm <- function(object, type = "A", boot = "none", meq.alt = 0,
+conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                            control = NULL, tol = sqrt(.Machine$double.eps), ...) {
 
   # housekeeping
@@ -163,7 +163,7 @@ conTestLRT.lm <- function(object, type = "A", boot = "none", meq.alt = 0,
     stop("type must be \"A\", \"B\" or \"C\"")
   }
 
-  if(!(boot %in% c("none", "residual", "model.based", "parametric"))) {
+  if(!(boot %in% c("no", "residual", "model.based", "parametric"))) {
     stop("ERROR: boot method unknown.")
   }
 
@@ -261,7 +261,7 @@ conTestLRT.lm <- function(object, type = "A", boot = "none", meq.alt = 0,
     }
   }
 
-  if (boot == "none") {
+  if (boot == "no") {
     pvalue <- con_pvalue_Chibar_lm(cov, Ts.org = Ts, object$df.residual, type = type,
                                    Amat, bvec, meq, meq.alt)
   }

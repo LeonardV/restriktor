@@ -143,7 +143,7 @@ conLM.lm <- function(model, constraints, se = "default",
   OUT$CON <- if (is.character(constraints)) { CON }
   OUT$partable <- if (is.character(constraints)) { partable }
   OUT$se <- se
-  if (se != "none") {
+  if (se != "no") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
       information <- con_augmented_information(X = X, b.unconstr = b.unconstr, 
                                                b.constr = b.constr,
@@ -154,12 +154,12 @@ conLM.lm <- function(model, constraints, se = "default",
       OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),
                                                               999, control$B), 
                                  fixed = TRUE, constraints = Amat,
-                                 rhs = bvec, neq = meq, se = "none")
+                                 rhs = bvec, neq = meq, se = "no")
     } else if (se == "boot.standard") {
       OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),
                                                            999, control$B),
                                  fixed = FALSE, constraints = Amat,
-                                 rhs = bvec, neq = meq, se = "none")
+                                 rhs = bvec, neq = meq, se = "no")
     }
   }
   if (ncol(Y) == 1L) {

@@ -2,7 +2,7 @@ con_constraints_ceq_amat <- function(object, constraints = NULL) {
 
     # we first check the class of object
     if(!any(class(object) %in% c("lm", "rlm", "glm", "mlm"))) {
-      stop("This a prototype implementation. It only works for lm(), rlm(), glm() and mlm()")
+      stop("It only works for lm(), rlm(), glm() and mlm()")
     }
 
     # build a bare-bones parameter table for this object
@@ -19,7 +19,7 @@ con_constraints_cin_amat <- function(object, constraints = NULL) {
 
     # we first check the class of object
     if(!any(class(object) %in% c("lm", "rlm", "glm", "mlm"))) {
-      stop("This a prototype implementation. It only works for lm(), rlm(), glm() and mlm()")
+      stop("It only works for lm(), rlm(), glm() and mlm()")
     }
     # build a bare-bones parameter table for this object
     lavpartable <- lav_partable(object, est = TRUE, label = TRUE)
@@ -35,7 +35,7 @@ con_constraints_con_amat <- function(object, constraints = NULL) {
 
     # we first check the class of object
     if(!any(class(object) %in% c("lm", "rlm", "glm", "mlm"))) {
-      stop("This a prototype implementation. It only works for lm(), rlm(), glm() and mlm()")
+      stop("It only works for lm(), rlm(), glm() and mlm()")
     }
 
     # build a bare-bones parameter table for this object
@@ -54,7 +54,7 @@ con_constraints_rhs_bvec <- function(object, constraints = NULL) {
 
   # we first check the class of object
   if(!any(class(object) %in% c("lm", "rlm", "glm", "mlm"))) {
-    stop("This a prototype implementation. It only works for lm(), rlm(), glm() and mlm()")
+    stop("It only works for lm(), rlm(), glm() and mlm()")
   }
 
   # build a bare-bones parameter table for this object

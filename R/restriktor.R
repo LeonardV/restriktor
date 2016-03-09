@@ -2,6 +2,9 @@ restriktor <- function(model, constraints, se = "default",
                        rhs = NULL, neq = NULL, control = NULL,
                        debug = FALSE, ...) {
 
+  if (!(is.null(weights(model)))) {
+    stop("Restriktor ERROR: weights are not possible (yet).")
+  }
   bvec <- rhs 
   meq <- neq
   

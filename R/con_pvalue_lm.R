@@ -31,10 +31,10 @@ con_pvalue_Fbar_lm <- function(cov, Ts.org, df.residual, type = "type A",
 
 
 con_pvalue_Chibar_lm <- function(cov, Ts.org, df.residual, type = "type A",
-                               Amat, bvec, meq = 0L, meq.alt = 0L) {
+                                 Amat, bvec, meq = 0L, meq.alt = 0L) {
   #check
   if ((qr(Amat)$rank < nrow(Amat))) {
-    stop("constraint matrix must have full row-rank")
+    stop("Restriktor ERROR: constraint matrix must have full row-rank")
   }
   #compute weights
   wt.bar <- con_wt_lm(Amat%*%cov%*%t(Amat), meq=meq)
@@ -70,7 +70,7 @@ con_pvalue_boot_parametric_lm <- function(model, Ts.org = NULL, type = "A",
 
   p.distr <- tolower(p.distr)
   if (type == "C") { 
-    stop("type C is based on a t-distribution. Set boot = \"none\" ") 
+    stop("Restriktor ERROR: type C is based on a t-distribution. Set boot = \"no\" ") 
   }
   
   model.org <- model$model.org
@@ -78,7 +78,7 @@ con_pvalue_boot_parametric_lm <- function(model, Ts.org = NULL, type = "A",
   n <- dim(X)[1]
   
   constraints <- model$constraints
-  Amat <- model$Amat
+#  Amat <- model$Amat
   bvec <- model$bvec
   meq <- model$meq
   
@@ -112,7 +112,6 @@ con_pvalue_boot_parametric_lm <- function(model, Ts.org = NULL, type = "A",
       ystar <- rchisq(n = n, df = df)
     }
 
-      
     xcol <- which(rowSums(attr(model.org$terms, "factors")) > 0)
     terms <- attr(model.org$terms , "term.labels")
     DATA <- data.frame(ystar, model.org$model[,xcol])
@@ -120,18 +119,9 @@ con_pvalue_boot_parametric_lm <- function(model, Ts.org = NULL, type = "A",
     form <- formula(model.org)
     form[[2]] <- as.name("ystar")
     boot_model <- update(model.org, formula = form, data = DATA)
-    CALL <- list(boot_model, constraints = constraints, rhs = bvec, neq = meq, control = control, se = "none")
+    CALL <- list(boot_model, constraints = constraints, rhs = bvec, neq = meq, control = control, se = "no")
     boot_conLM <- do.call("restriktor", CALL)  
-    
-    #boot_conLM <- restriktor(lm(DATA), constraints = constraints, rhs = bvec, neq = meq, control = control, se = "none")
-
-  #  if (test == "Fbar") {
     boot_conTest <- conTest(boot_conLM, type = type, test = test, meq.alt = meq.alt, control = control)
-#    } else if (test == "LRT") {
-#      boot_conTest_LM <- conTestLRT.lm(boot_conLM, type = type, test = test, meq.alt = meq.alt,
-#                                        control = control)
-#    }
-
     OUT <- boot_conTest$Ts
 
     if (verbose) {
@@ -192,7 +182,7 @@ con_pvalue_boot_model_based_lm <- function(model, Ts.org = NULL, type = "A",
                                            verbose = FALSE, ...) {
 
   if (type == "C") { 
-    stop("type C is based on a t-distribution. Set boot = \"none\" ") 
+    stop("type C is based on a t-distribution. Set boot = \"no\" ") 
   }
   model.org <- model$model.org
   X <- model.matrix(model.org)[,,drop=FALSE]
@@ -216,7 +206,7 @@ con_pvalue_boot_model_based_lm <- function(model, Ts.org = NULL, type = "A",
 
 
   if (type == "A") {
-    call.my <- list(constraints = Amat, rhs = bvec, neq = nrow(Amat), control = control, se ="none")
+    call.my <- list(constraints = Amat, rhs = bvec, neq = nrow(Amat), control = control, se ="no")
     call.lm <- list(model = model.org)
     CALL <- c(call.lm, call.my)
     if (any(duplicated(CALL))) {
@@ -224,7 +214,7 @@ con_pvalue_boot_model_based_lm <- function(model, Ts.org = NULL, type = "A",
     }
     fit <- do.call("restriktor", CALL)
   } else if (type == "B") {
-      call.my <- list(constraints = Amat, rhs = bvec, neq = meq, control = control, se = "none")
+      call.my <- list(constraints = Amat, rhs = bvec, neq = meq, control = control, se = "no")
       call.lm <- list(model = model.org)
       CALL <- c(call.lm, call.my)
       if (any(duplicated(CALL))) {
@@ -248,23 +238,18 @@ con_pvalue_boot_model_based_lm <- function(model, Ts.org = NULL, type = "A",
       ystar <- as.matrix(c(yhat + r[idx]))
       xcol <- which(rowSums(attr(model.org$terms, "factors")) > 0)
       terms <- attr(model.org$terms , "term.labels")
-      DATA <- data.frame(ystar, model.org$model[,xcol])
-      colnames(DATA) <- c(as.character("ystar"), terms)
-      simData <- as.data.frame(DATA)
+      simData <- data.frame(ystar, model.org$model[,xcol])
+      colnames(simData) <- c(as.character("ystar"), terms)
+      simData <- as.data.frame(simData)
       form <- formula(model.org)
       form[[2]] <- as.name("ystar")
 
       boot_model <- update(model.org, formula = form, data = simData)
-      boot_conLM <- restriktor(boot_model, constraints = constraints, bvec = bvec, meq = meq, se = "none")
-
-#      if (test == "Fbar") {
-      boot_conTest <- conTest(boot_conLM, type = type, test = test, meq.alt = meq.alt, control = control)
-#      } else if (test == "LRT") {
-#        boot_conTest_LM <- conTestLRT.lm(boot_conLM, type = type, meq.alt = meq.alt, control = control)
-#      }
-      Ts <- boot_conTest$Ts
-
-      OUT <- Ts
+      CALL <- list(boot_model, constraints = constraints, rhs = bvec, neq = meq, control = control, se = "no")
+      boot_conLM <- do.call("restriktor", CALL)  
+      boot_conTest <- conTest(boot_conLM, type = type, test = test, meq.alt = meq.alt, control = control)$Ts
+      OUT <- boot_conTest
+      
       if (verbose) {
         cat("iteration =", b, "...Ts =", OUT, "\n")
       }

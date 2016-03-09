@@ -1,15 +1,11 @@
 #acknowledgement: code taken from ic.infer package
 #slightly adapted by LV
-con_boot_lm <- function(model, B = 1000, fixed = FALSE, ...) { #constraints, bvec, meq
+con_boot_lm <- function(model, B = 1000, fixed = FALSE, ...) { 
     ## check for admissible model
     if (!("lm" %in% class(model)))
-        stop("ERROR: model must be of class lm.")
-
+        stop("Restriktor ERROR: model must be of class lm.")
     ## prepare data for bootstrap sampling
     resp <- attr(model$terms, "response")
-#    resp.names <- as.character(formula(model))[[2]]
-#    y <- as.matrix(model$model[,resp])
-#      colnames(y) <- resp.names
     xcol <- which(rowSums(attr(model$terms, "factors")) > 0)
     DATA <- as.data.frame(model$model[, c(resp, xcol)])
     wt <- weights(model)

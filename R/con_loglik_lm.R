@@ -1,3 +1,4 @@
+# add weights w
 # compute the loglikelihood based on the (un)constrained coefficients.
 con_loglik_lm <- function(X, y, b, detU = 1) {
   n <- dim(X)[1]

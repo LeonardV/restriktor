@@ -1,7 +1,7 @@
 con_augmented_information <- function(X, b.unconstr, b.constr, s2, constraints, bvec, meq) {
 
   H <- constraints
-  information <- 1/s2 * crossprod(X) #1/fit.con$s2 * crossprod(X) vcov(model)
+  information <- 1/s2 * crossprod(X) 
   npar <- NCOL(information)
   
   if (!isSymmetric(information)) {

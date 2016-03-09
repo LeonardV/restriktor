@@ -10,40 +10,43 @@ con_augmented_information <- function(X, b.unconstr, b.constr, s2, constraints, 
 
   # lagrangean coefs
   lambda <- as.numeric(solve(H%*%solve(t(X)%*%X)%*%t(H)) %*% (H%*%b.unconstr-bvec))
-
-  inactive.idx <- which(H %*% b.unconstr - bvec >= 0 * bvec)
-  active.idx <- seq(NROW(H))[-inactive.idx]
   
-  if (meq > 0L) {
-    inactive.idx <- inactive.idx[which(inactive.idx != 1:meq)]
-    active.idx <- active.idx[which(active.idx != 1:meq)]
-  }
   #equality constraints
   if (meq > 0L) {
     G <- rbind(H[1:meq, ])
   } else {
     G <- matrix(0L, 1, NROW(information))
   }
+  
+  if (meq > 0L) {
+    H <- H[-c(1:meq),,drop=FALSE]
+    bvec <- bvec[-c(1:meq)]
+  }
+  
+  inactive.idx <- H %*% b.unconstr - bvec >= 0 * bvec
+  #inactive.idx <- H %*% b.unconstr - bvec < 0 * bvec
+  #active.idx <- seq(NROW(H))[-inactive.idx]
+  
   #active inequality constraints
-  H.active <- H[active.idx,,drop=FALSE]
+  H.active <- H[!inactive.idx,,drop=FALSE]
   #inactive inequality constraints
   H.inactive <- H[inactive.idx,,drop=FALSE]
   # diagonal matrix with Lagrangean coefficients
   Gamma <- diag(lambda, NROW(H), NROW(H))
   # slack parameters
   slacks <- H %*% b.constr - bvec
-  slacks[abs(slacks) < sqrt(.Machine$double.eps)] <- 0L
+    slacks[abs(slacks) < sqrt(.Machine$double.eps)] <- 0L
   # diagonal matrix with slack parameters for the inactive constraints
-  Z <- matrix(, nrow = 0, ncol = 0)
-  if (length(inactive.idx) == 1L) {
+  Z <- matrix(0L, nrow = 0, ncol = 0)
+  if (sum(inactive.idx) == 1L) {
     Z <- diag(slacks[inactive.idx,,drop=FALSE])  
   }
-  if (length(inactive.idx) > 1L) {
+  if (sum(inactive.idx) > 1L) {
     Z <- diag(slacks[inactive.idx,,drop=TRUE])  
   }  
   
   if(NROW(H) > 0L) {
-    H0  <- matrix(0L, NROW(H), NROW(H))
+#    H0  <- matrix(0L, NROW(H), NROW(H))
     H12 <- matrix(0L, NROW(information), NCOL(Gamma))
     H13 <- matrix(0L, NROW(information), NCOL(Z))
     H23 <- matrix(0L, NROW(Gamma), NCOL(Z))
@@ -87,11 +90,12 @@ con_augmented_information <- function(X, b.unconstr, b.constr, s2, constraints, 
     )
     information <- E3
   }
+  
   information <- try( MASS::ginv(information)[1:npar, 1:npar, drop = FALSE], silent = TRUE )
-  information[abs(information) < sqrt(.Machine$double.eps)] <- 0L
+    information[abs(information) < sqrt(.Machine$double.eps)] <- 0L
 
   OUT <- information
 
-  OUT
+    return(OUT)
 }
  

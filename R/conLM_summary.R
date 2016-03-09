@@ -1,6 +1,6 @@
 summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
                           bootCIs = TRUE, bty = "basic", level = 0.95, 
-                          signif.stars = getOption("show.signif.stars"), ...) {
+                          signif.stars = getOption("show.signif.stars")) {
 
   # bty = "stud" needs bootstrap variances
   if (bootCIs & !is.null(x$bootout) & !bty %in% c("norm", "basic", "perc", "bca")) {
@@ -17,7 +17,7 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
   nam <- c("Min", "1Q", "Median", "3Q", "Max")
   rq <- quantile(resid)
    names(rq) <- nam
-  print(rq, digits, ...)
+  print(rq, digits)
   cat("\n")
 
   if (length(x$b.constr) && is.null(x$bootout)) {
@@ -36,29 +36,36 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
     dimnames(coefficients) <- list(names(x$model.org$coefficients),
                                    c("Estimate", "Std. Error", "t value", "Pr(>|t|)"))
     coefficients[,4][coefficients[,4] < 2e-16] <- 2e-16
-#    print(coefficients, digits = digits, scientific = FALSE, print.gap = 2L, quote = FALSE)
-    printCoefmat(coefficients, digits = digits, signif.stars = signif.stars, na.print = "NA", ...)
+    printCoefmat(coefficients, digits = digits, signif.stars = signif.stars, 
+                 na.print = "NA")
     cat("\n")
     if (se == "const") {
       cat("Homoskedastic standard errors\n")
     } else {
       cat("Heteroskedastic standard errors:", se ,"\n")
     }
-    cat("Constrained model: R2 reduced from", round(x$R2.org,3), "to", round(x$R2.reduced, 3),"\n")
+    
+    if (round(x$R2.org,3) != round(x$R2.reduced, 3)) {
+      cat("Constrained model: R2 reduced from", round(x$R2.org,3), "to", round(x$R2.reduced, 3),"\n")  
+    } else {
+      cat("Constrained model: R2 remains", round(x$R2.org,3),"\n")
+    }
+    
   } else if (length(x$b.constr) && !is.null(x$bootout)) {
     if (bootCIs) {
       cis <- matrix(0, length(x$b.constr), 2)
       colnames(cis) <- c("lower", "upper")
       for (i in 1:length(x$b.constr)) {
-        if (!bty %in% c("norm", "perc"))
+        if (!bty %in% c("norm", "perc")) {
           cis[i, ] <- boot.ci(x$bootout, conf = level,
                               type = bty, index = i)[[bty]][4:5]
-        if (bty == "perc")
+        } else if (bty == "perc") {
           cis[i, ] <- boot.ci(x$bootout, conf = level,
                               type = bty, index = i)[["percent"]][4:5]
-        if (bty == "norm")
+        } else if (bty == "norm") {
           cis[i, ] <- boot.ci(x$bootout, conf = level,
                               type = bty, index = i)[["normal"]][2:3]
+        }  
       }
       cat("\nCoefficients from constrained model\nwith",
           100 * level, "pct bootstrap confidence intervals (",bty,"):", "\n")
@@ -70,7 +77,6 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
     colnames(icc) <- c("Estimate", "Std. Error", "Lower", "Upper")
     print(icc, quote = FALSE, digits = digits)
 
-#    print(x$bootout, digits = digits, scientific = FALSE)
     cat("\nConstrained model: R2 reduced from", round(x$R2.org,3), "to", round(x$R2.reduced, 3),"\n")
   } else {
     cat("No coefficients\n")

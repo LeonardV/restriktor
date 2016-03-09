@@ -18,5 +18,7 @@ conTest <- function(object, type = "A", ...) {
     }
   } else if (nrow(object$Amat) == object$meq) {
     UseMethod("conTestEq")    
+  } else {
+    stop("Restriktor ERROR: Amat and meq do not match.")
   }
 }  

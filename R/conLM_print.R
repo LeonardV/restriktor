@@ -1,4 +1,4 @@
-print.conLM <- function(x, digits = max(3, getOption("digits") - 3), ...) {
+print.conLM <- function(x, digits = max(3, getOption("digits") - 3)) {
 
   cat("\nRestriktor: constrained linear model:\n\n")
   if (length(coef(x)) > 0L) {

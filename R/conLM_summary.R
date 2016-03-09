@@ -42,7 +42,7 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
     if (se == "const") {
       cat("Homoskedastic standard errors\n")
     } else {
-      cat("Heteroskedastic standard errors:", se ,"\n")
+      cat("Heteroskedastic robust standard errors:", se ,"\n")
     }
     
     if (round(x$R2.org,3) != round(x$R2.reduced, 3)) {

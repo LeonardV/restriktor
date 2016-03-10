@@ -5,6 +5,8 @@ restriktor <- function(model, constraints, se = "default",
   if (!(is.null(weights(model)))) {
     stop("Restriktor ERROR: weights are not possible (yet).")
   }
+  
+  # rename for internal use
   bvec <- rhs 
   meq <- neq
   
@@ -22,6 +24,9 @@ restriktor <- function(model, constraints, se = "default",
     # inequality constraints
     Amatw <- con_constraints_con_amat(model, constraints = constraints)
   }  else if (is.vector(constraints) | is.matrix(constraints)) {
+      if (is.vector(constraints)) {
+        constraints <- rbind(constraints)
+      }
       Amatw <- constraints
       bvecw <- if (is.null(bvec)) { rep(0L, nrow(Amatw)) } else { bvec }
       meqw  <- if (is.null(meq)) { 0L } else { meq }

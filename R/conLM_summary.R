@@ -30,14 +30,19 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
     } else {
       sqrt(diag(sandwich(x, bread.=bread.lm(x), meat.=meatHC(x, type = se))))
     }  
+    
+    ##########
     tval <- ifelse(std.error != 0, x$b.constr/std.error, 0L)
     coefficients <- cbind(x$b.constr, std.error, tval, 2 * pt(abs(tval),
                                                     x$df.residual, lower.tail = FALSE))
     dimnames(coefficients) <- list(names(x$model.org$coefficients),
                                    c("Estimate", "Std. Error", "t value", "Pr(>|t|)"))
     coefficients[,4][coefficients[,4] < 2e-16] <- 2e-16
+    #cat("\nDefined new paramters:\n")
     printCoefmat(coefficients, digits = digits, signif.stars = signif.stars, 
                  na.print = "NA")
+    ###########
+    
     cat("\n")
     if (se == "const") {
       cat("Homoskedastic standard errors\n")

@@ -7,7 +7,12 @@ con_pvalue_Fbar_lm <- function(cov, Ts.org, df.residual, type = "type A",
   #compute weights
   wt.bar <- con_wt_lm(Amat%*%cov%*%t(Amat), meq=meq)
 
-  if(type == "A") {
+  if (type == "global") {
+    # compute df
+    df.bar <- ((ncol(Amat) - 1) - nrow(Amat)):((ncol(Amat) - 1) - meq)    
+    # p value based on the chi-square distribution
+    pvalue <- 1-pfbar(Ts.org, df1 = df.bar, df2 = df.residual, wt = rev(wt.bar))
+  } else if(type == "A") {
     # compute df
     df.bar <- 0:(nrow(Amat) - meq)
     # p value based on F-distribution or chi-square distribution
@@ -30,7 +35,7 @@ con_pvalue_Fbar_lm <- function(cov, Ts.org, df.residual, type = "type A",
 
 
 
-con_pvalue_Chibar_lm <- function(cov, Ts.org, df.residual, type = "type A",
+con_pvalue_Chibar_lm <- function(cov, Ts.org, df.residual, type = "A",
                                  Amat, bvec, meq = 0L, meq.alt = 0L) {
   #check
   if ((qr(Amat)$rank < nrow(Amat))) {
@@ -39,15 +44,20 @@ con_pvalue_Chibar_lm <- function(cov, Ts.org, df.residual, type = "type A",
   #compute weights
   wt.bar <- con_wt_lm(Amat%*%cov%*%t(Amat), meq=meq)
   
-  if(type == "A") {
+  if (type == "global") {
+    # compute df
+    df.bar <- ((ncol(Amat) - 1) - nrow(Amat)):((ncol(Amat) - 1) - meq)    
+    # p value based on the chi-square distribution
+    pvalue <- 1-pchibar(Ts.org, df1 = df.bar, wt = rev(wt.bar))
+  }  else if (type == "A") {
     # compute df
     df.bar <- 0:(nrow(Amat) - meq)
-    # p value based on F-distribution or chi-square distribution
+    # p value based on th chi-square distribution
     pvalue <- 1-pchibar(Ts.org, df1 = df.bar, wt = rev(wt.bar))
   } else if (type == "B") {
     # compute df
     df.bar <- (meq - meq.alt):(nrow(Amat) - meq.alt)#meq:nrow(Amat)
-    # p value based on F-distribution or chi-square distribution
+    # p value based on th chi-square distribution
     pvalue <- 1-pchibar(Ts.org, df1 = df.bar, wt = wt.bar)
   } else if (type == "C") {
     # t-distribution
@@ -61,7 +71,7 @@ con_pvalue_Chibar_lm <- function(cov, Ts.org, df.residual, type = "type A",
 
 ################################################################################
 con_pvalue_boot_parametric_lm <- function(model, Ts.org = NULL, type = "A",
-                                          test = "F", constraints, bvec = NULL,
+                                          test = "F", bvec = NULL,
                                           meq = NULL, meq.alt = 0,
                                           R = 9999, p.distr = "N", df = 7,
                                           parallel = "no", ncpus = 1L, cl = NULL,
@@ -77,8 +87,8 @@ con_pvalue_boot_parametric_lm <- function(model, Ts.org = NULL, type = "A",
   X <- model.matrix(model.org)[,,drop=FALSE]
   n <- dim(X)[1]
   
-  constraints <- model$constraints
-#  Amat <- model$Amat
+#  constraints <- model$constraints
+  Amat <- model$Amat
   bvec <- model$bvec
   meq <- model$meq
   
@@ -111,7 +121,7 @@ con_pvalue_boot_parametric_lm <- function(model, Ts.org = NULL, type = "A",
     } else if (p.distr == "chi") {
       ystar <- rchisq(n = n, df = df)
     }
-
+  
     xcol <- which(rowSums(attr(model.org$terms, "factors")) > 0)
     terms <- attr(model.org$terms , "term.labels")
     DATA <- data.frame(ystar, model.org$model[,xcol])
@@ -119,7 +129,7 @@ con_pvalue_boot_parametric_lm <- function(model, Ts.org = NULL, type = "A",
     form <- formula(model.org)
     form[[2]] <- as.name("ystar")
     boot_model <- update(model.org, formula = form, data = DATA)
-    CALL <- list(boot_model, constraints = constraints, rhs = bvec, neq = meq, control = control, se = "no")
+    CALL <- list(boot_model, constraints = Amat, rhs = bvec, neq = meq, control = control, se = "no")
     boot_conLM <- do.call("restriktor", CALL)  
     boot_conTest <- conTest(boot_conLM, type = type, test = test, meq.alt = meq.alt, control = control)
     OUT <- boot_conTest$Ts
@@ -187,7 +197,7 @@ con_pvalue_boot_model_based_lm <- function(model, Ts.org = NULL, type = "A",
   model.org <- model$model.org
   X <- model.matrix(model.org)[,,drop=FALSE]
   
-  constraints <- model$constraints
+  #constraints <- model$constraints
   Amat <- model$Amat
   bvec <- model$bvec
   meq <- model$meq
@@ -204,8 +214,23 @@ con_pvalue_boot_model_based_lm <- function(model, Ts.org = NULL, type = "A",
     }  
   }
 
-
-  if (type == "A") {
+  if (type == "global") {
+    intercept <- model.org$assign[1] == 0L
+    g <- length(model$b.constr)
+    if (intercept) {
+      Amatg <- cbind(rep(0, (g - 1)), diag(rep(1, g - 1))) 
+      bvecg <- rep(0, g - 1) 
+    } else {
+      stop("Restriktor ERROR: test not applicable for models without intercept.")      
+    }
+    call.my <- list(constraints = Amatg, rhs = bvecg, neq = nrow(Amatg), control = control, se ="no")
+    call.lm <- list(model = model.org)
+    CALL <- c(call.lm, call.my)
+    if (any(duplicated(CALL))) {
+      stop("duplicated elements in CALL.list")
+    }
+    fit <- do.call("restriktor", CALL)
+  } else if (type == "A") {
     call.my <- list(constraints = Amat, rhs = bvec, neq = nrow(Amat), control = control, se ="no")
     call.lm <- list(model = model.org)
     CALL <- c(call.lm, call.my)
@@ -245,7 +270,7 @@ con_pvalue_boot_model_based_lm <- function(model, Ts.org = NULL, type = "A",
       form[[2]] <- as.name("ystar")
 
       boot_model <- update(model.org, formula = form, data = simData)
-      CALL <- list(boot_model, constraints = constraints, rhs = bvec, neq = meq, control = control, se = "no")
+      CALL <- list(boot_model, constraints = Amat, rhs = bvec, neq = meq, control = control, se = "no")
       boot_conLM <- do.call("restriktor", CALL)  
       boot_conTest <- conTest(boot_conLM, type = type, test = test, meq.alt = meq.alt, control = control)$Ts
       OUT <- boot_conTest

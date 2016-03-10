@@ -4,15 +4,15 @@
 conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                         control = NULL, tol = sqrt(.Machine$double.eps), ...) {
 
-  # housekeeping
-  type <- toupper(type)
-  #test <- tolower(test)
-
+  if (type != "global") {
+    type <- toupper(type)
+  }  
+  
   if (!("conLM" %in% class(object))) {
     stop("object must be of class conLM().")
   }
-  if(!(type %in% c("A","B","C"))) {
-    stop("type must be \"A\", \"B\" or \"C\"")
+  if(!(type %in% c("A","B","C","global"))) {
+    stop("type must be \"A\", \"B\", \"C\" or \"global\"")
   }
 
   if(!(boot %in% c("no", "residual", "model.based", "parametric"))) {
@@ -37,7 +37,7 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   #iact <- NULL
   #s2 <- NULL
   Ts <- as.numeric(NA)
-    names(Ts) <- "F"
+ #   names(Ts) <- "F"
   Amat <- object$Amat
   bvec <- object$bvec
   meq <- object$meq
@@ -49,7 +49,24 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     stop("length b.unconstr and nrow(cov) must be identical.")
   }
 
-  if (type == "A") {
+  if (type == "global") {
+    # check for intercept
+    intercept <- object$model.org$assign[1] == 0L
+    g <- length(object$b.constr)
+    if (intercept) {
+      Amatg <- cbind(rep(0, (g - 1)), diag(rep(1, g - 1))) 
+      bvecg <- rep(0, g - 1) 
+    } else {
+        stop("Restriktor ERROR: test not applicable for models without intercept.")      
+    } 
+    b.eqconstr <- con_solver_lm(b.unconstr, X = X, y = Y, Amat = Amatg,
+                                bvec = bvecg, meq = nrow(Amatg),
+                                tol = ifelse(is.null(control$tol), 1e-09, control$tol),
+                                maxit = ifelse(is.null(control$maxit), 1e04, control$maxit))$solution
+    b.eqconstr[abs(b.eqconstr) < tol] <- 0L
+    names(b.eqconstr) <- vnames
+    Ts <- c(t(b.constr - b.eqconstr) %*% solve(cov, b.constr - b.eqconstr))
+  } else if (type == "A") {
     # optimizer
     b.eqconstr <- con_solver_lm(b.unconstr, X = X, y = Y, Amat = Amat,
                                 bvec = bvec, meq = nrow(Amat),
@@ -83,7 +100,7 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     if (meq == 0L) {
       Ts <- as.vector(min((Amat %*% b.unconstr - bvec) /
                             sqrt(diag(Amat %*%cov%*% t(Amat)))))
-      names(Ts) <- "Tbar"
+#      names(Ts) <- "Tbar"
     } else {
       stop("test not applicable with equality constraints.")
     }
@@ -94,7 +111,7 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                  Amat, bvec, meq, meq.alt)
   } else if (boot == "parametric") {
     pvalue <- con_pvalue_boot_parametric_lm(object, Ts.org = Ts, type = type, test = "F",
-                                            constraints = constraints, bvec = bvec, meq = meq, meq.alt = meq.alt,
+                                            bvec = bvec, meq = meq, meq.alt = meq.alt,
                                             R = ifelse(is.null(control$B), 9999, control$B),
                                             p.distr = ifelse(is.null(control$p.distr), "N", control$p.distr),
                                             df = ifelse(is.null(control$df), 7, control$df),
@@ -134,7 +151,7 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
               model.org = model.org)
 
 
-  if (type == "A") { 
+  if (type == "A" | type == "global") { 
     OUT$b.eqconstr <- b.eqconstr 
   }
 
@@ -152,17 +169,17 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
 conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                            control = NULL, tol = sqrt(.Machine$double.eps), ...) {
 
-  # housekeeping
-  type <- toupper(type)
-  #test <- tolower(test)
-
+  if (type != "global") {
+    type <- toupper(type)
+  }  
+  
   if (!("conLM" %in% class(object))) {
     stop("object must be of class conLM().")
   }
-  if(!(type %in% c("A","B","C"))) {
-    stop("type must be \"A\", \"B\" or \"C\"")
+  if(!(type %in% c("A","B","C","global"))) {
+    stop("type must be \"A\", \"B\", \"C\" or \"global\"")
   }
-
+  
   if(!(boot %in% c("no", "residual", "model.based", "parametric"))) {
     stop("ERROR: boot method unknown.")
   }
@@ -178,7 +195,7 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   Y <- cbind(model.org$model[, attr(model.org$terms, "response")])
   cov <- object$Sigma
   b.unconstr <- object$b.unconstr
-    var.names <- names(b.unconstr)
+    vnames <- names(b.unconstr)
   b.constr <- object$b.constr
   b.eqconstr <- NULL
   b.constr.alt <- NULL
@@ -198,14 +215,39 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     stop("length b.unconstr and nrow(cov) must be identical.")
   }
 
-  if (type == "A") {
+  if (type == "global") {
+    # check for intercept
+    intercept <- object$model.org$assign[1] == 0L
+    g <- length(object$b.constr)
+    if (intercept) {
+      Amat <- cbind(rep(0, (g - 1)), diag(rep(1, g - 1))) 
+      bvec <- rep(0, g - 1) 
+    } else {
+      Amat <- diag(rep(1, g))
+      bvec <- rep(0, g) 
+    } 
+    b.eqconstr <- con_solver_lm(b.unconstr, X = X, y = Y, Amat = Amat,
+                                bvec = bvec, meq = nrow(Amat),
+                                tol = ifelse(is.null(control$tol), 1e-09, control$tol),
+                                maxit = ifelse(is.null(control$maxit), 1e04, control$maxit))$solution
+    b.eqconstr[abs(b.eqconstr) < tol] <- 0L
+    names(b.eqconstr) <- vnames
+    # test statistics
+    ll0.out <- con_loglik_lm(X = X, y = Y, b = b.eqconstr, detU = 1)
+    ll0 <- ll0.out$loglik
+    s2 <- ll0.out$Sigma
+    
+    ll1.out <- con_loglik_lm(X = X, y = Y, b = b.constr, detU = 1)
+    ll1 <- ll1.out$loglik
+    Ts <- -2*(ll0 - ll1)
+  } else if (type == "A") {
     # optimizer
     b.eqconstr <- con_solver_lm(b.unconstr, X = X, y = Y, Amat = Amat,
                                 bvec = bvec, meq = nrow(Amat),
                                 tol = ifelse(is.null(control$tol), 1e-09, control$tol),
                                 maxit = ifelse(is.null(control$maxit), 1e04, control$maxit))$solution
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
-      names(b.eqconstr) <- var.names
+      names(b.eqconstr) <- vnames
     # test statistics
     ll0.out <- con_loglik_lm(X = X, y = Y, b = b.eqconstr, detU = 1)
     ll0 <- ll0.out$loglik
@@ -234,7 +276,7 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                       bvec=bvec[1:meq.alt], meq = meq.alt,
                                       tol = ifelse(is.null(control$tol), 1e-09, control$tol),
                                       maxit = ifelse(is.null(control$maxit), 1e04, control$maxit))$solution
-          names(b.constr.alt) <- var.names
+          names(b.constr.alt) <- vnames
 
         ll0.out <- con_loglik_lm(X = X, y = Y, b = b.constr, detU = 1)
         ll0 <- ll0.out$loglik
@@ -307,7 +349,9 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
               pvalue = pvalue,
               model.org = object$model.org)
 
-  if(type == "A") { OUT$b.eqconstr <- b.eqconstr }
+  if(type == "A" | type == "global") { 
+    OUT$b.eqconstr <- b.eqconstr 
+  }
 
   class(OUT) <- "conTest"
 

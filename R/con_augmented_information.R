@@ -94,7 +94,8 @@ con_augmented_information <- function(X, b.unconstr, b.constr, s2, constraints, 
   information <- try( MASS::ginv(information)[1:npar, 1:npar, drop = FALSE], silent = TRUE )
     information[abs(information) < sqrt(.Machine$double.eps)] <- 0L
 
-  OUT <- information
+    # augmented/inverted information
+    OUT <- information
 
     return(OUT)
 }

@@ -84,7 +84,7 @@ conLM.lm <- function(model, constraints, se = "default",
   #  if(is.null(Amat)) { OUT$CON <- CON }
   } else {
     # compute constrained estimates for lm() and mlm() - FIXME for weights
-    out.qp <- con_solver_lm(b.unconstr, X = X, y = Y, Amat = Amat,
+    out.qp <- con_solver(b.unconstr, X = X, y = Y, Amat = Amat,
                             bvec = bvec, meq = meq, tol = tol,
                             maxit = ifelse(is.null(control$maxit), 1e04,
                                            control$maxit))

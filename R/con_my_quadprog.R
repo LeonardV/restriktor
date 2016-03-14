@@ -1,6 +1,6 @@
 # code taken from http://homepage.cs.uri.edu/faculty/hamel/courses/2014/spring2014/csc581/solve-QP.r
 # addapted version of the QP wrapper...needed to get rid of the 'stop' statements.
-con_my_solve_QP_lm <- function(Dmat, dvec, Amat, bvec, meq = 0, factorized = FALSE) {
+con_my_solve_QP <- function(Dmat, dvec, Amat, bvec, meq = 0, factorized = FALSE) {
   n <- nrow(Dmat)
   q <- ncol(Amat)
   if (missing(bvec)) {

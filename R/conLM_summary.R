@@ -10,8 +10,12 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
     stop("invalid confidence level")
   }
 
-  cat("\nRestriktor: constrained linear model:\n\n")
-
+  if (class(x)[1] == "conLM") {
+    cat("\nRestriktor: constrained linear model:\n\n")
+  } else if(class(x)[1] == "conRLM") {
+    cat("\nRestriktor: constrained robust linear model:\n\n")
+  }
+  
   cat("Residuals:\n")
   resid <- x$residuals
   nam <- c("Min", "1Q", "Median", "3Q", "Max")

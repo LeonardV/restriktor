@@ -3,14 +3,15 @@ restriktor <- function(model, constraints, se = "default",
                        debug = FALSE, ...) {
 
   if (!(is.null(weights(model)))) {
+    if(!all(weights(model) == 1L)) {
     stop("Restriktor ERROR: weights are not possible (yet).")
+    }
   }
-  
   # rename for internal use
   bvec <- rhs 
   meq <- neq
   
-  if (is.character(constraints) && class(model) %in% c("lm", "rlm", "glm", "mlm")) {
+  if (is.character(constraints) && class(model) %in% c("lm", "rlm")) {
     # build a bare-bones parameter table for this model
     partable <- lav_partable(model, est = TRUE, label = TRUE)
     # parse the constraints

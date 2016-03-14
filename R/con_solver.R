@@ -1,5 +1,5 @@
-con_solver_lm <- function(b.unconstr, X, y, Amat, bvec, meq,
-                          maxit = 10000, tol = sqrt(.Machine$double.eps)) {
+con_solver <- function(b.unconstr, X, y, Amat, bvec, meq,
+                       maxit = 10000, tol = sqrt(.Machine$double.eps)) {
   val <- 0
   y <- as.matrix(y)
   for (i in 1:maxit) {
@@ -8,8 +8,8 @@ con_solver_lm <- function(b.unconstr, X, y, Amat, bvec, meq,
     yVx <- kronecker(solve(Sigma), t(X)) %*% as.vector(y)
     dvec <- 2*yVx
     Dmat <- 2*kronecker(solve(Sigma), t(X) %*% X)
-    out <- con_my_solve_QP_lm(Dmat = Dmat, dvec = dvec, Amat = t(Amat),
-                              bvec = bvec, meq = meq)
+    out <- con_my_solve_QP(Dmat = Dmat, dvec = dvec, Amat = t(Amat),
+                           bvec = bvec, meq = meq)
 
     if(out$status == -1) {
       stop("constraints are inconsistent, no solution!")

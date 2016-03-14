@@ -4,25 +4,20 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                        bvec = NULL, meq = 0L,
                        tol = sqrt(.Machine$double.eps), ...) { 
   
+  Amat <- Amatw; bvec <- bvecw; meq <- meqw
+  
+  # check class
   if (!("rlm" %in% class(model))) {
     stop("ERROR: model must be of class rlm.")
   }
-  
-  # If "default", conventional standard errors are computed based on inverting
-  # the expected augmented information matrix.
-  if(!(se %in% c("default","standard","boot.residual","boot.model.based","boot.standard")))
-    stop("ERROR: se must be \"standard\", \"boot.model.based\" or \"boot.standard\"")
-  if (se == "default") {
-    se <- "standard"
+  if (se == "default" | se == "standard") {
+    se <- "const"
   } else if (se == "boot.residual") {
     se <- "boot.model.based"
   }
-  
-  Amat <- Amatw
-  bvec <- bvecw
-  meq <- meqw
-  
-  if(is.null(bvec)) { bvec <- rep(0L, nrow(Amat)) }
+  if (missing(constraints) && is.null(bvec)) { 
+    bvec <- rep(0L, nrow(Amat)) 
+  }
   
   # acknowledgement: code taken from ic.infer package (Ulrike Groemping)
   if (nrow(Amat) - meq - 2 > 2) {
@@ -35,122 +30,178 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                  " elements cannot be created", sep = ""))
   }
   
-  if(is.null(object$model)) {
-    Y <- object$residuals + object$fitted
-  } else {
-    Data <- object$model
-    mfit <- object$model
-    Y <- model.response(mfit)  
-  }  
-  X  <- model.matrix(object)[,,drop = FALSE]
-  n <- dim(X)[1]
-  beta.unconstr <- coef(object)
-  # number of parameters
-  p <- length(beta.unconstr)
-  df.residual <- nrow(X)-ncol(X)
   
-  if(ncol(Amat) != length(beta.unconstr)) {
+  if (is.null(model$model)) {
+    Y <- model$residuals + model$fitted
+  } else {
+#    Data <- model$model
+#    mfit <- model$model
+    Y <- as.matrix(model$model[, attr(model$terms, "response")])
+  }  
+  X  <- model.matrix(model)[,,drop = FALSE]
+#  n <- dim(X)[1]
+  b.unconstr <- coef(model)
+  so <- MASS:::summary.rlm(model)
+  df.residual <- so$df[2]
+  # number of parameters
+#  p <- length(b.unconstr)
+#  df.residual <- nrow(X)-ncol(X)
+  
+  if (ncol(Amat) != length(b.unconstr)) {
     stop("length coefficients and ncol(Amat) must be identical")
   }
     
-  if (all(Amat %*% c(beta.unconstr) - bvec >= 0 * bvec) & meq == 0) {
-    #R2 and adjusted R2, code taken from lmrob() function.
-    resid <- object$residuals
-    pred <- object$fitted.values
-    resp <- pred + resid 
-    wgt <- object$w
-    if(is.null(object$model)) {
-      df.int <- if (any(colnames(X) == "(Intercept)")) 1L else 0L
-    } else {
-        df.int <- if (attr(object$terms, "intercept")) 1L else 0L
-    } 
-    resp.mean <- if (df.int == 1L) sum(wgt * resp)/sum(wgt) else 0
-    yMy <- sum(wgt * (resp - resp.mean)^2)
-    rMr <- sum(wgt * resid^2)
-    # bi-square correction
-    correc <- 1.207617 
-    R2 <- r2correc <- (yMy - rMr) / (yMy + rMr * (correc - 1))
-    R2.adjusted <- 1 - (1 - r2correc) * ((n - df.int) / df.residual)
+  #R2 and adjusted R2, acknowledgement: code taken from lmrob() function.
+  resid <- resid(model)
+  pred <- model$fitted.values
+  resp <- pred + resid 
+  wgt <- model$w
+  if (is.null(model$model)) {
+    df.int <- if (any(colnames(X) == "(Intercept)")) 1L else 0L
+  } else {
+    df.int <- if (attr(model$terms, "intercept")) 1L else 0L
+  } 
+  resp.mean <- if (df.int == 1L) sum(wgt * resp)/sum(wgt) else 0
+  yMy <- sum(wgt * (resp - resp.mean)^2)
+  rMr <- sum(wgt * resid^2)
+  # bi-square correction
+  correc <- 1.207617 
+  R2.org <- r2correc <- (yMy - rMr) / (yMy + rMr * (correc - 1))
+  #R2.adjusted <- 1 - (1 - r2correc) * ((n - df.int) / df.residual)
+  
+  if (all(Amat %*% c(b.unconstr) - bvec >= 0 * bvec) & meq == 0) {
+    # compute log-likelihood
+    ll.out <- con_loglik_lm(X = X, y = Y, b = b.unconstr, detU = 1)
+    ll <- ll.out$loglik
+    b.constr <- b.unconstr
+    s2 <- so$stddev^2
     
-    OUT <- list(object.rlm = object,  
-                beta.constr = beta.unconstr, 
-                residuals = resid(object), 
-                fitted.values = fitted(object), 
-                weights = object$weights, R2 = R2, R2.adjusted = R2.adjusted,
-                df.residual = df.residual, scale = object$s, 
-                VCOV = NULL, 
-                Amat = Amat, bvec = bvec, meq = meq, iact = 0L, 
-                converged = object$converged)
-  }
-  else {
-    call.rlm <- as.list(object$call)
+    OUT <- list(CON = NULL,
+                partable = NULL,
+                constraints = constraints,
+                b.unconstr = b.unconstr,
+                b.constr = b.unconstr,
+                residuals = resid(model),
+                fitted.values = fitted(model),
+                weights = model$weights,
+                R2.org = R2.org,
+                R2.reduced = R2.org,
+                df.residual = df.residual,
+                scale = model$s, 
+                s2 = s2,  
+                loglik = ll, 
+                Sigma = vcov(model),                                      #probably not robust!
+                Amat = Amat, bvec = bvec, meq = meq, iact = 0L,
+                converged = model$converged,
+                bootout = NULL)
+  } else {
+    call.rlm <- as.list(model$call)
     call.rlm <- call.rlm[-1]
-    
-    if (call.rlm[["method"]] == "M") {
-      if (is.null(call.rlm[["psi"]])) {
-        stop("test only applicable with \"psi=psi.bisquare\".")
-      } 
-      else if (!(call.rlm[["psi"]] == "psi.bisquare")) {
-        stop("test only applicable with \"psi=psi.bisquare\".")  
-      }
+    # the default is M-estimation with psi = psi.huber loss function.
+    # only psi.bisquare is applicable for now.
+    if (is.null(call.rlm$method) && is.null(call.rlm$psi)) {
+      stop("Restiktor ERROR: test only applicable with \"psi=psi.bisquare\".")
+    } else if (call.rlm$method == "M" && is.null(call.rlm$psi)) {
+      stop("Restiktor ERROR: test only applicable with \"psi=psi.bisquare\".")
+    } else if (call.rlm$method == "M" && !(call.rlm$psi == "psi.bisquare")) {
+      stop("Restiktor ERROR: test only applicable with \"psi=psi.bisquare\".")
+    } else if (call.rlm$method == "MM" && !(call.rlm$psi == "psi.bisquare")) {
+      stop("Restiktor ERROR: test only applicable with \"psi=psi.bisquare\".")
     }
-    #fit inequality constrained model
+    
+    #fit inequality constrained robust model
     if (is.null(call.rlm[["formula"]])) {
       call.rlm[["data"]] <- NULL
       call.rlm[["x"]] <- NULL
       call.rlm[["y"]] <- NULL
       call.my <- list(x = X, y = Y, Amat = Amat, meq = meq, bvec = bvec)      
       CALL <- c(call.rlm, call.my)
-      rfit <- do.call("icrlm.fit", CALL)
+      rfit <- do.call("conRLM_fit", CALL)
     }
     else {
       call.my <- list(Amat = Amat, meq = meq, bvec = bvec)  
       call.rlm[["data"]] <- as.name("Data")
       CALL <- c(call.rlm, call.my)
-      rfit <- do.call("icrlm.formula", CALL)
+      rfit <- do.call("conRLM.formula", CALL)
     }
     
-    beta.constr <- coef(rfit)
-      beta.constr[abs(beta.constr) < sqrt(.Machine$double.eps)] <- 0L
+    b.constr <- coef(rfit)
+      b.constr[abs(b.constr) < sqrt(.Machine$double.eps)] <- 0L
+    ll.out <- con_loglik_lm(X = X, y = Y, b = b.constr, detU = 1)
+    ll <- ll.out$loglik
     
     # vector with the indices of the active constraints
     iact <- rfit$iact
-    
     #scale parameter
-    sigma <- object$s
+  #  scale <- model$s
     #standard deviation
-    tau.hat <- MASS:::summary.rlm(object)$stddev  
-    
+    tau.hat <- MASS:::summary.rlm(rfit)$stddev  
+    s2 <- tau.hat^2
     #R2 and adjusted R2, code taken from lmrob() function.
     resid <- rfit$residuals
     pred <- rfit$fitted.values
     resp <- pred + resid 
     wgt <- rfit$w
-    if (is.null(object$model)) {
+    if (is.null(model$model)) {
       df.int <- if (any(colnames(X) == "(Intercept)")) 1L else 0L
     } else {
-      df.int <- if (attr(object$terms, "intercept")) 1L else 0L
+      df.int <- if (attr(model$terms, "intercept")) 1L else 0L
     }
     resp.mean <- if (df.int == 1L) sum(wgt * resp)/sum(wgt) else 0
     yMy <- sum(wgt * (resp - resp.mean)^2)
     rMr <- sum(wgt * resid^2)
     # bi-square correction
     correc <- 1.207617 
-    R2 <- r2correc <- (yMy - rMr) / (yMy + rMr * (correc - 1))
-    R2.adjusted <- 1 - (1 - r2correc) * ((n - df.int) / df.residual)
+    R2.reduced <- r2correc <- (yMy - rMr) / (yMy + rMr * (correc - 1))
+    #R2.adjusted <- 1 - (1 - r2correc) * ((n - df.int) / df.residual)
   
-    OUT <- list(object.rlm = object,  
-                beta.constr = beta.constr, 
-                residuals = resid, 
-                fitted.values = pred, 
-                weights = rfit$weights, R2 = R2, R2.adjusted = R2.adjusted,
-                df.residual = df.residual, scale = rfit$s, 
-                VCOV = NULL, 
-                Amat = Amat, bvec = bvec, meq = meq, iact = iact, 
-                converged = object$converged)
+    OUT <- list(CON = NULL,
+                partable = NULL,
+                constraints = constraints,
+                b.unconstr = b.unconstr,
+                b.constr = b.constr,
+                residuals = resid,
+                wresid = rfit$wresid,
+                fitted.values = pred,
+                weights = rfit$weights,
+                R2.org = R2.org,
+                R2.reduced = R2.reduced,
+                df.residual = df.residual,
+                scale = rfit$s,                                                #unconstrained or constrained scale estimate???
+                s2 = s2, #standard deviation tau.hat                                         
+                loglik = ll, 
+                Sigma = vcov(rfit),                                             #probably not correct???
+                Amat = Amat, bvec = bvec, meq = meq, iact = iact,
+                converged = rfit$converged,
+                bootout = NULL)
   }
-  class(OUT) <- c("conRLM")
-    
-  OUT
-}  
   
+  OUT$model.org <- model
+  OUT$CON <- if (is.character(constraints)) { CON }
+  OUT$partable <- if (is.character(constraints)) { partable }
+  OUT$se <- se
+  
+  if (se != "no") {
+    if (!(se %in% c("boot.model.based","boot.standard"))) {
+      information.inv <- con_augmented_information(X = X, b.unconstr = b.unconstr, 
+                                                   b.constr = b.constr,
+                                                   s2 = s2, constraints = Amat, 
+                                                   bvec = bvec, meq = meq)
+      OUT$information.inverted <- information.inv
+    } else if (se == "boot.model.based") {
+      OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),
+                                                   999, control$B), 
+                                 fixed = TRUE, constraints = Amat,
+                                 rhs = bvec, neq = meq, se = "no")
+    } else if (se == "boot.standard") {
+      OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),
+                                                   999, control$B),
+                                 fixed = FALSE, constraints = Amat,
+                                 rhs = bvec, neq = meq, se = "no")
+    }
+  }
+  
+  class(OUT) <- c("conRLM","conLM")
+  
+  return(OUT)
+}

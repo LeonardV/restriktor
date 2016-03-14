@@ -59,7 +59,7 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     } else {
         stop("Restriktor ERROR: test not applicable for models without intercept.")      
     } 
-    b.eqconstr <- con_solver_lm(b.unconstr, X = X, y = Y, Amat = Amatg,
+    b.eqconstr <- con_solver(b.unconstr, X = X, y = Y, Amat = Amatg,
                                 bvec = bvecg, meq = nrow(Amatg),
                                 tol = ifelse(is.null(control$tol), 1e-09, control$tol),
                                 maxit = ifelse(is.null(control$maxit), 1e04, control$maxit))$solution
@@ -68,7 +68,7 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     Ts <- c(t(b.constr - b.eqconstr) %*% solve(cov, b.constr - b.eqconstr))
   } else if (type == "A") {
     # optimizer
-    b.eqconstr <- con_solver_lm(b.unconstr, X = X, y = Y, Amat = Amat,
+    b.eqconstr <- con_solver(b.unconstr, X = X, y = Y, Amat = Amat,
                                 bvec = bvec, meq = nrow(Amat),
                                 tol = ifelse(is.null(control$tol), 1e-09, control$tol),
                                 maxit = ifelse(is.null(control$maxit), 1e04, control$maxit))$solution
@@ -84,7 +84,7 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     else {
       # some equality may be preserved in the alternative hypothesis.
       if(meq.alt != 0L && meq.alt <= meq) {
-        b.constr.alt <- con_solver_lm(b.unconstr, X = X, y = Y,
+        b.constr.alt <- con_solver(b.unconstr, X = X, y = Y,
                                       Amat = Amat[1:meq.alt,,drop=FALSE],
                                       bvec = bvec[1:meq.alt], meq = meq.alt,
                                       tol = ifelse(is.null(control$tol), 1e-09, control$tol),
@@ -226,7 +226,7 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
       Amat <- diag(rep(1, g))
       bvec <- rep(0, g) 
     } 
-    b.eqconstr <- con_solver_lm(b.unconstr, X = X, y = Y, Amat = Amat,
+    b.eqconstr <- con_solver(b.unconstr, X = X, y = Y, Amat = Amat,
                                 bvec = bvec, meq = nrow(Amat),
                                 tol = ifelse(is.null(control$tol), 1e-09, control$tol),
                                 maxit = ifelse(is.null(control$maxit), 1e04, control$maxit))$solution
@@ -242,7 +242,7 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     Ts <- -2*(ll0 - ll1)
   } else if (type == "A") {
     # optimizer
-    b.eqconstr <- con_solver_lm(b.unconstr, X = X, y = Y, Amat = Amat,
+    b.eqconstr <- con_solver(b.unconstr, X = X, y = Y, Amat = Amat,
                                 bvec = bvec, meq = nrow(Amat),
                                 tol = ifelse(is.null(control$tol), 1e-09, control$tol),
                                 maxit = ifelse(is.null(control$maxit), 1e04, control$maxit))$solution
@@ -271,7 +271,7 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     else {
       # some equality may be preserved in the alternative hypothesis.
       if(meq.alt != 0L && meq.alt <= meq) {
-        b.constr.alt <- con_solver_lm(b.unconstr, X = X, y = Y,
+        b.constr.alt <- con_solver(b.unconstr, X = X, y = Y,
                                       Amat = Amat[1:meq.alt,,drop=FALSE],
                                       bvec=bvec[1:meq.alt], meq = meq.alt,
                                       tol = ifelse(is.null(control$tol), 1e-09, control$tol),

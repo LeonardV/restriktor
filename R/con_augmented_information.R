@@ -23,10 +23,8 @@ con_augmented_information <- function(X, b.unconstr, b.constr, s2, constraints, 
     bvec <- bvec[-c(1:meq)]
   }
   
+  #inactive inequality constraints
   inactive.idx <- H %*% b.unconstr - bvec >= 0 * bvec
-  #inactive.idx <- H %*% b.unconstr - bvec < 0 * bvec
-  #active.idx <- seq(NROW(H))[-inactive.idx]
-  
   #active inequality constraints
   H.active <- H[!inactive.idx,,drop=FALSE]
   #inactive inequality constraints

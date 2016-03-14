@@ -149,7 +149,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 Amat = Amat, bvec = bvec, meq = meq, iact = iact, 
                 converged = object$converged)
   }
-  class(OUT) <- c("icrlm")
+  class(OUT) <- c("conRLM")
     
   OUT
 }  

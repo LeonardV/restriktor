@@ -1,10 +1,8 @@
 con_bootdata_lm <- function(data, indices, ...){
     l <- list(...)
-    model <- l$model  
+    form <- l$form
     dat <- data[indices,]
-    l$model <- lm(formula(model), data = dat)
-    out <- do.call("restriktor", l)  
-    out <- out$b.constr
-  
-    return(out)
+    l$model <- lm(form, data = dat)
+    out <- do.call("restriktor", l)$b.constr
+    out
 }

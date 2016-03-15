@@ -68,18 +68,14 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   if (all(Amat %*% c(b.unconstr) - bvec >= 0 * bvec) & meq == 0) {
     call.rlm <- as.list(model$call)
     call.rlm <- call.rlm[-1]
-    # the default is M-estimation with psi = psi.huber loss function.
-    # only psi.bisquare is applicable for now.
-    if (is.null(call.rlm$method) && is.null(call.rlm$psi)) {
-      stop("Restiktor ERROR: test only applicable with \"psi=psi.bisquare\".")
-    } else if (call.rlm$method == "M" && is.null(call.rlm$psi)) {
-      stop("Restiktor ERROR: test only applicable with \"psi=psi.bisquare\".")
-    } else if (call.rlm$method == "M" && !(call.rlm$psi == "psi.bisquare")) {
-      stop("Restiktor ERROR: test only applicable with \"psi=psi.bisquare\".")
-    } else if (call.rlm$method == "MM" && !is.null(call.rlm$psi)) {
-        if (!(call.rlm$psi == "psi.bisquare")) {
-          stop("Restiktor ERROR: test only applicable with \"psi=psi.bisquare\".")
-        }
+    # only MM-estimator with psi.bisquare is applicable for now.
+    if (!(call.rlm$method == "MM")) {
+      stop("Restiktor ERROR: only MM-estimation is available.")
+    } 
+    if (call.rlm$method == "MM" && !(is.null(call.rlm$psi))) {
+      if (!(call.rlm$psi == "psi.bisquare")) {
+        stop("Restriktor ERROR: only bisquare loss function is availble.")
+      } 
     }
     #fit inequality constrained robust model
     if (is.null(call.rlm[["formula"]])) {
@@ -128,16 +124,13 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     call.rlm <- call.rlm[-1]
     # the default is M-estimation with psi = psi.huber loss function.
     # only psi.bisquare is applicable for now.
-    if (is.null(call.rlm$method) && is.null(call.rlm$psi)) {
-      stop("Restiktor ERROR: test only applicable with \"psi=psi.bisquare\".")
-    } else if (call.rlm$method == "M" && is.null(call.rlm$psi)) {
-      stop("Restiktor ERROR: test only applicable with \"psi=psi.bisquare\".")
-    } else if (call.rlm$method == "M" && !(call.rlm$psi == "psi.bisquare")) {
-      stop("Restiktor ERROR: test only applicable with \"psi=psi.bisquare\".")
-    } else if (call.rlm$method == "MM" && !is.null(call.rlm$psi)) {
+    if (!(call.rlm$method == "MM")) {
+      stop("Restiktor ERROR: only MM-estimation is available.")
+    } 
+    if (call.rlm$method == "MM" && !(is.null(call.rlm$psi))) {
       if (!(call.rlm$psi == "psi.bisquare")) {
-        stop("Restiktor ERROR: test only applicable with \"psi=psi.bisquare\".")
-      }
+        stop("Restriktor ERROR: only bisquare loss function is availble.")
+      } 
     }
     #fit inequality constrained robust model
     if (is.null(call.rlm[["formula"]])) {

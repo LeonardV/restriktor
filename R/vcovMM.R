@@ -1,17 +1,16 @@
 #Adjusted code from the .vcov.avar1() function in the Robustbase package
 #Computes the robust variance-covariance matrix
 
-vcov.MM <- function(obj, ...)
-{ 
-  x <- as.matrix(obj$x)
+vcovMM <- function(X, resid0, resid, scale, ...) { 
+  x <- X#as.matrix(obj$x)
   ## set psi and chi constants
   psi <- chi <- "bisquare"
   c.chi <- 1.54764
   c.psi <- 4.685061
   
-  r0 <- as.numeric(obj$resid0)
-  r <- as.numeric(resid(obj))
-  scale <- obj$s
+  r0 <- resid0#as.numeric(obj$resid0)
+  r <- resid#as.numeric(resid(obj))
+  scale <- scale#obj$s
   bb <- 1/2 ## this is always 1/2 for S estimates by convention
   ## scaled residuals
   n <- length(r)

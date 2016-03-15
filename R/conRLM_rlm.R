@@ -47,6 +47,24 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     stop("length coefficients and ncol(Amat) must be identical")
   }
   
+  #R2 and adjusted R2, code taken from lmrob() function.
+  resid <- model$residuals
+  pred <- model$fitted.values
+  resp <- pred + resid 
+  wgt <- model$w
+  if (is.null(model$model)) {
+    df.int <- if (any(colnames(X) == "(Intercept)")) 1L else 0L
+  } else {
+    df.int <- if (attr(model$terms, "intercept")) 1L else 0L
+  }
+  resp.mean <- if (df.int == 1L) sum(wgt * resp)/sum(wgt) else 0
+  yMy <- sum(wgt * (resp - resp.mean)^2)
+  rMr <- sum(wgt * resid^2)
+  # bi-square correction
+  correc <- 1.207617 
+  R2.org <- r2correc <- (yMy - rMr) / (yMy + rMr * (correc - 1))
+  #R2.adjusted <- 1 - (1 - r2correc) * ((n - df.int) / df.residual)
+
   if (all(Amat %*% c(b.unconstr) - bvec >= 0 * bvec) & meq == 0) {
     call.rlm <- as.list(model$call)
     call.rlm <- call.rlm[-1]
@@ -78,31 +96,15 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
       rfit <- do.call("rlm.formula", CALL)
     }
     
-    b.unconstr <- coef(rfit)
+    b.constr <- b.unconstr <- coef(rfit)
       b.unconstr[abs(b.unconstr) < sqrt(.Machine$double.eps)] <- 0L
+      b.constr[abs(b.constr) < sqrt(.Machine$double.eps)] <- 0L
     ll.out <- con_loglik_lm(X = X, y = Y, b = b.unconstr, detU = 1)
     ll <- ll.out$loglik
     
     tau.hat <- so$stddev  
     s2 <- tau.hat^2
-    #R2 and adjusted R2, code taken from lmrob() function.
-    resid <- rfit$residuals
-    pred <- rfit$fitted.values
-    resp <- pred + resid 
-    wgt <- rfit$w
-    if (is.null(model$model)) {
-      df.int <- if (any(colnames(X) == "(Intercept)")) 1L else 0L
-    } else {
-      df.int <- if (attr(model$terms, "intercept")) 1L else 0L
-    }
-    resp.mean <- if (df.int == 1L) sum(wgt * resp)/sum(wgt) else 0
-    yMy <- sum(wgt * (resp - resp.mean)^2)
-    rMr <- sum(wgt * resid^2)
-    # bi-square correction
-    correc <- 1.207617 
-    R2.reduced <- r2correc <- (yMy - rMr) / (yMy + rMr * (correc - 1))
-    #R2.adjusted <- 1 - (1 - r2correc) * ((n - df.int) / df.residual)
-        
+            
     OUT <- list(CON = NULL,
                 partable = NULL,
                 constraints = constraints,
@@ -211,8 +213,9 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   
   if (se != "no") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
-      information <- vcovMM(X, rfit$resid0, rfit$resid, rfit$scale)
-      information.inv <- con_augmented_information(X = X, b.unconstr = b.unconstr, 
+      information <- solve(vcovMM(X, rfit$resid0, rfit$residuals, rfit$s))       #is this the information matrix?
+      information.inv <- con_augmented_information(information = information,
+                                                   X = X, b.unconstr = b.unconstr, 
                                                    b.constr = b.constr,
                                                    s2 = s2, constraints = Amat, 
                                                    bvec = bvec, meq = meq)

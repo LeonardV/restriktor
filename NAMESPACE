@@ -34,4 +34,4 @@ export("restriktor", "conLM.lm", "conLM.default",
        "con_constraints_ceq_amat",
        "con_constraints_cin_amat",
        "con_constraints_con_amat",
-       "lav_partable", "pchibar", "pfbar")
+       "lav_partable", "pchibar", "pfbar", "vcovMM")

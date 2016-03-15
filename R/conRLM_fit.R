@@ -1,15 +1,13 @@
 #adjusted code from the rlm() function (MASS package).
 conRLM_fit <- function(x, y, weights, w = rep(1, nrow(x)),
-                      init = "ls", 
-                      scale.est = c("MAD", "Huber", "proposal 2"), k2 = 1.345,
-                      method = c("M", "MM"), wt.method = c("inv.var", "case"),
-                      maxit = 500, acc = 1e-09, test.vec = "resid", lqs.control= NULL,
-                      Amat = NULL, bvec = NULL, meq = 0L, ...)
-  {
+                       init = "ls", 
+                       scale.est = c("MAD", "Huber", "proposal 2"), k2 = 1.345,
+                       method = c("M", "MM"), wt.method = c("inv.var", "case"),
+                       maxit = 500, acc = 1e-09, test.vec = "resid", lqs.control= NULL,
+                       Amat = NULL, bvec = NULL, meq = 0L, ...) {
     irls.delta <- function(old, new)
       sqrt(sum((old - new)^2)/max(1e-20, sum(old^2)))
-    irls.rrxwr <- function(x, w, r)
-    {
+    irls.rrxwr <- function(x, w, r) {
       w <- sqrt(w)
       max(abs((matrix(r * w, 1L, length(r)) %*% x)/
                 sqrt(matrix(w, 1L, length(r)) %*% (x^2))))/sqrt(sum(w * r^2))
@@ -155,6 +153,8 @@ conRLM_fit <- function(x, y, weights, w = rep(1, nrow(x)),
       done <- (convi <= acc)
       if(done) break
     }
+    
+    #cat("iteration =", iiter, "...converged =", done, "\n")
 
     if(!done)
       warning(gettextf("'rlm' failed to converge in %d steps", maxit),

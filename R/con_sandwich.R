@@ -19,8 +19,7 @@ bread.lm <- function(x, ...)
 }
 
 
-estfun <- function(x, ...)
-{
+estfun <- function(x, ...) {
   xmat <- model.matrix(x$model.org)
   xmat <- naresid(x$model.org$na.action, xmat)
   if(any(alias <- is.na(coef(x)))) xmat <- xmat[, !alias, drop = FALSE]

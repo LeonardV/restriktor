@@ -51,7 +51,7 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
 
   if (type == "global") {
     # check for intercept
-    intercept <- object$model.org$assign[1] == 0L
+    intercept <- any(attr(terms(model.org), "intercept"))
     g <- length(object$b.constr)
     if (intercept) {
       Amatg <- cbind(rep(0, (g - 1)), diag(rep(1, g - 1))) 
@@ -107,28 +107,28 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   }
 
   if (boot == "no") {
-    pvalue <- con_pvalue_Fbar_lm(cov, Ts.org = Ts, object$df.residual, type = type,
-                                 Amat, bvec, meq, meq.alt)
+    pvalue <- con_pvalue_Fbar(cov, Ts.org = Ts, object$df.residual, type = type,
+                              Amat, bvec, meq, meq.alt)
   } else if (boot == "parametric") {
-    pvalue <- con_pvalue_boot_parametric_lm(object, Ts.org = Ts, type = type, test = "F",
-                                            bvec = bvec, meq = meq, meq.alt = meq.alt,
-                                            R = ifelse(is.null(control$B), 9999, control$B),
-                                            p.distr = ifelse(is.null(control$p.distr), "N", control$p.distr),
-                                            df = ifelse(is.null(control$df), 7, control$df),
-                                            parallel = ifelse(is.null(control$parallel), "no", control$parallel),
-                                            ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
-                                            cl = ifelse(is.null(control$cl), NULL, control$cl),
-                                            seed = ifelse(is.null(control$seed), 1234, control$seed),
-                                            verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
+    pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "F",
+                                         bvec = bvec, meq = meq, meq.alt = meq.alt,
+                                         R = ifelse(is.null(control$B), 9999, control$B),
+                                         p.distr = ifelse(is.null(control$p.distr), "N", control$p.distr),
+                                         df = ifelse(is.null(control$df), 7, control$df),
+                                         parallel = ifelse(is.null(control$parallel), "no", control$parallel),
+                                         ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
+                                         cl = ifelse(is.null(control$cl), NULL, control$cl),
+                                         seed = ifelse(is.null(control$seed), 1234, control$seed),
+                                         verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   } else if (boot == "model.based") {
-    pvalue <- con_pvalue_boot_model_based_lm(object, Ts.org = Ts, type = type, test = "F",
-                                             meq.alt = meq.alt,
-                                             R = ifelse(is.null(control$B), 9999, control$B),
-                                             parallel = ifelse(is.null(control$parallel), "no", control$parallel),
-                                             ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
-                                             cl = ifelse(is.null(control$cl), NULL, control$cl),
-                                             seed = ifelse(is.null(control$seed), 1234, control$seed),
-                                             verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
+    pvalue <- con_pvalue_boot_model_based(object, Ts.org = Ts, type = type, test = "F",
+                                          meq.alt = meq.alt,
+                                          R = ifelse(is.null(control$B), 9999, control$B),
+                                          parallel = ifelse(is.null(control$parallel), "no", control$parallel),
+                                          ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
+                                          cl = ifelse(is.null(control$cl), NULL, control$cl),
+                                          seed = ifelse(is.null(control$seed), 1234, control$seed),
+                                          verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   }
 
   OUT <- list(CON = object$CON,

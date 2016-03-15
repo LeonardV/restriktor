@@ -1,11 +1,11 @@
-con_pvalue_Fbar_lm <- function(cov, Ts.org, df.residual, type = "type A",
-                               Amat, bvec, meq = 0L, meq.alt = 0L) {
+con_pvalue_Fbar <- function(cov, Ts.org, df.residual, type = "type A",
+                            Amat, bvec, meq = 0L, meq.alt = 0L) {
   #check
   if ((qr(Amat)$rank < nrow(Amat))) {
     stop("constraint matrix must have full row-rank")
   }
   #compute weights
-  wt.bar <- con_wt_lm(Amat%*%cov%*%t(Amat), meq=meq)
+  wt.bar <- con_wt(Amat%*%cov%*%t(Amat), meq=meq)
 
   if (type == "global") {
     # compute df
@@ -35,14 +35,14 @@ con_pvalue_Fbar_lm <- function(cov, Ts.org, df.residual, type = "type A",
 
 
 
-con_pvalue_Chibar_lm <- function(cov, Ts.org, df.residual, type = "A",
-                                 Amat, bvec, meq = 0L, meq.alt = 0L) {
+con_pvalue_Chibar <- function(cov, Ts.org, df.residual, type = "A",
+                              Amat, bvec, meq = 0L, meq.alt = 0L) {
   #check
   if ((qr(Amat)$rank < nrow(Amat))) {
     stop("Restriktor ERROR: constraint matrix must have full row-rank")
   }
   #compute weights
-  wt.bar <- con_wt_lm(Amat%*%cov%*%t(Amat), meq=meq)
+  wt.bar <- con_wt(Amat%*%cov%*%t(Amat), meq=meq)
   
   if (type == "global") {
     # compute df
@@ -70,13 +70,13 @@ con_pvalue_Chibar_lm <- function(cov, Ts.org, df.residual, type = "A",
 
 
 ################################################################################
-con_pvalue_boot_parametric_lm <- function(model, Ts.org = NULL, type = "A",
-                                          test = "F", bvec = NULL,
-                                          meq = NULL, meq.alt = 0,
-                                          R = 9999, p.distr = "N", df = 7,
-                                          parallel = "no", ncpus = 1L, cl = NULL,
-                                          seed = NULL, control = NULL,
-                                          verbose = FALSE, ...) {
+con_pvalue_boot_parametric <- function(model, Ts.org = NULL, type = "A",
+                                       test = "F", bvec = NULL,
+                                       meq = NULL, meq.alt = 0,
+                                       R = 9999, p.distr = "N", df = 7,
+                                       parallel = "no", ncpus = 1L, cl = NULL,
+                                       seed = NULL, control = NULL,
+                                       verbose = FALSE, ...) {
 
   p.distr <- tolower(p.distr)
   if (type == "C") { 
@@ -128,12 +128,14 @@ con_pvalue_boot_parametric_lm <- function(model, Ts.org = NULL, type = "A",
     colnames(DATA) <- c(as.character("ystar"), terms)  
     form <- formula(model.org)
     form[[2]] <- as.name("ystar")
-    boot_model <- update(model.org, formula = form, data = DATA)
-    CALL <- list(boot_model, constraints = Amat, rhs = bvec, neq = meq, control = control, se = "no")
-    boot_conLM <- do.call("restriktor", CALL)  
-    boot_conTest <- conTest(boot_conLM, type = type, test = test, meq.alt = meq.alt, control = control)
-    OUT <- boot_conTest$Ts
-
+    boot_model <- update(model.org, formula = form, data = DATA, maxit = 5000)
+    OUT <- NA
+    if (boot_model$converged) {
+      CALL <- list(model = boot_model, constraints = Amat, rhs = bvec, neq = meq, control = control, se = "no")
+      boot_conLM <- do.call("restriktor", CALL)  
+      boot_conTest <- conTest(boot_conLM, type = type, test = test, meq.alt = meq.alt, control = control)
+      OUT <- boot_conTest$Ts
+    }
     if (verbose) {
       cat("iteration =", b, "...Ts =", OUT, "\n")
     }
@@ -177,7 +179,8 @@ con_pvalue_boot_parametric_lm <- function(model, Ts.org = NULL, type = "A",
 
     # > or >= ??? 
     pvalue <- sum(Ts.boot >= Ts.org) / Rboot.tot
-
+      attr(pvalue, "B") <- Rboot.tot
+    
     OUT <- pvalue
 
     OUT
@@ -185,11 +188,11 @@ con_pvalue_boot_parametric_lm <- function(model, Ts.org = NULL, type = "A",
 
 
 ###################################################################################
-con_pvalue_boot_model_based_lm <- function(model, Ts.org = NULL, type = "A",
-                                           test = "F", meq.alt = 0,
-                                           R = 9999, parallel = "no", ncpus = 1L,
-                                           cl = NULL, seed = NULL, control = NULL,
-                                           verbose = FALSE, ...) {
+con_pvalue_boot_model_based <- function(model, Ts.org = NULL, type = "A",
+                                        test = "F", meq.alt = 0,
+                                        R = 9999, parallel = "no", ncpus = 1L,
+                                        cl = NULL, seed = NULL, control = NULL,
+                                        verbose = FALSE, ...) {
 
   if (type == "C") { 
     stop("type C is based on a t-distribution. Set boot = \"no\" ") 
@@ -263,17 +266,20 @@ con_pvalue_boot_model_based_lm <- function(model, Ts.org = NULL, type = "A",
       ystar <- as.matrix(c(yhat + r[idx]))
       xcol <- which(rowSums(attr(model.org$terms, "factors")) > 0)
       terms <- attr(model.org$terms , "term.labels")
-      simData <- data.frame(ystar, model.org$model[,xcol])
-      colnames(simData) <- c(as.character("ystar"), terms)
-      simData <- as.data.frame(simData)
+      DATA <- data.frame(ystar, model.org$model[,xcol])
+      colnames(DATA) <- c(as.character("ystar"), terms)
+      DATA <- as.data.frame(DATA)
       form <- formula(model.org)
       form[[2]] <- as.name("ystar")
-
-      boot_model <- update(model.org, formula = form, data = simData)
-      CALL <- list(boot_model, constraints = Amat, rhs = bvec, neq = meq, control = control, se = "no")
-      boot_conLM <- do.call("restriktor", CALL)  
-      boot_conTest <- conTest(boot_conLM, type = type, test = test, meq.alt = meq.alt, control = control)$Ts
-      OUT <- boot_conTest
+      
+      OUT <- NA
+      boot_model <- update(model.org, formula = form, data = DATA, maxit = 5000)
+      if (boot_model$converged) {
+        CALL <- list(boot_model, constraints = Amat, rhs = bvec, neq = meq, control = control, se = "no")
+        boot_conLM <- do.call("restriktor", CALL)  
+        boot_conTest <- conTest(boot_conLM, type = type, test = test, meq.alt = meq.alt, control = control)$Ts
+        OUT <- boot_conTest
+      }
       
       if (verbose) {
         cat("iteration =", b, "...Ts =", OUT, "\n")
@@ -317,9 +323,9 @@ con_pvalue_boot_model_based_lm <- function(model, Ts.org = NULL, type = "A",
     }
     # > or >= ???
     pvalue <- sum(Ts.boot >= Ts.org) / Rboot.tot
-
+      attr(pvalue, "B") <- Rboot.tot
     OUT <- pvalue
-
+    
     OUT
   }
 

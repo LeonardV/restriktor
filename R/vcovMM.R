@@ -9,7 +9,7 @@ vcovMM <- function(X, resid0, resid, scale, ...) {
   c.psi <- 4.685061
   
   r0 <- resid0#as.numeric(obj$resid0)
-  r <- resid#as.numeric(resid(obj))
+  r <- as.numeric(resid)#as.numeric(resid(obj))
   scale <- scale#obj$s
   bb <- 1/2 ## this is always 1/2 for S estimates by convention
   ## scaled residuals

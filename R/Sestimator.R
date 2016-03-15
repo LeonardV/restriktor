@@ -1,3 +1,4 @@
+# acknowledgement: the lqs function is from the MASS package
 Sestimator <- function(x, y, lqs.control= NULL) {
   out <- do.call("lqs",
                   c(list(x, y, intercept = FALSE, method = "S",

@@ -34,8 +34,6 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   if (is.null(model$model)) {
     Y <- model$residuals + model$fitted
   } else {
-#    Data <- model$model
-#    mfit <- model$model
     Y <- as.matrix(model$model[, attr(model$terms, "response")])
   }  
   X  <- model.matrix(model)[,,drop = FALSE]
@@ -111,20 +109,20 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
       } 
     }
     #fit inequality constrained robust model
-    if (is.null(call.rlm[["formula"]])) {
+#    if (is.null(call.rlm[["formula"]])) {
       call.rlm[["data"]] <- NULL
       call.rlm[["x"]] <- NULL
       call.rlm[["y"]] <- NULL
       call.my <- list(x = X, y = Y, Amat = Amat, meq = meq, bvec = bvec)      
       CALL <- c(call.rlm, call.my)
       rfit <- do.call("conRLM_fit", CALL)
-    }
-    else {
-      call.my <- list(Amat = Amat, meq = meq, bvec = bvec)  
-      call.rlm[["data"]] <- as.name("Data")
-      CALL <- c(call.rlm, call.my)
-      rfit <- do.call("conRLM.formula", CALL)
-    }
+#    }
+#    else {
+#      call.my <- list(Amat = Amat, meq = meq, bvec = bvec)  
+      #call.rlm[["data"]] <- as.name("DATA")
+#      CALL <- c(call.rlm, call.my)
+#      rfit <- do.call("conRLM.formula", CALL)
+#    }
     
     b.constr <- coef(rfit)
     b.constr[abs(b.constr) < sqrt(.Machine$double.eps)] <- 0L
@@ -146,7 +144,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     #R2 and adjusted R2, code taken from lmrob() function.
     pred <- rfit$fitted.values
     resp <- pred + resid 
-    wgt <- rfit$w
+    wgt <- diag(rfit$w)
     if (is.null(model$model)) {
       df.int <- if (any(colnames(X) == "(Intercept)")) 1L else 0L
     } else {
@@ -173,10 +171,10 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 R2.org = R2.org,
                 R2.reduced = R2.reduced,
                 df.residual = df.residual,
-                scale = rfit$s,                                                #unconstrained or constrained scale estimate???
-                s2 = s2, #standard deviation tau.hat                                         
+                scale = rfit$s,                                                               
+                s2 = s2,                                                         #standard deviation tau.hat                                         
                 loglik = ll, 
-                Sigma = vcov(rfit),                                             #probably not correct???
+                Sigma = vcov(rfit),                                             #probably not robust???
                 Amat = Amat, bvec = bvec, meq = meq, iact = iact,
                 converged = rfit$converged, iter = rfit$iter,
                 bootout = NULL)
@@ -209,7 +207,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     }
   }
   
-  class(OUT) <- c("conRLM","conLM")
+  class(OUT) <- c("conRLM","conLM","rlm")
   
   return(OUT)
 }

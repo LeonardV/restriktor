@@ -1,5 +1,5 @@
-tukeyChi <- function (x, cc, deriv = 0) 
-{
+#acknowledgement: code taken from robustbase package.
+tukeyChi <- function (x, cc, deriv = 0) {
   x <- x/cc
   x2 <- x * x
   out <- x2 > 1

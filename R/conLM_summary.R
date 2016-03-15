@@ -24,9 +24,9 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
   print(rq, digits)
   cat("\n")
 
-  if (length(x$b.constr) && is.null(x$bootout)) {
+  se <- x$se
+  if (length(x$b.constr) && is.null(x$bootout) && !(se == "no")) {
     cat("Coefficients:\n")
-    se <- x$se
     std.error <-
     if (se == "const" | se == "default") {
       covar <- x$information
@@ -90,6 +90,11 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
     colnames(icc) <- c("Estimate", "Std. Error", "Lower", "Upper")
     print(icc, quote = FALSE, digits = digits)
 
+    cat("\nConstrained model: R2 reduced from", round(x$R2.org,3), "to", round(x$R2.reduced, 3),"\n")
+  } else if (se == "no") {
+    cat("Coefficients:\n")
+    print(coef(x), digits = digits, scientific = FALSE, print.gap = 2L,
+          quote = FALSE)
     cat("\nConstrained model: R2 reduced from", round(x$R2.org,3), "to", round(x$R2.reduced, 3),"\n")
   } else {
     cat("No coefficients\n")

@@ -1,5 +1,5 @@
 # acknowledgment: code taken from ic.infer package (Ulrike Groemping)
-con_weights_lm <- function (corr, ...) {
+con_weights <- function (corr, ...) {
     ## ... given to pmvnorm, should contain algorithm information only
     ## changed to ... in order to stay tuned with updates in mvtnorm
     ## and be also compatible with old versions (e.g. 2.5.0)

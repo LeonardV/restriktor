@@ -50,7 +50,8 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   if (ncol(Amat) != length(b.unconstr)) {
     stop("length coefficients and ncol(Amat) must be identical")
   }
-    
+  
+  if (all(Amat %*% c(b.unconstr) - bvec >= 0 * bvec) & meq == 0) {  
   #R2 and adjusted R2, acknowledgement: code taken from lmrob() function.
   resid <- resid(model)
   pred <- model$fitted.values
@@ -69,31 +70,63 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   R2.org <- r2correc <- (yMy - rMr) / (yMy + rMr * (correc - 1))
   #R2.adjusted <- 1 - (1 - r2correc) * ((n - df.int) / df.residual)
   
-  if (all(Amat %*% c(b.unconstr) - bvec >= 0 * bvec) & meq == 0) {
-    # compute log-likelihood
-    ll.out <- con_loglik_lm(X = X, y = Y, b = b.unconstr, detU = 1)
-    ll <- ll.out$loglik
-    b.constr <- b.unconstr
-    s2 <- so$stddev^2
-    
-    OUT <- list(CON = NULL,
-                partable = NULL,
-                constraints = constraints,
-                b.unconstr = b.unconstr,
-                b.constr = b.unconstr,
-                residuals = resid(model),
-                fitted.values = fitted(model),
-                weights = model$weights,
-                R2.org = R2.org,
-                R2.reduced = R2.org,
-                df.residual = df.residual,
-                scale = model$s, 
-                s2 = s2,  
-                loglik = ll, 
-                Sigma = vcov(model),                                      #probably not robust!
-                Amat = Amat, bvec = bvec, meq = meq, iact = 0L,
-                converged = model$converged,
-                bootout = NULL)
+  
+  call.rlm <- as.list(model$call)
+  call.rlm <- call.rlm[-1]
+  # the default is M-estimation with psi = psi.huber loss function.
+  # only psi.bisquare is applicable for now.
+  if (is.null(call.rlm$method) && is.null(call.rlm$psi)) {
+    stop("Restiktor ERROR: test only applicable with \"psi=psi.bisquare\".")
+  } else if (call.rlm$method == "M" && is.null(call.rlm$psi)) {
+    stop("Restiktor ERROR: test only applicable with \"psi=psi.bisquare\".")
+  } else if (call.rlm$method == "M" && !(call.rlm$psi == "psi.bisquare")) {
+    stop("Restiktor ERROR: test only applicable with \"psi=psi.bisquare\".")
+  } else if (call.rlm$method == "MM" && !(call.rlm$psi == "psi.bisquare")) {
+    stop("Restiktor ERROR: test only applicable with \"psi=psi.bisquare\".")
+  }
+  
+  #fit inequality constrained robust model
+  if (is.null(call.rlm[["formula"]])) {
+    call.rlm[["data"]] <- NULL
+    call.rlm[["x"]] <- NULL
+    call.rlm[["y"]] <- NULL
+    call.my <- list(x = X, y = Y)      
+    CALL <- c(call.rlm, call.my)
+    rfit <- do.call("rlm_fit", CALL)
+  }
+  else {
+    call.my <- list()  
+    call.rlm[["data"]] <- as.name("Data")
+    CALL <- c(call.rlm, call.my)
+    rfit <- do.call("rlm.formula", CALL)
+  }
+  
+  b.unconstr <- coef(rfit)
+  # compute log-likelihood
+  ll.out <- con_loglik_lm(X = X, y = Y, b = b.unconstr, detU = 1)
+  ll <- ll.out$loglik
+  b.constr <- b.unconstr
+  s2 <- so$stddev^2
+  
+  OUT <- list(CON = NULL,
+              partable = NULL,
+              constraints = constraints,
+              b.unconstr = b.unconstr,
+              b.constr = b.unconstr,
+              residuals = resid(model),
+              resid0 = rfit$resid0,
+              fitted.values = fitted(model),
+              weights = model$weights,
+              R2.org = R2.org,
+              R2.reduced = R2.org,
+              df.residual = df.residual,
+              scale = model$s, 
+              s2 = s2,  
+              loglik = ll, 
+              Sigma = vcov(model),                                      #probably not robust!
+              Amat = Amat, bvec = bvec, meq = meq, iact = 0L,
+              converged = model$converged,
+              bootout = NULL)
   } else {
     call.rlm <- as.list(model$call)
     call.rlm <- call.rlm[-1]
@@ -161,6 +194,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 b.unconstr = b.unconstr,
                 b.constr = b.constr,
                 residuals = resid,
+                resid0 = rfit$resid0,
                 wresid = rfit$wresid,
                 fitted.values = pred,
                 weights = rfit$weights,
@@ -183,7 +217,9 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   
   if (se != "no") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
-      information.inv <- con_augmented_information(X = X, b.unconstr = b.unconstr, 
+      information <- solve(vcov.MM(X, rfit$resid0, rfit$residuals, rfit$s))     #fix sandwich for rlm!
+      information.inv <- con_augmented_information(information = information,
+                                                   X = X, b.unconstr = b.unconstr, 
                                                    b.constr = b.constr,
                                                    s2 = s2, constraints = Amat, 
                                                    bvec = bvec, meq = meq)

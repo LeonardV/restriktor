@@ -1,9 +1,9 @@
 # adjusted rlm.formula function for inequality constraints from MASS package
 conRLM.formula <- function(formula, data, weights, ..., subset, na.action,
-                          method = c("M", "MM", "model.frame"),
-                          wt.method = c("inv.var", "case"),
-                          model = TRUE, x.ret = TRUE, y.ret = FALSE, 
-                          contrasts = NULL, Amat = NULL, bvec = NULL, meq = 0L) {
+                           method = c("M", "MM", "model.frame"),
+                           wt.method = c("inv.var", "case"),
+                           model = TRUE, x.ret = TRUE, y.ret = FALSE, 
+                           contrasts = NULL, Amat = NULL, bvec = NULL, meq = 0L) {
     mf <- match.call(expand.dots = FALSE)
     mf$method <- mf$wt.method <- mf$model <- mf$x.ret <- mf$y.ret <- 
       mf$contrasts <- mf$Amat <- mf$bvec <- mf$meq <- mf$... <- NULL

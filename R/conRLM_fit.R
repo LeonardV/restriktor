@@ -1,10 +1,10 @@
 #adjusted code from the rlm() function (MASS package).
 conRLM_fit <- function(x, y, weights, w = rep(1, nrow(x)),
-                       init = "ls", 
-                       scale.est = c("MAD", "Huber", "proposal 2"), k2 = 1.345,
-                       method = c("M", "MM"), wt.method = c("inv.var", "case"),
-                       maxit = 500, acc = 1e-09, test.vec = "resid", lqs.control= NULL,
-                       Amat = NULL, bvec = NULL, meq = 0L, ...)
+                      init = "ls", 
+                      scale.est = c("MAD", "Huber", "proposal 2"), k2 = 1.345,
+                      method = c("M", "MM"), wt.method = c("inv.var", "case"),
+                      maxit = 500, acc = 1e-09, test.vec = "resid", lqs.control= NULL,
+                      Amat = NULL, bvec = NULL, meq = 0L, ...)
   {
     irls.delta <- function(old, new)
       sqrt(sum((old - new)^2)/max(1e-20, sum(old^2)))
@@ -165,13 +165,13 @@ conRLM_fit <- function(x, y, weights, w = rep(1, nrow(x)),
     cl <- match.call()
     cl[[1L]] <- as.name("rlm")
     fit <- list(coefficients = coef, residuals = yy - fitted, wresid = resid,
-                resid0 = if (method=="MM") { resid0 },
+                resid0 = if(method=="MM") { resid0 },
                 effects = temp$effects,
                 rank = temp$rank, fitted.values = fitted,
                 assign = temp$assign, qr = temp$qr, 
                 df.residual = NA, w = w,
                 s = scale, psi = psi, k2 = k2,
-                weights = if (!missing(weights)) weights,
+                weights = if(!missing(weights)) weights,
                 conv = conv, converged = done, x = xx, call = cl, 
                 iact = iact)
     class(fit) <- c("conRLM", "rlm", "lm")

@@ -12,7 +12,7 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
 
   if (class(x)[1] == "conLM") {
     cat("\nRestriktor: constrained linear model:\n\n")
-  } else if(class(x)[1] == "conRLM") {
+  } else if (class(x)[1] == "conRLM") {
     cat("\nRestriktor: constrained robust linear model:\n\n")
   }
   
@@ -32,7 +32,7 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
       covar <- x$information
       sqrt(diag(covar))
     } else {
-      sqrt(diag(sandwich(x, bread.=bread.lm(x), meat.=meatHC(x, type = se))))
+      sqrt(diag(sandwich(x, bread.=bread.lm(x), meat.=meatHC(x, type = se))))    #<FIXME> for rlm
     }  
     
     ##########
@@ -59,6 +59,10 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
     } else {
       cat("Constrained model: R2 remains", round(x$R2.org,3),"\n")
     }
+    
+#    if (class(x)[1] == "conRLM") {
+#      cat("Convergence in ")
+#    }
     
   } else if (length(x$b.constr) && !is.null(x$bootout)) {
     if (bootCIs) {

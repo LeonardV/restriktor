@@ -172,7 +172,7 @@ conRLM_fit <- function(x, y, weights, w = rep(1, nrow(x)),
                 df.residual = NA, w = w,
                 s = scale, psi = psi, k2 = k2,
                 weights = if(!missing(weights)) weights,
-                conv = conv, converged = done, x = xx, call = cl, 
+                conv = conv, converged = done, iter = iiter, x = xx, call = cl, 
                 iact = iact)
     class(fit) <- c("conRLM", "rlm", "lm")
     fit

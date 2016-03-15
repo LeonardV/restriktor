@@ -39,10 +39,10 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     Y <- as.matrix(model$model[, attr(model$terms, "response")])
   }  
   X  <- model.matrix(model)[,,drop = FALSE]
-  b.unconstr <- coef(model)
+  b.unconstr <- coef(model)  
   so <- MASS:::summary.rlm(model)
   df.residual <- so$df[2]
-  
+
   if (ncol(Amat) != length(b.unconstr)) {
     stop("length coefficients and ncol(Amat) must be identical")
   }
@@ -65,59 +65,37 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   R2.org <- r2correc <- (yMy - rMr) / (yMy + rMr * (correc - 1))
   #R2.adjusted <- 1 - (1 - r2correc) * ((n - df.int) / df.residual)
 
+
   if (all(Amat %*% c(b.unconstr) - bvec >= 0 * bvec) & meq == 0) {
-    call.rlm <- as.list(model$call)
-    call.rlm <- call.rlm[-1]
-    # only MM-estimator with psi.bisquare is applicable for now.
-    if (!(call.rlm$method == "MM")) {
-      stop("Restiktor ERROR: only MM-estimation is available.")
-    } 
-    if (call.rlm$method == "MM" && !(is.null(call.rlm$psi))) {
-      if (!(call.rlm$psi == "psi.bisquare")) {
-        stop("Restriktor ERROR: only bisquare loss function is availble.")
-      } 
-    }
-    #fit inequality constrained robust model
-    if (is.null(call.rlm[["formula"]])) {
-      call.rlm[["data"]] <- NULL
-      call.rlm[["x"]] <- NULL
-      call.rlm[["y"]] <- NULL
-      call.my <- list(x = X, y = Y)      
-      CALL <- c(call.rlm, call.my)
-      rfit <- do.call("rlm_fit", CALL)
-    }
-    else {
-      call.rlm[["data"]] <- as.name("Data")
-      CALL <- call.rlm
-      rfit <- do.call("rlm.formula", CALL)
-    }
+    temp <- Sestimator(x = X, y = Y, lqs.control= NULL)
+    resid0 <- temp$resid  
+    scale <- temp$scale
     
-    b.constr <- b.unconstr <- coef(rfit)
-      b.unconstr[abs(b.unconstr) < sqrt(.Machine$double.eps)] <- 0L
-      b.constr[abs(b.constr) < sqrt(.Machine$double.eps)] <- 0L
+    b.constr <- b.unconstr
     ll.out <- con_loglik_lm(X = X, y = Y, b = b.unconstr, detU = 1)
     ll <- ll.out$loglik
-    
+        
     tau.hat <- so$stddev  
     s2 <- tau.hat^2
-            
+        
     OUT <- list(CON = NULL,
                 partable = NULL,
                 constraints = constraints,
                 b.unconstr = b.unconstr,
                 b.constr = b.unconstr,
                 residuals = resid(model),
+                init.resid = resid0,
                 fitted.values = fitted(model),
                 weights = model$weights,
                 R2.org = R2.org,
                 R2.reduced = R2.org,
                 df.residual = df.residual,
-                scale = model$s, 
+                scale = scale, 
                 s2 = s2,  
                 loglik = ll, 
                 Sigma = vcov(model),                                      #probably not robust!
                 Amat = Amat, bvec = bvec, meq = meq, iact = 0L,
-                converged = model$converged,
+                converged = model$converged, iter = NULL,
                 bootout = NULL)
   } else {
     call.rlm <- as.list(model$call)
@@ -149,7 +127,11 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     }
     
     b.constr <- coef(rfit)
-      b.constr[abs(b.constr) < sqrt(.Machine$double.eps)] <- 0L
+    b.constr[abs(b.constr) < sqrt(.Machine$double.eps)] <- 0L
+    resid0 <- rfit$resid0
+    resid  <- rfit$residuals
+    scale  <- rfit$s
+          
     ll.out <- con_loglik_lm(X = X, y = Y, b = b.constr, detU = 1)
     ll <- ll.out$loglik
     
@@ -160,8 +142,8 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     #standard deviation
     tau.hat <- MASS:::summary.rlm(rfit)$stddev  
     s2 <- tau.hat^2
+    
     #R2 and adjusted R2, code taken from lmrob() function.
-    resid <- rfit$residuals
     pred <- rfit$fitted.values
     resp <- pred + resid 
     wgt <- rfit$w
@@ -184,6 +166,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 b.unconstr = b.unconstr,
                 b.constr = b.constr,
                 residuals = resid,
+                init.resid = rfit$resid0,
                 wresid = rfit$wresid,
                 fitted.values = pred,
                 weights = rfit$weights,
@@ -195,7 +178,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 loglik = ll, 
                 Sigma = vcov(rfit),                                             #probably not correct???
                 Amat = Amat, bvec = bvec, meq = meq, iact = iact,
-                converged = rfit$converged,
+                converged = rfit$converged, iter = rfit$iter,
                 bootout = NULL)
   }
   
@@ -206,7 +189,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   
   if (se != "no") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
-      information <- solve(vcovMM(X, rfit$resid0, rfit$residuals, rfit$s))       #is this the information matrix?
+      information <- solve(vcovMM(X, resid0, resid, scale))       #is this the information matrix?
       information.inv <- con_augmented_information(information = information,
                                                    X = X, b.unconstr = b.unconstr, 
                                                    b.constr = b.constr,

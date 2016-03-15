@@ -39,43 +39,70 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     Y <- as.matrix(model$model[, attr(model$terms, "response")])
   }  
   X  <- model.matrix(model)[,,drop = FALSE]
-#  n <- dim(X)[1]
   b.unconstr <- coef(model)
   so <- MASS:::summary.rlm(model)
   df.residual <- so$df[2]
-  # number of parameters
-#  p <- length(b.unconstr)
-#  df.residual <- nrow(X)-ncol(X)
   
   if (ncol(Amat) != length(b.unconstr)) {
     stop("length coefficients and ncol(Amat) must be identical")
   }
-    
-  #R2 and adjusted R2, acknowledgement: code taken from lmrob() function.
-  resid <- resid(model)
-  pred <- model$fitted.values
-  resp <- pred + resid 
-  wgt <- model$w
-  if (is.null(model$model)) {
-    df.int <- if (any(colnames(X) == "(Intercept)")) 1L else 0L
-  } else {
-    df.int <- if (attr(model$terms, "intercept")) 1L else 0L
-  } 
-  resp.mean <- if (df.int == 1L) sum(wgt * resp)/sum(wgt) else 0
-  yMy <- sum(wgt * (resp - resp.mean)^2)
-  rMr <- sum(wgt * resid^2)
-  # bi-square correction
-  correc <- 1.207617 
-  R2.org <- r2correc <- (yMy - rMr) / (yMy + rMr * (correc - 1))
-  #R2.adjusted <- 1 - (1 - r2correc) * ((n - df.int) / df.residual)
   
   if (all(Amat %*% c(b.unconstr) - bvec >= 0 * bvec) & meq == 0) {
-    # compute log-likelihood
+    call.rlm <- as.list(model$call)
+    call.rlm <- call.rlm[-1]
+    # the default is M-estimation with psi = psi.huber loss function.
+    # only psi.bisquare is applicable for now.
+    if (is.null(call.rlm$method) && is.null(call.rlm$psi)) {
+      stop("Restiktor ERROR: test only applicable with \"psi=psi.bisquare\".")
+    } else if (call.rlm$method == "M" && is.null(call.rlm$psi)) {
+      stop("Restiktor ERROR: test only applicable with \"psi=psi.bisquare\".")
+    } else if (call.rlm$method == "M" && !(call.rlm$psi == "psi.bisquare")) {
+      stop("Restiktor ERROR: test only applicable with \"psi=psi.bisquare\".")
+    } else if (call.rlm$method == "MM" && !is.null(call.rlm$psi)) {
+        if (!(call.rlm$psi == "psi.bisquare")) {
+          stop("Restiktor ERROR: test only applicable with \"psi=psi.bisquare\".")
+        }
+    }
+    #fit inequality constrained robust model
+    if (is.null(call.rlm[["formula"]])) {
+      call.rlm[["data"]] <- NULL
+      call.rlm[["x"]] <- NULL
+      call.rlm[["y"]] <- NULL
+      call.my <- list(x = X, y = Y)      
+      CALL <- c(call.rlm, call.my)
+      rfit <- do.call("rlm_fit", CALL)
+    }
+    else {
+      call.rlm[["data"]] <- as.name("Data")
+      CALL <- call.rlm
+      rfit <- do.call("rlm.formula", CALL)
+    }
+    
+    b.unconstr <- coef(rfit)
+      b.unconstr[abs(b.unconstr) < sqrt(.Machine$double.eps)] <- 0L
     ll.out <- con_loglik_lm(X = X, y = Y, b = b.unconstr, detU = 1)
     ll <- ll.out$loglik
-    b.constr <- b.unconstr
-    s2 <- so$stddev^2
     
+    tau.hat <- so$stddev  
+    s2 <- tau.hat^2
+    #R2 and adjusted R2, code taken from lmrob() function.
+    resid <- rfit$residuals
+    pred <- rfit$fitted.values
+    resp <- pred + resid 
+    wgt <- rfit$w
+    if (is.null(model$model)) {
+      df.int <- if (any(colnames(X) == "(Intercept)")) 1L else 0L
+    } else {
+      df.int <- if (attr(model$terms, "intercept")) 1L else 0L
+    }
+    resp.mean <- if (df.int == 1L) sum(wgt * resp)/sum(wgt) else 0
+    yMy <- sum(wgt * (resp - resp.mean)^2)
+    rMr <- sum(wgt * resid^2)
+    # bi-square correction
+    correc <- 1.207617 
+    R2.reduced <- r2correc <- (yMy - rMr) / (yMy + rMr * (correc - 1))
+    #R2.adjusted <- 1 - (1 - r2correc) * ((n - df.int) / df.residual)
+        
     OUT <- list(CON = NULL,
                 partable = NULL,
                 constraints = constraints,
@@ -105,10 +132,11 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
       stop("Restiktor ERROR: test only applicable with \"psi=psi.bisquare\".")
     } else if (call.rlm$method == "M" && !(call.rlm$psi == "psi.bisquare")) {
       stop("Restiktor ERROR: test only applicable with \"psi=psi.bisquare\".")
-    } else if (call.rlm$method == "MM" && !(call.rlm$psi == "psi.bisquare")) {
-      stop("Restiktor ERROR: test only applicable with \"psi=psi.bisquare\".")
+    } else if (call.rlm$method == "MM" && !is.null(call.rlm$psi)) {
+      if (!(call.rlm$psi == "psi.bisquare")) {
+        stop("Restiktor ERROR: test only applicable with \"psi=psi.bisquare\".")
+      }
     }
-    
     #fit inequality constrained robust model
     if (is.null(call.rlm[["formula"]])) {
       call.rlm[["data"]] <- NULL
@@ -183,6 +211,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   
   if (se != "no") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
+      information <- vcovMM(X, rfit$resid0, rfit$resid, rfit$scale)
       information.inv <- con_augmented_information(X = X, b.unconstr = b.unconstr, 
                                                    b.constr = b.constr,
                                                    s2 = s2, constraints = Amat, 

@@ -145,7 +145,9 @@ conLM.lm <- function(model, constraints, se = "default",
   OUT$se <- se
   if (se != "no") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
-      information.inv <- con_augmented_information(X = X, b.unconstr = b.unconstr, 
+      information <- 1/s2 * crossprod(X) 
+      information.inv <- con_augmented_information(information = information,
+                                                   X = X, b.unconstr = b.unconstr, 
                                                    b.constr = b.constr,
                                                    s2 = s2, constraints = Amat, 
                                                    bvec = bvec, meq = meq)

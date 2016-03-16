@@ -187,7 +187,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   
   if (se != "no") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
-      information <- solve(vcovMM(X, resid0, resid, scale))       #is this the information matrix?
+      information <- 1/s2 * crossprod(X) #solve(vcovMM(X, resid0, resid, scale))       #is this the information matrix?
       information.inv <- con_augmented_information(information = information,
                                                    X = X, b.unconstr = b.unconstr, 
                                                    b.constr = b.constr,

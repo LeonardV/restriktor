@@ -32,7 +32,7 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
       covar <- x$information
       sqrt(diag(covar))
     } else {
-      sqrt(diag(sandwich(x, bread.=bread.lm(x), meat.=meatHC(x, type = se))))    #<FIXME> for rlm
+      sqrt(diag(sandwich(x, bread.=bread(x), meat.=meatHC(x, type = se))))    
     }  
     
     ##########

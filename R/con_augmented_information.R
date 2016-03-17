@@ -1,4 +1,4 @@
-con_augmented_information <- function(information, X, b.unconstr, b.constr, s2, 
+con_augmented_information <- function(information, X, b.unconstr, b.constr,  
                                       constraints, bvec, meq) {
   H <- constraints
   npar <- NCOL(information)

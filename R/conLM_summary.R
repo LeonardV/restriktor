@@ -29,10 +29,9 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
     cat("Coefficients:\n")
     std.error <-
     if (se == "const" | se == "default") {
-      covar <- x$information
-      sqrt(diag(covar))
+      sqrt(diag(x$information.inverted))
     } else {
-      sqrt(diag(sandwich(x, bread.=bread(x), meat.=meatHC(x, type = se))))    
+      sqrt(diag(sandwich(x, bread.=bread(x), meat.=meatHC(x, type = se))))                    #<FIXME> for rlm Amat %*% bread %*% t(Amat)
     }  
     
     ##########

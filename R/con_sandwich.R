@@ -16,12 +16,9 @@ estfun <- function(x, ...) {
   UseMethod("estfun")
 }
 
-bread.lm <- function(x, ...)
-{
+bread.lm <- function(x, ...) {
   if(!is.null(x$na.action)) class(x$na.action) <- "omit"
-#  X <- model.matrix(x$model.org)[,,drop=FALSE]
-#  s2 <- x$s2
-  cov <- 1/x$s2 * x$information #solve(t(X) %*% X)
+  cov <- 1/x$s2 * x$information 
   return(cov * as.vector(sum(summary(x$model.org)$df[1:2])))
 }
 
@@ -36,6 +33,7 @@ bread.rlm <- function(x, ...) {
   psi_deriv <- function(z) tukeyChi(z, deriv = 1)
   rval <- sqrt(abs(as.vector(psi_deriv(res/x$model.org$s)/x$model.org$s))) * wts * xmat    
   rval <- chol2inv(qr.R(qr(rval))) * nrow(xmat)
+
   return(rval)
 }
 

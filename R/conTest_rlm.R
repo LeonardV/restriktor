@@ -20,13 +20,13 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     boot <- "model.based"
   }
   
-  constraints <- object$constraints
+#  constraints <- object$constraints
   model.org <- object$model.org
   X <- model.matrix(model.org)[,,drop=FALSE]
   Y <- model.org$model[, attr(model.org$terms, "response")]
   cov <- object$Sigma                                                           #use the robust vcovMM?
   scale <- object$scale
-  tau <- sqrt(object$s2)
+#  tau <- sqrt(object$s2)
   b.unconstr <- object$b.unconstr
   vnames <- names(b.unconstr)
   b.constr <- object$b.constr
@@ -228,13 +228,13 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     boot <- "model.based"
   }
   
-  constraints <- object$constraints
+#  constraints <- object$constraints
   model.org <- object$model.org
   X <- model.matrix(model.org)[,,drop=FALSE]
   Y <- model.org$model[, attr(model.org$terms, "response")]
-  #cov <- object$Sigma                                                           #use the robust vcovMM?
+  cov <- object$Sigma                                                           #use the robust vcovMM?
   scale <- model.org$s
-  tau <- sqrt(object$s2)
+#  tau <- sqrt(object$s2)
   b.unconstr <- object$b.unconstr
   vnames <- names(b.unconstr)
   b.constr <- object$b.constr
@@ -282,8 +282,9 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr <- coef(rfit)
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
-    out0 <- robustWaldScores(x = X, y = Y, beta0 = b.eqconstr, betaA = b.unconstr, 
-                             scale = scale)
+    out0 <- robustWaldScores(x = X, y = Y, type = "global", beta0 = b.eqconstr, 
+                             betaA = b.constr, scale = scale, Amat = Amatg, 
+                             bvec = bvecg, meq = nrow(Amatg))
     Ts <- out0$Rscore
     cov <- out0$V
   } else if (type == "A") {
@@ -307,17 +308,18 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
     
-    out1 <- robustWaldScores(x = X, y = Y, beta0 = b.eqconstr, betaA = b.constr, 
-                           scale = scale, Amat = Amat, bvec = bvec, 
-                           meq = meq)
+    out1 <- robustWaldScores(x = X, y = Y, type = "A", beta0 = b.eqconstr, 
+                             betaA = b.constr, scale = scale, Amat = Amat, 
+                             bvec = bvec, meq = meq)
     Ts <- out1$Rscore
     cov <- out1$V
   }
   else if (type == "B") {
     if (meq.alt == 0L) {
-      out2 <- robustWaldScores(x = X, y = Y, beta0 = b.constr, betaA = b.unconstr, 
-                             scale = scale)
-      Ts <- out2$RWald
+      out2 <- robustWaldScores(x = X, y = Y, type = "B", beta0 = b.constr, 
+                               betaA = b.unconstr, scale = scale, Amat = Amat, 
+                               bvec = bvec, meq = meq)
+      Ts <- out2$Rscore
       cov <- out2$V
     }
     else {
@@ -344,8 +346,10 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
         b.constr.alt <- coef(rfit)
         b.constr.alt[abs(b.constr.alt) < tol] <- 0L
         names(b.constr.alt) <- vnames
-        out3 <- robustWaldScores(x = X, y = Y, beta0 = b.constr, betaA = b.constr.alt, 
-                               scale = scale)
+        out3 <- robustWaldScores(x = X, y = Y, type = "B", beta0 = b.constr, 
+                                 betaA = b.constr.alt, scale = scale,
+                                 Amat = Amat[1:meq.alt,,drop=FALSE], meq = meq.alt, 
+                                 bvec = bvec[1:meq.alt])
         Ts <- out3$Rscore
         cov <- out3$V
       }
@@ -443,13 +447,13 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     boot <- "model.based"
   }
   
-  constraints <- object$constraints
+  #constraints <- object$constraints
   model.org <- object$model.org
   X <- model.matrix(model.org)[,,drop=FALSE]
   Y <- model.org$model[, attr(model.org$terms, "response")]
-  #cov <- object$Sigma                                                           #use the robust vcovMM?
+  cov <- object$Sigma                                                           #use the robust vcovMM?
   scale <- model.org$s
-  tau <- sqrt(object$s2)
+#  tau <- sqrt(object$s2)
   b.unconstr <- object$b.unconstr
   vnames <- names(b.unconstr)
   b.constr <- object$b.constr
@@ -497,8 +501,9 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr <- coef(rfit)
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
-    out0 <- robustWaldScores(x = X, y = Y, beta0 = b.eqconstr, betaA = b.unconstr, 
-                             scale = scale)
+    out0 <- robustWaldScores(x = X, y = Y, type = "global", beta0 = b.eqconstr, 
+                             betaA = b.constr, scale = scale, Amat = Amatg, 
+                             bvec = bvecg, meq = nrow(Amatg))
     Ts <- out0$RWald
     cov <- out0$V
   } else if (type == "A") {
@@ -522,16 +527,17 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
     
-    out1 <- robustWaldScores(x = X, y = Y, beta0 = b.eqconstr, betaA = b.constr, 
-                             scale = scale, Amat = Amat, bvec = bvec, 
-                             meq = meq)
+    out1 <- robustWaldScores(x = X, y = Y, type = "A", beta0 = b.eqconstr, 
+                             betaA = b.constr, scale = scale, Amat = Amat, 
+                             bvec = bvec, meq = nrow(Amat))
     Ts <- out1$RWald
     cov <- out1$V
   }
   else if (type == "B") {
     if (meq.alt == 0L) {
-      out2 <- robustWaldScores(x = X, y = Y, beta0 = b.constr, betaA = b.unconstr, 
-                               scale = scale)
+      out2 <- robustWaldScores(x = X, y = Y, type = "B", beta0 = b.constr, 
+                               betaA = b.unconstr, scale = scale, Amat = Amat, 
+                               bvec = bvec, meq = nrow(Amat))
       Ts <- out2$RWald
       cov <- out2$V
     }
@@ -559,8 +565,10 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
         b.constr.alt <- coef(rfit)
         b.constr.alt[abs(b.constr.alt) < tol] <- 0L
         names(b.constr.alt) <- vnames
-        out3 <- robustWaldScores(x = X, y = Y, beta0 = b.constr, betaA = b.constr.alt, 
-                                 scale = scale)
+        out3 <- robustWaldScores(x = X, y = Y, type = "B", beta0 = b.constr, 
+                                 betaA = b.unconstr, scale = scale, 
+                                 Amat = Amat[1:meq.alt,,drop=FALSE], meq = meq.alt, 
+                                 bvec = bvec[1:meq.alt])
         Ts <- out3$RWald
         cov <- out3$V
       }
@@ -657,12 +665,12 @@ conTestWald2.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     boot <- "model.based"
   }
   
-  constraints <- object$constraints
+#  constraints <- object$constraints
   model.org <- object$model.org
   X <- model.matrix(model.org)[,,drop=FALSE]
   Y <- model.org$model[, attr(model.org$terms, "response")]
-  cov <- t(X)%*%X                                                       
-  scale <- model.org$s
+  cov <- object$Sigma  #t(X)%*%X                                                       
+#  scale <- model.org$s
   tau <- sqrt(object$s2)
   b.unconstr <- object$b.unconstr
   vnames <- names(b.unconstr)
@@ -736,7 +744,7 @@ conTestWald2.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     names(b.eqconstr) <- vnames
     
     Ts <- robustWaldXX(x = X, beta0 = b.eqconstr, beta1 = b.constr, 
-                         beta2 = b.unconstr, tau = tau)   
+                       beta2 = b.unconstr, tau = tau)   
   }
   else if (type == "B") {
     if (meq.alt == 0L) {
@@ -785,7 +793,7 @@ conTestWald2.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   }
   
   if (boot == "no") {
-    pvalue <- con_pvalue_Fbar(cov, Ts.org = Ts, object$df.residual, type = type,
+    pvalue <- con_pvalue_Fbar(cov = crossprod(X), Ts.org = Ts, object$df.residual, type = type,
                               Amat, bvec, meq, meq.alt)
   } else if (boot == "parametric") {
     pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "wald2",

@@ -27,10 +27,9 @@ export("restriktor", "conLM.lm", "conLM.default",
        "conTest", 
        "conTestF.lm", "conTestF.rlm", "conTestLRT.lm", "conTestEq.lm",
        "conTestScore.rlm", "conTestWald.rlm", "conTestWald2.rlm",
-       "print.conLM", "summary.conLM", "print.conTest", #"summary.conTest", 
+       "print.conLM", "summary.conLM", "print.conTest", 
        "coef.conLM", "conRLM.rlm", 
        "con_constraints_ceq_amat",
        "con_constraints_cin_amat",
        "con_constraints_con_amat",
-       "lav_partable", "pchibar", "pfbar", 
-       "Sestimator", "vcovMM")
+       "lav_partable", "pchibar", "pfbar")

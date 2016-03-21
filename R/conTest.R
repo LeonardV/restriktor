@@ -11,8 +11,8 @@ conTest <- function(object, type = "A", ...) {
       UseMethod("conTestF")
     } else if (test == "LRT") {
       UseMethod("conTestLRT")  
-    #} else if (test == "score") {
-    #  UseMethod("conTestScore")  
+    } else if (test == "score") {
+      UseMethod("conTestScore")  
     } else if (test == "wald") {
       UseMethod("conTestWald")  
     } else if (test == "wald2") {

@@ -122,28 +122,34 @@ robustWaldScores <- function(x, y, type = "A", beta0, betaA, scale,
    #TsScore <- as.numeric(n * t(Z) %*% solve(result.C, Z))
 
    weightsZ0 <- psi0
-   Z <- (t(x) %*% weightsZ0) / n  
+   Z0 <- (t(x) %*% weightsZ0) / n  
+   
+   weightsZA <- psiA
+   ZA <- (t(x) %*% weightsZA) / n  
    
 #   #Score-type test (Silvapulle, 1996, eq. 2.6)
    #An <- sqrt(n) * solve(M221) %*% Z[idx1]
-   An <- sqrt(n) * solve(M) %*% Z
-   Dn <- An
+#   An <- sqrt(n) * solve(M) %*% Z0
+#   Dn <- An
    #Dmat <- solve(Amat%*%V%*%t(Amat))
-   Dmat <- solve(V)
-   dvec <- t(Dn)%*%Dmat
+#   Dmat <- solve(V)
+#   dvec <- t(Dn)%*%Dmat
    #out <- quadprog:::solve.QP(Dmat=Dmat, dvec=dvec, Amat=t(diag(length(dvec))), bvec=bvec, meq=meq) 
-   if (type == "A" | type == "global" | (type == "B" && meq.alt != 0)) {
-    out <- quadprog:::solve.QP(Dmat=Dmat, dvec=dvec, Amat=t(Amat), bvec=bvec, meq=meq) 
-    b <- out$solution
-   } else {
-     b <- Dn
-   }  
+#   if (type == "A" | type == "global" | (type == "B" && meq.alt != 0)) {
+#    out <- quadprog:::solve.QP(Dmat=Dmat, dvec=dvec, Amat=t(Amat), bvec=bvec, meq=meq) 
+#    b <- out$solution
+#   } else {
+#     b <- Dn
+#   }  
+#   TsScore <- as.numeric((t(Dn)%*%Dmat%*%Dn) - (t(Dn-b)%*%Dmat%*%(Dn-b))) 
    
-   TsScore <- as.numeric((t(Dn)%*%Dmat%*%Dn) - (t(Dn-b)%*%Dmat%*%(Dn-b))) 
+   result.C <- M %*% V %*% t(M)
+   TsScore <- as.numeric(n * t(ZA-Z0) %*% solve(result.C, (ZA-Z0)))
+   
    #TsScore <- as.numeric((t(Dn-b)%*%Dmat%*%(Dn-b)))
    #unconstrained
-   #  result.C <- M221 %*% V22 %*% t(M221)
-   #  TsScore <- as.numeric(n * t(Z[idx1]) %*% solve(result.C, Z[idx1]))
+    #result.C <- M221 %*% V22 %*% t(M221)
+    #TsScore <- as.numeric(n * t(Z[idx1]) %*% solve(result.C, Z[idx1]))
   
   
   OUT <- list(RWald = TsWald,

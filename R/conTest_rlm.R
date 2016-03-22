@@ -75,7 +75,7 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr <- coef(rfit)
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
-    Ts <- robustFm(x = X, y = Y, beta0 = b.eqconstr, betaA = b.unconstr, 
+    Ts <- robustFm(x = X, y = Y, beta0 = b.eqconstr, betaA = b.constr, 
                    scale = scale, cc = 4.685061)
   } else if (type == "A") {
     call.rlm <- as.list(model.org$call)
@@ -282,7 +282,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr <- coef(rfit)
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
-    out0 <- robustWaldScores(x = X, y = Y, type = "global", beta0 = b.eqconstr, 
+    out0 <- robustWaldScores(x = X, y = Y, beta0 = b.eqconstr, 
                              betaA = b.constr, scale = scale, Amat = Amat, 
                              bvec = bvec, meq = meq)
     Ts <- out0$Rscore
@@ -308,7 +308,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
     
-    out1 <- robustWaldScores(x = X, y = Y, type = "A", beta0 = b.eqconstr, 
+    out1 <- robustWaldScores(x = X, y = Y, beta0 = b.eqconstr, 
                              betaA = b.constr, scale = scale, Amat = Amat, 
                              bvec = bvec, meq = meq)
     Ts <- out1$Rscore
@@ -316,7 +316,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   }
   else if (type == "B") {
     if (meq.alt == 0L) {
-      out2 <- robustWaldScores(x = X, y = Y, type = "B", beta0 = b.constr, 
+      out2 <- robustWaldScores(x = X, y = Y, beta0 = b.constr, 
                                betaA = b.unconstr, scale = scale, Amat = Amat, 
                                bvec = bvec, meq = meq)
       Ts <- out2$Rscore
@@ -346,7 +346,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
         b.constr.alt <- coef(rfit)
         b.constr.alt[abs(b.constr.alt) < tol] <- 0L
         names(b.constr.alt) <- vnames
-        out3 <- robustWaldScores(x = X, y = Y, type = "B", beta0 = b.constr, 
+        out3 <- robustWaldScores(x = X, y = Y, beta0 = b.constr, 
                                  betaA = b.constr.alt, scale = scale,
                                  Amat = Amat[1:meq.alt,,drop=FALSE], meq = meq.alt, 
                                  bvec = bvec[1:meq.alt])
@@ -501,7 +501,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr <- coef(rfit)
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
-    out0 <- robustWaldScores(x = X, y = Y, type = "global", beta0 = b.eqconstr, 
+    out0 <- robustWaldScores(x = X, y = Y, beta0 = b.eqconstr, 
                              betaA = b.constr, scale = scale, Amat = Amat, 
                              bvec = bvec, meq = meq)
     Ts <- out0$RWald
@@ -527,7 +527,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
     
-    out1 <- robustWaldScores(x = X, y = Y, type = "A", beta0 = b.eqconstr, 
+    out1 <- robustWaldScores(x = X, y = Y, beta0 = b.eqconstr, 
                              betaA = b.constr, scale = scale, Amat = Amat, 
                              bvec = bvec, meq = meq)
     Ts <- out1$RWald
@@ -535,7 +535,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   }
   else if (type == "B") {
     if (meq.alt == 0L) {
-      out2 <- robustWaldScores(x = X, y = Y, type = "B", beta0 = b.constr, 
+      out2 <- robustWaldScores(x = X, y = Y, beta0 = b.constr, 
                                betaA = b.unconstr, scale = scale, Amat = Amat, 
                                bvec = bvec, meq = Amat)
       Ts <- out2$RWald
@@ -565,7 +565,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
         b.constr.alt <- coef(rfit)
         b.constr.alt[abs(b.constr.alt) < tol] <- 0L
         names(b.constr.alt) <- vnames
-        out3 <- robustWaldScores(x = X, y = Y, type = "B", beta0 = b.constr, 
+        out3 <- robustWaldScores(x = X, y = Y, beta0 = b.constr, 
                                  betaA = b.constr.alt, scale = scale, 
                                  Amat = Amat[1:meq.alt,,drop=FALSE], meq = meq.alt, 
                                  bvec = bvec[1:meq.alt])
@@ -776,7 +776,7 @@ conTestWald2.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
         b.constr.alt[abs(b.constr.alt) < tol] <- 0L
         names(b.constr.alt) <- vnames
         Ts <- robustWaldXX(x = X, beta0 = b.constr, beta1 = b.constr.alt, 
-                           beta2 = b.constr.alt, tau = tau)   
+                           beta2 = b.unconstr, tau = tau)   
       }
       else {
         stop("meq.alt must not be larger than meq.")

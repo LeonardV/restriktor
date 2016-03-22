@@ -21,7 +21,7 @@
 
 
 robustWaldScores <- function(x, y, beta0, betaA, scale, 
-                             Amat = NULL, bvec = NULL, meq = NULL, meq.alt = 0) { 
+                             Amat = NULL, bvec = NULL, meq = NULL) { 
   
   x <- as.matrix(x)
   n <- nrow(x)
@@ -36,9 +36,6 @@ robustWaldScores <- function(x, y, beta0, betaA, scale,
   
   rstar0 <- res0/scale
   rstarA <- resA/scale
-  
-  tukeyChi(res, deriv=1)  
-  tukeyPsi(res, deriv=1)  
   
   psi0   <- tukeyChi(rstar0, cc, deriv=1)  
   psiA   <- tukeyChi(rstarA, cc, deriv=1) 
@@ -94,8 +91,8 @@ robustWaldScores <- function(x, y, beta0, betaA, scale,
      
 #    out <- quadprog:::solve.QP(Dmat=Dmat, dvec=dvec, Amat=t(Amat[,idx1]), bvec=bvec, meq=meq) 
 #    TsWald <- as.numeric((t(Dn)%*%Dmat%*%Dn) - (t(Dn-b)%*%Dmat%*%(Dn-b)) )
-   TsWald <- as.numeric(n * as.numeric(Amat%*%(betaA-beta0)) %*% solve(V22, as.numeric(t(Amat%*%(betaA-beta0))) ))
-   
+   #TsWald <- as.numeric(n * as.numeric(Amat%*%(betaA-beta0)) %*% solve(V22, as.numeric(t(Amat%*%(betaA-beta0))) ))
+    TsWald <- as.numeric(n * c(betaA-beta0) %*% solve(V, c(betaA-beta0)))
    
   #unconstrained
   #TsWald <- as.numeric(n * betaA[idx1] %*% solve(V22, betaA[idx1]) )

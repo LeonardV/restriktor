@@ -17,23 +17,28 @@ estfun <- function(x, ...) {
 }
 
 bread.lm <- function(x, ...) {
-  if(!is.null(x$na.action)) class(x$na.action) <- "omit"
-  cov <- 1/x$s2 * x$information 
-  return(cov * as.vector(sum(summary(x$model.org)$df[1:2])))
+  if(!is.null(x$model.org$na.action)) class(x$model.org$na.action) <- "omit"
+  #x$information.inverted = vcov(fit.lm)
+  cov.unscaled <- 1/x$s2 * x$information.inverted 
+  return(cov.unscaled * as.vector(sum(summary(x$model.org)$df[1:2])))
 }
 
 
 bread.rlm <- function(x, ...) {
-  if(!is.null(x$model.org$na.action)) class(x$na.action) <- "omit"
+  if(!is.null(x$model.org$na.action)) class(x$model.org$na.action) <- "omit"
   xmat <- model.matrix(x$model.org)
   xmat <- naresid(x$model.org$na.action, xmat)
-  wts <- weights(x)
-  if(is.null(wts)) wts <- 1
-  res <- residuals(x)
-  psi_deriv <- function(z) tukeyChi(z, deriv = 1)
-  rval <- sqrt(abs(as.vector(psi_deriv(res/x$model.org$s)/x$model.org$s))) * wts * xmat    
-  rval <- chol2inv(qr.R(qr(rval))) * nrow(xmat)
-
+    wts <- weights(x)
+    if(is.null(wts)) wts <- 1
+    res <- residuals(x)
+    #psi_deriv <- function(z) tukeyPsi(z, deriv = 1)
+    psi_deriv <- function(z) x$model.org$psi(z, deriv = 1)
+    rval <- sqrt(abs(as.vector(psi_deriv(res/x$model.org$s)/x$model.org$s))) * wts * xmat    
+    #rval <- chol2inv(qr.R(qr(rval))) * nrow(xmat)
+    rval <- solve(chol2inv(qr.R(qr(rval))) )
+    rval <- con_augmented_information(rval, X = xmat, x$b.unconstr, x$b.constr, x$Amat, x$bvec, x$meq) * nrow(xmat)
+#  rval <- 1/x$s2 * x$information.inverted * nrow(xmat)
+  
   return(rval)
 }
 
@@ -60,7 +65,8 @@ estfun.rlm <- function(x, ...) {
   wts <- weights(x)
   if(is.null(wts)) wts <- 1
   res <- residuals(x)
-  psi <- function(z) tukeyChi(z) * z
+  #psi <- function(z) tukeyPsi(z) * z
+  psi <- function(z) x$model.org$psi(z) * z
   rval <- as.vector(psi(res/x$model.org$s)) * wts * xmat
   attr(rval, "assign") <- NULL
   attr(rval, "contrasts") <- NULL
@@ -84,7 +90,12 @@ meatHC <- function(x,
   
   ## get hat values and residual degrees of freedom
   #diaghat <- try(hatvalues(x$model.org), silent = TRUE)
-  diaghat <- diag(X%*%(1/x$s2 * x$information)%*%t(X))
+ # if (class(x)[1] == "conLM") {
+    diaghat <- NA#diag(X%*%(1/x$s2 * x$information.inverted)%*%t(X))                
+#  } else if (class(x)[1] == "conRLM") {
+#    diaghat <- diag(X%*%(solve(vcovMM(X = X, resid0 = x$init.resid, 
+#                                      resid = x$residuals, scale = x$scale)))%*%t(X))                         
+#  }  
   df <- n - NCOL(X)
   
   ## the following might work, but "intercept" is also claimed for "coxph"
@@ -121,7 +132,7 @@ meatHC <- function(x,
            "HC5"   = { omega <- function(residuals, diaghat, df) {
              k <- 0.7 ## as recommended by Cribari-Neto et al.
              n <- length(residuals)
-             p <- as.integer(round(sum(diaghat),  digits = 0))
+             p <- as.integer(round(sum(diaghat), digits = 0))
              delta <- pmin(n * diaghat/p, pmax(4, n * k * max(diaghat)/p))
              residuals^2 / sqrt((1 - diaghat)^delta)
            }}

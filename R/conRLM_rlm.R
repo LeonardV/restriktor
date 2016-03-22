@@ -201,7 +201,12 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   
   if (se != "no") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
-      information <- 1/s2 * crossprod(X)  #informationMM(x = X, betaA = b.constr, scale = model$s) only for MM-estimation?
+      information <- 1/s2 * crossprod(X)  
+      
+      #only for MM-estimation? 
+      #can we take the inverse to obtain the information matrix.
+      #information <- solve(vcovMM(X, resid0, resid, scale))                     #<FIXME>
+      
       information.inv <- con_augmented_information(information = information,
                                                    X = X, b.unconstr = b.unconstr, 
                                                    b.constr = b.constr,

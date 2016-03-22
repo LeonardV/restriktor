@@ -28,11 +28,11 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
   if (length(x$b.constr) && is.null(x$bootout) && !(se == "no")) {
     cat("Coefficients:\n")
     std.error <-
-    if (se == "const" | se == "default") {
-      sqrt(diag(x$information.inverted))
-    } else {
+#    if (se == "const" | se == "default") {
+#      sqrt(diag(x$information.inverted))
+#    } else {
       sqrt(diag(sandwich(x, bread.=bread(x), meat.=meatHC(x, type = se))))                    #<FIXME> for rlm Amat %*% bread %*% t(Amat)
-    }  
+#    }  
     
     ##########
     tval <- ifelse(std.error != 0, x$b.constr/std.error, 0L)

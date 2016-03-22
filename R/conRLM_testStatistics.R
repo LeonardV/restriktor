@@ -20,7 +20,7 @@
 # meq  <- fitA.con$meq 
 
 
-robustWaldScores <- function(x, y, type = "A", beta0, betaA, scale, 
+robustWaldScores <- function(x, y, beta0, betaA, scale, 
                              Amat = NULL, bvec = NULL, meq = NULL, meq.alt = 0) { 
   
   x <- as.matrix(x)
@@ -29,13 +29,16 @@ robustWaldScores <- function(x, y, type = "A", beta0, betaA, scale,
   
   #tukey bisquare tuning constant
   cc = 4.685061
-  
+    
   #Calculate M, Q, V 
   res0 <- y - x%*%beta0
   resA <- y - x%*%betaA
   
   rstar0 <- res0/scale
   rstarA <- resA/scale
+  
+  tukeyChi(res, deriv=1)  
+  tukeyPsi(res, deriv=1)  
   
   psi0   <- tukeyChi(rstar0, cc, deriv=1)  
   psiA   <- tukeyChi(rstarA, cc, deriv=1) 

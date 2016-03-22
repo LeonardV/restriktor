@@ -7,15 +7,15 @@ conTest <- function(object, type = "A", ...) {
     } else {
       test <- l$test
     } 
-    if (test == "F") {
+    if (test == "F" | test == "f") {
       UseMethod("conTestF")
-    } else if (test == "LRT") {
+    } else if (test == "LRT" | test == "lrt") {
       UseMethod("conTestLRT")  
-    } else if (test == "score") {
+    } else if (test == "score" | test == "Score") {
       UseMethod("conTestScore")  
-    } else if (test == "wald") {
+    } else if (test == "Wald" | test == "wald") {
       UseMethod("conTestWald")  
-    } else if (test == "wald2") {
+    } else if (test == "Wald2" | test == "wald2") {
       UseMethod("conTestWald2")  
     } else {
       stop("restriktor ERROR: test ", sQuote(test), " not (yet) implemented.")

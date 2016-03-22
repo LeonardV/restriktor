@@ -13,13 +13,13 @@ con_test_Wald <- function(VCOV, JAC, theta.r) {
     info.r  <- JAC %*% VCOV %*% t(JAC)
 
     # Wald test statistic
-    Wald <- as.numeric(t(theta.r) %*% solve( info.r ) %*% theta.r)
+    Wald <- as.numeric(t(theta.r) %*% solve(info.r) %*% theta.r)
 
     # df
     Wald.df <- nrow(JAC)
 
     # p-value based on chisq
-    Wald.pvalue <- 1 - pchisq(Wald, df=Wald.df)
+    Wald.pvalue <- 1 - pchisq(Wald, df = Wald.df)
 
     OUT <- list(test = "Wald",
                 Ts = Wald,

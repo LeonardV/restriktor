@@ -5,9 +5,9 @@ importFrom("lavaan",
            lavParseModelString,
            lav_constraints_parse)
 
-importFrom("MASS",
-           lqs,
-           psi.bisquare)
+#importFrom("MASS",
+#           lqs,
+#           psi.bisquare)
 
 importFrom("mvtnorm",
            pmvnorm)
@@ -25,7 +25,8 @@ importFrom("boot",
 # export ordinary functions defined in this package
 export("restriktor", "conLM.lm", "conLM.default",
        "conTest", 
-       "conTestF.lm", "conTestF.rlm", "conTestLRT.lm", "conTestEq.lm",
+       "conTestF.lm", "conTestF.rlm", "conTestLRT.lm", 
+       "conTestEq.lm", "conTestEq.rlm",
        "conTestScore.rlm", "conTestWald.rlm", "conTestWald2.rlm",
        "print.conLM", "summary.conLM", "print.conTest", 
        "coef.conLM", "conRLM.rlm", 

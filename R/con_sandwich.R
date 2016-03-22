@@ -1,6 +1,5 @@
 #adjusted functions from the sandwich package.
-sandwich <- function(x, bread. = bread, meat. = meat, ...)
-{
+sandwich <- function(x, bread. = bread, meat. = meat, ...) {
   if(is.list(x$model.org) && !is.null(x$model.org$na.action)) class(x$model.org$na.action) <- "omit"
   if(is.function(bread.)) bread. <- bread.(x)
   if(is.function(meat.)) meat. <- meat.(x, ...)
@@ -9,17 +8,37 @@ sandwich <- function(x, bread. = bread, meat. = meat, ...)
 }
 
 
-bread.lm <- function(x, ...)
-{
+bread <- function(x, ...) {
+  UseMethod("bread")
+}
+
+estfun <- function(x, ...) {
+  UseMethod("estfun")
+}
+
+bread.lm <- function(x, ...) {
   if(!is.null(x$na.action)) class(x$na.action) <- "omit"
-#  X <- model.matrix(x$model.org)[,,drop=FALSE]
-#  s2 <- x$s2
-  cov <- 1/x$s2 * x$information #solve(t(X) %*% X)
+  cov <- 1/x$s2 * x$information 
   return(cov * as.vector(sum(summary(x$model.org)$df[1:2])))
 }
 
 
-estfun <- function(x, ...) {
+bread.rlm <- function(x, ...) {
+  if(!is.null(x$model.org$na.action)) class(x$na.action) <- "omit"
+  xmat <- model.matrix(x$model.org)
+  xmat <- naresid(x$model.org$na.action, xmat)
+  wts <- weights(x)
+  if(is.null(wts)) wts <- 1
+  res <- residuals(x)
+  psi_deriv <- function(z) tukeyChi(z, deriv = 1)
+  rval <- sqrt(abs(as.vector(psi_deriv(res/x$model.org$s)/x$model.org$s))) * wts * xmat    
+  rval <- chol2inv(qr.R(qr(rval))) * nrow(xmat)
+
+  return(rval)
+}
+
+
+estfun.lm <- function(x, ...) {
   xmat <- model.matrix(x$model.org)
   xmat <- naresid(x$model.org$na.action, xmat)
   if(any(alias <- is.na(coef(x)))) xmat <- xmat[, !alias, drop = FALSE]
@@ -29,15 +48,31 @@ estfun <- function(x, ...) {
   rval <- as.vector(res) * wts * xmat
   attr(rval, "assign") <- NULL
   attr(rval, "contrasts") <- NULL
-  if(zoo:::is.zoo(res)) rval <- zoo(rval, index(res), attr(res, "frequency"))
+  if(zoo:::is.zoo(res)) rval <- zoo:::zoo(rval, index(res), attr(res, "frequency"))
   if(is.ts(res)) rval <- ts(rval, start = start(res), frequency = frequency(res))
   return(rval)
 }
 
+
+estfun.rlm <- function(x, ...) {
+  xmat <- model.matrix(x$model.org)
+  xmat <- naresid(x$model.org$na.action, xmat)
+  wts <- weights(x)
+  if(is.null(wts)) wts <- 1
+  res <- residuals(x)
+  psi <- function(z) tukeyChi(z) * z
+  rval <- as.vector(psi(res/x$model.org$s)) * wts * xmat
+  attr(rval, "assign") <- NULL
+  attr(rval, "contrasts") <- NULL
+  if(is.ts(res)) rval <- ts(rval, start = start(res), frequency = frequency(res))
+  if(zoo:::is.zoo(res)) rval <- zoo:::zoo(rval, index(res), attr(res, "frequency"))
+  return(rval)
+}
+
+
 meatHC <- function(x, 
                    type = c("HC3", "const", "HC", "HC0", "HC1", "HC2", "HC4", "HC4m", "HC5"),
-                   omega = NULL)
-{
+                   omega = NULL) {
   ## ensure that NAs are omitted
   if(is.list(x$model.org) && !is.null(x$model.org$na.action)) class(x$model.org$na.action) <- "omit"
   

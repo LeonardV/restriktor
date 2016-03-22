@@ -6,9 +6,30 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   
   Amat <- Amatw; bvec <- bvecw; meq <- meqw
   
+  # check for psi.bisquare loss function
+  call.model <- as.list(model$call)
+  if (!is.null(call.model$method)) {
+    if (call.model$method == "MM") {
+      if (is.null(call.model$psi)) {
+        call.model$psi <- "psi.bisquare"  
+      }
+    } else if (call.model$method == "M") {
+      if (is.null(call.model$psi)) {
+        call.model$psi <- "psi.huber"  
+      }
+    }
+  }
+  if (is.null(call.model$psi)) {
+    stop("Restriktor ERROR: psi must be a bisquare function.")
+  } else if (!is.null(call.model$psi)) {
+      if (!(call.model$psi == "psi.bisquare")) {
+        stop("Restriktor ERROR: psi must be a bisquare function.")
+      }
+  }
+  
   # check class
   if (!("rlm" %in% class(model))) {
-    stop("ERROR: model must be of class rlm.")
+    stop("Restriktor ERROR: model must be of class rlm.")
   }
   if (se == "default" | se == "standard") {
     se <- "const"
@@ -100,14 +121,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     call.rlm <- call.rlm[-1]
     # the default is M-estimation with psi = psi.huber loss function.
     # only psi.bisquare is applicable for now.
-    if (!(call.rlm$method == "MM")) {
-      stop("Restiktor ERROR: only MM-estimation is available.")
-    } 
-    if (call.rlm$method == "MM" && !(is.null(call.rlm$psi))) {
-      if (!(call.rlm$psi == "psi.bisquare")) {
-        stop("Restriktor ERROR: only bisquare loss function is availble.")
-      } 
-    }
+    
     #fit inequality constrained robust model
 #    if (is.null(call.rlm[["formula"]])) {
       call.rlm[["data"]] <- NULL
@@ -164,7 +178,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 b.unconstr = b.unconstr,
                 b.constr = b.constr,
                 residuals = resid,
-                init.resid = rfit$resid0,
+                init.resid = resid0,
                 wresid = rfit$wresid,
                 fitted.values = pred,
                 weights = rfit$weights,
@@ -174,7 +188,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 scale = rfit$s,                                                               
                 s2 = s2,                                                         #standard deviation tau.hat                                         
                 loglik = ll, 
-                Sigma = vcov(rfit),                                             #probably not robust???
+                Sigma = vcov(model),                                             #probably not robust???
                 Amat = Amat, bvec = bvec, meq = meq, iact = iact,
                 converged = rfit$converged, iter = rfit$iter,
                 bootout = NULL)
@@ -183,18 +197,18 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   OUT$model.org <- model
   OUT$CON <- if (is.character(constraints)) { CON }
   OUT$partable <- if (is.character(constraints)) { partable }
-  OUT$se <- se
+  OUT$se <- se 
   
   if (se != "no") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
-      information <- solve(vcovMM(X, resid0, resid, scale))       #is this the information matrix?
+      information <- 1/s2 * crossprod(X)  #informationMM(x = X, betaA = b.constr, scale = model$s) only for MM-estimation?
       information.inv <- con_augmented_information(information = information,
                                                    X = X, b.unconstr = b.unconstr, 
                                                    b.constr = b.constr,
-                                                   s2 = s2, constraints = Amat, 
+                                                   constraints = Amat, 
                                                    bvec = bvec, meq = meq)
       OUT$information.inverted <- information.inv
-    } else if (se == "boot.model.based") {
+    } else if (se == "boot.model.based") { 
       OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),
                                                    999, control$B), 
                                  fixed = TRUE, constraints = Amat,

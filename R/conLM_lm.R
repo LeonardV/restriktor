@@ -149,7 +149,7 @@ conLM.lm <- function(model, constraints, se = "default",
       information.inv <- con_augmented_information(information = information,
                                                    X = X, b.unconstr = b.unconstr, 
                                                    b.constr = b.constr,
-                                                   s2 = s2, constraints = Amat, 
+                                                   constraints = Amat, 
                                                    bvec = bvec, meq = meq)
       OUT$information.inverted <- information.inv
     } else if (se == "boot.model.based") {

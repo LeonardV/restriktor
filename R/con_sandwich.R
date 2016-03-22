@@ -26,8 +26,8 @@ bread.lm <- function(x, ...) {
 
 bread.rlm <- function(x, ...) {
   if(!is.null(x$model.org$na.action)) class(x$model.org$na.action) <- "omit"
-  xmat <- model.matrix(x$model.org)
-  xmat <- naresid(x$model.org$na.action, xmat)
+    xmat <- model.matrix(x$model.org)
+    xmat <- naresid(x$model.org$na.action, xmat)
     wts <- weights(x)
     if(is.null(wts)) wts <- 1
     res <- residuals(x)
@@ -36,10 +36,10 @@ bread.rlm <- function(x, ...) {
     rval <- sqrt(abs(as.vector(psi_deriv(res/x$model.org$s)/x$model.org$s))) * wts * xmat    
     #rval <- chol2inv(qr.R(qr(rval))) * nrow(xmat)
     rval <- solve(chol2inv(qr.R(qr(rval))) )
-    rval <- con_augmented_information(rval, X = xmat, x$b.unconstr, x$b.constr, x$Amat, x$bvec, x$meq) * nrow(xmat)
+    rval <- con_augmented_information(rval, X = xmat, x$b.unconstr, x$b.constr, 
+                                      x$Amat, x$bvec, x$meq) * nrow(xmat)
 #  rval <- 1/x$s2 * x$information.inverted * nrow(xmat)
-  
-  return(rval)
+    return(rval)
 }
 
 

@@ -91,7 +91,7 @@ meatHC <- function(x,
   ## get hat values and residual degrees of freedom
   #diaghat <- try(hatvalues(x$model.org), silent = TRUE)
  # if (class(x)[1] == "conLM") {
-    diaghat <- NA#diag(X%*%(1/x$s2 * x$information.inverted)%*%t(X))                
+    diaghat <- diag(X%*%(1/x$s2 * x$information.inverted)%*%t(X))                
 #  } else if (class(x)[1] == "conRLM") {
 #    diaghat <- diag(X%*%(solve(vcovMM(X = X, resid0 = x$init.resid, 
 #                                      resid = x$residuals, scale = x$scale)))%*%t(X))                         

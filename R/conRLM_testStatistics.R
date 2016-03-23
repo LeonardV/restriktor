@@ -7,8 +7,8 @@
 # x4 <- rnorm(n, 0)
 # y <- 1 + 1*x1 + 0.1*x2 + 0.3*x3 + 0.5*x4 + rnorm(n)
 # fit.rlm <- rlm(y~x1+x2+x3+x4, method="MM")
-# fit0.con <- restriktor(fit.rlm, constraints = "x2 > 0; x3 > 0; x4 == 0", se = "const")
-# fitA.con <- restriktor(fit.rlm, constraints = "x4 == 0", se = "const")
+# fit0.con <- restriktor(fit.rlm, constraints = "x2 == 0; x3 == 0; x4 == 0", se = "const")
+# fitA.con <- restriktor(fit.rlm, constraints = "x2 > 0; x3 > 0; x4 > 0", se = "const")
 # 
 # #conTest(fit0.con, test="wald", "A")
 # x <- model.matrix(fit.rlm)[,,drop=FALSE]
@@ -39,7 +39,7 @@ robustWaldScores <- function(x, y, beta0, betaA, scale,
   
   psi0   <- tukeyChi(rstar0, cc, deriv=1)  
   psiA   <- tukeyChi(rstarA, cc, deriv=1) 
-  psideriv0 <- tukeyChi(rstar0, cc, deriv=2) 
+#  psideriv0 <- tukeyChi(rstar0, cc, deriv=2) 
   psiderivA <- tukeyChi(rstarA, cc, deriv=2) 
   
   #compute M 
@@ -57,22 +57,16 @@ robustWaldScores <- function(x, y, beta0, betaA, scale,
   Q <- t(x) %*% xwQ / n
 
   
-  ############ <FIXME> ################
-#   if (type == "A" | type == "global") {
-#     idx0 <- which(colSums(abs(Amat)) == 0L)
-#     idx1 <- which(colSums(abs(Amat)) > 0L)
-#   } #else if (type == "B") {
-     #idx0 <- which(colSums(abs(Amat)) == 0L)
-     #idx0 <- idx1 <- which(colSums(abs(Amat)) > 0L)
-   #} 
-  
+  idx0 <- which(colSums(abs(Amat)) == 0L)
+  idx1 <- which(colSums(abs(Amat)) > 0L)
+
   #Calculate V 
   Minv <- solve(M)
   #information matrix 
   V <- Minv %*% Q %*% t(Minv)
   #V[(p0+1):pa,(p0+1):pa]
-  #V[idx1,idx1]
-  V22 <- Amat %*% V %*% t(Amat)
+  V22 <- V[idx1,idx1]
+  #V22 <- Amat %*% V %*% t(Amat)
   
 #   #Wald-type test statistic, Silvapulle (1996, eq. 2.6) & Silvapulle and Sen, 2005, p 154
 #     Tn <- sqrt(n)*(Amat%*%betaA)
@@ -91,8 +85,9 @@ robustWaldScores <- function(x, y, beta0, betaA, scale,
      
 #    out <- quadprog:::solve.QP(Dmat=Dmat, dvec=dvec, Amat=t(Amat[,idx1]), bvec=bvec, meq=meq) 
 #    TsWald <- as.numeric((t(Dn)%*%Dmat%*%Dn) - (t(Dn-b)%*%Dmat%*%(Dn-b)) )
-   #TsWald <- as.numeric(n * as.numeric(Amat%*%(betaA-beta0)) %*% solve(V22, as.numeric(t(Amat%*%(betaA-beta0))) ))
-    TsWald <- as.numeric(n * c(betaA-beta0) %*% solve(V, c(betaA-beta0)))
+    #TsWald <- as.numeric(n * as.numeric(Amat%*%(betaA-beta0)) %*% solve(V22, as.numeric(t(Amat%*%(betaA-beta0))) ))
+    TsWald <- as.numeric(n * as.numeric((betaA-beta0)[idx1]) %*% solve(V22, as.numeric(betaA-beta0)[idx1]))
+#    TsWald <- as.numeric(n * c(betaA-beta0) %*% solve(V, c(betaA-beta0)))
    
   #unconstrained
   #TsWald <- as.numeric(n * betaA[idx1] %*% solve(V22, betaA[idx1]) )
@@ -102,31 +97,39 @@ robustWaldScores <- function(x, y, beta0, betaA, scale,
    
    #Schur complement?
    # M221 <- M[(p0+1):p,(p0+1):p] - M[(p0+1):p,1:p0] %*% solve(M[1:p0,1:p0,drop=FALSE], M[1:p0,(p0+1):p,drop=FALSE])
-#   M221 <- M[idx1,idx1] - M[idx1,idx0] %*% solve(M[idx0,idx0,drop=FALSE], 
-#                                                 M[idx0,idx1,drop=FALSE])
+   #M221 <- M[idx1,idx1] - M[idx1,idx0] %*% solve(M[idx0,idx0,drop=FALSE], 
+   #                                               M[idx0,idx1,drop=FALSE])
    
+   weightsZ0 <- psi0
+   Z0 <- (t(x) %*% weightsZ0) / n  
+   Z0 <- Z0[idx1]
    
-   #<FIXME>
-#   weightsZ0 <- psi0
-#   Z0 <- (t(x) %*% weightsZ0) / n  
-   #Z0 <- Amat%*%Z0
-   
-#   weightsZA <- psiA
-#   ZA <- (t(x) %*% weightsZA) / n  
-   #ZA <- Amat%*%ZA
-   
+   weightsZA <- psiA
+   ZA <- (t(x) %*% weightsZA) / n  
+   ZA <- ZA[idx1]
    #n * t(Z0-ZA) %*% solve(V22, (Z0-ZA)) #n*(t(Z0 - ZA) %*% solve(V22) %*% (Z0 - ZA)) 
 #   as.numeric(n * as.numeric(Amat%*%(ZA-Z0)) %*% solve(V22, as.numeric(t(Amat%*%(ZA-Z0))) ))
 #   
    #result.C <- M221 %*% V22 %*% t(M221)
-   #TsScore <- as.numeric(n * t(Z) %*% solve(result.C, Z))
+   
+   result.C <- Q[idx1,idx1]-M[idx1,idx0]%*%solve(M[idx0,idx0,drop=F], Q[idx0,idx1,drop=F]) - 
+     Q[idx1,idx0]%*%solve(M[idx0,idx0,drop=F], M[idx0,idx1,drop=F])+
+     M[idx1,idx0]%*%solve(M[idx0,idx0,drop=F], Q[idx0,idx0,drop=F])%*%
+     solve(M[idx0,idx0,drop=F], M[idx0,idx1,drop=F])
+   
 
-   weightsZ0 <- psi0
-   Z0 <- (t(x) %*% weightsZ0) / n  
+   TsScore <- as.numeric(n * t(ZA-Z0) %*% solve(result.C, (ZA-Z0)))
+
+#   weightsZ0 <- psi0
+#   Z0 <- (t(x) %*% weightsZ0) / n  
    
-   weightsZA <- psiA
-   ZA <- (t(x) %*% weightsZA) / n  
+#   weightsZA <- psiA
+#   ZA <- (t(x) %*% weightsZA) / n  
+
+#   result.C <- M %*% V %*% t(M)
+#   TsScore <- as.numeric(n * t(ZA-Z0) %*% solve(result.C, (ZA-Z0)))
    
+      
 #   #Score-type test (Silvapulle, 1996, eq. 2.6)
    #An <- sqrt(n) * solve(M221) %*% Z[idx1]
 #   An <- sqrt(n) * solve(M) %*% Z0
@@ -142,16 +145,7 @@ robustWaldScores <- function(x, y, beta0, betaA, scale,
 #     b <- Dn
 #   }  
 #   TsScore <- as.numeric((t(Dn)%*%Dmat%*%Dn) - (t(Dn-b)%*%Dmat%*%(Dn-b))) 
-   
-   result.C <- M %*% V %*% t(M)
-   TsScore <- as.numeric(n * t(ZA-Z0) %*% solve(result.C, (ZA-Z0)))
-   
-   #TsScore <- as.numeric((t(Dn-b)%*%Dmat%*%(Dn-b)))
-   #unconstrained
-    #result.C <- M221 %*% V22 %*% t(M221)
-    #TsScore <- as.numeric(n * t(Z[idx1]) %*% solve(result.C, Z[idx1]))
-  
-  
+
   OUT <- list(RWald = TsWald,
               Rscore = TsScore,
               V = V)#,

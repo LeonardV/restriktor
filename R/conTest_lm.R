@@ -304,30 +304,30 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   }
 
   if (boot == "no") {
-    pvalue <- con_pvalue_Chibar_lm(cov, Ts.org = Ts, object$df.residual, type = type,
-                                   Amat, bvec, meq, meq.alt)
+    pvalue <- con_pvalue_Chibar(cov, Ts.org = Ts, object$df.residual, type = type,
+                                Amat, bvec, meq, meq.alt)
   }
   else if (boot == "parametric") {
-    pvalue <- con_pvalue_boot_parametric_lm(object, Ts.org = Ts, type = type, test = "LRT",
-                                            constraints = constraints, meq.alt = meq.alt,
-                                            R = ifelse(is.null(control$B), 9999, control$B),
-                                            p.distr = ifelse(is.null(control$p.distr), "N", control$p.distr),
-                                            df = ifelse(is.null(control$df), 7, control$df),
-                                            parallel = ifelse(is.null(control$parallel), "no", control$parallel),
-                                            ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
-                                            cl = ifelse(is.null(control$cl), NULL, control$cl),
-                                            seed = ifelse(is.null(control$seed), 1234, control$seed),
-                                            verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
-  }
+    pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "LRT",
+                                          constraints = constraints, meq.alt = meq.alt,
+                                          R = ifelse(is.null(control$B), 9999, control$B),
+                                          p.distr = ifelse(is.null(control$p.distr), "N", control$p.distr),
+                                          df = ifelse(is.null(control$df), 7, control$df),
+                                          parallel = ifelse(is.null(control$parallel), "no", control$parallel),
+                                          ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
+                                          cl = ifelse(is.null(control$cl), NULL, control$cl),
+                                          seed = ifelse(is.null(control$seed), 1234, control$seed),
+                                          verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
+}
   else if (boot == "model.based") {
-    pvalue <- con_pvalue_boot_model_based_lm(object, Ts.org = Ts, type = type, test = "LRT",
-                                             meq.alt = meq.alt,
-                                             R = ifelse(is.null(control$B), 9999, control$B),
-                                             parallel = ifelse(is.null(control$parallel), "no", control$parallel),
-                                             ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
-                                             cl = ifelse(is.null(control$cl), NULL, control$cl),
-                                             seed = ifelse(is.null(control$seed), 1234, control$seed),
-                                             verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
+    pvalue <- con_pvalue_boot_model_based(object, Ts.org = Ts, type = type, test = "LRT",
+                                           meq.alt = meq.alt,
+                                           R = ifelse(is.null(control$B), 9999, control$B),
+                                           parallel = ifelse(is.null(control$parallel), "no", control$parallel),
+                                           ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
+                                           cl = ifelse(is.null(control$cl), NULL, control$cl),
+                                           seed = ifelse(is.null(control$seed), 1234, control$seed),
+                                           verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   }
 
   OUT <- list(CON = object$CON,

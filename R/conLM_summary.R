@@ -44,8 +44,12 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
     #cat("\nDefined new paramters:\n")
     printCoefmat(coefficients, digits = digits, signif.stars = signif.stars, 
                  na.print = "NA")
-    ###########
+    ############################################################################
     
+    
+    
+    
+    ############################################################################
     cat("\n")
     if (se == "const") {
       cat("Homoskedastic standard errors\n")

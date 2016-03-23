@@ -1,5 +1,5 @@
 #taken from the lavaan package
-# build a bare-bones parameter table from a fitted lm object
+# build a bare-bones parameter table from a fitted object
 lav_partable <- function(object, est = FALSE, label = FALSE,
                                  as.data.frame. = FALSE) {
 
@@ -50,6 +50,7 @@ lav_partable <- function(object, est = FALSE, label = FALSE,
 
         # convert all ':' to '.'
         partable$label <- gsub("[:()]", ".", partable$label)
+        
     }
 
     # convert to data.frame?

@@ -1,4 +1,4 @@
-summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
+summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
                           bootCIs = TRUE, bty = "basic", level = 0.95, 
                           signif.stars = getOption("show.signif.stars")) {
 
@@ -27,7 +27,7 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
   se <- x$se
   if (length(x$b.constr) && is.null(x$bootout) && !(se == "no")) {
     cat("Coefficients:\n")
-    std.error <-
+    SE <-
 #    if (se == "const" | se == "default") {
 #      sqrt(diag(x$information.inverted))
 #    } else {
@@ -35,21 +35,37 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 3),
 #    }  
     
     ##########
-    tval <- ifelse(std.error != 0, x$b.constr/std.error, 0L)
-    coefficients <- cbind(x$b.constr, std.error, tval, 2 * pt(abs(tval),
+    tval <- ifelse(SE != 0, x$b.constr/SE, 0L)
+    coefficients <- cbind(x$b.constr, SE, tval, 2 * pt(abs(tval),
                                                     x$df.residual, lower.tail = FALSE))
     dimnames(coefficients) <- list(names(x$model.org$coefficients),
                                    c("Estimate", "Std. Error", "t value", "Pr(>|t|)"))
-    coefficients[,4][coefficients[,4] < 2e-16] <- 2e-16
+    
     #cat("\nDefined new paramters:\n")
+    
+    ######################### defined parameters ###############################
+#     if (!(is.null(x$partable))) {
+#       idx1 <- which(grepl("<", x$partable$op, fixed=TRUE))
+#       idx2 <- which(grepl(">", x$partable$op, fixed=TRUE))
+#       idx3 <- which(grepl("==", x$partable$op, fixed=TRUE))
+#       idx.con <- c(idx1,idx2,idx3)
+#       
+#       vnames <- x$partable$lhs[which(x$partable$op == ":=")]
+#       idx <- which(x$partable$lhs[idx.con] %in% vnames)
+#        
+#       b.def  <- as.numeric(H[idx,,drop=FALSE] %*% coef(x))
+#         names(b.def) <- vnames
+#       SE.def <- sqrt(diag(H[idx,,drop=FALSE] %*% x$information.inverted %*% t(H[idx,,drop=FALSE])))
+#       tval.def <- ifelse(SE.def != 0, b.def/SE.def, 0L)
+#       
+#       coefficients <- rbind(coefficients, cbind(b.def, SE.def, tval.def, 2 * pt(abs(tval.def),
+#                                         x$df.residual, lower.tail = FALSE)))
+#     }  
+    ############################################################################
+    coefficients[,4][coefficients[,4] < 2e-16] <- 2e-16
     printCoefmat(coefficients, digits = digits, signif.stars = signif.stars, 
                  na.print = "NA")
-    ############################################################################
     
-    
-    
-    
-    ############################################################################
     cat("\n")
     if (se == "const") {
       cat("Homoskedastic standard errors\n")

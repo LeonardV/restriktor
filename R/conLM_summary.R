@@ -27,11 +27,12 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
   se <- x$se
   if (length(x$b.constr) && is.null(x$bootout) && !(se == "no")) {
     cat("Coefficients:\n")
+    vcovHC <- sandwich(x, bread.=bread(x), meat.=meatHC(x, type = se))
     SE <-
 #    if (se == "const" | se == "default") {
 #      sqrt(diag(x$information.inverted))
 #    } else {
-      sqrt(diag(sandwich(x, bread.=bread(x), meat.=meatHC(x, type = se))))                    #<FIXME> for rlm Amat %*% bread %*% t(Amat)
+      sqrt(diag(vcovHC))  
 #    }  
     
     ##########
@@ -44,23 +45,33 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
     #cat("\nDefined new paramters:\n")
     
     ######################### defined parameters ###############################
-#     if (!(is.null(x$partable))) {
-#       idx1 <- which(grepl("<", x$partable$op, fixed=TRUE))
-#       idx2 <- which(grepl(">", x$partable$op, fixed=TRUE))
-#       idx3 <- which(grepl("==", x$partable$op, fixed=TRUE))
-#       idx.con <- c(idx1,idx2,idx3)
-#       
-#       vnames <- x$partable$lhs[which(x$partable$op == ":=")]
-#       idx <- which(x$partable$lhs[idx.con] %in% vnames)
-#        
-#       b.def  <- as.numeric(H[idx,,drop=FALSE] %*% coef(x))
-#         names(b.def) <- vnames
-#       SE.def <- sqrt(diag(H[idx,,drop=FALSE] %*% x$information.inverted %*% t(H[idx,,drop=FALSE])))
-#       tval.def <- ifelse(SE.def != 0, b.def/SE.def, 0L)
-#       
-#       coefficients <- rbind(coefficients, cbind(b.def, SE.def, tval.def, 2 * pt(abs(tval.def),
-#                                         x$df.residual, lower.tail = FALSE)))
-#     }  
+    if (!(is.null(x$partable))) {
+      ineq.idx <- which(x$partable$op == ">" | x$partable$op == "<")
+      def.idx <- which(x$partable$op == ":=")
+      lhs.labels <- all.vars(parse(file = "", text = x$partable$lhs[ineq.idx]))
+      rhs.labels <- all.vars(parse(file = "", text = x$partable$rhs[ineq.idx]))
+      ineq.labels <- unique(c(lhs.labels, rhs.labels))
+      def.names <- as.character(x$partable$lhs[def.idx])
+      d.idx <- which(ineq.labels %in% def.names)
+      #ineq.labels <- ineq.labels[-d.idx]
+      if (x$meq > 0L) {
+        H <- x$Amat[-c(1:x$meq),]  
+        bvec <- x$bvec[-c(1:x$meq)]  
+      } else {
+        H <- x$Amat
+        bvec <- x$bvec
+      }
+      b.def <- as.numeric(H[d.idx,,drop=FALSE] %*% coef(x)) - bvec[d.idx] 
+      b.def[abs(b.def) < 1e-14] <- 0L
+        names(b.def) <- def.names
+      cov.diag <- diag(H[d.idx,,drop=FALSE] %*% vcovHC %*% t(H[d.idx,,drop=FALSE]))
+      cov.diag[cov.diag < 0] <- 0L
+      SE.def <- sqrt(cov.diag)            
+      tval.def <- ifelse(SE.def != 0, b.def/SE.def, 0L)
+      
+      coefficients <- rbind(coefficients, cbind(b.def, SE.def, tval.def, 2 * pt(abs(tval.def),
+                            x$df.residual, lower.tail = FALSE)))
+    }  
     ############################################################################
     coefficients[,4][coefficients[,4] < 2e-16] <- 2e-16
     printCoefmat(coefficients, digits = digits, signif.stars = signif.stars, 

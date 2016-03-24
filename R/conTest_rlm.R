@@ -348,8 +348,8 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
         names(b.constr.alt) <- vnames
         out3 <- robustWaldScores(x = X, y = Y, beta0 = b.constr, 
                                  betaA = b.constr.alt, scale = scale,
-                                 Amat = Amat[1:meq.alt,,drop=FALSE], meq = meq.alt, 
-                                 bvec = bvec[1:meq.alt])
+                                 Amat = Amat, meq = meq.alt,                    #[1:meq.alt,,drop=FALSE]
+                                 bvec = bvec)
         Ts <- out3$Rscore
         cov <- out3$V
       }
@@ -567,8 +567,8 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
         names(b.constr.alt) <- vnames
         out3 <- robustWaldScores(x = X, y = Y, beta0 = b.constr, 
                                  betaA = b.constr.alt, scale = scale, 
-                                 Amat = Amat[1:meq.alt,,drop=FALSE], meq = meq.alt, 
-                                 bvec = bvec[1:meq.alt])
+                                 Amat = Amat, meq = meq.alt,                    #[1:meq.alt,,drop=FALSE] ?
+                                 bvec = bvec)
         Ts <- out3$RWald
         cov <- out3$V
       }

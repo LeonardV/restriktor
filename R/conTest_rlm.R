@@ -283,8 +283,8 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
     out0 <- robustWaldScores(x = X, y = Y, beta0 = b.eqconstr, 
-                             betaA = b.constr, scale = scale, Amat = Amat, 
-                             bvec = bvec, meq = meq)
+                             betaA = b.constr, scale = scale, Amat = Amatg, 
+                             bvec = bvecg, meq = meq)
     Ts <- out0$Rscore
     cov <- out0$V
   } else if (type == "A") {
@@ -502,8 +502,8 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
     out0 <- robustWaldScores(x = X, y = Y, beta0 = b.eqconstr, 
-                             betaA = b.constr, scale = scale, Amat = Amat, 
-                             bvec = bvec, meq = meq)
+                             betaA = b.constr, scale = scale, Amat = Amatg, 
+                             bvec = bvecg, meq = meq)
     Ts <- out0$RWald
     cov <- out0$V
   } else if (type == "A") {

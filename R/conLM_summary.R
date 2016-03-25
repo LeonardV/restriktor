@@ -42,25 +42,19 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
     dimnames(coefficients) <- list(names(x$model.org$coefficients),
                                    c("Estimate", "Std. Error", "t value", "Pr(>|t|)"))
     
-    #cat("\nDefined new paramters:\n")
-    
-    ######################### defined parameters ###############################
+    ######################### new defined parameters ############################
     if (!(is.null(x$partable)) && any(x$partable$op == ":=")) {
-      
       b.def <- x$CON$def.function(coef(x))
-      JAC <- lavaan:::lav_func_jacobian_simple(func = x$CON$def.function, x = coef(x))
+      JAC <- lav_func_jacobian_simple(func = x$CON$def.function, x = coef(x))
       def.cov <- JAC %*% vcovHC %*% t(JAC)
       diag.def.cov <- diag(def.cov)
       diag.def.cov[ diag.def.cov < 0 ] <- as.numeric(NA)
       SE.def <- sqrt(diag.def.cov)
-       
       tval.def <- ifelse(SE.def != 0, b.def/SE.def, 0L)
       coefficients <- rbind(coefficients, cbind(b.def, SE.def, tval.def, 2 * pt(abs(tval.def),
                             x$df.residual, lower.tail = FALSE)))
       }  
-      
     ############################################################################
-    
       coefficients[,4][coefficients[,4] < 2e-16] <- 2e-16
     printCoefmat(coefficients, digits = digits, signif.stars = signif.stars, 
                  na.print = "NA")

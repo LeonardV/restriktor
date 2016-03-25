@@ -7,6 +7,10 @@ restriktor <- function(model, constraints, se = "default",
     stop("Restriktor ERROR: weights are not possible (yet).")
     }
   }
+  
+  if (any(c("glm", "mlm") %in% class(model))) 
+    stop("Restriktor does not work (yet) on classes glm or mlm.")
+  
   # rename for internal use
   bvec <- rhs 
   meq <- neq

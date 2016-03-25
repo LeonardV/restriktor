@@ -45,35 +45,61 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
     #cat("\nDefined new paramters:\n")
     
     ######################### defined parameters ###############################
-    if (!(is.null(x$partable))) {
-      ineq.idx <- which(x$partable$op == ">" | x$partable$op == "<")
-      def.idx <- which(x$partable$op == ":=")
-      lhs.labels <- all.vars(parse(file = "", text = x$partable$lhs[ineq.idx]))
-      rhs.labels <- all.vars(parse(file = "", text = x$partable$rhs[ineq.idx]))
-      ineq.labels <- unique(c(lhs.labels, rhs.labels))
-      def.names <- as.character(x$partable$lhs[def.idx])
-      d.idx <- which(ineq.labels %in% def.names)
-      #ineq.labels <- ineq.labels[-d.idx]
+    coefficients.def.ciq <- coefficients.def.ceq <- NULL
+    if (!(is.null(x$partable)) && any(x$partable$op == ":=")) {
+      #equality constraints defined parameters
       if (x$meq > 0L) {
-        H <- x$Amat[-c(1:x$meq),]  
-        bvec <- x$bvec[-c(1:x$meq)]  
-      } else {
-        H <- x$Amat
-        bvec <- x$bvec
-      }
-      b.def <- as.numeric(H[d.idx,,drop=FALSE] %*% coef(x)) - bvec[d.idx] 
-      b.def[abs(b.def) < 1e-14] <- 0L
-        names(b.def) <- def.names
-      cov.diag <- diag(H[d.idx,,drop=FALSE] %*% vcovHC %*% t(H[d.idx,,drop=FALSE]))
-      cov.diag[cov.diag < 0] <- 0L
-      SE.def <- sqrt(cov.diag)            
-      tval.def <- ifelse(SE.def != 0, b.def/SE.def, 0L)
+        eq.idx <- which(x$partable$op == "==")
+        def.idx <- which(x$partable$op == ":=")
+        lhs.labels <- all.vars(parse(file = "", text = x$partable$lhs[eq.idx]))
+        rhs.labels <- all.vars(parse(file = "", text = x$partable$rhs[eq.idx]))
+        eq.labels <- unique(c(lhs.labels, rhs.labels))
+        def.names <- as.character(x$partable$lhs[def.idx])
+        d.idx <- which(eq.labels%in%def.names)
+        
+        H.ceq <- x$Amat[1:x$meq,,drop=FALSE]  
+        bvec.ceq <- x$bvec[1:x$meq]  
+        #"new > 0; x2 > 0; new2 := 2*x3; new2 == 1; new := 2*x4 + x1"
+        b.def.ceq <- as.numeric(H.ceq[d.idx,,drop=FALSE] %*% coef(x)) #- bvec.ceq[d.idx]                          #is this correct?
+          b.def.ceq[abs(b.def.ceq) < 1e-14] <- 0L
+          n.idx <- which(eq.labels%in%def.names)
+          names(b.def.ceq) <- eq.labels[n.idx]
+        cov.diag <- diag(H.ceq[d.idx,,drop=FALSE] %*% vcovHC %*% t(H.ceq[d.idx,,drop=FALSE]))
+          cov.diag[cov.diag < 0] <- 0L
+        SE.def.ceq <- sqrt(cov.diag)            
+        tval.def.ceq <- ifelse(SE.def.ceq != 0, b.def.ceq/SE.def.ceq, 0L)
+        coefficients.def.ceq <- rbind(cbind(b.def.ceq, SE.def.ceq, tval.def.ceq, 2 * pt(abs(tval.def.ceq),
+                                            x$df.residual, lower.tail = FALSE)))
+      }  
       
-      coefficients <- rbind(coefficients, cbind(b.def, SE.def, tval.def, 2 * pt(abs(tval.def),
-                            x$df.residual, lower.tail = FALSE)))
+      if (any(x$partable$op == "<" | x$partable$op == ">")) {
+        #inequality constraints defined parameters
+        ineq.idx <- which(x$partable$op == ">" | x$partable$op == "<")
+        def.idx <- which(x$partable$op == ":=")
+        lhs.labels <- all.vars(parse(file = "", text = x$partable$lhs[ineq.idx]))
+        rhs.labels <- all.vars(parse(file = "", text = x$partable$rhs[ineq.idx]))
+        ineq.labels <- unique(c(lhs.labels, rhs.labels))
+        def.names <- as.character(x$partable$lhs[def.idx])
+        d.idx <- which(ineq.labels%in%def.names)
+        
+        H.ciq <- x$Amat[-c(1:x$meq),,drop=FALSE]
+        bvec.ciq <- x$bvec[-c(1:x$meq)]  
+        b.def.ciq <- as.numeric(H.ciq[d.idx,,drop=FALSE] %*% coef(x)) #- bvec.ciq[d.idx] 
+          b.def.ciq[abs(b.def.ciq) < 1e-14] <- 0L
+          n.idx <- which(ineq.labels%in%def.names)
+          names(b.def.ciq) <- ineq.labels[n.idx]
+        cov.diag <- diag(H.ciq[d.idx,,drop=FALSE] %*% vcovHC %*% t(H.ciq[d.idx,,drop=FALSE]))
+          cov.diag[cov.diag < 0] <- 0L
+        SE.def.ciq <- sqrt(cov.diag)            
+        tval.def.ciq <- ifelse(SE.def.ciq != 0, b.def.ciq/SE.def.ciq, 0L)
+        
+        coefficients.def.ciq <- rbind(cbind(b.def.ciq, SE.def.ciq, tval.def.ciq, 2 * pt(abs(tval.def.ciq),
+                                            x$df.residual, lower.tail = FALSE)))  
+      }
     }  
     ############################################################################
-    coefficients[,4][coefficients[,4] < 2e-16] <- 2e-16
+    coefficients <- rbind(coefficients, coefficients.def.ceq, coefficients.def.ciq)
+      coefficients[,4][coefficients[,4] < 2e-16] <- 2e-16
     printCoefmat(coefficients, digits = digits, signif.stars = signif.stars, 
                  na.print = "NA")
     

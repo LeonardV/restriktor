@@ -53,7 +53,7 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
       tval.def <- ifelse(SE.def != 0, b.def/SE.def, 0L)
       coefficients <- rbind(coefficients, cbind(b.def, SE.def, tval.def, 2 * pt(abs(tval.def),
                             x$df.residual, lower.tail = FALSE)))
-      }  
+    }  
     ############################################################################
       coefficients[,4][coefficients[,4] < 2e-16] <- 2e-16
     printCoefmat(coefficients, digits = digits, signif.stars = signif.stars, 

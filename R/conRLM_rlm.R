@@ -84,12 +84,12 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   R2.org <- r2correc <- (yMy - rMr) / (yMy + rMr * (correc - 1))
   #R2.adjusted <- 1 - (1 - r2correc) * ((n - df.int) / df.residual)
 
-
+  temp <- Sestimator(x = X, y = Y, lqs.control= NULL)
+  resid0 <- temp$resid  
+  scale <- temp$scale
+  
+  
   if (all(Amat %*% c(b.unconstr) - bvec >= 0 * bvec) & meq == 0) {
-    temp <- Sestimator(x = X, y = Y, lqs.control= NULL)
-    resid0 <- temp$resid  
-    scale <- temp$scale
-    
     b.constr <- b.unconstr
     ll.out <- con_loglik_lm(X = X, y = Y, b = b.unconstr, detU = 1)
     ll <- ll.out$loglik

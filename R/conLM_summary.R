@@ -71,10 +71,6 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
     } else {
       cat("Constrained model: R2 remains", round(x$R2.org,3),"\n")
     }
-    
-#    if (class(x)[1] == "conRLM") {
-#      cat("Convergence in ")
-#    }
 
   } else if (length(x$b.constr) && !is.null(x$bootout)) {
     if (bootCIs) {
@@ -120,17 +116,26 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
   # multivariate normal distribution function.
   s2unc <- x$s2unc.ml
   X <- model.matrix(x$model.org)[,,drop=FALSE]
-  invW <- kronecker(solve(s2unc), t(X) %*% X)
+  # information matrix0
+  invW <- kronecker(1/(s2unc), t(X) %*% X)
+  # covariance matrix
   W <- solve(invW)
-  Amat <- fit.con$Amat
-
+  
   if (!(nrow(x$Amat) == x$meq)) {
-    LP <- rev(con_wt(fit.con$Amat%*%W%*%t(fit.con$Amat), meq = x$meq))
+    LP <- rev(con_wt(x$Amat%*%W%*%t(x$Amat), meq = x$meq))
     penalty <- 1 + sum( (1:ncol(W)) * c(LP, rep(0, ncol(W)-length(LP))) )
-    goric <- -2*(fit.con$loglik - penalty)
+    
+    # add small sample corrections
+    #    if (type == "GORICCa"){
+    #      penalty <- -0.5*t*N + (0.5*t*N) * (t*N * ((t*N-plp)^2 + 2*t*N + qlp)) / ((t*N - plp)^3) + 0.5*sum((1:ncol(W))*LP[-1]*((t*N) / (t*N-(1:ncol(W)) - 2)))
+    #    }
+    #    if (type == "GORICCb"){
+    #      penalty <- sum(((t*N * (0:ncol(W) + 1)) / (t*N - 0:ncol(W) - 2)) * LP)
+    #    }
+    goric <- -2*(x$loglik - penalty)
     delta <- goric - min(goric)
     goric_weights <- exp(-delta/2) / sum(exp(-delta/2))
-    result_goric <- c(fit.con$loglik, penalty, goric = goric, 
+    result_goric <- c(x$loglik, penalty, goric = goric, 
                           goric_weights = round(goric_weights,3))
       names(result_goric) <- c("Loglik", "Penalty", "Goric", "Weights")
     cat("Generalized Order-Restricted Information Criterion:\n")

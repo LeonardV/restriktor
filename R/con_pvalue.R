@@ -330,17 +330,12 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL, type = "A",
   }
 
 
-############## NEED FIX - NOT IMPLEMENTED YET ################
-mix.boot <- function(object, R = 999, p.distr = c("N", "t", "Chi"), df = 7,
+
+
+mix.boot <- function(object, R = 9999, p.distr = c("N", "t", "Chi"), 
                      parallel = c("no", "multicore", "snow"),
                      ncpus = 1L, cl = NULL, seed = NULL, verbose = FALSE, ...) {
 
-  if(class(object) != "test.lm") {
-    stop("object must be of class test.lm().")
-  }
-  if (missing(parallel)) {
-    parallel <- getOption("boot.parallel", "no")
-  }
   parallel <- match.arg(parallel)
 
   have_mc <- have_snow <- FALSE
@@ -353,28 +348,16 @@ mix.boot <- function(object, R = 999, p.distr = c("N", "t", "Chi"), df = 7,
       ncpus <- 1L
   }
 
-  if (missing(p.distr))
-    p.distr <- getOption("p.distr", "N")
-  p.distr <- match.arg(p.distr)
-
+  s2unc <- object$s2unc
+  X <- model.matrix(object$model.org)[,,drop=FALSE]
+  invW <- kronecker(solve(s2unc), t(X) %*% X)
+  W <- solve(invW)
+  Dmat <- 2*invW
   Amat <- object$Amat
-  meq <- object$meq
-
-  start.idx <- meq + 2
-  idx <- start.idx:ncol(Amat)# + (start.idx - 1))
-  p <- length(coef(object$object.lm))
-  Amatw <- rbind(diag(p)[idx,])
-  idx <- sapply(1:nrow(Amatw), function(x) which(Amatw[x,] == 1))
   bvec <- object$bvec
-  if(meq > 0L) {
-    bvec <- object$bvec[-meq]
-  }
-
-  X <- model.matrix(object$object.lm)[,,drop=FALSE]
-  n <- dim(X)[1]
-  beta.unconstr <- coef(object$object.lm)
-
-  posPar <- matrix(as.numeric(NA), R, nrow(Amat)-meq)
+  meq <- object$meq
+  
+  iact <- vector("numeric", ncol(Amat))
   fn <- function(b) {
     if (verbose)
       cat("iteration =", b, "\n")
@@ -383,23 +366,20 @@ mix.boot <- function(object, R = 999, p.distr = c("N", "t", "Chi"), df = 7,
     if (!exists(".Random.seed", envir = .GlobalEnv))
       runif(1)
     RNGstate <- .Random.seed
-    if (p.distr == "N") {
-      ystar <- rnorm(n, 0, 1)
+    
+    # add rmvtnorm
+    Z <- rmvnorm(n = 1, mean = rep(0, ncol(W)), sigma=W)
+    
+    dvec <- 2*(Z %*% invW)
+    QP <- restriktor:::con_my_solve_QP(Dmat = Dmat, dvec = dvec, Amat = t(Amat),
+                                       bvec = bvec, meq = meq)
+    
+    if (QP$iact[1] == 0) {
+      return(0) 
+    } else { 
+      return(length(QP$iact))
     }
-    else if (p.distr == "t") {
-      ystar <- rt(n, df = df)
-    }
-    else if (p.distr == "Chi") {
-      ystar <- rchisq(n, df = df)
-    }
-
-    beta.constr <- constr.solve(beta.unconstr = beta.unconstr, x = X,
-                                y = cbind(ystar),
-                                Amat = Amatw, bvec = bvec, meq = 0L)$solution
-    beta.constr[abs(beta.constr) < sqrt(.Machine$double.eps)] <- 0L
-    OUT <- beta.constr[idx]
-
-    OUT
+    
   }
 
   RR <- sum(R)
@@ -424,17 +404,18 @@ mix.boot <- function(object, R = 999, p.distr = c("N", "t", "Chi"), df = 7,
   error.idx <- integer(0)
   for (b in seq_len(R)) {
     if (!is.null(res[[b]])) {
-      posPar[b, 1:nrow(Amatw)] <- res[[b]]
+      iact[b] <- res[[b]]
     }
     else {
       error.idx <- c(error.idx, b)
     }
   }
-  posPar <- sapply(1:R, function(x) sum(posPar[x,] > 0L))
-  wt.bar <- sapply(nrow(Amatw):0, function(x) sum(posPar == x)/R)
-    names(wt.bar) <- nrow(Amatw):0
+  dimsol <- ncol(W) - iact
+  #wt <- sapply(1:(ncol(W)+1), function(x) sum(x == (dimsol+1)))/R
+  wt <- rev(sapply(1:(ncol(W)), function(x) sum(x == (dimsol)))/R)
+    names(wt) <- nrow(Amat):0
 
-  OUT <- wt.bar
+  OUT <- wt
 
   OUT
 }

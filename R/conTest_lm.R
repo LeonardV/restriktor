@@ -34,10 +34,7 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   b.constr <- object$b.constr
   b.eqconstr <- NULL
   b.constr.alt <- NULL
-  #iact <- NULL
-  #s2 <- NULL
   Ts <- as.numeric(NA)
- #   names(Ts) <- "F"
   Amat <- object$Amat
   bvec <- object$bvec
   meq <- object$meq
@@ -57,7 +54,7 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
       Amatg <- cbind(rep(0, (g - 1)), diag(rep(1, g - 1))) 
       bvecg <- rep(0, g - 1) 
     } else {
-        stop("Restriktor ERROR: test not applicable for models without intercept.")      
+        stop("Restriktor ERROR: test not ready yet for models without intercept.")      
     } 
     b.eqconstr <- con_solver(b.unconstr, X = X, y = Y, Amat = Amatg,
                                 bvec = bvecg, meq = nrow(Amatg),
@@ -106,7 +103,6 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     if (meq == 0L) {
       Ts <- as.vector(min((Amat %*% b.unconstr - bvec) /
                             sqrt(diag(Amat %*%cov%*% t(Amat)))))
-#      names(Ts) <- "Tbar"
     } else {
       stop("test not applicable with equality constraints.")
     }
@@ -136,8 +132,8 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                           seed = ifelse(is.null(control$seed), 1234, control$seed),
                                           verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   } else if (boot == "mix.weights") {
-    pvalue <- con_pvalue_boot_weights(object, Ts.org = Ts, df.residual = object$df.residual, 
-                                      type = type, Amat =Amat, bvec = bvec, meq = meq, 
+    pvalue <- con_pvalue_boot_weights(object, pbar = "pfbar", Ts.org = Ts, df.residual = object$df.residual, 
+                                      type = type, Amat = Amat, bvec = bvec, meq = meq, 
                                       meq.alt = meq.alt, 
                                       R = ifelse(is.null(control$B), 9999, control$B),
                                       parallel = ifelse(is.null(control$parallel), "no", control$parallel),
@@ -196,7 +192,7 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     stop("type must be \"A\", \"B\", \"C\" or \"global\"")
   }
   
-  if(!(boot %in% c("no", "residual", "model.based", "parametric"))) {
+  if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix.weights"))) {
     stop("ERROR: boot method unknown.")
   }
 
@@ -207,14 +203,13 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   constraints <- object$constraints
   model.org <- object$model.org
   X <- model.matrix(model.org)[,,drop=FALSE]
-#  n <- dim(X)[1]
   Y <- cbind(model.org$model[, attr(model.org$terms, "response")])
-  cov <- vcov(model.org) #Sigma  b.unconstr <- object$b.unconstr
+  cov <- vcov(model.org) #Sigma  
+  b.unconstr <- object$b.unconstr
     vnames <- names(b.unconstr)
   b.constr <- object$b.constr
   b.eqconstr <- NULL
   b.constr.alt <- NULL
- # iact <- NULL
   s2 <- NULL
   Ts <- as.numeric(NA)
     names(Ts) <- "LRT"
@@ -327,8 +322,7 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   if (boot == "no") {
     pvalue <- con_pvalue_Chibar(cov, Ts.org = Ts, object$df.residual, type = type,
                                 Amat, bvec, meq, meq.alt)
-  }
-  else if (boot == "parametric") {
+  } else if (boot == "parametric") {
     pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "LRT",
                                           constraints = constraints, meq.alt = meq.alt,
                                           R = ifelse(is.null(control$B), 9999, control$B),
@@ -339,16 +333,25 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                           cl = ifelse(is.null(control$cl), NULL, control$cl),
                                           seed = ifelse(is.null(control$seed), 1234, control$seed),
                                           verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
-}
-  else if (boot == "model.based") {
+  } else if (boot == "model.based") {
     pvalue <- con_pvalue_boot_model_based(object, Ts.org = Ts, type = type, test = "LRT",
-                                           meq.alt = meq.alt,
-                                           R = ifelse(is.null(control$B), 9999, control$B),
-                                           parallel = ifelse(is.null(control$parallel), "no", control$parallel),
-                                           ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
-                                           cl = ifelse(is.null(control$cl), NULL, control$cl),
-                                           seed = ifelse(is.null(control$seed), 1234, control$seed),
-                                           verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
+                                          meq.alt = meq.alt,
+                                          R = ifelse(is.null(control$B), 9999, control$B),
+                                          parallel = ifelse(is.null(control$parallel), "no", control$parallel),
+                                          ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
+                                          cl = ifelse(is.null(control$cl), NULL, control$cl),
+                                          seed = ifelse(is.null(control$seed), 1234, control$seed),
+                                          verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
+  } else if (boot == "mix.weights") {
+    pvalue <- con_pvalue_boot_weights(object, pbar = "pchibar", Ts.org = Ts, df.residual = object$df.residual, 
+                                      type = type, Amat = Amat, bvec = bvec, meq = meq, 
+                                      meq.alt = meq.alt, 
+                                      R = ifelse(is.null(control$B), 9999, control$B),
+                                      parallel = ifelse(is.null(control$parallel), "no", control$parallel),
+                                      ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
+                                      cl = ifelse(is.null(control$cl), NULL, control$cl),
+                                      seed = ifelse(is.null(control$seed), 1234, control$seed),
+                                      verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   }
 
   OUT <- list(CON = object$CON,

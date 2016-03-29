@@ -332,7 +332,7 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL, type = "A",
 
 
 
-mix.boot <- function(object, R = 9999, p.distr = c("N", "t", "Chi"), 
+mix.boot <- function(object, Amat, bvec, meq, R = 9999, 
                      parallel = c("no", "multicore", "snow"),
                      ncpus = 1L, cl = NULL, seed = NULL, verbose = FALSE, ...) {
 
@@ -353,9 +353,6 @@ mix.boot <- function(object, R = 9999, p.distr = c("N", "t", "Chi"),
   invW <- kronecker(solve(s2unc), t(X) %*% X)
   W <- solve(invW)
   Dmat <- 2*invW
-  Amat <- object$Amat
-  bvec <- object$bvec
-  meq <- object$meq
   
   iact <- vector("numeric", ncol(Amat))
   fn <- function(b) {
@@ -367,19 +364,16 @@ mix.boot <- function(object, R = 9999, p.distr = c("N", "t", "Chi"),
       runif(1)
     RNGstate <- .Random.seed
     
-    # add rmvtnorm
     Z <- rmvnorm(n = 1, mean = rep(0, ncol(W)), sigma=W)
-    
     dvec <- 2*(Z %*% invW)
-    QP <- restriktor:::con_my_solve_QP(Dmat = Dmat, dvec = dvec, Amat = t(Amat),
-                                       bvec = bvec, meq = meq)
+    QP <- con_my_solve_QP(Dmat = Dmat, dvec = dvec, Amat = t(Amat),
+                          bvec = bvec, meq = meq)
     
-    if (QP$iact[1] == 0) {
-      return(0) 
+    if (QP$iact[1] == 0L) {
+      return(0L) 
     } else { 
       return(length(QP$iact))
-    }
-    
+    }    
   }
 
   RR <- sum(R)
@@ -411,7 +405,6 @@ mix.boot <- function(object, R = 9999, p.distr = c("N", "t", "Chi"),
     }
   }
   dimsol <- ncol(W) - iact
-  #wt <- sapply(1:(ncol(W)+1), function(x) sum(x == (dimsol+1)))/R
   wt <- rev(sapply(1:(ncol(W)), function(x) sum(x == (dimsol)))/R)
     names(wt) <- nrow(Amat):0
 
@@ -421,7 +414,7 @@ mix.boot <- function(object, R = 9999, p.distr = c("N", "t", "Chi"),
 }
 
 
-con_pvalue_boot_weights <- function(object, Ts.org, df.residual, type = "type A",
+con_pvalue_boot_weights <- function(object, pbar = "pfbar", Ts.org, df.residual, type = "type A",
                                     Amat, bvec, meq = 0L, meq.alt = 0L, 
                                     R = 9999, p.distr = c("N", "t"),
                                     parallel = c("no", "multicore", "snow"),
@@ -429,32 +422,49 @@ con_pvalue_boot_weights <- function(object, Ts.org, df.residual, type = "type A"
                                     verbose = FALSE) {
   
   # compute weights based on simulation
-  wt.bar <- mix.boot(object, R = R, parallel = parallel, ncpus = ncpus, 
-                     cl = cl, seed = seed, verbose = verbose)
-  
-  if (meq == 0L) {
-    wt.bar <- wt.bar
-  } else if (meq > 0) {
-    wt.bar <- wt.bar[-(1:meq)]
+  if (!(type == "C")) {
+    wt.bar <- mix.boot(object, pbar = pbar, Amat = Amat, bvec = bvec, meq = meq, R = R, 
+                       parallel = parallel, ncpus = ncpus, 
+                       cl = cl, seed = seed, verbose = verbose)
+    
+    if (meq == 0L) {
+      wt.bar <- wt.bar
+    } else if (meq > 0) {
+      wt.bar <- wt.bar[-(1:meq)]
+    }
   }
   
   if (type == "global") {
     # compute df
     df.bar <- ((ncol(Amat) - 1) - nrow(Amat)):((ncol(Amat) - 1) - meq)    
     # p value based on the chi-square distribution
-    pvalue <- 1-pfbar(Ts.org, df1 = df.bar, df2 = df.residual, wt = rev(wt.bar))
+    if (pbar == "pfbar") {
+      pb <- pfbar
+      pvalue <- 1-pb(Ts.org, df1 = df.bar, df2 = df.residual, wt = rev(wt.bar))
+    } else if (pbar == "pchibar") {
+      pb <- pchibar
+      pvalue <- 1-pb(Ts.org, df1 = df.bar, wt = rev(wt.bar))
+    }      
   } else if(type == "A") {
     # compute df
     df.bar <- 0:(nrow(Amat) - meq)
-    # p value based on F-distribution or chi-square distribution
-    pvalue <- 1-pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
-                      wt = rev(wt.bar))
+    if (pbar == "pfbar") {
+      pb <- pfbar
+      pvalue <- 1-pb(Ts.org, df1 = df.bar, df2 = df.residual, wt = rev(wt.bar))
+    } else if (pbar == "pchibar") {
+      pb <- pchibar
+      pvalue <- 1-pb(Ts.org, df1 = df.bar, wt = rev(wt.bar))
+    }
   } else if (type == "B") {
     # compute df
     df.bar <- (meq - meq.alt):(nrow(Amat) - meq.alt)#meq:nrow(Amat)
-    # p value based on F-distribution or chi-square distribution
-    pvalue <- 1-pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
-                      wt = wt.bar)
+    if (pbar == "pfbar") {
+      pb <- pfbar
+      pvalue <- 1-pb(Ts.org, df1 = df.bar, df2 = df.residual, wt = wt.bar)
+    } else if (pbar == "pchibar") {
+      pb <- pchibar
+      pvalue <- 1-pb(Ts.org, df1 = df.bar, wt = wt.bar)
+    }    
   } else if (type == "C") {
     # t-distribution
     pvalue <- 1-pt(Ts.org, df.residual)

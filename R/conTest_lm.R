@@ -27,8 +27,8 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   model.org <- object$model.org
   X <- model.matrix(model.org)[,,drop=FALSE]
   Y <- model.org$model[, attr(model.org$terms, "response")]
-  #n <- dim(X)[1]
-  cov <- object$Sigma
+  #unconstrained vcov
+  cov <- vcov(model.org) #Sigma
   b.unconstr <- object$b.unconstr
   vnames <- names(b.unconstr)
   b.constr <- object$b.constr
@@ -199,8 +199,7 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   X <- model.matrix(model.org)[,,drop=FALSE]
 #  n <- dim(X)[1]
   Y <- cbind(model.org$model[, attr(model.org$terms, "response")])
-  cov <- object$Sigma
-  b.unconstr <- object$b.unconstr
+  cov <- vcov(model.org) #Sigma  b.unconstr <- object$b.unconstr
     vnames <- names(b.unconstr)
   b.constr <- object$b.constr
   b.eqconstr <- NULL

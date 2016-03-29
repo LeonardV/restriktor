@@ -48,13 +48,14 @@ conLM.lm <- function(model, constraints, se = "default",
     stop("length coefficients and ncol(Amat) must be identical")
   }
 
+  # compute log-likelihood
+  ll.out <- con_loglik_lm(X = X, y = Y, b = b.unconstr, detU = 1)
+  ll <- ll.out$loglik
+  s2unc.ml <- s2.ml <- as.numeric(ll.out$Sigma)
+  s2unc <- s2 <- summary(model)$sigma^2
+  
   # check if the constraints are in line with the data!
   if (all(Amat %*% c(b.unconstr) - bvec >= 0 * bvec) & meq == 0) {
-    # compute log-likelihood
-    ll.out <- con_loglik_lm(X = X, y = Y, b = b.unconstr, detU = 1)
-    ll <- ll.out$loglik
-    s2.ml <- as.numeric(ll.out$Sigma)
-    s2 <- summary(model)$sigma^2
     b.constr <- b.unconstr
 
     OUT <- list(CON = NULL,
@@ -68,8 +69,8 @@ conLM.lm <- function(model, constraints, se = "default",
                 R2.org = R2.org,
                 R2.reduced = R2.org,
                 df.residual = model$df.residual,
-                s2 = s2,
-                loglik = ll, s2.ml = s2.ml,
+                s2 = s2, s2unc = s2,
+                loglik = ll, s2.ml = s2.ml, s2unc.ml = s2.ml,
                 Sigma = vcov(model),
                 Amat = Amat, bvec = bvec, meq = meq, iact = NULL, bootout = NULL)  
   } else {
@@ -122,8 +123,8 @@ conLM.lm <- function(model, constraints, se = "default",
                 R2.org = R2.org,
                 R2.reduced = R2.reduced,
                 df.residual = model$df.residual,
-                s2 = s2,
-                loglik = ll, s2.ml = s2.ml,
+                s2 = s2, s2unc = summary(model)$sigma^2,
+                loglik = ll, s2.ml = s2.ml, s2unc.ml = s2unc.ml,
                 Sigma = vcov(model),
                 Amat = Amat, bvec = bvec, meq = meq, iact = out.qp$iact,
                 bootout = NULL)

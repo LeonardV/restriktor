@@ -58,7 +58,7 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
       coefficients[,4][coefficients[,4] < 2e-16] <- 2e-16
     printCoefmat(coefficients, digits = digits, signif.stars = signif.stars, 
                  na.print = "NA")
-    
+     
     cat("\n")
     if (se == "const") {
       cat("Homoskedastic standard errors\n")
@@ -75,7 +75,7 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
 #    if (class(x)[1] == "conRLM") {
 #      cat("Convergence in ")
 #    }
-    
+
   } else if (length(x$b.constr) && !is.null(x$bootout)) {
     if (bootCIs) {
       cis <- matrix(0, length(x$b.constr), 2)
@@ -112,5 +112,29 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
     cat("No coefficients\n")
   }  
   cat("\n")
+
+#  cat("\n")
+  # acknowledgment: code taken from the goric package.
+  # The goric_penalty() function uses a simulation approach for calculating the
+  # level probabilities, while these weights can be calculated using the 
+  # multivariate normal distribution function.
+  s2unc <- x$s2unc.ml
+  X <- model.matrix(x$model.org)[,,drop=FALSE]
+  invW <- kronecker(solve(s2unc), t(X) %*% X)
+  W <- solve(invW)
+  Amat <- fit.con$Amat
+
+  if (!(nrow(x$Amat) == x$meq)) {
+    LP <- rev(con_wt(fit.con$Amat%*%W%*%t(fit.con$Amat), meq = x$meq))
+    penalty <- 1 + sum( (1:ncol(W)) * c(LP, rep(0, ncol(W)-length(LP))) )
+    goric <- -2*(fit.con$loglik - penalty)
+    delta <- goric - min(goric)
+    goric_weights <- exp(-delta/2) / sum(exp(-delta/2))
+    result_goric <- c(fit.con$loglik, penalty, goric = goric, 
+                          goric_weights = round(goric_weights,3))
+      names(result_goric) <- c("Loglik", "Penalty", "Goric", "Weights")
+    cat("Generalized Order-Restricted Information Criterion:\n")
+    print(result_goric, digits = digits)
+  }
   invisible(x)
 }

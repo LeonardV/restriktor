@@ -207,8 +207,6 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
 
 
 
-
-
 conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
                              control = NULL, tol = sqrt(.Machine$double.eps), ...) {
   

@@ -2,9 +2,11 @@ con_solver <- function(b.unconstr, X, y, Amat, bvec, meq,
                        maxit = 10000, tol = sqrt(.Machine$double.eps)) {
   val <- 0
   y <- as.matrix(y)
+  n <- dim(X)[1]
+  p <- dim(X)[2]
   for (i in 1:maxit) {
     Sigma <- (t(y - X%*%matrix(b.unconstr, ncol = ncol(y))) %*%
-                (y - X%*%matrix(b.unconstr, ncol = ncol(y)))) / (nrow(X)) #ML!
+                (y - X%*%matrix(b.unconstr, ncol = ncol(y)))) / (n-p)           #ML divided by n
     yVx <- kronecker(solve(Sigma), t(X)) %*% as.vector(y)
     dvec <- 2*yVx
     Dmat <- 2*kronecker(solve(Sigma), t(X) %*% X)

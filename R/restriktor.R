@@ -2,12 +2,6 @@ restriktor <- function(model, constraints, se = "default",
                        rhs = NULL, neq = NULL, control = NULL,
                        debug = FALSE, ...) {
 
-  if (!(is.null(weights(model)))) {
-    if(!all(weights(model) == 1L)) {
-    stop("Restriktor ERROR: weights are not possible (yet).")
-    }
-  }
-  
   if (any(c("glm", "mlm") %in% class(model))) 
     stop("Restriktor does not work (yet) on classes glm or mlm.")
   
@@ -47,7 +41,7 @@ restriktor <- function(model, constraints, se = "default",
     bvecw <- con_constraints_rhs_bvec(model, constraints=constraints)
     # inequality constraints
     Amatw <- con_constraints_con_amat(model, constraints = constraints)
-  }  else if (is.vector(constraints) | is.matrix(constraints)) {
+  }  else if (!is.character(constraints)) {
       if (is.vector(constraints)) {
         constraints <- rbind(constraints)
       }

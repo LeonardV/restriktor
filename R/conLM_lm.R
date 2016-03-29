@@ -7,23 +7,15 @@ conLM.lm <- function(model, constraints, se = "default",
   if (!("lm" %in% class(model))) {
     stop("ERROR: model must be of class lm.")
   }
-  # If "default", conventional standard errors are computed based on inverting
-  # the expected augmented information matrix.
-#  if(!(se %in% c("default","standard","HC3","const", "HC", "HC0", "HC1", "HC2", "HC4", 
-#                 "HC4m", "HC5","boot.residual","boot.model.based","boot.standard")))
-#    stop("ERROR: se must be \"HC3\", \"const\", \"HC\", \"HC0\", \"HC1\", 
-#         \"HC2\", \"HC4\", \"HC4m\", \"HC5\", \"boot.model.based\" or \"boot.standard\"")
   if (se == "default" | se == "standard") {
     se <- "const"
   } else if (se == "boot.residual") {
     se <- "boot.model.based"
   }
-
   if (missing(constraints) && is.null(bvec)) { 
     bvec <- rep(0L, nrow(Amat)) 
   }
-
-  # acknowledgement: code taken from ic.infer package (Ulrike Groemping)
+  # acknowledgement: code taken from ic.infer package 
   if (nrow(Amat) - meq - 2 > 2) {
     if (!is.numeric(try(matrix(0, floor((nrow(Amat) - meq -
                                            2)/2), choose(nrow(Amat) - meq, floor((nrow(Amat) - meq -
@@ -79,15 +71,13 @@ conLM.lm <- function(model, constraints, se = "default",
                 s2 = s2,
                 loglik = ll, s2.ml = s2.ml,
                 Sigma = vcov(model),
-                Amat = Amat, bvec = bvec, meq = meq, iact = NULL, bootout = NULL)
-
-  #  if(is.null(Amat)) { OUT$CON <- CON }
+                Amat = Amat, bvec = bvec, meq = meq, iact = NULL, bootout = NULL)  
   } else {
     # compute constrained estimates for lm() and mlm() - FIXME for weights
     out.qp <- con_solver(b.unconstr, X = X, y = Y, Amat = Amat,
-                            bvec = bvec, meq = meq, tol = tol,
-                            maxit = ifelse(is.null(control$maxit), 1e04,
-                                           control$maxit))
+                         bvec = bvec, meq = meq, tol = tol,
+                         maxit = ifelse(is.null(control$maxit), 1e04, 
+                                        control$maxit))
     b.constr <- matrix(out.qp$solution, ncol = ncol(Y))
     b.constr[abs(b.constr) < tol] <- 0L
 
@@ -97,7 +87,7 @@ conLM.lm <- function(model, constraints, se = "default",
 
     # lm()
     if (ncol(Y) == 1L) {
-      residuals <- as.numeric(t(Y - (X %*% b.constr)))
+      residuals <- as.numeric(t(Y - (X%*%b.constr)))
       s2 <- as.numeric(sum(residuals^2) / (n-p))
       fitted <- t(X%*%b.constr)
       b.constr <- c(b.constr)
@@ -116,7 +106,7 @@ conLM.lm <- function(model, constraints, se = "default",
     } else {
       s2 <- NULL
       s2.ml <- NULL
-      residuals <- Y - (X %*% b.constr)
+      residuals <- Y - (X%*%b.constr)
       fitted <- X%*%b.constr
       rownames(b.constr) <- row.names
       R2.org <- R2.reduced <- NULL

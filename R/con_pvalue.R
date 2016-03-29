@@ -334,7 +334,7 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL, type = "A",
 
 mix.boot <- function(object, Amat, bvec, meq, R = 9999, 
                      parallel = c("no", "multicore", "snow"),
-                     ncpus = 1L, cl = NULL, seed = NULL, verbose = FALSE, ...) {
+                     ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, ...) {
 
   parallel <- match.arg(parallel)
 

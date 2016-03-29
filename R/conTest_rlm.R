@@ -58,6 +58,7 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     #fit inequality constrained robust model
     call.rlm <- as.list(model.org$call)
     call.rlm <- call.rlm[-1]
+    call.rlm[["weights"]] <- weights(model.org)     
 #    if (is.null(call.rlm[["formula"]])) {
       call.rlm[["data"]] <- NULL
       call.rlm[["x"]] <- NULL
@@ -80,6 +81,7 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   } else if (type == "A") {
     call.rlm <- as.list(model.org$call)
     call.rlm <- call.rlm[-1]
+    call.rlm[["weights"]] <- weights(model.org) 
  #   if (is.null(call.rlm[["formula"]])) {
       call.rlm[["data"]] <- NULL
       call.rlm[["x"]] <- NULL
@@ -110,6 +112,7 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
       if(meq.alt != 0L && meq.alt <= meq) {
         call.rlm <- as.list(model.org$call)
         call.rlm <- call.rlm[-1]
+        call.rlm[["weights"]] <- weights(model.org)
 #        if (is.null(call.rlm[["formula"]])) {
           call.rlm[["data"]] <- NULL
           call.rlm[["x"]] <- NULL
@@ -265,6 +268,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     #fit inequality constrained robust model
     call.rlm <- as.list(model.org$call)
     call.rlm <- call.rlm[-1]
+    call.rlm[["weights"]] <- weights(model.org)
     #    if (is.null(call.rlm[["formula"]])) {
     call.rlm[["data"]] <- NULL
     call.rlm[["x"]] <- NULL
@@ -290,6 +294,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   } else if (type == "A") {
     call.rlm <- as.list(model.org$call)
     call.rlm <- call.rlm[-1]
+    call.rlm[["weights"]] <- weights(model.org)
     #   if (is.null(call.rlm[["formula"]])) {
     call.rlm[["data"]] <- NULL
     call.rlm[["x"]] <- NULL
@@ -327,6 +332,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
       if(meq.alt != 0L && meq.alt <= meq) {
         call.rlm <- as.list(model.org$call)
         call.rlm <- call.rlm[-1]
+        call.rlm[["weights"]] <- weights(model.org)
         #        if (is.null(call.rlm[["formula"]])) {
         call.rlm[["data"]] <- NULL
         call.rlm[["x"]] <- NULL
@@ -484,6 +490,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     #fit inequality constrained robust model
     call.rlm <- as.list(model.org$call)
     call.rlm <- call.rlm[-1]
+    call.rlm[["weights"]] <- weights(model.org)
     #    if (is.null(call.rlm[["formula"]])) {
     call.rlm[["data"]] <- NULL
     call.rlm[["x"]] <- NULL
@@ -509,6 +516,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   } else if (type == "A") {
     call.rlm <- as.list(model.org$call)
     call.rlm <- call.rlm[-1]
+    call.rlm[["weights"]] <- weights(model.org)
     #   if (is.null(call.rlm[["formula"]])) {
     call.rlm[["data"]] <- NULL
     call.rlm[["x"]] <- NULL
@@ -546,6 +554,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
       if(meq.alt != 0L && meq.alt <= meq) {
         call.rlm <- as.list(model.org$call)
         call.rlm <- call.rlm[-1]
+        call.rlm[["weights"]] <- weights(model.org)
         #        if (is.null(call.rlm[["formula"]])) {
         call.rlm[["data"]] <- NULL
         call.rlm[["x"]] <- NULL
@@ -702,6 +711,7 @@ conTestWald2.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     #fit inequality constrained robust model
     call.rlm <- as.list(model.org$call)
     call.rlm <- call.rlm[-1]
+    call.rlm[["weights"]] <- weights(model.org)
     #    if (is.null(call.rlm[["formula"]])) {
     call.rlm[["data"]] <- NULL
     call.rlm[["x"]] <- NULL
@@ -725,6 +735,7 @@ conTestWald2.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   } else if (type == "A") {
     call.rlm <- as.list(model.org$call)
     call.rlm <- call.rlm[-1]
+    call.rlm[["weights"]] <- weights(model.org)
     #   if (is.null(call.rlm[["formula"]])) {
     call.rlm[["data"]] <- NULL
     call.rlm[["x"]] <- NULL
@@ -756,6 +767,7 @@ conTestWald2.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
       if(meq.alt != 0L && meq.alt <= meq) {
         call.rlm <- as.list(model.org$call)
         call.rlm <- call.rlm[-1]
+        call.rlm[["weights"]] <- weights(model.org)
         #        if (is.null(call.rlm[["formula"]])) {
         call.rlm[["data"]] <- NULL
         call.rlm[["x"]] <- NULL

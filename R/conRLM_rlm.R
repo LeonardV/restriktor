@@ -105,22 +105,21 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 residuals = resid(model),
                 init.resid = resid0,
                 fitted.values = fitted(model),
-                weights = model$weights,
+                weights = weights(model),
                 R2.org = R2.org,
                 R2.reduced = R2.org,
                 df.residual = df.residual,
                 scale = scale, 
                 s2 = s2,  
                 loglik = ll, 
-                Sigma = vcov(model),                                      #probably not robust!
+                Sigma = vcov(model),                                            #probably not so robust!
                 Amat = Amat, bvec = bvec, meq = meq, iact = 0L,
                 converged = model$converged, iter = NULL,
                 bootout = NULL)
   } else {
     call.rlm <- as.list(model$call)
     call.rlm <- call.rlm[-1]
-    # the default is M-estimation with psi = psi.huber loss function.
-    # only psi.bisquare is applicable for now.
+    call.rlm[["weights"]] <- weights(model) 
     
     #fit inequality constrained robust model
 #    if (is.null(call.rlm[["formula"]])) {

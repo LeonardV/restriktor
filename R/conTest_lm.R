@@ -15,7 +15,7 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     stop("type must be \"A\", \"B\", \"C\" or \"global\"")
   }
 
-  if(!(boot %in% c("no", "residual", "model.based", "parametric"))) {
+  if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix.weights"))) {
     stop("ERROR: boot method unknown.")
   }
 
@@ -135,6 +135,16 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                           cl = ifelse(is.null(control$cl), NULL, control$cl),
                                           seed = ifelse(is.null(control$seed), 1234, control$seed),
                                           verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
+  } else if (boot == "mix.weights") {
+    pvalue <- con_pvalue_boot_weights(object, Ts.org = Ts, df.residual = object$df.residual, 
+                                      type = type, Amat =Amat, bvec = bvec, meq = meq, 
+                                      meq.alt = meq.alt, 
+                                      R = ifelse(is.null(control$B), 9999, control$B),
+                                      parallel = ifelse(is.null(control$parallel), "no", control$parallel),
+                                      ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
+                                      cl = ifelse(is.null(control$cl), NULL, control$cl),
+                                      seed = ifelse(is.null(control$seed), 1234, control$seed),
+                                      verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   }
 
   OUT <- list(CON = object$CON,

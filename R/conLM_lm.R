@@ -51,9 +51,7 @@ conLM.lm <- function(model, constraints, se = "default",
   # compute log-likelihood
   ll.out <- con_loglik_lm(X = X, y = Y, b = b.unconstr, detU = 1)
   ll <- ll.out$loglik
-  s2unc.ml <- s2.ml <- as.numeric(ll.out$Sigma)
-  s2unc <- s2 <- summary(model)$sigma^2
-  
+  s2 <- so$sigma^2
   # check if the constraints are in line with the data!
   if (all(Amat %*% c(b.unconstr) - bvec >= 0 * bvec) & meq == 0) {
     b.constr <- b.unconstr
@@ -69,9 +67,9 @@ conLM.lm <- function(model, constraints, se = "default",
                 R2.org = R2.org,
                 R2.reduced = R2.org,
                 df.residual = model$df.residual,
-                s2 = s2, s2unc = s2,
-                loglik = ll, s2.ml = s2.ml, s2unc.ml = s2.ml,
-                Sigma = vcov(model),
+                s2.unc = so$sigma^2, s2.unc.ml = ll.out$Sigma,
+                s2 = s2, s2.ml = ll.out$Sigma, 
+                loglik = ll, Sigma = vcov(model),
                 Amat = Amat, bvec = bvec, meq = meq, iact = NULL, bootout = NULL)  
   } else {
     # compute constrained estimates for lm() and mlm() 
@@ -82,17 +80,23 @@ conLM.lm <- function(model, constraints, se = "default",
     b.constr <- matrix(out.qp$solution, ncol = ncol(Y))
     b.constr[abs(b.constr) < tol] <- 0L
 
-    ll.out <- con_loglik_lm(X = X, y = Y, b = b.constr, detU = 1)
-    ll <- ll.out$loglik
-    s2.ml <- as.numeric(ll.out$Sigma)
-
+    conll.out <- con_loglik_lm(X = X, y = Y, b = b.constr, detU = 1)
+    conll <- conll.out$loglik
+    fitted <- model.matrix(model) %*% b.constr
+    residuals <- Y - fitted
+    
+    p2 <- 0L
+    if (meq > 0L) {
+      p2 <- length((1:meq)[bvec == 0])  
+    }
+    s2 <- sum(residuals^2) / (n-(p-p2))
+    
     # lm()
     if (ncol(Y) == 1L) {
-      residuals <- as.numeric(t(Y - (X%*%b.constr)))
-      s2 <- as.numeric(sum(residuals^2) / (n-p))
-      fitted <- t(X%*%b.constr)
+#      fitted <- model.matrix(model) %*% b.constr
+#      residuals <- Y - fitted
       b.constr <- c(b.constr)
-        names(b.constr) <- col.names
+      names(b.constr) <- col.names
 
       # compute constrained R^2, acknowledgement: code taken from ic.infer package (Ulrike Groemping)
       R2.reduced <- 1 - sum(residuals^2)/sum((Y - mean(Y))^2)
@@ -105,12 +109,11 @@ conLM.lm <- function(model, constraints, se = "default",
         R2.reduced <- 1 - sum(weights(model) * residuals^2)/sum(weights(model) * Y^2)
 
     } else {
-      s2 <- NULL
-      s2.ml <- NULL
-      residuals <- Y - (X%*%b.constr)
-      fitted <- X%*%b.constr
+      fitted <- model.matrix(model) %*% b.constr
+      residuals <- Y - fitted
       rownames(b.constr) <- row.names
       R2.org <- R2.reduced <- NULL
+      se <- "no"
     }
 
     OUT <- list(CON = NULL,
@@ -123,9 +126,9 @@ conLM.lm <- function(model, constraints, se = "default",
                 R2.org = R2.org,
                 R2.reduced = R2.reduced,
                 df.residual = model$df.residual,
-                s2 = s2, s2unc = summary(model)$sigma^2,
-                loglik = ll, s2.ml = s2.ml, s2unc.ml = s2unc.ml,
-                Sigma = vcov(model),
+                s2.unc = so$sigma^2, s2.unc.ml = ll.out$Sigma,
+                s2 = s2, s2.ml = conll.out$Sigma, 
+                loglik = conll, Sigma = vcov(model),
                 Amat = Amat, bvec = bvec, meq = meq, iact = out.qp$iact,
                 bootout = NULL)
   }

@@ -88,13 +88,13 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   resid0 <- temp$resid  
   scale <- temp$scale
   
-  ll.out <- con_loglik_lm(X = X, y = Y, b = b.unconstr, detU = 1)
-  ll <- ll.out$loglik
-  s2unc.ml <- s2.ml <- ll.out$Sigma
-  tau.hat <- so$stddev  
-  s2unc <- s2 <- tau.hat^2
-  
   if (all(Amat %*% c(b.unconstr) - bvec >= 0 * bvec) & meq == 0) {
+    
+    ll.out <- con_loglik_lm(X = X, y = Y, b = b.unconstr, detU = 1)
+    ll <- ll.out$loglik
+    s2.ml <- ll.out$Sigma
+    tau.hat <- so$stddev  
+    s2 <- tau.hat^2
     b.constr <- b.unconstr
         
     OUT <- list(CON = NULL,
@@ -110,7 +110,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 R2.reduced = R2.org,
                 df.residual = df.residual,
                 scale = scale, 
-                s2 = s2, s2unc = s2, s2.ml = s2.ml, s2unc.ml = s2unc.ml,  
+                s2 = s2, s2.ml = s2.ml, 
                 loglik = ll, 
                 Sigma = vcov(model),                                            #probably not so robust!
                 Amat = Amat, bvec = bvec, meq = meq, iact = 0L,
@@ -146,14 +146,9 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     ll.out <- con_loglik_lm(X = X, y = Y, b = b.constr, detU = 1)
     ll <- ll.out$loglik
     s2.ml <- ll.out$Sigma    
-
-    # vector with the indices of the active constraints
-    iact <- rfit$iact
-    #scale parameter
-  #  scale <- model$s
-    #standard deviation
     tau.hat <- MASS:::summary.rlm(rfit)$stddev  
     s2 <- tau.hat^2
+    iact <- rfit$iact
     
     #R2 and adjusted R2, code taken from lmrob() function.
     pred <- rfit$fitted.values
@@ -186,7 +181,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 R2.reduced = R2.reduced,
                 df.residual = df.residual,
                 scale = rfit$s,                                                               
-                s2 = s2, s2unc = s2, s2.ml = s2.ml, s2unc.ml = s2unc.ml,
+                s2 = s2, s2.ml = s2.ml,
                 loglik = ll, 
                 Sigma = vcov(model),                                             #probably not robust???
                 Amat = Amat, bvec = bvec, meq = meq, iact = iact,

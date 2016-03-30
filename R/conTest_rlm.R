@@ -26,7 +26,6 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   Y <- model.org$model[, attr(model.org$terms, "response")]
   cov <- object$Sigma                                                           #use the robust vcovMM?
   scale <- object$scale
-#  tau <- sqrt(object$s2)
   b.unconstr <- object$b.unconstr
   vnames <- names(b.unconstr)
   b.constr <- object$b.constr
@@ -186,7 +185,7 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
               meq = meq,
               meq.alt = meq.alt,
               iact = object$iact,
-              s2 = object$s2,
+              #s2 = object$s2,
               df.residual = object$df.residual,
               cov = cov,
               Ts = Ts,
@@ -235,7 +234,6 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   Y <- model.org$model[, attr(model.org$terms, "response")]
   cov <- object$Sigma                                                           #use the robust vcovMM?
   scale <- model.org$s
-#  tau <- sqrt(object$s2)
   b.unconstr <- object$b.unconstr
   vnames <- names(b.unconstr)
   b.constr <- object$b.constr
@@ -407,7 +405,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
               meq = meq,
               meq.alt = meq.alt,
               iact = object$iact,
-              s2 = object$s2,
+              #s2 = object$s2,
               df.residual = object$df.residual,
               cov = cov,
               Ts = Ts,
@@ -457,7 +455,6 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   Y <- model.org$model[, attr(model.org$terms, "response")]
   cov <- object$Sigma                                                           #use the robust vcovMM?
   scale <- model.org$s
-#  tau <- sqrt(object$s2)
   b.unconstr <- object$b.unconstr
   vnames <- names(b.unconstr)
   b.constr <- object$b.constr
@@ -630,7 +627,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
               meq = meq,
               meq.alt = meq.alt,
               iact = object$iact,
-              s2 = object$s2,
+              #s2 = object$s2,
               df.residual = object$df.residual,
               cov = cov,
               Ts = Ts,
@@ -672,16 +669,14 @@ conTestWald2.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     boot <- "model.based"
   }
   
-#  constraints <- object$constraints
   model.org <- object$model.org
   X <- model.matrix(model.org)[,,drop=FALSE]
   Y <- model.org$model[, attr(model.org$terms, "response")]
-  cov <- object$Sigma  #t(X)%*%X                                                       
-#  scale <- model.org$s
-  tau <- sqrt(object$s2)
+  cov <- object$Sigma
+  tau <- MASS:::summary.rlm(model.org)$stddev  
   b.unconstr <- object$b.unconstr
-  vnames <- names(b.unconstr)
   b.constr <- object$b.constr
+  vnames <- names(b.unconstr)
   Amat <- object$Amat
   bvec <- object$bvec
   meq  <- object$meq
@@ -839,7 +834,7 @@ conTestWald2.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
               meq = meq,
               meq.alt = meq.alt,
               iact = object$iact,
-              s2 = object$s2,
+              #s2 = object$s2,
               df.residual = object$df.residual,
               cov = cov,
               Ts = Ts,

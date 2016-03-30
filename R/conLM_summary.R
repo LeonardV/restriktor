@@ -115,7 +115,7 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
   # The goric_penalty() function uses a simulation approach for calculating the
   # level probabilities, while these weights can be calculated using the 
   # multivariate normal distribution function.
-  s2unc <- x$s2unc.ml
+  s2unc <- x$s2.ml
   X <- model.matrix(x$model.org)[,,drop=FALSE]
   Y <- as.matrix(x$model.org$model[, attr(x$model.org$terms, "response")])
   # information matrix0

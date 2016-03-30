@@ -348,7 +348,7 @@ mix.boot <- function(object, Amat, bvec, meq, R = 9999,
       ncpus <- 1L
   }
 
-  s2unc <- object$s2unc
+  s2unc <- object$s2.unc
   X <- model.matrix(object$model.org)[,,drop=FALSE]
   invW <- kronecker(solve(s2unc), t(X) %*% X)
   W <- solve(invW)

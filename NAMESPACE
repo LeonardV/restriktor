@@ -11,7 +11,8 @@ importFrom("lavaan",
 #           psi.bisquare)
 
 importFrom("mvtnorm",
-           pmvnorm)
+           pmvnorm,
+           rmvnorm)
 
 importFrom("quadprog",
            solve.QP)

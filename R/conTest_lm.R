@@ -27,8 +27,7 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   model.org <- object$model.org
   X <- model.matrix(model.org)[,,drop=FALSE]
   Y <- model.org$model[, attr(model.org$terms, "response")]
-  #unconstrained vcov
-  cov <- vcov(model.org) #Sigma
+  cov <- vcov(model.org) 
   b.unconstr <- object$b.unconstr
   vnames <- names(b.unconstr)
   b.constr <- object$b.constr
@@ -155,7 +154,6 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
               meq = meq,
               meq.alt = meq.alt,
               iact = object$iact,
-              s2 = object$s2,
               df.residual = object$df.residual,
               cov = cov,
               Ts = Ts,
@@ -204,16 +202,14 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   model.org <- object$model.org
   X <- model.matrix(model.org)[,,drop=FALSE]
   Y <- cbind(model.org$model[, attr(model.org$terms, "response")])
-  cov <- vcov(model.org) #Sigma  
+  cov <- vcov(model.org)   
   b.unconstr <- object$b.unconstr
     vnames <- names(b.unconstr)
   b.constr <- object$b.constr
   b.eqconstr <- NULL
   b.constr.alt <- NULL
-  s2 <- NULL
   Ts <- as.numeric(NA)
     names(Ts) <- "LRT"
-
   Amat <- object$Amat
   bvec <- object$bvec
   meq <- object$meq
@@ -247,7 +243,6 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     # test statistics
     ll0.out <- con_loglik_lm(X = X, y = Y, b = b.eqconstr, detU = 1)
     ll0 <- ll0.out$loglik
-    s2 <- ll0.out$Sigma
     
     ll1.out <- con_loglik_lm(X = X, y = Y, b = b.constr, detU = 1)
     ll1 <- ll1.out$loglik
@@ -265,8 +260,7 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     # test statistics
     ll0.out <- con_loglik_lm(X = X, y = Y, b = b.eqconstr, detU = 1)
     ll0 <- ll0.out$loglik
-    s2 <- ll0.out$Sigma
-
+    
     ll1.out <- con_loglik_lm(X = X, y = Y, b = b.constr, detU = 1)
     ll1 <- ll1.out$loglik
     Ts <- -2*(ll0 - ll1)
@@ -276,8 +270,7 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
       # test statistic
       ll0.out <- con_loglik_lm(X = X, y = Y, b = b.constr, detU = 1)
       ll0 <- ll0.out$loglik
-      s2 <- ll0.out$Sigma
-
+    
       ll1.out <- con_loglik_lm(X = X, y = Y, b = b.unconstr, detU = 1)
       ll1 <- ll1.out$loglik
       Ts <- -2*(ll0 - ll1)
@@ -296,8 +289,7 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
 
         ll0.out <- con_loglik_lm(X = X, y = Y, b = b.constr, detU = 1)
         ll0 <- ll0.out$loglik
-        s2 <- ll0.out$Sigma
-
+        
         ll1 <- con_loglik_lm(X = X, y = Y, b = b.constr.alt, detU = 1)
         ll1 <- ll1.out$loglik
         Ts <- -2*(ll0 - ll1)
@@ -320,7 +312,7 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   }
 
   if (boot == "no") {
-    pvalue <- con_pvalue_Chibar(cov, Ts.org = Ts, object$df.residual, type = type,
+    pvalue <- con_pvalue_Fbar(cov, Ts.org = Ts, object$df.residual, type = type,
                                 Amat, bvec, meq, meq.alt)
   } else if (boot == "parametric") {
     pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "LRT",
@@ -366,7 +358,6 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
               meq = meq,
               meq.alt = meq.alt,
               iact = object$iact,
-              s2 = s2,
               df.residual = object$df.residual,
               cov = cov,
               Ts = Ts,

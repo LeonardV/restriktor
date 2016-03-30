@@ -19,28 +19,28 @@ conTestEq.lm <- function(object, test = "default", ...) {
       OUT <- con_test_Wald(VCOV    = object$Sigma,
                            JAC     = object$Amat, #CON$ceq.JAC,
                            theta.r = c(object$Amat %*% object$b.unconstr)) #CON$ceq.theta)
-OUT$Amat <- object$Amat
-OUT$bvec <- object$bvec
-OUT$meq <- object$meq
-OUT$b.constr <- object$b.constr
-OUT$b.unconstr <- object$b.unconstr
+    OUT$Amat <- object$Amat
+    OUT$bvec <- object$bvec
+    OUT$meq <- object$meq
+    OUT$b.constr <- object$b.constr
+    OUT$b.unconstr <- object$b.unconstr
     } else if (test == "f" || test == "ftest") {
       Wald <- con_test_Wald(VCOV    = object$Sigma,
                             JAC     = object$Amat, #CON$ceq.JAC,
                             theta.r = c(object$Amat %*% object$b.unconstr)) #CON$ceq.theta))
-# convert Wald to F
-OUT <- list()
-OUT$test <- "F"
-OUT$Ts <- Wald$Ts / Wald$df
-OUT$df   <- Wald$df
-X <- model.matrix(object$model.org)[,,drop=FALSE]
-OUT$df.residual <- df.residual(object) #nrow(X)-ncol(X)
-OUT$pvalue <- 1 - pf(OUT$Ts, OUT$df, OUT$df.residual)
-OUT$Amat <- object$Amat
-OUT$bvec <- object$bvec
-OUT$meq <- object$meq
-OUT$b.constr <- object$b.constr
-OUT$b.unconstr <- object$b.unconstr
+      # convert Wald to F
+      OUT <- list()
+      OUT$test <- "F"
+      OUT$Ts <- Wald$Ts / Wald$df
+      OUT$df   <- Wald$df
+      X <- model.matrix(object$model.org)[,,drop=FALSE]
+      OUT$df.residual <- df.residual(object) #nrow(X)-ncol(X)
+      OUT$pvalue <- 1 - pf(OUT$Ts, OUT$df, OUT$df.residual)
+      OUT$Amat <- object$Amat
+      OUT$bvec <- object$bvec
+      OUT$meq <- object$meq
+      OUT$b.constr <- object$b.constr
+      OUT$b.unconstr <- object$b.unconstr
     } else {
       stop("restriktor ERROR: test ", sQuote(test), " not (yet) implemented. Choose \"F\" or \"Wald\"")
     }
@@ -55,9 +55,9 @@ OUT$b.unconstr <- object$b.unconstr
     stop("ERROR: can not handle (yet) nonlinear (in)equality constraints")
   }
 
-class(OUT) <- "conTest"
+  class(OUT) <- "conTest"
 
-OUT
+  OUT
 }
 
 

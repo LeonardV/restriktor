@@ -141,12 +141,6 @@ conLM.lm <- function(model, constraints, se = "default",
                                                    b.constr = b.constr,
                                                    Amat = Amat, 
                                                    bvec = bvec, meq = meq) 
-      
-#       information.inv <- con_augmented_information(X = X, beta = b.unconstr, 
-#                                                    information = information,
-#                                                    Amat = Amat, bvec = bvec,
-#                                                    inverted    = TRUE,
-#                                                    check.pd    = FALSE)
       OUT$information.inverted <- information.inv
     } else if (se == "boot.model.based") {
       OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),

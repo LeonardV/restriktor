@@ -12,7 +12,7 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     stop("type must be \"A\", \"B\", \"C\" or \"global\"")
   }
   
-  if(!(boot %in% c("no", "residual", "model.based", "parametric"))) {
+  if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix.weights"))) {
     stop("ERROR: boot method unknown.")
   }
   
@@ -171,6 +171,16 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                           cl = ifelse(is.null(control$cl), NULL, control$cl),
                                           seed = ifelse(is.null(control$seed), 1234, control$seed),
                                           verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
+  } else if (boot == "mix.weights") {
+    pvalue <- con_pvalue_boot_weights(object, pbar = "pfbar", Ts.org = Ts, df.residual = object$df.residual, 
+                                      type = type, Amat = Amat, bvec = bvec, meq = meq, 
+                                      meq.alt = meq.alt, 
+                                      R = ifelse(is.null(control$B), 9999, control$B),
+                                      parallel = ifelse(is.null(control$parallel), "no", control$parallel),
+                                      ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
+                                      cl = ifelse(is.null(control$cl), NULL, control$cl),
+                                      seed = ifelse(is.null(control$seed), 1234, control$seed),
+                                      verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   }
   
   OUT <- list(CON = object$CON,
@@ -220,7 +230,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     stop("type must be \"A\", \"B\", \"C\" or \"global\"")
   }
   
-  if(!(boot %in% c("no", "residual", "model.based", "parametric"))) {
+  if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix.weights"))) {
     stop("ERROR: boot method unknown.")
   }
   
@@ -283,8 +293,8 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
     out0 <- robustWaldScores(x = X, y = Y, beta0 = b.eqconstr, 
-                             betaA = b.constr, scale = scale, Amat = Amatg, 
-                             bvec = bvecg, meq = meq)
+                             betaA = b.constr, scale = scale)#, Amat = Amatg, 
+                             #bvec = bvecg, meq = meq)
     Ts <- out0$Rscore
     cov <- out0$V
   } else if (type == "A") {
@@ -310,16 +320,16 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     names(b.eqconstr) <- vnames
     
     out1 <- robustWaldScores(x = X, y = Y, beta0 = b.eqconstr, 
-                             betaA = b.constr, scale = scale, Amat = Amat, 
-                             bvec = bvec, meq = meq)
+                             betaA = b.constr, scale = scale)#, Amat = Amat, 
+                             #bvec = bvec, meq = meq)
     Ts <- out1$Rscore
     cov <- out1$V
   }
   else if (type == "B") {
     if (meq.alt == 0L) {
       out2 <- robustWaldScores(x = X, y = Y, beta0 = b.constr, 
-                               betaA = b.unconstr, scale = scale, Amat = Amat, 
-                               bvec = bvec, meq = meq)
+                               betaA = b.unconstr, scale = scale)#, Amat = Amat, 
+                               #bvec = bvec, meq = meq)
       Ts <- out2$Rscore
       cov <- out2$V
     }
@@ -349,9 +359,9 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
         b.constr.alt[abs(b.constr.alt) < tol] <- 0L
         names(b.constr.alt) <- vnames
         out3 <- robustWaldScores(x = X, y = Y, beta0 = b.constr, 
-                                 betaA = b.constr.alt, scale = scale,
-                                 Amat = Amat, meq = meq.alt,                    #[1:meq.alt,,drop=FALSE]
-                                 bvec = bvec)
+                                 betaA = b.constr.alt, scale = scale)#,
+                                 #Amat = Amat, meq = meq.alt,                    #[1:meq.alt,,drop=FALSE]
+                                 #bvec = bvec)
         Ts <- out3$Rscore
         cov <- out3$V
       }
@@ -391,6 +401,16 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                           cl = ifelse(is.null(control$cl), NULL, control$cl),
                                           seed = ifelse(is.null(control$seed), 1234, control$seed),
                                           verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
+  } else if (boot == "mix.weights") {
+    pvalue <- con_pvalue_boot_weights(object, pbar = "pfbar", Ts.org = Ts, df.residual = object$df.residual, 
+                                      type = type, Amat = Amat, bvec = bvec, meq = meq, 
+                                      meq.alt = meq.alt, 
+                                      R = ifelse(is.null(control$B), 9999, control$B),
+                                      parallel = ifelse(is.null(control$parallel), "no", control$parallel),
+                                      ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
+                                      cl = ifelse(is.null(control$cl), NULL, control$cl),
+                                      seed = ifelse(is.null(control$seed), 1234, control$seed),
+                                      verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   }
   
   OUT <- list(CON = object$CON,
@@ -405,7 +425,6 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
               meq = meq,
               meq.alt = meq.alt,
               iact = object$iact,
-              #s2 = object$s2,
               df.residual = object$df.residual,
               cov = cov,
               Ts = Ts,
@@ -441,7 +460,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     stop("type must be \"A\", \"B\", \"C\" or \"global\"")
   }
   
-  if(!(boot %in% c("no", "residual", "model.based", "parametric"))) {
+  if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix.weights"))) {
     stop("ERROR: boot method unknown.")
   }
   
@@ -504,8 +523,8 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
     out0 <- robustWaldScores(x = X, y = Y, beta0 = b.eqconstr, 
-                             betaA = b.constr, scale = scale, Amat = Amatg, 
-                             bvec = bvecg, meq = meq)
+                             betaA = b.constr, scale = scale)#, Amat = Amatg, 
+                             #bvec = bvecg, meq = meq)
     Ts <- out0$RWald
     cov <- out0$V
   } else if (type == "A") {
@@ -531,16 +550,16 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     names(b.eqconstr) <- vnames
     
     out1 <- robustWaldScores(x = X, y = Y, beta0 = b.eqconstr, 
-                             betaA = b.constr, scale = scale, Amat = Amat, 
-                             bvec = bvec, meq = meq)
+                             betaA = b.constr, scale = scale)#, Amat = Amat, 
+                             #bvec = bvec, meq = meq)
     Ts <- out1$RWald
     cov <- out1$V
   }
   else if (type == "B") {
     if (meq.alt == 0L) {
       out2 <- robustWaldScores(x = X, y = Y, beta0 = b.constr, 
-                               betaA = b.unconstr, scale = scale, Amat = Amat, 
-                               bvec = bvec, meq = Amat)
+                               betaA = b.unconstr, scale = scale)#, Amat = Amat, 
+                               #bvec = bvec, meq = Amat)
       Ts <- out2$RWald
       cov <- out2$V
     }
@@ -570,9 +589,9 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
         b.constr.alt[abs(b.constr.alt) < tol] <- 0L
         names(b.constr.alt) <- vnames
         out3 <- robustWaldScores(x = X, y = Y, beta0 = b.constr, 
-                                 betaA = b.constr.alt, scale = scale, 
-                                 Amat = Amat, meq = meq.alt,                    #[1:meq.alt,,drop=FALSE] ?
-                                 bvec = bvec)
+                                 betaA = b.constr.alt, scale = scale)#, 
+                                 #Amat = Amat, meq = meq.alt,                    #[1:meq.alt,,drop=FALSE] ?
+                                 #bvec = bvec)
         Ts <- out3$RWald
         cov <- out3$V
       }
@@ -613,6 +632,16 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                           cl = ifelse(is.null(control$cl), NULL, control$cl),
                                           seed = ifelse(is.null(control$seed), 1234, control$seed),
                                           verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
+  } else if (boot == "mix.weights") {
+    pvalue <- con_pvalue_boot_weights(object, pbar = "pfbar", Ts.org = Ts, df.residual = object$df.residual, 
+                                      type = type, Amat = Amat, bvec = bvec, meq = meq, 
+                                      meq.alt = meq.alt, 
+                                      R = ifelse(is.null(control$B), 9999, control$B),
+                                      parallel = ifelse(is.null(control$parallel), "no", control$parallel),
+                                      ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
+                                      cl = ifelse(is.null(control$cl), NULL, control$cl),
+                                      seed = ifelse(is.null(control$seed), 1234, control$seed),
+                                      verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   }
   
   OUT <- list(CON = object$CON,
@@ -661,7 +690,7 @@ conTestWald2.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     stop("type must be \"A\", \"B\", \"C\" or \"global\"")
   }
   
-  if(!(boot %in% c("no", "residual", "model.based", "parametric"))) {
+  if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix.weights"))) {
     stop("ERROR: boot method unknown.")
   }
   
@@ -820,6 +849,16 @@ conTestWald2.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                           cl = ifelse(is.null(control$cl), NULL, control$cl),
                                           seed = ifelse(is.null(control$seed), 1234, control$seed),
                                           verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
+  } else if (boot == "mix.weights") {
+    pvalue <- con_pvalue_boot_weights(object, pbar = "pfbar", Ts.org = Ts, df.residual = object$df.residual, 
+                                      type = type, Amat = Amat, bvec = bvec, meq = meq, 
+                                      meq.alt = meq.alt, 
+                                      R = ifelse(is.null(control$B), 9999, control$B),
+                                      parallel = ifelse(is.null(control$parallel), "no", control$parallel),
+                                      ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
+                                      cl = ifelse(is.null(control$cl), NULL, control$cl),
+                                      seed = ifelse(is.null(control$seed), 1234, control$seed),
+                                      verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   }
   
   OUT <- list(CON = object$CON,
@@ -834,7 +873,6 @@ conTestWald2.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
               meq = meq,
               meq.alt = meq.alt,
               iact = object$iact,
-              #s2 = object$s2,
               df.residual = object$df.residual,
               cov = cov,
               Ts = Ts,

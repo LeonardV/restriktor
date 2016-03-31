@@ -128,14 +128,13 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL, type = "A",
     colnames(DATA) <- c(as.character("ystar"), terms)  
     form <- formula(model.org)
     form[[2]] <- as.name("ystar")
-    boot_model <- update(model.org, formula = form, data = DATA, maxit = 5000)
-    OUT <- NA
-    if (boot_model$converged) {
-      CALL <- list(model = boot_model, constraints = Amat, rhs = bvec, neq = meq, control = control, se = "no")
-      boot_conLM <- do.call("restriktor", CALL)  
-      boot_conTest <- conTest(boot_conLM, type = type, test = test, meq.alt = meq.alt, control = control)
-      OUT <- boot_conTest$Ts
-    }
+    boot_model <- update(model.org, formula = form, data = DATA)
+    
+    CALL <- list(model = boot_model, constraints = Amat, rhs = bvec, neq = meq, control = control, se = "no")
+    boot_conLM <- do.call("restriktor", CALL)  
+    boot_conTest <- conTest(boot_conLM, type = type, test = test, meq.alt = meq.alt, control = control)
+    OUT <- boot_conTest$Ts
+  
     if (verbose) {
       cat("iteration =", b, "...Ts =", OUT, "\n")
     }
@@ -272,15 +271,12 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL, type = "A",
       form <- formula(model.org)
       form[[2]] <- as.name("ystar")
       
-      OUT <- NA
-      boot_model <- update(model.org, formula = form, data = DATA, maxit = 5000)
-      if (boot_model$converged) {
-        CALL <- list(boot_model, constraints = Amat, rhs = bvec, neq = meq, control = control, se = "no")
-        boot_conLM <- do.call("restriktor", CALL)  
-        boot_conTest <- conTest(boot_conLM, type = type, test = test, meq.alt = meq.alt, control = control)$Ts
-        OUT <- boot_conTest
-      }
-      
+      boot_model <- update(model.org, formula = form, data = DATA)
+      CALL <- list(boot_model, constraints = Amat, rhs = bvec, neq = meq, control = control, se = "no")
+      boot_conLM <- do.call("restriktor", CALL)  
+      boot_conTest <- conTest(boot_conLM, type = type, test = test, meq.alt = meq.alt, control = control)$Ts
+      OUT <- boot_conTest
+    
       if (verbose) {
         cat("iteration =", b, "...Ts =", OUT, "\n")
       }

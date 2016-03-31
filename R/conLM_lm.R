@@ -84,10 +84,7 @@ conLM.lm <- function(model, constraints, se = "default",
     conll <- conll.out$loglik
     fitted <- model.matrix(model) %*% b.constr
     residuals <- Y - fitted
-    
-    p2 <- 0L                                                                    # is this correct?                             
-    if (meq > 0L) { p2 <- length((1:meq)[bvec == 0]) }
-    s2 <- sum(residuals^2) / (n-(p-p2))
+    s2 <- sum(residuals^2) / (n-p)                                              # <FIXME> in case of "x == 0 or 0 == x" p should be reduced. </FIXME>
     
     # lm
     if (ncol(Y) == 1L) {

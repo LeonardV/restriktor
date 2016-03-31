@@ -21,13 +21,11 @@ importFrom("boot",
            boot,
            boot.ci)
 
-#importFrom("sandwich",
-#           vcovHC)
 
 # export ordinary functions defined in this package
 export("restriktor", "conLM.lm", "conLM.default",
        "conTest", 
-       "conTestF.lm", "conTestF.rlm", "conTestLRT.lm", 
+       "conTestF.lm", "conTestF.rlm", "conTestLRT.lm", "conTestScore.lm",
        "conTestEq.lm", "conTestEq.rlm",
        "conTestScore.rlm", "conTestWald.rlm", "conTestWald2.rlm",
        "print.conLM", "summary.conLM", "print.conTest", 

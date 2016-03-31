@@ -2,14 +2,14 @@ restriktor <- function(model, constraints, se = "default",
                        rhs = NULL, neq = NULL, control = NULL,
                        debug = FALSE, ...) {
 
-  if (any(c("glm", "mlm") %in% class(model))) 
-    stop("Restriktor does not work (yet) on classes glm or mlm.")
+  if (any(c("glm", "mlm", "gls") %in% class(model))) 
+    stop("Restriktor does not work on classes glm, mlm and gls (yet).")
   
   # rename for internal use
   bvec <- rhs 
   meq <- neq
   
-  if (is.character(constraints) && class(model) %in% c("lm", "rlm")) {
+  if (is.character(constraints)) {#} && class(model) %in% c("lm", "rlm")) {
     # build a bare-bones parameter table for this model
     partable <- lav_partable(model, est = FALSE, label = TRUE)
     

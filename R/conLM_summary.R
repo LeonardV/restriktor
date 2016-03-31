@@ -29,13 +29,7 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
   if (length(x$b.constr) && is.null(x$bootout) && !(se == "no")) {
     cat("Coefficients:\n")
     vcovHC <- sandwich(x, bread.=bread(x), meat.=meatHC(x, type = se))
-    SE <-
-#    if (se == "const" | se == "default") {
-#      sqrt(diag(x$information.inverted))
-#    } else {
-      sqrt(diag(vcovHC))  
-#    }  
-    
+    SE <- sqrt(diag(vcovHC))  
     ##########
     tval <- ifelse(SE != 0, x$b.constr/SE, 0L)
     coefficients <- cbind(x$b.constr, SE, tval, 2 * pt(abs(tval),
@@ -62,7 +56,7 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
      
     cat("\n")
     if (se == "const") {
-      cat("Homoskedastic standard errors\n")
+      cat("Homoskedastic standard errors.\n")
     } else {
       cat("Heteroskedastic robust standard errors:", se ,"\n")
     }
@@ -108,9 +102,8 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
   } else {
     cat("No coefficients\n")
   }  
-  cat("\n")
+  #cat("\n")
 
-#  cat("\n")
   # acknowledgment: code taken from the goric package.
   # The goric_penalty() function uses a simulation approach for calculating the
   # level probabilities, while these weights can be calculated using the 
@@ -128,33 +121,32 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
   } else {
     wt <- rev(mix.boot(x, Amat = x$Amat, bvec = x$bvec, meq = x$meq, ...))
   }  
-    #penalty <- 1 + sum( (1:ncol(W)) * c(wt, rep(0, ncol(W)-length(wt))) )
     
-    if (type == "GORIC") {
-      #penalty <- 1 + sum((1:ncol(W)) * wt)
-      penalty <- 1 + sum( (1:ncol(W)) * c(wt, rep(0, ncol(W)-length(wt))) )
-    } else {
-      N <- nrow(X)
-      t <- ncol(Y) 
-      k <- ncol(X)
-      plp <- sum((1:ncol(W)) * c(wt, rep(0, ncol(W)-length(wt))))
-      qlp <- -2 * plp + sum(((1:ncol(W))^2) * c(wt, rep(0, ncol(W)-length(wt)))) - plp^2
-    }
-    # small sample corrections
-    if (type == "GORICCa"){
-      penalty <- -0.5*t*N + (0.5*t*N) * (t*N * ((t*N-plp)^2 + 2*t*N + qlp)) / 
-        ((t*N - plp)^3) + 0.5*sum((1:ncol(W))*c(wt, rep(0, ncol(W)-length(wt)))*((t*N) / (t*N-(1:ncol(W)) - 2)))
-    } else if (type == "GORICCb"){
-      penalty <- sum(((t*N * (1:ncol(W) + 1)) / (t*N - 1:ncol(W) - 2)) * c(wt, rep(0, ncol(W)-length(wt))))
-    }
-    goric <- -2*(x$loglik - penalty)
-    delta <- goric - min(goric)
-    goric_weights <- exp(-delta/2) / sum(exp(-delta/2))
-    result_goric <- c(x$loglik, penalty, goric = goric, 
-                          goric_weights = round(goric_weights,3))
-      names(result_goric) <- c("Loglik", "Penalty", "Goric", "Weights")
-    cat("Generalized Order-Restricted Information Criterion:\n")
-    print(result_goric, digits = digits)
-  
+  if (type == "GORIC") {
+    #penalty <- 1 + sum((1:ncol(W)) * wt)
+    penalty <- 1 + sum( (1:ncol(W)) * c(wt, rep(0, ncol(W)-length(wt))) )
+  } else {
+    N <- nrow(X)
+    t <- ncol(Y) 
+    #k <- ncol(X)
+    plp <- sum((1:ncol(W)) * c(wt, rep(0, ncol(W)-length(wt))))
+    qlp <- -2 * plp + sum(((1:ncol(W))^2) * c(wt, rep(0, ncol(W)-length(wt)))) - plp^2
+  }
+  # small sample corrections
+  if (type == "GORICCa"){
+    penalty <- -0.5*t*N + (0.5*t*N) * (t*N * ((t*N-plp)^2 + 2*t*N + qlp)) / 
+      ((t*N - plp)^3) + 0.5*sum((1:ncol(W))*c(wt, rep(0, ncol(W)-length(wt)))*((t*N) / (t*N-(1:ncol(W)) - 2)))
+  } else if (type == "GORICCb"){
+    penalty <- sum(((t*N * (1:ncol(W) + 1)) / (t*N - 1:ncol(W) - 2)) * c(wt, rep(0, ncol(W)-length(wt))))
+  }
+  goric <- -2*(x$loglik - penalty)
+  delta <- goric - min(goric)
+  goric_weights <- exp(-delta/2) / sum(exp(-delta/2))
+  result_goric <- c(x$loglik, penalty, goric = goric, 
+                        goric_weights = round(goric_weights,3))
+    names(result_goric) <- c("Loglik", "Penalty", "Goric", "Weights")
+  cat("\nGeneralized Order-Restricted Information Criterion:\n")
+  print(result_goric, digits = digits)
+
   invisible(x)
 }

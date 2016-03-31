@@ -34,11 +34,18 @@ bread.rlm <- function(x, ...) {
     #psi_deriv <- function(z) tukeyPsi(z, deriv = 1)
     psi_deriv <- function(z) x$model.org$psi(z, deriv = 1)
     rval <- sqrt(abs(as.vector(psi_deriv(res/x$model.org$s)/x$model.org$s))) * wts * xmat    
-    #rval <- chol2inv(qr.R(qr(rval))) * nrow(xmat)
-    rval <- solve(chol2inv(qr.R(qr(rval))) )
-    rval <- con_augmented_information(rval, X = xmat, x$b.unconstr, x$b.constr, 
-                                      x$Amat, x$bvec, x$meq) * nrow(xmat)
-#  rval <- 1/x$s2 * x$information.inverted * nrow(xmat)
+    rval <- chol2inv(qr.R(qr(rval))) * nrow(xmat)
+    rval <- solve(rval) #/ x$model.org$s * nrow(xmat)
+    #1/x$s2 * crossprod(xmat)
+    #rval <- solve(chol2inv(qr.R(qr(rval))) ) / x$model.org$s
+    #rval <- 1/s2 * crossprod(xmat)  
+    rval <- con_augmented_information(information = rval, X = xmat, 
+                                      b.unconstr = x$b.unconstr, 
+                                      b.constr = x$b.constr, Amat = x$Amat, 
+                                      bvec = x$bvec, 
+                                      meq = x$meq) #* nrow(xmat)
+    #rval <- rval * x$model.org$s
+    
     return(rval)
 }
 

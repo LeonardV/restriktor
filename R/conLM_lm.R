@@ -4,7 +4,7 @@ conLM.lm <- function(model, constraints, se = "default",
   
   Amat <- Amatw; bvec <- bvecw; meq <- meqw
   # check class
-  if (!("lm" %in% class(model))) {
+  if (!(class(model)[1] %in% c("lm", "mlm"))) {
     stop("ERROR: model must be of class lm.")
   }
   if (se == "default" | se == "standard") {
@@ -85,16 +85,12 @@ conLM.lm <- function(model, constraints, se = "default",
     fitted <- model.matrix(model) %*% b.constr
     residuals <- Y - fitted
     
-    p2 <- 0L
-    if (meq > 0L) {
-      p2 <- length((1:meq)[bvec == 0])  
-    }
+    p2 <- 0L                                                                    # is this correct?                             
+    if (meq > 0L) { p2 <- length((1:meq)[bvec == 0]) }
     s2 <- sum(residuals^2) / (n-(p-p2))
     
-    # lm()
+    # lm
     if (ncol(Y) == 1L) {
-#      fitted <- model.matrix(model) %*% b.constr
-#      residuals <- Y - fitted
       b.constr <- c(b.constr)
       names(b.constr) <- col.names
 
@@ -108,9 +104,9 @@ conLM.lm <- function(model, constraints, se = "default",
       if (!(attr(model$terms, "intercept") | is.null(weights(model))))
         R2.reduced <- 1 - sum(weights(model) * residuals^2)/sum(weights(model) * Y^2)
 
-    } else {
-      fitted <- model.matrix(model) %*% b.constr
-      residuals <- Y - fitted
+    } else { #mlm
+      #fitted <- model.matrix(model) %*% b.constr
+      #residuals <- Y - fitted
       rownames(b.constr) <- row.names
       R2.org <- R2.reduced <- NULL
       se <- "no"
@@ -143,8 +139,14 @@ conLM.lm <- function(model, constraints, se = "default",
       information.inv <- con_augmented_information(information = information,
                                                    X = X, b.unconstr = b.unconstr, 
                                                    b.constr = b.constr,
-                                                   constraints = Amat, 
-                                                   bvec = bvec, meq = meq)
+                                                   Amat = Amat, 
+                                                   bvec = bvec, meq = meq) 
+      
+#       information.inv <- con_augmented_information(X = X, beta = b.unconstr, 
+#                                                    information = information,
+#                                                    Amat = Amat, bvec = bvec,
+#                                                    inverted    = TRUE,
+#                                                    check.pd    = FALSE)
       OUT$information.inverted <- information.inv
     } else if (se == "boot.model.based") {
       OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),

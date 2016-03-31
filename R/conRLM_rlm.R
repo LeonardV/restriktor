@@ -88,13 +88,14 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   resid0 <- temp$resid  
   scale <- temp$scale
   
+  ll.out <- con_loglik_lm(X = X, y = Y, b = b.unconstr, detU = 1)
+  ll <- ll.out$loglik
+  s2.ml <- ll.out$Sigma
+  tau.hat <- so$stddev  
+  s2 <- tau.hat^2
+  
   if (all(Amat %*% c(b.unconstr) - bvec >= 0 * bvec) & meq == 0) {
     
-    ll.out <- con_loglik_lm(X = X, y = Y, b = b.unconstr, detU = 1)
-    ll <- ll.out$loglik
-    s2.ml <- ll.out$Sigma
-    tau.hat <- so$stddev  
-    s2 <- tau.hat^2
     b.constr <- b.unconstr
         
     OUT <- list(CON = NULL,
@@ -111,6 +112,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 df.residual = df.residual,
                 scale = scale, 
                 s2 = s2, s2.ml = s2.ml, 
+                s2.unc = s2, s2.unc.ml = s2.ml,
                 loglik = ll, 
                 Sigma = vcov(model),                                            #probably not so robust!
                 Amat = Amat, bvec = bvec, meq = meq, iact = 0L,
@@ -145,9 +147,9 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
           
     ll.out <- con_loglik_lm(X = X, y = Y, b = b.constr, detU = 1)
     ll <- ll.out$loglik
-    s2.ml <- ll.out$Sigma    
+    cons2.ml <- ll.out$Sigma    
     tau.hat <- MASS:::summary.rlm(rfit)$stddev  
-    s2 <- tau.hat^2
+    cons2 <- tau.hat^2
     iact <- rfit$iact
     
     #R2 and adjusted R2, code taken from lmrob() function.
@@ -181,7 +183,8 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 R2.reduced = R2.reduced,
                 df.residual = df.residual,
                 scale = rfit$s,                                                               
-                s2 = s2, s2.ml = s2.ml,
+                s2 = cons2, s2.ml = cons2.ml,
+                s2.unc = s2, s2.unc.ml = s2.ml,
                 loglik = ll, 
                 Sigma = vcov(model),                                             #probably not robust???
                 Amat = Amat, bvec = bvec, meq = meq, iact = iact,
@@ -205,8 +208,15 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
       information.inv <- con_augmented_information(information = information,
                                                    X = X, b.unconstr = b.unconstr, 
                                                    b.constr = b.constr,
-                                                   constraints = Amat, 
+                                                   Amat = Amat, 
                                                    bvec = bvec, meq = meq)
+      
+#       information.inv <- con_augmented_information(X = X, beta = b.unconstr, 
+#                                                    information = information,
+#                                                    Amat = Amat, bvec = bvec,
+#                                                    inverted    = TRUE,
+#                                                    check.pd    = FALSE)
+      
       OUT$information.inverted <- information.inv
     } else if (se == "boot.model.based") { 
       OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),

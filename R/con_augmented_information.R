@@ -1,12 +1,12 @@
 con_augmented_information <- function(information, X, b.unconstr, b.constr,  
-                                      constraints, bvec, meq) {
-  H <- constraints
+                                       Amat, bvec, meq) {
+  H <- Amat
   npar <- NCOL(information)
   
-  if (!isSymmetric(information)) {
-    stop("Information matrix information is not symmetric.")
-  }
-
+#  if (!isSymmetric(information)) {
+#    stop("Information matrix information is not symmetric.")
+#  }
+  
   # lagrangean coefs
   lambda <- as.numeric(solve(H%*%solve(t(X)%*%X)%*%t(H)) %*% (H%*%b.unconstr-bvec))
   
@@ -32,7 +32,7 @@ con_augmented_information <- function(information, X, b.unconstr, b.constr,
   Gamma <- diag(lambda, NROW(H), NROW(H))
   # slack parameters
   slacks <- H %*% b.constr - bvec
-    slacks[abs(slacks) < sqrt(.Machine$double.eps)] <- 0L
+  slacks[abs(slacks) < sqrt(.Machine$double.eps)] <- 0L
   # diagonal matrix with slack parameters for the inactive constraints
   Z <- matrix(0L, nrow = 0, ncol = 0)
   if (sum(inactive.idx) == 1L) {
@@ -43,7 +43,7 @@ con_augmented_information <- function(information, X, b.unconstr, b.constr,
   }  
   
   if(NROW(H) > 0L) {
-#    H0  <- matrix(0L, NROW(H), NROW(H))
+    #    H0  <- matrix(0L, NROW(H), NROW(H))
     H12 <- matrix(0L, NROW(information), NCOL(Gamma))
     H13 <- matrix(0L, NROW(information), NCOL(Z))
     H23 <- matrix(0L, NROW(Gamma), NCOL(Z))
@@ -60,24 +60,24 @@ con_augmented_information <- function(information, X, b.unconstr, b.constr,
     H56 <- matrix(0L, NROW(H.active), NROW(H.inactive))
     H66 <- matrix(0L, NROW(H.inactive), NROW(H.inactive))
     DL <- 2*diag(lambda, NROW(H), NROW(H))
-
-##############################################################  
-  
-#  if(length(inactive.idx) > 0L) {
-#    H <- H[-inactive.idx,,drop=FALSE]
-#    lambda <- lambda[-inactive.idx]
-#  }
-#  if(NROW(H) > 0L) {
-#    H0 <- matrix(0,NROW(H),NROW(H))
-#    H10 <- matrix(0, NCOL(information), NROW(H))
-#    DL <- 2*diag(lambda, NROW(H), NROW(H))
-#    E3 <- rbind( cbind(     information,  H10, t(H)),
-#                 cbind(          t(H10),   DL,  H0),
-#                 cbind(               H,   H0,  H0)  )
-#    information <- E3   
-#  }
-########################################################################3
-  # block matrix - Ronald Schoenberg (1997)
+    
+    ##############################################################  
+    
+    #  if(length(inactive.idx) > 0L) {
+    #    H <- H[-inactive.idx,,drop=FALSE]
+    #    lambda <- lambda[-inactive.idx]
+    #  }
+    #  if(NROW(H) > 0L) {
+    #    H0 <- matrix(0,NROW(H),NROW(H))
+    #    H10 <- matrix(0, NCOL(information), NROW(H))
+    #    DL <- 2*diag(lambda, NROW(H), NROW(H))
+    #    E3 <- rbind( cbind(     information,  H10, t(H)),
+    #                 cbind(          t(H10),   DL,  H0),
+    #                 cbind(               H,   H0,  H0)  )
+    #    information <- E3   
+    #  }
+    ########################################################################3
+    # block matrix - Ronald Schoenberg (1997)
     E3 <- rbind( cbind(  information,    H12,    H13,   t(G), t(H.active), t(H.inactive)),
                  cbind(       t(H12),     DL,    H23,    H24,         H25,           H26),
                  cbind(       t(H13), t(H23),    H33,    H34,         H35,           2*Z),
@@ -89,11 +89,11 @@ con_augmented_information <- function(information, X, b.unconstr, b.constr,
   }
   
   information <- try( MASS::ginv(information)[1:npar, 1:npar, drop = FALSE], silent = TRUE )
-    information[abs(information) < sqrt(.Machine$double.eps)] <- 0L
-
-    # augmented/inverted information
-    OUT <- information
-
-    return(OUT)
+  information[abs(information) < sqrt(.Machine$double.eps)] <- 0L
+  
+  # augmented/inverted information
+  OUT <- information
+  
+  return(OUT)
 }
- 
+

@@ -670,7 +670,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
 }
 
 
-
+#<FIXME> remove intercept X[,-1] for assymetric error distributions.</FIXME>
 conTestWald2.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
                              control = NULL, tol = sqrt(.Machine$double.eps), ...) {
   

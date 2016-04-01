@@ -73,8 +73,8 @@ robustFm <- function(x, y, beta0, betaA, scale, cc = 4.685061) {
   resid1 <- y - x%*%betaA
   
   #residuals / scale
-  rstar0 <- c(resid0/scale)                                               
-  rstar1 <- c(resid1/scale)
+  rstar0 <- as.numeric(resid0/scale)                                               
+  rstar1 <- as.numeric(resid1/scale)
   
   L0 <- sum(tukeyChi(rstar0, cc, deriv = 0))
   L1 <- sum(tukeyChi(rstar1, cc, deriv = 0))
@@ -95,7 +95,7 @@ robustFm <- function(x, y, beta0, betaA, scale, cc = 4.685061) {
 ## robust Wald statistic, Silvapulle (1992) ##
 robustWaldXX <- function(x, beta0, beta1, beta2, tau) {
   TsWald <- c(( (t(beta2-beta0)%*%(t(x)%*%x)%*%(beta2-beta0)) - 
-              (t(beta2-beta1)%*%(t(x)%*%x)%*%(beta2-beta1)) ) / tau^2) 
+                (t(beta2-beta1)%*%(t(x)%*%x)%*%(beta2-beta1)) ) / tau^2) 
   
   out <- TsWald
   

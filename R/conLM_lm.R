@@ -92,7 +92,8 @@ conLM.lm <- function(model, constraints, se = "default",
     check.idx <- length(which(rowSums(data.frame(lhs.idx, rhs.idx)) == 2))
     p2 <- sum(rhs.idx, lhs.idx) - check.idx
     s2 <- sum(residuals^2) / (n-(p-p2))                                      # <FIXME> in case of "x == 0 or 0 == x" p should be adjusted. </FIXME>
-    print(p2)
+    
+    cat("CHECK DF S^2!")
     
     # lm
     if (ncol(Y) == 1L) {

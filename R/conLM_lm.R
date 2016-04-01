@@ -84,7 +84,15 @@ conLM.lm <- function(model, constraints, se = "default",
     conll <- conll.out$loglik
     fitted <- model.matrix(model) %*% b.constr
     residuals <- Y - fitted
-    s2 <- sum(residuals^2) / (n-p)                                              # <FIXME> in case of "x == 0 or 0 == x" p should be reduced. </FIXME>
+    
+    op.idx <- !grepl("[^==]", partable$op)
+    p.idx <- as.data.frame(partable)[op.idx,]
+    rhs.idx <- p.idx$rhs == 0L
+    lhs.idx <- p.idx$lhs == 0L
+    check.idx <- length(which(rowSums(data.frame(lhs.idx, rhs.idx)) == 2))
+    p2 <- sum(rhs.idx, lhs.idx) - check.idx
+    s2 <- sum(residuals^2) / (n-(p-p2))                                      # <FIXME> in case of "x == 0 or 0 == x" p should be adjusted. </FIXME>
+    print(p2)
     
     # lm
     if (ncol(Y) == 1L) {

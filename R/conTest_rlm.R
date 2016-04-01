@@ -20,7 +20,6 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     boot <- "model.based"
   }
   
-#  constraints <- object$constraints
   model.org <- object$model.org
   X <- model.matrix(model.org)[,,drop=FALSE]
   Y <- model.org$model[, attr(model.org$terms, "response")]
@@ -153,7 +152,7 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
                               Amat, bvec, meq, meq.alt)
   } else if (boot == "parametric") {
     pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "F",
-                                         bvec = bvec, meq = meq, meq.alt = meq.alt,
+                                         meq.alt = meq.alt,
                                          R = ifelse(is.null(control$B), 9999, control$B),
                                          p.distr = ifelse(is.null(control$p.distr), "N", control$p.distr),
                                          df = ifelse(is.null(control$df), 7, control$df),
@@ -173,8 +172,7 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                           verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   } else if (boot == "mix.weights") {
     pvalue <- con_pvalue_boot_weights(object, pbar = "pfbar", Ts.org = Ts, df.residual = object$df.residual, 
-                                      type = type, Amat = Amat, bvec = bvec, meq = meq, 
-                                      meq.alt = meq.alt, 
+                                      type = type, meq.alt = meq.alt, 
                                       R = ifelse(is.null(control$B), 9999, control$B),
                                       parallel = ifelse(is.null(control$parallel), "no", control$parallel),
                                       ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
@@ -238,7 +236,6 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     boot <- "model.based"
   }
   
-#  constraints <- object$constraints
   model.org <- object$model.org
   X <- model.matrix(model.org)[,,drop=FALSE]
   Y <- model.org$model[, attr(model.org$terms, "response")]
@@ -383,7 +380,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
                               Amat, bvec, meq, meq.alt)
   } else if (boot == "parametric") {
     pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "score",
-                                         bvec = bvec, meq = meq, meq.alt = meq.alt,
+                                         meq.alt = meq.alt,
                                          R = ifelse(is.null(control$B), 9999, control$B),
                                          p.distr = ifelse(is.null(control$p.distr), "N", control$p.distr),
                                          df = ifelse(is.null(control$df), 7, control$df),
@@ -403,8 +400,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                           verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   } else if (boot == "mix.weights") {
     pvalue <- con_pvalue_boot_weights(object, pbar = "pfbar", Ts.org = Ts, df.residual = object$df.residual, 
-                                      type = type, Amat = Amat, bvec = bvec, meq = meq, 
-                                      meq.alt = meq.alt, 
+                                      type = type, meq.alt = meq.alt, 
                                       R = ifelse(is.null(control$B), 9999, control$B),
                                       parallel = ifelse(is.null(control$parallel), "no", control$parallel),
                                       ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
@@ -614,7 +610,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
                               Amat, bvec, meq, meq.alt)
   } else if (boot == "parametric") {
     pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "wald",
-                                         bvec = bvec, meq = meq, meq.alt = meq.alt,
+                                         meq.alt = meq.alt,
                                          R = ifelse(is.null(control$B), 9999, control$B),
                                          p.distr = ifelse(is.null(control$p.distr), "N", control$p.distr),
                                          df = ifelse(is.null(control$df), 7, control$df),
@@ -634,8 +630,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                           verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   } else if (boot == "mix.weights") {
     pvalue <- con_pvalue_boot_weights(object, pbar = "pfbar", Ts.org = Ts, df.residual = object$df.residual, 
-                                      type = type, Amat = Amat, bvec = bvec, meq = meq, 
-                                      meq.alt = meq.alt, 
+                                      type = type, meq.alt = meq.alt, 
                                       R = ifelse(is.null(control$B), 9999, control$B),
                                       parallel = ifelse(is.null(control$parallel), "no", control$parallel),
                                       ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
@@ -831,7 +826,7 @@ conTestWald2.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
                               Amat, bvec, meq, meq.alt)
   } else if (boot == "parametric") {
     pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "wald2",
-                                         bvec = bvec, meq = meq, meq.alt = meq.alt,
+                                         meq.alt = meq.alt,
                                          R = ifelse(is.null(control$B), 9999, control$B),
                                          p.distr = ifelse(is.null(control$p.distr), "N", control$p.distr),
                                          df = ifelse(is.null(control$df), 7, control$df),
@@ -851,8 +846,7 @@ conTestWald2.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                           verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   } else if (boot == "mix.weights") {
     pvalue <- con_pvalue_boot_weights(object, pbar = "pfbar", Ts.org = Ts, df.residual = object$df.residual, 
-                                      type = type, Amat = Amat, bvec = bvec, meq = meq, 
-                                      meq.alt = meq.alt, 
+                                      type = type, meq.alt = meq.alt, 
                                       R = ifelse(is.null(control$B), 9999, control$B),
                                       parallel = ifelse(is.null(control$parallel), "no", control$parallel),
                                       ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),

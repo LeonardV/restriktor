@@ -148,7 +148,9 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     ll.out <- con_loglik_lm(X = X, y = Y, b = b.constr, detU = 1)
     ll <- ll.out$loglik
     cons2.ml <- ll.out$Sigma    
-    tau.hat <- MASS:::summary.rlm(rfit)$stddev  
+    
+    tau.hat <- MASS:::summary.rlm(rfit)$stddev                                  # <FIXME> in case of "x == 0 or 0 == x" p should be adjusted. </FIXME>
+    
     cons2 <- tau.hat^2
     iact <- rfit$iact
     

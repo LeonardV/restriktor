@@ -5,7 +5,7 @@ con_pvalue_Fbar <- function(cov, Ts.org, df.residual, type = "type A",
     stop("constraint matrix must have full row-rank")
   }
   #compute weights
-  wt.bar <- con_wt(Amat%*%cov%*%t(Amat), meq=meq)
+  wt.bar <- con_wt(Amat %*% cov %*% t(Amat), meq = meq)
 
   if (type == "global") {
     # compute df
@@ -31,6 +31,8 @@ con_pvalue_Fbar <- function(cov, Ts.org, df.residual, type = "type A",
   }
 
   pvalue
+    #attr(pvalue, "wt") <- wt.bar
+    #attr(pvalue, "df.bar") <- df.bar
 }
 
 
@@ -66,14 +68,16 @@ con_pvalue_Chibar <- function(cov, Ts.org, df.residual, type = "A",
   }
   
   pvalue
+    #attr(pvalue, "wt") <- wt.bar
+    #attr(pvalue, "df.bar") <- df.bar
 }
 
 
 ################################################################################
-con_pvalue_boot_parametric <- function(model, Ts.org = NULL, type = "A",
-                                       test = "F", bvec = NULL,
-                                       meq = NULL, meq.alt = 0,
-                                       R = 9999, p.distr = "N", df = 7,
+con_pvalue_boot_parametric <- function(model, Ts.org = NULL, type = "A", 
+                                       meq.alt = meq.alt,
+                                       test = "F", R = 9999, 
+                                       p.distr = "N", df = 7,
                                        parallel = "no", ncpus = 1L, cl = NULL,
                                        seed = NULL, control = NULL,
                                        verbose = FALSE, ...) {
@@ -86,11 +90,11 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL, type = "A",
   model.org <- model$model.org
   X <- model.matrix(model.org)[,,drop=FALSE]
   n <- dim(X)[1]
-  
-#  constraints <- model$constraints
+
+  # constraints   
   Amat <- model$Amat
   bvec <- model$bvec
-  meq <- model$meq
+  meq  <- model$meq
   
   #parallel housekeeping
   have_mc <- have_snow <- FALSE
@@ -188,8 +192,9 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL, type = "A",
 
 ###################################################################################
 con_pvalue_boot_model_based <- function(model, Ts.org = NULL, type = "A",
-                                        test = "F", meq.alt = 0,
-                                        R = 9999, parallel = "no", ncpus = 1L,
+                                        meq.alt = meq.alt,
+                                        test = "F", R = 9999, 
+                                        parallel = "no", ncpus = 1L,
                                         cl = NULL, seed = NULL, control = NULL,
                                         verbose = FALSE, ...) {
 
@@ -199,10 +204,10 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL, type = "A",
   model.org <- model$model.org
   X <- model.matrix(model.org)[,,drop=FALSE]
   
-  #constraints <- model$constraints
+  # constraints 
   Amat <- model$Amat
   bvec <- model$bvec
-  meq <- model$meq
+  meq  <- model$meq
 
   have_mc <- have_snow <- FALSE
   if (parallel != "no" && ncpus > 1L) {
@@ -250,6 +255,7 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL, type = "A",
       fit <- do.call("restriktor", CALL)
     }
 
+    # compute residuals under H0
     r <- residuals(fit)
     yhat <- fitted(fit)
 
@@ -328,12 +334,12 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL, type = "A",
 
 
 
-mix.boot <- function(object, Amat, bvec, meq, R = 9999, 
-                     parallel = c("no", "multicore", "snow"),
+mix.boot <- function(object, type = "A", 
+                     meq.alt = meq.alt,
+                     R = 9999, parallel = c("no", "multicore", "snow"),
                      ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, ...) {
 
   parallel <- match.arg(parallel)
-
   have_mc <- have_snow <- FALSE
   if (parallel != "no" && ncpus > 1L) {
     if (parallel == "multicore")
@@ -344,8 +350,20 @@ mix.boot <- function(object, Amat, bvec, meq, R = 9999,
       ncpus <- 1L
   }
 
+  # constraints 
+  Amat <- object$Amat
+  bvec <- object$bvec
+  meq  <- object$meq
+  
+#  if (meq.alt > 0 & type == "B") {
+#   Amat <- Amat[1:meq.alt,,drop=FALSE]
+#   meq  <- meq.alt 
+#   bvec <- bvec[1:meq.alt]
+#  }
+  
+
   s2unc <- object$s2.unc
-  X <- model.matrix(object$model.org)[,,drop=FALSE]
+  X <- model.matrix(object$model.org)[,,drop = FALSE]
   invW <- kronecker(solve(s2unc), t(X) %*% X)
   W <- solve(invW)
   Dmat <- 2*invW
@@ -402,9 +420,10 @@ mix.boot <- function(object, Amat, bvec, meq, R = 9999,
   }
   dimsol <- ncol(W) - iact
   wt <- sapply(1:(ncol(W)), function(x) sum(x == (dimsol)))/R
-  wt.idx <- which(wt == 0)
-  wt <- rev(wt[-c(wt.idx)])
-    names(wt) <- nrow(Amat):0
+  #wt.idx <- which(wt == 0)
+  wt.idx <- (nrow(Amat)-meq) + 1
+  wt <- rev(wt[1:wt.idx])
+    names(wt) <- (nrow(Amat)-meq):0
 
   OUT <- wt
 
@@ -412,24 +431,22 @@ mix.boot <- function(object, Amat, bvec, meq, R = 9999,
 }
 
 
-con_pvalue_boot_weights <- function(object, pbar = "pfbar", Ts.org, df.residual, type = "type A",
-                                    Amat, bvec, meq = 0L, meq.alt = 0L, 
+con_pvalue_boot_weights <- function(model, type = "type A", pbar = "pfbar", Ts.org = Ts.org, 
+                                    df.residual = df.residual, meq.alt = 0L, 
                                     R = 9999, p.distr = c("N", "t"),
                                     parallel = c("no", "multicore", "snow"),
-                                    ncpus = 1L, cl = NULL, seed, 
+                                    ncpus = 1L, cl = NULL, seed = 1234, 
                                     verbose = FALSE) {
+  
+  # constraints 
+  Amat <- model$Amat
+  meq  <- model$meq
   
   # compute weights based on simulation
   if (!(type == "C")) {
-    wt.bar <- mix.boot(object, pbar = pbar, Amat = Amat, bvec = bvec, meq = meq, R = R, 
+    wt.bar <- mix.boot(object = model, type = type, meq.alt = meq.alt, R = R, 
                        parallel = parallel, ncpus = ncpus, 
                        cl = cl, seed = seed, verbose = verbose)
-    
-    if (meq == 0L) {
-      wt.bar <- wt.bar
-    } else if (meq > 0) {
-      wt.bar <- wt.bar[-(1:meq)]
-    }
   }
   
   if (type == "global") {
@@ -470,4 +487,6 @@ con_pvalue_boot_weights <- function(object, pbar = "pfbar", Ts.org, df.residual,
   }
   
   pvalue
+    #attr(pvalue, "wt") <- wt.bar
+    #attr(pvalue, "df.bar") <- df.bar
 }

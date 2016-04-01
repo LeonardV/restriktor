@@ -1,4 +1,4 @@
-# computes the F- or LRT-statistic
+# computes the F, LRT and Score test statistic
 # To do: implement E-bar test statistic.
 
 conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
@@ -23,7 +23,6 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     boot <- "model.based"
   }
 
-#  constraints <- object$constraints
   model.org <- object$model.org
   X <- model.matrix(model.org)[,,drop=FALSE]
   Y <- model.org$model[, attr(model.org$terms, "response")]
@@ -85,13 +84,13 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
       # some equality may be preserved in the alternative hypothesis.
       if(meq.alt != 0L && meq.alt <= meq) {
         b.constr.alt <- con_solver(b.unconstr, X = X, y = Y,
-                                      Amat = Amat[1:meq.alt,,drop=FALSE],
-                                      bvec = bvec[1:meq.alt], meq = meq.alt,
-                                      tol = ifelse(is.null(control$tol), 1e-09, 
-                                                   control$tol),
-                                      maxit = ifelse(is.null(control$maxit), 1e04, 
-                                                     control$maxit))$solution
-
+                                   Amat = Amat[1:meq.alt,,drop=FALSE],
+                                   bvec = bvec[1:meq.alt], meq = meq.alt,
+                                   tol = ifelse(is.null(control$tol), 1e-09, 
+                                                control$tol),
+                                   maxit = ifelse(is.null(control$maxit), 1e04, 
+                                                  control$maxit))$solution
+        names(b.constr.alt) <- vnames
         Ts <- as.vector(t(b.constr - b.constr.alt) %*% solve(cov, b.constr - b.constr.alt))
       }
       else {
@@ -109,10 +108,10 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
 
   if (boot == "no") {
     pvalue <- con_pvalue_Fbar(cov, Ts.org = Ts, object$df.residual, type = type,
-                              Amat, bvec, meq, meq.alt)
+                              Amat = Amat, bvec = bvec, meq = meq, meq.alt = meq.alt)
   } else if (boot == "parametric") {
     pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "F",
-                                         bvec = bvec, meq = meq, meq.alt = meq.alt,
+                                         meq.alt = meq.alt,
                                          R = ifelse(is.null(control$B), 9999, control$B),
                                          p.distr = ifelse(is.null(control$p.distr), "N", control$p.distr),
                                          df = ifelse(is.null(control$df), 7, control$df),
@@ -131,9 +130,9 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                           seed = ifelse(is.null(control$seed), 1234, control$seed),
                                           verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   } else if (boot == "mix.weights") {
-    pvalue <- con_pvalue_boot_weights(object, pbar = "pfbar", Ts.org = Ts, df.residual = object$df.residual, 
-                                      type = type, Amat = Amat, bvec = bvec, meq = meq, 
-                                      meq.alt = meq.alt, 
+    pvalue <- con_pvalue_boot_weights(object, type = type, pbar = "pfbar", Ts.org = Ts, 
+                                      df.residual = object$df.residual, 
+                                      meq.alt = meq.alt,
                                       R = ifelse(is.null(control$B), 9999, control$B),
                                       parallel = ifelse(is.null(control$parallel), "no", control$parallel),
                                       ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
@@ -198,7 +197,6 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     boot <- "model.based"
   }
 
-  constraints <- object$constraints
   model.org <- object$model.org
   X <- model.matrix(model.org)[,,drop=FALSE]
   Y <- cbind(model.org$model[, attr(model.org$terms, "response")])
@@ -277,15 +275,15 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     }
     else {
       # some equality may be preserved in the alternative hypothesis.
-      if(meq.alt != 0L && meq.alt <= meq) {
+      if (meq.alt > 0L && meq.alt <= meq) {
         b.constr.alt <- con_solver(b.unconstr, X = X, y = Y,
-                                      Amat = Amat[1:meq.alt,,drop=FALSE],
-                                      bvec=bvec[1:meq.alt], meq = meq.alt,
-                                      tol = ifelse(is.null(control$tol), 1e-09, 
-                                                   control$tol),
-                                      maxit = ifelse(is.null(control$maxit), 1e04, 
-                                                     control$maxit))$solution
-          names(b.constr.alt) <- vnames
+                                   Amat = Amat[1:meq.alt,,drop=FALSE],
+                                   bvec=bvec[1:meq.alt], meq = meq.alt,
+                                   tol = ifelse(is.null(control$tol), 1e-09, 
+                                                control$tol),
+                                   maxit = ifelse(is.null(control$maxit), 1e04, 
+                                                  control$maxit))$solution
+        names(b.constr.alt) <- vnames
 
         ll0.out <- con_loglik_lm(X = X, y = Y, b = b.constr, detU = 1)
         ll0 <- ll0.out$loglik
@@ -313,18 +311,18 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
 
   if (boot == "no") {
     pvalue <- con_pvalue_Fbar(cov, Ts.org = Ts, object$df.residual, type = type,
-                                Amat, bvec, meq, meq.alt)
+                              Amat, bvec, meq, meq.alt)
   } else if (boot == "parametric") {
     pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "LRT",
-                                          constraints = constraints, meq.alt = meq.alt,
-                                          R = ifelse(is.null(control$B), 9999, control$B),
-                                          p.distr = ifelse(is.null(control$p.distr), "N", control$p.distr),
-                                          df = ifelse(is.null(control$df), 7, control$df),
-                                          parallel = ifelse(is.null(control$parallel), "no", control$parallel),
-                                          ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
-                                          cl = ifelse(is.null(control$cl), NULL, control$cl),
-                                          seed = ifelse(is.null(control$seed), 1234, control$seed),
-                                          verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
+                                         meq.alt = meq.alt,
+                                         R = ifelse(is.null(control$B), 9999, control$B),
+                                         p.distr = ifelse(is.null(control$p.distr), "N", control$p.distr),
+                                         df = ifelse(is.null(control$df), 7, control$df),
+                                         parallel = ifelse(is.null(control$parallel), "no", control$parallel),
+                                         ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
+                                         cl = ifelse(is.null(control$cl), NULL, control$cl),
+                                         seed = ifelse(is.null(control$seed), 1234, control$seed),
+                                         verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   } else if (boot == "model.based") {
     pvalue <- con_pvalue_boot_model_based(object, Ts.org = Ts, type = type, test = "LRT",
                                           meq.alt = meq.alt,
@@ -335,9 +333,8 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                           seed = ifelse(is.null(control$seed), 1234, control$seed),
                                           verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   } else if (boot == "mix.weights") {
-    pvalue <- con_pvalue_boot_weights(object, pbar = "pfbar", Ts.org = Ts, df.residual = object$df.residual, 
-                                      type = type, Amat = Amat, bvec = bvec, meq = meq, 
-                                      meq.alt = meq.alt, 
+    pvalue <- con_pvalue_boot_weights(object, type = type, pbar = "pfbar", Ts.org = Ts, df.residual = object$df.residual, 
+                                      meq.alt = meq.alt,
                                       R = ifelse(is.null(control$B), 9999, control$B),
                                       parallel = ifelse(is.null(control$parallel), "no", control$parallel),
                                       ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
@@ -442,7 +439,15 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
     
-    s20  <- sum((Y - X%*%b.eqconstr)^2) / (n-p)
+    op.idx <- !grepl("[^==]", x$partable$op)
+    p.idx <- as.data.frame(x$partable)[op.idx,]
+    rhs.idx <- p.idx$rhs == 0L
+    lhs.idx <- p.idx$lhs == 0L
+    check.idx <- length(which(rowSums(data.frame(lhs.idx, rhs.idx)) == 2))
+    p2 <- sum(rhs.idx, lhs.idx) - check.idx
+                                          # <FIXME> in case of "x == 0 or 0 == x" p should be adjusted. </FIXME>
+    
+    s20  <- sum((Y - X%*%b.eqconstr)^2) / (n-(p-p2))
     d0   <- 1/s20 * t(X)%*%(Y - X%*%b.eqconstr)
     i <- 1/s20 * (t(X)%*%X)
     U <- 1/sqrt(n) * solve(i) %*% d0
@@ -531,7 +536,7 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   }
   else if (boot == "parametric") {
     pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "Score",
-                                         constraints = constraints, meq.alt = meq.alt,
+                                         meq.alt = meq.alt,
                                          R = ifelse(is.null(control$B), 9999, control$B),
                                          p.distr = ifelse(is.null(control$p.distr), "N", control$p.distr),
                                          df = ifelse(is.null(control$df), 7, control$df),
@@ -551,9 +556,8 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                           seed = ifelse(is.null(control$seed), 1234, control$seed),
                                           verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   } else if (boot == "mix.weights") {
-    pvalue <- con_pvalue_boot_weights(object, pbar = "pfbar", Ts.org = Ts, df.residual = object$df.residual, 
-                                      type = type, Amat = Amat, bvec = bvec, meq = meq, 
-                                      meq.alt = meq.alt, 
+    pvalue <- con_pvalue_boot_weights(object, type = type, pbar = "pfbar", Ts.org = Ts, df.residual = object$df.residual,
+                                      meq.alt = meq.alt,
                                       R = ifelse(is.null(control$B), 9999, control$B),
                                       parallel = ifelse(is.null(control$parallel), "no", control$parallel),
                                       ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),

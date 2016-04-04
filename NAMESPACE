@@ -6,10 +6,6 @@ importFrom("lavaan",
            lav_constraints_parse,
            lav_func_jacobian_simple)
 
-#importFrom("MASS",
-#           lqs,
-#           psi.bisquare)
-
 importFrom("mvtnorm",
            pmvnorm,
            rmvnorm)
@@ -21,17 +17,16 @@ importFrom("boot",
            boot,
            boot.ci)
 
+importFrom("zoo",
+           is.zoo)
 
 # export ordinary functions defined in this package
-export("restriktor", "conLM.lm", "conLM.default",
-       "conTest", 
-       "conTestF.lm", "conTestF.rlm", "conTestLRT.lm", "conTestScore.lm",
-       "conTestWald.lm",
-       "conTestEq.lm", "conTestEq.rlm",
-       "conTestScore.rlm", "conTestWald.rlm", "conTestWald2.rlm",
+export("restriktor", "conLM.lm", "conRLM.rlm", #"conLM.default",
+       "conTest", "conTestF.lm", "conTestF.rlm", "conTestLRT.lm", 
+       "conTestScore.lm", "conTestEq.lm", "conTestEq.rlm",
+       "conTestScore.rlm", "conTestWald.rlm", #"conTestWald2.rlm",
        "print.conLM", "summary.conLM", "print.conTest", 
-       "coef.conLM", "conRLM.rlm", 
+       "coef.conLM", "model.matrix.conLM",  
        "con_constraints_ceq_amat",
-       "con_constraints_cin_amat",
        "con_constraints_con_amat",
        "lav_partable", "pchibar", "pfbar")

@@ -14,9 +14,13 @@ conTest <- function(object, type = "A", ...) {
     } else if (test == "score" | test == "Score") {
       UseMethod("conTestScore")  
     } else if (test == "Wald" | test == "wald") {
-      UseMethod("conTestWald")  
-    } else if (test == "Wald2" | test == "wald2") {
-      UseMethod("conTestWald2")  
+       if ("lm" %in% class(object)) {
+         UseMethod("conTestF")
+       } else {
+         UseMethod("conTestWald")     
+       }
+#    } else if (test == "Wald2" | test == "wald2") {
+#      UseMethod("conTestWald2")  
     } else {
       stop("restriktor ERROR: test ", sQuote(test), " not (yet) implemented.")
     }

@@ -67,7 +67,7 @@ conLM.lm <- function(model, constraints, se = "default",
                 R2.org = R2.org,
                 R2.reduced = R2.org,
                 df.residual = model$df.residual,
-                s2.unc = so$sigma^2, s2.unc.ml = ll.out$Sigma,
+                s2.unc = s2, s2.unc.ml = ll.out$Sigma,
                 s2 = s2, s2.ml = ll.out$Sigma, 
                 loglik = ll, Sigma = vcov(model),
                 Amat = Amat, bvec = bvec, meq = meq, iact = NULL, bootout = NULL)  
@@ -85,15 +85,20 @@ conLM.lm <- function(model, constraints, se = "default",
     fitted <- model.matrix(model) %*% b.constr
     residuals <- Y - fitted
     
+    # if equality constraints are involved, df should be adjusted or not???
     op.idx <- !grepl("[^==]", partable$op)
-    p.idx <- as.data.frame(partable)[op.idx,]
-    rhs.idx <- p.idx$rhs == 0L
-    lhs.idx <- p.idx$lhs == 0L
-    check.idx <- length(which(rowSums(data.frame(lhs.idx, rhs.idx)) == 2))
-    p2 <- sum(rhs.idx, lhs.idx) - check.idx
-    s2 <- sum(residuals^2) / (n-(p-p2))                                      # <FIXME> in case of "x == 0 or 0 == x" p should be adjusted. </FIXME>
+    partable.df <- as.data.frame(partable)
+    idx <- partable.df[op.idx,]
+    rhs.idx <- grepl("(^[[:digit:]][.][[:digit:]]$)|(^[0-9]$)", as.vector(idx$rhs))
+    lhs.idx <- grepl("(^[[:digit:]][.][[:digit:]]$)|(^[0-9]$)", as.vector(idx$lhs))
+    check.idx <- length(which(rowSums(cbind(lhs.idx, rhs.idx)) == 2))
+    p.correction <- sum(rhs.idx) + sum(lhs.idx) - check.idx
+    p <- NCOL(X)
+    df <- (n-(p-p.correction))
+    df.old <- n - p
+    s2 <- sum(residuals^2) / df
     
-    cat("CHECK DF S^2!")
+    cat("CHECK DF S^2! =", s2, "...df = ", df, "...df.old =", df.old, "\n")
     
     # lm
     if (ncol(Y) == 1L) {

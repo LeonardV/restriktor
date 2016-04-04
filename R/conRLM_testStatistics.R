@@ -93,11 +93,11 @@ robustFm <- function(x, y, beta0, betaA, scale, cc = 4.685061) {
 
 
 ## robust Wald statistic, Silvapulle (1992) ##
-robustWaldXX <- function(x, beta0, beta1, beta2, tau) {
-  TsWald <- c(( (t(beta2-beta0)%*%(t(x)%*%x)%*%(beta2-beta0)) - 
-                (t(beta2-beta1)%*%(t(x)%*%x)%*%(beta2-beta1)) ) / tau^2) 
-  
-  out <- TsWald
-  
-  out
-}
+# robustWaldXX <- function(x, beta0, beta1, beta2, tau) {
+#   TsWald <- c(( (t(beta2-beta0)%*%(t(x)%*%x)%*%(beta2-beta0)) - 
+#                 (t(beta2-beta1)%*%(t(x)%*%x)%*%(beta2-beta1)) ) / tau^2) 
+#   
+#   out <- TsWald
+#   
+#   out
+# }

@@ -88,7 +88,7 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL, type = "A",
   }
   
   model.org <- model$model.org
-  X <- model.matrix(model.org)[,,drop=FALSE]
+  X <- model.matrix(model)[,,drop=FALSE]
   n <- dim(X)[1]
 
   # constraints   
@@ -202,7 +202,7 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL, type = "A",
     stop("type C is based on a t-distribution. Set boot = \"no\" ") 
   }
   model.org <- model$model.org
-  X <- model.matrix(model.org)[,,drop=FALSE]
+  X <- model.matrix(model)[,,drop=FALSE]
   
   # constraints 
   Amat <- model$Amat
@@ -355,13 +355,6 @@ mix.boot <- function(object, type = "A",
   bvec <- object$bvec
   meq  <- object$meq
   
-#  if (meq.alt > 0 & type == "B") {
-#   Amat <- Amat[1:meq.alt,,drop=FALSE]
-#   meq  <- meq.alt 
-#   bvec <- bvec[1:meq.alt]
-#  }
-  
-
   s2unc <- object$s2.unc
   X <- model.matrix(object$model.org)[,,drop = FALSE]
   invW <- kronecker(solve(s2unc), t(X) %*% X)

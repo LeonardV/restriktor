@@ -1,5 +1,5 @@
-#acknowledgement: code from ic.infer package
-#slightly adapted by LV
+# acknowledgement: code from ic.infer package
+# slightly adapted by LV
 con_boot_lm <- function(model, B = 1000, fixed = FALSE, ...) { 
     ## prepare data for bootstrap sampling
     form <- formula(model)

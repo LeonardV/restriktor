@@ -1,24 +1,19 @@
-#adjusted functions from the sandwich package.
+# adjusted bread functions from the sandwich package.
+
 sandwich <- function(x, bread. = bread, meat. = meat, ...) {
-  if(is.list(x$model.org) && !is.null(x$model.org$na.action)) class(x$model.org$na.action) <- "omit"
+  if(is.list(x) && !is.null(x$na.action)) class(x$na.action) <- "omit"
   if(is.function(bread.)) bread. <- bread.(x)
   if(is.function(meat.)) meat. <- meat.(x, ...)
   n <- NROW(estfun(x))
   return(1/n * (bread. %*% meat. %*% bread.))
 }
 
-
 bread <- function(x, ...) {
   UseMethod("bread")
 }
 
-estfun <- function(x, ...) {
-  UseMethod("estfun")
-}
-
 bread.lm <- function(x, ...) {
   if(!is.null(x$model.org$na.action)) class(x$model.org$na.action) <- "omit"
-  #x$information.inverted = vcov(fit.lm)
   cov.unscaled <- 1/x$s2 * x$information.inverted 
   return(cov.unscaled * as.vector(sum(summary(x$model.org)$df[1:2])))
 }
@@ -26,7 +21,7 @@ bread.lm <- function(x, ...) {
 
 bread.rlm <- function(x, ...) {
   if(!is.null(x$model.org$na.action)) class(x$model.org$na.action) <- "omit"
-    xmat <- model.matrix(x$model.org)
+    xmat <- model.matrix(x)
     xmat <- naresid(x$model.org$na.action, xmat)
     wts <- weights(x)
     if(is.null(wts)) wts <- 1
@@ -46,35 +41,38 @@ bread.rlm <- function(x, ...) {
 }
 
 
+
+estfun <- function(x, ...) {
+  UseMethod("estfun")
+}
+
 estfun.lm <- function(x, ...) {
-  xmat <- model.matrix(x$model.org)
-  xmat <- naresid(x$model.org$na.action, xmat)
+  xmat <- model.matrix(x)
+  xmat <- naresid(x$na.action, xmat)
   if(any(alias <- is.na(coef(x)))) xmat <- xmat[, !alias, drop = FALSE]
-  wts <- weights(x$model.org)
+  wts <- weights(x)
   if(is.null(wts)) wts <- 1
   res <- residuals(x)
   rval <- as.vector(res) * wts * xmat
   attr(rval, "assign") <- NULL
   attr(rval, "contrasts") <- NULL
-  if(zoo:::is.zoo(res)) rval <- zoo:::zoo(rval, index(res), attr(res, "frequency"))
+  if(is.zoo(res)) rval <- zoo(rval, index(res), attr(res, "frequency"))
   if(is.ts(res)) rval <- ts(rval, start = start(res), frequency = frequency(res))
   return(rval)
 }
 
-
 estfun.rlm <- function(x, ...) {
-  xmat <- model.matrix(x$model.org)
-  xmat <- naresid(x$model.org$na.action, xmat)
+  xmat <- model.matrix(x)
+  #xmat <- naresid(x$na.action, xmat)
   wts <- weights(x)
   if(is.null(wts)) wts <- 1
   res <- residuals(x)
-  #psi <- function(z) tukeyPsi(z) * z
   psi <- function(z) x$model.org$psi(z) * z
   rval <- as.vector(psi(res/x$model.org$s)) * wts * xmat
   attr(rval, "assign") <- NULL
   attr(rval, "contrasts") <- NULL
   if(is.ts(res)) rval <- ts(rval, start = start(res), frequency = frequency(res))
-  if(zoo:::is.zoo(res)) rval <- zoo:::zoo(rval, index(res), attr(res, "frequency"))
+  if(is.zoo(res)) rval <- zoo(rval, index(res), attr(res, "frequency"))
   return(rval)
 }
 
@@ -86,7 +84,7 @@ meatHC <- function(x,
   if(is.list(x$model.org) && !is.null(x$model.org$na.action)) class(x$model.org$na.action) <- "omit"
   
   ## extract X
-  X <- model.matrix(x$model.org)
+  X <- model.matrix(x)
   if(any(alias <- is.na(coef(x)))) X <- X[, !alias, drop = FALSE]
   attr(X, "assign") <- NULL
   n <- NROW(X)
@@ -94,12 +92,23 @@ meatHC <- function(x,
   ## get hat values and residual degrees of freedom
   #diaghat <- try(hatvalues(x$model.org), silent = TRUE)
  # if (class(x)[1] == "conLM") {
-    diaghat <- diag(X%*%(1/x$s2 * x$information.inverted)%*%t(X))                
+  diaghat <- diag(X%*%(1/x$s2 * x$information.inverted)%*%t(X))                
 #  } else if (class(x)[1] == "conRLM") {
 #    diaghat <- diag(X%*%(solve(vcovMM(X = X, resid0 = x$init.resid, 
 #                                      resid = x$residuals, scale = x$scale)))%*%t(X))                         
 #  }  
-  df <- n - NCOL(X)
+
+  op.idx <- !grepl("[^==]", x$partable$op)
+  partable.df <- as.data.frame(x$partable)
+  idx <- partable.df[op.idx,]
+  rhs.idx <- grepl("(^[[:digit:]][.][[:digit:]]$)|(^[0-9]$)", as.vector(idx$rhs))
+  lhs.idx <- grepl("(^[[:digit:]][.][[:digit:]]$)|(^[0-9]$)", as.vector(idx$lhs))
+  check.idx <- length(which(rowSums(cbind(lhs.idx, rhs.idx)) == 2))
+  p.correction <- sum(rhs.idx) + sum(lhs.idx) - check.idx
+  p <- NCOL(X)
+  df <- (n-(p-p.correction))
+  df.old <- n - p
+  cat("CHECK DF S^2!", "...df = ", df, "...df.old =", df.old, "\n")
   
   ## the following might work, but "intercept" is also claimed for "coxph"
   ## res <- if(attr(terms(x), "intercept") > 0) estfun(x)[,1] else rowMeans(estfun(x)/X, na.rm = TRUE)

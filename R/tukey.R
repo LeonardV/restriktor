@@ -16,7 +16,7 @@ tukeyChi <- function (x, cc = 4.685061, deriv = 0) {
   r
 }
 
-
+#acknowledgement: code taken from robustbase package.
 tukeyPsi <- function (x, cc = 4.685061, deriv = 0) {
   x2 <- (x/cc)^2
   if (deriv < 0) 

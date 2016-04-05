@@ -21,7 +21,8 @@ dfEq_correction <- function(object, ...) {
   lhs.idx <- grepl("(^[[:digit:]][.][[:digit:]]$)|(^[0-9]$)", as.vector(idx$lhs))
   # check if rhs contains any numbers
   rhs.idx <- grepl("(^[[:digit:]][.][[:digit:]]$)|(^[0-9]$)", as.vector(idx$rhs))
-  # check if perhaps both sides contain numbers. This is probably not possible.
+  # check if perhaps both sides contain numbers. This is probably not possible,
+  # but they should not be included.
   check.idx <- length(which(rowSums(cbind(lhs.idx, rhs.idx)) == 2))
   # remove any numbers before checking duplicate variable names. 
   char.idx <- !grepl("(^[[:digit:]][.][[:digit:]]$)|(^[0-9]$)", c(as.vector(idx$lhs), as.vector(idx$rhs)))
@@ -31,6 +32,7 @@ dfEq_correction <- function(object, ...) {
   pEq.corr <- sum(rhs.idx) + sum(lhs.idx) - check.idx + diff.idx
   
   out <- pEq.corr
-  
+  attr(out, "char") <- char
+
   out
 }

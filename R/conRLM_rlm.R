@@ -90,9 +90,9 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   
   ll.out <- con_loglik_lm(X = X, y = Y, b = b.unconstr, detU = 1)
   ll <- ll.out$loglik
-  s2.ml <- ll.out$Sigma
+  s2.unc.ml <- s2.ml <- ll.out$Sigma
   tau.hat <- so$stddev  
-  s2 <- tau.hat^2
+  s2.unc <- s2 <- tau.hat^2
   
   if (all(Amat %*% c(b.unconstr) - bvec >= 0 * bvec) & meq == 0) {
     
@@ -128,9 +128,11 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
       call.rlm[["data"]] <- NULL
       call.rlm[["x"]] <- NULL
       call.rlm[["y"]] <- NULL
-      call.my <- list(x = X, y = Y, Amat = Amat, meq = meq, bvec = bvec)      
+      call.my <- list(x = X, y = Y, Amat = Amat, meq = meq, bvec = bvec, 
+                      partable = partable)      
       CALL <- c(call.rlm, call.my)
       rfit <- do.call("conRLM_fit", CALL)
+        attr(rfit, "parTable") <- partable
 #    }
 #    else {
 #      call.my <- list(Amat = Amat, meq = meq, bvec = bvec)  
@@ -147,11 +149,14 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
           
     ll.out <- con_loglik_lm(X = X, y = Y, b = b.constr, detU = 1)
     ll <- ll.out$loglik
-    cons2.ml <- ll.out$Sigma    
+    s2.ml <- ll.out$Sigma    
     
-    tau.hat <- MASS:::summary.rlm(rfit)$stddev                                  # <FIXME> in case of "x == 0 or 0 == x" p should be adjusted. </FIXME>
-    
-    cons2 <- tau.hat^2
+    so2.rlm <- MASS:::summary.rlm(rfit)
+    so.rlm <- summary_rlm(rfit)
+    tau.hat <- so.rlm$stddev                                  
+    s2 <- tau.hat^2
+    cat("CHECK DF S^2! =", s2, "...df = ", so.rlm$df[2], "...df.old =", so2.rlm$df[2], "\n")
+
     iact <- rfit$iact
     
     #R2 and adjusted R2, code taken from lmrob() function.
@@ -185,8 +190,8 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 R2.reduced = R2.reduced,
                 df.residual = df.residual,
                 scale = rfit$s,                                                               
-                s2 = cons2, s2.ml = cons2.ml,
-                s2.unc = s2, s2.unc.ml = s2.ml,
+                s2 = s2, s2.ml = s2.ml,
+                s2.unc = s2.unc, s2.unc.ml = s2.unc.ml,
                 loglik = ll, 
                 Sigma = vcov(model),                                             #probably not robust???
                 Amat = Amat, bvec = bvec, meq = meq, iact = iact,

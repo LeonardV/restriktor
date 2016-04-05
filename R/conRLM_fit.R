@@ -1,19 +1,20 @@
-#adjusted code from the rlm() function (MASS package).
+# acknowledgement: code taken from the rlm() function (MASS package).
+# adjusted by LV.
 conRLM_fit <- function(x, y, weights, w = rep(1, nrow(x)),
-                       init = "ls", 
-                       scale.est = c("MAD", "Huber", "proposal 2"), k2 = 1.345,
-                       method = c("M", "MM"), wt.method = c("inv.var", "case"),
-                       maxit = 5000, acc = 1e-14, test.vec = "resid", lqs.control= NULL,
-                       Amat = NULL, bvec = NULL, meq = 0L, ...) {
-    irls.delta <- function(old, new)
+                       init = "ls", scale.est = c("MAD", "Huber", "proposal 2"), 
+                       k2 = 1.345, method = c("M", "MM"), 
+                       wt.method = c("inv.var", "case"), maxit = 5000, 
+                       acc = 1e-14, test.vec = "resid", lqs.control= NULL, 
+                       Amat = NULL, bvec = NULL, meq = 0L, partable = NULL, ...) {
+    irls.delta <- function(old, new) {
       sqrt(sum((old - new)^2)/max(1e-20, sum(old^2)))
+    }
     irls.rrxwr <- function(x, w, r) {
       w <- sqrt(w)
       max(abs((matrix(r * w, 1L, length(r)) %*% x)/
                 sqrt(matrix(w, 1L, length(r)) %*% (x^2))))/sqrt(sum(w * r^2))
     }
-    wmad <- function(x, w)
-    {
+    wmad <- function(x, w) {
       o <- sort.list(abs(x)); x <- abs(x)[o]; w <- w[o]
       p <- cumsum(w)/sum(w)
       n <- sum(p < 0.5)
@@ -27,21 +28,26 @@ conRLM_fit <- function(x, y, weights, w = rep(1, nrow(x)),
       x <- as.matrix(x)
       colnames(x) <- nmx
     } else x <- as.matrix(x)
-    if(is.null(colnames(x)))
+    if (is.null(colnames(x)))
       colnames(x) <- paste("X", seq(ncol(x)), sep="")
-    if(qr(x)$rank < ncol(x))
+    if (qr(x)$rank < ncol(x))
       stop("'x' is singular: singular fits are not implemented in 'rlm'")
     
-    if(!(any(test.vec == c("resid", "coef", "w", "NULL"))
-         || is.null(test.vec))) stop("invalid 'test.vec'")
+    if (!(any(test.vec == c("resid", "coef", "w", "NULL"))
+         || is.null(test.vec))) {
+      stop("invalid 'test.vec'")
+    }
     ## deal with weights
     xx <- x
     yy <- y
     if(!missing(weights)) {
-      if(length(weights) != nrow(x))
+      if (length(weights) != nrow(x)) {
         stop("length of 'weights' must equal number of observations")
-      if(any(weights < 0)) stop("negative 'weights' value")
-      if(wt.method == "inv.var") {
+      }
+      if (any(weights < 0)) {
+        stop("negative 'weights' value")
+      }
+      if (wt.method == "inv.var") {
         fac <- sqrt(weights)
         y <- y*fac; x <- x* fac
         wt <- NULL
@@ -51,35 +57,44 @@ conRLM_fit <- function(x, y, weights, w = rep(1, nrow(x)),
       }
     } else wt <- NULL
     
-    if(method == "M") {
+    if (method == "M") {
       scale.est <- match.arg(scale.est)
       psi <- psi.bisquare
-      if(!is.function(psi)) psi <- get(psi, mode="function")
-      if(is.character(init)) {
+      if (!is.function(psi)) { 
+        psi <- get(psi, mode="function")
+      }
+      if (is.character(init)) {
         if(init == "ls") {
             temp <- lm.wfit(x, y, w, method="qr") 
-        }
-        else if(init == "lts") {                                                
-          if(is.null(lqs.control)) lqs.control <- list(nsamp=200L)
-          temp <- do.call("lqs", c(list(x, y, intercept = FALSE), lqs.control))
-        } else stop("'init' method is unknown")
+        #}
+        #else if(init == "lts") {                                                
+        #  if(is.null(lqs.control)) lqs.control <- list(nsamp=200L)
+        #  temp <- do.call("lqs", c(list(x, y, intercept = FALSE), lqs.control))
+        } else stop(" only 'init = ls' method")
           coef <- temp$coefficient
           resid <- temp$residuals
       } else {
-        if(is.list(init)) coef <- init$coef
-        else coef <- init
+        if (is.list(init)) {
+          coef <- init$coef
+        } else {
+          coef <- init
+        }
         resid <- drop(y - x %*% coef)
       }
     } else if(method == "MM") {
-      scale.est <- "MM"
+        scale.est <- "MM"
+        # parameters fixed to zero should be remove to compute scale.
+        con.equal <- attr(dfEq_correction(partable), "char")
+        equal.idx <- colnames(x) %in% con.equal
+        X <- x[,!equal.idx, drop = FALSE]
         temp <- do.call("lqs",
-                        c(list(x, y, intercept = FALSE, method = "S",
+                        c(list(x = X, y, intercept = FALSE, method = "S",
                                k0 = 1.54764), lqs.control))
         coef <- temp$coefficients
         resid <- temp$residuals
         resid0 <- resid
         scale <- temp$scale
-      psi <- psi.bisquare
+        psi <- psi.bisquare
     } else {
       stop("'method' is unknown")
     }
@@ -91,25 +106,26 @@ conRLM_fit <- function(x, y, weights, w = rep(1, nrow(x)),
     ## At this point the residuals are weighted for inv.var and
     ## unweighted for case weights.  Only Huber handles case weights
     ## correctly.
-    if(scale.est != "MM")
-      scale <- if(is.null(wt)) mad(resid, 0) else wmad(resid, wt)
+    if (scale.est != "MM")
+      scale <- if (is.null(wt)) mad(resid, 0) else wmad(resid, wt)
 
     for(iiter in 1L:maxit) {
-      if(!is.null(test.vec)) testpv <- get(test.vec)
-      if(scale.est != "MM") {
-        scale <- if(scale.est == "MAD")
-          if(is.null(wt)) median(abs(resid))/0.6745 else wmad(resid, wt)
-        else if(is.null(wt))
+      if (!is.null(test.vec)) { 
+        testpv <- get(test.vec)
+      }
+      if (scale.est != "MM") {
+        scale <- if (scale.est == "MAD")
+          if (is.null(wt)) median(abs(resid))/0.6745 else wmad(resid, wt)
+        else if (is.null(wt))
           sqrt(sum(pmin(resid^2, (k2 * scale)^2))/(n1*gamma))
         else sqrt(sum(wt*pmin(resid^2, (k2 * scale)^2))/(n1*gamma))
-        if(scale == 0) {
+        if (scale == 0) {
           done <- TRUE
           break
         }
       }
       w <- psi(resid/scale)
-      if(!is.null(wt)) w <- w * weights
-      #if (all(Amat %*% coef - bvec >= 0 * bvec) & meq == 0 & iiter > 1L) {  
+      if (!is.null(wt)) w <- w * weights
       if (is.null(Amat)) {
         temp <- lm.wfit(x, y, w, method="qr")
         coef <- temp$coefficients
@@ -122,7 +138,7 @@ conRLM_fit <- function(x, y, weights, w = rep(1, nrow(x)),
         out <- con_my_solve_QP(Dmat = XX, dvec = Xy, Amat = t(Amat), 
                                bvec = bvec, meq = meq)
         
-        if(out$status == -1 || out$status == -2) {
+        if (out$status == -1 || out$status == -2) {
           done <- FALSE
           break
         }
@@ -131,16 +147,19 @@ conRLM_fit <- function(x, y, weights, w = rep(1, nrow(x)),
         iact <- out$iact
       }
             
-      if(!is.null(test.vec)) convi <- irls.delta(testpv, get(test.vec))
-      else convi <- irls.rrxwr(x, w, resid)                                      
+      if (!is.null(test.vec)) {
+        convi <- irls.delta(testpv, get(test.vec))
+      } else {
+        convi <- irls.rrxwr(x, w, resid)
+      }
       conv <- c(conv, convi)
       done <- (convi <= acc)
-      if(done) break
+      if (done) {
+        break
+      }
     }
     
-    #cat("iteration =", iiter, "...converged =", done, "\n")
-
-    if(!done)
+    if (!done)
       warning(gettextf("'rlm' failed to converge in %d steps", maxit),
               domain = NA)
     fitted <- drop(xx %*% coef)
@@ -149,7 +168,7 @@ conRLM_fit <- function(x, y, weights, w = rep(1, nrow(x)),
     cl <- match.call()
     cl[[1L]] <- as.name("rlm")
     fit <- list(coefficients = coef, residuals = yy - fitted, wresid = resid,
-                resid0 = if(method=="MM") { resid0 },
+                resid0 = if (method=="MM") { resid0 },
                 effects = temp$effects,
                 rank = temp$rank, fitted.values = fitted,
                 assign = temp$assign, qr = temp$qr, 

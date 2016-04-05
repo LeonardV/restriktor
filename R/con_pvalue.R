@@ -30,9 +30,11 @@ con_pvalue_Fbar <- function(cov, Ts.org, df.residual, type = "type A",
     names(pvalue) <- "pt.value"
   }
 
-  pvalue
-    #attr(pvalue, "wt") <- wt.bar
-    #attr(pvalue, "df.bar") <- df.bar
+  out <- pvalue
+    attr(out, "wt") <- wt.bar
+    attr(out, "df.bar") <- df.bar
+  
+  out    
 }
 
 
@@ -67,9 +69,11 @@ con_pvalue_Chibar <- function(cov, Ts.org, df.residual, type = "A",
     names(pvalue) <- "pt.value"
   }
   
-  pvalue
-    #attr(pvalue, "wt") <- wt.bar
-    #attr(pvalue, "df.bar") <- df.bar
+  out <- pvalue
+    attr(out, "wt") <- wt.bar
+    attr(out, "df.bar") <- df.bar
+  
+  out
 }
 
 
@@ -479,7 +483,9 @@ con_pvalue_boot_weights <- function(model, type = "type A", pbar = "pfbar", Ts.o
     names(pvalue) <- "pt.value"
   }
   
-  pvalue
-    #attr(pvalue, "wt") <- wt.bar
-    #attr(pvalue, "df.bar") <- df.bar
+  out <- pvalue
+    attr(out, "wt") <- wt.bar
+    attr(out, "df.bar") <- df.bar
+  
+  out
 }

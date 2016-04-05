@@ -1,6 +1,5 @@
 # utility functions
 
-
 coef.conLM <- function(object, ...)  {
   object$b.constr
 }
@@ -25,7 +24,8 @@ dfEq_correction <- function(object, ...) {
   # but they should not be included.
   check.idx <- length(which(rowSums(cbind(lhs.idx, rhs.idx)) == 2))
   # remove any numbers before checking duplicate variable names. 
-  char.idx <- !grepl("(^[[:digit:]][.][[:digit:]]$)|(^[0-9]$)", c(as.vector(idx$lhs), as.vector(idx$rhs)))
+  char.idx <- !grepl("(^[[:digit:]][.][[:digit:]]$)|(^[0-9]$)", 
+                     c(as.vector(idx$lhs), as.vector(idx$rhs)))
   char <- c(as.vector(idx$lhs), as.vector(idx$rhs))[char.idx]
   diff.idx <- length(char) - length(unique(char))
 

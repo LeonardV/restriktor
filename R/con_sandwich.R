@@ -98,15 +98,9 @@ meatHC <- function(x,
 #                                      resid = x$residuals, scale = x$scale)))%*%t(X))                         
 #  }  
 
-  op.idx <- !grepl("[^==]", x$partable$op)
-  partable.df <- as.data.frame(x$partable)
-  idx <- partable.df[op.idx,]
-  rhs.idx <- grepl("(^[[:digit:]][.][[:digit:]]$)|(^[0-9]$)", as.vector(idx$rhs))
-  lhs.idx <- grepl("(^[[:digit:]][.][[:digit:]]$)|(^[0-9]$)", as.vector(idx$lhs))
-  check.idx <- length(which(rowSums(cbind(lhs.idx, rhs.idx)) == 2))
-  p.correction <- sum(rhs.idx) + sum(lhs.idx) - check.idx
+  dfEq.corr <- dfEq_correction(x$partable)  
   p <- NCOL(X)
-  df <- (n-(p-p.correction))
+  df <- n - p + dfEq.corr
   df.old <- n - p
   cat("CHECK DF S^2!", "...df = ", df, "...df.old =", df.old, "\n")
   

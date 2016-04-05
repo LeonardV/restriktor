@@ -437,7 +437,7 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
     
-    s20  <- sum((Y - X%*%b.eqconstr)^2) / (n-(p-p2))
+    s20  <- sum((Y - X%*%b.eqconstr)^2) / (n-p) #no df adjustment necessary for global test.
     d0   <- 1/s20 * t(X)%*%(Y - X%*%b.eqconstr)
     i <- 1/s20 * (t(X)%*%X)
     U <- 1/sqrt(n) * solve(i) %*% d0
@@ -457,19 +457,17 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
     
-#     fitted <- model.matrix(object) %*% b.eqconstr
-#     res0 <- Y - fitted
-#     op.idx <- !grepl("[^==]", object$partable$op)
-#     p.idx <- as.data.frame(object$partable)[op.idx,]
-#     rhs.idx <- p.idx$rhs == 0L
-#     lhs.idx <- p.idx$lhs == 0L
-#     check.idx <- length(which(rowSums(data.frame(lhs.idx, rhs.idx)) == 2))
-#     p2 <- sum(rhs.idx, lhs.idx) - check.idx
-#     df <- (n-(p-p2))
-#     s2 <- sum(res0^2) / df
-#     cat("CHECK DF S^2!", "...df.org = ", (n-p), "...df.adj =", df, "\n")
-#     
-    s20 <- sum((Y - X%*%b.eqconstr)^2) / (n-p)
+    # if parameters are constraint to a number, df shoulde be adjusted.
+    con.idx <- which(object$partable$op == "<" | object$partable$op == ">")
+    user.equal  <- object$partable
+      user.equal$op[con.idx] <- "=="
+    pEq.corr <- dfEq_correction(user.equal)
+    p <- NCOL(X)
+    df <- (n - p + pEq.corr)
+    s20 <- sum((Y - X%*%b.eqconstr)^2) / df
+    
+    cat("CHECK DF S^2! =", s20, "...df = ", df, "\n")
+    
     d0 <- 1/s20 * t(X)%*%(Y - X%*%b.eqconstr)
     i <- 1/s20 * (t(X)%*%X)
     U <- 1/sqrt(n) * solve(i) %*% d0
@@ -482,7 +480,13 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   }
   else if (type == "B") {
     if (meq.alt == 0L) {
-      s20  <- sum((Y - X%*%b.constr)^2) / (n-p)
+      pEq.corr <- dfEq_correction(object$partable)
+      p <- NCOL(X)
+      df <- (n - p + pEq.corr)
+      s20 <- sum((Y - X%*%b.constr)^2) / df
+      
+      cat("CHECK DF S^2! =", s20, "...df = ", df, "\n")
+      
       d0   <- 1/s20 * t(X)%*%(Y - X%*%b.constr)
       i <- 1/s20 * (t(X)%*%X)
       U <- 1/sqrt(n) * solve(i) %*% d0
@@ -502,7 +506,13 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                                   control$maxit))$solution
         names(b.constr.alt) <- vnames
         
-        s20  <- sum((Y - X%*%b.constr)^2) / (n-p)
+        pEq.corr <- dfEq_correction(object$partable)
+        p <- NCOL(X)
+        df <- (n - p + pEq.corr)
+        s20 <- sum((Y - X%*%b.constr)^2) / df
+        
+        cat("CHECK DF S^2! =", s20, "...df = ", df, "\n")
+        
         d0   <- 1/s20 * t(X)%*%(Y - X%*%b.constr)
         i <- 1/s20 * (t(X)%*%X)
         U <- 1/sqrt(n) * solve(i) %*% d0

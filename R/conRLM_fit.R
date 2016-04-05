@@ -3,7 +3,7 @@ conRLM_fit <- function(x, y, weights, w = rep(1, nrow(x)),
                        init = "ls", 
                        scale.est = c("MAD", "Huber", "proposal 2"), k2 = 1.345,
                        method = c("M", "MM"), wt.method = c("inv.var", "case"),
-                       maxit = 500, acc = 1e-09, test.vec = "resid", lqs.control= NULL,
+                       maxit = 5000, acc = 1e-14, test.vec = "resid", lqs.control= NULL,
                        Amat = NULL, bvec = NULL, meq = 0L, ...) {
     irls.delta <- function(old, new)
       sqrt(sum((old - new)^2)/max(1e-20, sum(old^2)))
@@ -55,14 +55,6 @@ conRLM_fit <- function(x, y, weights, w = rep(1, nrow(x)),
       scale.est <- match.arg(scale.est)
       psi <- psi.bisquare
       if(!is.function(psi)) psi <- get(psi, mode="function")
-      ## match any ... args to those of psi.
-#      arguments <- list(...)
-#      if(length(arguments)) {
-#        pm <- pmatch(names(arguments), names(formals(psi)), nomatch = 0L)
-#        if(any(pm == 0L)) warning("some of ... do not match")
-#        pm <- names(arguments)[pm> 0L]
-#        formals(psi)[pm] <- unlist(arguments[pm])
-#      }
       if(is.character(init)) {
         if(init == "ls") {
             temp <- lm.wfit(x, y, w, method="qr") 
@@ -88,13 +80,6 @@ conRLM_fit <- function(x, y, weights, w = rep(1, nrow(x)),
         resid0 <- resid
         scale <- temp$scale
       psi <- psi.bisquare
-  #    if(length(arguments <- list(...)))
-  #      if(match("c", names(arguments), nomatch = 0L)) {
-  #        c0 <- arguments$c
-  #        if (c0 > 1.54764) formals(psi)$c <- c0
-  #        else
-  #          warning("'c' must be at least 1.548 and has been ignored")
-  #      }
     } else {
       stop("'method' is unknown")
     }
@@ -124,18 +109,18 @@ conRLM_fit <- function(x, y, weights, w = rep(1, nrow(x)),
       }
       w <- psi(resid/scale)
       if(!is.null(wt)) w <- w * weights
-      if(is.null(Amat)) {
+      #if (all(Amat %*% coef - bvec >= 0 * bvec) & meq == 0 & iiter > 1L) {  
+      if (is.null(Amat)) {
         temp <- lm.wfit(x, y, w, method="qr")
         coef <- temp$coefficients
         resid <- temp$residuals
         iact <- 0L
-      }
-      else {
+      } else {
         w <- diag(c(w))
         XX <- t(x) %*% w %*% x
         Xy <- t(x) %*% w %*% y
-        out <- con_my_solve_QP(Dmat = XX, dvec = Xy, Amat = t(Amat), bvec = bvec, 
-                               meq = meq)
+        out <- con_my_solve_QP(Dmat = XX, dvec = Xy, Amat = t(Amat), 
+                               bvec = bvec, meq = meq)
         
         if(out$status == -1 || out$status == -2) {
           done <- FALSE
@@ -145,8 +130,7 @@ conRLM_fit <- function(x, y, weights, w = rep(1, nrow(x)),
         resid <- drop(y - x %*% coef)
         iact <- out$iact
       }
-      
-      
+            
       if(!is.null(test.vec)) convi <- irls.delta(testpv, get(test.vec))
       else convi <- irls.rrxwr(x, w, resid)                                      
       conv <- c(conv, convi)

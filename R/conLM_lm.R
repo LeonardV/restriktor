@@ -85,17 +85,11 @@ conLM.lm <- function(model, constraints, se = "default",
     fitted <- model.matrix(model) %*% b.constr
     residuals <- Y - fitted
     
-    # if equality constraints are involved, df should be adjusted or not???
-    op.idx <- !grepl("[^==]", partable$op)
-    partable.df <- as.data.frame(partable)
-    idx <- partable.df[op.idx,]
-    rhs.idx <- grepl("(^[[:digit:]][.][[:digit:]]$)|(^[0-9]$)", as.vector(idx$rhs))
-    lhs.idx <- grepl("(^[[:digit:]][.][[:digit:]]$)|(^[0-9]$)", as.vector(idx$lhs))
-    check.idx <- length(which(rowSums(cbind(lhs.idx, rhs.idx)) == 2))
-    p.correction <- sum(rhs.idx) + sum(lhs.idx) - check.idx
+    # function to correct the df in case of e.g., x1 == 0, df + 1; x1 == 0 and x1 == x2, df + 2
+    pEq.corr <- dfEq_correction(partable)
     p <- NCOL(X)
-    df <- (n-(p-p.correction))
-    df.old <- n - p
+    df <- (n - p + pEq.corr)
+    df.old <- n-p
     s2 <- sum(residuals^2) / df
     
     cat("CHECK DF S^2! =", s2, "...df = ", df, "...df.old =", df.old, "\n")

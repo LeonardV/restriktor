@@ -41,7 +41,7 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
     if (!(is.null(x$partable)) && any(x$partable$op == ":=")) {
       b.def <- x$CON$def.function(coef(x))
       JAC <- lav_func_jacobian_simple(func = x$CON$def.function, x = coef(x))
-      def.cov <- JAC %*% vcovHC %*% t(JAC)
+      def.cov <- JAC %*% vcovHC %*% t(JAC) #JAC, Amat[meq]
       diag.def.cov <- diag(def.cov)
       diag.def.cov[ diag.def.cov < 0 ] <- as.numeric(NA)
       SE.def <- sqrt(diag.def.cov)

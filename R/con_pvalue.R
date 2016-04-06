@@ -417,9 +417,10 @@ mix.boot <- function(object, type = "A",
   }
   dimsol <- ncol(W) - iact
   wt <- sapply(1:(ncol(W)), function(x) sum(x == (dimsol)))/R
-  #wt.idx <- which(wt == 0)
-  wt.idx <- (nrow(Amat)-meq) + 1
-  wt <- rev(wt[1:wt.idx])
+  zero.idx <- which(wt == 0)
+  wt <- rev(wt[-zero.idx])
+  #wt.idx <- (nrow(Amat)-meq)
+  #wt <- rev(wt[1:wt.idx])
     names(wt) <- (nrow(Amat)-meq):0
 
   OUT <- wt

@@ -356,7 +356,7 @@ mix.boot <- function(object, type = "A",
 
   # constraints 
   Amat <- object$Amat
-  bvec <- object$bvec
+  bvec <- rep(0L, nrow(Amat))
   meq  <- object$meq
   
   s2unc <- object$s2.unc
@@ -419,8 +419,6 @@ mix.boot <- function(object, type = "A",
   wt <- sapply(1:(ncol(W)), function(x) sum(x == (dimsol)))/R
   zero.idx <- which(wt == 0)
   wt <- rev(wt[-zero.idx])
-  #wt.idx <- (nrow(Amat)-meq)
-  #wt <- rev(wt[1:wt.idx])
     names(wt) <- (nrow(Amat)-meq):0
 
   OUT <- wt

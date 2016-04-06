@@ -98,11 +98,12 @@ meatHC <- function(x,
 #                                      resid = x$residuals, scale = x$scale)))%*%t(X))                         
 #  }  
 
-  dfEq.corr <- dfEq_correction(x$partable)  
+  dfEq.corr <- dfEq_correction(x$parTable)  
   p <- NCOL(X)
   df <- n - p + dfEq.corr
   df.old <- n - p
-  cat("CHECK DF S^2!", "...df = ", df, "...df.old =", df.old, "\n")
+  
+  cat(" SW:...CHECK DF S^2!", "...df = ", df, "...df.old =", df.old, "\n")
   
   ## the following might work, but "intercept" is also claimed for "coxph"
   ## res <- if(attr(terms(x), "intercept") > 0) estfun(x)[,1] else rowMeans(estfun(x)/X, na.rm = TRUE)

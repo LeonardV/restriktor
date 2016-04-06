@@ -103,7 +103,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     b.constr <- b.unconstr
         
     OUT <- list(CON = NULL,
-                partable = parTable,
+                parTable = parTable,
                 constraints = constraints,
                 b.unconstr = b.unconstr,
                 b.constr = b.unconstr,
@@ -133,7 +133,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
       call.rlm[["x"]] <- NULL
       call.rlm[["y"]] <- NULL
       call.my <- list(x = X, y = Y, Amat = Amat, meq = meq, bvec = bvec, 
-                      partable = parTable)      
+                      parTable = parTable)      
       CALL <- c(call.rlm, call.my)
       rfit <- do.call("conRLM_fit", CALL)
         attr(rfit, "parTable") <- parTable
@@ -178,7 +178,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     #R2.adjusted <- 1 - (1 - r2correc) * ((n - df.int) / df.residual)
   
     OUT <- list(CON = NULL,
-                partable = parTable,
+                parTable = parTable,
                 constraints = constraints,
                 b.unconstr = b.unconstr,
                 b.constr = b.constr,
@@ -202,7 +202,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   
   OUT$model.org <- model
   OUT$CON <- if (is.character(constraints)) { CON }
-  #OUT$partable <- if (is.character(constraints)) { partable }
+  #OUT$parTable <- if (is.character(constraints)) { parTable }
   OUT$se <- se 
   
   if (se != "no") {

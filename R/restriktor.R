@@ -9,13 +9,13 @@ restriktor <- function(model, constraints, se = "default",
   bvec <- rhs 
   meq <- neq
   
+  # build a bare-bones parameter table for this model
+  parTable <- lav_partable(model, est = FALSE, label = TRUE)
+  
   if (is.character(constraints)) {#} && class(model) %in% c("lm", "rlm")) {
-    # build a bare-bones parameter table for this model
-    partable <- lav_partable(model, est = FALSE, label = TRUE)
-    
     # parse the constraints
     CON <- lav_constraints_parse(constraints = constraints,
-                                 partable = partable,
+                                 partable = parTable,
                                  debug = debug)
     
     FLAT <- lavaan:::lavParseModelString(constraints)
@@ -28,12 +28,12 @@ restriktor <- function(model, constraints, se = "default",
     LIST$op <- op
     LIST$rhs <- c(LIST$rhs, rhs)
     
-    partable$lhs <- c(partable$lhs, LIST$lhs)
-    partable$op <- c(partable$op, LIST$op)
-    partable$rhs <- c(partable$rhs, LIST$rhs)
+    parTable$lhs <- c(parTable$lhs, LIST$lhs)
+    parTable$op <- c(parTable$op, LIST$op)
+    parTable$rhs <- c(parTable$rhs, LIST$rhs)
     #def.idx <- which(LIST$op == ":=")
-    partable$label <- c(partable$label, rep("", length(lhs)))
-    #partable$label[def.idx] <- LIST$lhs[def.idx]
+    parTable$label <- c(parTable$label, rep("", length(lhs)))
+    #parTable$label[def.idx] <- LIST$lhs[def.idx]
     
     # equality constraints
     meqw  <- nrow(con_constraints_ceq_amat(model, constraints = constraints))
@@ -53,7 +53,7 @@ restriktor <- function(model, constraints, se = "default",
   }
 
   if (debug && is.character(constraints)) {
-    print(as.data.frame(lavpartable, stringsAsFactors = FALSE))
+    print(as.data.frame(lavparTable, stringsAsFactors = FALSE))
     print(CON)
   }
 

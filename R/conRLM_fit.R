@@ -5,7 +5,7 @@ conRLM_fit <- function(x, y, weights, w = rep(1, nrow(x)),
                        k2 = 1.345, method = c("M", "MM"), 
                        wt.method = c("inv.var", "case"), maxit = 5000, 
                        acc = 1e-14, test.vec = "resid", lqs.control= NULL, 
-                       Amat = NULL, bvec = NULL, meq = 0L, partable = NULL, ...) {
+                       Amat = NULL, bvec = NULL, meq = 0L, parTable = NULL, ...) {
     irls.delta <- function(old, new) {
       sqrt(sum((old - new)^2)/max(1e-20, sum(old^2)))
     }
@@ -83,8 +83,8 @@ conRLM_fit <- function(x, y, weights, w = rep(1, nrow(x)),
       }
     } else if(method == "MM") {
         scale.est <- "MM"
-        # parameters fixed to zero should be remove to compute scale.
-        con.equal <- attr(dfEq_correction(partable), "char")
+        # columns of X fixed to zero by equality constraints should be removed to compute scale.
+        con.equal <- attr(dfEq_correction(parTable, bvec.idx = "(^[0]$)"), "char")
         equal.idx <- colnames(x) %in% con.equal
         X <- x[,!equal.idx, drop = FALSE]
         temp <- do.call("lqs",

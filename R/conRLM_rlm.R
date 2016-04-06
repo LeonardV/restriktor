@@ -1,4 +1,4 @@
-#compute constraint estimates
+#compute constraint robust estimates
 conRLM.rlm <- function(model, constraints, debug = FALSE,
                        se = "default", control = NULL,
                        bvec = NULL, meq = 0L,
@@ -84,9 +84,14 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   R2.org <- r2correc <- (yMy - rMr) / (yMy + rMr * (correc - 1))
   #R2.adjusted <- 1 - (1 - r2correc) * ((n - df.int) / df.residual)
 
-  temp <- Sestimator(x = X, y = Y, lqs.control= NULL)
-  resid0 <- temp$resid  
-  scale <- temp$scale
+# initial residuals are needed for vcovMM()
+# remove parameters constraint to zero.
+#   con.equal <- attr(dfEq_correction(parTable, bvec.idx = "(^[0]$)"), "char")
+#   equal.idx <- colnames(X) %in% con.equal
+#   X2 <- X[,!equal.idx, drop = FALSE]
+#   temp <- Sestimator(x = X2, y = Y, lqs.control= NULL)
+#   resid0 <- temp$resid  
+#   scale <- temp$scale
   
   ll.out <- con_loglik_lm(X = X, y = Y, b = b.unconstr, detU = 1)
   ll <- ll.out$loglik
@@ -95,22 +100,21 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   s2.unc <- s2 <- tau.hat^2
   
   if (all(Amat %*% c(b.unconstr) - bvec >= 0 * bvec) & meq == 0) {
-    
     b.constr <- b.unconstr
         
     OUT <- list(CON = NULL,
-                partable = NULL,
+                partable = parTable,
                 constraints = constraints,
                 b.unconstr = b.unconstr,
                 b.constr = b.unconstr,
                 residuals = resid(model),
-                init.resid = resid0,
+                #init.resid = resid0,
                 fitted.values = fitted(model),
                 weights = weights(model),
                 R2.org = R2.org,
                 R2.reduced = R2.org,
                 df.residual = df.residual,
-                scale = scale, 
+                scale = model$s, 
                 s2 = s2, s2.ml = s2.ml, 
                 s2.unc = s2, s2.unc.ml = s2.ml,
                 loglik = ll, 
@@ -129,10 +133,11 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
       call.rlm[["x"]] <- NULL
       call.rlm[["y"]] <- NULL
       call.my <- list(x = X, y = Y, Amat = Amat, meq = meq, bvec = bvec, 
-                      partable = partable)      
+                      partable = parTable)      
       CALL <- c(call.rlm, call.my)
       rfit <- do.call("conRLM_fit", CALL)
-        attr(rfit, "parTable") <- partable
+        attr(rfit, "parTable") <- parTable
+      iact <- rfit$iact
 #    }
 #    else {
 #      call.my <- list(Amat = Amat, meq = meq, bvec = bvec)  
@@ -143,10 +148,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     
     b.constr <- coef(rfit)
     b.constr[abs(b.constr) < sqrt(.Machine$double.eps)] <- 0L
-    resid0 <- rfit$resid0
-    resid  <- rfit$residuals
-    scale  <- rfit$s
-          
+
     ll.out <- con_loglik_lm(X = X, y = Y, b = b.constr, detU = 1)
     ll <- ll.out$loglik
     s2.ml <- ll.out$Sigma    
@@ -155,10 +157,9 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     so.rlm <- summary_rlm(rfit)
     tau.hat <- so.rlm$stddev                                  
     s2 <- tau.hat^2
-    cat("CHECK DF S^2! =", s2, "...df = ", so.rlm$df[2], "...df.old =", so2.rlm$df[2], "\n")
-
-    iact <- rfit$iact
     
+    cat(" ...CHECK DF S^2! =", s2, "...df = ", so.rlm$df[2], "...df.old =", so2.rlm$df[2])
+
     #R2 and adjusted R2, code taken from lmrob() function.
     pred <- rfit$fitted.values
     resp <- pred + resid 
@@ -177,12 +178,12 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     #R2.adjusted <- 1 - (1 - r2correc) * ((n - df.int) / df.residual)
   
     OUT <- list(CON = NULL,
-                partable = NULL,
+                partable = parTable,
                 constraints = constraints,
                 b.unconstr = b.unconstr,
                 b.constr = b.constr,
                 residuals = resid,
-                init.resid = resid0,
+                #init.resid = resid0,
                 wresid = rfit$wresid,
                 fitted.values = pred,
                 weights = rfit$weights,
@@ -201,7 +202,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   
   OUT$model.org <- model
   OUT$CON <- if (is.character(constraints)) { CON }
-  OUT$partable <- if (is.character(constraints)) { partable }
+  #OUT$partable <- if (is.character(constraints)) { partable }
   OUT$se <- se 
   
   if (se != "no") {

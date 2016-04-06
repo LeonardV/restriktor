@@ -57,7 +57,7 @@ conLM.lm <- function(model, constraints, se = "default",
     b.constr <- b.unconstr
 
     OUT <- list(CON = NULL,
-                partable = NULL,
+                parTable = parTable,
                 constraints = constraints,
                 b.unconstr = b.unconstr,
                 b.constr = b.unconstr,
@@ -86,7 +86,8 @@ conLM.lm <- function(model, constraints, se = "default",
     residuals <- Y - fitted
     
     # function to correct the df in case of e.g., x1 == 0, df + 1; x1 == 0 and x1 == x2, df + 2
-    pEq.corr <- dfEq_correction(partable)
+    pEq.corr <- dfEq_correction(parTable, 
+                                bvec.idx = "(^[[:digit:]][.][[:digit:]]$)|(^[0-9]$)")
     p <- NCOL(X)
     df <- (n - p + pEq.corr)
     df.old <- n-p
@@ -118,7 +119,7 @@ conLM.lm <- function(model, constraints, se = "default",
     }
 
     OUT <- list(CON = NULL,
-                partable = NULL,
+                parTable = parTable,
                 constraints = constraints,
                 b.constr = b.constr, b.unconstr = b.unconstr,
                 residuals = residuals,
@@ -136,7 +137,7 @@ conLM.lm <- function(model, constraints, se = "default",
 
   OUT$model.org <- model
   OUT$CON <- if (is.character(constraints)) { CON }
-  OUT$partable <- if (is.character(constraints)) { partable }
+  #OUT$partable <- if (is.character(constraints)) { partable }
   OUT$se <- se
   if (se != "no") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
@@ -149,12 +150,12 @@ conLM.lm <- function(model, constraints, se = "default",
       OUT$information.inverted <- information.inv
     } else if (se == "boot.model.based") {
       OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),
-                                                              999, control$B), 
+                                                   999, control$B), 
                                  fixed = TRUE, constraints = Amat,
                                  rhs = bvec, neq = meq, se = "no")
     } else if (se == "boot.standard") {
       OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),
-                                                           999, control$B),
+                                                   999, control$B),
                                  fixed = FALSE, constraints = Amat,
                                  rhs = bvec, neq = meq, se = "no")
     }

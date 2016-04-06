@@ -437,7 +437,8 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
     
-    s20  <- sum((Y - X%*%b.eqconstr)^2) / (n-p) #no df adjustment necessary for global test.
+    #no df adjustment necessary for global test.
+    s20  <- sum((Y - X%*%b.eqconstr)^2) / (n-p) 
     d0   <- 1/s20 * t(X)%*%(Y - X%*%b.eqconstr)
     i <- 1/s20 * (t(X)%*%X)
     U <- 1/sqrt(n) * solve(i) %*% d0
@@ -458,8 +459,8 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     names(b.eqconstr) <- vnames
     
     # if parameters are constraint to a number, df shoulde be adjusted.
-    con.idx <- which(object$partable$op == "<" | object$partable$op == ">")
-    user.equal  <- object$partable
+    con.idx <- which(object$parTable$op == "<" | object$parTable$op == ">")
+    user.equal  <- object$parTable
       user.equal$op[con.idx] <- "=="
     pEq.corr <- dfEq_correction(user.equal)
     p <- NCOL(X)
@@ -480,7 +481,7 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   }
   else if (type == "B") {
     if (meq.alt == 0L) {
-      pEq.corr <- dfEq_correction(object$partable)
+      pEq.corr <- dfEq_correction(object$parTable)
       p <- NCOL(X)
       df <- (n - p + pEq.corr)
       s20 <- sum((Y - X%*%b.constr)^2) / df
@@ -506,7 +507,7 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                                   control$maxit))$solution
         names(b.constr.alt) <- vnames
         
-        pEq.corr <- dfEq_correction(object$partable)
+        pEq.corr <- dfEq_correction(object$parTable)
         p <- NCOL(X)
         df <- (n - p + pEq.corr)
         s20 <- sum((Y - X%*%b.constr)^2) / df

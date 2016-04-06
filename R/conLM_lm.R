@@ -89,11 +89,11 @@ conLM.lm <- function(model, constraints, se = "default",
     pEq.corr <- dfEq_correction(parTable, 
                                 bvec.idx = "(^[[:digit:]][.][[:digit:]]$)|(^[0-9]$)")
     p <- NCOL(X)
-    df <- (n - p + pEq.corr)
+    df.residual <- (n - p + pEq.corr)
     df.old <- n-p
-    s2 <- sum(residuals^2) / df
+    s2 <- sum(residuals^2) / df.residual
     
-    cat("CHECK DF S^2! =", s2, "...df = ", df, "...df.old =", df.old, "\n")
+    cat("conLM.lm: ...CHECK DF S^2! =", s2, "...df = ", df.residual, "...df.old =", df.old, "\n")
     
     # lm
     if (ncol(Y) == 1L) {
@@ -127,7 +127,7 @@ conLM.lm <- function(model, constraints, se = "default",
                 weights = weights(model),
                 R2.org = R2.org,
                 R2.reduced = R2.reduced,
-                df.residual = model$df.residual,
+                df.residual = df.residual, # model$df.residual,
                 s2.unc = so$sigma^2, s2.unc.ml = ll.out$Sigma,
                 s2 = s2, s2.ml = conll.out$Sigma, 
                 loglik = conll, Sigma = vcov(model),

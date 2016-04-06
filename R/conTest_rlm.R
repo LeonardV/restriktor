@@ -24,6 +24,7 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   model.org <- object$model.org
   X <- model.matrix(model.org)[,,drop=FALSE]
   Y <- model.org$model[, attr(model.org$terms, "response")]
+  df.residual <- object$df.residual
   # unconstrained vcov
   COV <- object$Sigma                                                           #use the robust vcovMM?
   # unconstrained scale
@@ -128,7 +129,7 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   }
   
   if (boot == "no") {
-    pvalue <- con_pvalue_Fbar(COV, Ts.org = Ts, object$df.residual, type = type,
+    pvalue <- con_pvalue_Fbar(COV, Ts.org = Ts, df.residual, type = type,
                               Amat, bvec, meq, meq.alt)
   } else if (boot == "parametric") {
     pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "F",
@@ -151,7 +152,7 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                           seed = ifelse(is.null(control$seed), 1234, control$seed),
                                           verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   } else if (boot == "mix.weights") {
-    pvalue <- con_pvalue_boot_weights(object, pbar = "pfbar", Ts.org = Ts, df.residual = object$df.residual, 
+    pvalue <- con_pvalue_boot_weights(object, pbar = "pfbar", Ts.org = Ts, df.residual = df.residual, 
                                       type = type, meq.alt = meq.alt, 
                                       R = ifelse(is.null(control$B), 9999, control$B),
                                       parallel = ifelse(is.null(control$parallel), "no", control$parallel),
@@ -173,7 +174,7 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
               meq = meq,
               meq.alt = meq.alt,
               iact = object$iact,
-              df.residual = object$df.residual,
+              df.residual = df.residual,
               COV = COV,
               Ts = Ts,
               pvalue = pvalue,
@@ -218,6 +219,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   model.org <- object$model.org
   X <- model.matrix(model.org)[,,drop=FALSE]
   Y <- model.org$model[, attr(model.org$terms, "response")]
+  df.residual <- object$df.residual
   # unconstrained vcov
   COV <- object$Sigma                                                           #use the robust vcovMM?
   # unconstrained scale
@@ -336,7 +338,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   }
   
   if (boot == "no") {
-    pvalue <- con_pvalue_Fbar(COV, Ts.org = Ts, object$df.residual, type = type,
+    pvalue <- con_pvalue_Fbar(COV, Ts.org = Ts, df.residual, type = type,
                               Amat, bvec, meq, meq.alt)
   } else if (boot == "parametric") {
     pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "score",
@@ -359,7 +361,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                           seed = ifelse(is.null(control$seed), 1234, control$seed),
                                           verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   } else if (boot == "mix.weights") {
-    pvalue <- con_pvalue_boot_weights(object, pbar = "pfbar", Ts.org = Ts, df.residual = object$df.residual, 
+    pvalue <- con_pvalue_boot_weights(object, pbar = "pfbar", Ts.org = Ts, df.residual = df.residual, 
                                       type = type, meq.alt = meq.alt, 
                                       R = ifelse(is.null(control$B), 9999, control$B),
                                       parallel = ifelse(is.null(control$parallel), "no", control$parallel),
@@ -381,7 +383,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
               meq = meq,
               meq.alt = meq.alt,
               iact = object$iact,
-              df.residual = object$df.residual,
+              df.residual = df.residual,
               COV = COV,
               Ts = Ts,
               pvalue = pvalue,
@@ -428,6 +430,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   model.org <- object$model.org
   X <- model.matrix(model.org)[,,drop=FALSE]
   Y <- model.org$model[, attr(model.org$terms, "response")]
+  df.residual <- object$df.residual
   # unconstrained vcov
   COV <- object$Sigma                                                           #use the robust vcovMM?
   # unconstrained scale
@@ -546,7 +549,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   }
   
   if (boot == "no") {
-    pvalue <- con_pvalue_Fbar(COV, Ts.org = Ts, object$df.residual, type = type,
+    pvalue <- con_pvalue_Fbar(COV, Ts.org = Ts, df.residual, type = type,
                               Amat, bvec, meq, meq.alt)
   } else if (boot == "parametric") {
     pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "wald",
@@ -569,7 +572,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                           seed = ifelse(is.null(control$seed), 1234, control$seed),
                                           verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   } else if (boot == "mix.weights") {
-    pvalue <- con_pvalue_boot_weights(object, pbar = "pfbar", Ts.org = Ts, df.residual = object$df.residual, 
+    pvalue <- con_pvalue_boot_weights(object, pbar = "pfbar", Ts.org = Ts, df.residual = df.residual, 
                                       type = type, meq.alt = meq.alt, 
                                       R = ifelse(is.null(control$B), 9999, control$B),
                                       parallel = ifelse(is.null(control$parallel), "no", control$parallel),
@@ -591,7 +594,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
               meq = meq,
               meq.alt = meq.alt,
               iact = object$iact,
-              df.residual = object$df.residual,
+              df.residual = df.residual,
               COV = COV,
               Ts = Ts,
               pvalue = pvalue,
@@ -769,7 +772,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
 #   }
 #   
 #   if (boot == "no") {
-#     pvalue <- con_pvalue_Fbar(COV = crossprod(X), Ts.org = Ts, object$df.residual, type = type,
+#     pvalue <- con_pvalue_Fbar(COV = crossprod(X), Ts.org = Ts, df.residual, type = type,
 #                               Amat, bvec, meq, meq.alt)
 #   } else if (boot == "parametric") {
 #     pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "wald2",
@@ -792,7 +795,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
 #                                           seed = ifelse(is.null(control$seed), 1234, control$seed),
 #                                           verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
 #   } else if (boot == "mix.weights") {
-#     pvalue <- con_pvalue_boot_weights(object, pbar = "pfbar", Ts.org = Ts, df.residual = object$df.residual, 
+#     pvalue <- con_pvalue_boot_weights(object, pbar = "pfbar", Ts.org = Ts, df.residual = df.residual, 
 #                                       type = type, meq.alt = meq.alt, 
 #                                       R = ifelse(is.null(control$B), 9999, control$B),
 #                                       parallel = ifelse(is.null(control$parallel), "no", control$parallel),
@@ -814,7 +817,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
 #               meq = meq,
 #               meq.alt = meq.alt,
 #               iact = object$iact,
-#               df.residual = object$df.residual,
+#               df.residual = df.residual,
 #               COV = COV,
 #               Ts = Ts,
 #               pvalue = pvalue,

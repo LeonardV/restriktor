@@ -27,7 +27,8 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   model.org <- object$model.org
   X <- model.matrix(object)[,,drop=FALSE]
   Y <- model.org$model[, attr(model.org$terms, "response")]
-  cov <- vcov(model.org) 
+  df.residual <- object$df.residual
+  COV <- vcov(model.org) 
   b.unconstr <- object$b.unconstr
   vnames <- names(b.unconstr)
   b.constr <- object$b.constr
@@ -41,8 +42,8 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   if (meq == nrow(Amat)) {
     stop("test not applicable for object with equality constraints only.")
   }
-  if (!(length(b.unconstr) == nrow(cov))) {
-    stop("length b.unconstr and nrow(cov) must be identical.")
+  if (!(length(b.unconstr) == nrow(COV))) {
+    stop("length b.unconstr and nrow(COV) must be identical.")
   }
 
   if (type == "global") {
@@ -63,7 +64,7 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                                control$maxit))$solution
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
-    Ts <- c(t(b.constr - b.eqconstr) %*% solve(cov, b.constr - b.eqconstr))
+    Ts <- c(t(b.constr - b.eqconstr) %*% solve(COV, b.constr - b.eqconstr))
   } else if (type == "A") {
     # optimizer
     b.eqconstr <- con_solver(b.unconstr, X = X, y = Y, Amat = Amat,
@@ -74,12 +75,12 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                                control$maxit))$solution
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
       names(b.eqconstr) <- vnames
-    Ts <- c(t(b.constr - b.eqconstr) %*% solve(cov, b.constr - b.eqconstr))
+    Ts <- c(t(b.constr - b.eqconstr) %*% solve(COV, b.constr - b.eqconstr))
   }
   else if (type == "B") {
     if (meq.alt == 0L) {
       # Fbar test statistic
-      Ts <- as.vector(t(b.unconstr - b.constr) %*% solve(cov, b.unconstr - b.constr))
+      Ts <- as.vector(t(b.unconstr - b.constr) %*% solve(COV, b.unconstr - b.constr))
     }
     else {
       # some equality may be preserved in the alternative hypothesis.
@@ -92,7 +93,7 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                    maxit = ifelse(is.null(control$maxit), 1e04, 
                                                   control$maxit))$solution
         names(b.constr.alt) <- vnames
-        Ts <- as.vector(t(b.constr - b.constr.alt) %*% solve(cov, b.constr - b.constr.alt))
+        Ts <- as.vector(t(b.constr - b.constr.alt) %*% solve(COV, b.constr - b.constr.alt))
       }
       else {
         stop("meq.alt must not be larger than meq.")
@@ -101,14 +102,14 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   } else if (type == "C") { # intersection-union test (Sasabuchi, 1980)
     if (meq == 0L) {
       Ts <- as.vector(min((Amat %*% b.unconstr - bvec) /
-                            sqrt(diag(Amat %*%cov%*% t(Amat)))))
+                            sqrt(diag(Amat %*% COV %*% t(Amat)))))
     } else {
       stop("test not applicable with equality constraints.")
     }
   }
 
   if (boot == "no") {
-    pvalue <- con_pvalue_Fbar(cov, Ts.org = Ts, object$df.residual, type = type,
+    pvalue <- con_pvalue_Fbar(COV, Ts.org = Ts, df.residual, type = type,
                               Amat = Amat, bvec = bvec, meq = meq, meq.alt = meq.alt)
   } else if (boot == "parametric") {
     pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "F",
@@ -132,8 +133,7 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                           verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   } else if (boot == "mix.weights") {
     pvalue <- con_pvalue_boot_weights(object, type = type, pbar = "pfbar", Ts.org = Ts, 
-                                      df.residual = object$df.residual, 
-                                      meq.alt = meq.alt,
+                                      df.residual = df.residual, meq.alt = meq.alt,
                                       R = ifelse(is.null(control$B), 9999, control$B),
                                       parallel = ifelse(is.null(control$parallel), "no", control$parallel),
                                       ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
@@ -154,8 +154,8 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
               meq = meq,
               meq.alt = meq.alt,
               iact = object$iact,
-              df.residual = object$df.residual,
-              cov = cov,
+              df.residual = df.residual,
+              COV = COV,
               Ts = Ts,
               pvalue = pvalue,
               model.org = model.org)
@@ -198,7 +198,8 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   model.org <- object$model.org
   X <- model.matrix(model.org)[,,drop=FALSE]
   Y <- cbind(model.org$model[, attr(model.org$terms, "response")])
-  cov <- vcov(model.org)   
+  df.residual <- object$df.residual
+  COV <- vcov(model.org)   
   b.unconstr <- object$b.unconstr
     vnames <- names(b.unconstr)
   b.constr <- object$b.constr
@@ -213,8 +214,8 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   if (meq == nrow(Amat)) {
     stop("test not applicable for object with equality constraints only.")
   }
-  if (!(length(b.unconstr) == nrow(cov))) {
-    stop("length b.unconstr and nrow(cov) must be identical.")
+  if (!(length(b.unconstr) == nrow(COV))) {
+    stop("length b.unconstr and nrow(COV) must be identical.")
   }
 
   if (type == "global") {
@@ -299,7 +300,7 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   else if (type == "C") {
     if (meq == 0L) {
       Ts <- as.vector(min((Amat %*% b.unconstr - bvec) /
-                            sqrt(diag(Amat %*%cov%*% t(Amat)))))
+                            sqrt(diag(Amat %*% COV %*% t(Amat)))))
       names(Ts) <- "Tbar"
     }
     else {
@@ -308,7 +309,7 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   }
 
   if (boot == "no") {
-    pvalue <- con_pvalue_Fbar(cov, Ts.org = Ts, object$df.residual, type = type,
+    pvalue <- con_pvalue_Fbar(COV, Ts.org = Ts, df.residual, type = type,
                               Amat, bvec, meq, meq.alt)
   } else if (boot == "parametric") {
     pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "LRT",
@@ -331,7 +332,7 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                           seed = ifelse(is.null(control$seed), 1234, control$seed),
                                           verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   } else if (boot == "mix.weights") {
-    pvalue <- con_pvalue_boot_weights(object, type = type, pbar = "pfbar", Ts.org = Ts, df.residual = object$df.residual, 
+    pvalue <- con_pvalue_boot_weights(object, type = type, pbar = "pfbar", Ts.org = Ts, df.residual = df.residual, 
                                       meq.alt = meq.alt,
                                       R = ifelse(is.null(control$B), 9999, control$B),
                                       parallel = ifelse(is.null(control$parallel), "no", control$parallel),
@@ -353,8 +354,8 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
               meq = meq,
               meq.alt = meq.alt,
               iact = object$iact,
-              df.residual = object$df.residual,
-              cov = cov,
+              df.residual = df.residual,
+              COV = COV,
               Ts = Ts,
               pvalue = pvalue,
               model.org = object$model.org)
@@ -399,7 +400,8 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   Y <- cbind(model.org$model[, attr(model.org$terms, "response")])
   n <- dim(X)[1]
   p <- dim(X)[2]
-  cov <- object$Sigma
+  df.residual <- object$df.residual
+  COV <- object$Sigma
   b.unconstr <- object$b.unconstr
   vnames <- names(b.unconstr)
   b.constr <- object$b.constr
@@ -534,7 +536,7 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   else if (type == "C") {
     if (meq == 0L) {
       Ts <- as.vector(min((Amat %*% b.unconstr - bvec) /
-                            sqrt(diag(Amat %*%cov%*% t(Amat)))))
+                            sqrt(diag(Amat %*% COV %*% t(Amat)))))
       names(Ts) <- "Tbar"
     }
     else {
@@ -543,7 +545,7 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   }
   
   if (boot == "no") {
-    pvalue <- con_pvalue_Chibar(cov, Ts.org = Ts, object$df.residual, type = type,
+    pvalue <- con_pvalue_Chibar(COV, Ts, df.residual, type,
                                 Amat, bvec, meq, meq.alt)
   }
   else if (boot == "parametric") {
@@ -568,8 +570,8 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                           seed = ifelse(is.null(control$seed), 1234, control$seed),
                                           verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   } else if (boot == "mix.weights") {
-    pvalue <- con_pvalue_boot_weights(object, type = type, pbar = "pfbar", Ts.org = Ts, df.residual = object$df.residual,
-                                      meq.alt = meq.alt,
+    pvalue <- con_pvalue_boot_weights(object, type = type, pbar = "pfbar", Ts.org = Ts, 
+                                      df.residual = df.residual, meq.alt = meq.alt,
                                       R = ifelse(is.null(control$B), 9999, control$B),
                                       parallel = ifelse(is.null(control$parallel), "no", control$parallel),
                                       ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
@@ -590,8 +592,8 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
               meq = meq,
               meq.alt = meq.alt,
               iact = object$iact,
-              df.residual = object$df.residual,
-              cov = cov,
+              df.residual = df.residual,
+              COV = COV,
               Ts = Ts,
               pvalue = pvalue,
               model.org = object$model.org)

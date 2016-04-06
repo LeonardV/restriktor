@@ -60,8 +60,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   X  <- model.matrix(model)[,,drop = FALSE]
   b.unconstr <- coef(model)  
   so <- MASS:::summary.rlm(model)
-  df.residual <- so$df[2]
-
+  
   if (ncol(Amat) != length(b.unconstr)) {
     stop("length coefficients and ncol(Amat) must be identical")
   }
@@ -113,7 +112,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 weights = weights(model),
                 R2.org = R2.org,
                 R2.reduced = R2.org,
-                df.residual = df.residual,
+                df.residual = so$df[2],
                 scale = model$s, 
                 s2 = s2, s2.ml = s2.ml, 
                 s2.unc = s2, s2.unc.ml = s2.ml,
@@ -129,15 +128,15 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     
     #fit inequality constrained robust model
 #    if (is.null(call.rlm[["formula"]])) {
-      call.rlm[["data"]] <- NULL
-      call.rlm[["x"]] <- NULL
-      call.rlm[["y"]] <- NULL
-      call.my <- list(x = X, y = Y, Amat = Amat, meq = meq, bvec = bvec, 
-                      parTable = parTable)      
-      CALL <- c(call.rlm, call.my)
-      rfit <- do.call("conRLM_fit", CALL)
-        attr(rfit, "parTable") <- parTable
-      iact <- rfit$iact
+    call.rlm[["data"]] <- NULL
+    call.rlm[["x"]] <- NULL
+    call.rlm[["y"]] <- NULL
+    call.my <- list(x = X, y = Y, Amat = Amat, meq = meq, bvec = bvec, 
+                    parTable = parTable)      
+    CALL <- c(call.rlm, call.my)
+    rfit <- do.call("conRLM_fit", CALL)
+      attr(rfit, "parTable") <- parTable
+    iact <- rfit$iact
 #    }
 #    else {
 #      call.my <- list(Amat = Amat, meq = meq, bvec = bvec)  
@@ -151,14 +150,13 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
 
     ll.out <- con_loglik_lm(X = X, y = Y, b = b.constr, detU = 1)
     ll <- ll.out$loglik
-    s2.ml <- ll.out$Sigma    
+    s2.ml <- ll.out$Sigma
     
-    so2.rlm <- MASS:::summary.rlm(rfit)
     so.rlm <- summary_rlm(rfit)
-    tau.hat <- so.rlm$stddev                                  
+    tau.hat <- so.rlm$stddev
     s2 <- tau.hat^2
     
-    cat(" ...CHECK DF S^2! =", s2, "...df = ", so.rlm$df[2], "...df.old =", so2.rlm$df[2])
+    cat(" ...CHECK DF S^2! =", s2, "...df = ", so.rlm$df[2])
 
     #R2 and adjusted R2, code taken from lmrob() function.
     pred <- rfit$fitted.values
@@ -189,7 +187,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 weights = rfit$weights,
                 R2.org = R2.org,
                 R2.reduced = R2.reduced,
-                df.residual = df.residual,
+                df.residual = so.rlm$df[2],
                 scale = rfit$s,                                                               
                 s2 = s2, s2.ml = s2.ml,
                 s2.unc = s2.unc, s2.unc.ml = s2.unc.ml,

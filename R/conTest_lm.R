@@ -86,7 +86,7 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
       # some equality may be preserved in the alternative hypothesis.
       if(meq.alt != 0L && meq.alt <= meq) {
         b.constr.alt <- con_solver(b.unconstr, X = X, y = Y,
-                                   Amat = Amat[1:meq.alt,,drop=FALSE],
+                                   Amat = Amat[1:meq.alt,,drop = FALSE],
                                    bvec = bvec[1:meq.alt], meq = meq.alt,
                                    tol = ifelse(is.null(control$tol), 1e-09, 
                                                 control$tol),

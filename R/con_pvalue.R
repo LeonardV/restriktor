@@ -1,37 +1,33 @@
-con_pvalue_Fbar <- function(cov, Ts.org, df.residual, type = "type A",
+# Mixture of F-distributions.
+con_pvalue_Fbar <- function(wt, Ts.org, df.residual, type = "A",
                             Amat, bvec, meq = 0L, meq.alt = 0L) {
   #check
   if ((qr(Amat)$rank < nrow(Amat))) {
     stop("constraint matrix must have full row-rank")
   }
-  #compute weights
-  wt.bar <- con_wt(Amat %*% cov %*% t(Amat), meq = meq)
-
   if (type == "global") {
     # compute df
     df.bar <- ((ncol(Amat) - 1) - nrow(Amat)):((ncol(Amat) - 1) - meq)    
     # p value based on the chi-square distribution
-    pvalue <- 1-pfbar(Ts.org, df1 = df.bar, df2 = df.residual, wt = rev(wt.bar))
+    pvalue <- 1-pfbar(Ts.org, df1 = df.bar, df2 = df.residual, wt = rev(wt))
   } else if(type == "A") {
     # compute df
     df.bar <- 0:(nrow(Amat) - meq)
     # p value based on F-distribution or chi-square distribution
     pvalue <- 1-pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
-                       wt = rev(wt.bar))
+                       wt = rev(wt))
   } else if (type == "B") {
     # compute df
     df.bar <- (meq - meq.alt):(nrow(Amat) - meq.alt)#meq:nrow(Amat)
     # p value based on F-distribution or chi-square distribution
     pvalue <- 1-pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
-                       wt = wt.bar)
-  } else if (type == "C") {
-    # t-distribution
-    pvalue <- 1-pt(Ts.org, df.residual)
-    names(pvalue) <- "pt.value"
+                       wt = wt)
+  } else  {
+    stop("hypothesis test type ", sQuote(type), " unknown.")
   }
 
   out <- pvalue
-    attr(out, "wt") <- wt.bar
+    attr(out, "wt") <- wt
     attr(out, "df.bar") <- df.bar
   
   out    
@@ -39,38 +35,34 @@ con_pvalue_Fbar <- function(cov, Ts.org, df.residual, type = "type A",
 
 
 
-con_pvalue_Chibar <- function(cov, Ts.org, df.residual, type = "A",
+con_pvalue_Chibar <- function(wt, Ts.org, type = "A",
                               Amat, bvec, meq = 0L, meq.alt = 0L) {
   #check
   if ((qr(Amat)$rank < nrow(Amat))) {
     stop("Restriktor ERROR: constraint matrix must have full row-rank")
   }
-  #compute weights
-  wt.bar <- con_wt(Amat%*%cov%*%t(Amat), meq=meq)
   
   if (type == "global") {
     # compute df
     df.bar <- ((ncol(Amat) - 1) - nrow(Amat)):((ncol(Amat) - 1) - meq)    
     # p value based on the chi-square distribution
-    pvalue <- 1-pchibar(Ts.org, df1 = df.bar, wt = rev(wt.bar))
+    pvalue <- 1-pchibar(Ts.org, df1 = df.bar, wt = rev(wt))
   }  else if (type == "A") {
     # compute df
     df.bar <- 0:(nrow(Amat) - meq)
     # p value based on th chi-square distribution
-    pvalue <- 1-pchibar(Ts.org, df1 = df.bar, wt = rev(wt.bar))
+    pvalue <- 1-pchibar(Ts.org, df1 = df.bar, wt = rev(wt))
   } else if (type == "B") {
     # compute df
     df.bar <- (meq - meq.alt):(nrow(Amat) - meq.alt)#meq:nrow(Amat)
     # p value based on th chi-square distribution
-    pvalue <- 1-pchibar(Ts.org, df1 = df.bar, wt = wt.bar)
-  } else if (type == "C") {
-    # t-distribution
-    pvalue <- 1-pt(Ts.org, df.residual)
-    names(pvalue) <- "pt.value"
+    pvalue <- 1-pchibar(Ts.org, df1 = df.bar, wt = wt)
+  } else  {
+    stop("hypothesis test type ", sQuote(type), " unknown.")
   }
   
   out <- pvalue
-    attr(out, "wt") <- wt.bar
+    attr(out, "wt") <- wt
     attr(out, "df.bar") <- df.bar
   
   out
@@ -427,64 +419,3 @@ mix.boot <- function(object, type = "A",
 }
 
 
-con_pvalue_boot_weights <- function(model, type = "type A", pbar = "pfbar", Ts.org = Ts.org, 
-                                    df.residual = df.residual, meq.alt = 0L, 
-                                    R = 9999, p.distr = c("N", "t"),
-                                    parallel = c("no", "multicore", "snow"),
-                                    ncpus = 1L, cl = NULL, seed = 1234, 
-                                    verbose = FALSE) {
-  
-  # constraints 
-  Amat <- model$Amat
-  meq  <- model$meq
-  
-  # compute weights based on simulation
-  if (!(type == "C")) {
-    wt.bar <- mix.boot(object = model, type = type, meq.alt = meq.alt, R = R, 
-                       parallel = parallel, ncpus = ncpus, 
-                       cl = cl, seed = seed, verbose = verbose)
-  }
-  
-  if (type == "global") {
-    # compute df
-    df.bar <- ((ncol(Amat) - 1) - nrow(Amat)):((ncol(Amat) - 1) - meq)    
-    # p value based on the chi-square distribution
-    if (pbar == "pfbar") {
-      pb <- pfbar
-      pvalue <- 1-pb(Ts.org, df1 = df.bar, df2 = df.residual, wt = rev(wt.bar))
-    } else if (pbar == "pchibar") {
-      pb <- pchibar
-      pvalue <- 1-pb(Ts.org, df1 = df.bar, wt = rev(wt.bar))
-    }      
-  } else if(type == "A") {
-    # compute df
-    df.bar <- 0:(nrow(Amat) - meq)
-    if (pbar == "pfbar") {
-      pb <- pfbar
-      pvalue <- 1-pb(Ts.org, df1 = df.bar, df2 = df.residual, wt = rev(wt.bar))
-    } else if (pbar == "pchibar") {
-      pb <- pchibar
-      pvalue <- 1-pb(Ts.org, df1 = df.bar, wt = rev(wt.bar))
-    }
-  } else if (type == "B") {
-    # compute df
-    df.bar <- (meq - meq.alt):(nrow(Amat) - meq.alt)#meq:nrow(Amat)
-    if (pbar == "pfbar") {
-      pb <- pfbar
-      pvalue <- 1-pb(Ts.org, df1 = df.bar, df2 = df.residual, wt = wt.bar)
-    } else if (pbar == "pchibar") {
-      pb <- pchibar
-      pvalue <- 1-pb(Ts.org, df1 = df.bar, wt = wt.bar)
-    }    
-  } else if (type == "C") {
-    # t-distribution
-    pvalue <- 1-pt(Ts.org, df.residual)
-    names(pvalue) <- "pt.value"
-  }
-  
-  out <- pvalue
-    attr(out, "wt") <- wt.bar
-    attr(out, "df.bar") <- df.bar
-  
-  out
-}

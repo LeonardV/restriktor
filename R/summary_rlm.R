@@ -1,7 +1,8 @@
 # acknowledgement: code taken from MASS package
 # adapted for dfEq_correction by LV.
+# add option to get ml sigma
 summary_rlm <- function (object, method = c("XtX", "XtWX"), 
-                         correlation = FALSE, ...) {
+                         correlation = FALSE, ml = FALSE, ...) {
   method <- match.arg(method)
   s <- object$s
   coef <- object$coefficients
@@ -22,9 +23,11 @@ summary_rlm <- function (object, method = c("XtX", "XtWX"),
   }
   parTable <- attr(object, "parTable")
   dfEq.corr <- dfEq_correction(parTable)
-  if (length(object$call$wt.method) && object$call$wt.method == 
-        "case") {
+  if (length(object$call$wt.method) && object$call$wt.method == "case") {
     rdf <- sum(wts) - p + dfEq.corr
+    if (ml) {
+      rdf <- sum(wts)
+    }
     w <- object$psi(wresid/s)
     S <- sum(wts * (wresid * w)^2)/rdf
     psiprime <- object$psi(wresid/s, deriv = 1)
@@ -37,6 +40,9 @@ summary_rlm <- function (object, method = c("XtX", "XtWX"),
   } else {
     res <- res * sqrt(wts)
     rdf <- n - p + dfEq.corr
+    if (ml) {
+      rdf <- n
+    }
     w <- object$psi(wresid/s)
     S <- sum((wresid * w)^2)/rdf
     psiprime <- object$psi(wresid/s, deriv = 1)

@@ -1,11 +1,11 @@
 Package: restriktor
 Title: Constrained Statistical Inference
-Version: 0.1-23
+Version: 0.1-24
 Authors@R: c(person(given = "Yves", family = "Rosseel",
                     role  = c("aut", "cre"),
                     email = "Yves.Rosseel@UGent.be"),
              person(given = "Leonard", family = "Vanbrabant",
-                    role = "aut",
+                    role =  c("aut", "cre"),
                     email = "Leonard.Vanbrabant@ugent.be")
             )
 Description: Allow for easy-to-use testing of linear and nonlinear equality

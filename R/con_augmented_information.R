@@ -1,5 +1,6 @@
 # Ref: Ronald Schoenberg (1997). Constrained Maximum Likelihood. Computational Economics, 10, 251-266
-con_augmented_information <- function(information, X, b.unconstr, b.constr,  
+con_augmented_information <- function(information, X, 
+                                      b.unconstr, b.constr,  
                                       Amat, bvec, meq) {
   H <- Amat
   npar <- NCOL(information)
@@ -68,15 +69,13 @@ con_augmented_information <- function(information, X, b.unconstr, b.constr,
                cbind(     H.active, t(H25), t(H35), t(H45),         H55,           H56),
                cbind(   H.inactive, t(H26),    2*Z, t(H46),      t(H56),           H66)
   )
-  information <- E3
 
-
-  information <- try( MASS::ginv(information)[1:npar, 1:npar, drop = FALSE], silent = TRUE )
-    information[abs(information) < sqrt(.Machine$double.eps)] <- 0L
+  inverted.information <- try( MASS::ginv(E3)[1:npar, 1:npar, drop = FALSE], silent = TRUE )
+    inverted.information[abs(inverted.information) < sqrt(.Machine$double.eps)] <- 0L
   
   # augmented/inverted information
-  OUT <- information
-  
-  return(OUT)
+  OUT <- inverted.information
+      
+    return(OUT)
 }
 

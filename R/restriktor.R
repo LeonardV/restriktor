@@ -1,9 +1,10 @@
 restriktor <- function(model, constraints, se = "default",
                        rhs = NULL, neq = NULL, control = NULL,
                        debug = FALSE, ...) {
-
-  if (any(c("glm", "mlm", "gls") %in% class(model))) 
+  #if (any(c("glm", "mlm", "gls") %in% class(model))) {
+  if (any(c("glm", "gls") %in% class(model))) {
     stop("Restriktor does not work on classes glm, mlm and gls (yet).")
+  }
   
   # rename for internal use
   bvec <- rhs 
@@ -21,19 +22,17 @@ restriktor <- function(model, constraints, se = "default",
     FLAT <- lavaan:::lavParseModelString(constraints)
     CON_FLAT <- attr(FLAT, "constraints")
     LIST <- list()
-    lhs = unlist(lapply(CON_FLAT, "[[", "lhs"))
-    op = unlist(lapply(CON_FLAT, "[[", "op"))
-    rhs = unlist(lapply(CON_FLAT, "[[", "rhs"))
+    lhs <- unlist(lapply(CON_FLAT, "[[", "lhs"))
+    op  <- unlist(lapply(CON_FLAT, "[[", "op"))
+    rhs <- unlist(lapply(CON_FLAT, "[[", "rhs"))
     LIST$lhs <- lhs
-    LIST$op <- op
+    LIST$op  <- op
     LIST$rhs <- c(LIST$rhs, rhs)
     
     parTable$lhs <- c(parTable$lhs, LIST$lhs)
     parTable$op <- c(parTable$op, LIST$op)
     parTable$rhs <- c(parTable$rhs, LIST$rhs)
-    #def.idx <- which(LIST$op == ":=")
     parTable$label <- c(parTable$label, rep("", length(lhs)))
-    #parTable$label[def.idx] <- LIST$lhs[def.idx]
     
     # equality constraints
     meqw  <- nrow(con_constraints_ceq_amat(model, constraints = constraints))
@@ -49,7 +48,7 @@ restriktor <- function(model, constraints, se = "default",
       bvecw <- if (is.null(bvec)) { rep(0L, nrow(Amatw)) } else { bvec }
       meqw  <- if (is.null(meq)) { 0L } else { meq }
   } else { 
-    stop("no constraints specified.") 
+    stop("no constraints were specified.") 
   }
 
   if (debug && is.character(constraints)) {
@@ -57,9 +56,9 @@ restriktor <- function(model, constraints, se = "default",
     print(CON)
   }
 
-  if ("lm" %in% class(model)[1]) {
+  if (class(model)[1] %in% c("lm","mlm")) {
     UseMethod("conLM")
-  } else if ("rlm" %in% class(model)[1]) {
+  } else if (class(model)[1] %in% "rlm") {
       UseMethod("conRLM")
   }
   

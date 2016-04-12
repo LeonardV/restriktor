@@ -32,6 +32,10 @@ conLM.lm <- function(model, constraints, se = "default",
   Y <- as.matrix(model$model[, attr(model$terms, "response")])
   # model matrix
   X <- model.matrix(model)[,,drop = FALSE]
+  # residual variance
+  s2.con <- s2.unc <- so$sigma^2
+  # weigths
+  w <- weights(model)
   # original R^2
   R2.org <- so$r.squared
   # sample size
@@ -40,22 +44,20 @@ conLM.lm <- function(model, constraints, se = "default",
   b.unconstr <- coef(model)
   # number of parameters
   p <- length(b.unconstr)
-  # variable names
-  col.names <- names(b.unconstr)
-  row.names <- rownames(b.unconstr)
-
+  
   if(ncol(Amat) != length(b.unconstr)) {
     stop("length coefficients and ncol(Amat) must be identical")
   }
 
-  # compute log-likelihood
-  ll.out <- con_loglik_lm(X = X, y = Y, b = b.unconstr, detU = 1)
-  ll <- ll.out$loglik
-  s2 <- so$sigma^2
+  # compute (weighted) log-likelihood
+  ll.unc <- con_loglik_lm(X = X, y = Y, b = b.unconstr, w = w)
+  LL.unc <- ll.unc$loglik
+  s2.unc.ml <- ll.unc$Sigma / n
+  
   # check if the constraints are in line with the data!
   if (all(Amat %*% c(b.unconstr) - bvec >= 0 * bvec) & meq == 0) {
     b.constr <- b.unconstr
-
+    
     OUT <- list(CON = NULL,
                 parTable = parTable,
                 constraints = constraints,
@@ -67,9 +69,9 @@ conLM.lm <- function(model, constraints, se = "default",
                 R2.org = R2.org,
                 R2.reduced = R2.org,
                 df.residual = model$df.residual,
-                s2.unc = s2, s2.unc.ml = ll.out$Sigma,
-                s2 = s2, s2.ml = ll.out$Sigma, 
-                loglik = ll, Sigma = vcov(model),
+                s2.unc = s2.unc, s2.unc.ml = s2.unc.ml,
+                s2.con = s2.unc, s2.con.ml = s2.unc.ml, 
+                loglik = LL.unc, Sigma = vcov(model),
                 Amat = Amat, bvec = bvec, meq = meq, iact = NULL, bootout = NULL)  
   } else {
     # compute constrained estimates for lm() and mlm() 
@@ -79,26 +81,29 @@ conLM.lm <- function(model, constraints, se = "default",
                                         control$maxit))
     b.constr <- matrix(out.qp$solution, ncol = ncol(Y))
     b.constr[abs(b.constr) < tol] <- 0L
-
-    conll.out <- con_loglik_lm(X = X, y = Y, b = b.constr, detU = 1)
-    conll <- conll.out$loglik
-    fitted <- model.matrix(model) %*% b.constr
-    residuals <- Y - fitted
+    
+    ll.con <- con_loglik_lm(X = X, y = Y, b = b.constr, w = w)
+    LL.con <- ll.con$loglik
+    s2.con.ml <- ll.con$Sigma / n
     
     # function to correct the df in case of e.g., x1 == 0, df + 1; x1 == 0 and x1 == x2, df + 2
     pEq.corr <- dfEq_correction(parTable, 
                                 bvec.idx = "(^[[:digit:]][.][[:digit:]]$)|(^[0-9]$)")
-    p <- NCOL(X)
-    df.residual <- (n - p + pEq.corr)
-    df.old <- n-p
-    s2 <- sum(residuals^2) / df.residual
-    
-    cat("conLM.lm: ...CHECK DF S^2! =", s2, "...df = ", df.residual, "...df.old =", df.old, "\n")
-    
     # lm
     if (ncol(Y) == 1L) {
+      fitted <- X %*% b.constr
+      residuals <- Y - fitted
+      df.residual <- (n - p + pEq.corr)
+      if (is.null(w)) {
+        s2.con <- sum(residuals^2) / df.residual  
+      } else {
+        s2.con <- sum(w*residuals^2) / df.residual
+      }
+      
+      cat("conLM.lm: ...CHECK DF S^2! =", s2.con, "...df = ", df.residual,"\n")
+      
       b.constr <- c(b.constr)
-      names(b.constr) <- col.names
+      names(b.constr) <- names(b.unconstr)
 
       # compute constrained R^2, acknowledgement: code taken from ic.infer package (Ulrike Groemping)
       R2.reduced <- 1 - sum(residuals^2)/sum((Y - mean(Y))^2)
@@ -111,9 +116,14 @@ conLM.lm <- function(model, constraints, se = "default",
         R2.reduced <- 1 - sum(weights(model) * residuals^2)/sum(weights(model) * Y^2)
 
     } else { #mlm
-      #fitted <- model.matrix(model) %*% b.constr
-      #residuals <- Y - fitted
-      rownames(b.constr) <- row.names
+      df <- model$df.residual
+      fitted <- X %*% b.constr
+      residuals <- Y - fitted
+      df.residual <- (df + pEq.corr)
+      
+      # variable names
+      rownames(b.constr) <- rownames(b.unconstr)
+      colnames(b.constr) <- colnames(b.unconstr)
       R2.org <- R2.reduced <- NULL
       se <- "no"
     }
@@ -128,26 +138,27 @@ conLM.lm <- function(model, constraints, se = "default",
                 R2.org = R2.org,
                 R2.reduced = R2.reduced,
                 df.residual = model$df.residual,
-                s2.unc = so$sigma^2, s2.unc.ml = ll.out$Sigma,
-                s2 = s2, s2.ml = conll.out$Sigma, 
-                loglik = conll, Sigma = vcov(model),
+                s2.unc = s2.unc, s2.unc.ml = s2.unc.ml,
+                s2.con = s2.con, s2.con.ml = s2.con.ml, 
+                loglik = LL.con, Sigma = vcov(model),
                 Amat = Amat, bvec = bvec, meq = meq, iact = out.qp$iact,
                 bootout = NULL)
   }
 
   OUT$model.org <- model
   OUT$CON <- if (is.character(constraints)) { CON }
-  #OUT$partable <- if (is.character(constraints)) { partable }
   OUT$se <- se
   if (se != "no") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
-      information <- 1/s2 * crossprod(X) 
-      information.inv <- con_augmented_information(information = information,
-                                                   X = X, b.unconstr = b.unconstr, 
-                                                   b.constr = b.constr,
-                                                   Amat = Amat, 
-                                                   bvec = bvec, meq = meq) 
-      OUT$information.inverted <- information.inv
+      information <- 1/s2.con * crossprod(X) 
+      OUT$information <- information
+      inverted.information <- con_augmented_information(information = information,
+                                                        X = X, 
+                                                        b.unconstr = b.unconstr, 
+                                                        b.constr = b.constr,
+                                                        Amat = Amat, 
+                                                        bvec = bvec, meq = meq) 
+      attr(OUT$information, "inverted.information") <- inverted.information        
     } else if (se == "boot.model.based") {
       OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),
                                                    999, control$B), 
@@ -163,7 +174,7 @@ conLM.lm <- function(model, constraints, se = "default",
   if (ncol(Y) == 1L) {
     class(OUT) <- c("conLM","lm")
   } else if (ncol(Y) > 1L) {
-    class(OUT) <- c("conMLM","mlm")
+    class(OUT) <- c("conLM","mlm")
   }
     
     return(OUT)

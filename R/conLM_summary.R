@@ -18,7 +18,12 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
   }
   
   cat("Residuals:\n")
-  resid <- x$residuals
+  if (is.null(weights(x))) {
+    resid <- x$residuals  
+  } else {
+    resid <- sqrt(x$weights) * x$residuals
+  }
+  
   nam <- c("Min", "1Q", "Median", "3Q", "Max")
   rq <- quantile(resid)
    names(rq) <- nam
@@ -107,17 +112,21 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
   # acknowledgment: code taken from the goric package.
   # The goric_penalty() function uses a simulation approach for calculating the
   # level probabilities, while these weights can be calculated using the 
-  # multivariate normal distribution function.
-  s2unc <- x$s2.ml
+  # multivariate normal distribution function. Except for the case of equalities only.
+  if (class(x)[1] == "conRLM") {
+    Sigma <- summary_rlm(x$model.org, ml = TRUE)$stddev^2
+  } else if (class(x)[1] == "conLM") {
+    Sigma <- x$s2.unc.ml     
+  }
   X <- model.matrix(x$model.org)[,,drop=FALSE]
   Y <- as.matrix(x$model.org$model[, attr(x$model.org$terms, "response")])
-  # information matrix0
-  invW <- kronecker(1/(s2unc), t(X) %*% X)
+  # information matrix
+  invW <- kronecker(solve(Sigma), t(X) %*% X)
   # covariance matrix
   W <- solve(invW)
   
   if (!(nrow(x$Amat) == x$meq)) {
-    wt <- rev(con_wt(x$Amat%*%W%*%t(x$Amat), meq = x$meq))
+    wt <- rev(con_wt(x$Amat %*% W %*% t(x$Amat), meq = x$meq))
   } else {
     wt <- rev(mix.boot(x, Amat = x$Amat, bvec = x$bvec, meq = x$meq, ...))
   }  

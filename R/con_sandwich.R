@@ -14,7 +14,8 @@ bread <- function(x, ...) {
 
 bread.lm <- function(x, ...) {
   if(!is.null(x$model.org$na.action)) class(x$model.org$na.action) <- "omit"
-  cov.unscaled <- 1/x$s2 * x$information.inverted 
+  I.inv <- attr(x$information, "inverted.information")
+  cov.unscaled <- 1/x$s2.con * I.inv
   return(cov.unscaled * as.vector(sum(summary(x$model.org)$df[1:2])))
 }
 
@@ -36,7 +37,7 @@ bread.rlm <- function(x, ...) {
                                       b.unconstr = x$b.unconstr, 
                                       b.constr = x$b.constr, Amat = x$Amat, 
                                       bvec = x$bvec, 
-                                      meq = x$meq) #* nrow(xmat)
+                                      meq = x$meq) 
     return(rval)
 }
 
@@ -92,7 +93,8 @@ meatHC <- function(x,
   ## get hat values and residual degrees of freedom
   #diaghat <- try(hatvalues(x$model.org), silent = TRUE)
  # if (class(x)[1] == "conLM") {
-  diaghat <- diag(X%*%(1/x$s2 * x$information.inverted)%*%t(X))                
+  I.inv <- attr(x$information, "inverted.information")
+  diaghat <- diag(X %*% (1/x$s2.con * I.inv) %*% t(X))                
 #  } else if (class(x)[1] == "conRLM") {
 #    diaghat <- diag(X%*%(solve(vcovMM(X = X, resid0 = x$init.resid, 
 #                                      resid = x$residuals, scale = x$scale)))%*%t(X))                         

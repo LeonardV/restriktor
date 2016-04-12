@@ -213,7 +213,8 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   X <- model.matrix(model.org)[,,drop=FALSE]
   Y <- cbind(model.org$model[, attr(model.org$terms, "response")])
   df.residual <- object$df.residual
-  COV <- vcov(model.org)   
+  COV <- vcov(model.org)  
+  w <- weights(model.org)
   b.unconstr <- object$b.unconstr
     vnames <- names(b.unconstr)
   b.constr <- object$b.constr
@@ -252,10 +253,10 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
     # test statistics
-    ll0.out <- con_loglik_lm(X = X, y = Y, b = b.eqconstr, detU = 1)
+    ll0.out <- con_loglik_lm(X = X, y = Y, b = b.eqconstr, w = w)
     ll0 <- ll0.out$loglik
     
-    ll1.out <- con_loglik_lm(X = X, y = Y, b = b.constr, detU = 1)
+    ll1.out <- con_loglik_lm(X = X, y = Y, b = b.constr, w = w)
     ll1 <- ll1.out$loglik
     Ts <- -2*(ll0 - ll1)
   } else if (type == "A") {
@@ -269,20 +270,20 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
       names(b.eqconstr) <- vnames
     # test statistics
-    ll0.out <- con_loglik_lm(X = X, y = Y, b = b.eqconstr, detU = 1)
+    ll0.out <- con_loglik_lm(X = X, y = Y, b = b.eqconstr, w = w)
     ll0 <- ll0.out$loglik
     
-    ll1.out <- con_loglik_lm(X = X, y = Y, b = b.constr, detU = 1)
+    ll1.out <- con_loglik_lm(X = X, y = Y, b = b.constr, w = w)
     ll1 <- ll1.out$loglik
     Ts <- -2*(ll0 - ll1)
   }
   else if (type == "B") {
     if (meq.alt == 0L) {
       # test statistic
-      ll0.out <- con_loglik_lm(X = X, y = Y, b = b.constr, detU = 1)
+      ll0.out <- con_loglik_lm(X = X, y = Y, b = b.constr, w = w)
       ll0 <- ll0.out$loglik
     
-      ll1.out <- con_loglik_lm(X = X, y = Y, b = b.unconstr, detU = 1)
+      ll1.out <- con_loglik_lm(X = X, y = Y, b = b.unconstr, w = w)
       ll1 <- ll1.out$loglik
       Ts <- -2*(ll0 - ll1)
     }
@@ -298,10 +299,10 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                                   control$maxit))$solution
         names(b.constr.alt) <- vnames
 
-        ll0.out <- con_loglik_lm(X = X, y = Y, b = b.constr, detU = 1)
+        ll0.out <- con_loglik_lm(X = X, y = Y, b = b.constr, w = w)
         ll0 <- ll0.out$loglik
         
-        ll1.out <- con_loglik_lm(X = X, y = Y, b = b.constr.alt, detU = 1)
+        ll1.out <- con_loglik_lm(X = X, y = Y, b = b.constr.alt, w = w)
         ll1 <- ll1.out$loglik
         Ts <- -2*(ll0 - ll1)
       }

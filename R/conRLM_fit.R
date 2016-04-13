@@ -84,9 +84,15 @@ conRLM_fit <- function(x, y, weights, w = rep(1, nrow(x)),
     } else if(method == "MM") {
         scale.est <- "MM"
         # columns of X fixed to zero by equality constraints should be removed to compute scale.
-        con.equal <- attr(dfEq_correction(parTable, bvec.idx = "(^[0]$)"), "char")
-        equal.idx <- colnames(x) %in% con.equal
-        X <- x[,!equal.idx, drop = FALSE]
+        #con.equal <- conEqualZero(parTable, bvec.idx = "(^[0]$)")
+        #equal.idx <- colnames(x) %in% con.equal
+        #X <- x[,!equal.idx, drop = FALSE]
+        Dmat <- diag(ncol(Amat))
+        dvec <- cbind(rep(1, ncol(Amat)))
+        QP <- solve.QP(XX, Xy, t(Amat), bvec, meq)$solution
+        
+        stop("FIXME: columns of X fixed to zero should be removed first before computing the robust scale estimate.")
+        
         temp <- do.call("lqs",
                         c(list(x = X, y, intercept = FALSE, method = "S",
                                k0 = 1.54764), lqs.control))
@@ -94,6 +100,10 @@ conRLM_fit <- function(x, y, weights, w = rep(1, nrow(x)),
         resid <- temp$residuals
         resid0 <- resid
         scale <- temp$scale
+        
+        print(scale)
+        print(equal.idx)
+        
         psi <- psi.bisquare
     } else {
       stop("'method' is unknown")
@@ -176,7 +186,7 @@ conRLM_fit <- function(x, y, weights, w = rep(1, nrow(x)),
                 s = scale, psi = psi, k2 = k2,
                 weights = if(!missing(weights)) weights,
                 conv = conv, converged = done, iter = iiter, x = xx, call = cl, 
-                iact = iact)
+                Amat = Amat, bvec = bvec, meq = meq, iact = iact)
     class(fit) <- c("conRLM", "rlm", "lm")
     fit
   }

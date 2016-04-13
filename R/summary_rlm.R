@@ -1,5 +1,5 @@
 # acknowledgement: code taken from MASS package
-# adapted for dfEq_correction by LV.
+# adapted to correct for equality constraints by LV.
 # add option to get ml sigma
 summary_rlm <- function (object, method = c("XtX", "XtWX"), 
                          correlation = FALSE, ml = FALSE, ...) {
@@ -21,10 +21,9 @@ summary_rlm <- function (object, method = c("XtX", "XtWX"),
   } else {
     rep(1, n)
   }
-  parTable <- attr(object, "parTable")
-  dfEq.corr <- dfEq_correction(parTable)
+  
   if (length(object$call$wt.method) && object$call$wt.method == "case") {
-    rdf <- sum(wts) - p + dfEq.corr
+    rdf <- sum(wts) - (p - qr(object$Amat[1:object$meq,])$rank)
     if (ml) {
       rdf <- sum(wts)
     }
@@ -39,7 +38,7 @@ summary_rlm <- function (object, method = c("XtX", "XtWX"),
     stddev <- sqrt(S) * (kappa/mn)
   } else {
     res <- res * sqrt(wts)
-    rdf <- n - p + dfEq.corr
+    rdf <- n - (p - qr(object$Amat[1:object$meq,])$rank)
     if (ml) {
       rdf <- n
     }

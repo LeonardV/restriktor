@@ -1,3 +1,5 @@
+#<FIXME> rewrite in order to extract coefficients from summary <\FIXME>
+
 summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
                           bootCIs = TRUE, bty = "basic", level = 0.95, 
                           signif.stars = getOption("show.signif.stars"), 

@@ -40,7 +40,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     bvec <- rep(0L, nrow(Amat)) 
   }
   
-  # acknowledgement: code taken from ic.infer package (Ulrike Groemping)
+  # acknowledgement: code taken from ic.infer package 
   if (nrow(Amat) - meq - 2 > 2) {
     if (!is.numeric(try(matrix(0, floor((nrow(Amat) - meq -
                                          2)/2), choose(nrow(Amat) - meq, floor((nrow(Amat) - meq -
@@ -72,7 +72,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   resid <- model$residuals
   pred <- model$fitted.values
   resp <- pred + resid 
-  wgt <- model$w
+  wgt <- w #model$w                                                             # check if correct!
   if (is.null(model$model)) {
     df.int <- if (any(colnames(X) == "(Intercept)")) 1L else 0L
   } else {
@@ -100,7 +100,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 residuals = resid(model),
                 #init.resid = resid0,
                 fitted.values = fitted(model),
-                weights = weights(model),
+                weights = w,
                 R2.org = R2.org,
                 R2.reduced = R2.org,
                 df.residual = so$df[2],
@@ -126,7 +126,6 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                     parTable = parTable)      
     CALL <- c(call.rlm, call.my)
     rfit <- do.call("conRLM_fit", CALL)
-      attr(rfit, "parTable") <- parTable
     iact <- rfit$iact
 #    }
 #    else {
@@ -146,8 +145,6 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     tau.hat <- so.rlm$stddev
     s2.con <- tau.hat^2
     
-    cat(" ...CHECK DF S^2! =", s2.con, "...df = ", so.rlm$df[2])
-
     #R2 and adjusted R2, code taken from lmrob() function.
     pred <- rfit$fitted.values
     resp <- pred + resid 

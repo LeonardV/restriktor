@@ -86,26 +86,21 @@ conLM.lm <- function(model, constraints, se = "default",
     LL.con <- ll.con$loglik
     s2.con.ml <- ll.con$Sigma / n
     
-    # function to correct the df in case of e.g., x1 == 0, df + 1; x1 == 0 and x1 == x2, df + 2
-    pEq.corr <- dfEq_correction(parTable, 
-                                bvec.idx = "(^[[:digit:]][.][[:digit:]]$)|(^[0-9]$)")
     # lm
     if (ncol(Y) == 1L) {
+      b.constr <- as.vector(b.constr)
+      names(b.constr) <- names(b.unconstr)
+      
       fitted <- X %*% b.constr
       residuals <- Y - fitted
-      df.residual <- (n - p + pEq.corr)
+      df.residual <- n - (p - qr(Amat[1:meq,])$rank)
       if (is.null(w)) {
         s2.con <- sum(residuals^2) / df.residual  
       } else {
         s2.con <- sum(w*residuals^2) / df.residual
       }
       
-      cat("conLM.lm: ...CHECK DF S^2! =", s2.con, "...df = ", df.residual,"\n")
-      
-      b.constr <- c(b.constr)
-      names(b.constr) <- names(b.unconstr)
-
-      # compute constrained R^2, acknowledgement: code taken from ic.infer package (Ulrike Groemping)
+      # compute constrained R^2, acknowledgement: code taken from ic.infer package 
       R2.reduced <- 1 - sum(residuals^2)/sum((Y - mean(Y))^2)
       if (is.null(weights(model)) & !attr(model$terms, "intercept"))
         R2.reduced <- 1 - sum(residuals^2)/sum(Y^2)
@@ -115,13 +110,12 @@ conLM.lm <- function(model, constraints, se = "default",
       if (!(attr(model$terms, "intercept") | is.null(weights(model))))
         R2.reduced <- 1 - sum(weights(model) * residuals^2)/sum(weights(model) * Y^2)
 
-    } else { #mlm
+    } else { #mlm <FIXME>
       df <- model$df.residual
       fitted <- X %*% b.constr
       residuals <- Y - fitted
-      df.residual <- (df + pEq.corr)
+      df.residual <- df + qr(Amat[1:meq,])$rank
       
-      # variable names
       rownames(b.constr) <- rownames(b.unconstr)
       colnames(b.constr) <- colnames(b.unconstr)
       R2.org <- R2.reduced <- NULL

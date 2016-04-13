@@ -1,5 +1,4 @@
 # adjusted bread functions from the sandwich package.
-
 sandwich <- function(x, bread. = bread, meat. = meat, ...) {
   if(is.list(x) && !is.null(x$na.action)) class(x$na.action) <- "omit"
   if(is.function(bread.)) bread. <- bread.(x)
@@ -100,12 +99,8 @@ meatHC <- function(x,
 #                                      resid = x$residuals, scale = x$scale)))%*%t(X))                         
 #  }  
 
-  dfEq.corr <- dfEq_correction(x$parTable)  
   p <- NCOL(X)
-  df <- n - p + dfEq.corr
-  df.old <- n - p
-  
-  cat(" SW:...CHECK DF S^2!", "...df = ", df, "...df.old =", df.old, "\n")
+  df <- n - (p - qr(x$Amat[1:x$meq,])$rank)
   
   ## the following might work, but "intercept" is also claimed for "coxph"
   ## res <- if(attr(terms(x), "intercept") > 0) estfun(x)[,1] else rowMeans(estfun(x)/X, na.rm = TRUE)

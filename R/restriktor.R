@@ -1,7 +1,8 @@
-# TO DO:
+################################### TO DO ######################################
 # - weights conTestScore fix
 # - con_solver weights fix
 
+###############################################################################
 restriktor <- function(model, constraints, se = "default",
                        rhs = NULL, neq = NULL, control = NULL,
                        debug = FALSE, ...) {

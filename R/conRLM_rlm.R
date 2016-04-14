@@ -59,7 +59,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   }  
   X  <- model.matrix(model)[,,drop = FALSE]
   b.unconstr <- coef(model)  
-  so <- MASS:::summary.rlm(model)
+  so <- summary_rlm(model)#MASS:::summary.rlm(model)
   tau.hat <- so$stddev  
   s2.con <- s2.unc <- tau.hat^2
   w <- weights(model)

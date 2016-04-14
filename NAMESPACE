@@ -20,8 +20,13 @@ importFrom("boot",
 importFrom("zoo",
            is.zoo)
 
+importFrom("ic.infer",
+           #nchoosek, NOT EXPORTED!
+           ic.weights)
+
 # export ordinary functions defined in this package
-export("restriktor", "conLM.lm", "conRLM.rlm", #"conLM.default",
+export("restriktor", 
+       "conLM.lm", "conRLM.rlm", #"conLM.default",
        "conTest", "conTestF.lm", "conTestF.rlm", "conTestLRT.lm", 
        "conTestScore.lm", "conTestEq.lm", "conTestEq.rlm",
        "conTestScore.rlm", "conTestWald.rlm", #"conTestWald2.rlm",

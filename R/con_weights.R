@@ -42,7 +42,7 @@ con_weights <- function (corr, ...) {
             ### fill the two middle weights by 0.5 - odd and even sum of others,
             ###     respectively, according to Silvapulle and Sen 2004,
             ###     Prop. 3.6.1, part 3
-            jetzt <- con_nchoosek(g, k)
+            jetzt <- nchoosek(g, k)
             wjetzt <- matrix(0, choose(g, k), 2)
             for (j in 1:(choose(g, k))) {
                 diese <- jetzt[, j]

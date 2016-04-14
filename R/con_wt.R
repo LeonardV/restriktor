@@ -1,8 +1,8 @@
 con_wt <- function(cov, meq) {
   if (meq == 0L) {
-    wt.bar <- con_weights(cov)
+    wt.bar <- ic.weights(cov)
   } else if (meq > 0) {
-    wt.bar <- con_weights(solve(solve(cov)[-(1:meq), -(1:meq)]))
+    wt.bar <- ic.weights(solve(solve(cov)[-(1:meq), -(1:meq)]))
   }
   wt.bar
 }

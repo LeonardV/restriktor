@@ -75,7 +75,7 @@ conLM.lm <- function(model, constraints, se = "default",
                 Amat = Amat, bvec = bvec, meq = meq, iact = NULL, bootout = NULL)  
   } else {
     # compute constrained estimates for lm() and mlm() 
-    out.qp <- con_solver(b.unconstr, X = X, y = Y, Amat = Amat,
+    out.qp <- con_solver(b.unconstr, X = X, y = Y, w = w, Amat = Amat,
                          bvec = bvec, meq = meq, tol = tol,
                          maxit = ifelse(is.null(control$maxit), 1e04, 
                                         control$maxit))

@@ -27,6 +27,7 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   model.org <- object$model.org
   X <- model.matrix(object)[,,drop=FALSE]
   Y <- model.org$model[, attr(model.org$terms, "response")]
+  w <- weights(model.org)
   df.residual <- object$df.residual
   COV <- vcov(model.org) 
   b.unconstr <- object$b.unconstr
@@ -56,7 +57,7 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     } else {
         stop("Restriktor ERROR: test not ready yet for models without intercept.")      
     } 
-    b.eqconstr <- con_solver(b.unconstr, X = X, y = Y, Amat = Amatg,
+    b.eqconstr <- con_solver(b.unconstr, X = X, y = Y, w = w, Amat = Amatg,
                                 bvec = bvecg, meq = nrow(Amatg),
                                 tol = ifelse(is.null(control$tol), 1e-09, 
                                              control$tol),
@@ -67,7 +68,7 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     Ts <- c(t(b.constr - b.eqconstr) %*% solve(COV, b.constr - b.eqconstr))
   } else if (type == "A") {
     # optimizer
-    b.eqconstr <- con_solver(b.unconstr, X = X, y = Y, Amat = Amat,
+    b.eqconstr <- con_solver(b.unconstr, X = X, y = Y, w = w, Amat = Amat,
                                 bvec = bvec, meq = nrow(Amat),
                                 tol = ifelse(is.null(control$tol), 1e-09, 
                                              control$tol),
@@ -85,7 +86,7 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     else {
       # some equality may be preserved in the alternative hypothesis.
       if(meq.alt != 0L && meq.alt <= meq) {
-        b.constr.alt <- con_solver(b.unconstr, X = X, y = Y,
+        b.constr.alt <- con_solver(b.unconstr, X = X, y = Y, w = w, 
                                    Amat = Amat[1:meq.alt,,drop = FALSE],
                                    bvec = bvec[1:meq.alt], meq = meq.alt,
                                    tol = ifelse(is.null(control$tol), 1e-09, 
@@ -244,7 +245,7 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
       Amatg <- diag(rep(1, g))
       bvecg <- rep(0, g) 
     } 
-    b.eqconstr <- con_solver(b.unconstr, X = X, y = Y, Amat = Amatg,
+    b.eqconstr <- con_solver(b.unconstr, X = X, y = Y, w = w, Amat = Amatg,
                              bvec = bvecg, meq = nrow(Amatg),
                              tol = ifelse(is.null(control$tol), 1e-09, 
                                           control$tol),
@@ -261,7 +262,7 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     Ts <- -2*(ll0 - ll1)
   } else if (type == "A") {
     # optimizer
-    b.eqconstr <- con_solver(b.unconstr, X = X, y = Y, Amat = Amat,
+    b.eqconstr <- con_solver(b.unconstr, X = X, y = Y, w = w, Amat = Amat,
                                 bvec = bvec, meq = nrow(Amat),
                                 tol = ifelse(is.null(control$tol), 1e-09, 
                                              control$tol),
@@ -290,7 +291,7 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt > 0L && meq.alt <= meq) {
-        b.constr.alt <- con_solver(b.unconstr, X = X, y = Y,
+        b.constr.alt <- con_solver(b.unconstr, X = X, y = Y, w = w,
                                    Amat = Amat[1:meq.alt,,drop=FALSE],
                                    bvec=bvec[1:meq.alt], meq = meq.alt,
                                    tol = ifelse(is.null(control$tol), 1e-09, 
@@ -422,10 +423,11 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   model.org <- object$model.org
   X <- model.matrix(object)[,,drop=FALSE]
   Y <- cbind(model.org$model[, attr(model.org$terms, "response")])
+  df.residual <- object$df.residual
+  w <- weights(model.org)
+  COV <- object$Sigma
   n <- dim(X)[1]
   p <- dim(X)[2]
-  df.residual <- object$df.residual
-  COV <- object$Sigma
   b.unconstr <- object$b.unconstr
   vnames <- names(b.unconstr)
   b.constr <- object$b.constr
@@ -454,7 +456,7 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
       bvecg <- rep(0, g) 
     }
     
-    b.eqconstr <- con_solver(b.unconstr, X = X, y = Y, Amat = Amatg,
+    b.eqconstr <- con_solver(b.unconstr, X = X, y = Y, w = w, Amat = Amatg, 
                              bvec = bvecg, meq = nrow(Amatg),
                              tol = ifelse(is.null(control$tol), 1e-09, 
                                           control$tol),
@@ -475,7 +477,7 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     Ts <- as.numeric(n*Ts)
   } else if (type == "A") {
     
-    b.eqconstr <- con_solver(b.unconstr, X = X, y = Y, Amat = Amat,
+    b.eqconstr <- con_solver(b.unconstr, X = X, y = Y, w = w, Amat = Amat,
                              bvec = bvec, meq = nrow(Amat),
                              tol = ifelse(is.null(control$tol), 1e-09, 
                                           control$tol),
@@ -488,13 +490,9 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     con.idx <- which(object$parTable$op == "<" | object$parTable$op == ">")
     user.equal  <- object$parTable
       user.equal$op[con.idx] <- "=="
-    pEq.corr <- dfEq_correction(user.equal)
     p <- NCOL(X)
-    df <- (n - p + pEq.corr)
+    df <- n - (p - qr(Amat[1:meq,])$rank)
     s20 <- sum((Y - X%*%b.eqconstr)^2) / df
-    
-    cat("CHECK DF S^2! =", s20, "...df = ", df, "\n")
-    
     d0 <- 1/s20 * t(X)%*%(Y - X%*%b.eqconstr)
     i <- 1/s20 * (t(X)%*%X)
     U <- 1/sqrt(n) * solve(i) %*% d0
@@ -507,13 +505,9 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   }
   else if (type == "B") {
     if (meq.alt == 0L) {
-      pEq.corr <- dfEq_correction(object$parTable)
       p <- NCOL(X)
-      df <- (n - p + pEq.corr)
+      df <- n - (p - qr(Amat[1:meq,])$rank)
       s20 <- sum((Y - X%*%b.constr)^2) / df
-      
-      cat("CHECK DF S^2! =", s20, "...df = ", df, "\n")
-      
       d0   <- 1/s20 * t(X)%*%(Y - X%*%b.constr)
       i <- 1/s20 * (t(X)%*%X)
       U <- 1/sqrt(n) * solve(i) %*% d0
@@ -533,13 +527,9 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                                   control$maxit))$solution
         names(b.constr.alt) <- vnames
         
-        pEq.corr <- dfEq_correction(object$parTable)
         p <- NCOL(X)
-        df <- (n - p + pEq.corr)
+        df <- n - (p - qr(Amat[1:meq,])$rank)
         s20 <- sum((Y - X%*%b.constr)^2) / df
-        
-        cat("CHECK DF S^2! =", s20, "...df = ", df, "\n")
-        
         d0   <- 1/s20 * t(X)%*%(Y - X%*%b.constr)
         i <- 1/s20 * (t(X)%*%X)
         U <- 1/sqrt(n) * solve(i) %*% d0

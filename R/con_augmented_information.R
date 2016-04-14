@@ -76,6 +76,6 @@ con_augmented_information <- function(information, X,
   # augmented/inverted information
   OUT <- inverted.information
       
-    return(OUT)
+    OUT
 }
 

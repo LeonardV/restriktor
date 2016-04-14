@@ -60,8 +60,8 @@ conLM.default <- function(model, constraints, se = "default",
     } else {
         ## equality constraints involved or some inequality constraints violated
         ## calculate constrained estimate
-        out <- con_my_solve_QP_lm(Dmat = solve(V), dvec = solve(V, b),
-                                  Amat = t(Amat), bvec = bvec, meq = meq)
+        out <- solve.QP(Dmat = solve(V), dvec = solve(V, b),
+                        Amat = t(Amat), bvec = bvec, meq = meq)
         names(out$solution) <- names(b)
         out$solution[abs(out$solution) < tol] <- 0
         ## initialize output list

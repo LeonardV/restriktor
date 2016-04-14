@@ -1,5 +1,5 @@
 # compute the (weighted) loglikelihood based on the regression coefficients.
-con_loglik_lm <- function(X, y, b, w) {
+con_loglik_lm <- function(X, y, b, w = NULL) {
   n <- dim(X)[1]
   if (is.null(w)) {
     w <- rep(1, n)
@@ -11,5 +11,5 @@ con_loglik_lm <- function(X, y, b, w) {
 
   OUT <- list(loglik = ll, Sigma = S)
 
-  OUT
+    OUT
 }

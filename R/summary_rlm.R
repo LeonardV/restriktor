@@ -21,9 +21,14 @@ summary_rlm <- function (object, method = c("XtX", "XtWX"),
   } else {
     rep(1, n)
   }
-  
   if (length(object$call$wt.method) && object$call$wt.method == "case") {
-    rdf <- sum(wts) - (p - qr(object$Amat[1:object$meq,])$rank)
+    if (exists("object$Amat")) {
+      if (object$meq > 0) {
+        rdf <- sum(wts) - (p - qr(object$Amat[1:object$meq,])$rank)
+      }   
+    } else {
+      rdf <- sum(wts) - p
+    } 
     if (ml) {
       rdf <- sum(wts)
     }
@@ -38,7 +43,13 @@ summary_rlm <- function (object, method = c("XtX", "XtWX"),
     stddev <- sqrt(S) * (kappa/mn)
   } else {
     res <- res * sqrt(wts)
-    rdf <- n - (p - qr(object$Amat[1:object$meq,])$rank)
+    if (exists("object$Amat")) {
+      if (object$meq > 0) {
+        rdf <- n - (p - qr(object$Amat[1:object$meq,])$rank)
+      } 
+    } else {
+      rdf <- n - p
+    } 
     if (ml) {
       rdf <- n
     }

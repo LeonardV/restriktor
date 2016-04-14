@@ -145,13 +145,13 @@ conRLM_fit <- function(x, y, weights, w = rep(1, nrow(x)),
         w <- diag(c(w))
         XX <- t(x) %*% w %*% x
         Xy <- t(x) %*% w %*% y
-        out <- con_my_solve_QP(Dmat = XX, dvec = Xy, Amat = t(Amat), 
-                               bvec = bvec, meq = meq)
+        out <- solve.QP(Dmat = XX, dvec = Xy, Amat = t(Amat), 
+                        bvec = bvec, meq = meq)
         
-        if (out$status == -1 || out$status == -2) {
-          done <- FALSE
-          break
-        }
+#         if (out$status == -1 || out$status == -2) {
+#           done <- FALSE
+#           break
+#         }
         coef <- out$solution 
         resid <- drop(y - x %*% coef)
         iact <- out$iact

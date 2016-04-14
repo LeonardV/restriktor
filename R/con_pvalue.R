@@ -369,8 +369,8 @@ mix.boot <- function(object, type = "A",
     
     Z <- rmvnorm(n = 1, mean = rep(0, ncol(W)), sigma=W)
     dvec <- 2*(Z %*% invW)
-    QP <- con_my_solve_QP(Dmat = Dmat, dvec = dvec, Amat = t(Amat),
-                          bvec = bvec, meq = meq)
+    QP <- solve.QP(Dmat = Dmat, dvec = dvec, Amat = t(Amat),
+                   bvec = bvec, meq = meq)
     
     if (QP$iact[1] == 0L) {
       return(0L) 

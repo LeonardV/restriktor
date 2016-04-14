@@ -1,4 +1,4 @@
-  #acknowlegment: taken from ic.infer package (Ulrike Groemping)
+  #acknowlegment: taken from ic.infer package 
   pfbar <- function(x, df1, df2, wt) {
     if (x <= 0) {
       return(0)

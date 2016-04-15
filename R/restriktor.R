@@ -9,7 +9,7 @@ restriktor <- function(model, constraints, se = "default",
                        rhs = NULL, neq = NULL, control = NULL,
                        debug = FALSE, ...) {
   #if (any(c("glm", "mlm", "gls") %in% class(model))) {
-  if (any(c("glm", "gls") %in% class(model))) {
+  if (any(c("glm", "mlm", "gls") %in% class(model))) {
     stop("Restriktor does not work on classes glm, mlm and gls (yet).")
   }
   
@@ -66,7 +66,7 @@ restriktor <- function(model, constraints, se = "default",
   if (class(model)[1] %in% c("lm","mlm")) {
     UseMethod("conLM")
   } else if (class(model)[1] %in% "rlm") {
-      UseMethod("conRLM")
+    UseMethod("conRLM")
   }
   
 }

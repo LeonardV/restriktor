@@ -22,32 +22,32 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   
   # original model
   model.org <- object$model.org
+  # model matrix
   X <- model.matrix(model.org)[,,drop=FALSE]
-  Y <- model.org$model[, attr(model.org$terms, "response")]
+  # response variable
+  Y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
+  # weights
+  w <- weights(model.org)
+  # unconstrained df
   df.residual <- object$df.residual
-  # unconstrained vcov
-  COV <- object$Sigma                                                           #use the robust vcovMM?
+  # unconstrained covariance matrix
+  COV <- object$Sigma
   # unconstrained scale
   scale <- model.org$s
-  # unconstrained parameters
+  # parameter estimates
   b.unconstr <- object$b.unconstr
-  # constrained parameters
   b.constr <- object$b.constr
+  b.eqconstr <- NULL
+  b.constr.alt <- NULL
+  # variable names
   vnames <- names(b.unconstr)
+  # constraints stuff
   Amat <- object$Amat
   bvec <- object$bvec
   meq  <- object$meq
   
-  # depends on type
-  b.eqconstr <- NULL
-  b.constr.alt <- NULL
-  
-  
   if (meq == nrow(Amat)) {
     stop("test not applicable for object with equality constraints only.")
-  }
-  if (!(length(b.unconstr) == nrow(COV))) {
-    stop("length b.unconstr and nrow(COV) must be identical.")
   }
   
   if (type == "global") {
@@ -63,7 +63,7 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     #fit inequality constrained robust model
     call.rlm <- as.list(model.org$call)
     call.rlm <- call.rlm[-1]
-    call.rlm[["weights"]] <- weights(model.org)     
+    call.rlm[["weights"]] <- w
     call.rlm[["data"]] <- NULL
     call.rlm[["x"]] <- NULL
     call.rlm[["y"]] <- NULL
@@ -71,15 +71,15 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     CALL <- c(call.rlm, call.my)
     rfit <- do.call("conRLM_fit", CALL)
 
-        b.eqconstr <- coef(rfit)
+    b.eqconstr <- coef(rfit)
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
-    Ts <- robustFm(x = X, y = Y, beta0 = b.eqconstr, betaA = b.constr, 
+    Ts <- robustFm(x = X, y = Y,  beta0 = b.eqconstr, betaA = b.constr, 
                    scale = scale, cc = 4.685061)
   } else if (type == "A") {
     call.rlm <- as.list(model.org$call)
     call.rlm <- call.rlm[-1]
-    call.rlm[["weights"]] <- weights(model.org) 
+    call.rlm[["weights"]] <- w
     call.rlm[["data"]] <- NULL
     call.rlm[["x"]] <- NULL
     call.rlm[["y"]] <- NULL
@@ -90,18 +90,18 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr <- coef(rfit)
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
-    Ts <- robustFm(x = X, y = Y, beta0 = b.eqconstr, betaA = b.constr, 
+    Ts <- robustFm(x = X, y = Y,  beta0 = b.eqconstr, betaA = b.constr, 
                    scale = scale, cc = 4.685061)
   } else if (type == "B") {
     if (meq.alt == 0L) {
-      Ts <- robustFm(x = X, y = Y, beta0 = b.constr, betaA = b.unconstr, 
+      Ts <- robustFm(x = X, y = Y,  beta0 = b.constr, betaA = b.unconstr, 
                      scale = scale, cc = 4.685061)
     } else {
       # some equality may be preserved in the alternative hypothesis.
-      if(meq.alt != 0L && meq.alt <= meq) {
+      if (meq.alt != 0L && meq.alt <= meq) {
         call.rlm <- as.list(model.org$call)
         call.rlm <- call.rlm[-1]
-        call.rlm[["weights"]] <- weights(model.org)
+        call.rlm[["weights"]] <- w
         call.rlm[["data"]] <- NULL
         call.rlm[["x"]] <- NULL
         call.rlm[["y"]] <- NULL
@@ -113,7 +113,7 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
         b.constr.alt <- coef(rfit)
         b.constr.alt[abs(b.constr.alt) < tol] <- 0L
         names(b.constr.alt) <- vnames
-        Ts <- robustFm(x = X, y = Y, beta0 = b.constr, betaA = b.constr.alt, 
+        Ts <- robustFm(x = X, y = Y,  beta0 = b.constr, betaA = b.constr.alt, 
                        scale = scale, cc = 4.685061)
       } else {
         stop("meq.alt must not be larger than meq.")
@@ -132,9 +132,8 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   
   if (!(type == "C")) {
     if (boot == "no") {
-      # compute weights
+      # compute mixing weights
       wt.bar <- con_wt(Amat %*% COV %*% t(Amat), meq = meq)
-      # compute pvalue based on F-distribution
       pvalue <- con_pvalue_Fbar(wt = wt.bar, Ts.org = Ts, 
                                 df.residual = df.residual, type = type,
                                 Amat = Amat, bvec = bvec, meq = meq, 
@@ -230,33 +229,35 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     boot <- "model.based"
   }
   
+  
   # original model
   model.org <- object$model.org
+  # model matrix
   X <- model.matrix(model.org)[,,drop=FALSE]
-  Y <- model.org$model[, attr(model.org$terms, "response")]
+  # response variable
+  Y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
+  # weights
+  w <- weights(model.org)
+  # unconstrained df
   df.residual <- object$df.residual
-  # unconstrained vcov
-  COV <- object$Sigma                                                           #use the robust vcovMM?
+  # unconstrained covariance matrix
+  COV <- object$Sigma
   # unconstrained scale
   scale <- model.org$s
-  # unconstrained parameters
+  # parameter estimates
   b.unconstr <- object$b.unconstr
-  # constrained parameters
   b.constr <- object$b.constr
+  b.eqconstr <- NULL
+  b.constr.alt <- NULL
+  # variable names
   vnames <- names(b.unconstr)
+  # constraints stuff
   Amat <- object$Amat
   bvec <- object$bvec
   meq  <- object$meq
   
-  # depends on type
-  b.eqconstr <- NULL
-  b.constr.alt <- NULL
-  
   if (meq == nrow(Amat)) {
     stop("test not applicable for object with equality constraints only.")
-  }
-  if (!(length(b.unconstr) == nrow(COV))) {
-    stop("length b.unconstr and nrow(COV) must be identical.")
   }
   
   if (type == "global") {
@@ -283,7 +284,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr <- coef(rfit)
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
-    out0 <- robustWaldScores(x = X, y = Y, beta0 = b.eqconstr, 
+    out0 <- robustWaldScores(x = X, y = Y,  beta0 = b.eqconstr, 
                              betaA = b.constr, scale = scale)#, Amat = Amatg, 
                              #bvec = bvecg, meq = meq)
     Ts <- out0$RWald
@@ -303,7 +304,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
     
-    out1 <- robustWaldScores(x = X, y = Y, beta0 = b.eqconstr, 
+    out1 <- robustWaldScores(x = X, y = Y,  beta0 = b.eqconstr, 
                              betaA = b.constr, scale = scale)#, Amat = Amat, 
                              #bvec = bvec, meq = meq)
     Ts <- out1$RWald
@@ -311,7 +312,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   }
   else if (type == "B") {
     if (meq.alt == 0L) {
-      out2 <- robustWaldScores(x = X, y = Y, beta0 = b.constr, 
+      out2 <- robustWaldScores(x = X, y = Y,  beta0 = b.constr, 
                                betaA = b.unconstr, scale = scale)#, Amat = Amat, 
                                #bvec = bvec, meq = Amat)
       Ts <- out2$RWald
@@ -333,7 +334,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
         b.constr.alt <- coef(rfit)
         b.constr.alt[abs(b.constr.alt) < tol] <- 0L
         names(b.constr.alt) <- vnames
-        out3 <- robustWaldScores(x = X, y = Y, beta0 = b.constr, 
+        out3 <- robustWaldScores(x = X, y = Y,  beta0 = b.constr, 
                                  betaA = b.constr.alt, scale = scale)#, 
                                  #Amat = Amat, meq = meq.alt,                    
                                  #bvec = bvec)
@@ -456,31 +457,32 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   
   # original model
   model.org <- object$model.org
+  # model matrix
   X <- model.matrix(model.org)[,,drop=FALSE]
-  Y <- model.org$model[, attr(model.org$terms, "response")]
+  # response variable
+  Y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
+  # weights
+  w <- weights(model.org)
+  # unconstrained df
   df.residual <- object$df.residual
-  # unconstrained vcov
-  COV <- object$Sigma                                                           #use the robust vcovMM?
+  # unconstrained covariance matrix
+  COV <- object$Sigma
   # unconstrained scale
   scale <- model.org$s
-  # unconstrained parameters
+  # parameter estimates
   b.unconstr <- object$b.unconstr
-  # constrained parameters
   b.constr <- object$b.constr
+  b.eqconstr <- NULL
+  b.constr.alt <- NULL
+  # variable names
   vnames <- names(b.unconstr)
+  # constraints stuff
   Amat <- object$Amat
   bvec <- object$bvec
   meq  <- object$meq
   
-  # depends on type
-  b.eqconstr <- NULL
-  b.constr.alt <- NULL
-  
   if (meq == nrow(Amat)) {
     stop("test not applicable for object with equality constraints only.")
-  }
-  if (!(length(b.unconstr) == nrow(COV))) {
-    stop("length b.unconstr and nrow(COV) must be identical.")
   }
   
   if (type == "global") {
@@ -496,7 +498,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     #fit inequality constrained robust model
     call.rlm <- as.list(model.org$call)
     call.rlm <- call.rlm[-1]
-    call.rlm[["weights"]] <- weights(model.org)
+    call.rlm[["weights"]] <- w
     #    if (is.null(call.rlm[["formula"]])) {
     call.rlm[["data"]] <- NULL
     call.rlm[["x"]] <- NULL
@@ -508,7 +510,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr <- coef(rfit)
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
-    out0 <- robustWaldScores(x = X, y = Y, beta0 = b.eqconstr, 
+    out0 <- robustWaldScores(x = X, y = Y,  beta0 = b.eqconstr, 
                              betaA = b.constr, scale = scale)#, Amat = Amatg, 
     #bvec = bvecg, meq = meq)
     Ts <- out0$Rscore
@@ -516,7 +518,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   } else if (type == "A") {
     call.rlm <- as.list(model.org$call)
     call.rlm <- call.rlm[-1]
-    call.rlm[["weights"]] <- weights(model.org)
+    call.rlm[["weights"]] <- w
     call.rlm[["data"]] <- NULL
     call.rlm[["x"]] <- NULL
     call.rlm[["y"]] <- NULL
@@ -528,14 +530,14 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
     
-    out1 <- robustWaldScores(x = X, y = Y, beta0 = b.eqconstr, 
+    out1 <- robustWaldScores(x = X, y = Y,  beta0 = b.eqconstr, 
                              betaA = b.constr, scale = scale)#, Amat = Amat, 
     #bvec = bvec, meq = meq)
     Ts <- out1$Rscore
     COV <- out1$V
   } else if (type == "B") {
     if (meq.alt == 0L) {
-      out2 <- robustWaldScores(x = X, y = Y, beta0 = b.constr, 
+      out2 <- robustWaldScores(x = X, y = Y,  beta0 = b.constr, 
                                betaA = b.unconstr, scale = scale)#, Amat = Amat, 
       #bvec = bvec, meq = meq)
       Ts <- out2$Rscore
@@ -545,7 +547,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
       if (meq.alt != 0L && meq.alt <= meq) {
         call.rlm <- as.list(model.org$call)
         call.rlm <- call.rlm[-1]
-        call.rlm[["weights"]] <- weights(model.org)
+        call.rlm[["weights"]] <- w
         call.rlm[["data"]] <- NULL
         call.rlm[["x"]] <- NULL
         call.rlm[["y"]] <- NULL
@@ -557,7 +559,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
         b.constr.alt <- coef(rfit)
         b.constr.alt[abs(b.constr.alt) < tol] <- 0L
         names(b.constr.alt) <- vnames
-        out3 <- robustWaldScores(x = X, y = Y, beta0 = b.constr, 
+        out3 <- robustWaldScores(x = X, y = Y,  beta0 = b.constr, 
                                  betaA = b.constr.alt, scale = scale)#,
         #Amat = Amat, meq = meq.alt,                    #[1:meq.alt,,drop=FALSE]
         #bvec = bvec)

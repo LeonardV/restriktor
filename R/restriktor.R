@@ -1,7 +1,8 @@
 ################################### TO DO ######################################
-# - weights conTestScore fix.
+# - add weights  + down weights to RLM.
 # - implement E-bar test statistic for lm.
 # - add options for no intercept models.
+# - improve code description.
 
 ###############################################################################
 restriktor <- function(model, constraints, se = "default",

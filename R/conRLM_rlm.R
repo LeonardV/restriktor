@@ -59,26 +59,30 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   }  
   X  <- model.matrix(model)[,,drop = FALSE]
   b.unconstr <- coef(model)  
-  so <- summary_rlm(model)#MASS:::summary.rlm(model)
+  so <- summary_rlm(model)
   tau.hat <- so$stddev  
   s2.con <- s2.unc <- tau.hat^2
   w <- weights(model)
   
+  if (any(w != 1L)) {
+    stop("weights are not implemented (yet).")
+  }
+  
   if (ncol(Amat) != length(b.unconstr)) {
-    stop("length coefficients and ncol(Amat) must be identical")
+    stop("length coefficients and ncol(Amat) must be identical.")
   }
   
   #R2 and adjusted R2, code taken from lmrob() function.
-  resid <- model$residuals
+  resid <- model$resid
   pred <- model$fitted.values
   resp <- pred + resid 
-  wgt <- w #model$w                                                             # check if correct!
+  wgt <- w #model$w                                                             #check if correct.
   if (is.null(model$model)) {
-    df.int <- if (any(colnames(X) == "(Intercept)")) 1L else 0L
+    df.int <- if (any(colnames(X) == "(Intercept)")) { 1L } else { 0L }
   } else {
-    df.int <- if (attr(model$terms, "intercept")) 1L else 0L
+    df.int <- if (attr(model$terms, "intercept")) { 1L } else { 0L }
   }
-  resp.mean <- if (df.int == 1L) sum(wgt * resp)/sum(wgt) else 0
+  resp.mean <- if (df.int == 1L) { sum(wgt * resp) / sum(wgt) } else { 0L }
   yMy <- sum(wgt * (resp - resp.mean)^2)
   rMr <- sum(wgt * resid^2)
   # bi-square correction
@@ -97,7 +101,8 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 constraints = constraints,
                 b.unconstr = b.unconstr,
                 b.constr = b.unconstr,
-                residuals = resid(model),
+                residuals = model$resid,
+                wresid = model$wresid,
                 #init.resid = resid0,
                 fitted.values = fitted(model),
                 weights = w,
@@ -106,7 +111,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 df.residual = so$df[2],
                 scale = model$s, 
                 s2.unc = s2.unc, 
-                s2.con = s2.con, 
+                s2.con = s2.unc, 
                 loglik = LL.unc, 
                 Sigma = vcov(model),                                            #probably not so robust!
                 Amat = Amat, bvec = bvec, meq = meq, iact = 0L,
@@ -171,10 +176,10 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 #init.resid = resid0,
                 wresid = rfit$wresid,
                 fitted.values = pred,
-                weights = rfit$weights,
+                weights = w,
                 R2.org = R2.org,
                 R2.reduced = R2.reduced,
-                df.residual = so$df[2],
+                df.residual = so$df[2], # correction for equalities constraints is included.
                 scale = rfit$s,                                                               
                 s2.unc = s2.unc, 
                 s2.con = s2.con, 
@@ -187,7 +192,6 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   
   OUT$model.org <- model
   OUT$CON <- if (is.character(constraints)) { CON }
-  #OUT$parTable <- if (is.character(constraints)) { parTable }
   OUT$se <- se 
   
   if (se != "no") {
@@ -218,5 +222,5 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   
   class(OUT) <- c("conRLM","conLM","rlm")
   
-    return(OUT)
+  return(OUT)
 }

@@ -1,15 +1,15 @@
 robustWaldScores <- function(x, y, beta0, betaA, scale) { 
   
-  x <- as.matrix(x)
-  n <- nrow(x)
-  p <- ncol(x)
+  X <- as.matrix(x)
+  n <- dim(X)[1]
+  p <- dim(X)[2]
   
   #tukey bisquare tuning constant
   cc = 4.685061
     
   #Calculate M, Q, V 
-  res0 <- y - x%*%beta0
-  resA <- y - x%*%betaA
+  res0 <- y - X %*% beta0
+  resA <- y - X %*% betaA
   
   rstar0 <- res0/scale
   rstarA <- resA/scale
@@ -23,15 +23,15 @@ robustWaldScores <- function(x, y, beta0, betaA, scale) {
   weightsM <- psiderivA / scale
 #  weightsM <- psideriv0 / scale             
   WM <- weightsM %*% rep(1, p)
-  xwM <- x * WM
-  M <- t(x) %*% xwM / n
+  xwM <- X * WM
+  M <- t(X) %*% xwM / n
   
   #compute Q 
   weightsQ <- psiA^2
 #  weightsQ <- psi0^2
   WQ <- weightsQ %*% rep(1, p)
-  xwQ <- x * WQ
-  Q <- t(x) %*% xwQ / n
+  xwQ <- X * WQ
+  Q <- t(X) %*% xwQ / n
 
   #Calculate V 
   Minv <- solve(M)
@@ -43,10 +43,10 @@ robustWaldScores <- function(x, y, beta0, betaA, scale) {
    
   # Score test-statistic
   weightsZ0 <- psi0
-  Z0 <- (t(x) %*% weightsZ0) / n  
+  Z0 <- (t(X) %*% weightsZ0) / n  
 
   weightsZA <- psiA
-  ZA <- (t(x) %*% weightsZA) / n  
+  ZA <- (t(X) %*% weightsZA) / n  
     
   result.C <- M %*% V %*% t(M)
   TsScore <- as.numeric(n * t(ZA-Z0) %*% solve(result.C, (ZA-Z0)))
@@ -65,12 +65,13 @@ robustWaldScores <- function(x, y, beta0, betaA, scale) {
 ## robust Fm test statistic ##
 robustFm <- function(x, y, beta0, betaA, scale, cc = 4.685061) {
   
-  n <- dim(x)[1]
-  p <- dim(x)[2]
+  X <- x
+  n <- dim(X)[1]
+  p <- dim(X)[2]
   
   #compute residuals under null and alternative model
-  resid0 <- y - x %*% beta0
-  resid1 <- y - x %*% betaA
+  resid0 <- y - X %*% beta0
+  resid1 <- y - X %*% betaA
   
   #residuals / scale
   rstar0 <- as.numeric(resid0/scale)                                               
@@ -85,10 +86,12 @@ robustFm <- function(x, y, beta0, betaA, scale, cc = 4.685061) {
   psi.prime2.h1 <- tukeyChi(rstar1, cc, deriv = 2)                    
   
   #asymptotic covariance matrix standardizing constant
-  l.h1 <- ( 0.5 * (1/(n - p)) * sum(psi.prime.h1^2) ) / ( (1/n)*sum(psi.prime2.h1) )
-  out <- 1/l.h1 * (L0 - L1) 
+  l.h1 <- ( 0.5 * (1 / (n - p)) * sum(psi.prime.h1^2) ) / ( (1/n) * sum(psi.prime2.h1) )  
+  out <- 1 / l.h1 * (L0 - L1) 
     
-  out
+  OUT <- out
+  
+  OUT
 }
 
 

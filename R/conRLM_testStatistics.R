@@ -69,8 +69,8 @@ robustFm <- function(x, y, beta0, betaA, scale, cc = 4.685061) {
   p <- dim(x)[2]
   
   #compute residuals under null and alternative model
-  resid0 <- y - x%*%beta0
-  resid1 <- y - x%*%betaA
+  resid0 <- y - x %*% beta0
+  resid1 <- y - x %*% betaA
   
   #residuals / scale
   rstar0 <- as.numeric(resid0/scale)                                               

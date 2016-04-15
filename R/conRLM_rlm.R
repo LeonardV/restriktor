@@ -115,7 +115,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   } else {
     call.rlm <- as.list(model$call)
     call.rlm <- call.rlm[-1]
-    call.rlm[["weights"]] <- weights(model) 
+    call.rlm[["weights"]] <- w 
     
     #fit inequality constrained robust model
 #    if (is.null(call.rlm[["formula"]])) {

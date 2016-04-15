@@ -15,7 +15,8 @@ conLM.lm <- function(model, constraints, se = "default",
   if (missing(constraints) && is.null(bvec)) { 
     bvec <- rep(0L, nrow(Amat)) 
   }
-  # acknowledgement: code taken from ic.infer package 
+  
+  # acknowledgement: this check is taken from the ic.infer package 
   if (nrow(Amat) - meq - 2 > 2) {
     if (!is.numeric(try(matrix(0, floor((nrow(Amat) - meq -
                                            2)/2), choose(nrow(Amat) - meq, floor((nrow(Amat) - meq -
@@ -33,7 +34,7 @@ conLM.lm <- function(model, constraints, se = "default",
   # model matrix
   X <- model.matrix(model)[,,drop = FALSE]
   # residual variance
-  s2.con <- s2.unc <- so$sigma^2
+  s2.unc <- so$sigma^2
   # weigths
   w <- weights(model)
   # original R^2
@@ -57,6 +58,7 @@ conLM.lm <- function(model, constraints, se = "default",
   # check if the constraints are in line with the data!
   if (all(Amat %*% c(b.unconstr) - bvec >= 0 * bvec) & meq == 0) {
     b.constr <- b.unconstr
+    s2.con <- s2.unc
     
     OUT <- list(CON = NULL,
                 parTable = parTable,
@@ -75,11 +77,11 @@ conLM.lm <- function(model, constraints, se = "default",
                 Amat = Amat, bvec = bvec, meq = meq, iact = NULL, bootout = NULL)  
   } else {
     # compute constrained estimates for lm() and mlm() 
-    out.qp <- con_solver(b.unconstr, X = X, y = Y, w = w, Amat = Amat,
+    out.QP <- con_solver(b.unconstr, X = X, y = Y, w = w, Amat = Amat,
                          bvec = bvec, meq = meq, tol = tol,
                          maxit = ifelse(is.null(control$maxit), 1e04, 
                                         control$maxit))
-    b.constr <- matrix(out.qp$solution, ncol = ncol(Y))
+    b.constr <- matrix(out.QP$solution, ncol = ncol(Y))
     b.constr[abs(b.constr) < tol] <- 0L
     
     ll.con <- con_loglik_lm(X = X, y = Y, b = b.constr, w = w)
@@ -89,35 +91,38 @@ conLM.lm <- function(model, constraints, se = "default",
     # lm
     if (ncol(Y) == 1L) {
       b.constr <- as.vector(b.constr)
-      names(b.constr) <- names(b.unconstr)
-      
+        names(b.constr) <- names(b.unconstr)
       fitted <- X %*% b.constr
       residuals <- Y - fitted
+      # compute residual df corrected for equality constraints. 
       df.residual <- n - (p - qr(Amat[1:meq,])$rank)
+      # compute weighted residuals
       if (is.null(w)) {
         s2.con <- sum(residuals^2) / df.residual  
       } else {
         s2.con <- sum(w*residuals^2) / df.residual
       }
       
-      # compute constrained R^2, acknowledgement: code taken from ic.infer package 
-      R2.reduced <- 1 - sum(residuals^2)/sum((Y - mean(Y))^2)
-      if (is.null(weights(model)) & !attr(model$terms, "intercept"))
-        R2.reduced <- 1 - sum(residuals^2)/sum(Y^2)
-      if (attr(model$terms, "intercept") & !is.null(weights(model)))
-        R2.reduced <- 1 - sum(weights(model) * residuals^2)/sum(weights(model) *
-                                                           (Y - weighted.mean(Y, w = weights(model)))^2)
-      if (!(attr(model$terms, "intercept") | is.null(weights(model))))
-        R2.reduced <- 1 - sum(weights(model) * residuals^2)/sum(weights(model) * Y^2)
+      # compute reduced R^2.
+      R2.reduced <- 1 - sum(residuals^2) / sum((Y - mean(Y))^2)
+      # no weights and no intercept
+      if (is.null(w) & !attr(model$terms, "intercept")) {
+        R2.reduced <- 1 - sum(residuals^2) / sum(Y^2)
+      # weights and intercept
+      } else if (attr(model$terms, "intercept") & !is.null(w)) {
+        R2.reduced <- 1 - sum(w * residuals^2) / sum(w * (Y - weighted.mean(Y, w = w))^2)
+      # weights and no intercept 
+      } else if (!(attr(model$terms, "intercept") | is.null(w))) {
+        R2.reduced <- 1 - sum(w * residuals^2) / sum(w * Y^2)
+      }
 
     } else { #mlm <FIXME>
-      df <- model$df.residual
-      fitted <- X %*% b.constr
       residuals <- Y - fitted
+        rownames(b.constr) <- rownames(b.unconstr)
+        colnames(b.constr) <- colnames(b.unconstr)
+      fitted <- X %*% b.constr
+      df <- model$df.residual
       df.residual <- df + qr(Amat[1:meq,])$rank
-      
-      rownames(b.constr) <- rownames(b.unconstr)
-      colnames(b.constr) <- colnames(b.unconstr)
       R2.org <- R2.reduced <- NULL
       se <- "no"
     }
@@ -125,23 +130,30 @@ conLM.lm <- function(model, constraints, se = "default",
     OUT <- list(CON = NULL,
                 parTable = parTable,
                 constraints = constraints,
-                b.constr = b.constr, b.unconstr = b.unconstr,
-                residuals = residuals,
-                fitted.values = fitted,
-                weights = weights(model),
-                R2.org = R2.org,
-                R2.reduced = R2.reduced,
-                df.residual = model$df.residual,
-                s2.unc = s2.unc, s2.unc.ml = s2.unc.ml,
-                s2.con = s2.con, s2.con.ml = s2.con.ml, 
-                loglik = LL.con, Sigma = vcov(model),
-                Amat = Amat, bvec = bvec, meq = meq, iact = out.qp$iact,
+                b.constr = b.constr, # constrained
+                b.unconstr = b.unconstr, # unconstrained
+                residuals = residuals, # constrained 
+                fitted.values = fitted, # constrained 
+                weights = w,
+                R2.org = R2.org, # unconstrained
+                R2.reduced = R2.reduced, # constrained
+                df.residual = model$df.residual, # unconstrained
+                s2.unc = s2.unc, s2.unc.ml = s2.unc.ml, # unconstrained
+                s2.con = s2.con, s2.con.ml = s2.con.ml, # constrained
+                loglik = LL.con, # constrained
+                Sigma = vcov(model), # unconstrained
+                Amat = Amat, bvec = bvec, meq = meq, iact = out.QP$iact,
                 bootout = NULL)
   }
-
+  
+  # original model
   OUT$model.org <- model
+  # CON only exists if constraints input is not a matrix
   OUT$CON <- if (is.character(constraints)) { CON }
+  # type standard error
   OUT$se <- se
+  # compute standard errors based on the augmented inverted information matrix or
+  # based on the standard bootstrap or model.based bootstrap
   if (se != "no") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
       information <- 1/s2.con * crossprod(X) 
@@ -165,6 +177,7 @@ conLM.lm <- function(model, constraints, se = "default",
                                  rhs = bvec, neq = meq, se = "no")
     }
   }
+  
   if (ncol(Y) == 1L) {
     class(OUT) <- c("conLM","lm")
   } else if (ncol(Y) > 1L) {

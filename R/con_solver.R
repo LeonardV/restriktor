@@ -11,11 +11,11 @@ con_solver <- function(b.unconstr, X, y, w, Amat, bvec, meq,
   W <- diag(w)
   
   for (i in 1:maxit) {
-    Sigma <- (t(y - X%*%matrix(b.unconstr, ncol = ncol(y))) %*% W %*% 
+    Sigma <- (t(y - X%*%matrix(b.unconstr, ncol = ncol(y))) %*% W %*%
                 (y - X%*%matrix(b.unconstr, ncol = ncol(y)))) / (n-p)           #ML divided by n
-    yVx <- kronecker(solve(Sigma), t(X)) %*% as.vector(y)
+    yVx <- kronecker(solve(Sigma), t(X)) %*% W %*% as.vector(y)
     dvec <- 2*yVx
-    Dmat <- 2*kronecker(solve(Sigma), t(X) %*% X)
+    Dmat <- 2*kronecker(solve(Sigma), t(X) %*% W %*% X)
     out <- solve.QP(Dmat = Dmat, dvec = dvec, Amat = t(Amat),
                            bvec = bvec, meq = meq)
 
@@ -25,13 +25,17 @@ con_solver <- function(b.unconstr, X, y, w, Amat, bvec, meq,
 #       stop("matrix D in quadratic function is not positive definite!")
 #     }
 
+    # only needed for mlm case
     if (abs(out$value - val) <= tol) {
       break
     } else {
       val <- out$value
     }
-    if (i == maxit & abs(out$value - val) > tol)
-      warning("Maximum number of iterations reached without convergence.")
+    
+    if (i == maxit & abs(out$value - val) > tol) {
+      warning(gettextf("'quadprog' failed to converge in %d steps", maxit), 
+              domain = NA)
+    }  
   }
 
   OUT <- out

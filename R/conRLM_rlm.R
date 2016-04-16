@@ -6,27 +6,6 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   
   Amat <- Amatw; bvec <- bvecw; meq <- meqw
   
-  # check for psi.bisquare loss function
-  call.model <- as.list(model$call)
-  if (!is.null(call.model$method)) {
-    if (call.model$method == "MM") {
-      if (is.null(call.model$psi)) {
-        call.model$psi <- "psi.bisquare"  
-      }
-    } else if (call.model$method == "M") {
-      if (is.null(call.model$psi)) {
-        call.model$psi <- "psi.huber"  
-      }
-    }
-  }
-  if (is.null(call.model$psi)) {
-    stop("Restriktor ERROR: psi must be a bisquare function.")
-  } else if (!is.null(call.model$psi)) {
-      if (!(call.model$psi == "psi.bisquare")) {
-        stop("Restriktor ERROR: psi must be a bisquare function.")
-      }
-  }
-  
   # check class
   if (!("rlm" %in% class(model))) {
     stop("Restriktor ERROR: model must be of class rlm.")
@@ -40,7 +19,77 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     bvec <- rep(0L, nrow(Amat)) 
   }
   
-  # acknowledgement: code taken from ic.infer package 
+  Y <- as.matrix(model$model[, attr(model$terms, "response")])
+  X  <- model.matrix(model)[,,drop = FALSE]
+  # unconstrained coefficients
+  b.unconstr <- coef(model)  
+  
+  # original model function call
+  call <- as.list(model$call)
+  # which method M or MM estimation
+  method <- call[["method"]]
+  if (is.null(method)) {
+    model$call[["method"]] <- "M"
+  } else if (method == "MM") {
+    call[["psi"]] <- "psi.bisquare"
+  } else if (is.name(method)) {
+    stop("define ", sQuote(method), " inside function.")
+  }
+  # psi function (only bisquare, will be checked later!)
+  psi <- as.character(call[["psi"]])
+  if (is.null(psi)) {
+    psi <- model$call[["psi"]] <- "psi.huber"
+  } 
+  # weights
+  weights <- model$weights
+  if (any(weights != 1L)) {
+    stop("weights are not implemented (yet).")
+  }
+  # weights method, inverse of the variance or case 
+  wt.method <- call[["wt.method"]]
+  if (is.null(wt.method)) {
+    model$call[["wt.method"]] <- "inv.var"
+  } else if (is.name(wt.method)) {
+    stop("define ", sQuote(wt.method), " inside function.")
+  }
+  # down weights 
+  w <- call[["w"]]
+  if (is.null(w)) {
+    model$call[["w"]] <- rep(1, nrow(X))
+  } else if (is.name(w)) {
+    stop("define ", sQuote(w), " inside function.")
+  }
+  # scale estimator - depends on method
+  scale.est <- call[["scale.est"]]
+  if (is.null(scale.est)) {
+    model$call[["scale.est"]] <- "MAD"
+  } else if (is.name(scale.est)) {
+    stop("define ", sQuote(scale.est), " inside function.")
+  }
+  # tuning constant used for Huber proposal 2 scale estimation.
+  k2 <- call[["k2"]]
+  if (is.null(k2)) {
+    model$call[["k2"]] <- 1.345
+  } else if (is.name(k2)) {
+    stop("define ", sQuote(k2), " inside function.")
+  }
+  # the stopping criterion is based on changes in this vector
+  test.vec <- call[["test.vec"]]
+  if (is.null(test.vec)) {
+    model$call[["test.vec"]] <- "resid"
+  } else if (is.name(resid)) {
+    stop("define ", sQuote(resid), " inside function.")
+  }
+  
+  # Restriktor only supports bisquare psi loss function (for now).
+  if (method == "M") {
+    if (psi != "psi.bisquare") {
+      stop("restriktor only supports the bisquare loss function (for now).")
+    }
+  }
+  
+  # acknowledgement: check for too many inequality constraints is taken from 
+  # the ic.infer package. 
   if (nrow(Amat) - meq - 2 > 2) {
     if (!is.numeric(try(matrix(0, floor((nrow(Amat) - meq -
                                          2)/2), choose(nrow(Amat) - meq, floor((nrow(Amat) - meq -
@@ -51,32 +100,22 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                  " elements cannot be created", sep = ""))
   }
   
+  # Adjusted summary function from MASS:::summary.rlm().
+  # The df needs to be corrected for equality constraints and
+  # we need the df for ML. 
+  so <- summary_rlm(model, Amat = Amat, meq = meq)
+  # unconstrained scale estimate for the standard errors
+  tau <- so$stddev
+  # # unconstrained scale estimate for the variance
+  s2.con <- s2.unc <- tau^2
   
-  if (is.null(model$model)) {
-    Y <- model$residuals + model$fitted
-  } else {
-    Y <- as.matrix(model$model[, attr(model$terms, "response")])
-  }  
-  X  <- model.matrix(model)[,,drop = FALSE]
-  b.unconstr <- coef(model)  
-  so <- summary_rlm(model)
-  tau.hat <- so$stddev  
-  s2.con <- s2.unc <- tau.hat^2
-  w <- weights(model)
-  
-  if (any(w != 1L)) {
-    stop("weights are not implemented (yet).")
-  }
-  
-  if (ncol(Amat) != length(b.unconstr)) {
-    stop("length coefficients and ncol(Amat) must be identical.")
-  }
-  
-  #R2 and adjusted R2, code taken from lmrob() function.
+  #R^2 
+  # acknowledment: code taken from the lmrob() function from the robustbase 
+  # package
   resid <- model$resid
   pred <- model$fitted.values
   resp <- pred + resid 
-  wgt <- w #model$w                                                             #check if correct.
+  wgt <- weights 
   if (is.null(model$model)) {
     df.int <- if (any(colnames(X) == "(Intercept)")) { 1L } else { 0L }
   } else {
@@ -87,13 +126,14 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   rMr <- sum(wgt * resid^2)
   # bi-square correction
   correc <- 1.207617 
-  R2.org <- r2correc <- (yMy - rMr) / (yMy + rMr * (correc - 1))
-  #R2.adjusted <- 1 - (1 - r2correc) * ((n - df.int) / df.residual)
-
+  R2.org <- (yMy - rMr) / (yMy + rMr * (correc - 1))
+  
+  # compute the loglikelihood
   ll.unc <- con_loglik_lm(X = X, y = Y, b = b.unconstr, w = w)
   LL.unc <- ll.unc$loglik
-      
-  if (all(Amat %*% c(b.unconstr) - bvec >= 0 * bvec) & meq == 0) {
+  
+  # # check if the constraints are in line with the data    
+  if (all(Amat %*% c(b.unconstr) - bvec >= 0 * bvec) & meq == 0) {  
     b.constr <- b.unconstr
         
     OUT <- list(CON = NULL,
@@ -115,45 +155,29 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 loglik = LL.unc, 
                 Sigma = vcov(model),                                            #probably not so robust!
                 Amat = Amat, bvec = bvec, meq = meq, iact = 0L,
-                converged = model$converged, iter = NULL,
+                converged = model$converged, iter = model$iter,
                 bootout = NULL)
   } else {
-    call.rlm <- as.list(model$call)
-    call.rlm <- call.rlm[-1]
-    call.rlm[["weights"]] <- w 
-    
-    #fit inequality constrained robust model
-#    if (is.null(call.rlm[["formula"]])) {
-    call.rlm[["data"]] <- NULL
-    call.rlm[["x"]] <- NULL
-    call.rlm[["y"]] <- NULL
-    call.my <- list(x = X, y = Y, Amat = Amat, meq = meq, bvec = bvec, 
-                    parTable = parTable)      
-    CALL <- c(call.rlm, call.my)
+    # update model
+    call.my <- list(Amat = Amat, meq = meq, bvec = bvec)
+    CALL <- c(list(model), call.my)
     rfit <- do.call("conRLM_fit", CALL)
-    iact <- rfit$iact
-#    }
-#    else {
-#      call.my <- list(Amat = Amat, meq = meq, bvec = bvec)  
-      #call.rlm[["data"]] <- as.name("DATA")
-#      CALL <- c(call.rlm, call.my)
-#      rfit <- do.call("conRLM.formula", CALL)
-#    }
-    
     b.constr <- coef(rfit)
-    b.constr[abs(b.constr) < sqrt(.Machine$double.eps)] <- 0L
-
+      b.constr[abs(b.constr) < sqrt(.Machine$double.eps)] <- 0L
+    iact <- rfit$iact
+    
     ll.con <- con_loglik_lm(X = X, y = Y, b = b.unconstr, w = w)
     LL.con <- ll.con$loglik
         
-    so.rlm <- summary_rlm(rfit)
-    tau.hat <- so.rlm$stddev
-    s2.con <- tau.hat^2
+    so.rlm <- summary_rlm(rfit, Amat = Amat, meq = meq)
+    tau <- so.rlm$stddev
+    s2.con <- tau^2
     
-    #R2 and adjusted R2, code taken from lmrob() function.
+    #R^2
     pred <- rfit$fitted.values
+    resid <- rfit$residuals
     resp <- pred + resid 
-    wgt <- diag(rfit$w)
+    wgt <- rfit$weights
     if (is.null(model$model)) {
       df.int <- if (any(colnames(X) == "(Intercept)")) 1L else 0L
     } else {
@@ -164,7 +188,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     rMr <- sum(wgt * resid^2)
     # bi-square correction
     correc <- 1.207617 
-    R2.reduced <- r2correc <- (yMy - rMr) / (yMy + rMr * (correc - 1))
+    R2.reduced <- (yMy - rMr) / (yMy + rMr * (correc - 1))
     #R2.adjusted <- 1 - (1 - r2correc) * ((n - df.int) / df.residual)
   
     OUT <- list(CON = NULL,

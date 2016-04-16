@@ -55,7 +55,7 @@ conLM.lm <- function(model, constraints, se = "default",
   LL.unc <- ll.unc$loglik
   s2.unc.ml <- ll.unc$Sigma / n
   
-  # check if the constraints are in line with the data!
+  # check if the constraints are in line with the data
   if (all(Amat %*% c(b.unconstr) - bvec >= 0 * bvec) & meq == 0) {
     b.constr <- b.unconstr
     s2.con <- s2.unc

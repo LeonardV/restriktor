@@ -2,7 +2,8 @@
 # adapted to correct for equality constraints by LV.
 # add option to get ml sigma
 summary_rlm <- function (object, method = c("XtX", "XtWX"), 
-                         correlation = FALSE, ml = FALSE, ...) {
+                         correlation = FALSE, ml = FALSE, 
+                         Amat = NULL, meq = NULL, ...) {
   method <- match.arg(method)
   s <- object$s
   coef <- object$coefficients
@@ -22,12 +23,11 @@ summary_rlm <- function (object, method = c("XtX", "XtWX"),
     rep(1, n)
   }
   if (length(object$call$wt.method) && object$call$wt.method == "case") {
-    if (exists("object$Amat")) {
-      if (object$meq > 0) {
-        rdf <- sum(wts) - (p - qr(object$Amat[1:object$meq,])$rank)
-      }   
-    } else {
-      rdf <- sum(wts) - p
+    rdf <- sum(wts) - p
+    if (!is.null(Amat)) {
+      if (meq > 0) {
+        rdf <- sum(wts) - (p - qr(Amat[1:meq,])$rank)
+      } 
     } 
     if (ml) {
       rdf <- sum(wts)
@@ -43,13 +43,12 @@ summary_rlm <- function (object, method = c("XtX", "XtWX"),
     stddev <- sqrt(S) * (kappa/mn)
   } else {
     res <- res * sqrt(wts)
-    if (exists("object$Amat")) {
-      if (object$meq > 0) {
-        rdf <- n - (p - qr(object$Amat[1:object$meq,])$rank)
-      } 
-    } else {
-      rdf <- n - p
-    } 
+    rdf <- n - p
+    if (!is.null(Amat)) {
+      if (!is.null(meq) & meq > 0) {
+        rdf <- n - (p - qr(Amat[1:meq,])$rank)
+      }
+    }
     if (ml) {
       rdf <- n
     }

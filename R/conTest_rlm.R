@@ -27,7 +27,7 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   # response variable
   Y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
   # weights
-  w <- weights(model.org)
+  #w <- weights(model.org)
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
@@ -61,32 +61,40 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
       stop("Restriktor ERROR: test not applicable for models without intercept.")      
     } 
     #fit inequality constrained robust model
-    call.rlm <- as.list(model.org$call)
-    call.rlm <- call.rlm[-1]
-    call.rlm[["weights"]] <- w
-    call.rlm[["data"]] <- NULL
-    call.rlm[["x"]] <- NULL
-    call.rlm[["y"]] <- NULL
-    call.my <- list(x = X, y = Y, Amat = Amatg, meq = nrow(Amatg), bvec = bvecg)      
-    CALL <- c(call.rlm, call.my)
-    rfit <- do.call("conRLM_fit", CALL)
+    # call.rlm <- as.list(model.org$call)
+    # call.rlm <- call.rlm[-1]
+    # call.rlm[["weights"]] <- w
+    # call.rlm[["data"]] <- NULL
+    # call.rlm[["x"]] <- NULL
+    # call.rlm[["y"]] <- NULL
+    # call.my <- list(x = X, y = Y, Amat = Amatg, meq = nrow(Amatg), bvec = bvecg)      
+    # CALL <- c(call.rlm, call.my)
+    # rfit <- do.call("conRLM_fit", CALL)
 
+    call.my <- list(Amat = Amatg, meq = nrow(Amatg), bvec = bvecg)
+        CALL <- c(list(model.org), call.my)
+    rfit <- do.call("conRLM_fit", CALL)
+    
     b.eqconstr <- coef(rfit)
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
     Ts <- robustFm(x = X, y = Y,  beta0 = b.eqconstr, betaA = b.constr, 
                    scale = scale, cc = 4.685061)
   } else if (type == "A") {
-    call.rlm <- as.list(model.org$call)
-    call.rlm <- call.rlm[-1]
-    call.rlm[["weights"]] <- w
-    call.rlm[["data"]] <- NULL
-    call.rlm[["x"]] <- NULL
-    call.rlm[["y"]] <- NULL
-    call.my <- list(x = X, y = Y, Amat = Amat, meq = nrow(Amat), bvec = bvec)      
-    CALL <- c(call.rlm, call.my)
-    rfit <- do.call("conRLM_fit", CALL)
+    #call.rlm <- as.list(model.org$call)
+    #call.rlm <- call.rlm[-1]
+    #call.rlm[["weights"]] <- w
+    #call.rlm[["data"]] <- NULL
+    #call.rlm[["x"]] <- NULL
+    #call.rlm[["y"]] <- NULL
+    #call.my <- list(x = X, y = Y, Amat = Amat, meq = nrow(Amat), bvec = bvec)      
+    #CALL <- c(call.rlm, call.my)
+    #rfit <- do.call("conRLM_fit", CALL)
 
+    call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec)
+        CALL <- c(list(model.org), call.my)
+    rfit <- do.call("conRLM_fit", CALL)
+    
     b.eqconstr <- coef(rfit)
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
@@ -99,17 +107,22 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     } else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt != 0L && meq.alt <= meq) {
-        call.rlm <- as.list(model.org$call)
-        call.rlm <- call.rlm[-1]
-        call.rlm[["weights"]] <- w
-        call.rlm[["data"]] <- NULL
-        call.rlm[["x"]] <- NULL
-        call.rlm[["y"]] <- NULL
-        call.my <- list(x = X, y = Y, Amat = Amat[1:meq.alt, , drop = FALSE], 
-                        meq = meq.alt, bvec = bvec[1:meq.alt])      
-        CALL <- c(call.rlm, call.my)
-        rfit <- do.call("conRLM_fit", CALL)
+        # call.rlm <- as.list(model.org$call)
+        # call.rlm <- call.rlm[-1]
+        # call.rlm[["weights"]] <- w
+        # call.rlm[["data"]] <- NULL
+        # call.rlm[["x"]] <- NULL
+        # call.rlm[["y"]] <- NULL
+        # call.my <- list(x = X, y = Y, Amat = Amat[1:meq.alt, , drop = FALSE], 
+        #                 meq = meq.alt, bvec = bvec[1:meq.alt])      
+        # CALL <- c(call.rlm, call.my)
+        # rfit <- do.call("conRLM_fit", CALL)
 
+        call.my <- list(Amat = Amat[1:meq.alt, , drop = FALSE], 
+                        meq = meq.alt, bvec = bvec[1:meq.alt])
+        CALL <- c(list(model.org), call.my)
+        rfit <- do.call("conRLM_fit", CALL)
+        
         b.constr.alt <- coef(rfit)
         b.constr.alt[abs(b.constr.alt) < tol] <- 0L
         names(b.constr.alt) <- vnames
@@ -237,7 +250,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   # response variable
   Y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
   # weights
-  w <- weights(model.org)
+  #w <- weights(model.org)
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
@@ -271,14 +284,18 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
       stop("Restriktor ERROR: test not applicable for models without intercept.")      
     } 
     #fit inequality constrained robust model
-    call.rlm <- as.list(model.org$call)
-    call.rlm <- call.rlm[-1]
-    call.rlm[["weights"]] <- weights(model.org)
-    call.rlm[["data"]] <- NULL
-    call.rlm[["x"]] <- NULL
-    call.rlm[["y"]] <- NULL
-    call.my <- list(x = X, y = Y, Amat = Amatg, meq = nrow(Amatg), bvec = bvecg)      
-    CALL <- c(call.rlm, call.my)
+    # call.rlm <- as.list(model.org$call)
+    # call.rlm <- call.rlm[-1]
+    # call.rlm[["weights"]] <- weights(model.org)
+    # call.rlm[["data"]] <- NULL
+    # call.rlm[["x"]] <- NULL
+    # call.rlm[["y"]] <- NULL
+    # call.my <- list(x = X, y = Y, Amat = Amatg, meq = nrow(Amatg), bvec = bvecg)      
+    # CALL <- c(call.rlm, call.my)
+    # rfit <- do.call("conRLM_fit", CALL)
+    
+    call.my <- list(Amat = Amatg, meq = nrow(Amatg), bvec = bvecg)
+    CALL <- c(list(model.org), call.my)
     rfit <- do.call("conRLM_fit", CALL)
     
     b.eqconstr <- coef(rfit)
@@ -290,14 +307,17 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     Ts <- out0$RWald
     COV <- out0$V
   } else if (type == "A") {
-    call.rlm <- as.list(model.org$call)
-    call.rlm <- call.rlm[-1]
-    call.rlm[["weights"]] <- weights(model.org)
-    call.rlm[["data"]] <- NULL
-    call.rlm[["x"]] <- NULL
-    call.rlm[["y"]] <- NULL
-    call.my <- list(x = X, y = Y, Amat = Amat, meq = nrow(Amat), bvec = bvec)      
-    CALL <- c(call.rlm, call.my)
+    # call.rlm <- as.list(model.org$call)
+    # call.rlm <- call.rlm[-1]
+    # call.rlm[["weights"]] <- weights(model.org)
+    # call.rlm[["data"]] <- NULL
+    # call.rlm[["x"]] <- NULL
+    # call.rlm[["y"]] <- NULL
+    # call.my <- list(x = X, y = Y, Amat = Amat, meq = nrow(Amat), bvec = bvec)      
+    # CALL <- c(call.rlm, call.my)
+    # rfit <- do.call("conRLM_fit", CALL)
+    call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec)
+    CALL <- c(list(model.org), call.my)
     rfit <- do.call("conRLM_fit", CALL)
     
     b.eqconstr <- coef(rfit)
@@ -320,17 +340,22 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     } else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt != 0L && meq.alt <= meq) {
-        call.rlm <- as.list(model.org$call)
-        call.rlm <- call.rlm[-1]
-        call.rlm[["weights"]] <- weights(model.org)
-        call.rlm[["data"]] <- NULL
-        call.rlm[["x"]] <- NULL
-        call.rlm[["y"]] <- NULL
-        call.my <- list(x = X, y = Y, Amat = Amat[1:meq.alt,,drop=FALSE], 
-                        meq = meq.alt, bvec = bvec[1:meq.alt])      
-        CALL <- c(call.rlm, call.my)
-        rfit <- do.call("conRLM_fit", CALL)
+        # call.rlm <- as.list(model.org$call)
+        # call.rlm <- call.rlm[-1]
+        # call.rlm[["weights"]] <- weights(model.org)
+        # call.rlm[["data"]] <- NULL
+        # call.rlm[["x"]] <- NULL
+        # call.rlm[["y"]] <- NULL
+        # call.my <- list(x = X, y = Y, Amat = Amat[1:meq.alt,,drop=FALSE], 
+        #                 meq = meq.alt, bvec = bvec[1:meq.alt])      
+        # CALL <- c(call.rlm, call.my)
+        # rfit <- do.call("conRLM_fit", CALL)
         
+        call.my <- list(Amat = Amat[1:meq.alt,,drop=FALSE], meq = meq.alt, 
+                        bvec = bvec[1:meq.alt])
+        CALL <- c(list(model.org), call.my)
+        rfit <- do.call("conRLM_fit", CALL)
+    
         b.constr.alt <- coef(rfit)
         b.constr.alt[abs(b.constr.alt) < tol] <- 0L
         names(b.constr.alt) <- vnames
@@ -462,7 +487,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   # response variable
   Y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
   # weights
-  w <- weights(model.org)
+  #w <- weights(model.org)
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
@@ -496,15 +521,18 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
       stop("Restriktor ERROR: test not applicable for models without intercept.")      
     } 
     #fit inequality constrained robust model
-    call.rlm <- as.list(model.org$call)
-    call.rlm <- call.rlm[-1]
-    call.rlm[["weights"]] <- w
-    #    if (is.null(call.rlm[["formula"]])) {
-    call.rlm[["data"]] <- NULL
-    call.rlm[["x"]] <- NULL
-    call.rlm[["y"]] <- NULL
-    call.my <- list(x = X, y = Y, Amat = Amatg, meq = nrow(Amatg), bvec = bvecg)      
-    CALL <- c(call.rlm, call.my)
+    # call.rlm <- as.list(model.org$call)
+    # call.rlm <- call.rlm[-1]
+    # call.rlm[["weights"]] <- w
+    # #    if (is.null(call.rlm[["formula"]])) {
+    # call.rlm[["data"]] <- NULL
+    # call.rlm[["x"]] <- NULL
+    # call.rlm[["y"]] <- NULL
+    # call.my <- list(x = X, y = Y, Amat = Amatg, meq = nrow(Amatg), bvec = bvecg)      
+    # CALL <- c(call.rlm, call.my)
+    # rfit <- do.call("conRLM_fit", CALL)
+    call.my <- list(Amat = Amatg, meq = nrow(Amatg), bvec = bvecg)
+        CALL <- c(list(model.org), call.my)
     rfit <- do.call("conRLM_fit", CALL)
     
     b.eqconstr <- coef(rfit)
@@ -516,14 +544,18 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     Ts <- out0$Rscore
     COV <- out0$V
   } else if (type == "A") {
-    call.rlm <- as.list(model.org$call)
-    call.rlm <- call.rlm[-1]
-    call.rlm[["weights"]] <- w
-    call.rlm[["data"]] <- NULL
-    call.rlm[["x"]] <- NULL
-    call.rlm[["y"]] <- NULL
-    call.my <- list(x = X, y = Y, Amat = Amat, meq = nrow(Amat), bvec = bvec)      
-    CALL <- c(call.rlm, call.my)
+    # call.rlm <- as.list(model.org$call)
+    # call.rlm <- call.rlm[-1]
+    # call.rlm[["weights"]] <- w
+    # call.rlm[["data"]] <- NULL
+    # call.rlm[["x"]] <- NULL
+    # call.rlm[["y"]] <- NULL
+    # call.my <- list(x = X, y = Y, Amat = Amat, meq = nrow(Amat), bvec = bvec)      
+    # CALL <- c(call.rlm, call.my)
+    # rfit <- do.call("conRLM_fit", CALL)
+    
+    call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec)
+            CALL <- c(list(model.org), call.my)
     rfit <- do.call("conRLM_fit", CALL)
     
     b.eqconstr <- coef(rfit)
@@ -545,15 +577,20 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     } else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt != 0L && meq.alt <= meq) {
-        call.rlm <- as.list(model.org$call)
-        call.rlm <- call.rlm[-1]
-        call.rlm[["weights"]] <- w
-        call.rlm[["data"]] <- NULL
-        call.rlm[["x"]] <- NULL
-        call.rlm[["y"]] <- NULL
-        call.my <- list(x = X, y = Y, Amat = Amat[1:meq.alt,,drop=FALSE], 
-                        meq = meq.alt, bvec = bvec[1:meq.alt])      
-        CALL <- c(call.rlm, call.my)
+        # call.rlm <- as.list(model.org$call)
+        # call.rlm <- call.rlm[-1]
+        # call.rlm[["weights"]] <- w
+        # call.rlm[["data"]] <- NULL
+        # call.rlm[["x"]] <- NULL
+        # call.rlm[["y"]] <- NULL
+        # call.my <- list(x = X, y = Y, Amat = Amat[1:meq.alt,,drop=FALSE], 
+        #                 meq = meq.alt, bvec = bvec[1:meq.alt])      
+        # CALL <- c(call.rlm, call.my)
+        # rfit <- do.call("conRLM_fit", CALL)
+        
+        call.my <- list(Amat = Amat[1:meq.alt,,drop=FALSE], meq = meq.alt, 
+                        bvec = bvec[1:meq.alt])
+                CALL <- c(list(model.org), call.my)
         rfit <- do.call("conRLM_fit", CALL)
         
         b.constr.alt <- coef(rfit)

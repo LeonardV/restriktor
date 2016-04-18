@@ -3,7 +3,7 @@
 summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
                           bootCIs = TRUE, bty = "basic", level = 0.95, 
                           signif.stars = getOption("show.signif.stars"), 
-                          type = "GORIC", ...) {
+                          ICtype = "GORIC", ...) {
 
   # bty = "stud" needs bootstrap variances
   if (bootCIs & !is.null(x$bootout) & !bty %in% c("norm", "basic", "perc", "bca")) {
@@ -109,55 +109,44 @@ summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
   } else {
     cat("No coefficients\n")
   }  
-  #cat("\n")
-
-  # acknowledgment: code taken from the goric package.
-  # The goric_penalty() function uses a simulation approach for calculating the
-  # level probabilities, while these weights can be calculated using the 
-  # multivariate normal distribution function. Except for the case of equalities only.
+  
   if (class(x)[1] == "conRLM") {
-    Sigma <- summary_rlm(x$model.org, ml = TRUE)$stddev^2
+    s2ml.unc <- summary_rlm(x$model.org, ml = TRUE)$stddev^2
   } else if (class(x)[1] == "conLM") {
-    Sigma <- x$s2.unc.ml     
+    s2ml.unc <- x$s2.unc.ml     
   }
+  
+  # compute goric
+  # REF: Kuiper, R.M.; Hoijtink, H.J.A.; Silvapulle, M. J. (2012) 
+  # Journal of statistical planning and inference, volume 142, pp. 2454 - 2463
+  ## TO DO: add small samples correction 
+  Amat <- x$Amat
+  meq <- x$meq
   X <- model.matrix(x$model.org)[,,drop=FALSE]
   Y <- as.matrix(x$model.org$model[, attr(x$model.org$terms, "response")])
-  # information matrix
-  invW <- kronecker(solve(Sigma), t(X) %*% X)
-  # covariance matrix
+  invW <- kronecker(solve(s2ml.unc), t(X) %*% X)
   W <- solve(invW)
   
-  if (!(nrow(x$Amat) == x$meq)) {
-    wt <- rev(con_wt(x$Amat %*% W %*% t(x$Amat), meq = x$meq))
+  if (meq < nrow(Amat)) {
+    wt <- con_wt(Amat %*% W %*% t(Amat), meq = meq)
   } else {
-    wt <- rev(mix.boot(x, Amat = x$Amat, bvec = x$bvec, meq = x$meq, ...))
-  }  
-    
-  if (type == "GORIC") {
-    #penalty <- 1 + sum((1:ncol(W)) * wt)
-    penalty <- 1 + sum( (1:ncol(W)) * c(wt, rep(0, ncol(W)-length(wt))) )
+    wt <- 1
+  }
+  # construct weight vector
+  wtExt <- rep(0L, ncol(W))
+  if (meq > 0L) {
+    wtExt[(meq+1):(meq + length(wt))] <- wt
   } else {
-    N <- nrow(X)
-    t <- ncol(Y) 
-    #k <- ncol(X)
-    plp <- sum((1:ncol(W)) * c(wt, rep(0, ncol(W)-length(wt))))
-    qlp <- -2 * plp + sum(((1:ncol(W))^2) * c(wt, rep(0, ncol(W)-length(wt)))) - plp^2
+    wtExt[1:length(wt)] <- wt
   }
-  # small sample corrections
-  if (type == "GORICCa"){
-    penalty <- -0.5*t*N + (0.5*t*N) * (t*N * ((t*N-plp)^2 + 2*t*N + qlp)) / 
-      ((t*N - plp)^3) + 0.5*sum((1:ncol(W))*c(wt, rep(0, ncol(W)-length(wt)))*((t*N) / (t*N-(1:ncol(W)) - 2)))
-  } else if (type == "GORICCb"){
-    penalty <- sum(((t*N * (1:ncol(W) + 1)) / (t*N - 1:ncol(W) - 2)) * c(wt, rep(0, ncol(W)-length(wt))))
-  }
-  goric <- -2*(x$loglik - penalty)
-  delta <- goric - min(goric)
-  goric_weights <- exp(-delta/2) / sum(exp(-delta/2))
-  result_goric <- c(x$loglik, penalty, goric = goric, 
-                        goric_weights = round(goric_weights,3))
-    names(result_goric) <- c("Loglik", "Penalty", "Goric", "Weights")
+  # penalty term
+  PT <- 1 + sum( (1:ncol(W)) * rev(wtExt))
+  goric <- -2*(x$loglik - PT)
+  result_goric <- c(x$loglik, PT, goric)
+      names(result_goric) <- c("Loglik", "Penalty", "Goric")
   cat("\nGeneralized Order-Restricted Information Criterion:\n")
   print(result_goric, digits = digits)
-
+  ####
+  
   invisible(x)
 }

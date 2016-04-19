@@ -1,6 +1,5 @@
-# adjusted bread functions from the sandwich package.
+# adjusted functions from the sandwich package.
 sandwich <- function(x, bread. = bread, meat. = meat, ...) {
-  if(is.list(x) && !is.null(x$na.action)) class(x$na.action) <- "omit"
   if(is.function(bread.)) bread. <- bread.(x)
   if(is.function(meat.)) meat. <- meat.(x, ...)
   n <- NROW(estfun(x))
@@ -11,16 +10,14 @@ bread <- function(x, ...) {
   UseMethod("bread")
 }
 
-bread.lm <- function(x, ...) {
-  if(!is.null(x$model.org$na.action)) class(x$model.org$na.action) <- "omit"
+bread.conLM <- function(x, ...) {
   I.inv <- attr(x$information, "inverted.information")
   cov.unscaled <- 1/x$s2.con * I.inv
   return(cov.unscaled * as.vector(sum(summary(x$model.org)$df[1:2])))
 }
 
 
-bread.rlm <- function(x, ...) {
-  if(!is.null(x$model.org$na.action)) class(x$model.org$na.action) <- "omit"
+bread.conRLM <- function(x, ...) {
     xmat <- model.matrix(x)
     xmat <- naresid(x$model.org$na.action, xmat)
     wts <- weights(x)
@@ -46,7 +43,7 @@ estfun <- function(x, ...) {
   UseMethod("estfun")
 }
 
-estfun.lm <- function(x, ...) {
+estfun.conLM <- function(x, ...) {
   xmat <- model.matrix(x)
   xmat <- naresid(x$na.action, xmat)
   if(any(alias <- is.na(coef(x)))) xmat <- xmat[, !alias, drop = FALSE]
@@ -61,7 +58,7 @@ estfun.lm <- function(x, ...) {
   return(rval)
 }
 
-estfun.rlm <- function(x, ...) {
+estfun.conRLM <- function(x, ...) {
   xmat <- model.matrix(x)
   #xmat <- naresid(x$na.action, xmat)
   wts <- weights(x)
@@ -80,9 +77,6 @@ estfun.rlm <- function(x, ...) {
 meatHC <- function(x, 
                    type = c("HC3", "const", "HC", "HC0", "HC1", "HC2", "HC4", "HC4m", "HC5"),
                    omega = NULL) {
-  ## ensure that NAs are omitted
-  if(is.list(x$model.org) && !is.null(x$model.org$na.action)) class(x$model.org$na.action) <- "omit"
-  
   ## extract X
   X <- model.matrix(x)
   if(any(alias <- is.na(coef(x)))) X <- X[, !alias, drop = FALSE]

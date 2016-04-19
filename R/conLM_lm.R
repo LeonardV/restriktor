@@ -2,15 +2,19 @@ conLM.lm <- function(model, constraints, se = "default",
                      bvec = NULL, meq = 0L, control = NULL,
                      tol = sqrt(.Machine$double.eps), debug = FALSE, ...) {
   
+  cl <- match.call()
   Amat <- Amatw; bvec <- bvecw; meq <- meqw
   # check class
   if (!(class(model)[1] %in% c("lm", "mlm"))) {
-    stop("ERROR: model must be of class lm.")
+    stop("model must be of class lm.")
   }
   if (se == "default" | se == "standard") {
     se <- "const"
   } else if (se == "boot.residual") {
     se <- "boot.model.based"
+  }
+  if (se == "boot.model.based" & any(Amat[,1] == 1)) { 
+    stop("no constraints on intercept possible for model based bootstrap.")
   }
   if (missing(constraints) && is.null(bvec)) { 
     bvec <- rep(0L, nrow(Amat)) 
@@ -30,15 +34,13 @@ conLM.lm <- function(model, constraints, se = "default",
   # model summary
   so <- summary(model)
   # response variable
-  Y <- as.matrix(model$model[, attr(model$terms, "response")])
+  y <- as.matrix(model$model[, attr(model$terms, "response")])
   # model matrix
   X <- model.matrix(model)[,,drop = FALSE]
   # residual variance
   s2.unc <- so$sigma^2
   # weigths
   w <- weights(model)
-  # original R^2
-  R2.org <- so$r.squared
   # sample size
   n <- dim(X)[1]
   # unconstrained estimates
@@ -51,9 +53,9 @@ conLM.lm <- function(model, constraints, se = "default",
   }
 
   # compute (weighted) log-likelihood
-  ll.unc <- con_loglik_lm(X = X, y = Y, b = b.unconstr, w = w)
+  ll.unc <- con_loglik_lm(X = X, y = y, b = b.unconstr, w = w)
   LL.unc <- ll.unc$loglik
-  s2.unc.ml <- ll.unc$Sigma / n
+  s2ml.unc <- ll.unc$Sigma / n
   
   # check if the constraints are in line with the data
   if (all(Amat %*% c(b.unconstr) - bvec >= 0 * bvec) & meq == 0) {
@@ -66,34 +68,33 @@ conLM.lm <- function(model, constraints, se = "default",
                 b.unconstr = b.unconstr,
                 b.constr = b.unconstr,
                 residuals = model$residuals, # in case of weights
-                fitted.values = fitted(model),
+                fitted = fitted(model),
                 weights = weights(model),
-                R2.org = R2.org,
-                R2.reduced = R2.org,
                 df.residual = model$df.residual,
-                s2.unc = s2.unc, s2.unc.ml = s2.unc.ml,
-                s2.con = s2.unc, s2.con.ml = s2.unc.ml, 
+                s2.unc = s2.unc, s2ml.unc = s2ml.unc,
+                s2.con = s2.unc, s2ml.con = s2ml.unc, 
                 loglik = LL.unc, Sigma = vcov(model),
-                Amat = Amat, bvec = bvec, meq = meq, iact = NULL, bootout = NULL)  
+                Amat = Amat, bvec = bvec, meq = meq, iact = NULL, 
+                bootout = NULL, call = cl)  
   } else {
     # compute constrained estimates for lm() and mlm() 
-    out.QP <- con_solver(b.unconstr, X = X, y = Y, w = w, Amat = Amat,
+    out.QP <- con_solver(b.unconstr, X = X, y = y, w = w, Amat = Amat,
                          bvec = bvec, meq = meq, tol = tol,
                          maxit = ifelse(is.null(control$maxit), 1e04, 
                                         control$maxit))
-    b.constr <- matrix(out.QP$solution, ncol = ncol(Y))
+    b.constr <- matrix(out.QP$solution, ncol = ncol(y))
     b.constr[abs(b.constr) < tol] <- 0L
     
-    ll.con <- con_loglik_lm(X = X, y = Y, b = b.constr, w = w)
+    ll.con <- con_loglik_lm(X = X, y = y, b = b.constr, w = w)
     LL.con <- ll.con$loglik
-    s2.con.ml <- ll.con$Sigma / n
+    s2ml.con <- ll.con$Sigma / n
     
     # lm
-    if (ncol(Y) == 1L) {
+    if (ncol(y) == 1L) {
       b.constr <- as.vector(b.constr)
         names(b.constr) <- names(b.unconstr)
       fitted <- X %*% b.constr
-      residuals <- Y - fitted
+      residuals <- y - fitted
       # compute residual df corrected for equality constraints. 
       df.residual <- n - (p - qr(Amat[1:meq,])$rank)
       # compute weighted residuals
@@ -102,29 +103,15 @@ conLM.lm <- function(model, constraints, se = "default",
       } else {
         s2.con <- sum(w*residuals^2) / df.residual
       }
-      
-      # compute reduced R^2.
-      R2.reduced <- 1 - sum(residuals^2) / sum((Y - mean(Y))^2)
-      # no weights and no intercept
-      if (is.null(w) & !attr(model$terms, "intercept")) {
-        R2.reduced <- 1 - sum(residuals^2) / sum(Y^2)
-      # weights and intercept
-      } else if (attr(model$terms, "intercept") & !is.null(w)) {
-        R2.reduced <- 1 - sum(w * residuals^2) / sum(w * (Y - weighted.mean(Y, w = w))^2)
-      # weights and no intercept 
-      } else if (!(attr(model$terms, "intercept") | is.null(w))) {
-        R2.reduced <- 1 - sum(w * residuals^2) / sum(w * Y^2)
-      }
-
     } else { #mlm <FIXME>
-      residuals <- Y - fitted
+      residuals <- y - fitted
         rownames(b.constr) <- rownames(b.unconstr)
         colnames(b.constr) <- colnames(b.unconstr)
       fitted <- X %*% b.constr
       df <- model$df.residual
       df.residual <- df + qr(Amat[1:meq,])$rank
       R2.org <- R2.reduced <- NULL
-      se <- "no"
+      se <- "none"
     }
 
     OUT <- list(CON = NULL,
@@ -133,17 +120,15 @@ conLM.lm <- function(model, constraints, se = "default",
                 b.constr = b.constr, # constrained
                 b.unconstr = b.unconstr, # unconstrained
                 residuals = residuals, # constrained 
-                fitted.values = fitted, # constrained 
+                fitted = fitted, # constrained 
                 weights = w,
-                R2.org = R2.org, # unconstrained
-                R2.reduced = R2.reduced, # constrained
                 df.residual = model$df.residual, # unconstrained
-                s2.unc = s2.unc, s2.unc.ml = s2.unc.ml, # unconstrained
-                s2.con = s2.con, s2.con.ml = s2.con.ml, # constrained
+                s2.unc = s2.unc, s2ml.unc = s2ml.unc, # unconstrained
+                s2.con = s2.con, s2ml.con = s2ml.con, # constrained
                 loglik = LL.con, # constrained
                 Sigma = vcov(model), # unconstrained
                 Amat = Amat, bvec = bvec, meq = meq, iact = out.QP$iact,
-                bootout = NULL)
+                bootout = NULL, call = cl)
   }
   
   # original model
@@ -154,7 +139,7 @@ conLM.lm <- function(model, constraints, se = "default",
   OUT$se <- se
   # compute standard errors based on the augmented inverted information matrix or
   # based on the standard bootstrap or model.based bootstrap
-  if (se != "no") {
+  if (se != "none") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
       information <- 1/s2.con * crossprod(X) 
       OUT$information <- information
@@ -169,18 +154,18 @@ conLM.lm <- function(model, constraints, se = "default",
       OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),
                                                    999, control$B), 
                                  fixed = TRUE, constraints = Amat,
-                                 rhs = bvec, neq = meq, se = "no")
+                                 rhs = bvec, neq = meq, se = "none")
     } else if (se == "boot.standard") {
       OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),
                                                    999, control$B),
                                  fixed = FALSE, constraints = Amat,
-                                 rhs = bvec, neq = meq, se = "no")
+                                 rhs = bvec, neq = meq, se = "none")
     }
   }
   
-  if (ncol(Y) == 1L) {
+  if (ncol(y) == 1L) {
     class(OUT) <- c("conLM","lm")
-  } else if (ncol(Y) > 1L) {
+  } else if (ncol(y) > 1L) {
     class(OUT) <- c("conLM","mlm")
   }
     

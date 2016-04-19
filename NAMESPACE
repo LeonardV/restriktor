@@ -4,7 +4,7 @@
 importFrom("lavaan",
            lavParseModelString,
            lav_constraints_parse,
-           lav_func_jacobian_simple)
+           lav_func_jacobian_complex)
 
 importFrom("mvtnorm",
            pmvnorm,
@@ -30,5 +30,6 @@ export("restriktor",
        "conTest", "conTestF.lm", "conTestF.rlm", "conTestLRT.lm", 
        "conTestScore.lm", "conTestEq.lm", "conTestEq.rlm",
        "conTestScore.rlm", "conTestWald.rlm", 
-       "print.conLM", "summary.conLM", "print.conTest", 
+       "print.conLM", "summary.conLM", "print.summary.conLM",
+       "print.conTest", 
        "coef.conLM")

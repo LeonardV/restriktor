@@ -329,10 +329,10 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL, type = "A",
 
 
 
-
-mix.boot <- function(object, type = "A", 
-                     meq.alt = meq.alt,
-                     R = 9999, parallel = c("no", "multicore", "snow"),
+#REF: Silvapulle and Sen (2005, p. 79). Constrained Statistical Inference: Order, 
+# Inequality, and Shape Constraints. Hoboken, {NJ}: Wiley
+mix.boot <- function(object, 
+                     R = 99999, parallel = c("no", "multicore", "snow"),
                      ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, ...) {
 
   parallel <- match.arg(parallel)
@@ -352,7 +352,7 @@ mix.boot <- function(object, type = "A",
   meq  <- object$meq
   
   s2unc <- object$s2.unc
-  X <- model.matrix(object$model.org)[,,drop = FALSE]
+  X <- model.matrix(object)[,,drop = FALSE]
   invW <- kronecker(solve(s2unc), t(X) %*% X)
   W <- solve(invW)
   Dmat <- 2*invW
@@ -367,7 +367,7 @@ mix.boot <- function(object, type = "A",
       runif(1)
     RNGstate <- .Random.seed
     
-    Z <- rmvnorm(n = 1, mean = rep(0, ncol(W)), sigma=W)
+    Z <- rmvnorm(n = 1, mean = rep(0, ncol(W)), sigma = W)
     dvec <- 2*(Z %*% invW)
     QP <- solve.QP(Dmat = Dmat, dvec = dvec, Amat = t(Amat),
                    bvec = bvec, meq = meq)
@@ -407,15 +407,17 @@ mix.boot <- function(object, type = "A",
       error.idx <- c(error.idx, b)
     }
   }
-  dimsol <- ncol(W) - iact
-  wt <- sapply(1:(ncol(W)), function(x) sum(x == (dimsol)))/R
-  zero.idx <- which(wt == 0)
-  if (length(zero.idx) > 0L) {
-    wt <- rev(wt[-zero.idx])  
-  } else {
-    wt <- rev(wt)
-  }
-  names(wt) <- (nrow(Amat)-meq):0
+  # compute the number of positive components of W.
+  dimL <- ncol(W) - iact
+  wt <- sapply(1:(ncol(W) + 1), function(x) sum(x == (dimL + 1))) / R
+  
+#   zero.idx <- which(wt == 0)
+#   if (length(zero.idx) > 0L) {
+#     wt <- rev(wt[-zero.idx])  
+#   } else {
+#     wt <- rev(wt)
+#   }
+#   names(wt) <- (nrow(Amat)-meq):0
 
   OUT <- wt
 

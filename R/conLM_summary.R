@@ -6,6 +6,7 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
   if (!inherits(object, "conLM")) {
     stop("object of class ", sQuote(class(object)), " is not supported.")
   }
+  
   z <- object
   
   # bty = "stud" needs bootstrap variances
@@ -25,7 +26,7 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
   est <- z$b.constr
   w <- z$weights
   
-
+  # code taken from summary.lm
   if (is.null(w)) {
     mss <- if (attr(z$model.org$terms, "intercept")) {
       sum((f - mean(f))^2)

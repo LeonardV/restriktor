@@ -126,9 +126,9 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   if (!(type == "C")) {
     if (boot == "no") {
       # compute mixing weights
-      wt.bar <- con_wt(Amat %*% COV %*% t(Amat), meq = meq)
+      wt <- con_wt(Amat %*% COV %*% t(Amat), meq = meq)
        
-      pvalue <- con_pvalue_Fbar(wt = wt.bar, Ts.org = Ts, 
+      pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
                                 df.residual = df.residual, type = type,
                                 Amat = Amat, bvec = bvec, meq = meq, 
                                 meq.alt = meq.alt)
@@ -154,15 +154,19 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                             verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
     } else if (boot == "mix.weights") {
       # compute weights based on simulation
-      wt.bar <- mix.boot(object, type = type, meq.alt = meq.alt, 
-                         R = ifelse(is.null(control$B), 9999, control$B),
-                         parallel = ifelse(is.null(control$parallel), "no", control$parallel),
-                         ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
-                         cl = ifelse(is.null(control$cl), NULL, control$cl),
-                         seed = ifelse(is.null(control$seed), 1234, control$seed),
-                         verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
+      wt <- mix.boot(object, type = type, meq.alt = meq.alt, 
+                     R = ifelse(is.null(control$B), 9999, control$B),
+                     parallel = ifelse(is.null(control$parallel), "no", control$parallel),
+                     ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
+                     cl = ifelse(is.null(control$cl), NULL, control$cl),
+                     seed = ifelse(is.null(control$seed), 1234, control$seed),
+                     verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
       
-      pvalue <- con_pvalue_Fbar(wt = wt.bar, Ts.org = Ts, 
+      wt <- rev(wt)
+      wt.idx <- which(wt == 0)
+      wt <- wt[-wt.idx]
+      
+      pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
                                 df.residual = df.residual, type = type,
                                 Amat = Amat, bvec = bvec, meq = meq, 
                                 meq.alt = meq.alt)
@@ -330,9 +334,9 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   
   if (!(type == "C")) {
     if (boot == "no") {
-      wt.bar <- con_wt(Amat %*% COV %*% t(Amat), meq = meq)
+      wt <- con_wt(Amat %*% COV %*% t(Amat), meq = meq)
       
-      pvalue <- con_pvalue_Fbar(wt = wt.bar, Ts.org = Ts, 
+      pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
                                 df.residual = df.residual, type = type,
                                 Amat = Amat, bvec = bvec, meq = meq, 
                                 meq.alt = meq.alt)
@@ -358,7 +362,7 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                             verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
     } else if (boot == "mix.weights") {
       # compute weights based on simulation
-      wt.bar <- mix.boot(object, type = type, meq.alt = meq.alt, 
+      wt <- mix.boot(object, type = type, meq.alt = meq.alt, 
                          R = ifelse(is.null(control$B), 9999, control$B),
                          parallel = ifelse(is.null(control$parallel), "no", control$parallel),
                          ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
@@ -366,7 +370,11 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                          seed = ifelse(is.null(control$seed), 1234, control$seed),
                          verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
       
-      pvalue <- con_pvalue_Fbar(wt = wt.bar, Ts.org = Ts, 
+      wt <- rev(wt)
+      wt.idx <- which(wt == 0)
+      wt <- wt[-wt.idx]
+      
+      pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
                                 df.residual = df.residual, type = type,
                                 Amat = Amat, bvec = bvec, meq = meq, 
                                 meq.alt = meq.alt)
@@ -558,7 +566,7 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     if (meq == 0L) {
       Ts <- as.vector(min((Amat %*% b.unconstr - bvec) /
                             sqrt(diag(Amat %*% COV %*% t(Amat)))))
-      pvalue <- 1-pt(Ts, df.residual)
+      pvalue <- 1 - pt(Ts, df.residual)
       names(pvalue) <- "pt.value"
     } else {
       stop("test not applicable with equality constraints.")
@@ -567,9 +575,9 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   
   if (!(type == "C")) {
     if (boot == "no") {
-      wt.bar <- con_wt(Amat %*% COV %*% t(Amat), meq = meq)
+      wt <- con_wt(Amat %*% COV %*% t(Amat), meq = meq)
       
-      pvalue <- con_pvalue_Fbar(wt = wt.bar, Ts.org = Ts, 
+      pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
                                 df.residual = df.residual, type = type,
                                 Amat = Amat, bvec = bvec, meq = meq, 
                                 meq.alt = meq.alt)
@@ -595,7 +603,7 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                             verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
     } else if (boot == "mix.weights") {
       # compute weights based on simulation
-      wt.bar <- mix.boot(object, type = type, meq.alt = meq.alt, 
+      wt <- mix.boot(object, type = type, meq.alt = meq.alt, 
                          R = ifelse(is.null(control$B), 9999, control$B),
                          parallel = ifelse(is.null(control$parallel), "no", control$parallel),
                          ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
@@ -603,7 +611,11 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                          seed = ifelse(is.null(control$seed), 1234, control$seed),
                          verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
       
-      pvalue <- con_pvalue_Fbar(wt = wt.bar, Ts.org = Ts, 
+      wt <- rev(wt)
+      wt.idx <- which(wt == 0)
+      wt <- wt[-wt.idx]
+      
+      pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
                                 df.residual = df.residual, type = type,
                                 Amat = Amat, bvec = bvec, meq = meq, 
                                 meq.alt = meq.alt)

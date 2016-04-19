@@ -19,3 +19,4 @@ Packaged: 2015-01-22 20:03:39 UTC; yves
 Author: Yves Rosseel [aut, cre],
   Leonard Vanbrabant [aut, cre]
 Maintainer: Yves Rosseel <Yves.Rosseel@UGent.be>
+Suggests: testthat

@@ -13,6 +13,10 @@ conLM.lm <- function(model, constraints, se = "default",
   } else if (se == "boot.residual") {
     se <- "boot.model.based"
   }
+  if (!(se %in% c("none","const","boot.model.based","boot.standard","HC","HC0",
+                  "HC1","HC2","HC3","HC4","HC4m","HC5"))) {
+    stop("standard error ", sQuote(se), " unknown.")
+  }
   if (se == "boot.model.based" & any(Amat[,1] == 1)) { 
     stop("no constraints on intercept possible for model based bootstrap.")
   }
@@ -166,7 +170,7 @@ conLM.lm <- function(model, constraints, se = "default",
   if (ncol(y) == 1L) {
     class(OUT) <- c("conLM","lm")
   } else if (ncol(y) > 1L) {
-    class(OUT) <- c("conLM","mlm")
+    class(OUT) <- c("conMLM","mlm")
   }
     
     return(OUT)

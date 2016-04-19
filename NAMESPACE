@@ -30,6 +30,8 @@ export("restriktor",
        "conTest", "conTestF.lm", "conTestF.rlm", "conTestLRT.lm", 
        "conTestScore.lm", "conTestEq.lm", "conTestEq.rlm",
        "conTestScore.rlm", "conTestWald.rlm", 
-       "print.conLM", "summary.conLM", "print.summary.conLM",
+       "print.conLM", "print.conRLM",
+       "summary.conLM", "print.summary.conLM",
+       "summary.conRLM", 
        "print.conTest", 
-       "coef.conLM")
+       "coef.conLM", "coef.conRLM")

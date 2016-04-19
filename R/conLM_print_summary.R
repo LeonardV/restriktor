@@ -2,7 +2,6 @@ print.summary.conLM <- function(object, digits = max(3, getOption("digits") - 2)
                           signif.stars = getOption("show.signif.stars"), ...) {
   
   x <- object
-  cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), "\n\n", sep = "")
   resid <- x$residuals
   rdf <- x$rdf
   se.type <- x$se.type[1]
@@ -15,6 +14,8 @@ print.summary.conLM <- function(object, digits = max(3, getOption("digits") - 2)
   } else if (class(x)[1] == "summary.conRLM") {
     cat("Restriktor: constrained robust linear model:\n\n")
   }
+  
+  cat("Call:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), "\n\n", sep = "")
   
   cat(if (!is.null(x$weights) && diff(range(x$weights))) 
     "Weighted ", "Residuals:\n\n", sep = "")

@@ -75,7 +75,7 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
         CALL <- c(list(model.org), call.my)
     rfit <- do.call("conRLM_fit", CALL)
     
-    b.eqconstr <- coef(rfit)
+    b.eqconstr <- rfit$coefficients
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
     Ts <- robustFm(x = X, y = Y,  beta0 = b.eqconstr, betaA = b.constr, 
@@ -95,7 +95,7 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
         CALL <- c(list(model.org), call.my)
     rfit <- do.call("conRLM_fit", CALL)
     
-    b.eqconstr <- coef(rfit)
+    b.eqconstr <- rfit$coefficients
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
     Ts <- robustFm(x = X, y = Y,  beta0 = b.eqconstr, betaA = b.constr, 
@@ -123,7 +123,7 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
         CALL <- c(list(model.org), call.my)
         rfit <- do.call("conRLM_fit", CALL)
         
-        b.constr.alt <- coef(rfit)
+        b.constr.alt <- rfit$coefficients
         b.constr.alt[abs(b.constr.alt) < tol] <- 0L
         names(b.constr.alt) <- vnames
         Ts <- robustFm(x = X, y = Y,  beta0 = b.constr, betaA = b.constr.alt, 
@@ -298,7 +298,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     CALL <- c(list(model.org), call.my)
     rfit <- do.call("conRLM_fit", CALL)
     
-    b.eqconstr <- coef(rfit)
+    b.eqconstr <- rfit$coefficients
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
     out0 <- robustWaldScores(x = X, y = Y,  beta0 = b.eqconstr, 
@@ -320,7 +320,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     CALL <- c(list(model.org), call.my)
     rfit <- do.call("conRLM_fit", CALL)
     
-    b.eqconstr <- coef(rfit)
+    b.eqconstr <- rfit$coefficients
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
     
@@ -356,7 +356,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
         CALL <- c(list(model.org), call.my)
         rfit <- do.call("conRLM_fit", CALL)
     
-        b.constr.alt <- coef(rfit)
+        b.constr.alt <- rfit$coefficients
         b.constr.alt[abs(b.constr.alt) < tol] <- 0L
         names(b.constr.alt) <- vnames
         out3 <- robustWaldScores(x = X, y = Y,  beta0 = b.constr, 
@@ -535,7 +535,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
         CALL <- c(list(model.org), call.my)
     rfit <- do.call("conRLM_fit", CALL)
     
-    b.eqconstr <- coef(rfit)
+    b.eqconstr <- rfit$coefficients
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
     out0 <- robustWaldScores(x = X, y = Y,  beta0 = b.eqconstr, 
@@ -558,7 +558,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
             CALL <- c(list(model.org), call.my)
     rfit <- do.call("conRLM_fit", CALL)
     
-    b.eqconstr <- coef(rfit)
+    b.eqconstr <- rfit$coefficients
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
     
@@ -593,7 +593,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
                 CALL <- c(list(model.org), call.my)
         rfit <- do.call("conRLM_fit", CALL)
         
-        b.constr.alt <- coef(rfit)
+        b.constr.alt <- rfit$coefficients
         b.constr.alt[abs(b.constr.alt) < tol] <- 0L
         names(b.constr.alt) <- vnames
         out3 <- robustWaldScores(x = X, y = Y,  beta0 = b.constr, 
@@ -775,7 +775,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
 #     #      CALL <- c(call.rlm, call.my)
 #     #      rfit <- do.call("conRLM.formula", CALL)
 #     #    }
-#     b.eqconstr <- coef(rfit)
+#     b.eqconstr <- rfit$coefficients
 #     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
 #     names(b.eqconstr) <- vnames
 #     
@@ -799,7 +799,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
 #     #      CALL <- c(call.rlm, call.my)
 #     #      rfit <- do.call("conRLM.formula", CALL)
 #     #    }
-#     b.eqconstr <- coef(rfit)
+#     b.eqconstr <- rfit$coefficients
 #     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
 #     names(b.eqconstr) <- vnames
 #     
@@ -833,7 +833,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
 #         #          CALL <- c(call.rlm, call.my)
 #         #          rfit <- do.call("conRLM.formula", CALL)
 #         #        }
-#         b.constr.alt <- coef(rfit)
+#         b.constr.alt <- rfit$coefficients
 #         b.constr.alt[abs(b.constr.alt) < tol] <- 0L
 #         names(b.constr.alt) <- vnames
 #         Ts <- robustWaldXX(x = X, beta0 = b.constr, beta1 = b.constr.alt, 

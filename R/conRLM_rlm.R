@@ -4,6 +4,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                        bvec = NULL, meq = 0L,
                        tol = sqrt(.Machine$double.eps), ...) { 
   
+  cl <- match.call()
   Amat <- Amatw; bvec <- bvecw; meq <- meqw
   
   # check class
@@ -14,6 +15,13 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     se <- "const"
   } else if (se == "boot.residual") {
     se <- "boot.model.based"
+  }
+  if (!(se %in% c("none","const","boot.model.based","boot.standard","HC","HC0",
+                  "HC1","HC2","HC3","HC4","HC4m","HC5"))) {
+    stop("standard error ", sQuote(se), " unknown.")
+  }
+  if (se == "boot.model.based" & any(Amat[,1] == 1)) { 
+    stop("no constraints on intercept possible for model based bootstrap.")
   }
   if (missing(constraints) && is.null(bvec)) { 
     bvec <- rep(0L, nrow(Amat)) 
@@ -156,13 +164,13 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 Sigma = vcov(model),                                            #probably not so robust!
                 Amat = Amat, bvec = bvec, meq = meq, iact = 0L,
                 converged = model$converged, iter = model$iter,
-                bootout = NULL)
+                bootout = NULL, call = cl)
   } else {
     # update model
     call.my <- list(Amat = Amat, meq = meq, bvec = bvec)
     CALL <- c(list(model), call.my)
     rfit <- do.call("conRLM_fit", CALL)
-    b.constr <- coef(rfit)
+    b.constr <- rfit$coefficients
       b.constr[abs(b.constr) < sqrt(.Machine$double.eps)] <- 0L
     iact <- rfit$iact
     
@@ -211,14 +219,14 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 Sigma = vcov(model),                                             #probably not robust???
                 Amat = Amat, bvec = bvec, meq = meq, iact = iact,
                 converged = rfit$converged, iter = rfit$iter,
-                bootout = NULL)
+                bootout = NULL, call = cl)
   }
   
   OUT$model.org <- model
   OUT$CON <- if (is.character(constraints)) { CON }
   OUT$se <- se 
   
-  if (se != "no") {
+  if (se != "none") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
       information <- 1/s2.con * crossprod(X) 
       OUT$information <- information      
@@ -235,16 +243,16 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
       OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),
                                                    999, control$B), 
                                  fixed = TRUE, constraints = Amat,
-                                 rhs = bvec, neq = meq, se = "no")
+                                 rhs = bvec, neq = meq, se = "none")
     } else if (se == "boot.standard") {
       OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),
                                                    999, control$B),
                                  fixed = FALSE, constraints = Amat,
-                                 rhs = bvec, neq = meq, se = "no")
+                                 rhs = bvec, neq = meq, se = "none")
     }
   }
   
-  class(OUT) <- c("conRLM","conLM","rlm")
+  class(OUT) <- c("conRLM","rlm")
   
   return(OUT)
 }

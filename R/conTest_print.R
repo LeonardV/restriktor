@@ -8,9 +8,9 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), brief = F
   } else {
     cat("\nConstrained hypothesis test type", x$type, "\n")  
   }
-  vnames <- names(x$b.constr)
+  vnames <- names(x$b.unconstr)
   if (is.null(vnames)) { 
-    vnames <- paste("m", 1:length(x$b.constr), sep = "") 
+    vnames <- paste("m", 1:length(x$b.unconstr), sep = "") 
   }
   Amat <- x$Amat
   colnames(Amat) <- vnames

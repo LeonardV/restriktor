@@ -9,12 +9,12 @@ print.summary.conLM <- function(object, digits = max(3, getOption("digits") - 2)
   bty <- attr(x$se.type, "bty")
   level <- attr(x$se.type, "level")
   
-  if (class(x)[1] == "summary.conLM") {
-    cat("Restriktor: constrained linear model:\n\n")
-  } else if (class(x)[1] == "summary.conRLM") {
+  if (inherits(x, "summary.conRLM")) {
     cat("Restriktor: constrained robust linear model:\n\n")
+  } else {
+    cat("Restriktor: constrained linear model:\n\n")
   }
-  
+    
   cat("Call:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), "\n\n", sep = "")
   
   cat(if (!is.null(x$weights) && diff(range(x$weights))) 

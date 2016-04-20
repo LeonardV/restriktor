@@ -25,26 +25,9 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
   f <- z$fitted
   est <- z$b.constr
   w <- z$weights
-  
-  # code taken from summary.lm
-  if (is.null(w)) {
-    mss <- if (attr(z$model.org$terms, "intercept")) {
-      sum((f - mean(f))^2)
-    } else {
-      sum(f^2)
-    }
-    rss <- sum(r^2)
-  } else {
-    mss <- if (attr(z$model.org$terms, "intercept")) {
-      m <- sum(w * f/sum(w))
-      sum(w * (f - m)^2)
-    } else {
-      sum(w * f^2)
-    }
-    rss <- sum(w * r^2)
-    r <- sqrt(w) * r
+  if (!is.null(w)) {
+    r <- sqrt(w) * residuals
   }
-  R2.reduced <- mss/(mss + rss)
   ans <- z[c("call", if (!is.null(w)) "weights")]
   ans$model.org <- z$model.org
   
@@ -100,10 +83,9 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
   }
   
   ans$rdf <- rdf
-  # compue R^2
-  ans$R2.org <- summary(z$model.org)$r.squared
+  ans$R2.org <- z$R2.org
   if (attr(z$model.org$terms, "intercept") != p) {
-    ans$R2.reduced <- R2.reduced
+    ans$R2.reduced <- z$R2.reduced
   } else {
     ans$R2.reduced <- 0
   }
@@ -111,7 +93,11 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
   # REF: Kuiper, R.M.; Hoijtink, H.J.A.; Silvapulle, M. J. (2012) 
   # Journal of statistical planning and inference, volume 142, pp. 2454 - 2463
   ## TO DO: add small samples correction 
-  s2ml.unc <- c(z$s2ml.unc)
+  if (inherits(object, "conRLM")) {
+    s2ml.unc <- c(summary_rlm(z$model.org, ml = TRUE)$stddev^2)
+  } else { 
+    s2ml.unc <- c(z$s2ml.unc)
+  }
   X <- model.matrix(z$model.org)[,,drop=FALSE]
   y <- as.matrix(z$model.org$model[, attr(z$model.org$terms, "response")])
   invW <- kronecker(solve(s2ml.unc), t(X) %*% X)
@@ -138,7 +124,11 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
     attr(ans$goric, "penalty") <- PT
     attr(ans$goric, "loglik")  <- z$loglik 
   
-  class(ans) <- "summary.conLM"
-  
+  if (class(object)[1] == "conLM") {
+    class(ans) <- "summary.conLM"
+  } else if (class(object)[1] == "conRLM") {
+    class(ans) <- c("summary.conLM","summary.conRLM")
+  } 
+    
   ans
 }

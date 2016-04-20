@@ -252,7 +252,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     }
   }
   
-  class(OUT) <- c("conRLM","rlm","conLM", "lm")
+  class(OUT) <- c("conRLM","conLM","rlm","lm")
   
   return(OUT)
 }

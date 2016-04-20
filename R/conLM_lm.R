@@ -71,10 +71,11 @@ conLM.lm <- function(model, constraints, se = "default",
                 constraints = constraints,
                 b.unconstr = b.unconstr,
                 b.constr = b.unconstr,
-                residuals = model$residuals, # in case of weights
+                residuals = model$residuals, # unweighted residuals
                 fitted = fitted(model),
                 weights = weights(model),
                 df.residual = model$df.residual,
+                R2.org = so$r.squared, R2.reduced = so$r.squared,
                 s2.unc = s2.unc, s2ml.unc = s2ml.unc,
                 s2.con = s2.unc, s2ml.con = s2ml.unc, 
                 loglik = LL.unc, Sigma = vcov(model),
@@ -99,6 +100,25 @@ conLM.lm <- function(model, constraints, se = "default",
         names(b.constr) <- names(b.unconstr)
       fitted <- X %*% b.constr
       residuals <- y - fitted
+      
+      # compute R^2
+      if (is.null(w)) {
+        mss <- if (attr(z$model.org$terms, "intercept")) {
+          sum((fitted - mean(fitted))^2)
+        } else {
+          sum(fitted^2)
+        }
+        rss <- sum(residuals^2)
+      } else {
+        mss <- if (attr(z$model.org$terms, "intercept")) {
+          m <- sum(w * fitted / sum(w))
+          sum(w * (fitted - m)^2)
+        } else {
+          sum(w * fitted^2)
+        }
+        rss <- sum(w * residuals^2)
+      }
+      R2.reduced <- mss/(mss + rss)
       # compute residual df corrected for equality constraints. 
       df.residual <- n - (p - qr(Amat[1:meq,])$rank)
       # compute weighted residuals
@@ -127,6 +147,7 @@ conLM.lm <- function(model, constraints, se = "default",
                 fitted = fitted, # constrained 
                 weights = w,
                 df.residual = model$df.residual, # unconstrained
+                R2.org = so$r.squared, R2.reduced = R2.reduced,
                 s2.unc = s2.unc, s2ml.unc = s2ml.unc, # unconstrained
                 s2.con = s2.con, s2ml.con = s2ml.con, # constrained
                 loglik = LL.con, # constrained

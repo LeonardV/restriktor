@@ -198,7 +198,7 @@ conRLM_fit <- function(model, maxit = 5000,
               weights = if (!missing(weights)) weights,
               conv = conv, converged = done, iter = iiter, x = x, call = cl, 
               Amat = Amat, bvec = bvec, meq = meq, iact = iact)
-  class(fit) <- c("conRLM", "rlm", "conLM", "lm")
+  class(fit) <- c("conRLM","conLM","rlm","lm")
   
   OUT <- fit
   

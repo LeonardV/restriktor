@@ -99,21 +99,17 @@ conRLM_fit <- function(model, maxit = 5000,
       QP <- solve.QP(Dmat, dvec, t(Amat[1:meq,,drop = FALSE]), bvec[1:meq], 
                      meq = nrow(Amat[1:meq,,drop = FALSE]))$solution
       x.idx <- QP %in% 0
-      temp <- do.call("lqs",
-                      c(list(x = x[,!x.idx, drop = FALSE], y, intercept = FALSE, 
-                             method = "S", k0 = 1.54764), lqs.control)) 
-      coef <- temp$coefficients
-      resid <- temp$residuals
-      #resid0 <- resid
-      scale <- temp$scale
-      psi <- psi.bisquare
     } else {
-      coef <- model$coefficients
-      resid <- model$residuals
-      #resid0 <- resid
-      scale <- model$s
-      psi <- psi.bisquare
+      x.idx <- rep(FALSE, ncol(Amat))
     }
+    temp <- do.call("lqs",
+                    c(list(x = x[,!x.idx, drop = FALSE], y, intercept = FALSE, 
+                           method = "S", k0 = 1.54764), lqs.control)) 
+    coef <- temp$coefficients
+    resid <- temp$residuals
+    resid0 <- resid
+    scale <- temp$scale
+    psi <- psi.bisquare
   } else {
     stop("'method' is unknown")
   }  
@@ -125,10 +121,6 @@ conRLM_fit <- function(model, maxit = 5000,
   n1 <- ( if (is.null(wt)) { nrow(x) } else { sum(wt) } ) - ncol(x) 
   theta <- 2 * pnorm(k2) - 1
   gamma <- theta + k2^2 * (1 - theta) - 2 * k2 * dnorm(k2)
-  
-#  if (scale.est != "MM") {
-#    scale <- if (is.null(wt)) mad(resid, 0) else wmad(resid, wt)
-#  }
   
   for(iiter in 1L:maxit) {
     if (!is.null(test.vec)) { 
@@ -191,7 +183,7 @@ conRLM_fit <- function(model, maxit = 5000,
   fit <- list(coefficients = coef, 
               residuals = c(y - fitted), 
               wresid = resid,
-              #resid0 = if (method == "MM") { resid0 },
+              resid0 = if (method == "MM") { resid0 },
               fitted.values = fitted,
               df.residual = NA, w = w,
               scale = scale, psi = psi, k2 = k2,

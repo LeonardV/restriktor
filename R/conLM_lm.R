@@ -146,7 +146,8 @@ conLM.lm <- function(model, constraints, se = "default",
                 residuals = residuals, # constrained 
                 fitted = fitted, # constrained 
                 weights = w,
-                df.residual = model$df.residual, # unconstrained
+                #df.residual = model$df.residual, # unconstrained
+                df.residual = df.residual, # constrained
                 R2.org = so$r.squared, R2.reduced = R2.reduced,
                 s2.unc = s2.unc, s2ml.unc = s2ml.unc, # unconstrained
                 s2.con = s2.con, s2ml.con = s2ml.con, # constrained
@@ -166,9 +167,8 @@ conLM.lm <- function(model, constraints, se = "default",
   # based on the standard bootstrap or model.based bootstrap
   if (se != "none") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
-      information <- 1/s2.con * crossprod(X) 
-      OUT$information <- information
-      inverted.information <- con_augmented_information(information = information,
+      OUT$information <- 1/s2.con * crossprod(X) 
+      inverted.information <- con_augmented_information(information = OUT$information,
                                                         X = X, 
                                                         b.unconstr = b.unconstr, 
                                                         b.constr = b.constr,

@@ -8,9 +8,10 @@
 restriktor <- function(model, constraints, se = "default",
                        rhs = NULL, neq = NULL, control = NULL,
                        debug = FALSE, ...) {
-  #if (any(c("glm", "mlm", "gls") %in% class(model))) {
-  if (any(c("glm", "mlm", "gls") %in% class(model))) {
-    stop("Restriktor does not work on classes glm, mlm and gls (yet).")
+  
+  #we first check the class of object
+  if (!any(class(model) %in% c("lm", "rlm"))) {
+    stop("It only works for lm(), rlm()")
   }
   
   # rename for internal use

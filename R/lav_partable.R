@@ -3,10 +3,10 @@
 lav_partable <- function(object, est = FALSE, label = FALSE,
                                  as.data.frame. = FALSE) {
 
-    # we first check the class of object
+#  we first check the class of object
     if (!any(class(object) %in% c("lm", "rlm", "glm", "mlm"))) {
-      stop("It only works for lm(), rlm(), glm() and mlm()")
-    }
+       stop("It only works for lm(), rlm(), glm() and mlm()")
+     }
 
     objectTerms <- terms(object)
 

@@ -12,13 +12,13 @@ robustWaldScores <- function(x, y, beta0, betaA, scale, test = "wald") {
   res0 <- y - X %*% beta0
   resA <- y - X %*% betaA
   
-  rstar0 <- res0/scale
-  rstarA <- resA/scale
+  rstar0 <- res0 / scale
+  rstarA <- resA / scale
   
-  psi0   <- tukeyChi(rstar0, cc, deriv=1)  
-  psiA   <- tukeyChi(rstarA, cc, deriv=1) 
-#  psideriv0 <- tukeyChi(rstar0, cc, deriv=2) 
-  psiderivA <- tukeyChi(rstarA, cc, deriv=2) 
+  psi0   <- tukeyChi(rstar0, cc, deriv = 1)  
+  psiA   <- tukeyChi(rstarA, cc, deriv = 1) 
+#  psideriv0 <- tukeyChi(rstar0, cc, deriv=2)  
+  psiderivA <- tukeyChi(rstarA, cc, deriv = 2) 
   
   #compute M 
   weightsM <- psiderivA / scale

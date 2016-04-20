@@ -19,16 +19,16 @@ bread.conLM <- function(x, ...) {
 
 bread.conRLM <- function(x, ...) {
     xmat <- model.matrix(x)
-    xmat <- naresid(x$model.org$na.action, xmat)
     wts <- weights(x)
-    if(is.null(wts)) wts <- 1
+    if (is.null(wts)) {
+      wts <- 1
+    }
     res <- residuals(x)
-    #psi_deriv <- function(z) tukeyPsi(z, deriv = 1)
     psi_deriv <- function(z) x$model.org$psi(z, deriv = 1)
-    rval <- sqrt(abs(as.vector(psi_deriv(res/x$model.org$s)/x$model.org$s))) * wts * xmat    
+    rval <- sqrt(abs(as.vector(psi_deriv(res / x$model.org$s) / x$model.org$s))) * wts * xmat    
     rval <- chol2inv(qr.R(qr(rval))) * nrow(xmat)
-    rval <- solve(rval) #/ x$model.org$s * nrow(xmat)
-    #rval <- 1/s2 * crossprod(xmat)  
+    rval <- solve(rval) #/ x$model.org$s * nrow(xmat)                           #solve(rval)
+    
     rval <- con_augmented_information(information = rval, X = xmat, 
                                       b.unconstr = x$b.unconstr, 
                                       b.constr = x$b.constr, Amat = x$Amat, 

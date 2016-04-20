@@ -1,5 +1,6 @@
-robustWaldScores <- function(x, y, beta0, betaA, scale) { 
+robustWaldScores <- function(x, y, beta0, betaA, scale, test = "wald") { 
   
+  test <- tolower(test)
   X <- as.matrix(x)
   n <- dim(X)[1]
   p <- dim(X)[2]
@@ -39,24 +40,24 @@ robustWaldScores <- function(x, y, beta0, betaA, scale) {
   V <- Minv %*% Q %*% t(Minv)
 
   # Wald test-statistic
-  TsWald <- as.numeric(n * c(betaA-beta0) %*% solve(V, c(betaA-beta0)))
-   
-  # Score test-statistic
-  weightsZ0 <- psi0
-  Z0 <- (t(X) %*% weightsZ0) / n  
+  if (test == "wald") {
+    Ts <- as.numeric(n * c(betaA-beta0) %*% solve(V, c(betaA-beta0)))
+  } else if (test == "score") {
+   # Score test-statistic
+    weightsZ0 <- psi0
+    Z0 <- (t(X) %*% weightsZ0) / n  
+  
+    weightsZA <- psiA
+    ZA <- (t(X) %*% weightsZA) / n  
+      
+    result.C <- M %*% V %*% t(M)
+    Ts <- as.numeric(n * t(ZA-Z0) %*% solve(result.C, (ZA-Z0)))
+  } 
 
-  weightsZA <- psiA
-  ZA <- (t(X) %*% weightsZA) / n  
-    
-  result.C <- M %*% V %*% t(M)
-  TsScore <- as.numeric(n * t(ZA-Z0) %*% solve(result.C, (ZA-Z0)))
-   
-
-  OUT <- list(RWald = TsWald,
-              Rscore = TsScore,
+  OUT <- list(Ts = Ts,
               V = V)
   
-    OUT
+  OUT
   
 }
 

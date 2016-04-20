@@ -6,7 +6,10 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), brief = F
   if (nrow(x$Amat) == x$meq) {
     cat("\nConstrained hypothesis test\n")
   } else {
-    cat("\nConstrained hypothesis test type", x$type, "\n")  
+    cat("\nConstrained hypothesis test type", x$type, "\n")
+    if (x$boot != "no") {
+      cat("( Number of successful bootstrap draws:", attr(x$pvalue, "B"),")\n")
+    }
   }
   vnames <- names(x$b.unconstr)
   if (is.null(vnames)) { 

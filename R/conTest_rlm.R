@@ -250,9 +250,8 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
     out0 <- robustWaldScores(x = X, y = y,  beta0 = b.eqconstr, 
-                             betaA = b.constr, scale = scale)#, Amat = Amatg, 
-                             #bvec = bvecg, meq = meq)
-    Ts <- out0$RWald
+                             betaA = b.constr, scale = scale, test = "wald")
+    Ts <- out0$Ts
     COV <- out0$V
   } else if (type == "A") {
     call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec)
@@ -264,16 +263,14 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     names(b.eqconstr) <- vnames
     
     out1 <- robustWaldScores(x = X, y = y,  beta0 = b.eqconstr, 
-                             betaA = b.constr, scale = scale)#, Amat = Amat, 
-                             #bvec = bvec, meq = meq)
-    Ts <- out1$RWald
+                             betaA = b.constr, scale = scale, test = "wald")
+    Ts <- out1$Ts
     COV <- out1$V
   }
   else if (type == "B") {
     if (meq.alt == 0L) {
       out2 <- robustWaldScores(x = X, y = y,  beta0 = b.constr, 
-                               betaA = b.unconstr, scale = scale)#, Amat = Amat, 
-                               #bvec = bvec, meq = Amat)
+                               betaA = b.unconstr, scale = scale, test = "wald")
       Ts <- out2$RWald
       COV <- out2$V
     } else {
@@ -288,10 +285,9 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
         b.constr.alt[abs(b.constr.alt) < tol] <- 0L
         names(b.constr.alt) <- vnames
         out3 <- robustWaldScores(x = X, y = y,  beta0 = b.constr, 
-                                 betaA = b.constr.alt, scale = scale)#, 
-                                 #Amat = Amat, meq = meq.alt,                    
-                                 #bvec = bvec)
-        Ts <- out3$RWald
+                                 betaA = b.constr.alt, scale = scale, 
+                                 test = "wald")
+        Ts <- out3$Ts
         COV <- out3$V
       } else {
         stop("meq.alt must not be larger than meq.")
@@ -447,8 +443,8 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
     out0 <- robustWaldScores(x = X, y = y,  beta0 = b.eqconstr, 
-                             betaA = b.constr, scale = scale)    
-    Ts <- out0$Rscore
+                             betaA = b.constr, scale = scale, test = "score")    
+    Ts <- out0$Ts
     COV <- out0$V
   } else if (type == "A") {
     call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec)
@@ -460,14 +456,14 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     names(b.eqconstr) <- vnames
     
     out1 <- robustWaldScores(x = X, y = y,  beta0 = b.eqconstr, 
-                             betaA = b.constr, scale = scale)
-    Ts <- out1$Rscore
+                             betaA = b.constr, scale = scale, test = "score")
+    Ts <- out1$Ts
     COV <- out1$V
   } else if (type == "B") {
     if (meq.alt == 0L) {
       out2 <- robustWaldScores(x = X, y = y,  beta0 = b.constr, 
-                               betaA = b.unconstr, scale = scale)
-      Ts <- out2$Rscore
+                               betaA = b.unconstr, scale = scale, test = "score")
+      Ts <- out2$Ts
       COV <- out2$V
     } else {
       # some equality may be preserved in the alternative hypothesis.
@@ -481,8 +477,9 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
         b.constr.alt[abs(b.constr.alt) < tol] <- 0L
         names(b.constr.alt) <- vnames
         out3 <- robustWaldScores(x = X, y = y,  beta0 = b.constr, 
-                                 betaA = b.constr.alt, scale = scale)
-        Ts <- out3$Rscore
+                                 betaA = b.constr.alt, scale = scale, 
+                                 test = "score")
+        Ts <- out3$Ts
         COV <- out3$V
       } else {
         stop("meq.alt must not be larger than meq.")
@@ -565,44 +562,4 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   
   OUT
   
-}
-
-
-# hypothesis test type C is based on a t-distribution.
-# intersection-union test 
-# REF: S. Sasabuchi (1980). A Test of a Multivariate Normal Mean with Composite 
-# Hypotheses Determined by Linear Inequalities. Biometrika Trust, 67 (2), 429-439.
-conTestC.rlm <- function(object, type = "C", ...) {
-  
-  if (!("conRLM" %in% class(object))) {
-    stop("object must be of class conRLM.")
-  }
-  
-  Amat <- object$Amat
-  bvec <- object$bvec
-  meq  <- object$meq
-  model.org <- object$model.org
-  COV <- vcov(model.org) 
-  df.residual <- object$df.residual
-  b.unconstr <- object$b.unconstr
-  
-  if (meq == 0L) {
-    Ts <- as.vector(min((Amat %*% b.unconstr - bvec) / 
-                          sqrt(diag(Amat %*% COV %*% t(Amat)))))
-    pvalue <- 1 - pt(Ts, df.residual)
-  } else {
-    stop("test not applicable with equality constraints.")
-  }
-  
-  OUT <- list(type = "C",
-              Ts = Ts, 
-              pvalue = pvalue,
-              b.unconstr = b.unconstr,
-              Amat = Amat,
-              bvec = bvec,
-              meq = meq)
-  
-  class(OUT) <- "conTest"
-  
-  OUT
 }

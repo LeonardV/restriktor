@@ -1,4 +1,4 @@
-# Mixture of F-distributions.
+# mixture of F distributions.
 con_pvalue_Fbar <- function(wt, Ts.org, df.residual, type = "A",
                             Amat, bvec, meq = 0L, meq.alt = 0L) {
   #check
@@ -34,7 +34,7 @@ con_pvalue_Fbar <- function(wt, Ts.org, df.residual, type = "A",
 }
 
 
-
+# mixture of chi-square distributions
 con_pvalue_Chibar <- function(wt, Ts.org, type = "A",
                               Amat, bvec, meq = 0L, meq.alt = 0L) {
   #check
@@ -73,7 +73,7 @@ con_pvalue_Chibar <- function(wt, Ts.org, type = "A",
 con_pvalue_boot_parametric <- function(model, Ts.org = NULL, type = "A", 
                                        meq.alt = meq.alt,
                                        test = "F", R = 9999, 
-                                       p.distr = "N", df = 7,
+                                       p.distr = "N", df = 7, warn = -1L,
                                        parallel = "no", ncpus = 1L, cl = NULL,
                                        seed = NULL, control = NULL,
                                        verbose = FALSE, ...) {
@@ -82,6 +82,7 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL, type = "A",
   if (type == "C") { 
     stop("Restriktor ERROR: type C is based on a t-distribution. Set boot = \"no\" ") 
   }
+  old_options <- options(); options(warn = warn)
   
   model.org <- model$model.org
   X <- model.matrix(model)[,,drop=FALSE]
@@ -131,8 +132,13 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL, type = "A",
     boot_model <- update(model.org, formula = form, data = DATA)
     
     CALL <- list(model = boot_model, constraints = Amat, rhs = bvec, neq = meq, control = control, se = "none")
-    boot_conLM <- do.call("restriktor", CALL)  
-    boot_conTest <- conTest(boot_conLM, type = type, test = test, meq.alt = meq.alt, control = control)
+    boot_conLM <- do.call("restriktor", CALL)
+    boot_conTest <- try(conTest(boot_conLM, type = type, test = test, meq.alt = meq.alt, control = control))
+    if (inherits(boot_conTest, "try-error")) {
+      if (verbose) cat("FAILED: creating test statistic\n")
+      options(old_options)
+      return(NULL)
+    }
     OUT <- boot_conTest$Ts
   
     if (verbose) {
@@ -141,6 +147,7 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL, type = "A",
       OUT
    }
 
+   options(old_options)
    RR <- sum(R)
      res <- if (ncpus > 1L && (have_mc || have_snow)) {
        if (have_mc) {
@@ -169,13 +176,16 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL, type = "A",
      }
      na.boot.idx <- which(is.na(Ts.boot), arr.ind = TRUE)
      inf.boot.idx <- which(Ts.boot == Inf, arr.ind = TRUE)
-     idx <- c(na.boot.idx, inf.boot.idx)
+     idx <- c(na.boot.idx, inf.boot.idx, error.idx)
      idx.unique <- unique(idx)
      Rboot.tot <- (R - length(idx.unique))
      if (length(idx.unique) > 0) {
-       Ts.boot <- Ts.boot[-idx.unique, ]
+       Ts.boot <- Ts.boot[-idx.unique]
      }
-
+     if (length(idx.unique) > 0L) {
+       warning("restriktor WARNING: only ", (R - length(idx.unique)), 
+               " bootstrap draws were successful")
+     }
     # > or >= ??? 
     pvalue <- sum(Ts.boot >= Ts.org) / Rboot.tot
       attr(pvalue, "B") <- Rboot.tot
@@ -189,7 +199,7 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL, type = "A",
 ###################################################################################
 con_pvalue_boot_model_based <- function(model, Ts.org = NULL, type = "A",
                                         meq.alt = meq.alt,
-                                        test = "F", R = 9999, 
+                                        test = "F", R = 9999, warn = -1L,
                                         parallel = "no", ncpus = 1L,
                                         cl = NULL, seed = NULL, control = NULL,
                                         verbose = FALSE, ...) {
@@ -197,6 +207,8 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL, type = "A",
   if (type == "C") { 
     stop("type C is based on a t-distribution. Set boot = \"no\" ") 
   }
+  old_options <- options(); options(warn = warn)
+  
   model.org <- model$model.org
   X <- model.matrix(model)[,,drop=FALSE]
   
@@ -276,15 +288,21 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL, type = "A",
       boot_model <- update(model.org, formula = form, data = DATA)
       CALL <- list(boot_model, constraints = Amat, rhs = bvec, neq = meq, control = control, se = "none")
       boot_conLM <- do.call("restriktor", CALL)  
-      boot_conTest <- conTest(boot_conLM, type = type, test = test, meq.alt = meq.alt, control = control)$Ts
-      OUT <- boot_conTest
+      boot_conTest <- try(conTest(boot_conLM, type = type, test = test, meq.alt = meq.alt, control = control))
+      if (inherits(boot_conTest, "try-error")) {
+        if (verbose) cat("FAILED: creating test statistic\n")
+        options(old_options)
+        return(NULL)
+      }
+      OUT <- boot_conTest$Ts
     
       if (verbose) {
         cat("iteration =", b, "...Ts =", OUT, "\n")
       }
         OUT
     }
-
+    
+    options(old_options)
     RR <- sum(R)
     res <- if (ncpus > 1L && (have_mc || have_snow)) {
       if (have_mc) {
@@ -313,11 +331,15 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL, type = "A",
     }
     na.boot.idx <- which(is.na(Ts.boot), arr.ind = TRUE)
     inf.boot.idx <- which(Ts.boot == Inf, arr.ind = TRUE)
-    idx <- c(na.boot.idx, inf.boot.idx)
+    idx <- c(na.boot.idx, inf.boot.idx, error.idx)
     idx.unique <- unique(idx)
     Rboot.tot <- (R - length(idx.unique))
     if (length(idx.unique) > 0) {
-      Ts.boot <- Ts.boot[-idx.unique, ]
+      Ts.boot <- Ts.boot[-idx.unique]
+    }
+    if (length(idx.unique) > 0L) {
+      warning("restriktor WARNING: only ", (R - length(idx.unique)), 
+              " bootstrap draws were successful")
     }
     # > or >= ???
     pvalue <- sum(Ts.boot >= Ts.org) / Rboot.tot
@@ -411,14 +433,6 @@ mix.boot <- function(object,
   dimL <- ncol(W) - iact
   wt <- sapply(1:(ncol(W) + 1), function(x) sum(x == (dimL + 1))) / R
   
-#   zero.idx <- which(wt == 0)
-#   if (length(zero.idx) > 0L) {
-#     wt <- rev(wt[-zero.idx])  
-#   } else {
-#     wt <- rev(wt)
-#   }
-#   names(wt) <- (nrow(Amat)-meq):0
-
   OUT <- wt
 
   OUT

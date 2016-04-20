@@ -103,14 +103,14 @@ conLM.lm <- function(model, constraints, se = "default",
       
       # compute R^2
       if (is.null(w)) {
-        mss <- if (attr(z$model.org$terms, "intercept")) {
+        mss <- if (attr(model$terms, "intercept")) {
           sum((fitted - mean(fitted))^2)
         } else {
           sum(fitted^2)
         }
         rss <- sum(residuals^2)
       } else {
-        mss <- if (attr(z$model.org$terms, "intercept")) {
+        mss <- if (attr(model$terms, "intercept")) {
           m <- sum(w * fitted / sum(w))
           sum(w * (fitted - m)^2)
         } else {

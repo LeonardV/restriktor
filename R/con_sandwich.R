@@ -84,7 +84,7 @@ meatHC <- function(x,
   
   ## get hat values and residual degrees of freedom
   if (inherits(x, "conRLM")) {
-    W <- diag(x$w)
+    W <- diag(x$model.org$w)                                                              #constrained or unconstrained
   } else if (class(x)[1] == "conLM") {
       if (!is.null(x$weights)) {
         W <- diag(x$weights)

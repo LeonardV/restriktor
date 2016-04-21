@@ -1,3 +1,19 @@
+# Data <- restriktor::ZelazoKolb1972
+# idx <- which(Data$Group == 3)
+# Data <- Data[-idx, ]
+# Data$Group <- factor(Data$Group)
+# 
+# fit.rlm <- rlm(Age ~ 1+Group, data=Data, method="MM")
+# fit0.con <- restriktor(fit.rlm, constraints="Group2 == 0; Group2 == Group4")
+# fitA.con <- restriktor(fit.rlm, constraints="Group2 > 0; Group2 < Group4")
+# 
+# x <- model.matrix(fit.rlm)[,,drop=FALSE]
+# y <- as.matrix(fit.rlm$model[, attr(fit.rlm$terms, "response")])
+# beta0 <- coef(fit0.con)
+# betaA <- coef(fitA.con)
+# scale <- fit.rlm$s
+# Amat <- fit0.con$Amat
+
 robustWaldScores <- function(x, y, beta0, betaA, scale, test = "wald") { 
   
   test <- tolower(test)
@@ -39,6 +55,11 @@ robustWaldScores <- function(x, y, beta0, betaA, scale, test = "wald") {
   #information matrix 
   V <- Minv %*% Q %*% t(Minv)
 
+  # idx1 <- which(colSums(Amat) != 0L)
+  # idx0 <- which(colSums(Amat) == 0L)
+  # result.V22 <- V[idx1,idx1]
+  # result.W <- n * betaA[idx1] %*% solve(result.V22, betaA[idx1])
+  
   # Wald test-statistic
   if (test == "wald") {
     Ts <- as.numeric(n * c(betaA-beta0) %*% solve(V, c(betaA-beta0)))
@@ -75,8 +96,8 @@ robustFm <- function(x, y, beta0, betaA, scale, cc = 4.685061) {
   resid1 <- y - X %*% betaA
   
   #residuals / scale
-  rstar0 <- as.numeric(resid0/scale)                                               
-  rstar1 <- as.numeric(resid1/scale)
+  rstar0 <- as.numeric(resid0 / scale)                                               
+  rstar1 <- as.numeric(resid1 / scale)
   
   L0 <- sum(tukeyChi(rstar0, cc, deriv = 0))
   L1 <- sum(tukeyChi(rstar1, cc, deriv = 0))

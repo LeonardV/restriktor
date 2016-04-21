@@ -13,8 +13,8 @@ con_solver <- function(b.unconstr, X, y, w, Amat, bvec, meq,
   W <- diag(w)
   
   for (i in 1:maxit) {
-    Sigma <- (t(y - X%*%matrix(b.unconstr, ncol = ncol(y))) %*% W %*%
-                (y - X%*%matrix(b.unconstr, ncol = ncol(y)))) / n               # dividing by n or (n-p-rank(meq)) does not influnce the solution!
+    Sigma <- (t(y - X %*% matrix(b.unconstr, ncol = ncol(y))) %*% W %*%
+                (y - X %*% matrix(b.unconstr, ncol = ncol(y)))) / n               # dividing by n or (n-p-rank(meq)) does not influnce the solution!
     
     yVx <- kronecker(solve(Sigma), t(X)) %*% W %*% as.vector(y)
     dvec <- 2*yVx

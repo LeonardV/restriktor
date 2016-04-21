@@ -421,12 +421,6 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   X <- model.matrix(object)[,,drop=FALSE]
   # response variable
   y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
-  # weights
-  w <- weights(model.org)
-  if (is.null(w)) {
-    w <- rep(1, n)
-  }
-  W <- diag(w)
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
@@ -435,6 +429,12 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   n <- dim(X)[1]
   # number of parameters
   p <- dim(X)[2]
+  # weights
+  w <- weights(model.org)
+  if (is.null(w)) {
+    w <- rep(1, n)
+  }
+  W <- diag(w)
   # parameter estimates
   b.unconstr <- object$b.unconstr
   b.constr <- object$b.constr

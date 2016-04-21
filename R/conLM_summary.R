@@ -101,26 +101,22 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
   invW <- kronecker(solve(s2ml.unc), t(X) %*% X)
   W <- solve(invW)
   # compute penalty term
-  if (meq < nrow(Amat)) {
-    if (bootWt) {
-      wt <- mix.boot(object, R = R)
-      if (nrow(Amat) != ncol(Amat)) {
-        wt <- wt[-1]
-        PT <- 1 + sum( (1:ncol(W)) * wt)
-      }
-    } else {
-      wt <- rev(con_wt(Amat %*% W %*% t(Amat), meq = meq))
-      start.idx <- 1 + (ncol(Amat)-nrow(Amat) - 1)
-      end.idx <- ncol(Amat) - meq
-      PT <- 1 + sum(start.idx:end.idx * wt)      
+  if (bootWt) {
+    wt <- mix.boot(object, R = R)
+    wt <- wt[-1]
+    PT <- 1 + sum( (1:ncol(W)) * wt)
+  } else if (!bootWt & (meq < nrow(Amat))) {
+    wt <- rev(con_wt(Amat %*% W %*% t(Amat), meq = meq))
+    start.idx <- 1 + (ncol(Amat)-nrow(Amat) - 1)
+    end.idx <- ncol(Amat) - meq
+    PT <- 1 + sum(start.idx:end.idx * wt)      
+  } else if (!bootWt & (meq == nrow(Amat))) {
+    stop("set bootWt = TRUE.")  
     }
-  } else {
-    PT <- 1 + sum( (1:ncol(W)) * 1)
-  }
   ans$goric <- -2*(z$loglik - PT)
-    attr(ans$goric, "weights") <- wt
-    attr(ans$goric, "penalty") <- PT
-    attr(ans$goric, "loglik")  <- z$loglik 
+  attr(ans$goric, "weights") <- wt
+  attr(ans$goric, "penalty") <- PT
+  attr(ans$goric, "loglik")  <- z$loglik 
   
   if (class(object)[1] == "conLM") {
     class(ans) <- "summary.conLM"

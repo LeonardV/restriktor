@@ -23,7 +23,6 @@ conLM.lm <- function(model, constraints, se = "default",
   if (missing(constraints) && is.null(bvec)) { 
     bvec <- rep(0L, nrow(Amat)) 
   }
-  
   # acknowledgement: this check is taken from the ic.infer package 
   if (nrow(Amat) - meq - 2 > 2) {
     if (!is.numeric(try(matrix(0, floor((nrow(Amat) - meq -
@@ -34,7 +33,6 @@ conLM.lm <- function(model, constraints, se = "default",
                    choose(nrow(Amat) - meq, floor((nrow(Amat) - meq)/2)),
                  " elements cannot be created", sep = ""))
   }
-
   # model summary
   so <- summary(model)
   # response variable
@@ -44,7 +42,7 @@ conLM.lm <- function(model, constraints, se = "default",
   # residual variance
   s2.unc <- so$sigma^2
   # weigths
-  w <- weights(model)
+  weights <- weights(model)
   # sample size
   n <- dim(X)[1]
   # unconstrained estimates
@@ -57,8 +55,9 @@ conLM.lm <- function(model, constraints, se = "default",
   }
 
   # compute (weighted) log-likelihood
-  ll.unc <- con_loglik_lm(X = X, y = y, b = b.unconstr, w = w)
+  ll.unc <- con_loglik_lm(X = X, y = y, b = b.unconstr, w = weights)
   LL.unc <- ll.unc$loglik
+  # ml residual variance
   s2ml.unc <- ll.unc$Sigma / n
   
   # check if the constraints are in line with the data
@@ -72,8 +71,8 @@ conLM.lm <- function(model, constraints, se = "default",
                 b.unconstr = b.unconstr,
                 b.constr = b.unconstr,
                 residuals = model$residuals, # unweighted residuals
-                fitted = fitted(model),
-                weights = weights(model),
+                fitted = model$fitted,
+                weights = model$weights,
                 df.residual = model$df.residual,
                 R2.org = so$r.squared, R2.reduced = so$r.squared,
                 s2.unc = s2.unc, s2ml.unc = s2ml.unc,
@@ -83,17 +82,16 @@ conLM.lm <- function(model, constraints, se = "default",
                 bootout = NULL, call = cl)  
   } else {
     # compute constrained estimates for lm() and mlm() 
-    out.QP <- con_solver(b.unconstr, X = X, y = y, w = w, Amat = Amat,
+    out.QP <- con_solver(b.unconstr, X = X, y = y, w = weights, Amat = Amat,
                          bvec = bvec, meq = meq, tol = tol,
                          maxit = ifelse(is.null(control$maxit), 1e04, 
                                         control$maxit))
     b.constr <- matrix(out.QP$solution, ncol = ncol(y))
     b.constr[abs(b.constr) < tol] <- 0L
     
-    ll.con <- con_loglik_lm(X = X, y = y, b = b.constr, w = w)
+    ll.con <- con_loglik_lm(X = X, y = y, b = b.constr, w = weights)
     LL.con <- ll.con$loglik
     s2ml.con <- ll.con$Sigma / n
-    
     # lm
     if (ncol(y) == 1L) {
       b.constr <- as.vector(b.constr)
@@ -102,7 +100,7 @@ conLM.lm <- function(model, constraints, se = "default",
       residuals <- y - fitted
       
       # compute R^2
-      if (is.null(w)) {
+      if (is.null(weights)) {
         mss <- if (attr(model$terms, "intercept")) {
           sum((fitted - mean(fitted))^2)
         } else {
@@ -111,21 +109,22 @@ conLM.lm <- function(model, constraints, se = "default",
         rss <- sum(residuals^2)
       } else {
         mss <- if (attr(model$terms, "intercept")) {
-          m <- sum(w * fitted / sum(w))
-          sum(w * (fitted - m)^2)
+          m <- sum(weights * fitted / sum(weights))
+          sum(weights * (fitted - m)^2)
         } else {
-          sum(w * fitted^2)
+          sum(weights * fitted^2)
         }
-        rss <- sum(w * residuals^2)
+        rss <- sum(weights * residuals^2)
       }
       R2.reduced <- mss/(mss + rss)
+      
       # compute residual df corrected for equality constraints. 
-      df.residual <- n - (p - qr(Amat[1:meq,])$rank)
+      df.residual <- n - (p - qr(Amat[0:meq,])$rank)
       # compute weighted residuals
-      if (is.null(w)) {
+      if (is.null(weights)) {
         s2.con <- sum(residuals^2) / df.residual  
       } else {
-        s2.con <- sum(w*residuals^2) / df.residual
+        s2.con <- sum(weights * residuals^2) / df.residual
       }
     } else { #mlm <FIXME>
       residuals <- y - fitted
@@ -133,8 +132,7 @@ conLM.lm <- function(model, constraints, se = "default",
         colnames(b.constr) <- colnames(b.unconstr)
       fitted <- X %*% b.constr
       df <- model$df.residual
-      df.residual <- df + qr(Amat[1:meq,])$rank
-      R2.org <- R2.reduced <- NULL
+      df.residual <- df + qr(Amat[0:meq,])$rank
       se <- "none"
     }
 
@@ -145,7 +143,7 @@ conLM.lm <- function(model, constraints, se = "default",
                 b.unconstr = b.unconstr, # unconstrained
                 residuals = residuals, # constrained 
                 fitted = fitted, # constrained 
-                weights = w,
+                weights = weights,
                 #df.residual = model$df.residual, # unconstrained
                 df.residual = df.residual, # constrained
                 R2.org = so$r.squared, R2.reduced = R2.reduced,

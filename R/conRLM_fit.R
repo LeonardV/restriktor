@@ -50,8 +50,8 @@ conRLM_fit <- function(model, maxit = 5000,
   if (is.null(psi)) { psi <- "psi.huber" }
   psi <- get(as.character(psi))
   # weights
-  w <- model$weights
-  if (any(w != 1L)) { stop("weights are not implemented (yet).") }
+  weights <- model$weights
+  if (any(weights != 1L)) { stop("Restriktor ERROR: weights are not implemented (yet).") }
   # weights method, inverse of the variance or case 
   wt.method <- call[["wt.method"]]
   if (is.null(wt.method)) { wt.method <- "inv.var" } 
@@ -147,13 +147,12 @@ conRLM_fit <- function(model, maxit = 5000,
     if (!is.null(wt)) {
       w <- w * weights
     }
+    # constained estimation part.
     W <- diag(c(w))
     XX <- t(x) %*% W %*% x
     Xy <- t(x) %*% W %*% y
-    QP <- solve.QP(Dmat = XX, dvec
-                   = Xy, Amat = t(Amat), 
+    QP <- solve.QP(Dmat = XX, dvec = Xy, Amat = t(Amat), 
                    bvec = bvec, meq = meq)
-    
     coef <- QP$solution
     resid <- drop(y - x %*% coef)
     iact <- QP$iact

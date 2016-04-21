@@ -25,9 +25,7 @@ summary_rlm <- function (object, method = c("XtX", "XtWX"),
   if (length(object$call$wt.method) && object$call$wt.method == "case") {
     rdf <- sum(wts) - p
     if (!is.null(Amat)) {
-      if (meq > 0) {
-        rdf <- sum(wts) - (p - qr(Amat[1:meq,])$rank)
-      } 
+      rdf <- sum(wts) - (p - qr(Amat[0:meq,])$rank)
     } 
     if (ml) {
       rdf <- sum(wts)
@@ -45,9 +43,7 @@ summary_rlm <- function (object, method = c("XtX", "XtWX"),
     res <- res * sqrt(wts)
     rdf <- n - p
     if (!is.null(Amat)) {
-      if (!is.null(meq) & meq > 0) {
-        rdf <- n - (p - qr(Amat[1:meq,])$rank)
-      }
+      rdf <- n - (p - qr(Amat[0:meq,])$rank)
     }
     if (ml) {
       rdf <- n

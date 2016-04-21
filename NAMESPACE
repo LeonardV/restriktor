@@ -34,4 +34,4 @@ export("restriktor",
        "print.conLM", #"print.conRLM",
        "summary.conLM", "print.summary.conLM",
        "print.conTest", 
-       "coef.conLM")
+       "coef.conLM", "model.matrix.conLM")

@@ -22,13 +22,12 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
   p <- z$model.org$rank
   rdf <- z$df.residual
   r <- c(z$residuals)
-  f <- z$fitted
+  #f <- z$fitted
   est <- z$b.constr
-  w <- z$weights
-  if (!is.null(w)) {
-    r <- sqrt(w) * residuals
-  }
-  ans <- z[c("call", if (!is.null(w)) "weights")]
+  #weights <- z$weights
+  r <- c(weighted.residuals(z))
+  
+  ans <- z[c("call", if (!is.null(z$weights)) "weights")]
   ans$model.org <- z$model.org
   
   se.type <- z$se
@@ -99,7 +98,6 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
     s2ml.unc <- c(z$s2ml.unc)
   }
   X <- model.matrix(z$model.org)[,,drop=FALSE]
-  y <- as.matrix(z$model.org$model[, attr(z$model.org$terms, "response")])
   invW <- kronecker(solve(s2ml.unc), t(X) %*% X)
   W <- solve(invW)
   # compute penalty term

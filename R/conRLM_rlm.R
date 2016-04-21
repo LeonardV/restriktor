@@ -137,18 +137,15 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   R2.org <- (yMy - rMr) / (yMy + rMr * (correc - 1))
   
   # compute the loglikelihood
-  ll.unc <- con_loglik_lm(X = X, y = Y, b = b.unconstr, w = w)
+  ll.unc <- con_loglik_lm(X = X, y = Y, b = b.unconstr, w = weights)
   LL.unc <- ll.unc$loglik
-  
   # # check if the constraints are in line with the data    
   if (all(Amat %*% c(b.unconstr) - bvec >= 0 * bvec) & meq == 0) {  
     b.constr <- b.unconstr
-    
     # To compute the vcovMM, we need the initial residuals from the S-estimator.
     # These are not available in the original rlm object.
     #S <- Sestimator(x = X, y = y)
     #resid0 <- residuals(S)
-        
     OUT <- list(CON = NULL,
                 parTable = parTable,
                 constraints = constraints,
@@ -157,12 +154,14 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 residuals = model$residuals,
                 wresid = model$wresid,
                 #init.residuals = resid0,
-                fitted.values = fitted(model),
-                weights = w,
+                fitted.values = model$fitted,
+                weights = model$weights,
+                w = model$w, 
+                scale = model$s, 
+                psi = model$psi,
                 R2.org = R2.org,
                 R2.reduced = R2.org,
                 df.residual = so.org$df[2],
-                scale = model$s, 
                 s2.unc = tau^2, 
                 s2.con = tau^2, 
                 loglik = LL.unc, 
@@ -178,9 +177,12 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     b.constr <- rfit$coefficients
       b.constr[abs(b.constr) < sqrt(.Machine$double.eps)] <- 0L
     iact <- rfit$iact
-    resid0 <- rfit$resid0
     
-    ll.con <- con_loglik_lm(X = X, y = Y, b = b.unconstr, w = w)
+    weights <- rfit$weights
+    w <- rfit$w
+    #resid0 <- rfit$resid0
+    
+    ll.con <- con_loglik_lm(X = X, y = Y, b = b.unconstr, w = weights)
     LL.con <- ll.con$loglik
         
     so.con <- summary_rlm(rfit, Amat = Amat, meq = meq)
@@ -214,12 +216,13 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 #init.residuals = resid0,
                 wresid = rfit$wresid,
                 fitted.values = pred,
-                weights = w,
+                weights = weights,
+                w = w, 
+                scale = model$s,
                 R2.org = R2.org,
                 R2.reduced = R2.reduced,
                 df.residual = so.con$df[2], # correction for equalities constraints is included.
                 #df.residual = so.org$df[2], 
-                scale = model$s,                                                               
                 s2.unc = tau.unc^2, 
                 s2.con = tau^2, 
                 loglik = LL.con, 

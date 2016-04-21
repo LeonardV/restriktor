@@ -1,7 +1,6 @@
 #REF: Zheng, S., Guo, J. Shi, N.Z, Tian, G.L (2012). Likelihood-based approaches 
 # formultivariate linear models under inequality constraints for incomplete data.
 # Journal of Statistical Planning and Inference 142, 2926-2942.
-# Slightly adjusted by LV to deal with weigths.
 con_solver <- function(b.unconstr, X, y, w, Amat, bvec, meq,
                        maxit = 10000, tol = sqrt(.Machine$double.eps)) {
   val <- 0
@@ -16,7 +15,7 @@ con_solver <- function(b.unconstr, X, y, w, Amat, bvec, meq,
   
   for (i in 1:maxit) {
     Sigma <- (t(y - X%*%matrix(b.unconstr, ncol = ncol(y))) %*% W %*%
-                (y - X%*%matrix(b.unconstr, ncol = ncol(y)))) / (n - p)           #ML divided by n
+                (y - X%*%matrix(b.unconstr, ncol = ncol(y)))) / (n - (p - qr(Amat[0:meq,])$rank)) # df correction for equality constraints.
     
     yVx <- kronecker(solve(Sigma), t(X)) %*% W %*% as.vector(y)
     dvec <- 2*yVx

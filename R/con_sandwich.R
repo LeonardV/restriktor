@@ -60,7 +60,6 @@ estfun.conLM <- function(x, ...) {
 
 estfun.conRLM <- function(x, ...) {
   xmat <- model.matrix(x)
-  #xmat <- naresid(x$na.action, xmat)
   wts <- weights(x)
   if(is.null(wts)) wts <- 1
   res <- residuals(x)
@@ -78,24 +77,25 @@ meatHC <- function(x,
                    type = c("HC3", "const", "HC", "HC0", "HC1", "HC2", "HC4", "HC4m", "HC5"),
                    omega = NULL) {
   ## extract X
-  X <- model.matrix(x)
+  X <- model.matrix(x$model.org)
   if(any(alias <- is.na(coef(x)))) X <- X[, !alias, drop = FALSE]
   attr(X, "assign") <- NULL
   n <- NROW(X)
   
   ## get hat values and residual degrees of freedom
-  #diaghat <- try(hatvalues(x$model.org), silent = TRUE)
- # if (class(x)[1] == "conLM") {
-  I.inv <- attr(x$information, "inverted.information")
-  diaghat <- diag(X %*% (1/x$s2.con * I.inv) %*% t(X))                
-#  } else if (class(x)[1] == "conRLM") {
-#    diaghat <- diag(X%*%(solve(vcovMM(X = X, resid0 = x$init.resid, 
-#                                      resid = x$residuals, scale = x$scale)))%*%t(X))                         
-#  }  
-
-  p <- NCOL(X)
-  df <- n - (p - qr(x$Amat[1:x$meq,])$rank)
+  if (inherits(x, "conRLM")) {
+    W <- diag(x$w)
+  } else if (class(x)[1] == "conLM") {
+      if (!is.null(x$weights)) {
+        W <- diag(x$weights)
+      } else {
+        W <- diag(n)
+      }
+  } 
+  diaghat <- diag(X %*% solve(t(X) %*% W %*% X) %*% t(X) %*% W)
   
+  p <- NCOL(X)
+  df <- n - (p - qr(x$Amat[0:x$meq,])$rank)
   ## the following might work, but "intercept" is also claimed for "coxph"
   ## res <- if(attr(terms(x), "intercept") > 0) estfun(x)[,1] else rowMeans(estfun(x)/X, na.rm = TRUE)
   ## hence better rely on

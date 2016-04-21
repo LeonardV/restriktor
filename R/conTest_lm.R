@@ -506,7 +506,7 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   }
   else if (type == "B") {
     if (meq.alt == 0L) {
-      df <- n - (p - qr(Amat[1:meq,])$rank)
+      df <- n - (p - qr(Amat[0:meq,])$rank)
       s20 <- sum(w*(y - X %*% b.constr)^2) / df
       d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b.constr)))
       i <- 1/s20 * (t(X) %*% W %*% X)
@@ -527,7 +527,7 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                                   control$maxit))$solution
           names(b.constr.alt) <- vnames
         
-        df <- n - (p - qr(Amat[1:meq,])$rank)
+        df <- n - (p - qr(Amat[0:meq,])$rank)
         s20 <- sum(w*(y - X %*% b.constr)^2) / df
         d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b.constr)))
         i <- 1/s20 * (t(X) %*% W %*% X)

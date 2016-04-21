@@ -144,8 +144,8 @@ conLM.lm <- function(model, constraints, se = "default",
                 residuals = residuals, # constrained 
                 fitted = fitted, # constrained 
                 weights = weights,
-                #df.residual = model$df.residual, # unconstrained
-                df.residual = df.residual, # constrained
+                df.residual = model$df.residual, # unconstrained
+                #df.residual = df.residual, # constrained
                 R2.org = so$r.squared, R2.reduced = R2.reduced,
                 s2.unc = s2.unc, s2ml.unc = s2ml.unc, # unconstrained
                 s2.con = s2.con, s2ml.con = s2ml.con, # constrained

@@ -1,5 +1,5 @@
 summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
-                          bootWt = FALSE, R = 99999, 
+                          bootWt = FALSE, R = 9999, 
                           digits = max(3, getOption("digits") - 2),
                           signif.stars = getOption("show.signif.stars"), ...) {
   

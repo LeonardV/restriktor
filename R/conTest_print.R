@@ -4,9 +4,9 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), brief = F
     stop("x must be of class \"conTest\"")
   }
   if (nrow(x$Amat) == x$meq) {
-    cat("\nConstrained hypothesis test\n")
+    cat("\nRestriktor: constrained hypothesis test\n")
   } else {
-    cat("\nConstrained hypothesis test type", x$type, "\n")
+    cat("\nRestriktor: constrained hypothesis test type", x$type, "\n")
     if (x$boot != "no") {
       cat("( Number of successful bootstrap draws:", attr(x$pvalue, "B"),")\n")
     }
@@ -25,6 +25,9 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), brief = F
   colnames(out.rest)[(ncol(Amat) + 1):ncol(out.rest)] <- c("op", "rhs")
   out.rest <- cbind(rep(" ", nrow(out.rest)), out.rest)
   out.rest[x$iact, 1] <- "A"
+  if (nrow(x$Amat) == x$meq) {
+    out.rest[1:nrow(Amat), 1] <- "A"
+  }  
   out.rest <- as.data.frame(out.rest)
   names(out.rest)[1] <- ""
 
@@ -114,19 +117,15 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), brief = F
         }
       }
   } else {
-    cat("\n H0: all constraints active (=)",
-        "\n HA: at least one constraint violated (=)",
+    cat("\n HA: at least one constraint violated (=)",
         "\n\n")
     print(out.test, quote = FALSE)
     if (!brief) {
       #cat("\n\nConstraints on", vnames[colSums(!x$Amat == 0) > 0], fill = TRUE)
       cat("\n\n(rows indicated with an \"A\" are active constraints)\n")
       print(out.rest, quote = FALSE, scientific = FALSE)
-      cat("\nConstrained estimate under H0:\n")
-      print.default(format(x$b.constr, digits = digits),
-                    print.gap = 2, quote = FALSE)
       cat("\nConstrained estimate under union of H0 and HA:\n")
-      print.default(format(x$b.unconstr, digits = digits),
+      print.default(format(x$b.constr, digits = digits),
                     print.gap = 2, quote = FALSE)
     }
   }

@@ -68,6 +68,8 @@ conRLM_fit <- function(model, maxit = 5000,
   test.vec <- call[["test.vec"]]
   if (is.null(test.vec)) { test.vec <- "resid" }
   
+  xx <- x
+  yy <- y
   # handling weights
   if (!missing(weights)) {
     if (wt.method == "inv.var") {
@@ -173,14 +175,14 @@ conRLM_fit <- function(model, maxit = 5000,
     warning(gettextf("'conRLM' failed to converge in %d steps", maxit),
             domain = NA)
   }
-  fitted <- drop(x %*% coef)
+  fitted <- drop(xx %*% coef)
   names(coef) <- colnames(x)
 
   cl <- match.call()
   cl[[1L]] <- as.name("conRLM, rlm")
   
   fit <- list(coefficients = coef, 
-              residuals = c(y - fitted), 
+              residuals = c(yy - fitted), 
               wresid = resid,
               resid0 = if (method == "MM") { resid0 },
               fitted.values = fitted,

@@ -1,4 +1,4 @@
-#compute constraint robust estimates
+#compute constrained robust estimates
 conRLM.rlm <- function(model, constraints, debug = FALSE,
                        se = "default", control = NULL,
                        bvec = NULL, meq = 0L,
@@ -27,7 +27,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     bvec <- rep(0L, nrow(Amat)) 
   }
   
-  Y <- as.matrix(model$model[, attr(model$terms, "response")])
+  y <- as.matrix(model$model[, attr(model$terms, "response")])
   X  <- model.matrix(model)[,,drop = FALSE]
   # unconstrained coefficients
   b.unconstr <- coef(model)  
@@ -48,7 +48,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   if (is.null(psi)) {
     psi <- model$call[["psi"]] <- "psi.huber"
   } 
-  # weights
+  # prior weights for each case
   weights <- model$weights
   if (any(weights != 1L)) {
     stop("weights are not implemented (yet).")
@@ -60,7 +60,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   } else if (is.name(wt.method)) {
     stop("define ", sQuote(wt.method), " inside function.")
   }
-  # down weights 
+  # initial down-weighting for each case
   w <- call[["w"]]
   if (is.null(w)) {
     model$call[["w"]] <- rep(1, nrow(X))
@@ -137,7 +137,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   R2.org <- (yMy - rMr) / (yMy + rMr * (correc - 1))
   
   # compute the loglikelihood
-  ll.unc <- con_loglik_lm(X = X, y = Y, b = b.unconstr, w = weights)
+  ll.unc <- con_loglik_lm(X = X, y = y, b = b.unconstr, w = weights)
   LL.unc <- ll.unc$loglik
   # # check if the constraints are in line with the data    
   if (all(Amat %*% c(b.unconstr) - bvec >= 0 * bvec) & meq == 0) {  
@@ -170,7 +170,6 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 converged = model$converged, iter = model$iter,
                 bootout = NULL, call = cl)
   } else {
-    # update model
     call.my <- list(Amat = Amat, meq = meq, bvec = bvec)
     CALL <- c(list(model), call.my)
     rfit <- do.call("conRLM_fit", CALL)
@@ -182,7 +181,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     w <- rfit$w
     #resid0 <- rfit$resid0
     
-    ll.con <- con_loglik_lm(X = X, y = Y, b = b.unconstr, w = weights)
+    ll.con <- con_loglik_lm(X = X, y = y, b = b.unconstr, w = weights)
     LL.con <- ll.con$loglik
         
     so.con <- summary_rlm(rfit, Amat = Amat, meq = meq)

@@ -170,42 +170,47 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 converged = model$converged, iter = model$iter,
                 bootout = NULL, call = cl)
   } else {
+    # add constraints to model
     call.my <- list(Amat = Amat, meq = meq, bvec = bvec)
+    # collect all original model arguments and add constraints
     CALL <- c(list(model), call.my)
+    # fit constraint robust liner model
     rfit <- do.call("conRLM_fit", CALL)
+    # constrained coefs
     b.constr <- rfit$coefficients
-      b.constr[abs(b.constr) < sqrt(.Machine$double.eps)] <- 0L
+    b.constr[abs(b.constr) < sqrt(.Machine$double.eps)] <- 0L
+    # number of active inequality constraints
     iact <- rfit$iact
-    
+    # weights
     weights <- rfit$weights
+    # psi(resid/scale) these are the weights used for downweighting the cases.
     w <- rfit$w
     #resid0 <- rfit$resid0
-    
+    # compute loglik
     ll.con <- con_loglik_lm(X = X, y = y, b = b.unconstr, w = weights)
     LL.con <- ll.con$loglik
-        
+    # we need the std. deviation adjusted for equality constraints (meq > 0)
     so.con <- summary_rlm(rfit, Amat = Amat, meq = meq)
     cov.unscaled <- so.con$cov.unscaled
     tau <- so.con$stddev
     
-    #R^2
+    #R^2 under the constrained model
+    # predicted values under constraints
     pred <- rfit$fitted.values
+    # residuals under constraints
     residuals <- rfit$residuals
+    # response under constraints
     resp <- pred + residuals 
+    # weights do not change under constraints
     wgt <- rfit$weights
-    if (is.null(model$model)) {
-      df.int <- if (any(colnames(X) == "(Intercept)")) 1L else 0L
-    } else {
-      df.int <- if (attr(model$terms, "intercept")) 1L else 0L
-    }
-    resp.mean <- if (df.int == 1L) sum(wgt * resp)/sum(wgt) else 0
+    df.int <- if (attr(model$terms, "intercept")) { 1L } else { 0L }
+    resp.mean <- if (df.int == 1L) { sum(wgt * resp)/sum(wgt) } else { 0 }
     yMy <- sum(wgt * (resp - resp.mean)^2)
     rMr <- sum(wgt * residuals^2)
     # bi-square correction
     correc <- 1.207617 
     R2.reduced <- (yMy - rMr) / (yMy + rMr * (correc - 1))
-    #R2.adjusted <- 1 - (1 - r2correc) * ((n - df.int) / df.residual)
-  
+    
     OUT <- list(CON = NULL,
                 parTable = parTable,
                 constraints = constraints,
@@ -225,7 +230,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 s2.unc = tau.unc^2, 
                 s2.con = tau^2, 
                 loglik = LL.con, 
-                Sigma = vcov(model),                                             #probably not robust???
+                Sigma = vcov(model),                                             #probably not so robust???
                 Amat = Amat, bvec = bvec, meq = meq, iact = iact,
                 converged = rfit$converged, iter = rfit$iter,
                 bootout = NULL, call = cl)

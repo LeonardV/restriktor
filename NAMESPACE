@@ -6,6 +6,9 @@ importFrom("lavaan",
            lav_constraints_parse,
            lav_func_jacobian_complex)
 
+importFrom("MASS",
+           psi.bisquare)
+
 importFrom("mvtnorm",
            pmvnorm,
            rmvnorm)
@@ -29,9 +32,9 @@ export("restriktor",
        "conLM.lm", "conRLM.rlm", 
        "conTest", "conTestC.lm", 
        "conTestF.lm", "conTestF.rlm", "conTestLRT.lm", 
-       "conTestScore.lm", "conTestEq.lm", #"conTestEq.rlm",
+       "conTestScore.lm", "conTestEq.lm", 
        "conTestScore.rlm", "conTestWald.rlm", 
-       "print.conLM", #"print.conRLM",
+       "print.conLM",
        "summary.conLM", "print.summary.conLM",
-       "print.conTest", 
+       "print.conTest", "summary.conTest",
        "coef.conLM", "model.matrix.conLM")

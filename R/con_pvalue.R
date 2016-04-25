@@ -70,7 +70,7 @@ con_pvalue_Chibar <- function(wt, Ts.org, type = "A",
 
 
 ################################################################################
-con_pvalue_boot_parametric <- function(model, Ts.org = NULL, 
+con_pvalue_boot_parametric <- function(model, Ts.org = NULL, type = "A",
                                        meq.alt = meq.alt,
                                        test = "F", R = 9999, 
                                        p.distr = "N", df = 7, warn = -1L,
@@ -194,7 +194,7 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL,
 
 
 ###################################################################################
-con_pvalue_boot_model_based <- function(model, Ts.org = NULL, 
+con_pvalue_boot_model_based <- function(model, Ts.org = NULL, type = "A",
                                         meq.alt = meq.alt,
                                         test = "F", R = 9999, warn = -1L,
                                         parallel = "no", ncpus = 1L,

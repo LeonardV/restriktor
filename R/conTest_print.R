@@ -7,8 +7,10 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), brief = F
     cat("\nRestriktor: restrikted hypothesis test\n")
   } else {
     cat("\nRestriktor: restrikted hypothesis test type", x$type, "\n")
-    if (x$boot != "no") {
-      cat("( Number of successful bootstrap draws:", attr(x$pvalue, "B"),")\n")
+    if (x$type != "C") {
+      if (x$boot != "no") {
+        cat("( Number of successful bootstrap draws:", attr(x$pvalue, "B"),")\n")
+      }
     }
   }
   vnames <- names(x$b.unconstr)
@@ -40,88 +42,68 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), brief = F
     if (x$type == "global") {
       cat("\nGlobal model test:\n\n")
       print(out.test, quote = FALSE, scientific = FALSE)
-      if (!brief) {
-        #cat("\n\nrestriktions on", vnames[colSums(!x$Amat == 0) > 0], fill = TRUE)
-        cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
-        print(out.rest, quote = FALSE, scientific = FALSE)
-        cat("\nrestrikted estimate under H0:\n")
-        print.default(format(x$b.eqconstr, digits = digits),
-                      print.gap = 2, quote = FALSE)
-        cat("\nrestrikted estimate under union of H0 and HA:\n")
-        print.default(format(x$b.constr, digits = digits),
-                      print.gap = 2, quote = FALSE)
-      }
+      cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
+      print(out.rest, quote = FALSE, scientific = FALSE)
+      cat("\nrestrikted estimate under H0:\n")
+      print.default(format(x$b.eqconstr, digits = digits),
+                    print.gap = 2, quote = FALSE)
+      cat("\nrestrikted estimate under union of H0 and HA:\n")
+      print.default(format(x$b.constr, digits = digits),
+                    print.gap = 2, quote = FALSE)
+    
     } else if (x$type == "A") {
       cat("\n H0: all restriktions active (=)",
-          "\n HA: at least one restriction strictly true (>)",
-          "\n\n")
-      print(out.test, quote = FALSE, scientific = FALSE)
-      if (!brief) {
-        #cat("\n\nrestriktions on", vnames[colSums(!x$Amat == 0) > 0], fill = TRUE)
-        cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
-        print(out.rest, quote = FALSE, scientific = FALSE)
-        cat("\nrestrikted estimate under H0:\n")
-        print.default(format(x$b.eqconstr, digits = digits),
-                      print.gap = 2, quote = FALSE)
-        cat("\nrestrikted estimate under union of H0 and HA:\n")
-        print.default(format(x$b.constr, digits = digits),
-                      print.gap = 2, quote = FALSE)
-      }
-    }
-    if (x$type == "B" && x$meq.alt == 0L) {
-        cat("\n H0: all restriktions true (>=)",
-            "\n HA: at least one restriktion violated (<)",
-            "\n\n")
-        print(out.test, quote = FALSE)
-        if (!brief) {
-          #cat("\nrestriktions on", vnames[colSums(!x$Amat == 0) > 0], "\n")
-          cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
-          print(out.rest, quote = FALSE, scientific = FALSE)
-          cat("\nrestrikted estimate under H0:\n")
-          print.default(format(x$b.constr, digits = digits),
-                        print.gap = 2, quote = FALSE)
-          cat("\nUnrestrikted estimate:\n")
-          print.default(format(x$b.unconstr, digits = digits),
-                        print.gap = 2, quote = FALSE)
-        }
-      }
-      else if (x$type == "B" && x$meq.alt > 0L) {
+          "\n HA: at least one restriction strictly true (>)","\n\n")
+      print(out.test, quote = FALSE, scientific = FALSE)        
+      cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
+      print(out.rest, quote = FALSE, scientific = FALSE)
+      cat("\nrestrikted estimate under H0:\n")
+      print.default(format(x$b.eqconstr, digits = digits),
+                    print.gap = 2, quote = FALSE)
+      cat("\nrestrikted estimate under union of H0 and HA:\n")
+      print.default(format(x$b.constr, digits = digits),
+                    print.gap = 2, quote = FALSE)
+    } else if (x$type == "B" && x$meq.alt == 0L) {
+      cat("\n H0: all restriktions true (>=)",
+          "\n HA: at least one restriktion violated (<)", "\n\n")
+      print(out.test, quote = FALSE)
+      cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
+      print(out.rest, quote = FALSE, scientific = FALSE)
+      cat("\nrestrikted estimate under H0:\n")
+      print.default(format(x$b.constr, digits = digits),
+                    print.gap = 2, quote = FALSE)
+      cat("\nUnrestrikted estimate:\n")
+      print.default(format(x$b.unconstr, digits = digits),
+                    print.gap = 2, quote = FALSE)
+    } else if (x$type == "B" && x$meq.alt > 0L) {
         cat("\n H0: all restriktions true (>= or =)",
             "\n HA: at least one restriktion violated (<), some =-restriktions maintained",
             "\n\n")
         print(out.test, quote = FALSE)
-        if (!brief) {
-          #cat("\n\nrestriktions on", vnames[colSums(!x$Amat == 0) > 0], "\n")
-          cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
-          print(out.rest, quote = FALSE, scientific = FALSE)
-          cat("\nrestrikted estimate under H0:\n")
-          print.default(format(x$b.constr, digits = digits),
-                        print.gap = 2, quote = FALSE)
-          cat("\nrestrikted estimate under HA:\n")
-          print.default(format(x$b.constr.alt, digits = digits),
-                        print.gap = 2, quote = FALSE)
-        }
-      }
-      if (x$type == "C") {
+        cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
+        print(out.rest, quote = FALSE, scientific = FALSE)
+        cat("\nrestrikted estimate under H0:\n")
+        print.default(format(x$b.constr, digits = digits),
+                      print.gap = 2, quote = FALSE)
+        cat("\nrestrikted estimate under HA:\n")
+        print.default(format(x$b.constr.alt, digits = digits),
+                      print.gap = 2, quote = FALSE)
+      } else if (x$type == "C") {
         cat("\n H0: at least one restriktion not strictly true (<=)",
             "\n HA: all restriktions strictly true (>)",
             "\n\n")
         print(out.test, quote = FALSE)
-        if (!brief) {
-          #cat("\n\nrestriktions on", vnames[colSums(!x$Amat == 0) > 0], "\n")
-          cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
-          print(out.rest, quote = FALSE, scientific = FALSE)
-          cat("\nUnrestrikted estimate:\n")
-          print.default(format(x$b.unconstr, digits = digits),
-                        print.gap = 2, quote = FALSE)
-        }
+        cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
+        print(out.rest, quote = FALSE, scientific = FALSE)
+        cat("\nUnrestrikted estimate:\n")
+        print.default(format(x$b.unconstr, digits = digits),
+                      print.gap = 2, quote = FALSE)
       }
-  } else {
+  } else { #equality constraints only
     cat("\n HA: at least one restriktion violated (=)",
         "\n\n")
     print(out.test, quote = FALSE)
     if (!brief) {
-      #cat("\n\nrestriktions on", vnames[colSums(!x$Amat == 0) > 0], fill = TRUE)
       cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
       print(out.rest, quote = FALSE, scientific = FALSE)
       cat("\nrestrikted estimate under union of H0 and HA:\n")

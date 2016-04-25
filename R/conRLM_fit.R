@@ -100,7 +100,7 @@ conRLM_fit <- function(model, maxit = 5000,
       dvec <- cbind(rep(1, ncol(Amat)))
       QP <- solve.QP(Dmat, dvec, t(Amat[1:meq,,drop = FALSE]), bvec[1:meq], 
                      meq = nrow(Amat[1:meq,,drop = FALSE]))$solution
-      QP[abs(QP) < tol] <- sqrt(.Machine$double.eps
+      QP[abs(QP) < sqrt(.Machine$double.eps)] <- 0L
       x.idx <- QP %in% 0
     } else {
       x.idx <- rep(FALSE, ncol(Amat))

@@ -12,11 +12,11 @@ Description: Allow for easy-to-use testing of linear and nonlinear equality
   and inequality constraints about parameters and effects, in a large variety
   of statistical models.
 Depends: R(>= 3.0.0), methods
-Imports: boot, lavaan, mvtnorm, quadprog, ic.infer, zoo
+Imports: boot, ic.infer, lavaan, MASS, mvtnorm, quadprog, zoo
 License: GPL (>= 2)
 LazyData: yes
 Packaged: 2015-01-22 20:03:39 UTC; yves
-Author: Yves Rosseel [aut, cre],
-  Leonard Vanbrabant [aut, cre]
+Author: Yves Rosseel [aut],
+        Leonard Vanbrabant [aut, cre]
 Maintainer: Yves Rosseel <Yves.Rosseel@UGent.be>
 Suggests: testthat

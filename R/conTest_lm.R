@@ -6,19 +6,16 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
 
   if (type != "global") {
     type <- toupper(type)
-  }  
-  
+  }    
   if (!("conLM" %in% class(object))) {
     stop("object must be of class conLM.")
   }
   if(!(type %in% c("A","B","global"))) {
     stop("type must be \"A\", \"B\", or \"global\"")
   }
-
   if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix.weights"))) {
     stop("ERROR: boot method unknown.")
   }
-
   if (boot == "residual") {
     boot <- "model.based"
   }
@@ -85,8 +82,7 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
       names(b.eqconstr) <- vnames
     # compute test statistic for hypothesis test type A
     Ts <- c(t(b.constr - b.eqconstr) %*% solve(COV, b.constr - b.eqconstr))
-  }
-  else if (type == "B") {
+  } else if (type == "B") {
     if (meq.alt == 0L) {
       # compute test statistic for hypothesis test type B when no equalities are
       # preserved in the alternative hypothesis.
@@ -201,18 +197,15 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   if (type != "global") {
     type <- toupper(type)
   }  
-  
   if (!("conLM" %in% class(object))) {
     stop("object must be of class conLM.")
   }
   if(!(type %in% c("A","B","global"))) {
     stop("type must be \"A\", \"B\", or \"global\"")
   }
-  
   if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix.weights"))) {
     stop("ERROR: boot method unknown.")
   }
-
   if (boot == "residual") {
     boot <- "model.based"
   }
@@ -283,14 +276,13 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
     
     ll1 <- object$loglik
     Ts <- -2*(ll0 - ll1)
-  }
-  else if (type == "B") {
-    if (meq.alt == 0L) {
-      ll0 <- object$loglik
-      ll1.out <- con_loglik_lm(X = X, y = y, b = b.unconstr, w = w)
-      ll1 <- ll1.out$loglik
-      Ts <- -2*(ll0 - ll1)
-    }
+  } else if (type == "B") {
+      if (meq.alt == 0L) {
+        ll0 <- object$loglik
+        ll1.out <- con_loglik_lm(X = X, y = y, b = b.unconstr, w = w)
+        ll1 <- ll1.out$loglik
+        Ts <- -2*(ll0 - ll1)
+      }
     else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt > 0L && meq.alt <= meq) {
@@ -399,18 +391,15 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   if (type != "global") {
     type <- toupper(type)
   }  
-  
   if (!("conLM" %in% class(object))) {
     stop("object must be of class conLM.")
   }
   if(!(type %in% c("A","B","global"))) {
     stop("type must be \"A\", \"B\", or \"global\"")
   }
-  
   if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix.weights"))) {
     stop("ERROR: boot method unknown.")
   }
-  
   if (boot == "residual") {
     boot <- "model.based"
   }
@@ -503,19 +492,18 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                              meq = meq)$solution
     Ts <- t(U) %*% i %*% U - ( t(U-b) %*% i %*% (U-b) ) 
     Ts <- as.numeric(n*Ts)
-  }
-  else if (type == "B") {
-    if (meq.alt == 0L) {
-      df <- n - (p - qr(Amat[0:meq,])$rank)
-      s20 <- sum(w*(y - X %*% b.constr)^2) / df
-      d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b.constr)))
-      i <- 1/s20 * (t(X) %*% W %*% X)
-      U <- 1/sqrt(n) * solve(i) %*% d0
-      UI <- t(U) %*% i
-      Ts <- t(U) %*% i %*% U 
-      Ts <- as.numeric(n*Ts)
-    }
-    else {
+  } else if (type == "B") {
+      if (meq.alt == 0L) {
+        df <- n - (p - qr(Amat[0:meq,])$rank)
+        s20 <- sum(w*(y - X %*% b.constr)^2) / df
+        d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b.constr)))
+        i <- 1/s20 * (t(X) %*% W %*% X)
+        U <- 1/sqrt(n) * solve(i) %*% d0
+        UI <- t(U) %*% i
+        Ts <- t(U) %*% i %*% U 
+        Ts <- as.numeric(n*Ts)
+      }
+      else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt != 0L && meq.alt <= meq) {
         b.constr.alt <- con_solver(b.unconstr, X = X, y = y, w = w,
@@ -525,7 +513,7 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                                 control$tol),
                                    maxit = ifelse(is.null(control$maxit), 1e04,
                                                   control$maxit))$solution
-          names(b.constr.alt) <- vnames
+        names(b.constr.alt) <- vnames
         
         df <- n - (p - qr(Amat[0:meq,])$rank)
         s20 <- sum(w*(y - X %*% b.constr)^2) / df
@@ -541,11 +529,10 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
         Ts <- as.numeric(n*Ts)
       }
       else {
-        stop("meq.alt must not be larger than meq.")
+      stop("meq.alt must not be larger than meq.")
       }
     }
   } 
-  
   
   if (boot == "no") {
     wt <- con_wt(Amat %*% COV %*% t(Amat), meq = meq)

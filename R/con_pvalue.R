@@ -3,7 +3,7 @@ con_pvalue_Fbar <- function(wt, Ts.org, df.residual, type = "A",
                             Amat, bvec, meq = 0L, meq.alt = 0L) {
   #check
   if ((qr(Amat)$rank < nrow(Amat))) {
-    stop("constraint matrix must have full row-rank")
+    stop("restriktions matrix must have full row-rank")
   }
   if (type == "global") {
     # compute df
@@ -39,7 +39,7 @@ con_pvalue_Chibar <- function(wt, Ts.org, type = "A",
                               Amat, bvec, meq = 0L, meq.alt = 0L) {
   #check
   if ((qr(Amat)$rank < nrow(Amat))) {
-    stop("Restriktor ERROR: constraint matrix must have full row-rank")
+    stop("Restriktor ERROR: restriktions matrix must have full row-rank")
   }
   
   if (type == "global") {
@@ -70,7 +70,7 @@ con_pvalue_Chibar <- function(wt, Ts.org, type = "A",
 
 
 ################################################################################
-con_pvalue_boot_parametric <- function(model, Ts.org = NULL, type = "A", 
+con_pvalue_boot_parametric <- function(model, Ts.org = NULL, 
                                        meq.alt = meq.alt,
                                        test = "F", R = 9999, 
                                        p.distr = "N", df = 7, warn = -1L,
@@ -79,9 +79,6 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL, type = "A",
                                        verbose = FALSE, ...) {
 
   p.distr <- tolower(p.distr)
-  if (type == "C") { 
-    stop("Restriktor ERROR: type C is based on a t-distribution. Set boot = \"no\" ") 
-  }
   old_options <- options(); options(warn = warn)
   
   model.org <- model$model.org
@@ -197,16 +194,13 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL, type = "A",
 
 
 ###################################################################################
-con_pvalue_boot_model_based <- function(model, Ts.org = NULL, type = "A",
+con_pvalue_boot_model_based <- function(model, Ts.org = NULL, 
                                         meq.alt = meq.alt,
                                         test = "F", R = 9999, warn = -1L,
                                         parallel = "no", ncpus = 1L,
                                         cl = NULL, seed = NULL, control = NULL,
                                         verbose = FALSE, ...) {
 
-  if (type == "C") { 
-    stop("type C is based on a t-distribution. Set boot = \"no\" ") 
-  }
   old_options <- options(); options(warn = warn)
   
   model.org <- model$model.org

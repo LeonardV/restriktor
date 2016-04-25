@@ -56,7 +56,7 @@ restriktor <- function(model, constraints, se = "default",
       bvecw <- if (is.null(bvec)) { rep(0L, nrow(Amatw)) } else { bvec }
       meqw  <- if (is.null(meq)) { 0L } else { meq }
   } else { 
-    stop("no constraints were specified.") 
+    stop("no restriktions were specified.") 
   }
 
   if (debug && is.character(constraints)) {

@@ -44,7 +44,7 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   meq  <- object$meq
   
   if (meq == nrow(Amat)) {
-    stop("test not applicable for object with equality constraints only.")
+    stop("test not applicable for object with equality restriktions only.")
   }
   
   if (type == "global") {
@@ -228,7 +228,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   meq  <- object$meq
   
   if (meq == nrow(Amat)) {
-    stop("test not applicable for object with equality constraints only.")
+    stop("test not applicable for object with equality restriktions only.")
   }
   
   if (type == "global") {
@@ -421,7 +421,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   meq  <- object$meq
   
   if (meq == nrow(Amat)) {
-    stop("test not applicable for object with equality constraints only.")
+    stop("test not applicable for object with equality restriktions only.")
   }
   
   if (type == "global") {

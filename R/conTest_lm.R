@@ -49,7 +49,7 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
 
   # check for equalities only
   if (meq == nrow(Amat)) {
-    stop("test not applicable for object with equality constraints only.")
+    stop("test not applicable for object with equality restriktions only.")
   }
   
   if (type == "global") {
@@ -242,7 +242,7 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   meq  <- object$meq
   
   if (meq == nrow(Amat)) {
-    stop("test not applicable for object with equality constraints only.")
+    stop("test not applicable for object with equality restriktions only.")
   }
   
   if (type == "global") {
@@ -448,7 +448,7 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   meq  <- object$meq
   
   if (meq == nrow(Amat)) {
-    stop("test not applicable for object with equality constraints only.")
+    stop("test not applicable for object with equality restriktions only.")
   }
 
   if (type == "global") {
@@ -647,7 +647,7 @@ conTestC.lm <- function(object, type = "C", ...) {
                           sqrt(diag(Amat %*% COV %*% t(Amat)))))
     pvalue <- 1 - pt(Ts, df.residual)
   } else {
-    stop("test not applicable with equality constraints.")
+    stop("test not applicable with equality restriktions.")
   }
   
   OUT <- list(type = "C",

@@ -1,19 +1,3 @@
-# Data <- restriktor::ZelazoKolb1972
-# idx <- which(Data$Group == 3)
-# Data <- Data[-idx, ]
-# Data$Group <- factor(Data$Group)
-# 
-# fit.rlm <- rlm(Age ~ 1+Group, data=Data, method="MM")
-# fit0.con <- restriktor(fit.rlm, constraints="Group2 == 0; Group2 == Group4")
-# fitA.con <- restriktor(fit.rlm, constraints="Group2 > 0; Group2 < Group4")
-# 
-# x <- model.matrix(fit.rlm)[,,drop=FALSE]
-# y <- as.matrix(fit.rlm$model[, attr(fit.rlm$terms, "response")])
-# beta0 <- coef(fit0.con)
-# betaA <- coef(fitA.con)
-# scale <- fit.rlm$s
-# Amat <- fit0.con$Amat
-
 robustWaldScores <- function(x, y, beta0, betaA, scale, test = "wald") { 
   
   test <- tolower(test)

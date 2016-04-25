@@ -10,9 +10,9 @@ print.summary.conLM <- function(object, digits = max(3, getOption("digits") - 2)
   level <- attr(x$se.type, "level")
   
   if (inherits(x, "summary.conRLM")) {
-    cat("Restriktor: constrained robust linear model:\n\n")
+    cat("Restriktor: restrikted robust linear model:\n\n")
   } else {
-    cat("Restriktor: constrained linear model:\n\n")
+    cat("Restriktor: restrikted linear model:\n\n")
   }
     
   cat("Call:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), "\n\n", sep = "")
@@ -35,7 +35,7 @@ print.summary.conLM <- function(object, digits = max(3, getOption("digits") - 2)
   
   coefs <- x$coefficients
   if (se.type %in% c("boot.model.based", "boot.standard") & bootCIs) {
-    cat("\nCoefficients from constrained model\nwith",
+    cat("\nCoefficients from restrikted model\nwith",
       100 * level, "pct bootstrap confidence intervals (",bty,"):\n ")  
   } else {
     cat("\nCoefficients:\n")
@@ -53,9 +53,9 @@ print.summary.conLM <- function(object, digits = max(3, getOption("digits") - 2)
   }
    
   if (x$R2.org == x$R2.reduced) {
-   cat("Constrained model: R2 remains", round(x$R2.org, 4),"\n")
+   cat("Restrikted model: R2 remains", round(x$R2.org, 4),"\n")
   } else {
-   cat("Constrained model: R2 reduced from", round(x$R2.org, 4), "to", round(x$R2.reduced, 4),"\n")  
+   cat("Restrikted model: R2 reduced from", round(x$R2.org, 4), "to", round(x$R2.reduced, 4),"\n")  
   }
 
   goric <- x$goric
@@ -63,7 +63,7 @@ print.summary.conLM <- function(object, digits = max(3, getOption("digits") - 2)
   PT <- attr(goric, "penalty")
   result_goric <- c(ll, PT, goric)
   names(result_goric) <- c("Loglik", "Penalty", "Goric")
-  cat("\nGeneralized Order-Restricted Information Criterion:\n")
+  cat("\nGeneralized Order-Restrikted Information Criterion:\n")
   print(result_goric, digits = digits)
   
   cat("\n")

@@ -21,7 +21,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     stop("standard error method ", sQuote(se), " unknown.")
   }
   if (se == "boot.model.based" & any(Amat[,1] == 1)) { 
-    stop("no constraints on intercept possible for model based bootstrap.")
+    stop("no restriktions on intercept possible for model based bootstrap.")
   }
   if (missing(constraints) && is.null(bvec)) { 
     bvec <- rep(0L, nrow(Amat)) 
@@ -102,7 +102,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     if (!is.numeric(try(matrix(0, floor((nrow(Amat) - meq -
                                          2)/2), choose(nrow(Amat) - meq, floor((nrow(Amat) - meq -
                                                                                 2)/2))), silent = TRUE)))
-      stop(paste("test does not work, too many inequality constraints, \n",
+      stop(paste("test does not work, too many inequality restriktions, \n",
                  "interim matrix with ", floor((nrow(Amat) - meq)/2) *
                    choose(nrow(Amat) - meq, floor((nrow(Amat) - meq)/2)),
                  " elements cannot be created", sep = ""))

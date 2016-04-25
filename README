@@ -1,2 +1,2 @@
-restriktor is a free, open source R package for constrained statistical
-inference.
+restriktor is a free, open source R package for linear equality and inequality 
+constrained statistical estimation and inference.

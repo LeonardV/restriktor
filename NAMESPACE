@@ -10,7 +10,7 @@ importFrom("MASS",
            psi.bisquare)
 
 importFrom("mvtnorm",
-           pmvnorm,
+#           pmvnorm,
            rmvnorm)
 
 importFrom("quadprog",

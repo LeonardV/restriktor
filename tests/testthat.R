@@ -3,31 +3,29 @@ library(restriktor)
 
 test_check("restriktor")
 
-set.seed(3013073)
-n = 100
-betas <- c(1,2,3,4)
-p <- length(betas)
-mu <- rep(0L, p)
-X <- MASS:::mvrnorm(n, mu, Sigma = diag(p), empirical = TRUE) 
-y <- 1 + X%*%betas + rnorm(n)
-fit.lm <- lm(y~X)
+DATA <- restriktor::ZelazoKolb1972
+idx <- which(DATA$Group == 3)
+DATA <- DATA[-idx, ]
+DATA$Group <- factor(DATA$Group)
+fit.lm <- lm(Age ~ Group, data = DATA)
+X <- model.matrix(fit.lm)[,,drop=FALSE]
 s2 <- summary(fit.lm)$sigma^2
-I <- 1/s2 * crossprod(cbind(1,X))  
-I <- round(I, 10)
+I <- 1/s2 * crossprod(X)
+Amat <- rbind(c(0,1,0), c(0,-1,1))
+bvec <- rep(0, nrow(Amat))
+meq = 0
 
 test_that("augmented information matrix", {
   
-  I.aug <- con_augmented_information(information = I, 
-                                     X = cbind(1,X), 
+  I.aug <- restriktor:::con_augmented_information(information = I, 
+                                     X = X, 
                                      b.unconstr = coef(fit.lm), 
                                      b.constr = coef(fit.lm),  
-                                     Amat = rbind(c(0,1,0,0,0),
-                                                  c(0,0,-1,0,0)), 
-                                     bvec = c(0), 
-                                     meq = 0)
+                                     Amat = Amat, 
+                                     bvec = bvec, 
+                                     meq = meq)
           
-  expect_that( I.aug, is_a("matrix") )Ttt
-  expect_that( all(I.aug[,3]), equals(0) )
-  expect_that( all(diag(I.aug)), equals(0.009138493) )
+  expect_that( I.aug, is_a("matrix") )
+  expect_that( mean(I.aug), equals(0.1360317, tolerance = 0.000001) )
 })
 

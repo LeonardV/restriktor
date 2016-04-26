@@ -14,9 +14,6 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), brief = F
     }
   }
   vnames <- names(x$b.unconstr)
-  if (is.null(vnames)) { 
-    vnames <- paste("m", 1:length(x$b.unconstr), sep = "") 
-  }
   Amat <- x$Amat
   colnames(Amat) <- vnames
   out.rest <- cbind(Amat, c(rep("   ==", x$meq), rep("   >=", nrow(x$Amat) -
@@ -53,7 +50,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), brief = F
     
     } else if (x$type == "A") {
       cat("\n H0: all restriktions active (=)",
-          "\n HA: at least one restriction strictly true (>)","\n\n")
+          "\n HA: at least one restriktion strictly true (>)","\n\n")
       print(out.test, quote = FALSE, scientific = FALSE)        
       cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
       print(out.rest, quote = FALSE, scientific = FALSE)

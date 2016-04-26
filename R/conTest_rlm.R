@@ -147,7 +147,6 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
                               meq.alt = meq.alt)
   }
   
-  
   OUT <- list(CON = object$CON,
               type = type,
               boot = boot,
@@ -198,8 +197,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
   }
   if (boot == "residual") {
     boot <- "model.based"
-  }
-  
+  }  
   
   # original model
   model.org <- object$model.org
@@ -250,7 +248,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     b.eqconstr[abs(b.eqconstr) < tol] <- 0L
     names(b.eqconstr) <- vnames
     out0 <- robustWaldScores(x = X, y = y,  beta0 = b.eqconstr, 
-                             betaA = b.constr, scale = scale, test = "wald")
+                             betaA = b.constr, scale = scale, test = "Wald")
     Ts <- out0$Ts
     COV <- out0$V
   } else if (type == "A") {
@@ -263,15 +261,15 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
     names(b.eqconstr) <- vnames
     
     out1 <- robustWaldScores(x = X, y = y,  beta0 = b.eqconstr, 
-                             betaA = b.constr, scale = scale, test = "wald")
+                             betaA = b.constr, scale = scale, test = "Wald")
     Ts <- out1$Ts
     COV <- out1$V
   }
   else if (type == "B") {
     if (meq.alt == 0L) {
       out2 <- robustWaldScores(x = X, y = y,  beta0 = b.constr, 
-                               betaA = b.unconstr, scale = scale, test = "wald")
-      Ts <- out2$RWald
+                               betaA = b.unconstr, scale = scale, test = "Wald")
+      Ts <- out2$Ts
       COV <- out2$V
     } else {
       # some equality may be preserved in the alternative hypothesis.
@@ -286,7 +284,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
         names(b.constr.alt) <- vnames
         out3 <- robustWaldScores(x = X, y = y,  beta0 = b.constr, 
                                  betaA = b.constr.alt, scale = scale, 
-                                 test = "wald")
+                                 test = "Wald")
         Ts <- out3$Ts
         COV <- out3$V
       } else {
@@ -304,7 +302,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
                               Amat = Amat, bvec = bvec, meq = meq, 
                               meq.alt = meq.alt)
   } else if (boot == "parametric") {
-    pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "wald",
+    pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "Wald",
                                          meq.alt = meq.alt,
                                          R = ifelse(is.null(control$B), 9999, control$B),
                                          p.distr = ifelse(is.null(control$p.distr), "N", control$p.distr),
@@ -315,7 +313,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                          seed = ifelse(is.null(control$seed), 1234, control$seed),
                                          verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   } else if (boot == "model.based") {
-    pvalue <- con_pvalue_boot_model_based(object, Ts.org = Ts, type = type, test = "wald",
+    pvalue <- con_pvalue_boot_model_based(object, Ts.org = Ts, type = type, test = "Wald",
                                           meq.alt = meq.alt,
                                           R = ifelse(is.null(control$B), 9999, control$B),
                                           parallel = ifelse(is.null(control$parallel), "no", control$parallel),
@@ -496,7 +494,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
                               Amat = Amat, bvec = bvec, meq = meq, 
                               meq.alt = meq.alt)
   } else if (boot == "parametric") {
-    pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "Score",
+    pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "score",
                                          meq.alt = meq.alt,
                                          R = ifelse(is.null(control$B), 9999, control$B),
                                          p.distr = ifelse(is.null(control$p.distr), "N", control$p.distr),
@@ -507,7 +505,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                          seed = ifelse(is.null(control$seed), 1234, control$seed),
                                          verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   } else if (boot == "model.based") {
-    pvalue <- con_pvalue_boot_model_based(object, Ts.org = Ts, type = type, test = "Score",
+    pvalue <- con_pvalue_boot_model_based(object, Ts.org = Ts, type = type, test = "score",
                                           meq.alt = meq.alt,
                                           R = ifelse(is.null(control$B), 9999, control$B),
                                           parallel = ifelse(is.null(control$parallel), "no", control$parallel),

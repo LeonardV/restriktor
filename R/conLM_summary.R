@@ -3,15 +3,18 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
                           digits = max(3, getOption("digits") - 2),
                           signif.stars = getOption("show.signif.stars"), ...) {
   
-  if (!inherits(object, "conLM")) {
-    stop("object of class ", sQuote(class(object)), " is not supported.")
-  }
-  
   z <- object
   
+  if (!inherits(z, "conLM")) {
+    stop("object of class ", sQuote(class(z)), " is not supported.")
+  }
   # bty = "stud" needs bootstrap variances
   if (bootCIs & !(bty %in% c("norm", "basic", "perc", "bca"))) {
-    stop("bty is invalid.")
+    if (bty == "stud") {
+      stop("bootstrap variances needed for studentized intervals.")
+    } else {
+      stop("bty is invalid.")
+    }
   }
   if (bootCIs & (level < 0.5 | level > 1)) {
     stop("invalid confidence level")
@@ -22,9 +25,7 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
   p <- z$model.org$rank
   rdf <- z$df.residual
   r <- c(z$residuals)
-  #f <- z$fitted
   est <- z$b.constr
-  #weights <- z$weights
   r <- c(weighted.residuals(z))
   
   ans <- z[c("call", if (!is.null(z$weights)) "weights")]
@@ -62,13 +63,14 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
     cis <- matrix(0, length(z$b.constr), 2)
     colnames(cis) <- c("lower", "upper")
     for (i in 1:length(z$b.constr)) {
-      if (!bty %in% c("norm", "perc")) {
+      if (!bty %in% c("norm", "perc")) { # basic and adjusted percentile
         cis[i, ] <- boot.ci(z$bootout, conf = level,
                             type = bty, index = i)[[bty]][4:5]
-      } else if (bty == "perc") {
+      } else if (bty == "perc") { # percentile method 
+        #bty name "perc" is different from name in list "percent"
         cis[i, ] <- boot.ci(z$bootout, conf = level,
-                            type = bty, index = i)[["percent"]][4:5]
-      } else if (bty == "norm") {
+                            type = bty, index = i)[["percent"]][4:5] 
+      } else if (bty == "norm") { # normal approximation
         cis[i, ] <- boot.ci(z$bootout, conf = level,
                             type = bty, index = i)[["normal"]][2:3]
       }  
@@ -91,7 +93,7 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
   # compute goric
   # REF: Kuiper, R.M.; Hoijtink, H.J.A.; Silvapulle, M. J. (2012) 
   # Journal of statistical planning and inference, volume 142, pp. 2454 - 2463
-  ## TO DO: add small samples correction 
+  ## TO DO: add small samples corrections
   if (inherits(object, "conRLM")) {
     s2ml.unc <- c(summary_rlm(z$model.org, ml = TRUE)$stddev^2)
   } else { 
@@ -101,18 +103,22 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
   invW <- kronecker(solve(s2ml.unc), t(X) %*% X)
   W <- solve(invW)
   # compute penalty term
-  if (bootWt) {
+  if (bootWt) { # compute mixing weights based on simulation
     wt <- mix.boot(object, R = R)
-    wt <- wt[-1]
-    PT <- 1 + sum( (1:ncol(W)) * wt)
-  } else if (!bootWt & (meq < nrow(Amat))) {
+    PT <- 1 + sum( (0:ncol(W)) * wt)
+  } else if (!bootWt & (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
     wt <- rev(con_wt(Amat %*% W %*% t(Amat), meq = meq))
     start.idx <- 1 + (ncol(Amat)-nrow(Amat) - 1)
     end.idx <- ncol(Amat) - meq
     PT <- 1 + sum(start.idx:end.idx * wt)      
-  } else if (!bootWt & (meq == nrow(Amat))) {
-    stop("set bootWt = TRUE.")  
-    }
+  } else if (!bootWt & (meq == nrow(Amat))) { # only equality constraints
+    wt <- rep(0L, ncol(W) + 1)
+    wt.idx <- ncol(W) - meq + 1
+    wt[wt.idx] <- 1
+    PT <- 1 + sum( (0:ncol(W)) * wt)
+  } else {
+    stop("restriktor ERROR: unable to compute mixing weights.")  
+  }
   ans$goric <- -2*(z$loglik - PT)
   attr(ans$goric, "weights") <- wt
   attr(ans$goric, "penalty") <- PT

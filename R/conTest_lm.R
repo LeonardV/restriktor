@@ -1,9 +1,9 @@
-# computes the F, LRT and Score test statistic
+# computes the F, LRT and score test statistic
 
 # REF: Silvapulle and Sen (2005). Constrained statistical inference. Chapter 2.
 conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                         control = NULL, tol = sqrt(.Machine$double.eps), ...) {
-
+  
   if (type != "global") {
     type <- toupper(type)
   }    
@@ -383,7 +383,7 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
 }
 
 
-# REF: Silvapulle, M.J. and Silvapulle, P. (1995). A Score Test Against One-Sided Alternatives
+# REF: Silvapulle, M.J. and Silvapulle, P. (1995). A score Test Against One-Sided Alternatives
 # Journal of the American Statistical Association, Vol. 90, No. 429 (Mar., 1995), pp. 342-349
 conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                             control = NULL, tol = sqrt(.Machine$double.eps), ...) {
@@ -542,7 +542,7 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                               Amat = Amat, bvec = bvec, meq = meq, 
                               meq.alt = meq.alt)
   } else if (boot == "parametric") {
-    pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "Score",
+    pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "score",
                                          meq.alt = meq.alt,
                                          R = ifelse(is.null(control$B), 9999, control$B),
                                          p.distr = ifelse(is.null(control$p.distr), "N", control$p.distr),
@@ -553,7 +553,7 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
                                          seed = ifelse(is.null(control$seed), 1234, control$seed),
                                          verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
   } else if (boot == "model.based") {
-    pvalue <- con_pvalue_boot_model_based(object, Ts.org = Ts, type = type, test = "Score",
+    pvalue <- con_pvalue_boot_model_based(object, Ts.org = Ts, type = type, test = "score",
                                           meq.alt = meq.alt,
                                           R = ifelse(is.null(control$B), 9999, control$B),
                                           parallel = ifelse(is.null(control$parallel), "no", control$parallel),

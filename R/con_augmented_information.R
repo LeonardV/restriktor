@@ -1,4 +1,5 @@
-# Ref: Ronald Schoenberg (1997). Constrained Maximum Likelihood. Computational Economics, 10, 251-266
+# Ref: Ronald Schoenberg (1997). Constrained Maximum Likelihood. Computational 
+# Economics, 10, 251-266
 con_augmented_information <- function(information, X, 
                                       b.unconstr, b.constr,  
                                       Amat, bvec, meq) {
@@ -6,7 +7,7 @@ con_augmented_information <- function(information, X,
   npar <- NCOL(information)
   
   if (!isSymmetric(information)) {
-    stop("Information matrix information is not symmetric.")
+    stop("Information matrix is not symmetric.")
   }
   
   # lagrangean coefs

@@ -16,27 +16,28 @@ normal models.}
   LazyLoad: \tab yes\cr
   }
   
-  Function \code{restriktor} estimates the parameters of a linear model (lm) or robust
-  linear model (rlm) subject to equality and/or inequality constraints. The function 
-  offers the possibility to compute model robust standard errors under the 
-  constraints. The parameters estimates can also be bootstrapped, where 
+  Function \code{restriktor} estimates the parameters of a linear model (lm) or 
+  robust linear model (rlm) subject to equality and/or inequality constraints. 
+  The function offers the possibility to compute (model robust) standard errors 
+  under the constraints. The parameters estimates can also be bootstrapped, where 
   bootstrapped standard errors and confidence intervals are available via the 
   summary function. Moreover, the function computes the Generalized Order-restricted
   Information Criterion (GORIC), which is a modification of the AIC and the ORIC.
   
   Function \code{conTest} conducts constrained hypothesis tests. Wald-, score and
   LRT test-statistics are available for both lm and rlm. The null-distribution
-  of these test-statistics take the form of a mixture of chi-square distributions. 
+  of these test-statistics takes the form of a mixture of chi-square distributions. 
   These mixing weights can be computed using the multivariate normal distribution
-  function. The function also offers the possibility to bootstrap the 
-  test-statistics. Parameters estimates under the hypotheses are available from the 
+  function or via a simulation approach. Bootstrap methods are available to avoid
+  calculating the mixing weights and to compute the p-value directly. Parameters 
+  estimates under the null- and alternative-hypothesis are available from the 
   summary function. 
   
   The package makes use of various other R packages: \pkg{quadprog} is used for 
   constrained estimation, \pkg{boot} for bootstrapping, \pkg{ic.infer} for 
   computing the weights based on the multivariate normal distribution, \pkg{lavaan}
-  for parsing the constraint syntax, \pkg{MASS} for the psi.bisquare loss function,
-  and \pkg{zoo} for computing sandwich estimators. 
+  for parsing the constraint syntax, \pkg{robustbase} for the bisquare loss function
+  and its derivatives, and \pkg{zoo} for computing sandwich estimators. 
 }
 
 \value{

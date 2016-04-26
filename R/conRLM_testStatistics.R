@@ -15,10 +15,11 @@ robustWaldScores <- function(x, y, beta0, betaA, scale, test = "wald") {
   rstar0 <- res0 / scale
   rstarA <- resA / scale
   
-  psi0   <- tukeyChi(rstar0, cc, deriv = 1)  
-  psiA   <- tukeyChi(rstarA, cc, deriv = 1) 
-#  psideriv0 <- tukeyChi(rstar0, cc, deriv=2)  
-  psiderivA <- tukeyChi(rstarA, cc, deriv = 2) 
+  # rho functions
+  psi0   <- Mchi(rstar0, cc, psi = "bisquare", deriv = 1) # tukeyChi(rstar0, cc, deriv = 1)  
+  psiA   <- Mchi(rstarA, cc, psi = "bisquare", deriv = 1) # tukeyChi(rstarA, cc, deriv = 1) 
+  #psideriv0 <- Mchi(rstar0, cc , psi = "bisquare", deriv = 2) #  psideriv0 <- tukeyChi(rstar0, cc, deriv=2)  
+  psiderivA <- Mchi(rstarA, cc, psi = "bisquare", deriv = 2) #tukeyChi(rstarA, cc, deriv = 2) 
   
   #compute M 
   weightsM <- psiderivA / scale
@@ -83,13 +84,13 @@ robustFm <- function(x, y, beta0, betaA, scale, cc = 4.685061) {
   rstar0 <- as.numeric(resid0 / scale)                                               
   rstar1 <- as.numeric(resid1 / scale)
   
-  L0 <- sum(tukeyChi(rstar0, cc, deriv = 0))
-  L1 <- sum(tukeyChi(rstar1, cc, deriv = 0))
+  L0 <- sum(Mchi(rstar0, cc, psi = "bisquare", deriv = 0))
+  L1 <- sum(Mchi(rstar1, cc, psi = "bisquare", deriv = 0))
   
-  #first derivative psi function
-  psi.prime.h1 <- tukeyChi(rstar1, cc, deriv = 1)                     
-  #second derivative psi function
-  psi.prime2.h1 <- tukeyChi(rstar1, cc, deriv = 2)                    
+  #first derivative rho function
+  psi.prime.h1 <- Mchi(rstar1, cc, psi = "bisquare", deriv = 1) # tukeyChi(rstar1, cc, deriv = 1)                     
+  #second derivative rho function
+  psi.prime2.h1 <- Mchi(rstar1, cc, psi = "bisquare", deriv = 2) # tukeyChi(rstar1, cc, deriv = 2)                    
   
   #asymptotic covariance matrix standardizing constant
   l.h1 <- ( 0.5 * (1 / (n - p)) * sum(psi.prime.h1^2) ) / ( (1/n) * sum(psi.prime2.h1) )  

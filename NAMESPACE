@@ -6,11 +6,10 @@ importFrom("lavaan",
            lav_constraints_parse,
            lav_func_jacobian_complex)
 
-importFrom("MASS",
-           psi.bisquare)
+importFrom("robustbase",
+           Mchi)
 
 importFrom("mvtnorm",
-#           pmvnorm,
            rmvnorm)
 
 importFrom("quadprog",

@@ -3,9 +3,12 @@
 # - implement E-bar test statistic for lm.
 # - add options for no intercept models.
 # - improve code description.
+# - add debug
+# - mlm 
+# - check class
 
 ###############################################################################
-restriktor <- function(model, constraints, se = "default",
+restriktor <- function(model, constraints, se = "standard",
                        rhs = NULL, neq = NULL, control = NULL,
                        debug = FALSE, ...) {
   
@@ -21,7 +24,7 @@ restriktor <- function(model, constraints, se = "default",
   # build a bare-bones parameter table for this model
   parTable <- lav_partable(model, est = FALSE, label = TRUE)
   
-  if (is.character(constraints)) {#} && class(model) %in% c("lm", "rlm")) {
+  if (is.character(constraints)) {
     # parse the constraints
     CON <- lav_constraints_parse(constraints = constraints,
                                  partable = parTable,

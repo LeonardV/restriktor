@@ -53,11 +53,10 @@ normal models.}
   \pkg{ic.infer}, which is originally from \pkg{vsn}, authored by Wolfgang Huber, 
   available under LGPL. 
   
-  The output of the summary function for the \code{conTest} function is largely 
-  based on the summary of the \code{ic.test} function from the \pkg{ic.infer} 
-  package.
+  The output of the \code{conTest} summary function is inspired on the summary 
+  of the \code{ic.test} function from the \pkg{ic.infer} package.
   
-  It also uses functions from the \code{rlm.default} function in the \pkg{MASS} 
+  It also uses code chunks from the \code{rlm.default} function from the \pkg{MASS} 
   package.  
 }
 
@@ -73,9 +72,8 @@ DATA$Group <- factor(DATA$Group)
 fit.lm <- lm(Age ~ Group, data = DATA)
 summary(fit.lm)
 
-# restrikted linear model with restriktions that the walking exercises would 
-# not have a negative effect of increasing the mean age at which a child starts 
-# to walk. 
+# restrikted linear model with restriktions that the walking exercises would not 
+# have a negative effect of increasing the mean age at which a child starts to walk. 
 
 fit.con <- restriktor(fit.lm, constraints = "Group2 > 0; Group2 < Group4")
 summary(fit.con)
@@ -122,10 +120,5 @@ summary(fit.con)
 \author{ Leonard Vanbrabant and Yves Rosseel - Ghent University}
 \seealso{ 
 See also \code{\link{restriktor}}, \code{\link{conTest}}, 
-          packages \pkg{boot}, \pkg{ic.infer}, \pkg{mvtnorm}, \pkg{quadprog}, 
-          and \pkg{goric}
+          packages \pkg{boot}, \pkg{goric}, \pkg{ic.infer}, \pkg{mvtnorm}, and \pkg{quadprog}.
 }
-
-\keyword{ models }
-\keyword{ regression }
-\keyword{ multivariate }

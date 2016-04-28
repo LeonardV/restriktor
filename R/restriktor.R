@@ -6,7 +6,6 @@
 # - add debug.
 # - mlm.
 # - check class.
-# - bootstrapped se for newly defined parameters.
 # - add score test for equality constraints only.
 
 ###############################################################################
@@ -20,8 +19,7 @@ restriktor <- function(model, constraints, se = "standard",
   }
   
   # rename for internal use
-  bvec <- rhs 
-  meq <- neq
+  bvec <- rhs; meq <- neq
   
   # build a bare-bones parameter table for this model
   parTable <- con_partable(model, est = FALSE, label = TRUE)
@@ -65,7 +63,7 @@ restriktor <- function(model, constraints, se = "standard",
   }
 
   if (debug && is.character(constraints)) {
-    print(as.data.frame(lavparTable, stringsAsFactors = FALSE))
+    print(as.data.frame(parTable, stringsAsFactors = FALSE))
     print(CON)
   }
 

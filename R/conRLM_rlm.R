@@ -11,12 +11,12 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   if (!("rlm" %in% class(model))) {
     stop("Restriktor ERROR: model must be of class rlm.")
   }
-  if (se == "default" | se == "standard") {
-    se <- "const"
+  if (se == "default") {
+    se <- "standard"
   } else if (se == "boot.residual") {
     se <- "boot.model.based"
   }
-  if (!(se %in% c("none","const","boot.model.based","boot.standard","HC","HC0",
+  if (!(se %in% c("none","standard","const","boot.model.based","boot.standard","HC","HC0",
                   "HC1","HC2","HC3","HC4","HC4m","HC5"))) {
     stop("standard error method ", sQuote(se), " unknown.")
   }
@@ -114,8 +114,6 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   so.org <- summary_rlm(model)
   # unconstrained scale estimate for the standard errors
   tau.unc <- tau <- so.org$stddev
-  # unscaled covariance matrix
-  cov.unscaled <- so.org$cov.unscaled
   
   #R^2 
   # acknowledment: code taken from the lmrob() function from the robustbase 
@@ -191,7 +189,6 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     LL.con <- ll.con$loglik
     # we need the std. deviation adjusted for equality constraints (meq > 0)
     so.con <- summary_rlm(rfit, Amat = Amat, meq = meq)
-    cov.unscaled <- so.con$cov.unscaled
     tau <- so.con$stddev
     
     #R^2 under the constrained model
@@ -246,7 +243,8 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
       #  V <- vcovMM(X = X, resid0 = resid0, residuals = residuals, scale = model$s)  
       #  OUT$information <- solve(V)
       #} else {
-      OUT$information <- tau^2 * cov.unscaled 
+      #OUT$information <- tau^2 * cov.unscaled 
+      OUT$information <- 1/tau^2 * crossprod(X)
       #}
       inverted.information <- con_augmented_information(information = OUT$information,
                                                         X = X, 

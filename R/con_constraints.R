@@ -1,7 +1,7 @@
 con_constraints_ceq_amat <- function(object, constraints = NULL) {
 
     # build a bare-bones parameter table for this object
-    lavpartable <- lav_partable(object, est = TRUE, label = TRUE)
+    lavpartable <- con_partable(object, est = TRUE, label = TRUE)
 
     # parse the constraints
     CON <- lav_constraints_parse(constraints = constraints,
@@ -14,7 +14,7 @@ con_constraints_ceq_amat <- function(object, constraints = NULL) {
 con_constraints_con_amat <- function(object, constraints = NULL) {
 
     # build a bare-bones parameter table for this object
-    lavpartable <- lav_partable(object, est = TRUE, label = TRUE)
+    lavpartable <- con_partable(object, est = TRUE, label = TRUE)
 
     # parse the constraints
     CON <- lav_constraints_parse(constraints = constraints,
@@ -28,7 +28,7 @@ con_constraints_con_amat <- function(object, constraints = NULL) {
 con_constraints_rhs_bvec <- function(object, constraints = NULL) {
 
   # build a bare-bones parameter table for this object
-  lavpartable <- lav_partable(object, est = TRUE, label = TRUE)
+  lavpartable <- con_partable(object, est = TRUE, label = TRUE)
 
   # parse the constraints
   CON <- lav_constraints_parse(constraints = constraints,

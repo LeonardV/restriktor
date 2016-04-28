@@ -43,19 +43,21 @@ print.summary.conLM <- function(object, digits = max(3, getOption("digits") - 2)
   printCoefmat(coefs, digits = digits, signif.stars = signif.stars, 
                na.print = "NA")
   
-  cat("\n")  
-  if (se.type == "const") {
-   cat("Homoskedastic standard errors.\n")
+  if (se.type == "standard") {
+    cat("\nStandard errors:", se.type ,"\n")
+  } else if (se.type == "const") {
+    cat("\nHomoskedastic standard errors.\n")
   } else if (se.type %in% c("boot.model.based", "boot.standard")) {
     if (se.type == "boot.model.based") {
       se.type <- "model-based"
     } else if (se.type == "boot.standard") {
       se.type <- "standard"
     }
-    cat("Bootstrapped standard errors:", se.type ,"\n")
+    cat("\nBootstrapped standard errors:", se.type ,"\n")
   } else {
-    cat("Heteroskedastic robust standard errors:", se.type ,"\n")
+    cat("\nHeteroskedastic robust standard errors:", se.type ,"\n")
   }
+  
    
   if (x$R2.org == x$R2.reduced) {
    cat("Restrikted model: R2 remains", round(x$R2.org, 4),"\n")

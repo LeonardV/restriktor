@@ -8,12 +8,12 @@ conLM.lm <- function(model, constraints, se = "default",
   if (!(class(model)[1] %in% c("lm", "mlm"))) {
     stop("model must be of class lm.")
   }
-  if (se == "default" | se == "standard") {
-    se <- "const"
+  if (se == "default") {
+    se <- "standard"
   } else if (se == "boot.residual") {
     se <- "boot.model.based"
   }
-  if (!(se %in% c("none","const","boot.model.based","boot.standard","HC","HC0",
+  if (!(se %in% c("none","standard","const","boot.model.based","boot.standard","HC","HC0",
                   "HC1","HC2","HC3","HC4","HC4m","HC5"))) {
     stop("standard error method ", sQuote(se), " unknown.")
   }
@@ -165,7 +165,7 @@ conLM.lm <- function(model, constraints, se = "default",
   # based on the standard bootstrap or model.based bootstrap
   if (se != "none") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
-      OUT$information <- 1/s2.con * crossprod(X) 
+      OUT$information <- 1/s2.con * crossprod(X)
       inverted.information <- con_augmented_information(information = OUT$information,
                                                         X = X, 
                                                         b.unconstr = b.unconstr, 

@@ -25,7 +25,7 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
   p <- z$model.org$rank
   rdf <- z$df.residual
   r <- c(z$residuals)
-  est <- z$b.constr
+  b.constr <- z$b.constr
   r <- c(weighted.residuals(z))
   
   ans <- z[c("call", if (!is.null(z$weights)) "weights")]
@@ -39,49 +39,76 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
 
   ans$residuals <- r
   if (is.null(z$bootout) && se.type != "none") {
-    vcovHC <- sandwich(z, bread.=bread(z), meat.=meatHC(z, type = se.type))
-    se <- sqrt(diag(vcovHC))
-    tval <- ifelse(se != 0, est/se, 0L)
-    ans$coefficients <- cbind(est, se, tval, 2 * pt(abs(tval), 
+    if (se.type == "standard") {
+      V <- attr(z$information, "inverted.information")
+      se <- sqrt(diag(V))
+    } else {
+      V <- sandwich(z, bread. = bread(z), meat. = meatHC(z, type = se.type))
+      se <- sqrt(diag(V))
+    }
+    tval <- ifelse(se != 0, b.constr/se, 0L)
+    ans$coefficients <- cbind(b.constr, se, tval, 2 * pt(abs(tval), 
                                                     rdf, lower.tail = FALSE))
-    dimnames(ans$coefficients) <- list(names(est),
+    dimnames(ans$coefficients) <- list(names(b.constr),
                                        c("Estimate", "Std. Error", "t value", "Pr(>|t|)"))
     # add new defined parameters 
     if (any(z$parTable$op == ":=")) {
-      b.def <- z$CON$def.function(est)
-      JAC <- lav_func_jacobian_complex(func = z$CON$def.function, x = est)
-      def.cov <- JAC %*% vcovHC %*% t(JAC)
+      b.def <- z$CON$def.function(b.constr)
+      JAC <- lav_func_jacobian_complex(func = z$CON$def.function, x = b.constr)
+      def.cov <- JAC %*% V %*% t(JAC)
       diag.def.cov <- diag(def.cov)
       diag.def.cov[ diag.def.cov < 0 ] <- as.numeric(NA)
       se.def <- sqrt(diag.def.cov)
-      tval.def <- ifelse(se.def != 0, b.def/se.def, 0L)
+      tval.def <- ifelse(se.def != 0, b.def / se.def, 0)
       ans$coefficients <- rbind(ans$coefficients, cbind(b.def, se.def, tval.def, 
                                                         2 * pt(abs(tval.def), 
                                                                rdf, lower.tail = FALSE)))
-    }  
-  } else if (bootCIs && (ans$se.type %in% c("boot.model.based", "boot.standard"))) {
-    cis <- matrix(0, length(z$b.constr), 2)
-    colnames(cis) <- c("lower", "upper")
-    for (i in 1:length(z$b.constr)) {
-      if (!bty %in% c("norm", "perc")) { # basic and adjusted percentile
-        cis[i, ] <- boot.ci(z$bootout, conf = level,
-                            type = bty, index = i)[[bty]][4:5]
-      } else if (bty == "perc") { # percentile method 
-        #bty name "perc" is different from name in list "percent"
-        cis[i, ] <- boot.ci(z$bootout, conf = level,
-                            type = bty, index = i)[["percent"]][4:5] 
-      } else if (bty == "norm") { # normal approximation
-        cis[i, ] <- boot.ci(z$bootout, conf = level,
-                            type = bty, index = i)[["normal"]][2:3]
-      }  
     }
-    se <- apply(z$bootout$t, 2, sd)
-    ans$coefficients <- cbind(est, se, cis)
-    colnames(ans$coefficients) <- c("Estimate", "Std. Error", "Lower", "Upper")
-  } else {
-    ans$coefficients <- cbind(est)
+  } else if (bootCIs && (ans$se.type %in% c("boot.model.based", "boot.standard"))) {
+      cis <- matrix(0, length(z$b.constr), 2)
+      colnames(cis) <- c("lower", "upper")
+      for (i in 1:length(z$b.constr)) {
+        if (!bty %in% c("norm", "perc")) { # basic and adjusted percentile
+          cis[i, ] <- boot.ci(z$bootout, conf = level,
+                              type = bty, index = i)[[bty]][4:5]
+        } else if (bty == "perc") { # percentile method 
+          #bty name "perc" is different from name in list "percent"
+          cis[i, ] <- boot.ci(z$bootout, conf = level,
+                              type = bty, index = i)[["percent"]][4:5] 
+        } else if (bty == "norm") { # normal approximation
+          cis[i, ] <- boot.ci(z$bootout, conf = level,
+                              type = bty, index = i)[["normal"]][2:3]
+        }  
+      }
+      se <- apply(z$bootout$t, 2, sd)
+      ans$coefficients <- cbind(b.constr, se, cis)
+      colnames(ans$coefficients) <- c("Estimate", "Std. Error", "Lower", "Upper")
+      # bootstrapped standard errors for newly defined parameters
+      if (any(z$parTable$op == ":=")) {
+        b.def <- z$CON$def.function(b.constr)
+        JAC <- lav_func_jacobian_complex(func = z$CON$def.function, x = b.constr)
+        bootout.def <- apply(z$bootout$t, 1, function(x) JAC %*% x)
+        se.def <- apply(bootout.def, 1, function(x) sd(x))
+        cis.def <- matrix(0, length(b.def), 2)
+        colnames(cis) <- c("lower", "upper")
+        for (i in 1:length(b.def)) {
+          if (!bty %in% c("norm", "perc")) { 
+            cis.def[i, ] <- boot.ci(z$bootout, conf = level, type = bty, 
+                                    t0 = b.def[i], t = bootout.def[i,])[[bty]][4:5]
+          } else if (bty == "perc") { 
+            cis.def[i, ] <- boot.ci(z$bootout, conf = level, type = bty, 
+                                    t0 = b.def[i], t = bootout.def[i,])[["percent"]][4:5] 
+          } else if (bty == "norm") { 
+            cis.def[i, ] <- boot.ci(z$bootout, conf = level, type = bty, 
+                                    t0 = b.def[i], t = bootout.def[i,])[["normal"]][2:3]
+          }  
+        } 
+        ans$coefficients <- rbind(ans$coefficients, cbind(b.def, se.def, cis.def))
+      }
+    } else {
+    ans$coefficients <- cbind(b.constr)
     colnames(ans$coefficients) <- "Estimate"
-  }
+    }
   
   ans$rdf <- rdf
   ans$R2.org <- z$R2.org

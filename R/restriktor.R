@@ -1,11 +1,13 @@
 ################################### TO DO ######################################
-# - add weights  + down weights to RLM.
+# - add weights + down weights to RLM.
 # - implement E-bar test statistic for lm.
 # - add options for no intercept models.
 # - improve code description.
-# - add debug
-# - mlm 
-# - check class
+# - add debug.
+# - mlm.
+# - check class.
+# - bootstrapped se for newly defined parameters.
+# - add score test for equality constraints only.
 
 ###############################################################################
 restriktor <- function(model, constraints, se = "standard",
@@ -22,7 +24,7 @@ restriktor <- function(model, constraints, se = "standard",
   meq <- neq
   
   # build a bare-bones parameter table for this model
-  parTable <- lav_partable(model, est = FALSE, label = TRUE)
+  parTable <- con_partable(model, est = FALSE, label = TRUE)
   
   if (is.character(constraints)) {
     # parse the constraints

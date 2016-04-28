@@ -1,6 +1,5 @@
-# taken from the lavaan package
 # build a bare-bones parameter table from a fitted object
-lav_partable <- function(object, est = FALSE, label = FALSE,
+con_partable <- function(object, est = FALSE, label = FALSE,
                                  as.data.frame. = FALSE) {
 
 #  we first check the class of object

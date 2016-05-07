@@ -51,7 +51,7 @@ conRLM_fit <- function(model, maxit = 5000,
   psi <- get(as.character(psi))
   # weights
   weights <- model$weights
-  if (any(weights != 1L)) { stop("Restriktor ERROR: weights are not implemented (yet).") }
+  #if (any(weights != 1L)) { stop("Restriktor ERROR: weights are not implemented (yet).") }
   # weights method, inverse of the variance or case 
   wt.method <- call[["wt.method"]]
   if (is.null(wt.method)) { wt.method <- "inv.var" } 
@@ -95,6 +95,7 @@ conRLM_fit <- function(model, maxit = 5000,
     # Which columns of X are constraint to zero by equality constraints on the paramters.
     # These columns must be removed before computing the robust scale.
     # Can we check this without QP?
+    # Is this fool proof?
     if (meq > 0L) {
       Dmat <- diag(ncol(Amat))
       dvec <- cbind(rep(1, ncol(Amat)))

@@ -12,7 +12,7 @@ Description: Allow for easy-to-use testing of linear equality and inequality
   constraints about parameters and effects, in linear and robust linear 
   statistical models.
 Depends: R(>= 3.0.0), methods
-Imports: boot, ic.infer, lavaan, mvtnorm, quadprog, robustbase, zoo
+Imports: boot, ic.infer, lavaan, mvtnorm, quadprog, zoo
 License: GPL (>= 2)
 LazyData: yes
 Packaged: 2015-01-22 20:03:39 UTC; yves

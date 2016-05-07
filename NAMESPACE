@@ -6,9 +6,6 @@ importFrom("lavaan",
            lav_constraints_parse,
            lav_func_jacobian_complex)
 
-importFrom("robustbase",
-           Mchi)
-
 importFrom("mvtnorm",
            rmvnorm)
 

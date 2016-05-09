@@ -1,7 +1,7 @@
 #compute constrained robust estimates
 conRLM.rlm <- function(model, constraints, debug = FALSE,
-                       se = "default", control = NULL,
-                       bvec = NULL, meq = 0L,
+                       se = "default", B = 999, 
+                       bvec = NULL, meq = 0L, 
                        tol = sqrt(.Machine$double.eps), ...) { 
   
   cl <- match.call()
@@ -21,7 +21,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     stop("standard error method ", sQuote(se), " unknown.")
   }
   if (se == "boot.model.based" & any(Amat[,1] == 1)) { 
-    stop("no restriktions on intercept possible for model based bootstrap.")
+    stop("no restriktions on intercept possible for 'se = boot.model.based' bootstrap method.")
   }
   if (missing(constraints) && is.null(bvec)) { 
     bvec <- rep(0L, nrow(Amat)) 
@@ -89,23 +89,14 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     stop("define ", sQuote(resid), " inside function.")
   }
   
-  # Restriktor only supports bisquare psi loss function (for now).
+  # check
   if (method == "M") {
     if (psi != "psi.bisquare") {
       stop("restriktor only supports the bisquare loss function (for now).")
     }
   }
-  
-  # acknowledgement: check for too many inequality constraints is taken from 
-  # the ic.infer package. 
-  if (nrow(Amat) - meq - 2 > 2) {
-    if (!is.numeric(try(matrix(0, floor((nrow(Amat) - meq -
-                                         2)/2), choose(nrow(Amat) - meq, floor((nrow(Amat) - meq -
-                                                                                2)/2))), silent = TRUE)))
-      stop(paste("test does not work, too many inequality restriktions, \n",
-                 "interim matrix with ", floor((nrow(Amat) - meq)/2) *
-                   choose(nrow(Amat) - meq, floor((nrow(Amat) - meq)/2)),
-                 " elements cannot be created", sep = ""))
+  if(ncol(Amat) != length(b.unconstr)) {
+    stop("length coefficients and ncol(constraints) must be identical")
   }
   
   # Adjusted summary function from MASS:::summary.rlm().
@@ -255,13 +246,11 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
       
       attr(OUT$information, "inverted.information") <- inverted.information        
     } else if (se == "boot.model.based") { 
-      OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),
-                                                   999, control$B), 
+      OUT$bootout <- con_boot_lm(model, B = B, 
                                  fixed = TRUE, constraints = Amat,
                                  rhs = bvec, neq = meq, se = "none")
     } else if (se == "boot.standard") {
-      OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),
-                                                   999, control$B),
+      OUT$bootout <- con_boot_lm(model, B = B,
                                  fixed = FALSE, constraints = Amat,
                                  rhs = bvec, neq = meq, se = "none")
     }

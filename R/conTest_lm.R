@@ -1,19 +1,23 @@
 # computes the F, LRT and score test statistic
 
 # REF: Silvapulle and Sen (2005). Constrained statistical inference. Chapter 2.
-conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
+conTestF.lm <- function(object, type = "A", boot = "no", neq.alt = 0,
                         control = NULL, tol = sqrt(.Machine$double.eps), ...) {
   
-  if (type != "global") {
-    type <- toupper(type)
-  }    
+  # rename for internal use
+  meq.alt <- neq.alt
+  
+  # checks
   if (!("conLM" %in% class(object))) {
     stop("object must be of class conLM.")
   }
+  if (type != "global") {
+    type <- toupper(type)
+  }    
   if(!(type %in% c("A","B","global"))) {
     stop("type must be \"A\", \"B\", or \"global\"")
   }
-  if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix.weights"))) {
+  if(!(boot %in% c("no","residual","model.based","parametric","mix.weights"))) {
     stop("ERROR: boot method unknown.")
   }
   if (boot == "residual") {
@@ -101,7 +105,7 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
         # be preserved in the alternative hypothesis.
         Ts <- as.vector(t(b.constr - b.constr.alt) %*% solve(COV, b.constr - b.constr.alt))
       } else {
-        stop("meq.alt must not be larger than meq.")
+        stop("neq.alt must not be larger than neq.")
       }
     }
   } 
@@ -142,14 +146,15 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
   } else if (boot == "mix.weights") {
     # compute weights based on simulation
     wt <- mix.boot(object, type = type, meq.alt = meq.alt, 
-                   R = ifelse(is.null(control$B), 9999, control$B),
+                   R = ifelse(is.null(control$B), 99999, control$B),
                    parallel = ifelse(is.null(control$parallel), "no", control$parallel),
                    ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
                    cl = ifelse(is.null(control$cl), NULL, control$cl),
                    seed = ifelse(is.null(control$seed), 1234, control$seed),
                    verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
     
-    # is this fool proof?
+    # is this fool proof? 
+    # The number of bootstrap samples must be large enough to avoid spurious results.
     wt <- rev(wt)
     wt.idx <- which(wt == 0)
     wt <- wt[-wt.idx]
@@ -191,15 +196,19 @@ conTestF.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
 
 
 # REF: Silvapulle and Sen (2005). Constrained statistical inference. Chapter 3.
-conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
+conTestLRT.lm <- function(object, type = "A", boot = "no", neq.alt = 0,
                            control = NULL, tol = sqrt(.Machine$double.eps), ...) {
 
-  if (type != "global") {
-    type <- toupper(type)
-  }  
+  # rename for internal use
+  meq.alt <- neq.alt
+  
+  # checks
   if (!("conLM" %in% class(object))) {
     stop("object must be of class conLM.")
   }
+  if (type != "global") {
+    type <- toupper(type)
+  }  
   if(!(type %in% c("A","B","global"))) {
     stop("type must be \"A\", \"B\", or \"global\"")
   }
@@ -301,7 +310,7 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
         Ts <- -2*(ll0 - ll1)
       }
       else {
-        stop("meq.alt must not be larger than meq.")
+        stop("neq.alt must not be larger than neq.")
       }
     }
   } 
@@ -385,15 +394,19 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
 
 # REF: Silvapulle, M.J. and Silvapulle, P. (1995). A score Test Against One-Sided Alternatives
 # Journal of the American Statistical Association, Vol. 90, No. 429 (Mar., 1995), pp. 342-349
-conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
+conTestScore.lm <- function(object, type = "A", boot = "no", neq.alt = 0,
                             control = NULL, tol = sqrt(.Machine$double.eps), ...) {
   
-  if (type != "global") {
-    type <- toupper(type)
-  }  
+  # rename for internal use
+  meq.alt <- neq.alt
+  
+  # checks
   if (!("conLM" %in% class(object))) {
     stop("object must be of class conLM.")
   }
+  if (type != "global") {
+    type <- toupper(type)
+  }  
   if(!(type %in% c("A","B","global"))) {
     stop("type must be \"A\", \"B\", or \"global\"")
   }
@@ -529,7 +542,7 @@ conTestScore.lm <- function(object, type = "A", boot = "no", meq.alt = 0,
         Ts <- as.numeric(n*Ts)
       }
       else {
-      stop("meq.alt must not be larger than meq.")
+      stop("neq.alt must not be larger than neq.")
       }
     }
   } 

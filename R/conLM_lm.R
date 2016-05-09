@@ -1,4 +1,4 @@
-conLM.lm <- function(model, constraints, se = "default",
+conLM.lm <- function(model, constraints, se = "default", B = 999,
                      bvec = NULL, meq = 0L, control = NULL,
                      tol = sqrt(.Machine$double.eps), debug = FALSE, ...) {
   
@@ -13,26 +13,17 @@ conLM.lm <- function(model, constraints, se = "default",
   } else if (se == "boot.residual") {
     se <- "boot.model.based"
   }
-  if (!(se %in% c("none","standard","const","boot.model.based","boot.standard","HC","HC0",
-                  "HC1","HC2","HC3","HC4","HC4m","HC5"))) {
+  if (!(se %in% c("none","standard","const","boot.model.based","boot.standard",
+                  "HC","HC0","HC1","HC2","HC3","HC4","HC4m","HC5"))) {
     stop("standard error method ", sQuote(se), " unknown.")
   }
   if (se == "boot.model.based" & any(Amat[,1] == 1)) { 
-    stop("no restriktions on intercept possible for model based bootstrap.")
+    stop("no restriktions on intercept possible for 'se = boot.model.based' bootstrap method.")
   }
   if (missing(constraints) && is.null(bvec)) { 
     bvec <- rep(0L, nrow(Amat)) 
   }
-  # acknowledgement: this check is taken from the ic.infer package 
-  if (nrow(Amat) - meq - 2 > 2) {
-    if (!is.numeric(try(matrix(0, floor((nrow(Amat) - meq -
-                                           2)/2), choose(nrow(Amat) - meq, floor((nrow(Amat) - meq -
-                                                                                  2)/2))), silent = TRUE)))
-      stop(paste("test does not work, too many inequality restriktions, \n",
-                 "interim matrix with ", floor((nrow(Amat) - meq)/2) *
-                   choose(nrow(Amat) - meq, floor((nrow(Amat) - meq)/2)),
-                 " elements cannot be created", sep = ""))
-  }
+  
   # model summary
   so <- summary(model)
   # response variable
@@ -51,7 +42,7 @@ conLM.lm <- function(model, constraints, se = "default",
   p <- length(b.unconstr)
   
   if(ncol(Amat) != length(b.unconstr)) {
-    stop("length coefficients and ncol(Amat) must be identical")
+    stop("length coefficients and ncol(constraints) must be identical")
   }
 
   # compute (weighted) log-likelihood
@@ -174,13 +165,11 @@ conLM.lm <- function(model, constraints, se = "default",
                                                         bvec = bvec, meq = meq) 
       attr(OUT$information, "inverted.information") <- inverted.information        
     } else if (se == "boot.model.based") {
-      OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),
-                                                   999, control$B), 
+      OUT$bootout <- con_boot_lm(model, B = B, 
                                  fixed = TRUE, constraints = Amat,
                                  rhs = bvec, neq = meq, se = "none")
     } else if (se == "boot.standard") {
-      OUT$bootout <- con_boot_lm(model, B = ifelse(is.null(control$B),
-                                                   999, control$B),
+      OUT$bootout <- con_boot_lm(model, B = B,
                                  fixed = FALSE, constraints = Amat,
                                  rhs = bvec, neq = meq, se = "none")
     }

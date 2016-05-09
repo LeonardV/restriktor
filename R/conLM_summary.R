@@ -1,7 +1,8 @@
 summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
-                          bootWt = FALSE, R = 9999, 
+                          GORIC = TRUE, bootWt = FALSE, B = 99999, 
                           digits = max(3, getOption("digits") - 2),
-                          signif.stars = getOption("show.signif.stars"), ...) {
+                          signif.stars = getOption("show.signif.stars"), 
+                          control = NULL, ...) {
   
   z <- object
   
@@ -117,39 +118,47 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
   } else {
     ans$R2.reduced <- 0
   }
-  # compute goric
-  # REF: Kuiper, R.M.; Hoijtink, H.J.A.; Silvapulle, M. J. (2012) 
-  # Journal of statistical planning and inference, volume 142, pp. 2454 - 2463
-  ## TO DO: add small samples corrections
-  if (inherits(object, "conRLM")) {
-    s2ml.unc <- c(summary_rlm(z$model.org, ml = TRUE)$stddev^2)
-  } else { 
-    s2ml.unc <- c(z$s2ml.unc)
+  
+  if (GORIC) {
+    # compute goric
+    # REF: Kuiper, R.M.; Hoijtink, H.J.A.; Silvapulle, M. J. (2012) 
+    # Journal of statistical planning and inference, volume 142, pp. 2454 - 2463
+    ## TO DO: add small samples corrections
+    if (inherits(object, "conRLM")) {
+      s2ml.unc <- c(summary_rlm(z$model.org, ml = TRUE)$stddev^2)
+    } else { 
+      s2ml.unc <- c(z$s2ml.unc)
+    }
+    X <- model.matrix(z$model.org)[,,drop=FALSE]
+    invW <- kronecker(solve(s2ml.unc), t(X) %*% X)
+    W <- solve(invW)
+    # compute penalty term
+    if (bootWt) { # compute mixing weights based on simulation
+      wt <- mix.boot(object, R = B,
+                     parallel = ifelse(is.null(control$parallel), "no", control$parallel),
+                     ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
+                     cl = ifelse(is.null(control$cl), NULL, control$cl),
+                     seed = ifelse(is.null(control$seed), 1234, control$seed),
+                     verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
+      PT <- 1 + sum( (0 : ncol(W)) * wt)
+    } else if (!bootWt & (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
+      wt <- rev(con_wt(Amat %*% W %*% t(Amat), meq = meq))
+      start.idx <- 1 + (ncol(Amat) - nrow(Amat) - 1)
+      end.idx <- ncol(Amat) - meq
+      PT <- 1 + sum(start.idx:end.idx * wt)      
+    } else if (!bootWt & (meq == nrow(Amat))) { # only equality constraints
+      wt <- rep(0L, ncol(W) + 1)
+      wt.idx <- ncol(W) - meq + 1
+      wt[wt.idx] <- 1
+      PT <- 1 + sum( (0 : ncol(W)) * wt)
+    } else {
+      stop("restriktor ERROR: unable to compute mixing weights for GORIC.")  
+    }
+    ans$goric <- -2*(z$loglik - PT)
+    attr(ans$goric, "weights") <- wt
+    attr(ans$goric, "penalty") <- PT
+    attr(ans$goric, "loglik")  <- z$loglik 
   }
-  X <- model.matrix(z$model.org)[,,drop=FALSE]
-  invW <- kronecker(solve(s2ml.unc), t(X) %*% X)
-  W <- solve(invW)
-  # compute penalty term
-  if (bootWt) { # compute mixing weights based on simulation
-    wt <- mix.boot(object, R = R)
-    PT <- 1 + sum( (0:ncol(W)) * wt)
-  } else if (!bootWt & (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
-    wt <- rev(con_wt(Amat %*% W %*% t(Amat), meq = meq))
-    start.idx <- 1 + (ncol(Amat)-nrow(Amat) - 1)
-    end.idx <- ncol(Amat) - meq
-    PT <- 1 + sum(start.idx:end.idx * wt)      
-  } else if (!bootWt & (meq == nrow(Amat))) { # only equality constraints
-    wt <- rep(0L, ncol(W) + 1)
-    wt.idx <- ncol(W) - meq + 1
-    wt[wt.idx] <- 1
-    PT <- 1 + sum( (0:ncol(W)) * wt)
-  } else {
-    stop("restriktor ERROR: unable to compute mixing weights.")  
-  }
-  ans$goric <- -2*(z$loglik - PT)
-  attr(ans$goric, "weights") <- wt
-  attr(ans$goric, "penalty") <- PT
-  attr(ans$goric, "loglik")  <- z$loglik 
   
   if (class(object)[1] == "conLM") {
     class(ans) <- "summary.conLM"

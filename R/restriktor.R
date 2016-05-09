@@ -7,7 +7,8 @@
 # - mlm.
 # - check class.
 # - add score test for equality constraints only.
-
+# - add GORIC weights (see p. 104, Kuiper, R.M. Model Selection).
+# - add small sample correction for GORIC, see REF. above.
 ###############################################################################
 restriktor <- function(model, constraints, se = "standard",
                        rhs = NULL, neq = NULL, control = NULL,

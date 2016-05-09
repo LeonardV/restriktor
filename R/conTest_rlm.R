@@ -1,12 +1,16 @@
-conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
+conTestF.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
                          control = NULL, tol = sqrt(.Machine$double.eps), ...) {
   
-  if (type != "global") {
-    type <- toupper(type)
-  }  
+  # rename for internal use
+  meq.alt <- neq.alt
+  
+  # checks
   if (!("conRLM" %in% class(object))) {
     stop("object must be of class conRLM.")
   }
+  if (type != "global") {
+    type <- toupper(type)
+  }  
   if(!(type %in% c("A","B","global"))) {
     stop("type must be \"A\", \"B\", or \"global\"")
   }
@@ -55,7 +59,7 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
       Amatg <- cbind(rep(0, (g - 1)), diag(rep(1, g - 1))) 
       bvecg <- rep(0, g - 1) 
     } else {
-      stop("Restriktor ERROR: test not applicable for models without intercept.")      
+      stop("Restriktor ERROR: test not applicable (yet) for models without intercept.")      
     } 
     #fit inequality constrained robust model
     call.my <- list(Amat = Amatg, meq = nrow(Amatg), bvec = bvecg)
@@ -95,7 +99,7 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
         Ts <- robustFm(x = X, y = y,  beta0 = b.constr, betaA = b.constr.alt, 
                        scale = scale, cc = 4.685061)
       } else {
-        stop("meq.alt must not be larger than meq.")
+        stop("neq.alt must not be larger than neq.")
       }
     }
   } 
@@ -179,16 +183,19 @@ conTestF.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
 
 
 
-conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
+conTestWald.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
                              control = NULL, tol = sqrt(.Machine$double.eps), ...) {
   
-  if (type != "global") {
-    type <- toupper(type)
-  }  
+  # rename for internal use
+  meq.alt <- neq.alt
   
+  # checks
   if (!("conRLM" %in% class(object))) {
     stop("object must be of class conRLM.")
   }
+  if (type != "global") {
+    type <- toupper(type)
+  } 
   if(!(type %in% c("A","B","global"))) {
     stop("type must be \"A\", \"B\", or \"global\"")
   }
@@ -288,7 +295,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
         Ts <- out3$Ts
         COV <- out3$V
       } else {
-        stop("meq.alt must not be larger than meq.")
+        stop("neq.alt must not be larger than neq.")
       }
     }
   } 
@@ -373,15 +380,19 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
 
 
 
-conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
+conTestScore.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
                              control = NULL, tol = sqrt(.Machine$double.eps), ...) {
   
-  if (type != "global") {
-    type <- toupper(type)
-  }  
+  # rename for internal use
+  meq.alt <- neq.alt
+  
+  # checks
   if (!("conRLM" %in% class(object))) {
     stop("object must be of class conRLM.")
   }
+  if (type != "global") {
+    type <- toupper(type)
+  }  
   if(!(type %in% c("A","B","global"))) {
     stop("type must be \"A\", \"B\", or \"global\"")
   }  
@@ -480,7 +491,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", meq.alt = 0,
         Ts <- out3$Ts
         COV <- out3$V
       } else {
-        stop("meq.alt must not be larger than meq.")
+        stop("neq.alt must not be larger than neq.")
       }
     }
   } 

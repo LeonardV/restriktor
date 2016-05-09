@@ -181,8 +181,6 @@ conTestF.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
 
 
 
-
-
 conTestWald.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
                              control = NULL, tol = sqrt(.Machine$double.eps), ...) {
   

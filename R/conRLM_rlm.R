@@ -1,8 +1,6 @@
 #compute constrained robust estimates
-conRLM.rlm <- function(model, constraints, debug = FALSE,
-                       se = "default", B = 999, 
-                       bvec = NULL, meq = 0L, 
-                       tol = sqrt(.Machine$double.eps), ...) { 
+conRLM.rlm <- function(model, constraints, se = "default", B = 999, 
+                       bvec = NULL, meq = 0L, control = NULL, ...) { 
   
   cl <- match.call()
   Amat <- Amatw; bvec <- bvecw; meq <- meqw
@@ -167,7 +165,9 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     rfit <- do.call("conRLM_fit", CALL)
     # constrained coefs
     b.restr <- rfit$coefficients
-    b.restr[abs(b.restr) < sqrt(.Machine$double.eps)] <- 0L
+    b.restr[abs(b.restr) < ifelse(is.null(control$tol), 
+                                  sqrt(.Machine$double.eps), 
+                                  control$tol)] <- 0L
     # number of active inequality constraints
     iact <- rfit$iact
     # weights

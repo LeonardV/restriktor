@@ -11,13 +11,15 @@ inequality restriktions}
 restriktor(model, constraints, se = "standard", 
    rhs = NULL, neq = NULL, control = NULL, debug = FALSE, ...)
            
-\method{restriktor}{restriktor}(model, constraints, se = "default", 
-   rhs = NULL, neq = NULL, control = NULL, debug = FALSE, ...)
+\method{conLM}{lm}(model, constraints, se = "default", 
+   rhs = NULL, neq = NULL, control = NULL, ...)
+\method{conRLM}{rlm}(model, constraints, se = "default", 
+   rhs = NULL, neq = NULL, control = NULL, ...)
 }
 \arguments{
   \item{model}{a fitted linear model object of class lm, or a 
   fitted robust linear model object of class rlm.}
-  \item{constraints}{there are two ways to constrain parameters. 
+  \item{constraints}{there are two ways to constrain parameters 
   First, the constraint syntax consists of one or more formula-like 
   expressions, where the syntax can be specified as a literal 
   string enclosed by single quotes. Only the names of coef(model) 
@@ -64,9 +66,12 @@ restriktor(model, constraints, se = "standard",
 }
 
 \details{
-The constraint syntax consists of one or more formula-like 
-expressions. The constraint syntax can be specified as a literal 
-string enclosed by single quotes as shown below: 
+\code{restriktor} is a convenience function that takes a formula-like
+expression as constraint input and translates it to a matrix/vector
+form (which can also be used as input form). The real work horses 
+are the \code{conLM} and the \code{conRLM} functions. The 
+constraint syntax can be specified in two ways. First as a 
+literal string enclosed by single quotes as shown below: 
 
 \preformatted{myConstraints <- '
   # 1. inequality constraints
@@ -78,8 +83,8 @@ string enclosed by single quotes as shown below:
 '  
 }
 
-
-The above constraints syntax can also be written as:
+Second, the above constraints syntax can also be written in matrix/
+vector notation as:
 \preformatted{myConstraints <-
   rbind(c(0, 0, 0,-1, 1, 0), #equality constraint x3 == x4
         c(0, 0, 0, 0,-1, 1), #equality constraint x4 == x5
@@ -187,6 +192,14 @@ is corrected in case of equality constraints.}
 standard errors are requested, else bootout = NULL.} 
 
 \item{call}{the matched call.}
+
+\item{model.org}{original model.}
+
+\item{se}{as input. This information is needed in the summary 
+function.}
+
+\item{information}{observed information matrix with the inverted 
+information matrix as attribute.}
 }
 
 \references{

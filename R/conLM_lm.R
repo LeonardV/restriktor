@@ -1,6 +1,5 @@
 conLM.lm <- function(model, constraints, se = "default", B = 999,
-                     bvec = NULL, meq = 0L, control = NULL,
-                     tol = sqrt(.Machine$double.eps), debug = FALSE, ...) {
+                     bvec = NULL, meq = 0L, control = NULL, ...) {
   
   cl <- match.call()
   Amat <- Amatw; bvec <- bvecw; meq <- meqw
@@ -71,11 +70,16 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
   } else {
     # compute constrained estimates for lm() and mlm() 
     out.QP <- con_solver(b.unrestr, X = X, y = y, w = weights, Amat = Amat,
-                         bvec = bvec, meq = meq, tol = tol,
+                         bvec = bvec, meq = meq, 
+                         tol = ifelse(is.null(control$tol), 
+                                      sqrt(.Machine$double.eps), 
+                                      control$tol),
                          maxit = ifelse(is.null(control$maxit), 1e04, 
                                         control$maxit))
     b.restr <- matrix(out.QP$solution, ncol = ncol(y))
-    b.restr[abs(b.restr) < tol] <- 0L
+    b.restr[abs(b.restr) < ifelse(is.null(control$tol), 
+                                  sqrt(.Machine$double.eps), 
+                                  control$tol)] <- 0L
     
     ll.restr <- con_loglik_lm(X = X, y = y, b = b.restr, w = weights)
     LL.restr <- ll.restr$loglik

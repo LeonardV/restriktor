@@ -1,6 +1,6 @@
 # build a bare-bones parameter table from a fitted object
 con_partable <- function(object, est = FALSE, label = FALSE,
-                                 as.data.frame. = FALSE) {
+                         as.data.frame. = FALSE) {
 
 #  we first check the class of object
     if (!any(class(object) %in% c("lm", "rlm", "glm", "mlm"))) {

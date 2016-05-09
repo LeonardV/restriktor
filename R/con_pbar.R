@@ -20,7 +20,3 @@
     cdf <- cdf + sum(pchisq(x, df1[!zed]) * wt[!zed])
     return(cdf)
   }
-  
-
-
-

@@ -13,7 +13,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), brief = F
       }
     }
   }
-  vnames <- names(x$b.unconstr)
+  vnames <- names(x$b.unrestr)
   Amat <- x$Amat
   colnames(Amat) <- vnames
   out.rest <- cbind(Amat, c(rep("   ==", x$meq), rep("   >=", nrow(x$Amat) -
@@ -42,10 +42,10 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), brief = F
       cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
       print(out.rest, quote = FALSE, scientific = FALSE)
       cat("\nrestrikted estimate under H0:\n")
-      print.default(format(x$b.eqconstr, digits = digits),
+      print.default(format(x$b.eqrestr, digits = digits),
                     print.gap = 2, quote = FALSE)
       cat("\nrestrikted estimate under union of H0 and HA:\n")
-      print.default(format(x$b.constr, digits = digits),
+      print.default(format(x$b.restr, digits = digits),
                     print.gap = 2, quote = FALSE)
     
     } else if (x$type == "A") {
@@ -55,10 +55,10 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), brief = F
       cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
       print(out.rest, quote = FALSE, scientific = FALSE)
       cat("\nrestrikted estimate under H0:\n")
-      print.default(format(x$b.eqconstr, digits = digits),
+      print.default(format(x$b.eqrestr, digits = digits),
                     print.gap = 2, quote = FALSE)
       cat("\nrestrikted estimate under union of H0 and HA:\n")
-      print.default(format(x$b.constr, digits = digits),
+      print.default(format(x$b.restr, digits = digits),
                     print.gap = 2, quote = FALSE)
     } else if (x$type == "B" && x$meq.alt == 0L) {
       cat("\n H0: all restriktions true (>=)",
@@ -67,10 +67,10 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), brief = F
       cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
       print(out.rest, quote = FALSE, scientific = FALSE)
       cat("\nrestrikted estimate under H0:\n")
-      print.default(format(x$b.constr, digits = digits),
+      print.default(format(x$b.restr, digits = digits),
                     print.gap = 2, quote = FALSE)
       cat("\nUnrestrikted estimate:\n")
-      print.default(format(x$b.unconstr, digits = digits),
+      print.default(format(x$b.unrestr, digits = digits),
                     print.gap = 2, quote = FALSE)
     } else if (x$type == "B" && x$meq.alt > 0L) {
         cat("\n H0: all restriktions true (>= or =)",
@@ -80,10 +80,10 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), brief = F
         cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
         print(out.rest, quote = FALSE, scientific = FALSE)
         cat("\nrestrikted estimate under H0:\n")
-        print.default(format(x$b.constr, digits = digits),
+        print.default(format(x$b.restr, digits = digits),
                       print.gap = 2, quote = FALSE)
         cat("\nrestrikted estimate under HA:\n")
-        print.default(format(x$b.constr.alt, digits = digits),
+        print.default(format(x$b.restr.alt, digits = digits),
                       print.gap = 2, quote = FALSE)
       } else if (x$type == "C") {
         cat("\n H0: at least one restriktion not strictly true (<=)",
@@ -93,7 +93,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), brief = F
         cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
         print(out.rest, quote = FALSE, scientific = FALSE)
         cat("\nUnrestrikted estimate:\n")
-        print.default(format(x$b.unconstr, digits = digits),
+        print.default(format(x$b.unrestr, digits = digits),
                       print.gap = 2, quote = FALSE)
       }
   } else { #equality constraints only
@@ -104,7 +104,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), brief = F
       cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
       print(out.rest, quote = FALSE, scientific = FALSE)
       cat("\nrestrikted estimate under union of H0 and HA:\n")
-      print.default(format(x$b.constr, digits = digits),
+      print.default(format(x$b.restr, digits = digits),
                     print.gap = 2, quote = FALSE)
     }
   }

@@ -4,11 +4,10 @@
 # - add options for no intercept models.
 # - improve code description.
 # - add debug.
-# - mlm.
-# - check class.
 # - add score test for equality constraints only.
 # - add GORIC weights (see p. 104, Kuiper, R.M. Model Selection).
 # - add small sample correction for GORIC, see REF. above.
+# - add support for mlm and glm.
 ###############################################################################
 restriktor <- function(model, constraints, se = "standard",
                        rhs = NULL, neq = NULL, control = NULL,
@@ -16,7 +15,7 @@ restriktor <- function(model, constraints, se = "standard",
   
   #we first check the class of object
   if (!any(class(model) %in% c("lm", "rlm"))) {
-    stop("It only works for lm(), rlm()")
+    stop("restriktor only works for lm(), rlm()")
   }
   
   # rename for internal use

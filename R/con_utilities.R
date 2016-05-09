@@ -1,6 +1,6 @@
 # utility functions
 coef.conLM <- function(object, ...)  {
-  object$b.constr
+  object$b.restr
 }
 
 model.matrix.conLM <- function(object, ...) {

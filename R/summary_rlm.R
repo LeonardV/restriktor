@@ -2,7 +2,7 @@
 # adapted to correct for equality constraints by LV.
 # add option to get ml sigma
 summary_rlm <- function (object, method = c("XtX", "XtWX"), 
-                         correlation = FALSE, ml = FALSE, 
+                         correlation = FALSE, 
                          Amat = NULL, meq = NULL, ...) {
   method <- match.arg(method)
   s <- object$s
@@ -27,9 +27,6 @@ summary_rlm <- function (object, method = c("XtX", "XtWX"),
     if (!is.null(Amat)) {
       rdf <- sum(wts) - (p - qr(Amat[0:meq,])$rank)
     } 
-    if (ml) {
-      rdf <- sum(wts)
-    }
     w <- object$psi(wresid/s)
     S <- sum(wts * (wresid * w)^2)/rdf
     psiprime <- object$psi(wresid/s, deriv = 1)
@@ -44,9 +41,6 @@ summary_rlm <- function (object, method = c("XtX", "XtWX"),
     rdf <- n - p
     if (!is.null(Amat)) {
       rdf <- n - (p - qr(Amat[0:meq,])$rank)
-    }
-    if (ml) {
-      rdf <- n
     }
     w <- object$psi(wresid/s)
     S <- sum((wresid * w)^2)/rdf

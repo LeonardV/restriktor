@@ -26,7 +26,7 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
   p <- z$model.org$rank
   rdf <- z$df.residual
   r <- c(z$residuals)
-  b.constr <- z$b.constr
+  b.restr <- z$b.restr
   r <- c(weighted.residuals(z))
   
   ans <- z[c("call", if (!is.null(z$weights)) "weights")]
@@ -47,15 +47,15 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
       V <- sandwich(z, bread. = bread(z), meat. = meatHC(z, type = se.type))
       se <- sqrt(diag(V))
     }
-    tval <- ifelse(se != 0, b.constr/se, 0L)
-    ans$coefficients <- cbind(b.constr, se, tval, 2 * pt(abs(tval), 
+    tval <- ifelse(se != 0, b.restr/se, 0L)
+    ans$coefficients <- cbind(b.restr, se, tval, 2 * pt(abs(tval), 
                                                     rdf, lower.tail = FALSE))
-    dimnames(ans$coefficients) <- list(names(b.constr),
+    dimnames(ans$coefficients) <- list(names(b.restr),
                                        c("Estimate", "Std. Error", "t value", "Pr(>|t|)"))
     # add new defined parameters 
     if (any(z$parTable$op == ":=")) {
-      b.def <- z$CON$def.function(b.constr)
-      JAC <- lav_func_jacobian_complex(func = z$CON$def.function, x = b.constr)
+      b.def <- z$CON$def.function(b.restr)
+      JAC <- lav_func_jacobian_complex(func = z$CON$def.function, x = b.restr)
       def.cov <- JAC %*% V %*% t(JAC)
       diag.def.cov <- diag(def.cov)
       diag.def.cov[ diag.def.cov < 0 ] <- as.numeric(NA)
@@ -66,9 +66,9 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
                                                                rdf, lower.tail = FALSE)))
     }
   } else if (bootCIs && (ans$se.type %in% c("boot.model.based", "boot.standard"))) {
-      cis <- matrix(0, length(z$b.constr), 2)
+      cis <- matrix(0, length(z$b.restr), 2)
       colnames(cis) <- c("lower", "upper")
-      for (i in 1:length(z$b.constr)) {
+      for (i in 1:length(z$b.restr)) {
         if (!bty %in% c("norm", "perc")) { # basic and adjusted percentile
           cis[i, ] <- boot.ci(z$bootout, conf = level,
                               type = bty, index = i)[[bty]][4:5]
@@ -82,12 +82,12 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
         }  
       }
       se <- apply(z$bootout$t, 2, sd)
-      ans$coefficients <- cbind(b.constr, se, cis)
+      ans$coefficients <- cbind(b.restr, se, cis)
       colnames(ans$coefficients) <- c("Estimate", "Std. Error", "Lower", "Upper")
       # bootstrapped standard errors for newly defined parameters
       if (any(z$parTable$op == ":=")) {
-        b.def <- z$CON$def.function(b.constr)
-        JAC <- lav_func_jacobian_complex(func = z$CON$def.function, x = b.constr)
+        b.def <- z$CON$def.function(b.restr)
+        JAC <- lav_func_jacobian_complex(func = z$CON$def.function, x = b.restr)
         bootout.def <- apply(z$bootout$t, 1, function(x) JAC %*% x)
         se.def <- apply(bootout.def, 1, function(x) sd(x))
         cis.def <- matrix(0, length(b.def), 2)
@@ -107,7 +107,7 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
         ans$coefficients <- rbind(ans$coefficients, cbind(b.def, se.def, cis.def))
       }
     } else {
-    ans$coefficients <- cbind(b.constr)
+    ans$coefficients <- cbind(b.restr)
     colnames(ans$coefficients) <- "Estimate"
     }
   
@@ -123,11 +123,12 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
     # compute goric
     # REF: Kuiper, R.M.; Hoijtink, H.J.A.; Silvapulle, M. J. (2012) 
     # Journal of statistical planning and inference, volume 142, pp. 2454 - 2463
-    ## TO DO: add small samples corrections
+    ## TO DO: add small sample corrections
     if (inherits(object, "conRLM")) {
-      s2ml.unc <- c(summary_rlm(z$model.org, ml = TRUE)$stddev^2)
+      s2ml.unc <- (summary_rlm(z$model.org)$stddev^2 * 
+                     summary_rlm(z$model.org)$df[2]) / length(r)
     } else { 
-      s2ml.unc <- c(z$s2ml.unc)
+      s2ml.unc <- (z$s2.unc * z$df.residual) / length(r)
     }
     X <- model.matrix(z$model.org)[,,drop=FALSE]
     invW <- kronecker(solve(s2ml.unc), t(X) %*% X)

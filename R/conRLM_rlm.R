@@ -30,7 +30,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   y <- as.matrix(model$model[, attr(model$terms, "response")])
   X  <- model.matrix(model)[,,drop = FALSE]
   # unconstrained coefficients
-  b.unconstr <- coef(model)  
+  b.unrestr <- coef(model)  
   
   # original model function call
   call <- as.list(model$call)
@@ -95,7 +95,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
       stop("restriktor only supports the bisquare loss function (for now).")
     }
   }
-  if(ncol(Amat) != length(b.unconstr)) {
+  if(ncol(Amat) != length(b.unrestr)) {
     stop("length coefficients and ncol(constraints) must be identical")
   }
   
@@ -126,20 +126,20 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
   R2.org <- (yMy - rMr) / (yMy + rMr * (correc - 1))
   
   # compute the loglikelihood
-  ll.unc <- con_loglik_lm(X = X, y = y, b = b.unconstr, w = weights)
+  ll.unc <- con_loglik_lm(X = X, y = y, b = b.unrestr, w = weights)
   LL.unc <- ll.unc$loglik
   # # check if the constraints are in line with the data    
-  if (all(Amat %*% c(b.unconstr) - bvec >= 0 * bvec) & meq == 0) {  
-    b.constr <- b.unconstr
+  if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) & meq == 0) {  
+    b.restr <- b.unrestr
     # To compute the vcovMM, we need the initial residuals from the S-estimator.
     # These are not available in the original rlm object.
     #S <- Sestimator(x = X, y = y)
     #resid0 <- residuals(S)
     OUT <- list(CON = NULL,
                 parTable = parTable,
-                constraints = constraints,
-                b.unconstr = b.unconstr,
-                b.constr = b.unconstr,
+                #constraints = constraints,
+                b.unrestr = b.unrestr,
+                b.restr = b.unrestr,
                 residuals = model$residuals,
                 wresid = model$wresid,
                 #init.residuals = resid0,
@@ -152,7 +152,7 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 R2.reduced = R2.org,
                 df.residual = so.org$df[2],
                 s2.unc = tau^2, 
-                s2.con = tau^2, 
+                s2.restr = tau^2, 
                 loglik = LL.unc, 
                 Sigma = vcov(model),                                            #probably not so robust!
                 Amat = Amat, bvec = bvec, meq = meq, iact = 0L,
@@ -166,8 +166,8 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     # fit constraint robust liner model
     rfit <- do.call("conRLM_fit", CALL)
     # constrained coefs
-    b.constr <- rfit$coefficients
-    b.constr[abs(b.constr) < sqrt(.Machine$double.eps)] <- 0L
+    b.restr <- rfit$coefficients
+    b.restr[abs(b.restr) < sqrt(.Machine$double.eps)] <- 0L
     # number of active inequality constraints
     iact <- rfit$iact
     # weights
@@ -176,11 +176,11 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     w <- rfit$w
     #resid0 <- rfit$resid0
     # compute loglik
-    ll.con <- con_loglik_lm(X = X, y = y, b = b.unconstr, w = weights)
-    LL.con <- ll.con$loglik
+    ll.restr <- con_loglik_lm(X = X, y = y, b = b.unrestr, w = weights)
+    LL.restr <- ll.restr$loglik
     # we need the std. deviation adjusted for equality constraints (meq > 0)
-    so.con <- summary_rlm(rfit, Amat = Amat, meq = meq)
-    tau <- so.con$stddev
+    so.restr <- summary_rlm(rfit, Amat = Amat, meq = meq)
+    tau <- so.restr$stddev
     
     #R^2 under the constrained model
     # predicted values under constraints
@@ -201,9 +201,9 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
     
     OUT <- list(CON = NULL,
                 parTable = parTable,
-                constraints = constraints,
-                b.unconstr = b.unconstr,
-                b.constr = b.constr,
+                #constraints = constraints,
+                b.unrestr = b.unrestr,
+                b.restr = b.restr,
                 residuals = residuals,
                 #init.residuals = resid0,
                 wresid = rfit$wresid,
@@ -213,11 +213,11 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
                 scale = model$s,
                 R2.org = R2.org,
                 R2.reduced = R2.reduced,
-                #df.residual = so.con$df[2], # correction for equalities constraints is included.
-                df.residual = so.org$df[2], 
+                df.residual = so.restr$df[2], # correction for equalities constraints is included.
+                #df.residual = so.org$df[2], 
                 s2.unc = tau.unc^2, 
-                s2.con = tau^2, 
-                loglik = LL.con, 
+                s2.restr = tau^2, 
+                loglik = LL.restr, 
                 Sigma = vcov(model),                                             #probably not so robust???
                 Amat = Amat, bvec = bvec, meq = meq, iact = iact,
                 converged = rfit$converged, iter = rfit$iter,
@@ -239,8 +239,8 @@ conRLM.rlm <- function(model, constraints, debug = FALSE,
       #}
       inverted.information <- con_augmented_information(information = OUT$information,
                                                         X = X, 
-                                                        b.unconstr = b.unconstr, 
-                                                        b.constr = b.constr,
+                                                        b.unrestr = b.unrestr, 
+                                                        b.restr = b.restr,
                                                         Amat = Amat, 
                                                         bvec = bvec, meq = meq)
       

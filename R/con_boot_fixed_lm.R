@@ -8,7 +8,7 @@ con_boot_fixed_lm <- function(data, indices, ...) {
     boot_data <- as.data.frame(boot_data)
     colnames(boot_data) <- colnames(data[ ,1:(ncol(data)-2)])
     l$model <- lm(form, data = boot_data)
-    out <- do.call("restriktor", l)$b.constr  
+    out <- do.call("restriktor", l)$b.restr  
     
     OUT <- out
     

@@ -37,57 +37,53 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
   # sample size
   n <- dim(X)[1]
   # unconstrained estimates
-  b.unconstr <- coef(model)
+  b.unrestr <- coef(model)
   # number of parameters
-  p <- length(b.unconstr)
+  p <- length(b.unrestr)
   
-  if(ncol(Amat) != length(b.unconstr)) {
+  if(ncol(Amat) != length(b.unrestr)) {
     stop("length coefficients and ncol(constraints) must be identical")
   }
 
   # compute (weighted) log-likelihood
-  ll.unc <- con_loglik_lm(X = X, y = y, b = b.unconstr, w = weights)
+  ll.unc <- con_loglik_lm(X = X, y = y, b = b.unrestr, w = weights)
   LL.unc <- ll.unc$loglik
-  # ml residual variance
-  s2ml.unc <- ll.unc$Sigma / n
   
   # check if the constraints are in line with the data
-  if (all(Amat %*% c(b.unconstr) - bvec >= 0 * bvec) & meq == 0) {
-    b.constr <- b.unconstr
-    s2.con <- s2.unc
+  if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) & meq == 0) {
+    b.restr <- b.unrestr
+    s2.restr <- s2.unc
     
     OUT <- list(CON = NULL,
                 parTable = parTable,
-                constraints = constraints,
-                b.unconstr = b.unconstr,
-                b.constr = b.unconstr,
+                #constraints = constraints,
+                b.unrestr = b.unrestr,
+                b.restr = b.unrestr,
                 residuals = model$residuals, # unweighted residuals
                 fitted = model$fitted,
                 weights = model$weights,
                 df.residual = model$df.residual,
                 R2.org = so$r.squared, R2.reduced = so$r.squared,
-                s2.unc = s2.unc, s2ml.unc = s2ml.unc,
-                s2.con = s2.unc, s2ml.con = s2ml.unc, 
+                s2.unc = s2.unc, s2.restr = s2.unc, 
                 loglik = LL.unc, Sigma = vcov(model),
                 Amat = Amat, bvec = bvec, meq = meq, iact = NULL, 
                 bootout = NULL, call = cl)  
   } else {
     # compute constrained estimates for lm() and mlm() 
-    out.QP <- con_solver(b.unconstr, X = X, y = y, w = weights, Amat = Amat,
+    out.QP <- con_solver(b.unrestr, X = X, y = y, w = weights, Amat = Amat,
                          bvec = bvec, meq = meq, tol = tol,
                          maxit = ifelse(is.null(control$maxit), 1e04, 
                                         control$maxit))
-    b.constr <- matrix(out.QP$solution, ncol = ncol(y))
-    b.constr[abs(b.constr) < tol] <- 0L
+    b.restr <- matrix(out.QP$solution, ncol = ncol(y))
+    b.restr[abs(b.restr) < tol] <- 0L
     
-    ll.con <- con_loglik_lm(X = X, y = y, b = b.constr, w = weights)
-    LL.con <- ll.con$loglik
-    s2ml.con <- ll.con$Sigma / n
+    ll.restr <- con_loglik_lm(X = X, y = y, b = b.restr, w = weights)
+    LL.restr <- ll.restr$loglik
     # lm
     if (ncol(y) == 1L) {
-      b.constr <- as.vector(b.constr)
-        names(b.constr) <- names(b.unconstr)
-      fitted <- X %*% b.constr
+      b.restr <- as.vector(b.restr)
+        names(b.restr) <- names(b.unrestr)
+      fitted <- X %*% b.restr
       residuals <- y - fitted
       
       # compute R^2
@@ -113,15 +109,15 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
       df.residual <- n - (p - qr(Amat[0:meq,])$rank)
       # compute weighted residuals
       if (is.null(weights)) {
-        s2.con <- sum(residuals^2) / df.residual  
+        s2.restr <- sum(residuals^2) / df.residual  
       } else {
-        s2.con <- sum(weights * residuals^2) / df.residual
+        s2.restr <- sum(weights * residuals^2) / df.residual
       }
     } else { #mlm <FIXME>
       residuals <- y - fitted
-        rownames(b.constr) <- rownames(b.unconstr)
-        colnames(b.constr) <- colnames(b.unconstr)
-      fitted <- X %*% b.constr
+        rownames(b.restr) <- rownames(b.unrestr)
+        colnames(b.restr) <- colnames(b.unrestr)
+      fitted <- X %*% b.restr
       df <- model$df.residual
       df.residual <- df + qr(Amat[0:meq,])$rank
       se <- "none"
@@ -129,19 +125,19 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
 
     OUT <- list(CON = NULL,
                 parTable = parTable,
-                constraints = constraints,
-                b.constr = b.constr, # constrained
-                b.unconstr = b.unconstr, # unconstrained
-                residuals = residuals, # constrained 
-                fitted = fitted, # constrained 
+                #constraints = constraints,
+                b.restr = b.restr, #constrained
+                b.unrestr = b.unrestr, #unconstrained
+                residuals = residuals, #constrained 
+                fitted = fitted, #constrained 
                 weights = weights,
-                df.residual = model$df.residual, # unconstrained
-                #df.residual = df.residual, # constrained
+                #df.residual = model$df.residual, # unconstrained
+                df.residual = df.residual, # constrained
                 R2.org = so$r.squared, R2.reduced = R2.reduced,
-                s2.unc = s2.unc, s2ml.unc = s2ml.unc, # unconstrained
-                s2.con = s2.con, s2ml.con = s2ml.con, # constrained
-                loglik = LL.con, # constrained
-                Sigma = vcov(model), # unconstrained
+                s2.unc = s2.unc,  #unconstrained
+                s2.restr = s2.restr,  #constrained
+                loglik = LL.restr, #constrained
+                Sigma = vcov(model), #unconstrained
                 Amat = Amat, bvec = bvec, meq = meq, iact = out.QP$iact,
                 bootout = NULL, call = cl)
   }
@@ -156,11 +152,11 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
   # based on the standard bootstrap or model.based bootstrap
   if (se != "none") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
-      OUT$information <- 1/s2.con * crossprod(X)
+      OUT$information <- 1/s2.restr * crossprod(X)
       inverted.information <- con_augmented_information(information = OUT$information,
                                                         X = X, 
-                                                        b.unconstr = b.unconstr, 
-                                                        b.constr = b.constr,
+                                                        b.unrestr = b.unrestr, 
+                                                        b.restr = b.restr,
                                                         Amat = Amat, 
                                                         bvec = bvec, meq = meq) 
       attr(OUT$information, "inverted.information") <- inverted.information        

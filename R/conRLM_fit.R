@@ -1,6 +1,7 @@
 # Fit an inequality contrained robust linear model.
 # If method = "M", the original coef and scale are used as starting value.
-# For method = "MM", this can only be when there are no equality constraints.
+# For method = "MM", the original coef and scale can only be used in case of 
+# no equality constraints.
 conRLM_fit <- function(model, maxit = 5000,
                        acc = 1e-14, lqs.control= NULL, 
                        Amat = NULL, bvec = NULL, meq = 0L, ...) {
@@ -11,76 +12,72 @@ conRLM_fit <- function(model, maxit = 5000,
  mf <- match.call(expand.dots = FALSE)
  mf$method <- mf$wt.method <- mf$model <- mf$x.ret <- mf$y.ret <- mf$contrasts <- mf$... <- NULL
   
-# if (method == "model.frame") {
-#   return(mf)
-# }
-  
-  irls.delta <- function(old, new) {
-    sqrt(sum((old - new)^2)/max(1e-20, sum(old^2)))
-  }
+ irls.delta <- function(old, new) {
+  sqrt(sum((old - new)^2)/max(1e-20, sum(old^2)))
+ }
 
-  irls.rrxwr <- function(x, w, r) {
-    w <- sqrt(w)
-    max(abs((matrix(r * w, 1L, length(r)) %*% x)/
-              sqrt(matrix(w, 1L, length(r)) %*% (x^2))))/sqrt(sum(w * r^2))
+ irls.rrxwr <- function(x, w, r) {
+  w <- sqrt(w)
+  max(abs((matrix(r * w, 1L, length(r)) %*% x) / 
+            sqrt(matrix(w, 1L, length(r)) %*% (x^2))))/sqrt(sum(w * r^2))
+ }
+ wmad <- function(x, w) {
+  o <- sort.list(abs(x)); x <- abs(x)[o]; w <- w[o]
+  p <- cumsum(w)/sum(w)
+  n <- sum(p < 0.5)
+  if (p[n + 1L] > 0.5) x[n + 1L]/0.6745 else (x[n + 1L] + x[n + 2L])/(2*0.6745)
+ }
+
+ # response variable
+ y <- as.matrix(model$model[, attr(model$terms, "response")])
+ # model matrix
+ x <- model.matrix(model)[,,drop = FALSE]
+ # scale
+ scale <- model$s
+ # weights
+ weights <- model$weights
+  
+ # original model function call
+ call <- as.list(model$call)
+ # which method M or MM estimation
+ method <- call[["method"]]
+ if (is.null(method)) { method <- "M" } 
+ # psi function (only bisquare)
+ psi <- call[["psi"]]
+ if (is.null(psi)) { psi <- "psi.huber" }
+ psi <- get(as.character(psi))
+ # weights
+ weights <- model$weights
+ #if (any(weights != 1L)) { stop("Restriktor ERROR: weights are not implemented (yet).") }
+ # weights method, inverse of the variance or case 
+ wt.method <- call[["wt.method"]]
+ if (is.null(wt.method)) { wt.method <- "inv.var" } 
+ # down weights 
+ w <- call[["w"]]
+ if (is.null(w)) { w <- rep(1, nrow(x)) }
+ # scale estimator - depends on method
+ scale.est <- call[["scale.est"]]
+ if (is.null(scale.est)) { scale.est <- "MAD" }
+ # tuning constant used for Huber proposal 2 scale estimation.
+ k2 <- call[["k2"]]
+ if (is.null(k2)) { k2 <- 1.345 }
+ # the stopping criterion is based on changes in this vector
+ test.vec <- call[["test.vec"]]
+ if (is.null(test.vec)) { test.vec <- "resid" }
+  
+ xx <- x
+ yy <- y
+ # handling weights
+ if (!missing(weights)) {
+  if (wt.method == "inv.var") {
+    fac <- sqrt(weights)
+    y <- y * fac
+    x <- x * fac
+    wt <- NULL
+  } else {
+    w <- w * weights
+    wt <- weights
   }
-  wmad <- function(x, w) {
-    o <- sort.list(abs(x)); x <- abs(x)[o]; w <- w[o]
-    p <- cumsum(w)/sum(w)
-    n <- sum(p < 0.5)
-    if (p[n + 1L] > 0.5) x[n + 1L]/0.6745 else (x[n + 1L] + x[n + 2L])/(2*0.6745)
-  }
-  
-  # response variable
-  y <- as.matrix(model$model[, attr(model$terms, "response")])
-  # model matrix
-  x <- model.matrix(model)[,,drop = FALSE]
-  # scale
-  scale <- model$s
-  # weights
-  weights <- model$weights
-  
-  # original model function call
-  call <- as.list(model$call)
-  # which method M or MM estimation
-  method <- call[["method"]]
-  if (is.null(method)) { method <- "M" } 
-  # psi function (only bisquare)
-  psi <- call[["psi"]]
-  if (is.null(psi)) { psi <- "psi.huber" }
-  psi <- get(as.character(psi))
-  # weights
-  weights <- model$weights
-  #if (any(weights != 1L)) { stop("Restriktor ERROR: weights are not implemented (yet).") }
-  # weights method, inverse of the variance or case 
-  wt.method <- call[["wt.method"]]
-  if (is.null(wt.method)) { wt.method <- "inv.var" } 
-  # down weights 
-  w <- call[["w"]]
-  if (is.null(w)) { w <- rep(1, nrow(x)) }
-  # scale estimator - depends on method
-  scale.est <- call[["scale.est"]]
-  if (is.null(scale.est)) { scale.est <- "MAD" }
-  # tuning constant used for Huber proposal 2 scale estimation.
-  k2 <- call[["k2"]]
-  if (is.null(k2)) { k2 <- 1.345 }
-  # the stopping criterion is based on changes in this vector
-  test.vec <- call[["test.vec"]]
-  if (is.null(test.vec)) { test.vec <- "resid" }
-  
-  xx <- x
-  yy <- y
-  # handling weights
-  if (!missing(weights)) {
-    if (wt.method == "inv.var") {
-      fac <- sqrt(weights)
-      y <- y * fac
-      x <- x * fac
-      wt <- NULL
-    } else {
-      w <- w * weights
-      wt <- weights
-    }
   } else { 
     wt <- NULL
   }

@@ -36,12 +36,12 @@ conTestF.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
   # unconstrained scale
   scale <- model.org$s
   # parameter estimates
-  b.unconstr <- object$b.unconstr
-  b.constr <- object$b.constr
-  b.eqconstr <- NULL
-  b.constr.alt <- NULL
+  b.unrestr <- object$b.unrestr
+  b.restr <- object$b.restr
+  b.eqrestr <- NULL
+  b.restr.alt <- NULL
   # variable names
-  vnames <- names(b.unconstr)
+  vnames <- names(b.unrestr)
   # constraints stuff
   Amat <- object$Amat
   bvec <- object$bvec
@@ -54,7 +54,7 @@ conTestF.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
   if (type == "global") {
     # check for intercept
     intercept <- any(attr(terms(model.org), "intercept"))
-    g <- length(object$b.constr)
+    g <- length(object$b.restr)
     if (intercept) {
       Amatg <- cbind(rep(0, (g - 1)), diag(rep(1, g - 1))) 
       bvecg <- rep(0, g - 1) 
@@ -66,24 +66,24 @@ conTestF.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
         CALL <- c(list(model.org), call.my)
     rfit <- do.call("conRLM_fit", CALL)
     
-    b.eqconstr <- rfit$coefficients
-    b.eqconstr[abs(b.eqconstr) < tol] <- 0L
-    names(b.eqconstr) <- vnames
-    Ts <- robustFm(x = X, y = y,  beta0 = b.eqconstr, betaA = b.constr, 
+    b.eqrestr <- rfit$coefficients
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
+    names(b.eqrestr) <- vnames
+    Ts <- robustFm(x = X, y = y,  beta0 = b.eqrestr, betaA = b.restr, 
                    scale = scale, cc = 4.685061)
   } else if (type == "A") {
     call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec)
         CALL <- c(list(model.org), call.my)
     rfit <- do.call("conRLM_fit", CALL)
     
-    b.eqconstr <- rfit$coefficients
-    b.eqconstr[abs(b.eqconstr) < tol] <- 0L
-    names(b.eqconstr) <- vnames
-    Ts <- robustFm(x = X, y = y,  beta0 = b.eqconstr, betaA = b.constr, 
+    b.eqrestr <- rfit$coefficients
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
+    names(b.eqrestr) <- vnames
+    Ts <- robustFm(x = X, y = y,  beta0 = b.eqrestr, betaA = b.restr, 
                    scale = scale, cc = 4.685061)
   } else if (type == "B") {
     if (meq.alt == 0L) {
-      Ts <- robustFm(x = X, y = y,  beta0 = b.constr, betaA = b.unconstr, 
+      Ts <- robustFm(x = X, y = y,  beta0 = b.restr, betaA = b.unrestr, 
                      scale = scale, cc = 4.685061)
     } else {
       # some equality may be preserved in the alternative hypothesis.
@@ -93,10 +93,10 @@ conTestF.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
         CALL <- c(list(model.org), call.my)
         rfit <- do.call("conRLM_fit", CALL)
         
-        b.constr.alt <- rfit$coefficients
-        b.constr.alt[abs(b.constr.alt) < tol] <- 0L
-        names(b.constr.alt) <- vnames
-        Ts <- robustFm(x = X, y = y,  beta0 = b.constr, betaA = b.constr.alt, 
+        b.restr.alt <- rfit$coefficients
+        b.restr.alt[abs(b.restr.alt) < tol] <- 0L
+        names(b.restr.alt) <- vnames
+        Ts <- robustFm(x = X, y = y,  beta0 = b.restr, betaA = b.restr.alt, 
                        scale = scale, cc = 4.685061)
       } else {
         stop("neq.alt must not be larger than neq.")
@@ -154,10 +154,10 @@ conTestF.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
   OUT <- list(CON = object$CON,
               type = type,
               boot = boot,
-              b.eqconstr = NULL,
-              b.unconstr = b.unconstr,
-              b.constr = b.constr,
-              b.constr.alt = b.constr.alt,
+              b.eqrestr = NULL,
+              b.unrestr = b.unrestr,
+              b.restr = b.restr,
+              b.restr.alt = b.restr.alt,
               Amat = Amat,
               bvec = bvec,
               meq = meq,
@@ -170,7 +170,7 @@ conTestF.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
               model.org = model.org)
   
   if (type == "A" | type == "global") { 
-    OUT$b.eqconstr <- b.eqconstr 
+    OUT$b.eqrestr <- b.eqrestr 
   }
   
   class(OUT) <- "conTest"
@@ -219,12 +219,12 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
   # unconstrained scale
   scale <- model.org$s
   # parameter estimates
-  b.unconstr <- object$b.unconstr
-  b.constr <- object$b.constr
-  b.eqconstr <- NULL
-  b.constr.alt <- NULL
+  b.unrestr <- object$b.unrestr
+  b.restr <- object$b.restr
+  b.eqrestr <- NULL
+  b.restr.alt <- NULL
   # variable names
-  vnames <- names(b.unconstr)
+  vnames <- names(b.unrestr)
   # constraints stuff
   Amat <- object$Amat
   bvec <- object$bvec
@@ -237,7 +237,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
   if (type == "global") {
     # check for intercept
     intercept <- any(attr(terms(model.org), "intercept"))
-    g <- length(object$b.constr)
+    g <- length(object$b.restr)
     if (intercept) {
       Amatg <- cbind(rep(0, (g - 1)), diag(rep(1, g - 1))) 
       bvecg <- rep(0, g - 1) 
@@ -249,11 +249,11 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
     CALL <- c(list(model.org), call.my)
     rfit <- do.call("conRLM_fit", CALL)
     
-    b.eqconstr <- rfit$coefficients
-    b.eqconstr[abs(b.eqconstr) < tol] <- 0L
-    names(b.eqconstr) <- vnames
-    out0 <- robustWaldScores(x = X, y = y,  beta0 = b.eqconstr, 
-                             betaA = b.constr, scale = scale, test = "Wald")
+    b.eqrestr <- rfit$coefficients
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
+    names(b.eqrestr) <- vnames
+    out0 <- robustWaldScores(x = X, y = y,  beta0 = b.eqrestr, 
+                             betaA = b.restr, scale = scale, test = "Wald")
     Ts <- out0$Ts
     COV <- out0$V
   } else if (type == "A") {
@@ -261,19 +261,19 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
     CALL <- c(list(model.org), call.my)
     rfit <- do.call("conRLM_fit", CALL)
     
-    b.eqconstr <- rfit$coefficients
-    b.eqconstr[abs(b.eqconstr) < tol] <- 0L
-    names(b.eqconstr) <- vnames
+    b.eqrestr <- rfit$coefficients
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
+    names(b.eqrestr) <- vnames
     
-    out1 <- robustWaldScores(x = X, y = y,  beta0 = b.eqconstr, 
-                             betaA = b.constr, scale = scale, test = "Wald")
+    out1 <- robustWaldScores(x = X, y = y,  beta0 = b.eqrestr, 
+                             betaA = b.restr, scale = scale, test = "Wald")
     Ts <- out1$Ts
     COV <- out1$V
   }
   else if (type == "B") {
     if (meq.alt == 0L) {
-      out2 <- robustWaldScores(x = X, y = y,  beta0 = b.constr, 
-                               betaA = b.unconstr, scale = scale, test = "Wald")
+      out2 <- robustWaldScores(x = X, y = y,  beta0 = b.restr, 
+                               betaA = b.unrestr, scale = scale, test = "Wald")
       Ts <- out2$Ts
       COV <- out2$V
     } else {
@@ -284,11 +284,11 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
         CALL <- c(list(model.org), call.my)
         rfit <- do.call("conRLM_fit", CALL)
     
-        b.constr.alt <- rfit$coefficients
-        b.constr.alt[abs(b.constr.alt) < tol] <- 0L
-        names(b.constr.alt) <- vnames
-        out3 <- robustWaldScores(x = X, y = y,  beta0 = b.constr, 
-                                 betaA = b.constr.alt, scale = scale, 
+        b.restr.alt <- rfit$coefficients
+        b.restr.alt[abs(b.restr.alt) < tol] <- 0L
+        names(b.restr.alt) <- vnames
+        out3 <- robustWaldScores(x = X, y = y,  beta0 = b.restr, 
+                                 betaA = b.restr.alt, scale = scale, 
                                  test = "Wald")
         Ts <- out3$Ts
         COV <- out3$V
@@ -349,10 +349,10 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
   OUT <- list(CON = object$CON,
               type = type,
               boot = boot,
-              b.eqconstr = NULL,
-              b.unconstr = b.unconstr,
-              b.constr = b.constr,
-              b.constr.alt = b.constr.alt,
+              b.eqrestr = NULL,
+              b.unrestr = b.unrestr,
+              b.restr = b.restr,
+              b.restr.alt = b.restr.alt,
               Amat = Amat,
               bvec = bvec,
               meq = meq,
@@ -366,7 +366,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
   
   
   if (type == "A" | type == "global") { 
-    OUT$b.eqconstr <- b.eqconstr 
+    OUT$b.eqrestr <- b.eqrestr 
   }
   
   class(OUT) <- "conTest"
@@ -416,12 +416,12 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
   # unconstrained scale
   scale <- model.org$s
   # parameter estimates
-  b.unconstr <- object$b.unconstr
-  b.constr <- object$b.constr
-  b.eqconstr <- NULL
-  b.constr.alt <- NULL
+  b.unrestr <- object$b.unrestr
+  b.restr <- object$b.restr
+  b.eqrestr <- NULL
+  b.restr.alt <- NULL
   # variable names
-  vnames <- names(b.unconstr)
+  vnames <- names(b.unrestr)
   # constraints stuff
   Amat <- object$Amat
   bvec <- object$bvec
@@ -434,7 +434,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
   if (type == "global") {
     # check for intercept
     intercept <- any(attr(terms(model.org), "intercept"))
-    g <- length(object$b.constr)
+    g <- length(object$b.restr)
     if (intercept) {
       Amatg <- cbind(rep(0, (g - 1)), diag(rep(1, g - 1))) 
       bvecg <- rep(0, g - 1) 
@@ -446,11 +446,11 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
         CALL <- c(list(model.org), call.my)
     rfit <- do.call("conRLM_fit", CALL)
     
-    b.eqconstr <- rfit$coefficients
-    b.eqconstr[abs(b.eqconstr) < tol] <- 0L
-    names(b.eqconstr) <- vnames
-    out0 <- robustWaldScores(x = X, y = y,  beta0 = b.eqconstr, 
-                             betaA = b.constr, scale = scale, test = "score")    
+    b.eqrestr <- rfit$coefficients
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
+    names(b.eqrestr) <- vnames
+    out0 <- robustWaldScores(x = X, y = y,  beta0 = b.eqrestr, 
+                             betaA = b.restr, scale = scale, test = "score")    
     Ts <- out0$Ts
     COV <- out0$V
   } else if (type == "A") {
@@ -458,18 +458,18 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
             CALL <- c(list(model.org), call.my)
     rfit <- do.call("conRLM_fit", CALL)
     
-    b.eqconstr <- rfit$coefficients
-    b.eqconstr[abs(b.eqconstr) < tol] <- 0L
-    names(b.eqconstr) <- vnames
+    b.eqrestr <- rfit$coefficients
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
+    names(b.eqrestr) <- vnames
     
-    out1 <- robustWaldScores(x = X, y = y,  beta0 = b.eqconstr, 
-                             betaA = b.constr, scale = scale, test = "score")
+    out1 <- robustWaldScores(x = X, y = y,  beta0 = b.eqrestr, 
+                             betaA = b.restr, scale = scale, test = "score")
     Ts <- out1$Ts
     COV <- out1$V
   } else if (type == "B") {
     if (meq.alt == 0L) {
-      out2 <- robustWaldScores(x = X, y = y,  beta0 = b.constr, 
-                               betaA = b.unconstr, scale = scale, test = "score")
+      out2 <- robustWaldScores(x = X, y = y,  beta0 = b.restr, 
+                               betaA = b.unrestr, scale = scale, test = "score")
       Ts <- out2$Ts
       COV <- out2$V
     } else {
@@ -480,11 +480,11 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
                 CALL <- c(list(model.org), call.my)
         rfit <- do.call("conRLM_fit", CALL)
         
-        b.constr.alt <- rfit$coefficients
-        b.constr.alt[abs(b.constr.alt) < tol] <- 0L
-        names(b.constr.alt) <- vnames
-        out3 <- robustWaldScores(x = X, y = y,  beta0 = b.constr, 
-                                 betaA = b.constr.alt, scale = scale, 
+        b.restr.alt <- rfit$coefficients
+        b.restr.alt[abs(b.restr.alt) < tol] <- 0L
+        names(b.restr.alt) <- vnames
+        out3 <- robustWaldScores(x = X, y = y,  beta0 = b.restr, 
+                                 betaA = b.restr.alt, scale = scale, 
                                  test = "score")
         Ts <- out3$Ts
         COV <- out3$V
@@ -545,10 +545,10 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
   OUT <- list(CON = object$CON,
               type = type,
               boot = boot,
-              b.eqconstr = NULL,
-              b.unconstr = b.unconstr,
-              b.constr = b.constr,
-              b.constr.alt = b.constr.alt,
+              b.eqrestr = NULL,
+              b.unrestr = b.unrestr,
+              b.restr = b.restr,
+              b.restr.alt = b.restr.alt,
               Amat = Amat,
               bvec = bvec,
               meq = meq,
@@ -562,7 +562,7 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
   
   
   if (type == "A" | type == "global") { 
-    OUT$b.eqconstr <- b.eqconstr 
+    OUT$b.eqrestr <- b.eqrestr 
   }
   
   class(OUT) <- "conTest"

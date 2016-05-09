@@ -3,7 +3,7 @@ con_bootdata_lm <- function(data, indices, ...){
     form <- l$form
     dat <- data[indices,]
     l$model <- lm(form, data = dat)
-    out <- do.call("restriktor", l)$b.constr
+    out <- do.call("restriktor", l)$b.restr
     
     OUT <- out
     

@@ -1,7 +1,7 @@
 # Ref: Ronald Schoenberg (1997). Constrained Maximum Likelihood. Computational 
 # Economics, 10, 251-266
 con_augmented_information <- function(information, X, 
-                                      b.unconstr, b.constr,  
+                                      b.unrestr, b.restr,  
                                       Amat, bvec, meq) {
   H <- Amat
   npar <- NCOL(information)
@@ -11,7 +11,7 @@ con_augmented_information <- function(information, X,
   }
   
   # lagrangean coefs
-  lambda <- as.numeric(solve(H%*%solve(t(X)%*%X)%*%t(H)) %*% (H%*%b.unconstr-bvec))
+  lambda <- as.numeric(solve(H%*%solve(t(X)%*%X)%*%t(H)) %*% (H%*%b.unrestr-bvec))
   
   #equality constraints
   if (meq > 0L) {
@@ -26,7 +26,7 @@ con_augmented_information <- function(information, X,
   }
   
   #inactive inequality constraints
-  inactive.idx <- H %*% b.unconstr - bvec >= 0 * bvec
+  inactive.idx <- H %*% b.unrestr - bvec >= 0 * bvec
   #active inequality constraints
   H.active <- H[!inactive.idx,,drop=FALSE]
   #inactive inequality constraints
@@ -34,7 +34,7 @@ con_augmented_information <- function(information, X,
   # diagonal matrix with Lagrangean coefficients
   Gamma <- diag(lambda, NROW(H), NROW(H))
   # slack parameters
-  slacks <- H %*% b.constr - bvec
+  slacks <- H %*% b.restr - bvec
   slacks[abs(slacks) < sqrt(.Machine$double.eps)] <- 0L
   # diagonal matrix with slack parameters for the inactive constraints
   Z <- matrix(0L, nrow = 0, ncol = 0)

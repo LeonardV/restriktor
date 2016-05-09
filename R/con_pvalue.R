@@ -225,7 +225,7 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL, type = "A",
 
   if (type == "global") {
     intercept <- model.org$assign[1] == 0L
-    g <- length(model$b.constr)
+    g <- length(model$b.restr)
     if (intercept) {
       Amatg <- cbind(rep(0, (g - 1)), diag(rep(1, g - 1))) 
       bvecg <- rep(0, g - 1) 

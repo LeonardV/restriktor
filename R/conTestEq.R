@@ -18,16 +18,16 @@ conTestEq.lm <- function(object, test = "default", ...) {
     if (test == "wald" || test == "x2" || test == "chisq") {
       OUT <- con_test_Wald(VCOV    = object$Sigma,
                            JAC     = object$Amat, #CON$ceq.JAC,
-                           theta.r = c(object$Amat %*% object$b.unconstr)) #CON$ceq.theta)
+                           theta.r = c(object$Amat %*% object$b.unrestr)) #CON$ceq.theta)
     OUT$Amat <- object$Amat
     OUT$bvec <- object$bvec
     OUT$meq <- object$meq
-    OUT$b.constr <- object$b.constr
-    OUT$b.unconstr <- object$b.unconstr
+    OUT$b.restr <- object$b.restr
+    OUT$b.unrestr <- object$b.unrestr
     } else if (test == "f" || test == "ftest") {
       Wald <- con_test_Wald(VCOV    = object$Sigma,
                             JAC     = object$Amat, #CON$ceq.JAC,
-                            theta.r = c(object$Amat %*% object$b.unconstr)) #CON$ceq.theta))
+                            theta.r = c(object$Amat %*% object$b.unrestr)) #CON$ceq.theta))
       # convert Wald to F
       OUT <- list()
       OUT$test <- "F"
@@ -39,13 +39,13 @@ conTestEq.lm <- function(object, test = "default", ...) {
       OUT$Amat <- object$Amat
       OUT$bvec <- object$bvec
       OUT$meq <- object$meq
-      OUT$b.constr <- object$b.constr
-      OUT$b.unconstr <- object$b.unconstr
+      OUT$b.restr <- object$b.restr
+      OUT$b.unrestr <- object$b.unrestr
     } else {
       stop("restriktor ERROR: test ", sQuote(test), " not (yet) implemented. Choose \"F\" or \"Wald\"")
     }
   } else if (#length(CON$ceq.nonlinear.idx) == 0L &&
-    #length(CON$cin.linear.idx)     > 0L && # some inequalities constr.
+    #length(CON$cin.linear.idx)     > 0L && # some inequalities restr.
     #length(CON$cin.nonlinear.idx) == 0L
     nrow(object$Amat != object$meq)) {
     

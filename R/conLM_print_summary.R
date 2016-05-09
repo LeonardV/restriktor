@@ -18,7 +18,7 @@ print.summary.conLM <- function(object, digits = max(3, getOption("digits") - 2)
   cat("Call:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), "\n\n", sep = "")
   
   cat(if (!is.null(x$weights) && diff(range(x$weights))) 
-    "Weighted ", "Residuals:\n\n", sep = "")
+    "Weighted ", "Residuals:\n", sep = "")
   if (rdf > 5L) {
     nam <- c("Min", "1Q", "Median", "3Q", "Max")
     rq <- if (length(dim(resid)) == 2L) {

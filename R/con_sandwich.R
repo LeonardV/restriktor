@@ -30,8 +30,8 @@ bread.conRLM <- function(x, ...) {
     rval <- solve(rval) #/ x$model.org$s * nrow(xmat)                           #solve(rval)
     
     rval <- con_augmented_information(information = rval, X = xmat, 
-                                      b.unconstr = x$b.unconstr, 
-                                      b.constr = x$b.constr, Amat = x$Amat, 
+                                      b.unrestr = x$b.unrestr, 
+                                      b.restr = x$b.restr, Amat = x$Amat, 
                                       bvec = x$bvec, 
                                       meq = x$meq) 
     return(rval)

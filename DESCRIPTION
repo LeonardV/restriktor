@@ -9,7 +9,7 @@ Authors@R: c(person(given = "Yves", family = "Rosseel",
                     email = "Leonard.Vanbrabant@ugent.be")
             )
 Description: Allow for easy-to-use testing of linear equality and inequality 
-  constraints about parameters and effects, in linear and robust linear 
+  restriktions about parameters and effects, in linear and robust linear 
   statistical models.
 Depends: R(>= 3.0.0), methods
 Imports: boot, ic.infer, lavaan, mvtnorm, quadprog, zoo

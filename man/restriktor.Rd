@@ -33,18 +33,18 @@ restriktor(model, constraints, se = "standard",
   error. For more information about constructing the matrix \eqn{R} 
   see details. 
   }
-  \item{se}{if "standard" (default), conventional standard errors 
+  \item{se}{if "\code{standard}" (default), conventional standard errors 
   are computed based on inverting the observed augmented information 
   matrix. If "const", homoskedastic standard errors are computed. 
-  If "HC0" or just "HC", heteroskedastic robust standard errors 
-  are computed (a.k.a Huber White). The options "HC1", "HC2", 
-  "HC3", "HC4", "HC4m", and "HC5" are refinements of "HC0". 
-  For more details about heteroskedastic robust standard errors 
-  see \code{\link{vcovHC}} in the \pkg{sandwich} package. If 
-  "boot.standard", bootstrapped standard errors are computed 
-  using standard bootstrapping. If "boot.model.based" or 
-  "boot.residual", bootstrapped standard errors are computed 
-  using model-based bootstrapping. If "none", no standard errors 
+  If "\code{HC0}" or just "\code{HC}", heteroskedastic robust standard 
+  errors are computed (a.k.a Huber White). The options "\code{HC1}", 
+  "\code{HC2}", "\code{HC3}", "\code{HC4}", "\code{HC4m}", and 
+  "\code{HC5}" are refinements of "\code{HC0}". For more details about 
+  heteroskedastic robust standard errors see \code{\link{vcovHC}} in 
+  the \pkg{sandwich} package. If "\code{boot.standard}", bootstrapped standard 
+  errors are computed using standard bootstrapping. If "\code{boot.model.based}" 
+  or "\code{boot.residual}", bootstrapped standard errors are computed 
+  using model-based bootstrapping. If "\code{none}", no standard errors 
   are computed. 
   }
   \item{rhs}{vector on the right-hand side of the constraints; 
@@ -55,12 +55,21 @@ restriktor(model, constraints, se = "standard",
   }
   \item{neq}{integer (default = 0) treating the number of 
   constraints rows as equality constraints instead of inequality 
-  constraints. For example, if neq = 2, this means that the first 
+  constraints. For example, if \code{neq = 2}, this means that the first 
   two rows of the constraints matrix \eqn{R} are treated as equality 
   constraints. Note: only used if constraints input is a matrix or 
   vector.
   }
-  \item{control}{a list of control arguments; see details.
+  \item{control}{a list of control arguments: 
+    \itemize{
+      \item \code{tol} numerical tolerance value. Estimates smaller than \code{tol} 
+      are set to 0.
+      \item \code{absval} tolerance criterion for convergence. Only needed for
+      objects of class mlm (not yet available).
+      \item \code{maxit} see \code{\link{rlm}}
+      \item \code{acc} see \code{\link{rlm}}
+      \item \code{lqs.control} see \code{\link{rlm}} 
+    }
   }
   \item{debug}{if TRUE, debugging information about the constraints
   is printed out.
@@ -68,84 +77,83 @@ restriktor(model, constraints, se = "standard",
 }
 
 \details{
-\code{restriktor} is a convenience function that takes a symbolic
-description as constraint input and translates it to the constraint
-matrix/vector \eqn{R}, the \eqn{rhs} and \eqn{neq}. The real work 
-horses are the \code{conLM} and the \code{conRLM} functions. The 
-constraint syntax can be specified in two ways. First as a 
-literal string enclosed by single quotes as shown below: 
-
-\preformatted{myConstraints <- '
-  # 1. inequality constraints
-    x1 > 0
-    x1 < x2
+  \code{restriktor} is a convenience function that takes a symbolic
+  description as constraint input and translates it to the constraint
+  matrix/vector \eqn{R}, the \eqn{rhs} and \eqn{neq}. The real work 
+  horses are the \code{conLM} and the \code{conRLM} functions. The 
+  constraint syntax can be specified in two ways. First as a 
+  literal string enclosed by single quotes as shown below: 
   
-  ! 2. equality constraints  
-    x3 == x4; x4 == x5    
-'  
-}
-
-Second, the above constraints syntax can also be written in 
-matrix/vector notation as:
-\preformatted{myConstraints <-
-  rbind(c(0, 0, 0,-1, 1, 0), #equality constraint x3 == x4
-        c(0, 0, 0, 0,-1, 1), #equality constraint x4 == x5
-        c(0, 1, 0, 0, 0, 0), #inequality constraint x1 > rhs
-        c(0,-1, 1, 0, 0, 0)) #inequality constraint x1 < x2
-
-The first column refers to the intercept, the remaining five
-columns refer to the regression coefficients x1 to x5.
-
-#rhs is equal to the number of myConstraints rows.      
-myRhs <- c(0,0,0,0) 
+  \preformatted{myConstraints <- '
+    # 1. inequality constraints
+      x1 > 0
+      x1 < x2
+    
+    ! 2. equality constraints  
+      x3 == x4; x4 == x5    
+  '  
+  }
   
-#the first two rows should be considered as equality constraints
-myNeq <- 2  
-}
-
-Blank lines and comments can be used in between the constraints, 
-and constraints can be split over multiple lines. Both the sharp 
-(#) and the exclamation (!) characters can be used to start a 
-comment. Multiple constraints can be placed on a single line if 
-they are separated by a semicolon (;).
-
-There can be three types of symoblic descriptions in the 
-constraints syntax:
-\enumerate{
-
-    \item Equality constraints: The "==" operator can be used to 
-    define equality constraints (e.g., x1 == 1 or x1 == x2).
+  Second, the above constraints syntax can also be written in 
+  matrix/vector notation as:
+  \preformatted{myConstraints <-
+    rbind(c(0, 0, 0,-1, 1, 0), #equality constraint x3 == x4
+          c(0, 0, 0, 0,-1, 1), #equality constraint x4 == x5
+          c(0, 1, 0, 0, 0, 0), #inequality constraint x1 > rhs
+          c(0,-1, 1, 0, 0, 0)) #inequality constraint x1 < x2
+  
+  The first column refers to the intercept, the remaining five
+  columns refer to the regression coefficients x1 to x5.
+  
+  #rhs is equal to the number of myConstraints rows.      
+  myRhs <- c(0,0,0,0) 
     
-    \item Inequality constraints: The "<" or ">" operator can be 
-    used to define inequality constraints (e.g., x1 > 1 or x1 < x2).
-    
-    \item Newly defined parameters: The ":=" operator can be used 
-    to define new parameters, which take on values that are an 
-    arbitrary function of the original model parameters. The 
-    function must be specified in terms of the parameter names 
-    in coef(model) (e.g., new := x1 + 2*x2). By default, the 
-    standard errors for these defined parameters are computed by 
-    using the so-called Delta method.
-}
+  #the first two rows should be considered as equality constraints
+  myNeq <- 2  
+  }
+  
+  Blank lines and comments can be used in between the constraints, 
+  and constraints can be split over multiple lines. Both the sharp 
+  (#) and the exclamation (!) characters can be used to start a 
+  comment. Multiple constraints can be placed on a single line if 
+  they are separated by a semicolon (;).
+  
+  There can be three types of symoblic descriptions in the 
+  constraints syntax:
+  \enumerate{
+  
+      \item Equality constraints: The "\code{==}" operator can be used to 
+      define equality constraints (e.g., \code{x1 == 1} or \code{x1 == x2}).
+      
+      \item Inequality constraints: The "\code{<}" or "\code{>}" operator can be 
+      used to define inequality constraints (e.g., \code{x1 > 1} or \code{x1 < x2}).
+      
+      \item Newly defined parameters: The "\code{:=}" operator can be used 
+      to define new parameters, which take on values that are an 
+      arbitrary function of the original model parameters. The 
+      function must be specified in terms of the parameter names 
+      in \code{coef(model)} (e.g., \code{new := x1 + 2*x2}). By default, the 
+      standard errors for these defined parameters are computed by 
+      using the so-called Delta method.
+  }
 
   Variable names of interaction effects in an lm object and an 
   rlm object are shown as semi-colons (:) between the variables. 
   In order to impose restriktions on parameters of interaction 
   effects, the semi-colon must be replaced by a dot (.). Thus, 
-  an interaction effect "x3:x4" becomes "x3.x4" (e.g., x3.x4 > 0). 
-  In addition, the intercept is shown as "(Intercept)". In order 
-  to impose restriktions on the intercept both parentheses must 
-  be replaced by a dot "(.Intercept.)" (e.g.,.Intercept. > 10).
-  Note: in most practical situations we do not impose restriktions
-  on the intercept because we do not have prior knowledge about 
-  the intercept. Moreover, the sign of the intercept can be 
-  changed arbitrarily by shifting the response variable \eqn{y}.
+  an interaction effect "\code{x3:x4}" becomes "\code{x3.x4}" 
+  (e.g., \code{x3.x4 > 0}). In addition, the intercept is shown as 
+  "\code{(Intercept)}". In order to impose restriktions on the intercept 
+  both parentheses must be replaced by a dot "\code{.Intercept.}" 
+  (e.g.,\code{.Intercept. > 10}). Note: in most practical situations 
+  we do not impose restriktions on the intercept because we do not have 
+  prior knowledge about the intercept. Moreover, the sign of the 
+  intercept can be changed arbitrarily by shifting the response 
+  variable \eqn{y}.
   
-  Each element can be modified using arithmetic operators ("*", 
-  "+"", "-" and "/"). For example, if x2 is expected to be twice 
-  as large as x1, then "2*x2 == x1". 
-  
-  
+  Each element can be modified using arithmetic operators. For example, 
+  if \code{x2} is expected to be twice as large as \code{x1}, 
+  then "\code{2*x2 == x1}". 
 }
 \value{
 An object of class conLM or conRLM, for which a print and a 
@@ -233,20 +241,23 @@ idx <- which(DATA$Group == 3)
 DATA <- DATA[-idx, ]
 DATA$Group <- factor(DATA$Group)
 
+# fit unrestrikted linear model
 fit1.lm <- lm(Age ~ Group, data = DATA)
+
+# the variable names can be used to impose restriktions on
+# the corresponding regression parameters.
 coef(fit1.lm)
 
 # restrikted linear model with restriktions that the walking 
 # exercises would not have a negative effect of increasing the 
 # mean age at which a child starts to walk. 
-
 fit1.con <- restriktor(fit1.lm, constraints = "Group2 > 0; Group2 < Group4")
 summary(fit1.con)
 
 \dontrun{ 
 # Or in matrix notation.
 myConstraints_mat1 <- rbind(c(0, 1, 0),
-                           c(0,-1, 1))
+                            c(0,-1, 1))
 myRhs1 <- rep(0L, nrow(myConstraints_mat1)) 
 myNeq1 <- 0
 
@@ -263,10 +274,10 @@ means <- c(1,2,1,3)
 nm <- length(means)
 group <- as.factor(rep(1:nm, each = n))
 y <- cbind(c(MASS:::mvrnorm(n, mu = means, Sigma = diag(nm)), nrow(n)))
-DATA <- data.frame(y, group)
+DATA2 <- data.frame(y, group)
 
-# unrestrikted robust linear model
-fit2.rlm <- MASS:::rlm(y ~ group, data = DATA, method = "MM")
+# fit unrestrikted robust linear model
+fit2.rlm <- MASS:::rlm(y ~ group, data = DATA2, method = "MM")
 coef(fit2.rlm)
 
 ## increasing means
@@ -314,8 +325,9 @@ fit4.con <- restriktor(fit2.lm, constr = myConstraints4,
                        se = "boot.model.based", B = 9)
 summary(fit4.con)
 
-
-## Is the average effect (AVE) larger than zero?
+# restriktor can also be used to define effects using the := operator 
+# and impose restriktions on them. For example, is the 
+# average effect (AVE) larger than zero?
 n <- 30
 a <- 10; b1 = 0.5; b2 = 1; b3 = 1.5
 # Generate 30 trials
@@ -323,10 +335,10 @@ X <- c(rep(c(0), n/2), rep(c(1), n/2)) # '0' 15 times, '1' 15 times
 set.seed(90) 
 Z <- rnorm(n, 16, 5)
 y = a + b1*X + b2*Z + b3*X*Z + rnorm(n, 0, sd = 10) 
-DATA2 = data.frame(cbind(y, X, Z))
+DATA3 = data.frame(cbind(y, X, Z))
 
 #fit linear model with interaction
-fit5.lm <- lm(y ~ X*Z, data = DATA2)
+fit5.lm <- lm(y ~ X*Z, data = DATA3)
 
 fit5.con <- restriktor(fit5.lm, constraints = "AVE := X + 16.86137*X.Z; 
                                                AVE > 0")

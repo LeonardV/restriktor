@@ -2,7 +2,7 @@
 # formultivariate linear models under inequality constraints for incomplete data.
 # Journal of Statistical Planning and Inference 142, 2926-2942.
 con_solver <- function(b.unrestr, X, y, w, Amat, bvec, meq,
-                       maxit = 10000, tol = sqrt(.Machine$double.eps)) {
+                       maxit = 100000, absval = sqrt(.Machine$double.eps)) {
   val <- 0
   y <- as.matrix(y)
   n <- dim(X)[1]
@@ -22,13 +22,13 @@ con_solver <- function(b.unrestr, X, y, w, Amat, bvec, meq,
     out <- solve.QP(Dmat = Dmat, dvec = dvec, Amat = t(Amat),
                            bvec = bvec, meq = meq)
 
-    if (abs(out$value - val) <= tol) {
+    if (abs(out$value - val) <= absval) {
       break
     } else {
       val <- out$value
     }
     
-    if (i == maxit & abs(out$value - val) > tol) {
+    if (i == maxit & abs(out$value - val) > absval) {
       warning(gettextf("'quadprog' failed to converge in %d steps", maxit), 
               domain = NA)
     }  

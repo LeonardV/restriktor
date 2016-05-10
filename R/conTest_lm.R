@@ -2,7 +2,7 @@
 
 # REF: Silvapulle and Sen (2005). Constrained statistical inference. Chapter 2.
 conTestF.lm <- function(object, type = "A", boot = "no", neq.alt = 0,
-                        control = NULL, tol = sqrt(.Machine$double.eps), ...) {
+                        control = NULL, ...) {
   
   # rename for internal use
   meq.alt <- neq.alt
@@ -65,24 +65,28 @@ conTestF.lm <- function(object, type = "A", boot = "no", neq.alt = 0,
     } 
     # call quadprog
     b.eqrestr <- con_solver(b.unrestr, X = X, y = y, w = w, Amat = Amatg,
-                             bvec = bvecg, meq = nrow(Amatg),
-                             tol = ifelse(is.null(control$tol), 1e-09, 
-                                          control$tol),
-                             maxit = ifelse(is.null(control$maxit), 1e04, 
-                                            control$maxit))$solution
+                            bvec = bvecg, meq = nrow(Amatg),
+                            absval = ifelse(is.null(control$absval), 1e-09, 
+                                            control$absval),
+                            maxit = ifelse(is.null(control$maxit), 1e04, 
+                                           control$maxit))$solution
     # fix estimates to zero 
-    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
+    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
+                                      sqrt(.Machine$double.eps),                                        
+                                      control$tol)] <- 0L
       names(b.eqrestr) <- vnames
     # compute global test statistic
     Ts <- c(t(b.restr - b.eqrestr) %*% solve(COV, b.restr - b.eqrestr))
   } else if (type == "A") {
     b.eqrestr <- con_solver(b.unrestr, X = X, y = y, w = w, Amat = Amat,
-                                bvec = bvec, meq = nrow(Amat),
-                                tol = ifelse(is.null(control$tol), 1e-09, 
-                                             control$tol),
-                                maxit = ifelse(is.null(control$maxit), 1e04, 
-                                               control$maxit))$solution
-    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
+                            bvec = bvec, meq = nrow(Amat),
+                            absval = ifelse(is.null(control$absval), 1e-09, 
+                                            control$absval),
+                            maxit = ifelse(is.null(control$maxit), 1e04, 
+                                           control$maxit))$solution
+    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
+                                      sqrt(.Machine$double.eps),                                        
+                                      control$tol)] <- 0L
       names(b.eqrestr) <- vnames
     # compute test statistic for hypothesis test type A
     Ts <- c(t(b.restr - b.eqrestr) %*% solve(COV, b.restr - b.eqrestr))
@@ -94,12 +98,15 @@ conTestF.lm <- function(object, type = "A", boot = "no", neq.alt = 0,
     } else {
       if (meq.alt != 0L && meq.alt <= meq) {
         b.restr.alt <- con_solver(b.unrestr, X = X, y = y, w = w, 
-                                   Amat = Amat[1:meq.alt,,drop = FALSE],
-                                   bvec = bvec[1:meq.alt], meq = meq.alt,
-                                   tol = ifelse(is.null(control$tol), 1e-09, 
-                                                control$tol),
-                                   maxit = ifelse(is.null(control$maxit), 1e04, 
-                                                  control$maxit))$solution
+                                  Amat = Amat[1:meq.alt,,drop = FALSE],
+                                  bvec = bvec[1:meq.alt], meq = meq.alt,
+                                  absval = ifelse(is.null(control$absval), 1e-09, 
+                                                  control$absval),
+                                  maxit = ifelse(is.null(control$maxit), 1e04, 
+                                                 control$maxit))$solution
+        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol), 
+                                              sqrt(.Machine$double.eps),                                        
+                                              control$tol)] <- 0L
         names(b.restr.alt) <- vnames
         # compute test statistic for hypothesis test type B when some equalities may 
         # be preserved in the alternative hypothesis.
@@ -197,7 +204,7 @@ conTestF.lm <- function(object, type = "A", boot = "no", neq.alt = 0,
 
 # REF: Silvapulle and Sen (2005). Constrained statistical inference. Chapter 3.
 conTestLRT.lm <- function(object, type = "A", boot = "no", neq.alt = 0,
-                           control = NULL, tol = sqrt(.Machine$double.eps), ...) {
+                           control = NULL, ...) {
 
   # rename for internal use
   meq.alt <- neq.alt
@@ -259,13 +266,15 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", neq.alt = 0,
       bvecg <- rep(0, g) 
     } 
     b.eqrestr <- con_solver(b.unrestr, X = X, y = y, w = w, Amat = Amatg,
-                             bvec = bvecg, meq = nrow(Amatg),
-                             tol = ifelse(is.null(control$tol), 1e-09, 
-                                          control$tol),
-                             maxit = ifelse(is.null(control$maxit), 1e04, 
-                                            control$maxit))$solution
-    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
-      names(b.eqrestr) <- vnames
+                            bvec = bvecg, meq = nrow(Amatg),
+                            absval = ifelse(is.null(control$absval), 1e-09, 
+                                            control$absval),
+                            maxit = ifelse(is.null(control$maxit), 1e04, 
+                                           control$maxit))$solution
+    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
+                                      sqrt(.Machine$double.eps),                                        
+                                      control$tol)] <- 0L
+    names(b.eqrestr) <- vnames
     ll0.out <- con_loglik_lm(X = X, y = y, b = b.eqrestr, w = w)
     ll0 <- ll0.out$loglik
     
@@ -273,12 +282,14 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", neq.alt = 0,
     Ts <- -2*(ll0 - ll1)
   } else if (type == "A") {
     b.eqrestr <- con_solver(b.unrestr, X = X, y = y, w = w, Amat = Amat,
-                                bvec = bvec, meq = nrow(Amat),
-                                tol = ifelse(is.null(control$tol), 1e-09, 
-                                             control$tol),
-                                maxit = ifelse(is.null(control$maxit), 1e04, 
-                                               control$maxit))$solution
-    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
+                            bvec = bvec, meq = nrow(Amat),
+                            absval = ifelse(is.null(control$absval), 1e-09, 
+                                            control$absval),
+                            maxit = ifelse(is.null(control$maxit), 1e04, 
+                                           control$maxit))$solution
+    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
+                                      sqrt(.Machine$double.eps),                                        
+                                      control$tol)] <- 0L
       names(b.eqrestr) <- vnames
     ll0.out <- con_loglik_lm(X = X, y = y, b = b.eqrestr, w = w)
     ll0 <- ll0.out$loglik
@@ -296,12 +307,15 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", neq.alt = 0,
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt > 0L && meq.alt <= meq) {
         b.restr.alt <- con_solver(b.unrestr, X = X, y = y, w = w,
-                                   Amat = Amat[1:meq.alt,,drop=FALSE],
-                                   bvec=bvec[1:meq.alt], meq = meq.alt,
-                                   tol = ifelse(is.null(control$tol), 1e-09, 
-                                                control$tol),
-                                   maxit = ifelse(is.null(control$maxit), 1e04, 
-                                                  control$maxit))$solution
+                                  Amat = Amat[1:meq.alt,,drop=FALSE],
+                                  bvec=bvec[1:meq.alt], meq = meq.alt,
+                                  absval = ifelse(is.null(control$absval), 1e-09, 
+                                                  control$absval),
+                                  maxit = ifelse(is.null(control$maxit), 1e04, 
+                                                 control$maxit))$solution
+        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol),                                        
+                                              sqrt(.Machine$double.eps),                                        
+                                              control$tol)] <- 0L
         names(b.restr.alt) <- vnames
 
         ll0 <- object$loglik
@@ -395,7 +409,7 @@ conTestLRT.lm <- function(object, type = "A", boot = "no", neq.alt = 0,
 # REF: Silvapulle, M.J. and Silvapulle, P. (1995). A score Test Against One-Sided Alternatives
 # Journal of the American Statistical Association, Vol. 90, No. 429 (Mar., 1995), pp. 342-349
 conTestScore.lm <- function(object, type = "A", boot = "no", neq.alt = 0,
-                            control = NULL, tol = sqrt(.Machine$double.eps), ...) {
+                            control = NULL, ...) {
   
   # rename for internal use
   meq.alt <- neq.alt
@@ -465,12 +479,14 @@ conTestScore.lm <- function(object, type = "A", boot = "no", neq.alt = 0,
       bvecg <- rep(0, g) 
     }
     b.eqrestr <- con_solver(b.unrestr, X = X, y = y, w = w, Amat = Amatg, 
-                             bvec = bvecg, meq = nrow(Amatg),
-                             tol = ifelse(is.null(control$tol), 1e-09, 
-                                          control$tol),
-                             maxit = ifelse(is.null(control$maxit), 1e04, 
-                                            control$maxit))$solution
-    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
+                            bvec = bvecg, meq = nrow(Amatg),
+                            absval = ifelse(is.null(control$absval), 1e-09, 
+                                            control$absval),
+                            maxit = ifelse(is.null(control$maxit), 1e04, 
+                                           control$maxit))$solution
+    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
+                                      sqrt(.Machine$double.eps),                                        
+                                      control$tol)] <- 0L
       names(b.eqrestr) <- vnames
     
     df <- n-(p-nrow(Amatg)) 
@@ -486,12 +502,14 @@ conTestScore.lm <- function(object, type = "A", boot = "no", neq.alt = 0,
     Ts <- as.numeric(n * Ts)
   } else if (type == "A") {
     b.eqrestr <- con_solver(b.unrestr, X = X, y = y, w = w, Amat = Amat,
-                             bvec = bvec, meq = nrow(Amat),
-                             tol = ifelse(is.null(control$tol), 1e-09, 
-                                          control$tol),
-                             maxit = ifelse(is.null(control$maxit), 1e04, 
-                                            control$maxit))$solution
-    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
+                            bvec = bvec, meq = nrow(Amat),
+                            absval = ifelse(is.null(control$absval), 1e-09, 
+                                            control$absval),
+                            maxit = ifelse(is.null(control$maxit), 1e04, 
+                                           control$maxit))$solution
+    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
+                                      sqrt(.Machine$double.eps),                                        
+                                      control$tol)] <- 0L
       names(b.eqrestr) <- vnames
     
     df <- n - (p - nrow(Amat))
@@ -520,12 +538,15 @@ conTestScore.lm <- function(object, type = "A", boot = "no", neq.alt = 0,
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt != 0L && meq.alt <= meq) {
         b.restr.alt <- con_solver(b.unrestr, X = X, y = y, w = w,
-                                   Amat = Amat[1:meq.alt,,drop=FALSE],
-                                   bvec = bvec[1:meq.alt], meq = meq.alt,
-                                   tol = ifelse(is.null(control$tol), 1e-09,
-                                                control$tol),
-                                   maxit = ifelse(is.null(control$maxit), 1e04,
-                                                  control$maxit))$solution
+                                  Amat = Amat[1:meq.alt,,drop=FALSE],
+                                  bvec = bvec[1:meq.alt], meq = meq.alt,
+                                  absval = ifelse(is.null(control$absval), 1e-09,
+                                                  control$absval),
+                                  maxit = ifelse(is.null(control$maxit), 1e04,
+                                                 control$maxit))$solution
+        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol),                                        
+                                              sqrt(.Machine$double.eps),                                        
+                                              control$tol)] <- 0L
         names(b.restr.alt) <- vnames
         
         df <- n - (p - qr(Amat[0:meq,])$rank)

@@ -71,9 +71,9 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
     # compute constrained estimates for lm() and mlm() 
     out.QP <- con_solver(b.unrestr, X = X, y = y, w = weights, Amat = Amat,
                          bvec = bvec, meq = meq, 
-                         tol = ifelse(is.null(control$tol), 
-                                      sqrt(.Machine$double.eps), 
-                                      control$tol),
+                         absval = ifelse(is.null(control$absval), 
+                                         sqrt(.Machine$double.eps), 
+                                         control$absval),
                          maxit = ifelse(is.null(control$maxit), 1e04, 
                                         control$maxit))
     b.restr <- matrix(out.QP$solution, ncol = ncol(y))

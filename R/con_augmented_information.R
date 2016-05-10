@@ -75,7 +75,9 @@ con_augmented_information <- function(information, X,
     inverted.information[abs(inverted.information) < sqrt(.Machine$double.eps)] <- 0L
   
   # augmented/inverted information
-  OUT <- inverted.information
+  OUT <- list(inverted.information = inverted.information,
+              augmented.information = E3)
+              
       
     OUT
 }

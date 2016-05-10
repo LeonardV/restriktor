@@ -1,6 +1,6 @@
 con_boot_lm <- function(model, B = 1000, fixed = FALSE, ...) { 
     
-  if (!(c("lm","rlm") %in% class(model))) {
+  if (!any(class(model) %in% c("lm", "rlm"))) {
     stop("ERROR: model must be of class lm or rlm.")
   }
   # original model formula

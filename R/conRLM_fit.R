@@ -4,7 +4,8 @@
 # no equality constraints.
 conRLM_fit <- function(model, maxit = 5000,
                        acc = 1e-14, lqs.control= NULL, 
-                       Amat = NULL, bvec = NULL, meq = 0L, ...) {
+                       Amat = NULL, bvec = NULL, meq = 0L, 
+                       tol = sqrt(.Machine$double.eps), ...) {
     
  # acknowledgement: the irls.delta(); irls.rrxwr(); wmad() functions are taken 
  # from the rlm.default function from the MASS package.
@@ -98,7 +99,7 @@ conRLM_fit <- function(model, maxit = 5000,
       dvec <- cbind(rep(1, ncol(Amat)))
       QP <- solve.QP(Dmat, dvec, t(Amat[1:meq,,drop = FALSE]), bvec[1:meq], 
                      meq = nrow(Amat[1:meq,,drop = FALSE]))$solution
-      QP[abs(QP) < sqrt(.Machine$double.eps)] <- 0L
+      QP[abs(QP) < tol] <- 0L
       x.idx <- QP %in% 0
     } else {
       x.idx <- rep(FALSE, ncol(Amat))

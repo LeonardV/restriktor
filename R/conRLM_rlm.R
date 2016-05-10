@@ -157,10 +157,24 @@ conRLM.rlm <- function(model, constraints, se = "default", B = 999,
                 converged = model$converged, iter = model$iter,
                 bootout = NULL, call = cl)
   } else {
-    # add constraints to model
-    call.my <- list(Amat = Amat, meq = meq, bvec = bvec)
+    # add constraints to model 
+    call.my <- list(Amat = Amat, meq = meq, bvec = bvec, 
+                    maxit = if (is.null(control$maxit)) {
+                      ifelse (is.null(model$call$maxit), 20, model$call$maxit)
+                    } else {
+                      control$maxit
+                    },
+                    acc = if (is.null(control$acc)) {
+                      ifelse (is.null(model$call$acc), 1e-4, model$call$acc)
+                    } else {
+                      control$acc
+                    },
+                    lqs.control = control$lqs.control,
+                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), control$tol))
     # collect all original model arguments and add constraints
+    #CALL <- c(list(model), call.my)
     CALL <- c(list(model), call.my)
+    CALL <- CALL[!duplicated(CALL)]
     # fit constraint robust liner model
     rfit <- do.call("conRLM_fit", CALL)
     # constrained coefs
@@ -230,21 +244,16 @@ conRLM.rlm <- function(model, constraints, se = "default", B = 999,
   
   if (se != "none") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
-      #if (model$call[["method"]] == "MM") {
       #  V <- vcovMM(X = X, resid0 = resid0, residuals = residuals, scale = model$s)  
-      #  OUT$information <- solve(V)
-      #} else {
-      #OUT$information <- tau^2 * cov.unscaled 
       OUT$information <- 1/tau^2 * crossprod(X)
-      #}
-      inverted.information <- con_augmented_information(information = OUT$information,
-                                                        X = X, 
-                                                        b.unrestr = b.unrestr, 
-                                                        b.restr = b.restr,
-                                                        Amat = Amat, 
-                                                        bvec = bvec, meq = meq)
-      
-      attr(OUT$information, "inverted.information") <- inverted.information        
+      information <- con_augmented_information(information = OUT$information,
+                                               X = X, 
+                                               b.unrestr = b.unrestr, 
+                                               b.restr = b.restr,
+                                               Amat = Amat, 
+                                               bvec = bvec, meq = meq)
+      attr(OUT$information, "inverted.information")  <- information$inverted.information
+      attr(OUT$information, "augmented.information") <- information$augmented.information        
     } else if (se == "boot.model.based") { 
       OUT$bootout <- con_boot_lm(model, B = B, 
                                  fixed = TRUE, constraints = Amat,

@@ -157,13 +157,14 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
   if (se != "none") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
       OUT$information <- 1/s2.restr * crossprod(X)
-      inverted.information <- con_augmented_information(information = OUT$information,
-                                                        X = X, 
-                                                        b.unrestr = b.unrestr, 
-                                                        b.restr = b.restr,
-                                                        Amat = Amat, 
-                                                        bvec = bvec, meq = meq) 
-      attr(OUT$information, "inverted.information") <- inverted.information        
+      information <- con_augmented_information(information = OUT$information,
+                                               X = X, 
+                                               b.unrestr = b.unrestr, 
+                                               b.restr = b.restr,
+                                               Amat = Amat, 
+                                               bvec = bvec, meq = meq) 
+      attr(OUT$information, "inverted.information")  <- information$inverted.information
+      attr(OUT$information, "augmented.information") <- information$augmented.information
     } else if (se == "boot.model.based") {
       OUT$bootout <- con_boot_lm(model, B = B, 
                                  fixed = TRUE, constraints = Amat,

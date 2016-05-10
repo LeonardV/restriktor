@@ -12,7 +12,7 @@ bread <- function(x, ...) {
 
 bread.conLM <- function(x, ...) {
   I.inv <- attr(x$information, "inverted.information")
-  cov.unscaled <- 1/x$s2.con * I.inv
+  cov.unscaled <- 1/x$s2.restr * I.inv
   return(cov.unscaled * as.vector(sum(summary(x$model.org)$df[1:2])))
 }
 
@@ -33,7 +33,7 @@ bread.conRLM <- function(x, ...) {
                                       b.unrestr = x$b.unrestr, 
                                       b.restr = x$b.restr, Amat = x$Amat, 
                                       bvec = x$bvec, 
-                                      meq = x$meq) 
+                                      meq = x$meq)$inverted.information 
     return(rval)
 }
 

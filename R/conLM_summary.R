@@ -88,7 +88,7 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
       if (any(z$parTable$op == ":=")) {
         b.def <- z$CON$def.function(b.restr)
         JAC <- lav_func_jacobian_complex(func = z$CON$def.function, x = b.restr)
-        bootout.def <- apply(z$bootout$t, 1, function(x) JAC %*% x)
+        bootout.def <- matrix(apply(z$bootout$t, 1, function(x) JAC %*% x), nrow(JAC))
         se.def <- apply(bootout.def, 1, function(x) sd(x))
         cis.def <- matrix(0, length(b.def), 2)
         colnames(cis) <- c("lower", "upper")

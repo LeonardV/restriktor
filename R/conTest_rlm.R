@@ -1,5 +1,5 @@
 conTestF.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
-                         control = NULL, tol = sqrt(.Machine$double.eps), ...) {
+                         control = NULL, ...) {
   
   # rename for internal use
   meq.alt <- neq.alt
@@ -62,22 +62,52 @@ conTestF.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
       stop("Restriktor ERROR: test not applicable (yet) for models without intercept.")      
     } 
     #fit inequality constrained robust model
-    call.my <- list(Amat = Amatg, meq = nrow(Amatg), bvec = bvecg)
-        CALL <- c(list(model.org), call.my)
+    call.my <- list(Amat = Amatg, meq = nrow(Amatg), bvec = bvecg,
+                    maxit = if (is.null(control$maxit)) {
+                      ifelse (is.null(model.org$call$maxit), 20, model.org$call$maxit)
+                    } else {
+                      control$maxit
+                    },
+                    acc = if (is.null(control$acc)) {
+                      ifelse (is.null(model.org$call$acc), 1e-4, model.org$call$acc)
+                    } else {
+                      control$acc
+                    },
+                    lqs.control = control$lqs.control,
+                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), control$tol))
+    # collect all original model arguments and add constraints
+    CALL <- c(list(model.org), call.my)
+    CALL <- CALL[!duplicated(CALL)]
     rfit <- do.call("conRLM_fit", CALL)
-    
     b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
+    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
+                                      sqrt(.Machine$double.eps), 
+                                      control$tol)] <- 0L
     names(b.eqrestr) <- vnames
     Ts <- robustFm(x = X, y = y,  beta0 = b.eqrestr, betaA = b.restr, 
                    scale = scale, cc = 4.685061)
   } else if (type == "A") {
-    call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec)
-        CALL <- c(list(model.org), call.my)
+    call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec,
+                    maxit = if (is.null(control$maxit)) {
+                      ifelse (is.null(model.org$call$maxit), 20, model.org$call$maxit)
+                    } else {
+                      control$maxit
+                    },
+                    acc = if (is.null(control$acc)) {
+                      ifelse (is.null(model.org$call$acc), 1e-4, model.org$call$acc)
+                    } else {
+                      control$acc
+                    },
+                    lqs.control = control$lqs.control,
+                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), control$tol))
+    # collect all original model arguments and add constraints
+    CALL <- c(list(model.org), call.my)
+    CALL <- CALL[!duplicated(CALL)]
     rfit <- do.call("conRLM_fit", CALL)
-    
     b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
+    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
+                                      sqrt(.Machine$double.eps), 
+                                      control$tol)] <- 0L
     names(b.eqrestr) <- vnames
     Ts <- robustFm(x = X, y = y,  beta0 = b.eqrestr, betaA = b.restr, 
                    scale = scale, cc = 4.685061)
@@ -89,12 +119,27 @@ conTestF.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt != 0L && meq.alt <= meq) {
         call.my <- list(Amat = Amat[1:meq.alt, , drop = FALSE], 
-                        meq = meq.alt, bvec = bvec[1:meq.alt])
+                        meq = meq.alt, bvec = bvec[1:meq.alt],
+                        maxit = if (is.null(control$maxit)) {
+                          ifelse (is.null(model.org$call$maxit), 20, model.org$call$maxit)
+                        } else {
+                          control$maxit
+                        },
+                        acc = if (is.null(control$acc)) {
+                          ifelse (is.null(model.org$call$acc), 1e-4, model.org$call$acc)
+                        } else {
+                          control$acc
+                        },
+                        lqs.control = control$lqs.control,
+                        tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), control$tol))
+        # collect all original model arguments and add constraints
         CALL <- c(list(model.org), call.my)
+        CALL <- CALL[!duplicated(CALL)]
         rfit <- do.call("conRLM_fit", CALL)
-        
         b.restr.alt <- rfit$coefficients
-        b.restr.alt[abs(b.restr.alt) < tol] <- 0L
+        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol), 
+                                              sqrt(.Machine$double.eps), 
+                                              control$tol)] <- 0L
         names(b.restr.alt) <- vnames
         Ts <- robustFm(x = X, y = y,  beta0 = b.restr, betaA = b.restr.alt, 
                        scale = scale, cc = 4.685061)
@@ -182,7 +227,7 @@ conTestF.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
 
 
 conTestWald.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
-                             control = NULL, tol = sqrt(.Machine$double.eps), ...) {
+                             control = NULL, ...) {
   
   # rename for internal use
   meq.alt <- neq.alt
@@ -245,24 +290,54 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
       stop("Restriktor ERROR: test not applicable for models without intercept.")      
     } 
     #fit inequality constrained robust model
-    call.my <- list(Amat = Amatg, meq = nrow(Amatg), bvec = bvecg)
+    call.my <- list(Amat = Amatg, meq = nrow(Amatg), bvec = bvecg,
+                    maxit = if (is.null(control$maxit)) {
+                      ifelse (is.null(model.org$call$maxit), 20, model.org$call$maxit)
+                    } else {
+                      control$maxit
+                    },
+                    acc = if (is.null(control$acc)) {
+                      ifelse (is.null(model.org$call$acc), 1e-4, model.org$call$acc)
+                    } else {
+                      control$acc
+                    },
+                    lqs.control = control$lqs.control,
+                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), control$tol))
+    # collect all original model arguments and add constraints
     CALL <- c(list(model.org), call.my)
+    CALL <- CALL[!duplicated(CALL)]
     rfit <- do.call("conRLM_fit", CALL)
-    
     b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
+    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
+                                       sqrt(.Machine$double.eps), 
+                                       control$tol)] <- 0L
     names(b.eqrestr) <- vnames
     out0 <- robustWaldScores(x = X, y = y,  beta0 = b.eqrestr, 
                              betaA = b.restr, scale = scale, test = "Wald")
     Ts <- out0$Ts
     COV <- out0$V
   } else if (type == "A") {
-    call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec)
+    call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec,
+                    maxit = if (is.null(control$maxit)) {
+                      ifelse (is.null(model.org$call$maxit), 20, model.org$call$maxit)
+                    } else {
+                      control$maxit
+                    },
+                    acc = if (is.null(control$acc)) {
+                      ifelse (is.null(model.org$call$acc), 1e-4, model.org$call$acc)
+                    } else {
+                      control$acc
+                    },
+                    lqs.control = control$lqs.control,
+                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), control$tol))
+    # collect all original model arguments and add constraints
     CALL <- c(list(model.org), call.my)
+    CALL <- CALL[!duplicated(CALL)]
     rfit <- do.call("conRLM_fit", CALL)
-    
     b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
+    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
+                                      sqrt(.Machine$double.eps), 
+                                      control$tol)] <- 0L
     names(b.eqrestr) <- vnames
     
     out1 <- robustWaldScores(x = X, y = y,  beta0 = b.eqrestr, 
@@ -280,12 +355,27 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt != 0L && meq.alt <= meq) {
         call.my <- list(Amat = Amat[1:meq.alt,,drop=FALSE], meq = meq.alt, 
-                        bvec = bvec[1:meq.alt])
+                        bvec = bvec[1:meq.alt],
+                        maxit = if (is.null(control$maxit)) {
+                          ifelse (is.null(model.org$call$maxit), 20, model.org$call$maxit)
+                        } else {
+                          control$maxit
+                        },
+                        acc = if (is.null(control$acc)) {
+                          ifelse (is.null(model.org$call$acc), 1e-4, model.org$call$acc)
+                        } else {
+                          control$acc
+                        },
+                        lqs.control = control$lqs.control,
+                        tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), control$tol))
+        # collect all original model arguments and add constraints
         CALL <- c(list(model.org), call.my)
+        CALL <- CALL[!duplicated(CALL)]
         rfit <- do.call("conRLM_fit", CALL)
-    
         b.restr.alt <- rfit$coefficients
-        b.restr.alt[abs(b.restr.alt) < tol] <- 0L
+        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol), 
+                                              sqrt(.Machine$double.eps), 
+                                              control$tol)] <- 0L
         names(b.restr.alt) <- vnames
         out3 <- robustWaldScores(x = X, y = y,  beta0 = b.restr, 
                                  betaA = b.restr.alt, scale = scale, 
@@ -379,7 +469,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
 
 
 conTestScore.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
-                             control = NULL, tol = sqrt(.Machine$double.eps), ...) {
+                             control = NULL, ...) {
   
   # rename for internal use
   meq.alt <- neq.alt
@@ -442,24 +532,54 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
       stop("Restriktor ERROR: test not applicable for models without intercept.")      
     } 
     #fit inequality constrained robust model
-    call.my <- list(Amat = Amatg, meq = nrow(Amatg), bvec = bvecg)
-        CALL <- c(list(model.org), call.my)
+    call.my <- list(Amat = Amatg, meq = nrow(Amatg), bvec = bvecg,
+                    maxit = if (is.null(control$maxit)) {
+                      ifelse (is.null(model.org$call$maxit), 20, model.org$call$maxit)
+                    } else {
+                      control$maxit
+                    },
+                    acc = if (is.null(control$acc)) {
+                      ifelse (is.null(model.org$call$acc), 1e-4, model.org$call$acc)
+                    } else {
+                      control$acc
+                    },
+                    lqs.control = control$lqs.control,
+                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), control$tol))
+    # collect all original model arguments and add constraints
+    CALL <- c(list(model.org), call.my)
+    CALL <- CALL[!duplicated(CALL)]
     rfit <- do.call("conRLM_fit", CALL)
-    
     b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
+    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
+                                      sqrt(.Machine$double.eps), 
+                                      control$tol)] <- 0L
     names(b.eqrestr) <- vnames
     out0 <- robustWaldScores(x = X, y = y,  beta0 = b.eqrestr, 
                              betaA = b.restr, scale = scale, test = "score")    
     Ts <- out0$Ts
     COV <- out0$V
   } else if (type == "A") {
-    call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec)
-            CALL <- c(list(model.org), call.my)
+    call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec,
+                    maxit = if (is.null(control$maxit)) {
+                      ifelse (is.null(model.org$call$maxit), 20, model.org$call$maxit)
+                    } else {
+                      control$maxit
+                    },
+                    acc = if (is.null(control$acc)) {
+                      ifelse (is.null(model.org$call$acc), 1e-4, model.org$call$acc)
+                    } else {
+                      control$acc
+                    },
+                    lqs.control = control$lqs.control,
+                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), control$tol))
+    # collect all original model arguments and add constraints
+    CALL <- c(list(model.org), call.my)
+    CALL <- CALL[!duplicated(CALL)]
     rfit <- do.call("conRLM_fit", CALL)
-    
     b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
+    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
+                                      sqrt(.Machine$double.eps), 
+                                      control$tol)] <- 0L
     names(b.eqrestr) <- vnames
     
     out1 <- robustWaldScores(x = X, y = y,  beta0 = b.eqrestr, 
@@ -476,12 +596,27 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt != 0L && meq.alt <= meq) {
         call.my <- list(Amat = Amat[1:meq.alt,,drop=FALSE], meq = meq.alt, 
-                        bvec = bvec[1:meq.alt])
-                CALL <- c(list(model.org), call.my)
+                        bvec = bvec[1:meq.alt],
+                        maxit = if (is.null(control$maxit)) {
+                          ifelse (is.null(model.org$call$maxit), 20, model.org$call$maxit)
+                        } else {
+                          control$maxit
+                        },
+                        acc = if (is.null(control$acc)) {
+                          ifelse (is.null(model.org$call$acc), 1e-4, model.org$call$acc)
+                        } else {
+                          control$acc
+                        },
+                        lqs.control = control$lqs.control,
+                        tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), control$tol))
+        # collect all original model arguments and add constraints
+        CALL <- c(list(model.org), call.my)
+        CALL <- CALL[!duplicated(CALL)]
         rfit <- do.call("conRLM_fit", CALL)
-        
         b.restr.alt <- rfit$coefficients
-        b.restr.alt[abs(b.restr.alt) < tol] <- 0L
+        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol), 
+                                              sqrt(.Machine$double.eps), 
+                                              control$tol)] <- 0L
         names(b.restr.alt) <- vnames
         out3 <- robustWaldScores(x = X, y = y,  beta0 = b.restr, 
                                  betaA = b.restr.alt, scale = scale, 

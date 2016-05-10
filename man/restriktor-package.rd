@@ -1,31 +1,31 @@
 \name{restriktor}
 \alias{restriktor-package}
-\title{Package for equality and inequality constrained estimation and hypothesis testing}
+\title{Package for equality and inequality restrikted estimation and hypothesis testing}
 \description{
 Package \code{restriktor} implements estimation, and testing linear equality and 
-inequality constraints about parameters and effects for multivariate (robust) 
+inequality restriktions about parameters and effects for multivariate (robust) 
 normal models.}
 
 \details{
   \tabular{ll}{
   Package: \tab restriktor\cr
   Type: \tab Package\cr
-  Version: \tab 0.1-24\cr
+  Version: \tab 0.1-25\cr
   Date: \tab 2016-04-25\cr
   License: \tab GPL (>=2)\cr
   LazyLoad: \tab yes\cr
   }
   
-  Function \code{restriktor} estimates the parameters of a linear model (lm) or 
-  robust linear model (rlm) subject to equality and/or inequality constraints. 
+  Function \code{restriktor} estimates the parameters of a linear model (\code{lm}) or 
+  robust linear model (\code{rlm}) subject to equality and/or inequality restriktions. 
   The function offers the possibility to compute (model robust) standard errors 
-  under the constraints. The parameters estimates can also be bootstrapped, where 
+  under the restriktions. The parameters estimates can also be bootstrapped, where 
   bootstrapped standard errors and confidence intervals are available via the 
   summary function. Moreover, the function computes the Generalized Order-restricted
   Information Criterion (GORIC), which is a modification of the AIC and the ORIC.
   
-  Function \code{conTest} conducts constrained hypothesis tests. Wald-, score and
-  LRT test-statistics are available for both lm and rlm. The null-distribution
+  Function \code{conTest} conducts restrikted hypothesis tests. Wald-, score and
+  LRT test-statistics are available for both \code{lm} and \code{rlm}. The null-distribution
   of these test-statistics takes the form of a mixture of chi-square distributions. 
   These mixing weights can be computed using the multivariate normal distribution
   function or via a simulation approach. Bootstrap methods are available to avoid
@@ -36,8 +36,7 @@ normal models.}
   The package makes use of various other R packages: \pkg{quadprog} is used for 
   constrained estimation, \pkg{boot} for bootstrapping, \pkg{ic.infer} for 
   computing the weights based on the multivariate normal distribution, \pkg{lavaan}
-  for parsing the constraint syntax, \pkg{robustbase} for the bisquare loss function
-  and its derivatives, and \pkg{zoo} for computing sandwich estimators. 
+  for parsing the constraint syntax, and \pkg{zoo} for computing sandwich estimators. 
 }
 
 \value{
@@ -62,7 +61,7 @@ normal models.}
 
 
 \examples{
-# unrestricted linear model for ages (in months) at which an infant starts to 
+# unrestrikted linear model for ages (in months) at which an infant starts to 
 # walk alone.
 DATA <- ZelazoKolb1972
 idx <- which(DATA$Group == 3)

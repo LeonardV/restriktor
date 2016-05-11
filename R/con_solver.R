@@ -2,7 +2,7 @@
 # formultivariate linear models under inequality constraints for incomplete data.
 # Journal of Statistical Planning and Inference 142, 2926-2942.
 con_solver <- function(b.unrestr, X, y, w, Amat, bvec, meq,
-                       maxit = 100000, absval = sqrt(.Machine$double.eps)) {
+                       maxit = 10000, absval = sqrt(.Machine$double.eps)) {
   val <- 0
   y <- as.matrix(y)
   n <- dim(X)[1]

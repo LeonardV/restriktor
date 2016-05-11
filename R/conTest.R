@@ -39,7 +39,7 @@ conTest <- function(object, type = "A", ...) {
       if ("B" %in% names(l$control)) {
         if (l$control$B < 9999) {
           warning("The number of bootstrap samples for computing the mixing weights 
- is too low and may cause spurious results (default: B = 99999).")
+ is too low and may cause spurious results (by default B = 99999).")
         }
       }
     }
@@ -63,7 +63,7 @@ conTest <- function(object, type = "A", ...) {
          } else if (class(object)[1] == "conRLM") {
            UseMethod("conTestWald")
          }
-      } 
+      }
     } else if (type == "C") {
       UseMethod("conTestC")
     } else if (type == "summary") {

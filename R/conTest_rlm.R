@@ -1,4 +1,6 @@
-conTestF.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
+conTestF.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999, 
+                         p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
+                         cl = NULL, seed = 1234, verbose = FALSE,
                          control = NULL, ...) {
   
   # rename for internal use
@@ -127,34 +129,26 @@ conTestF.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
                               Amat = Amat, bvec = bvec, meq = meq, 
                               meq.alt = meq.alt)
   } else if (boot == "parametric") {
-    pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "F",
+    pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, 
+                                         test = "F",
                                          meq.alt = meq.alt,
-                                         R = ifelse(is.null(control$B), 9999, control$B),
-                                         p.distr = ifelse(is.null(control$p.distr), "N", control$p.distr),
-                                         df = ifelse(is.null(control$df), 7, control$df),
-                                         parallel = ifelse(is.null(control$parallel), "no", control$parallel),
-                                         ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
-                                         cl = ifelse(is.null(control$cl), NULL, control$cl),
-                                         seed = ifelse(is.null(control$seed), 1234, control$seed),
-                                         verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
+                                         R = B, p.distr = p.distr,
+                                         df = df, parallel = parallel,
+                                         ncpus = ncpus, cl = cl,
+                                         seed = seed, verbose = verbose)
   } else if (boot == "model.based") {
-    pvalue <- con_pvalue_boot_model_based(object, Ts.org = Ts, type = type, test = "F",
+    pvalue <- con_pvalue_boot_model_based(object, Ts.org = Ts, type = type, 
+                                          test = "F",
                                           meq.alt = meq.alt,
-                                          R = ifelse(is.null(control$B), 9999, control$B),
-                                          parallel = ifelse(is.null(control$parallel), "no", control$parallel),
-                                          ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
-                                          cl = ifelse(is.null(control$cl), NULL, control$cl),
-                                          seed = ifelse(is.null(control$seed), 1234, control$seed),
-                                          verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
+                                          R = B, parallel = parallel,
+                                          ncpus = ncpus, cl = cl,
+                                          seed = seed, verbose = verbose)
   } else if (boot == "mix.weights") {
     # compute weights based on simulation
     wt <- mix.boot(object, type = type, meq.alt = meq.alt, 
-                       R = ifelse(is.null(control$B), 9999, control$B),
-                       parallel = ifelse(is.null(control$parallel), "no", control$parallel),
-                       ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
-                       cl = ifelse(is.null(control$cl), NULL, control$cl),
-                       seed = ifelse(is.null(control$seed), 1234, control$seed),
-                       verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
+                   R = B, parallel = parallel,
+                   ncpus = ncpus, cl = cl,
+                   seed = seed, verbose = verbose)
     
     wt <- rev(wt)
     wt.idx <- which(wt == 0)
@@ -196,8 +190,10 @@ conTestF.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
 
 
 
-conTestWald.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
-                             control = NULL, ...) {
+conTestWald.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999, 
+                            p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
+                            cl = NULL, seed = 1234, verbose = FALSE,
+                            control = NULL, ...) {
   
   # rename for internal use
   meq.alt <- neq.alt
@@ -301,7 +297,7 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
   }
   else if (type == "B") {
     if (meq.alt == 0L) {
-      out2 <- robustWaldScores(x = X, y = y,  beta0 = b.restr, 
+      out2 <- robustWaldScores(x = X, y = y, beta0 = b.restr, 
                                betaA = b.unrestr, scale = scale, test = "Wald", 
                                cc = ifelse(is.null(cc), 4.685061, cc))
       Ts <- out2$Ts
@@ -343,34 +339,26 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
                               Amat = Amat, bvec = bvec, meq = meq, 
                               meq.alt = meq.alt)
   } else if (boot == "parametric") {
-    pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "Wald",
+    pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, 
+                                         test = "Wald",
                                          meq.alt = meq.alt,
-                                         R = ifelse(is.null(control$B), 9999, control$B),
-                                         p.distr = ifelse(is.null(control$p.distr), "N", control$p.distr),
-                                         df = ifelse(is.null(control$df), 7, control$df),
-                                         parallel = ifelse(is.null(control$parallel), "no", control$parallel),
-                                         ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
-                                         cl = ifelse(is.null(control$cl), NULL, control$cl),
-                                         seed = ifelse(is.null(control$seed), 1234, control$seed),
-                                         verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
+                                         R = B, p.distr = p.distr,
+                                         df = df, parallel = parallel,
+                                         ncpus = ncpus, cl = cl,
+                                         seed = seed, verbose = verbose)
   } else if (boot == "model.based") {
-    pvalue <- con_pvalue_boot_model_based(object, Ts.org = Ts, type = type, test = "Wald",
+    pvalue <- con_pvalue_boot_model_based(object, Ts.org = Ts, type = type, 
+                                          test = "Wald",
                                           meq.alt = meq.alt,
-                                          R = ifelse(is.null(control$B), 9999, control$B),
-                                          parallel = ifelse(is.null(control$parallel), "no", control$parallel),
-                                          ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
-                                          cl = ifelse(is.null(control$cl), NULL, control$cl),
-                                          seed = ifelse(is.null(control$seed), 1234, control$seed),
-                                          verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
+                                          R = B, parallel = parallel,
+                                          ncpus = ncpus, cl = cl,
+                                          seed = seed, verbose = verbose)
   } else if (boot == "mix.weights") {
     # compute weights based on simulation
     wt <- mix.boot(object, type = type, meq.alt = meq.alt, 
-                       R = ifelse(is.null(control$B), 9999, control$B),
-                       parallel = ifelse(is.null(control$parallel), "no", control$parallel),
-                       ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
-                       cl = ifelse(is.null(control$cl), NULL, control$cl),
-                       seed = ifelse(is.null(control$seed), 1234, control$seed),
-                       verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
+                   R = B, parallel = parallel,
+                   ncpus = ncpus, cl = cl,
+                   seed = seed, verbose = verbose)
     
     wt <- rev(wt)
     wt.idx <- which(wt == 0)
@@ -414,7 +402,9 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
 
 
 
-conTestScore.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
+conTestScore.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999, 
+                             p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
+                             cl = NULL, seed = 1234, verbose = FALSE,
                              control = NULL, ...) {
   
   # rename for internal use
@@ -560,34 +550,26 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
                               Amat = Amat, bvec = bvec, meq = meq, 
                               meq.alt = meq.alt)
   } else if (boot == "parametric") {
-    pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, test = "score",
+    pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, 
+                                         test = "score",
                                          meq.alt = meq.alt,
-                                         R = ifelse(is.null(control$B), 9999, control$B),
-                                         p.distr = ifelse(is.null(control$p.distr), "N", control$p.distr),
-                                         df = ifelse(is.null(control$df), 7, control$df),
-                                         parallel = ifelse(is.null(control$parallel), "no", control$parallel),
-                                         ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
-                                         cl = ifelse(is.null(control$cl), NULL, control$cl),
-                                         seed = ifelse(is.null(control$seed), 1234, control$seed),
-                                         verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
+                                         R = B, p.distr = p.distr,
+                                         df = df, parallel = parallel,
+                                         ncpus = ncpus, cl = cl,
+                                         seed = seed, verbose = verbose)
   } else if (boot == "model.based") {
-    pvalue <- con_pvalue_boot_model_based(object, Ts.org = Ts, type = type, test = "score",
+    pvalue <- con_pvalue_boot_model_based(object, Ts.org = Ts, type = type, 
+                                          test = "score",
                                           meq.alt = meq.alt,
-                                          R = ifelse(is.null(control$B), 9999, control$B),
-                                          parallel = ifelse(is.null(control$parallel), "no", control$parallel),
-                                          ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
-                                          cl = ifelse(is.null(control$cl), NULL, control$cl),
-                                          seed = ifelse(is.null(control$seed), 1234, control$seed),
-                                          verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
+                                          R = B, parallel = parallel,
+                                          ncpus = ncpus, cl = cl,
+                                          seed = seed, verbose = verbose)
   } else if (boot == "mix.weights") {
     # compute weights based on simulation
     wt <- mix.boot(object, type = type, meq.alt = meq.alt, 
-                       R = ifelse(is.null(control$B), 9999, control$B),
-                       parallel = ifelse(is.null(control$parallel), "no", control$parallel),
-                       ncpus = ifelse(is.null(control$ncpus), 1, control$ncpus),
-                       cl = ifelse(is.null(control$cl), NULL, control$cl),
-                       seed = ifelse(is.null(control$seed), 1234, control$seed),
-                       verbose = ifelse(is.null(control$verbose), FALSE, control$verbose))
+                   R = B, parallel = parallel,
+                   ncpus = ncpus, cl = cl,
+                   seed = seed, verbose = verbose)
     
     wt <- rev(wt)
     wt.idx <- which(wt == 0)

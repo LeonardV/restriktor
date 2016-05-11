@@ -9,6 +9,7 @@ conRLM.rlm <- function(model, constraints, se = "default", B = 999,
   if (!("rlm" %in% class(model))) {
     stop("Restriktor ERROR: model must be of class rlm.")
   }
+  # standard error stuff
   if (se == "default") {
     se <- "standard"
   } else if (se == "boot.residual") {

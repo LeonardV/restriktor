@@ -168,7 +168,7 @@ conRLM_fit <- function(model,
   }
   
   if (!done) {
-    warning(gettextf("'conRLM' failed to converge in %d steps", maxit),
+    warning(gettextf("'conRLM' failed to converge in %d steps. Try to increase the number of iterations", maxit),
             domain = NA)
   }
   fitted <- drop(xx %*% coef)

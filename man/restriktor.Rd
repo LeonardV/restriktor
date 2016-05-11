@@ -3,9 +3,14 @@
 \alias{conLM.lm}
 \alias{conRLM.rlm}
 
-\title{Fitting linear regression models with equality and/or 
+\title{Estimating linear regression models with equality and/or 
 inequality restriktions}
-\description{}
+\description{Function \code{restriktor} estimates the parameters of a linear model (\code{lm}) 
+  or robust linear model (\code{rlm}) subject to equality and/or inequality 
+  restriktions. The function \code{restriktor} is a convenience function that can 
+  take a symbolic description as constraint input and translates it to right 
+  constraint matrices and vectors. The real work horses are the \code{conLM} and 
+  the \code{conRLM} functions for linear and robust linear models respectively.}
 
 \usage{
 restriktor(model, constraints, se = "standard", 
@@ -65,8 +70,10 @@ restriktor(model, constraints, se = "standard",
   }
   \item{control}{a list of control arguments: 
     \itemize{
-      \item \code{absval} tolerance criterion for convergence. Only needed for
-      objects of class mlm (not yet available).
+      \item \code{absval} tolerance criterion for convergence 
+      (default = sqrt(.Machine$double.eps)). Only used for model of class lm.
+      \item \code{maxit} the maximum number of iterations for the optimizer 
+      (default = 10000). Only used for model of class mlm (not yet available). 
       \item \code{tol} numerical tolerance value. Estimates smaller than \code{tol} 
       are set to 0.
     }

@@ -79,6 +79,7 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL, type = "A",
                                        verbose = FALSE, ...) {
 
   p.distr <- tolower(p.distr)
+  stopifnot(p.distr %in% c("N","t","chi"))
   old_options <- options(); options(warn = warn)
   
   model.org <- model$model.org

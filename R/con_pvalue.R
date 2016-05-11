@@ -129,9 +129,11 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL, type = "A",
     form[[2]] <- as.name("ystar")
     boot_model <- update(model.org, formula = form, data = DATA)
     
-    CALL <- list(model = boot_model, constraints = Amat, rhs = bvec, neq = meq, control = control, se = "none")
+    CALL <- list(model = boot_model, constraints = Amat, rhs = bvec, neq = meq, 
+                 control = control, se = "none")
     boot_conLM <- do.call("restriktor", CALL)
-    boot_conTest <- try(conTest(boot_conLM, type = type, test = test, meq.alt = meq.alt, control = control))
+    boot_conTest <- try(conTest(boot_conLM, type = type, test = test, 
+                                meq.alt = meq.alt, control = control))
     if (inherits(boot_conTest, "try-error")) {
       if (verbose) cat("FAILED: creating test statistic\n")
       options(old_options)
@@ -233,7 +235,8 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL, type = "A",
     } else {
       stop("Restriktor ERROR: test not applicable for models without intercept.")      
     }
-    call.my <- list(constraints = Amatg, rhs = bvecg, neq = nrow(Amatg), control = control, se = "none")
+    call.my <- list(constraints = Amatg, rhs = bvecg, neq = nrow(Amatg), 
+                    control = control, se = "none")
     call.lm <- list(model = model.org)
     CALL <- c(call.lm, call.my)
     if (any(duplicated(CALL))) {
@@ -241,7 +244,8 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL, type = "A",
     }
     fit <- do.call("restriktor", CALL)
   } else if (type == "A") {
-    call.my <- list(constraints = Amat, rhs = bvec, neq = nrow(Amat), control = control, se = "none")
+    call.my <- list(constraints = Amat, rhs = bvec, neq = nrow(Amat), 
+                    control = control, se = "none")
     call.lm <- list(model = model.org)
     CALL <- c(call.lm, call.my)
     if (any(duplicated(CALL))) {
@@ -249,7 +253,8 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL, type = "A",
     }
     fit <- do.call("restriktor", CALL)
   } else if (type == "B") {
-      call.my <- list(constraints = Amat, rhs = bvec, neq = meq, control = control, se = "none")
+      call.my <- list(constraints = Amat, rhs = bvec, neq = meq, 
+                      control = control, se = "none")
       call.lm <- list(model = model.org)
       CALL <- c(call.lm, call.my)
       if (any(duplicated(CALL))) {
@@ -281,9 +286,11 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL, type = "A",
       form[[2]] <- as.name("ystar")
       
       boot_model <- update(model.org, formula = form, data = DATA)
-      CALL <- list(boot_model, constraints = Amat, rhs = bvec, neq = meq, control = control, se = "none")
+      CALL <- list(boot_model, constraints = Amat, rhs = bvec, neq = meq, 
+                   control = control, se = "none")
       boot_conLM <- do.call("restriktor", CALL)  
-      boot_conTest <- try(conTest(boot_conLM, type = type, test = test, meq.alt = meq.alt, control = control))
+      boot_conTest <- try(conTest(boot_conLM, type = type, test = test, 
+                                  meq.alt = meq.alt, control = control))
       if (inherits(boot_conTest, "try-error")) {
         if (verbose) cat("FAILED: creating test statistic\n")
         options(old_options)

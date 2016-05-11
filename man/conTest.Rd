@@ -15,17 +15,32 @@ conTest(object, type = "A", ...)
 }
 \arguments{
   \item{object}{an object of class \code{conLM} or \code{conRLM}.} 
-  \item{type}{}
-  \item{test}{}
-  \item{boot}{}
-  \item{neq.alt}{}
-  \item{control}{}
+  \item{type}{hypothesis test type "A", "B", or "C". See details for more information.}
+  \item{test}{test statistic; for object of class lm an "F"-, "LRT"-, or 
+  "score"-test statistic is available. For object of class rlm an "F"-, "Wald"-, 
+  or "score"-test statistic is available.}
+  \item{neq.alt}{integer: number of equality restriktions (from beginning) that are 
+  maintained under the alternative hypothesis (for hypothesis test type "B")}
+  \item{boot}{if \code{"parametric"}, the parametric bootstrap is used. By default,
+  samples are drawn from a normal distribution with mean zero and varance one. See
+  \code{p.distr} for other options. If \code{"model.based"}, the model-based 
+  bootstrap is used.}
+  \item{B}{integer; number of bootstrap draws. The default value is set to 9999.}
+  \item{p.distr}{If \code{"N"}, samples for the parametric bootstrap are drawn 
+  from the normal distribution (default). If \code{"t"}, samples are drawn from
+  a t-distribution with 7 degrees of freedom by default. If \code{"chi"}, samples
+  are drawn from a chi-square distribution (df = 7 by default).}
+  \item{df}{degrees of freedom for \code{p.distr}.}
+  \item{parallel}{the type of parallel operation to be used (if any). If missing, the default is set "no".}
+  \item{ncpus}{integer: number of processes to be used in parallel operation: 
+  typically one would chose this to the number of available CPUs.}
+  \item{cl}{an optional parallel or snow cluster for use if parallel = "snow". 
+  If not supplied, a cluster on the local machine is created for the duration of 
+  the conTest call.}
+  \item{seed}{seed value.}
+  \item{verbose}{logical; if TRUE, information is shown at each bootstrap draw.}
+  \item{control}{a list of control arguments:}
   \item{...}{}
-  
-  object, type = "A", neq.alt = 0, boot = "no", B = 9999, 
-                            p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
-                            cl = NULL, seed = 1234, verbose = FALSE,
-                            control = NULL, ...
 }
 
 \details{}

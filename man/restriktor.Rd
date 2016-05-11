@@ -16,8 +16,11 @@ restriktor(model, constraints, se = "standard",
        rhs = NULL, neq = NULL, control = NULL, ...)
 }
 \arguments{
-  \item{model}{a fitted linear model object of class lm, or a 
-  fitted robust linear model object of class rlm.}
+  \item{model}{a fitted linear model object of class lm, or a fitted robust 
+  linear model object of class rlm. For class rlm, both \code{M} and
+  \code{MM} estimation are supported. For the loss function only the 
+  \code{bisquare} is supported for now, otherwise the function gives an error.} 
+  
   \item{constraints}{there are two ways to constrain parameters. 
   First, the constraint syntax consists of one or more symbolic
   descriptions, where the syntax can be specified as a literal 
@@ -62,13 +65,10 @@ restriktor(model, constraints, se = "standard",
   }
   \item{control}{a list of control arguments: 
     \itemize{
-      \item \code{tol} numerical tolerance value. Estimates smaller than \code{tol} 
-      are set to 0.
       \item \code{absval} tolerance criterion for convergence. Only needed for
       objects of class mlm (not yet available).
-      \item \code{maxit} see \code{\link{rlm}}
-      \item \code{acc} see \code{\link{rlm}}
-      \item \code{lqs.control} see \code{\link{rlm}} 
+      \item \code{tol} numerical tolerance value. Estimates smaller than \code{tol} 
+      are set to 0.
     }
   }
   \item{debug}{if TRUE, debugging information about the constraints

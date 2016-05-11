@@ -23,12 +23,12 @@ conTestF.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
   
   # original model
   model.org <- object$model.org
+  # tukey's bisquare tuning constant
+  cc <- model.org$call[["c"]]
   # model matrix
   X <- model.matrix(model.org)[,,drop=FALSE]
   # response variable
   y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
-  # weights
-  #w <- weights(model.org)
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
@@ -63,18 +63,8 @@ conTestF.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
     } 
     #fit inequality constrained robust model
     call.my <- list(Amat = Amatg, meq = nrow(Amatg), bvec = bvecg,
-                    maxit = if (is.null(control$maxit)) {
-                      ifelse (is.null(model.org$call$maxit), 20, model.org$call$maxit)
-                    } else {
-                      control$maxit
-                    },
-                    acc = if (is.null(control$acc)) {
-                      ifelse (is.null(model.org$call$acc), 1e-4, model.org$call$acc)
-                    } else {
-                      control$acc
-                    },
-                    lqs.control = control$lqs.control,
-                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), control$tol))
+                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
+                                  control$tol))
     # collect all original model arguments and add constraints
     CALL <- c(list(model.org), call.my)
     CALL <- CALL[!duplicated(CALL)]
@@ -84,22 +74,12 @@ conTestF.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
                                       sqrt(.Machine$double.eps), 
                                       control$tol)] <- 0L
     names(b.eqrestr) <- vnames
-    Ts <- robustFm(x = X, y = y,  beta0 = b.eqrestr, betaA = b.restr, 
-                   scale = scale, cc = 4.685061)
+    Ts <- robustFm(x = X, y = y, beta0 = b.eqrestr, betaA = b.restr, 
+                   scale = scale, cc = ifelse(is.null(cc), 4.685061, cc))
   } else if (type == "A") {
     call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec,
-                    maxit = if (is.null(control$maxit)) {
-                      ifelse (is.null(model.org$call$maxit), 20, model.org$call$maxit)
-                    } else {
-                      control$maxit
-                    },
-                    acc = if (is.null(control$acc)) {
-                      ifelse (is.null(model.org$call$acc), 1e-4, model.org$call$acc)
-                    } else {
-                      control$acc
-                    },
-                    lqs.control = control$lqs.control,
-                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), control$tol))
+                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
+                                  control$tol))
     # collect all original model arguments and add constraints
     CALL <- c(list(model.org), call.my)
     CALL <- CALL[!duplicated(CALL)]
@@ -109,29 +89,19 @@ conTestF.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
                                       sqrt(.Machine$double.eps), 
                                       control$tol)] <- 0L
     names(b.eqrestr) <- vnames
-    Ts <- robustFm(x = X, y = y,  beta0 = b.eqrestr, betaA = b.restr, 
-                   scale = scale, cc = 4.685061)
+    Ts <- robustFm(x = X, y = y, beta0 = b.eqrestr, betaA = b.restr, 
+                   scale = scale, cc = ifelse(is.null(cc), 4.685061, cc))
   } else if (type == "B") {
     if (meq.alt == 0L) {
-      Ts <- robustFm(x = X, y = y,  beta0 = b.restr, betaA = b.unrestr, 
-                     scale = scale, cc = 4.685061)
+      Ts <- robustFm(x = X, y = y, beta0 = b.restr, betaA = b.unrestr, 
+                     scale = scale, cc = ifelse(is.null(cc), 4.685061, cc))
     } else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt != 0L && meq.alt <= meq) {
         call.my <- list(Amat = Amat[1:meq.alt, , drop = FALSE], 
                         meq = meq.alt, bvec = bvec[1:meq.alt],
-                        maxit = if (is.null(control$maxit)) {
-                          ifelse (is.null(model.org$call$maxit), 20, model.org$call$maxit)
-                        } else {
-                          control$maxit
-                        },
-                        acc = if (is.null(control$acc)) {
-                          ifelse (is.null(model.org$call$acc), 1e-4, model.org$call$acc)
-                        } else {
-                          control$acc
-                        },
-                        lqs.control = control$lqs.control,
-                        tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), control$tol))
+                        tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
+                                      control$tol))
         # collect all original model arguments and add constraints
         CALL <- c(list(model.org), call.my)
         CALL <- CALL[!duplicated(CALL)]
@@ -141,8 +111,8 @@ conTestF.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
                                               sqrt(.Machine$double.eps), 
                                               control$tol)] <- 0L
         names(b.restr.alt) <- vnames
-        Ts <- robustFm(x = X, y = y,  beta0 = b.restr, betaA = b.restr.alt, 
-                       scale = scale, cc = 4.685061)
+        Ts <- robustFm(x = X, y = y, beta0 = b.restr, betaA = b.restr.alt, 
+                       scale = scale, cc = ifelse(is.null(cc), 4.685061, cc))
       } else {
         stop("neq.alt must not be larger than neq.")
       }
@@ -251,6 +221,8 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
   
   # original model
   model.org <- object$model.org
+  # tukey's bisquare tuning constant
+  cc <- model.org$call[["c"]]
   # model matrix
   X <- model.matrix(model.org)[,,drop=FALSE]
   # response variable
@@ -291,18 +263,8 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
     } 
     #fit inequality constrained robust model
     call.my <- list(Amat = Amatg, meq = nrow(Amatg), bvec = bvecg,
-                    maxit = if (is.null(control$maxit)) {
-                      ifelse (is.null(model.org$call$maxit), 20, model.org$call$maxit)
-                    } else {
-                      control$maxit
-                    },
-                    acc = if (is.null(control$acc)) {
-                      ifelse (is.null(model.org$call$acc), 1e-4, model.org$call$acc)
-                    } else {
-                      control$acc
-                    },
-                    lqs.control = control$lqs.control,
-                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), control$tol))
+                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
+                                  control$tol))
     # collect all original model arguments and add constraints
     CALL <- c(list(model.org), call.my)
     CALL <- CALL[!duplicated(CALL)]
@@ -313,23 +275,14 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
                                        control$tol)] <- 0L
     names(b.eqrestr) <- vnames
     out0 <- robustWaldScores(x = X, y = y,  beta0 = b.eqrestr, 
-                             betaA = b.restr, scale = scale, test = "Wald")
+                             betaA = b.restr, scale = scale, test = "Wald", 
+                             cc = ifelse(is.null(cc), 4.685061, cc))
     Ts <- out0$Ts
     COV <- out0$V
   } else if (type == "A") {
     call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec,
-                    maxit = if (is.null(control$maxit)) {
-                      ifelse (is.null(model.org$call$maxit), 20, model.org$call$maxit)
-                    } else {
-                      control$maxit
-                    },
-                    acc = if (is.null(control$acc)) {
-                      ifelse (is.null(model.org$call$acc), 1e-4, model.org$call$acc)
-                    } else {
-                      control$acc
-                    },
-                    lqs.control = control$lqs.control,
-                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), control$tol))
+                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
+                                  control$tol))
     # collect all original model arguments and add constraints
     CALL <- c(list(model.org), call.my)
     CALL <- CALL[!duplicated(CALL)]
@@ -341,14 +294,16 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
     names(b.eqrestr) <- vnames
     
     out1 <- robustWaldScores(x = X, y = y,  beta0 = b.eqrestr, 
-                             betaA = b.restr, scale = scale, test = "Wald")
+                             betaA = b.restr, scale = scale, test = "Wald", 
+                             cc = ifelse(is.null(cc), 4.685061, cc))
     Ts <- out1$Ts
     COV <- out1$V
   }
   else if (type == "B") {
     if (meq.alt == 0L) {
       out2 <- robustWaldScores(x = X, y = y,  beta0 = b.restr, 
-                               betaA = b.unrestr, scale = scale, test = "Wald")
+                               betaA = b.unrestr, scale = scale, test = "Wald", 
+                               cc = ifelse(is.null(cc), 4.685061, cc))
       Ts <- out2$Ts
       COV <- out2$V
     } else {
@@ -356,18 +311,8 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
       if (meq.alt != 0L && meq.alt <= meq) {
         call.my <- list(Amat = Amat[1:meq.alt,,drop=FALSE], meq = meq.alt, 
                         bvec = bvec[1:meq.alt],
-                        maxit = if (is.null(control$maxit)) {
-                          ifelse (is.null(model.org$call$maxit), 20, model.org$call$maxit)
-                        } else {
-                          control$maxit
-                        },
-                        acc = if (is.null(control$acc)) {
-                          ifelse (is.null(model.org$call$acc), 1e-4, model.org$call$acc)
-                        } else {
-                          control$acc
-                        },
-                        lqs.control = control$lqs.control,
-                        tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), control$tol))
+                        tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
+                                      control$tol))
         # collect all original model arguments and add constraints
         CALL <- c(list(model.org), call.my)
         CALL <- CALL[!duplicated(CALL)]
@@ -379,7 +324,8 @@ conTestWald.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
         names(b.restr.alt) <- vnames
         out3 <- robustWaldScores(x = X, y = y,  beta0 = b.restr, 
                                  betaA = b.restr.alt, scale = scale, 
-                                 test = "Wald")
+                                 test = "Wald", 
+                                 cc = ifelse(is.null(cc), 4.685061, cc))
         Ts <- out3$Ts
         COV <- out3$V
       } else {
@@ -493,6 +439,8 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
   
   # original model
   model.org <- object$model.org
+  # tukey's bisquare tuning constant
+  cc <- model.org$call[["c"]]
   # model matrix
   X <- model.matrix(model.org)[,,drop=FALSE]
   # response variable
@@ -533,18 +481,8 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
     } 
     #fit inequality constrained robust model
     call.my <- list(Amat = Amatg, meq = nrow(Amatg), bvec = bvecg,
-                    maxit = if (is.null(control$maxit)) {
-                      ifelse (is.null(model.org$call$maxit), 20, model.org$call$maxit)
-                    } else {
-                      control$maxit
-                    },
-                    acc = if (is.null(control$acc)) {
-                      ifelse (is.null(model.org$call$acc), 1e-4, model.org$call$acc)
-                    } else {
-                      control$acc
-                    },
-                    lqs.control = control$lqs.control,
-                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), control$tol))
+                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
+                                  control$tol))
     # collect all original model arguments and add constraints
     CALL <- c(list(model.org), call.my)
     CALL <- CALL[!duplicated(CALL)]
@@ -555,23 +493,14 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
                                       control$tol)] <- 0L
     names(b.eqrestr) <- vnames
     out0 <- robustWaldScores(x = X, y = y,  beta0 = b.eqrestr, 
-                             betaA = b.restr, scale = scale, test = "score")    
+                             betaA = b.restr, scale = scale, test = "score", 
+                             cc = ifelse(is.null(cc), 4.685061, cc))    
     Ts <- out0$Ts
     COV <- out0$V
   } else if (type == "A") {
     call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec,
-                    maxit = if (is.null(control$maxit)) {
-                      ifelse (is.null(model.org$call$maxit), 20, model.org$call$maxit)
-                    } else {
-                      control$maxit
-                    },
-                    acc = if (is.null(control$acc)) {
-                      ifelse (is.null(model.org$call$acc), 1e-4, model.org$call$acc)
-                    } else {
-                      control$acc
-                    },
-                    lqs.control = control$lqs.control,
-                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), control$tol))
+                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
+                                  control$tol))
     # collect all original model arguments and add constraints
     CALL <- c(list(model.org), call.my)
     CALL <- CALL[!duplicated(CALL)]
@@ -583,13 +512,15 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
     names(b.eqrestr) <- vnames
     
     out1 <- robustWaldScores(x = X, y = y,  beta0 = b.eqrestr, 
-                             betaA = b.restr, scale = scale, test = "score")
+                             betaA = b.restr, scale = scale, test = "score", 
+                             cc = ifelse(is.null(cc), 4.685061, cc))
     Ts <- out1$Ts
     COV <- out1$V
   } else if (type == "B") {
     if (meq.alt == 0L) {
       out2 <- robustWaldScores(x = X, y = y,  beta0 = b.restr, 
-                               betaA = b.unrestr, scale = scale, test = "score")
+                               betaA = b.unrestr, scale = scale, test = "score", 
+                               cc = ifelse(is.null(cc), 4.685061, cc))
       Ts <- out2$Ts
       COV <- out2$V
     } else {
@@ -597,18 +528,8 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
       if (meq.alt != 0L && meq.alt <= meq) {
         call.my <- list(Amat = Amat[1:meq.alt,,drop=FALSE], meq = meq.alt, 
                         bvec = bvec[1:meq.alt],
-                        maxit = if (is.null(control$maxit)) {
-                          ifelse (is.null(model.org$call$maxit), 20, model.org$call$maxit)
-                        } else {
-                          control$maxit
-                        },
-                        acc = if (is.null(control$acc)) {
-                          ifelse (is.null(model.org$call$acc), 1e-4, model.org$call$acc)
-                        } else {
-                          control$acc
-                        },
-                        lqs.control = control$lqs.control,
-                        tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), control$tol))
+                        tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
+                                      control$tol))
         # collect all original model arguments and add constraints
         CALL <- c(list(model.org), call.my)
         CALL <- CALL[!duplicated(CALL)]
@@ -620,7 +541,8 @@ conTestScore.rlm <- function(object, type = "A", boot = "no", neq.alt = 0,
         names(b.restr.alt) <- vnames
         out3 <- robustWaldScores(x = X, y = y,  beta0 = b.restr, 
                                  betaA = b.restr.alt, scale = scale, 
-                                 test = "score")
+                                 test = "score", 
+                                 cc = ifelse(is.null(cc), 4.685061, cc))
         Ts <- out3$Ts
         COV <- out3$V
       } else {

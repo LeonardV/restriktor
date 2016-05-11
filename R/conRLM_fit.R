@@ -2,8 +2,7 @@
 # If method = "M", the original coef and scale are used as starting value.
 # For method = "MM", the original coef and scale can only be used in case of 
 # no equality constraints.
-conRLM_fit <- function(model, maxit = 5000,
-                       acc = 1e-14, lqs.control= NULL, 
+conRLM_fit <- function(model,  
                        Amat = NULL, bvec = NULL, meq = 0L, 
                        tol = sqrt(.Machine$double.eps), ...) {
     
@@ -37,37 +36,33 @@ conRLM_fit <- function(model, maxit = 5000,
  scale <- model$s
  # weights
  weights <- model$weights
-  
+ if (any(weights != 1L)) { stop("Restriktor ERROR: weights are not implemented (yet).") }
  # original model function call
  call <- as.list(model$call)
  # which method M or MM estimation
  method <- call[["method"]]
- if (is.null(method)) { method <- "M" } 
- # psi function (only bisquare)
- psi <- call[["psi"]]
- if (is.null(psi)) { psi <- "psi.huber" }
- psi <- get(as.character(psi))
- # weights
- weights <- model$weights
- #if (any(weights != 1L)) { stop("Restriktor ERROR: weights are not implemented (yet).") }
+ # tukey's tuning constant
+ cc <- call[["c"]]
  # weights method, inverse of the variance or case 
  wt.method <- call[["wt.method"]]
- if (is.null(wt.method)) { wt.method <- "inv.var" } 
  # down weights 
  w <- call[["w"]]
- if (is.null(w)) { w <- rep(1, nrow(x)) }
  # scale estimator - depends on method
  scale.est <- call[["scale.est"]]
- if (is.null(scale.est)) { scale.est <- "MAD" }
  # tuning constant used for Huber proposal 2 scale estimation.
  k2 <- call[["k2"]]
- if (is.null(k2)) { k2 <- 1.345 }
  # the stopping criterion is based on changes in this vector
  test.vec <- call[["test.vec"]]
- if (is.null(test.vec)) { test.vec <- "resid" }
-  
+ # an optional list of control values for lqs.
+ lqs.control <- call[["lqs.control"]]
+ # the limit on the number of IWLS iterations.
+ maxit <- call[["maxit"]]
+ # the accuracy for the stopping criterion.
+ acc <- call[["acc"]]
+ 
  xx <- x
  yy <- y
+ 
  # handling weights
  if (!missing(weights)) {
   if (wt.method == "inv.var") {
@@ -87,6 +82,7 @@ conRLM_fit <- function(model, maxit = 5000,
   if (method == "M") {
     coef <- model$coefficient
     resid <- model$residuals
+    psi <- psi.bisquare
   # MM-estimation  
   } else if (method == "MM") {
     scale.est <- "MM"
@@ -145,7 +141,7 @@ conRLM_fit <- function(model, maxit = 5000,
         break
       }
     }
-    w <- psi(resid / scale)
+    w <- psi(resid / scale, c = cc)
     if (!is.null(wt)) {
       w <- w * weights
     }

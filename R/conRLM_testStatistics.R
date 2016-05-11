@@ -1,13 +1,11 @@
-robustWaldScores <- function(x, y, beta0, betaA, scale, test = "wald") { 
+robustWaldScores <- function(x, y, beta0, betaA, scale, test = "wald", 
+                             cc = 4.685061) { 
   
   test <- tolower(test)
   X <- as.matrix(x)
   n <- dim(X)[1]
   p <- dim(X)[2]
   
-  #tukey bisquare tuning constant
-  cc = 4.685061
-    
   #Calculate M, Q, V 
   res0 <- y - X %*% beta0
   resA <- y - X %*% betaA

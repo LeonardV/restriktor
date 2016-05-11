@@ -27,72 +27,58 @@ conRLM.rlm <- function(model, constraints, se = "default", B = 999,
   
   y <- as.matrix(model$model[, attr(model$terms, "response")])
   X  <- model.matrix(model)[,,drop = FALSE]
-  # unconstrained coefficients
   b.unrestr <- coef(model)  
   
+  ## extract all available settings from the original model and else
+  ## asign default settings from rlm. Except for the psi function, because
+  ## only the tukey's bisquare loss function is supported by restriktor.
   # original model function call
   call <- as.list(model$call)
   # which method M or MM estimation
   method <- call[["method"]]
-  if (is.null(method)) {
-    model$call[["method"]] <- "M"
-  } else if (method == "MM") {
-    call[["psi"]] <- "psi.bisquare"
-  } else if (is.name(method)) {
-    stop("define ", sQuote(method), " inside function.")
-  }
-  # psi function (only bisquare, will be checked later!)
-  psi <- as.character(call[["psi"]])
-  if (is.null(psi)) {
-    psi <- model$call[["psi"]] <- "psi.huber"
-  } 
-  # prior weights for each case
-  weights <- model$weights
-  if (any(weights != 1L)) {
-    stop("weights are not implemented (yet).")
-  }
-  # weights method, inverse of the variance or case 
-  wt.method <- call[["wt.method"]]
-  if (is.null(wt.method)) {
-    model$call[["wt.method"]] <- "inv.var"
-  } else if (is.name(wt.method)) {
-    stop("define ", sQuote(wt.method), " inside function.")
-  }
-  # initial down-weighting for each case
-  w <- call[["w"]]
-  if (is.null(w)) {
-    model$call[["w"]] <- rep(1, nrow(X))
-  } else if (is.name(w)) {
-    stop("define ", sQuote(w), " inside function.")
-  }
-  # scale estimator - depends on method
-  scale.est <- call[["scale.est"]]
-  if (is.null(scale.est)) {
-    model$call[["scale.est"]] <- "MAD"
-  } else if (is.name(scale.est)) {
-    stop("define ", sQuote(scale.est), " inside function.")
-  }
-  # tuning constant used for Huber proposal 2 scale estimation.
-  k2 <- call[["k2"]]
-  if (is.null(k2)) {
-    model$call[["k2"]] <- 1.345
-  } else if (is.name(k2)) {
-    stop("define ", sQuote(k2), " inside function.")
-  }
-  # the stopping criterion is based on changes in this vector
-  test.vec <- call[["test.vec"]]
-  if (is.null(test.vec)) {
-    model$call[["test.vec"]] <- "resid"
-  } else if (is.name(resid)) {
-    stop("define ", sQuote(resid), " inside function.")
-  }
+  if (is.null(method)) model$call[["method"]] <- "M"
   
-  # check
-  if (method == "M") {
+  # check (only tukey's bisquare)
+  # psi function 
+  psi <- call[["psi"]]
+  if (is.null(psi)) {
+    if (method == "M") {
+      stop("only tukey's bisquare loss function is supported.")
+    } 
+  } else {
     if (psi != "psi.bisquare") {
-      stop("restriktor only supports the bisquare loss function (for now).")
+      stop("only tukey's bisquare loss function is supported.")
     }
   }
+  # tukeys bisquare tuning constant
+  cc <- call[["c"]]
+  if (is.null(cc)) model$call[["c"]] <- 4.685061
+  # prior weights for each case
+  weights <- model$weights
+  if (any(weights != 1L)) stop("weights are not implemented (yet).")
+  # weights method, inverse of the variance or case 
+  wt.method <- call[["wt.method"]]
+  if (is.null(wt.method)) model$call[["wt.method"]] <- "inv.var"
+  # initial down-weighting for each case
+  w <- call[["w"]]
+  if (is.null(w)) model$call[["w"]] <- rep(1, nrow(X))
+  # scale estimator - depends on method
+  scale.est <- call[["scale.est"]]
+  if (is.null(scale.est)) model$call[["scale.est"]] <- "MAD"
+  # tuning constant used for Huber proposal 2 scale estimation.
+  k2 <- call[["k2"]]
+  if (is.null(k2)) model$call[["k2"]] <- 1.345
+  # the stopping criterion is based on changes in this vector
+  test.vec <- call[["test.vec"]]
+  if (is.null(test.vec)) model$call[["test.vec"]] <- "resid"
+  # the limit on the number of IWLS iterations.
+  maxit <- call[["maxit"]]
+  if (is.null(maxit)) model$call[["maxit"]] <- 20
+  # the accuracy for the stopping criterion.
+  acc <- call[["acc"]]
+  if (is.null(acc)) model$call[["acc"]] <- 1e-4
+  
+  # check
   if(ncol(Amat) != length(b.unrestr)) {
     stop("length coefficients and ncol(constraints) must be identical")
   }
@@ -159,18 +145,8 @@ conRLM.rlm <- function(model, constraints, se = "default", B = 999,
   } else {
     # add constraints to model 
     call.my <- list(Amat = Amat, meq = meq, bvec = bvec, 
-                    maxit = if (is.null(control$maxit)) {
-                      ifelse (is.null(model$call$maxit), 20, model$call$maxit)
-                    } else {
-                      control$maxit
-                    },
-                    acc = if (is.null(control$acc)) {
-                      ifelse (is.null(model$call$acc), 1e-4, model$call$acc)
-                    } else {
-                      control$acc
-                    },
-                    lqs.control = control$lqs.control,
-                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), control$tol))
+                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
+                                  control$tol))
     # collect all original model arguments and add constraints
     #CALL <- c(list(model), call.my)
     CALL <- c(list(model), call.my)

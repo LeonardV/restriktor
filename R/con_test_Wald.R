@@ -1,4 +1,4 @@
-con_test_Wald <- function(VCOV, JAC, theta.r) {
+con_test_Wald <- function(Sigma, JAC, theta.r) {
 
     # remove redundant rows from JAC *and* theta.r
     npar <- ncol(JAC)
@@ -10,7 +10,7 @@ con_test_Wald <- function(VCOV, JAC, theta.r) {
     theta.r <- as.numeric(JAC.full[,(npar + 1L)])
 
     # restricted vcov
-    info.r  <- JAC %*% VCOV %*% t(JAC)
+    info.r  <- JAC %*% Sigma %*% t(JAC)
 
     # Wald test statistic
     Wald <- as.numeric(t(theta.r) %*% solve(info.r) %*% theta.r)

@@ -65,7 +65,7 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
                 R2.org = so$r.squared, R2.reduced = so$r.squared,
                 s2.unc = s2.unc, s2.restr = s2.unc, 
                 loglik = LL.unc, Sigma = vcov(model),
-                Amat = Amat, bvec = bvec, meq = meq, iact = NULL, 
+                constraints = Amat, rhs = bvec, neq = meq, iact = NULL, 
                 bootout = NULL, call = cl)  
   } else {
     # compute constrained estimates for lm() and mlm() 
@@ -142,7 +142,7 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
                 s2.restr = s2.restr,  #constrained
                 loglik = LL.restr, #constrained
                 Sigma = vcov(model), #unconstrained
-                Amat = Amat, bvec = bvec, meq = meq, iact = out.QP$iact,
+                constraints = Amat, rhs = bvec, neq = meq, iact = out.QP$iact,
                 bootout = NULL, call = cl)
   }
   

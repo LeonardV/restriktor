@@ -4,8 +4,8 @@ conTest <- function(object, type = "A", ...) {
     stop("object must be of class \"conLM\" or \"conRLM\"")
   }
   
-  Amat <- object$Amat
-  meq <- object$meq
+  Amat <- object$constraints
+  meq <- object$neq
   
   l <- list(...)
   if (nrow(Amat) > meq) {

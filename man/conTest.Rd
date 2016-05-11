@@ -16,9 +16,9 @@ conTest(object, type = "A", ...)
 \arguments{
   \item{object}{an object of class \code{conLM} or \code{conRLM}.} 
   \item{type}{hypothesis test type "A", "B", or "C". See details for more information.}
-  \item{test}{test statistic; for object of class lm an "F"-, "LRT"-, or 
-  "score"-test statistic is available. For object of class rlm an "F"-, "Wald"-, 
-  or "score"-test statistic is available.}
+  \item{test}{test statistic; for object of class lm an "F"- (default), "LRT"-, or 
+  "score"-test statistic is available. For object of class rlm an "F"- (default), 
+  "Wald"-, or "score"-test statistic is available.}
   \item{neq.alt}{integer: number of equality restriktions (from beginning) that are 
   maintained under the alternative hypothesis (for hypothesis test type "B")}
   \item{boot}{if \code{"parametric"}, the parametric bootstrap is used. By default,
@@ -31,7 +31,8 @@ conTest(object, type = "A", ...)
   a t-distribution with 7 degrees of freedom by default. If \code{"chi"}, samples
   are drawn from a chi-square distribution (df = 7 by default).}
   \item{df}{degrees of freedom for \code{p.distr}.}
-  \item{parallel}{the type of parallel operation to be used (if any). If missing, the default is set "no".}
+  \item{parallel}{the type of parallel operation to be used (if any). If missing, 
+  the default is set "no".}
   \item{ncpus}{integer: number of processes to be used in parallel operation: 
   typically one would chose this to the number of available CPUs.}
   \item{cl}{an optional parallel or snow cluster for use if parallel = "snow". 
@@ -39,17 +40,41 @@ conTest(object, type = "A", ...)
   the conTest call.}
   \item{seed}{seed value.}
   \item{verbose}{logical; if TRUE, information is shown at each bootstrap draw.}
-  \item{control}{a list of control arguments:}
-  \item{...}{}
+  \item{control}{a list of control arguments: 
+    \itemize{
+      \item \code{absval} tolerance criterion for convergence 
+      (default = sqrt(.Machine$double.eps)). Only used for model of class lm.
+      \item \code{maxit} the maximum number of iterations for the optimizer 
+      (default = 10000). Only used for model of class mlm (not yet available). 
+      \item \code{tol} numerical tolerance value. Estimates smaller than \code{tol} 
+      are set to 0.
+    }
+  }
+  \item{\dots}{no additional arguments for now.}
 }
 
 \details{}
 \value{
-  An object of class conTest or conRLM, for which a print and a 
+  An object of class conTest, for which a print and a 
   summary method is available. More specifically, it is a list 
   with the following items:
     
-  \item{}{}
+  \item{CON}{a list with useful information about the restriktions.}
+  \item{type}{}
+  \item{b.eqrestr}{}
+  \item{b.unrestr}{}
+  \item{b.restr}{}
+  \item{b.restr.alt}{}
+  \item{constraints}{}
+  \item{rhs}{}
+  \item{neq}{}
+  \item{neq.alt}{}
+  \item{iact}{}
+  \item{df.residual}{}
+  \item{Sigma}{}
+  \item{Ts}{}
+  \item{pvalue}{}
+  \item{model.org}{}
 }
 
 \references{

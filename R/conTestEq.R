@@ -16,7 +16,7 @@ conTestEq.lm <- function(object, test = "default", ...) {
     
     # here we perform the usual Wald/F test...
     if (test == "wald" || test == "x2" || test == "chisq") {
-      OUT <- con_test_Wald(VCOV    = object$Sigma,
+      OUT <- con_test_Wald(Sigma    = object$Sigma,
                            JAC     = object$Amat, #CON$ceq.JAC,
                            theta.r = c(object$Amat %*% object$b.unrestr)) #CON$ceq.theta)
     OUT$Amat <- object$Amat
@@ -25,7 +25,7 @@ conTestEq.lm <- function(object, test = "default", ...) {
     OUT$b.restr <- object$b.restr
     OUT$b.unrestr <- object$b.unrestr
     } else if (test == "f" || test == "ftest") {
-      Wald <- con_test_Wald(VCOV    = object$Sigma,
+      Wald <- con_test_Wald(Sigma    = object$Sigma,
                             JAC     = object$Amat, #CON$ceq.JAC,
                             theta.r = c(object$Amat %*% object$b.unrestr)) #CON$ceq.theta))
       # convert Wald to F

@@ -34,7 +34,7 @@ conTestF.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
-  COV <- object$Sigma
+  Sigma <- object$Sigma
   # unconstrained scale
   scale <- model.org$s
   # parameter estimates
@@ -45,9 +45,9 @@ conTestF.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
   # variable names
   vnames <- names(b.unrestr)
   # constraints stuff
-  Amat <- object$Amat
-  bvec <- object$bvec
-  meq  <- object$meq
+  Amat <- object$constraints
+  bvec <- object$rhs
+  meq  <- object$neq
   
   if (meq == nrow(Amat)) {
     stop("test not applicable for object with equality restriktions only.")
@@ -123,7 +123,7 @@ conTestF.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
   
   if (boot == "no") {
     # compute mixing weights
-    wt <- con_wt(Amat %*% COV %*% t(Amat), meq = meq)
+    wt <- con_wt(Amat %*% Sigma %*% t(Amat), meq = meq)
     pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
                               df.residual = df.residual, type = type,
                               Amat = Amat, bvec = bvec, meq = meq, 
@@ -163,7 +163,7 @@ conTestF.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
   OUT <- list(CON = object$CON,
               type = type,
               boot = boot,
-              b.eqrestr = NULL,
+              b.eqrestr = b.eqrestr,
               b.unrestr = b.unrestr,
               b.restr = b.restr,
               b.restr.alt = b.restr.alt,
@@ -173,19 +173,14 @@ conTestF.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
               meq.alt = meq.alt,
               iact = object$iact,
               df.residual = df.residual,
-              COV = COV,
+              Sigma = Sigma,
               Ts = Ts,
               pvalue = pvalue,
               model.org = model.org)
   
-  if (type == "A" | type == "global") { 
-    OUT$b.eqrestr <- b.eqrestr 
-  }
-  
   class(OUT) <- "conTest"
   
   OUT
-  
 }
 
 
@@ -228,7 +223,7 @@ conTestWald.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
-  COV <- object$Sigma
+  Sigma <- object$Sigma
   # unconstrained scale
   scale <- model.org$s
   # parameter estimates
@@ -239,9 +234,9 @@ conTestWald.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
   # variable names
   vnames <- names(b.unrestr)
   # constraints stuff
-  Amat <- object$Amat
-  bvec <- object$bvec
-  meq  <- object$meq
+  Amat <- object$constraints
+  bvec <- object$rhs
+  meq  <- object$neq
   
   if (meq == nrow(Amat)) {
     stop("test not applicable for object with equality restriktions only.")
@@ -274,7 +269,7 @@ conTestWald.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
                              betaA = b.restr, scale = scale, test = "Wald", 
                              cc = ifelse(is.null(cc), 4.685061, cc))
     Ts <- out0$Ts
-    COV <- out0$V
+    Sigma <- out0$V
   } else if (type == "A") {
     call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec,
                     tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
@@ -293,7 +288,7 @@ conTestWald.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
                              betaA = b.restr, scale = scale, test = "Wald", 
                              cc = ifelse(is.null(cc), 4.685061, cc))
     Ts <- out1$Ts
-    COV <- out1$V
+    Sigma <- out1$V
   }
   else if (type == "B") {
     if (meq.alt == 0L) {
@@ -301,7 +296,7 @@ conTestWald.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
                                betaA = b.unrestr, scale = scale, test = "Wald", 
                                cc = ifelse(is.null(cc), 4.685061, cc))
       Ts <- out2$Ts
-      COV <- out2$V
+      Sigma <- out2$V
     } else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt != 0L && meq.alt <= meq) {
@@ -323,7 +318,7 @@ conTestWald.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
                                  test = "Wald", 
                                  cc = ifelse(is.null(cc), 4.685061, cc))
         Ts <- out3$Ts
-        COV <- out3$V
+        Sigma <- out3$V
       } else {
         stop("neq.alt must not be larger than neq.")
       }
@@ -332,7 +327,7 @@ conTestWald.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
   
   if (boot == "no") {
     # compute weights
-    wt <- con_wt(Amat %*% COV %*% t(Amat), meq = meq)
+    wt <- con_wt(Amat %*% Sigma %*% t(Amat), meq = meq)
     # compute pvalue based on F-distribution
     pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
                               df.residual = df.residual, type = type,
@@ -373,7 +368,7 @@ conTestWald.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
   OUT <- list(CON = object$CON,
               type = type,
               boot = boot,
-              b.eqrestr = NULL,
+              b.eqrestr = b.eqrestr,
               b.unrestr = b.unrestr,
               b.restr = b.restr,
               b.restr.alt = b.restr.alt,
@@ -383,20 +378,14 @@ conTestWald.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
               meq.alt = meq.alt,
               iact = object$iact,
               df.residual = df.residual,
-              COV = COV,
+              Sigma = Sigma,
               Ts = Ts,
               pvalue = pvalue,
               model.org = model.org)
   
-  
-  if (type == "A" | type == "global") { 
-    OUT$b.eqrestr <- b.eqrestr 
-  }
-  
   class(OUT) <- "conTest"
   
   OUT
-  
 }
 
 
@@ -440,7 +429,7 @@ conTestScore.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
-  COV <- object$Sigma
+  Sigma <- object$Sigma
   # unconstrained scale
   scale <- model.org$s
   # parameter estimates
@@ -451,9 +440,9 @@ conTestScore.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9
   # variable names
   vnames <- names(b.unrestr)
   # constraints stuff
-  Amat <- object$Amat
-  bvec <- object$bvec
-  meq  <- object$meq
+  Amat <- object$constraints
+  bvec <- object$rhs
+  meq  <- object$neq
   
   if (meq == nrow(Amat)) {
     stop("test not applicable for object with equality restriktions only.")
@@ -486,7 +475,7 @@ conTestScore.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9
                              betaA = b.restr, scale = scale, test = "score", 
                              cc = ifelse(is.null(cc), 4.685061, cc))    
     Ts <- out0$Ts
-    COV <- out0$V
+    Sigma <- out0$V
   } else if (type == "A") {
     call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec,
                     tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
@@ -505,14 +494,14 @@ conTestScore.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9
                              betaA = b.restr, scale = scale, test = "score", 
                              cc = ifelse(is.null(cc), 4.685061, cc))
     Ts <- out1$Ts
-    COV <- out1$V
+    Sigma <- out1$V
   } else if (type == "B") {
     if (meq.alt == 0L) {
       out2 <- robustWaldScores(x = X, y = y,  beta0 = b.restr, 
                                betaA = b.unrestr, scale = scale, test = "score", 
                                cc = ifelse(is.null(cc), 4.685061, cc))
       Ts <- out2$Ts
-      COV <- out2$V
+      Sigma <- out2$V
     } else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt != 0L && meq.alt <= meq) {
@@ -534,7 +523,7 @@ conTestScore.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9
                                  test = "score", 
                                  cc = ifelse(is.null(cc), 4.685061, cc))
         Ts <- out3$Ts
-        COV <- out3$V
+        Sigma <- out3$V
       } else {
         stop("neq.alt must not be larger than neq.")
       }
@@ -543,7 +532,7 @@ conTestScore.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9
   
   if (boot == "no") {
     # compute weights
-    wt <- con_wt(Amat %*% COV %*% t(Amat), meq = meq)
+    wt <- con_wt(Amat %*% Sigma %*% t(Amat), meq = meq)
     # compute pvalue based on F-distribution
     pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
                               df.residual = df.residual, type = type,
@@ -584,7 +573,7 @@ conTestScore.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9
   OUT <- list(CON = object$CON,
               type = type,
               boot = boot,
-              b.eqrestr = NULL,
+              b.eqrestr = b.eqrestr,
               b.unrestr = b.unrestr,
               b.restr = b.restr,
               b.restr.alt = b.restr.alt,
@@ -594,18 +583,12 @@ conTestScore.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9
               meq.alt = meq.alt,
               iact = object$iact,
               df.residual = df.residual,
-              COV = COV,
+              Sigma = Sigma,
               Ts = Ts,
               pvalue = pvalue,
               model.org = model.org)
   
-  
-  if (type == "A" | type == "global") { 
-    OUT$b.eqrestr <- b.eqrestr 
-  }
-  
   class(OUT) <- "conTest"
   
   OUT
-  
 }

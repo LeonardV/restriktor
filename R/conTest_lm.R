@@ -37,7 +37,7 @@ conTestF.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
-  COV <- vcov(model.org) 
+  Sigma <- vcov(model.org) 
   # parameter estimates
   b.unrestr <- object$b.unrestr
   b.restr <- object$b.restr
@@ -46,9 +46,9 @@ conTestF.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
   # variable names
   vnames <- names(b.unrestr)
   # constraints stuff
-  Amat <- object$Amat
-  bvec <- object$bvec
-  meq  <- object$meq
+  Amat <- object$constraints
+  bvec <- object$rhs
+  meq  <- object$neq
 
   # check for equalities only
   if (meq == nrow(Amat)) {
@@ -78,7 +78,7 @@ conTestF.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
                                       control$tol)] <- 0L
       names(b.eqrestr) <- vnames
     # compute global test statistic
-    Ts <- c(t(b.restr - b.eqrestr) %*% solve(COV, b.restr - b.eqrestr))
+    Ts <- c(t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr))
   } else if (type == "A") {
     b.eqrestr <- con_solver(b.unrestr, X = X, y = y, w = w, Amat = Amat,
                             bvec = bvec, meq = nrow(Amat),
@@ -91,12 +91,12 @@ conTestF.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
                                       control$tol)] <- 0L
       names(b.eqrestr) <- vnames
     # compute test statistic for hypothesis test type A
-    Ts <- c(t(b.restr - b.eqrestr) %*% solve(COV, b.restr - b.eqrestr))
+    Ts <- c(t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr))
   } else if (type == "B") {
     if (meq.alt == 0L) {
       # compute test statistic for hypothesis test type B when no equalities are
       # preserved in the alternative hypothesis.
-      Ts <- as.vector(t(b.unrestr - b.restr) %*% solve(COV, b.unrestr - b.restr))
+      Ts <- as.vector(t(b.unrestr - b.restr) %*% solve(Sigma, b.unrestr - b.restr))
     } else {
       if (meq.alt != 0L && meq.alt <= meq) {
         b.restr.alt <- con_solver(b.unrestr, X = X, y = y, w = w, 
@@ -112,7 +112,7 @@ conTestF.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
         names(b.restr.alt) <- vnames
         # compute test statistic for hypothesis test type B when some equalities may 
         # be preserved in the alternative hypothesis.
-        Ts <- as.vector(t(b.restr - b.restr.alt) %*% solve(COV, b.restr - b.restr.alt))
+        Ts <- as.vector(t(b.restr - b.restr.alt) %*% solve(Sigma, b.restr - b.restr.alt))
       } else {
         stop("neq.alt must not be larger than neq.")
       }
@@ -126,7 +126,7 @@ conTestF.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
   # based bootstrap, without fist computing the mixing weights.
   if (boot == "no") {
     # compute mixing weights
-    wt <- con_wt(Amat %*% COV %*% t(Amat), meq = meq)
+    wt <- con_wt(Amat %*% Sigma %*% t(Amat), meq = meq)
      
     pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
                               df.residual = df.residual, type = type,
@@ -165,7 +165,7 @@ conTestF.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
   OUT <- list(CON = object$CON,
               type = type,
               boot = boot,
-              b.eqrestr = NULL,
+              b.eqrestr = b.eqrestr,
               b.unrestr = b.unrestr,
               b.restr = b.restr,
               b.restr.alt = b.restr.alt,
@@ -175,20 +175,14 @@ conTestF.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
               meq.alt = meq.alt,
               iact = object$iact,
               df.residual = df.residual,
-              COV = COV,
+              Sigma = Sigma,
               Ts = Ts,
               pvalue = pvalue,
               model.org = model.org)
 
-
-  if (type == "A" | type == "global") { 
-    OUT$b.eqrestr <- b.eqrestr 
-  }
-
   class(OUT) <- "conTest"
 
   OUT
-
 }
 
 
@@ -229,7 +223,7 @@ conTestLRT.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
-  COV <- vcov(model.org) 
+  Sigma <- vcov(model.org) 
   # parameter estimates
   b.unrestr <- object$b.unrestr
   b.restr <- object$b.restr
@@ -238,9 +232,9 @@ conTestLRT.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999
   # variable names
   vnames <- names(b.unrestr)
   # constraints stuff
-  Amat <- object$Amat
-  bvec <- object$bvec
-  meq  <- object$meq
+  Amat <- object$constraints
+  bvec <- object$rhs
+  meq  <- object$neq
   
   if (meq == nrow(Amat)) {
     stop("test not applicable for object with equality restriktions only.")
@@ -322,7 +316,7 @@ conTestLRT.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999
   } 
   
   if (boot == "no") {
-    wt <- con_wt(Amat %*% COV %*% t(Amat), meq = meq)
+    wt <- con_wt(Amat %*% Sigma %*% t(Amat), meq = meq)
     
     pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
                               df.residual = df.residual, type = type,
@@ -361,7 +355,7 @@ conTestLRT.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999
   OUT <- list(CON = object$CON,
               type = type,
               boot = boot,
-              b.eqrestr = NULL,
+              b.eqrestr = b.eqrestr,
               b.unrestr = b.unrestr,
               b.restr = b.restr,
               b.restr.alt = b.restr.alt,
@@ -371,19 +365,14 @@ conTestLRT.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999
               meq.alt = meq.alt,
               iact = object$iact,
               df.residual = df.residual,
-              COV = COV,
+              Sigma = Sigma,
               Ts = Ts,
               pvalue = pvalue,
               model.org = object$model.org)
 
-  if(type == "A" | type == "global") { 
-    OUT$b.eqrestr <- b.eqrestr 
-  }
-
   class(OUT) <- "conTest"
 
   OUT
-
 }
 
 
@@ -423,7 +412,7 @@ conTestScore.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
-  COV <- vcov(model.org) 
+  Sigma <- vcov(model.org) 
   # sample size
   n <- dim(X)[1]
   # number of parameters
@@ -442,9 +431,9 @@ conTestScore.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
   # variable names
   vnames <- names(b.unrestr)
   # restraints stuff
-  Amat <- object$Amat
-  bvec <- object$bvec
-  meq  <- object$meq
+  Amat <- object$constraints
+  bvec <- object$rhs
+  meq  <- object$neq
   
   if (meq == nrow(Amat)) {
     stop("test not applicable for object with equality restriktions only.")
@@ -552,7 +541,7 @@ conTestScore.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
   } 
   
   if (boot == "no") {
-    wt <- con_wt(Amat %*% COV %*% t(Amat), meq = meq)
+    wt <- con_wt(Amat %*% Sigma %*% t(Amat), meq = meq)
     pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
                               df.residual = df.residual, type = type,
                               Amat = Amat, bvec = bvec, meq = meq, 
@@ -592,7 +581,7 @@ conTestScore.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
   OUT <- list(CON = object$CON,
               type = type,
               boot = boot,
-              b.eqrestr = NULL,
+              b.eqrestr = b.eqrestr,
               b.unrestr = b.unrestr,
               b.restr = b.restr,
               b.restr.alt = b.restr.alt,
@@ -602,19 +591,14 @@ conTestScore.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
               meq.alt = meq.alt,
               iact = object$iact,
               df.residual = df.residual,
-              COV = COV,
+              Sigma = Sigma,
               Ts = Ts,
               pvalue = pvalue,
               model.org = object$model.org)
   
-  if(type == "A" | type == "global") { 
-    OUT$b.eqrestr <- b.eqrestr 
-  }
-  
   class(OUT) <- "conTest"
   
   OUT
-  
 }
 
 
@@ -629,17 +613,17 @@ conTestC.lm <- function(object, type = "C", ...) {
     stop("object must be of class conLM.")
   }
   
-  Amat <- object$Amat
-  bvec <- object$bvec
-  meq  <- object$meq
+  Amat <- object$constraints
+  bvec <- object$rhs
+  meq  <- object$neq
   model.org <- object$model.org
-  COV <- vcov(model.org) 
+  Sigma <- vcov(model.org) 
   df.residual <- object$df.residual
   b.unrestr <- object$b.unrestr
     
   if (meq == 0L) {
     Ts <- as.vector(min((Amat %*% b.unrestr - bvec) / 
-                          sqrt(diag(Amat %*% COV %*% t(Amat)))))
+                          sqrt(diag(Amat %*% Sigma %*% t(Amat)))))
     pvalue <- 1 - pt(Ts, df.residual)
   } else {
     stop("test not applicable with equality restriktions.")

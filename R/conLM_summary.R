@@ -21,8 +21,8 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
     stop("invalid confidence level")
   }
   
-  Amat <- z$Amat
-  meq <- z$meq
+  Amat <- z$constraints
+  meq <- z$neq
   p <- z$model.org$rank
   rdf <- z$df.residual
   r <- c(z$residuals)

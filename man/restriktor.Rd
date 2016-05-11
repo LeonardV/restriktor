@@ -81,6 +81,7 @@ restriktor(model, constraints, se = "standard",
   \item{debug}{if TRUE, debugging information about the constraints
   is printed out.
   }
+  \item{\ldots}{not used for now.}
 }
 
 \details{

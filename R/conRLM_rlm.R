@@ -140,7 +140,7 @@ conRLM.rlm <- function(model, constraints, se = "default", B = 999,
                 s2.restr = tau^2, 
                 loglik = LL.unc, 
                 Sigma = vcov(model),                                            #probably not so robust!
-                Amat = Amat, bvec = bvec, meq = meq, iact = 0L,
+                constraints = Amat, rhs = bvec, neq = meq, iact = 0L,
                 converged = model$converged, iter = model$iter,
                 bootout = NULL, call = cl)
   } else {
@@ -210,7 +210,7 @@ conRLM.rlm <- function(model, constraints, se = "default", B = 999,
                 s2.restr = tau^2, 
                 loglik = LL.restr, 
                 Sigma = vcov(model),                                             #probably not so robust???
-                Amat = Amat, bvec = bvec, meq = meq, iact = iact,
+                constraints = Amat, rhs = bvec, neq = meq, iact = iact,
                 converged = rfit$converged, iter = rfit$iter,
                 bootout = NULL, call = cl)
   }

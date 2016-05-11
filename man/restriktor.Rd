@@ -269,6 +269,7 @@ summary(fit1.con)
 #########################
 ## Artificial examples ##
 #########################
+# generate data
 n <- 10
 means <- c(1,2,1,3)
 nm <- length(means)
@@ -280,7 +281,7 @@ DATA2 <- data.frame(y, group)
 fit2.rlm <- MASS:::rlm(y ~ group, data = DATA2, method = "MM")
 coef(fit2.rlm)
 
-## increasing means
+# increasing means
 myConstraints2 <- ' group2 > 0
                     group2 < group3
                     group3 < group4
@@ -292,7 +293,7 @@ fit2.con <- restriktor(fit2.rlm, constraints = myConstraints2, se = "HC0")
 summary(fit2.con)
 
 \dontrun{ 
-## increasing means in matrix notation.
+# increasing means in matrix notation.
 myConstraints_mat2 <- rbind(c(0, 1, 0, 0),
                             c(0,-1, 1, 0),
                             c(0, 0,-1, 1))
@@ -304,7 +305,7 @@ fit2.con <- restriktor(fit2.rlm, constraints = myConstraints_mat2,
 summary(fit2.con)
 }            
 
-## equality restriktions only.
+# equality restriktions only.
 myConstraints3 <- ' group2 == 0
                     group2 == group3
                     group3 == group4
@@ -313,7 +314,7 @@ fit3.con <- restriktor(fit2.lm, constr = myConstraints3)
 summary(fit3.con)
 
 
-## combination of equality and inequality restriktions.
+# combination of equality and inequality restriktions.
 myConstraints4 <- ' group2 == 0
                     group3 < group4
 '
@@ -328,16 +329,16 @@ summary(fit4.con)
 # restriktor can also be used to define effects using the := operator 
 # and impose restriktions on them. For example, is the 
 # average effect (AVE) larger than zero?
+# generate data
 n <- 30
-a <- 10; b1 = 0.5; b2 = 1; b3 = 1.5
-# Generate 30 trials
-X <- c(rep(c(0), n/2), rep(c(1), n/2)) # '0' 15 times, '1' 15 times
+b0 <- 10; b1 = 0.5; b2 = 1; b3 = 1.5
+X <- c(rep(c(0), n/2), rep(c(1), n/2))
 set.seed(90) 
 Z <- rnorm(n, 16, 5)
-y = a + b1*X + b2*Z + b3*X*Z + rnorm(n, 0, sd = 10) 
+y <- b0 + b1*X + b2*Z + b3*X*Z + rnorm(n, 0, sd = 10) 
 DATA3 = data.frame(cbind(y, X, Z))
 
-#fit linear model with interaction
+# fit linear model with interaction
 fit5.lm <- lm(y ~ X*Z, data = DATA3)
 
 fit5.con <- restriktor(fit5.lm, constraints = "AVE := X + 16.86137*X.Z; 

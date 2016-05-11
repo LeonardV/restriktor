@@ -16,27 +16,34 @@ normal models.}
   LazyLoad: \tab yes\cr
   }
   
-  Function \code{restriktor} estimates the parameters of a linear model (\code{lm}) or 
-  robust linear model (\code{rlm}) subject to equality and/or inequality restriktions. 
-  The function offers the possibility to compute (model robust) standard errors 
-  under the restriktions. The parameters estimates can also be bootstrapped, where 
-  bootstrapped standard errors and confidence intervals are available via the 
-  summary function. Moreover, the function computes the Generalized Order-restricted
-  Information Criterion (GORIC), which is a modification of the AIC and the ORIC.
+  Function \code{restriktor} estimates the parameters of a linear model (\code{lm}) 
+  or robust linear model (\code{rlm}) subject to equality and/or inequality 
+  restriktions. The function \code{restriktor} is a convenience function that can 
+  take a symbolic description as constraint input and translates it to right 
+  constraint matrices and vectors. The real work horses are the \code{conLM} and 
+  the \code{conRLM} functions for linear and robust linear models respectively.
+  
+  The function \code{restriktor} offers the possibility to compute (model robust) 
+  standard errors under the restriktions. The parameter estimates can also be 
+  bootstrapped, where bootstrapped standard errors and confidence intervals are 
+  available via the summary function. Moreover, the function computes the 
+  Generalized Order-restrikted Information Criterion (GORIC), which is a modification 
+  of the AIC and the ORIC.
   
   Function \code{conTest} conducts restrikted hypothesis tests. Wald-, score and
-  LRT test-statistics are available for both \code{lm} and \code{rlm}. The null-distribution
-  of these test-statistics takes the form of a mixture of chi-square distributions. 
-  These mixing weights can be computed using the multivariate normal distribution
-  function or via a simulation approach. Bootstrap methods are available to avoid
-  calculating the mixing weights and to compute the p-value directly. Parameters 
-  estimates under the null- and alternative-hypothesis are available from the 
-  summary function. 
+  LRT test-statistics are available for both \code{lm} and \code{rlm}. The 
+  null-distribution of these test-statistics takes the form of a mixture of 
+  chi-square distributions. These mixing weights can be computed using the 
+  multivariate normal distribution function or via a simulation approach. 
+  Bootstrap methods are available to avoid calculating the mixing weights and to 
+  compute the p-value directly. Parameters estimates under the null- and 
+  alternative-hypothesis are available from the summary function. 
   
   The package makes use of various other R packages: \pkg{quadprog} is used for 
-  constrained estimation, \pkg{boot} for bootstrapping, \pkg{ic.infer} for 
-  computing the weights based on the multivariate normal distribution, \pkg{lavaan}
-  for parsing the constraint syntax, and \pkg{zoo} for computing sandwich estimators. 
+  restrikted estimation, \pkg{boot} for bootstrapping, \pkg{ic.infer} for 
+  computing the mixing weights based on the multivariate normal distribution, 
+  \pkg{lavaan} for parsing the constraint syntax, and \pkg{zoo} is need for 
+  computing sandwich estimators for time series. 
 }
 
 \value{

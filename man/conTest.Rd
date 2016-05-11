@@ -3,6 +3,9 @@
 \alias{conTestF.lm}
 \alias{conTestLRT.lm}
 \alias{conTestScore.lm}
+\alias{conTestF.rlm}
+\alias{conTestWald.rlm}
+\alias{conTestScore.rlm}
 
 \title{Function for testing equality and/or inequality restrikted hypotheses for
 linear models}

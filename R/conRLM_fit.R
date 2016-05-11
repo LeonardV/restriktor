@@ -78,11 +78,11 @@ conRLM_fit <- function(model,
     wt <- NULL
   }
 
+  psi <- psi.bisquare
   # M-estimation
   if (method == "M") {
     coef <- model$coefficient
     resid <- model$residuals
-    psi <- psi.bisquare
   # MM-estimation  
   } else if (method == "MM") {
     scale.est <- "MM"
@@ -97,17 +97,17 @@ conRLM_fit <- function(model,
                      meq = nrow(Amat[1:meq,,drop = FALSE]))$solution
       QP[abs(QP) < tol] <- 0L
       x.idx <- QP %in% 0
+      temp <- do.call("lqs",
+                      c(list(x = x[,!x.idx, drop = FALSE], y, intercept = FALSE, 
+                             method = "S", k0 = 1.54764), lqs.control)) 
+      coef  <- temp$coefficients
+      resid <- temp$residuals
+      scale <- temp$scale  
     } else {
-      x.idx <- rep(FALSE, ncol(Amat))
+      coef  <- model$coefficients
+      resid <- model$residuals
+      scale <- model$s
     }
-    temp <- do.call("lqs",
-                    c(list(x = x[,!x.idx, drop = FALSE], y, intercept = FALSE, 
-                           method = "S", k0 = 1.54764), lqs.control)) 
-    coef <- temp$coefficients
-    resid <- temp$residuals
-    resid0 <- resid
-    scale <- temp$scale
-    psi <- psi.bisquare
   } else {
     stop("'method' is unknown")
   }  
@@ -180,7 +180,7 @@ conRLM_fit <- function(model,
   fit <- list(coefficients = coef, 
               residuals = c(yy - fitted), 
               wresid = resid,
-              resid0 = if (method == "MM") { resid0 },
+              #resid0 = if (method == "MM") { resid0 },
               fitted.values = fitted,
               df.residual = NA, w = w,
               scale = scale, psi = psi, k2 = k2,

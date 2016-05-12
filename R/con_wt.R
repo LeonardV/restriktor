@@ -14,9 +14,10 @@ con_wt <- function(cov, meq) {
 # compute weights based on simulation.
 #REF: Silvapulle and Sen (2005, p. 79). Constrained Statistical Inference: Order, 
 # Inequality, and Shape Constraints. Hoboken, {NJ}: Wiley
-mix.boot <- function(object, 
-                     R = 99999, parallel = c("no", "multicore", "snow"),
-                     ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, ...) {
+mix.boot <- function(VCOV, Amat, meq, 
+                     R = 9999, parallel = c("no", "multicore", "snow"),
+                     ncpus = 1L, cl = NULL, seed = NULL, verbose = FALSE, ...) {
+  
   
   parallel <- match.arg(parallel)
   have_mc <- have_snow <- FALSE
@@ -29,15 +30,9 @@ mix.boot <- function(object,
       ncpus <- 1L
   }
   
-  # constraints 
-  Amat <- object$Amat
   bvec <- rep(0L, nrow(Amat))
-  meq  <- object$meq
-  
-  s2unc <- object$s2.unc
-  X <- model.matrix(object)[,,drop = FALSE]
-  invW <- kronecker(solve(s2unc), t(X) %*% X)
-  W <- solve(invW)
+  W <- VCOV 
+  invW <- solve(W) 
   Dmat <- 2*invW
   
   iact <- vector("numeric", ncol(Amat))

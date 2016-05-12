@@ -1,12 +1,24 @@
-#compute constrained robust estimates
+#compute restrikted robust estimates
 conRLM.rlm <- function(model, constraints, se = "default", B = 999, 
-                       bvec = NULL, meq = 0L, control = NULL, ...) { 
+                       rhs = NULL, neq = 0L, bootWt = FALSE, R = 99999,
+                       parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
+                       control = NULL, verbose = FALSE, debug = FALSE, ...) { 
   
   cl <- match.call()
-  Amat <- Amatw; bvec <- bvecw; meq <- meqw
+  #rename for internal use
+  bvec <- rhs; meq <- neq
+  
+  # construct constraint matrix/vector.
+  CON_OUT <- con_constraints(model, constraints = constraints, 
+                             bvec = bvec, meq = meq, debug = debug)  
+  CON <- CON_OUT$CON
+  parTable <- CON_OUT$parTable
+  Amat <- CON_OUT$Amat
+  bvec <- CON_OUT$bvec
+  meq <- CON_OUT$meq
   
   # check class
-  if (!("rlm" %in% class(model))) {
+  if (!(class(model)[1] == "rlm")) {
     stop("Restriktor ERROR: model must be of class rlm.")
   }
   # standard error stuff
@@ -84,17 +96,19 @@ conRLM.rlm <- function(model, constraints, se = "default", B = 999,
     stop("length coefficients and ncol(constraints) must be identical")
   }
   
-  # Adjusted summary function from MASS:::summary.rlm().
-  # The df needs to be corrected for equality constraints and
-  # we need the df for ML. 
-  so.org <- summary_rlm(model)
+  # model summary
+  so.org <- summary(model)
   # unconstrained scale estimate for the standard errors
-  tau.unc <- tau <- so.org$stddev
-  
-  #R^2 
+  tau <- so.org$stddev
+  # residual degrees of freedom
+  rdf <- so.org$df[2]
+  # residuals
+  residuals <- model$residuals
+  # sampel size
+  n <- length(residuals)
+  # compute R^2 
   # acknowledment: code taken from the lmrob() function from the robustbase 
   # package
-  residuals <- model$residuals
   pred <- model$fitted.values
   resp <- pred + residuals 
   wgt <- weights 
@@ -135,7 +149,7 @@ conRLM.rlm <- function(model, constraints, se = "default", B = 999,
                 psi = model$psi,
                 R2.org = R2.org,
                 R2.reduced = R2.org,
-                df.residual = so.org$df[2],
+                df.residual = rdf,
                 s2.unc = tau^2, 
                 s2.restr = tau^2, 
                 loglik = LL.unc, 
@@ -170,8 +184,24 @@ conRLM.rlm <- function(model, constraints, se = "default", B = 999,
     ll.restr <- con_loglik_lm(X = X, y = y, b = b.unrestr, w = weights)
     LL.restr <- ll.restr$loglik
     # we need the std. deviation adjusted for equality constraints (meq > 0)
+    
+    summary(rfit)
+    if (model$call[["wt.method"]] == "inv.var") {
+      n <- length(weights)
+      p <- length(b.unrestr)
+      rdf <- n - (p - qr(Amat[0:meq,])$rank)  
+    } else if (model$call[["wt.method"]] == "case") {
+      wts <- model$weights
+      rdf <- sum(wts) - (p - qr(Amat[0:meq,])$rank)
+    } else {
+      stop("restriktor ERROR: could not compute df.")
+    }
+    
+    # adjust summary.rlm function to get the right residual degrees of freedom
+    # and standard deviation in case of equality constraints.
     so.restr <- summary_rlm(rfit, Amat = Amat, meq = meq)
-    tau <- so.restr$stddev
+    rdf <- so.restr$df[2]
+    tau.restr <- so.restr$stddev
     
     #R^2 under the constrained model
     # predicted values under constraints
@@ -204,10 +234,10 @@ conRLM.rlm <- function(model, constraints, se = "default", B = 999,
                 scale = model$s,
                 R2.org = R2.org,
                 R2.reduced = R2.reduced,
-                df.residual = so.restr$df[2], # correction for equalities constraints is included.
+                df.residual = rdf, # correction for equalities restriktions.
                 #df.residual = so.org$df[2], 
-                s2.unc = tau.unc^2, 
-                s2.restr = tau^2, 
+                s2.unc = tau^2, 
+                s2.restr = tau.restr^2, 
                 loglik = LL.restr, 
                 Sigma = vcov(model),                                             #probably not so robust???
                 constraints = Amat, rhs = bvec, neq = meq, iact = iact,
@@ -241,6 +271,32 @@ conRLM.rlm <- function(model, constraints, se = "default", B = 999,
                                  rhs = bvec, neq = meq, se = "none")
     }
   }
+  
+  # ML unconstrained MSE
+  tau2ml <- (tau^2 * so.org$df[2]) / n
+  invW <- kronecker(solve(tau2ml), t(X) %*% X)
+  W <- solve(invW)
+  
+  # compute mixing weights
+  if (bootWt) { # compute mixing weights based on simulation
+    OUT$wt <- mix.boot(VCOV = W,
+                       Amat = Amat, 
+                       meq = meq, 
+                       R = R,
+                       parallel = parallel,
+                       ncpus = ncpus,
+                       cl = cl,
+                       seed = seed,
+                       verbose = verbose)
+  } else if (!bootWt & (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
+    OUT$wt <- rev(con_wt(Amat %*% W %*% t(Amat), meq = meq))
+  } else if (!bootWt & (meq == nrow(Amat))) { # only equality constraints
+    wt <- rep(0L, ncol(W) + 1)
+    wt.idx <- ncol(W) - meq + 1
+    wt[wt.idx] <- 1
+    OUT$wt <- wt
+  }
+  attr(OUT$wt, "bootWt") <- bootWt
   
   class(OUT) <- c("conRLM","conLM","rlm","lm")
   

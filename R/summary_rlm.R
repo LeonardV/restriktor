@@ -1,6 +1,5 @@
 # acknowledgement: code taken from MASS package
-# adapted to correct for equality constraints by LV.
-# add option to get ml sigma
+# adapted to correct rdf for equality constraints by LV.
 summary_rlm <- function (object, method = c("XtX", "XtWX"), 
                          correlation = FALSE, 
                          Amat = NULL, meq = NULL, ...) {

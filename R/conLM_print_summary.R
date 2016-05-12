@@ -69,8 +69,9 @@ print.summary.conLM <- function(object, digits = max(3, getOption("digits") - 2)
   if (!is.null(goric)) {
     ll <- attr(goric, "loglik") 
     PT <- attr(goric, "penalty")
-    result_goric <- c(ll, PT, goric)
-    names(result_goric) <- c("Loglik", "Penalty", "Goric")
+    goric_weights <- attr(goric, "goric_weights")
+    result_goric <- c(ll, PT, goric, goric_weights)
+    names(result_goric) <- c("Loglik", "Penalty", "Goric", "Weights")
     cat("\nGeneralized Order-Restrikted Information Criterion:\n")
     print(result_goric, digits = digits)
   }  

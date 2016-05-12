@@ -9,67 +9,17 @@
 # - add small sample correction for GORIC, see REF. above.
 # - add support for mlm and glm.
 ###############################################################################
-restriktor <- function(model, constraints, se = "standard",
-                       rhs = NULL, neq = NULL, control = NULL,
-                       debug = FALSE, ...) {
+restriktor <- function(model, constraints, ...) {
   
-  #we first check the class of object
+  # check the class of object
   if (!any(class(model) %in% c("lm", "rlm"))) {
     stop("restriktor only works for lm(), rlm()")
   }
   
-  # rename for internal use
-  bvec <- rhs; meq <- neq
-  
-  # build a bare-bones parameter table for this model
-  parTable <- con_partable(model, est = FALSE, label = TRUE)
-  
-  if (is.character(constraints)) {
-    # parse the constraints
-    CON <- lav_constraints_parse(constraints = constraints,
-                                 partable = parTable,
-                                 debug = debug)
-    
-    FLAT <- lavaan:::lavParseModelString(constraints)
-    CON_FLAT <- attr(FLAT, "constraints")
-    LIST <- list()
-    lhs <- unlist(lapply(CON_FLAT, "[[", "lhs"))
-    op  <- unlist(lapply(CON_FLAT, "[[", "op"))
-    rhs <- unlist(lapply(CON_FLAT, "[[", "rhs"))
-    LIST$lhs <- lhs
-    LIST$op  <- op
-    LIST$rhs <- c(LIST$rhs, rhs)
-    
-    parTable$lhs <- c(parTable$lhs, LIST$lhs)
-    parTable$op <- c(parTable$op, LIST$op)
-    parTable$rhs <- c(parTable$rhs, LIST$rhs)
-    parTable$label <- c(parTable$label, rep("", length(lhs)))
-    
-    # equality constraints
-    meqw  <- nrow(con_constraints_ceq_amat(model, constraints = constraints))
-    # right-hand-side
-    bvecw <- con_constraints_rhs_bvec(model, constraints=constraints)
-    # inequality constraints
-    Amatw <- con_constraints_con_amat(model, constraints = constraints)
-  }  else if (!is.character(constraints)) {
-      if (is.vector(constraints)) {
-        constraints <- rbind(constraints)
-      }
-      Amatw <- constraints
-      bvecw <- if (is.null(bvec)) { rep(0L, nrow(Amatw)) } else { bvec }
-      meqw  <- if (is.null(meq)) { 0L } else { meq }
-  } else { 
-    stop("no restriktions were specified.") 
-  }
-
-  if (debug && is.character(constraints)) {
-    print(as.data.frame(parTable, stringsAsFactors = FALSE))
-    print(CON)
-  }
-
   if (class(model)[1] %in% c("lm","mlm")) {
     UseMethod("conLM")
-  } else if (class(model)[1] %in% "rlm") {
+  } 
+  else if (class(model)[1] %in% "rlm") {
     UseMethod("conRLM")
   }
   

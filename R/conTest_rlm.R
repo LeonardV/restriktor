@@ -121,9 +121,16 @@ conTestF.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
     }
   } 
   
+  wt <- object$wt
+  # is this fool proof? 
+  # The number of bootstrap samples must be large enough to avoid spurious results.
+  wt <- rev(wt)
+  if (attr(object$wt, "bootWt")) {
+    wt.idx <- which(wt == 0)
+    wt <- wt[-wt.idx]
+  }
+  
   if (boot == "no") {
-    # compute mixing weights
-    wt <- con_wt(Amat %*% Sigma %*% t(Amat), meq = meq)
     pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
                               df.residual = df.residual, type = type,
                               Amat = Amat, bvec = bvec, meq = meq, 
@@ -143,22 +150,7 @@ conTestF.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
                                           R = B, parallel = parallel,
                                           ncpus = ncpus, cl = cl,
                                           seed = seed, verbose = verbose)
-  } else if (boot == "mix.weights") {
-    # compute weights based on simulation
-    wt <- mix.boot(object, type = type, meq.alt = meq.alt, 
-                   R = B, parallel = parallel,
-                   ncpus = ncpus, cl = cl,
-                   seed = seed, verbose = verbose)
-    
-    wt <- rev(wt)
-    wt.idx <- which(wt == 0)
-    wt <- wt[-wt.idx]
-    
-    pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
-                              df.residual = df.residual, type = type,
-                              Amat = Amat, bvec = bvec, meq = meq, 
-                              meq.alt = meq.alt)
-  }
+  } 
   
   OUT <- list(CON = object$CON,
               type = type,
@@ -325,9 +317,16 @@ conTestWald.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
     }
   } 
   
+  wt <- object$wt
+  # is this fool proof? 
+  # The number of bootstrap samples must be large enough to avoid spurious results.
+  wt <- rev(wt)
+  if (attr(object$wt, "bootWt")) {
+    wt.idx <- which(wt == 0)
+    wt <- wt[-wt.idx]
+  }
+  
   if (boot == "no") {
-    # compute weights
-    wt <- con_wt(Amat %*% Sigma %*% t(Amat), meq = meq)
     # compute pvalue based on F-distribution
     pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
                               df.residual = df.residual, type = type,
@@ -348,22 +347,7 @@ conTestWald.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
                                           R = B, parallel = parallel,
                                           ncpus = ncpus, cl = cl,
                                           seed = seed, verbose = verbose)
-  } else if (boot == "mix.weights") {
-    # compute weights based on simulation
-    wt <- mix.boot(object, type = type, meq.alt = meq.alt, 
-                   R = B, parallel = parallel,
-                   ncpus = ncpus, cl = cl,
-                   seed = seed, verbose = verbose)
-    
-    wt <- rev(wt)
-    wt.idx <- which(wt == 0)
-    wt <- wt[-wt.idx]
-    
-    pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
-                              df.residual = df.residual, type = type,
-                              Amat = Amat, bvec = bvec, meq = meq, 
-                              meq.alt = meq.alt)
-  }
+  } 
   
   OUT <- list(CON = object$CON,
               type = type,
@@ -530,9 +514,16 @@ conTestScore.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9
     }
   } 
   
+  wt <- object$wt
+  # is this fool proof? 
+  # The number of bootstrap samples must be large enough to avoid spurious results.
+  wt <- rev(wt)
+  if (attr(object$wt, "bootWt")) {
+    wt.idx <- which(wt == 0)
+    wt <- wt[-wt.idx]
+  }
+  
   if (boot == "no") {
-    # compute weights
-    wt <- con_wt(Amat %*% Sigma %*% t(Amat), meq = meq)
     # compute pvalue based on F-distribution
     pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
                               df.residual = df.residual, type = type,
@@ -553,22 +544,7 @@ conTestScore.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9
                                           R = B, parallel = parallel,
                                           ncpus = ncpus, cl = cl,
                                           seed = seed, verbose = verbose)
-  } else if (boot == "mix.weights") {
-    # compute weights based on simulation
-    wt <- mix.boot(object, type = type, meq.alt = meq.alt, 
-                   R = B, parallel = parallel,
-                   ncpus = ncpus, cl = cl,
-                   seed = seed, verbose = verbose)
-    
-    wt <- rev(wt)
-    wt.idx <- which(wt == 0)
-    wt <- wt[-wt.idx]
-    
-    pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
-                              df.residual = df.residual, type = type,
-                              Amat = Amat, bvec = bvec, meq = meq, 
-                              meq.alt = meq.alt)
-  }
+  } 
   
   OUT <- list(CON = object$CON,
               type = type,

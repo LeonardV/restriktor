@@ -7,18 +7,19 @@
 inequality restriktions}
 \description{Function \code{restriktor} estimates the parameters of a linear model (\code{lm}) 
   or robust linear model (\code{rlm}) subject to equality and/or inequality 
-  restriktions. The function \code{restriktor} is a convenience function that can 
-  take a symbolic description as constraint input and translates it to right 
-  constraint matrices and vectors. The real work horses are the \code{conLM} and 
-  the \code{conRLM} functions for linear and robust linear models respectively.}
+  restriktions. The real work horses are the \code{conLM} and the \code{conRLM} 
+  functions for linear and robust linear models respectively.}
 
 \usage{
-restriktor(model, constraints, se = "standard", 
-           rhs = NULL, neq = NULL, control = NULL, debug = FALSE, ...)
-\method{conLM}{lm}(model, constraints, se = "default", 
-      rhs = NULL, neq = NULL, control = NULL, ...)
-\method{conRLM}{rlm}(model, constraints, se = "default", 
-       rhs = NULL, neq = NULL, control = NULL, ...)
+restriktor(model, constraints, ...)
+\method{conLM}{lm}(model, constraints, se = "default", B = 999,
+      rhs = NULL, neq = 0L, bootWt = FALSE, R = 99999,
+      parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, control = NULL, 
+      verbose = FALSE, debug = FALSE, ...)
+\method{conRLM}{rlm}(model, constraints, se = "default", B = 999,
+       rhs = NULL, neq = 0L, bootWt = FALSE, R = 99999,
+       parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, control = NULL, 
+       verbose = FALSE, debug = FALSE, ...)
 }
 \arguments{
   \item{model}{a fitted linear model object of class lm, or a fitted robust 
@@ -55,6 +56,7 @@ restriktor(model, constraints, se = "standard",
   using model-based bootstrapping. If "\code{none}", no standard errors 
   are computed. 
   }
+  \item{B}{}
   \item{rhs}{vector on the right-hand side of the constraints; 
   \eqn{R\theta \ge rhs}. The length of this vector equals the 
   number of rows of the constraints matrix \eqn{R} and consists of zeros 
@@ -68,6 +70,16 @@ restriktor(model, constraints, se = "standard",
   constraints. Note: only used if constraints input is a matrix or 
   vector.
   }
+  \item{bootWt}{}
+  \item{R}{}
+  \item{parallel}{the type of parallel operation to be used (if any). If missing, 
+  the default is set "no".}
+  \item{ncpus}{integer: number of processes to be used in parallel operation: 
+  typically one would chose this to the number of available CPUs.}
+  \item{cl}{an optional parallel or snow cluster for use if parallel = "snow". 
+  If not supplied, a cluster on the local machine is created for the duration of 
+  the conTest call.}
+  \item{seed}{seed value.}
   \item{control}{a list of control arguments: 
     \itemize{
       \item \code{absval} tolerance criterion for convergence 
@@ -78,6 +90,7 @@ restriktor(model, constraints, se = "standard",
       are set to 0.
     }
   }
+  \item{verbose}{logical; if TRUE, information is shown at each bootstrap draw.}
   \item{debug}{if TRUE, debugging information about the constraints
   is printed out.
   }

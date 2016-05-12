@@ -124,15 +124,22 @@ conTestF.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
   # using the multivariate normal distribution or via bootstrapping. The
   # pvalue can also be computed directly via the parametric bootstrap or model
   # based bootstrap, without fist computing the mixing weights.
+  
+  wt <- object$wt
+  # is this fool proof? 
+  # The number of bootstrap samples must be large enough to avoid spurious results.
+  wt <- rev(wt)
+  if (attr(object$wt, "bootWt")) {
+    wt.idx <- which(wt == 0)
+    wt <- wt[-wt.idx]
+  }
+  
   if (boot == "no") {
-    # compute mixing weights
-    wt <- con_wt(Amat %*% Sigma %*% t(Amat), meq = meq)
-     
     pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
                               df.residual = df.residual, type = type,
                               Amat = Amat, bvec = bvec, meq = meq, 
                               meq.alt = meq.alt)
-  } else if (boot == "parametric") {
+   } else if (boot == "parametric") {
     pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, 
                                          test = "F", meq.alt = meq.alt, 
                                          R = B, p.distr = p.distr,
@@ -143,24 +150,9 @@ conTestF.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
     pvalue <- con_pvalue_boot_model_based(object, Ts.org = Ts, type = type, 
                                           test = "F", meq.alt = meq.alt, 
                                           parallel = parallel, ncpus = ncpus,
-                                          cl = cl, seed = seed, verbose = verbose)
-  } else if (boot == "mix.weights") {
-    # compute weights based on simulation
-    wt <- mix.boot(object, type = type, meq.alt = meq.alt, R = B,
-                   parallel = parallel, ncpus = ncpus, cl = cl,
-                   seed = seed, verbose = verbose)
-    
-    # is this fool proof? 
-    # The number of bootstrap samples must be large enough to avoid spurious results.
-    wt <- rev(wt)
-    wt.idx <- which(wt == 0)
-    wt <- wt[-wt.idx]
-    
-    pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
-                              df.residual = df.residual, type = type,
-                              Amat = Amat, bvec = bvec, meq = meq, 
-                              meq.alt = meq.alt)
-  }
+                                          cl = cl, seed = seed, 
+                                          verbose = verbose)
+  } 
   
   OUT <- list(CON = object$CON,
               type = type,
@@ -315,9 +307,16 @@ conTestLRT.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999
     }
   } 
   
+  wt <- object$wt
+  # is this fool proof? 
+  # The number of bootstrap samples must be large enough to avoid spurious results.
+  wt <- rev(wt)
+  if (attr(object$wt, "bootWt")) {
+    wt.idx <- which(wt == 0)
+    wt <- wt[-wt.idx]
+  }
+  
   if (boot == "no") {
-    wt <- con_wt(Amat %*% Sigma %*% t(Amat), meq = meq)
-    
     pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
                               df.residual = df.residual, type = type,
                               Amat = Amat, bvec = bvec, meq = meq, 
@@ -330,27 +329,13 @@ conTestLRT.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999
                                          ncpus = ncpus, cl = cl,
                                          seed = seed, verbose = verbose)
   } else if (boot == "model.based") {
-    pvalue <- con_pvalue_boot_model_based(object, Ts.org = Ts, type = type, test = "LRT",
+    pvalue <- con_pvalue_boot_model_based(object, Ts.org = Ts, type = type, 
+                                          test = "LRT",
                                           meq.alt = meq.alt,
                                           R = B, parallel = parallel,
                                           ncpus = ncpus, cl = cl,
                                           seed = seed, verbose = verbose)
-  } else if (boot == "mix.weights") {
-    # compute weights based on simulation
-    wt <- mix.boot(object, type = type, meq.alt = meq.alt, 
-                   R = B, parallel = parallel,
-                   ncpus = ncpus, cl = cl,
-                   seed = seed, verbose = verbose)
-    
-    wt <- rev(wt)
-    wt.idx <- which(wt == 0)
-    wt <- wt[-wt.idx]
-    
-    pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
-                              df.residual = df.residual, type = type,
-                              Amat = Amat, bvec = bvec, meq = meq, 
-                              meq.alt = meq.alt)
-  }
+  } 
   
   OUT <- list(CON = object$CON,
               type = type,
@@ -540,8 +525,16 @@ conTestScore.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
     }
   } 
   
+  wt <- object$wt
+  wt <- rev(wt)
+  # is this fool proof? 
+  # The number of bootstrap samples must be large enough to avoid spurious results.
+  if (attr(object$wt, "bootWt")) {
+    wt.idx <- which(wt == 0)
+    wt <- wt[-wt.idx]
+  }
+  
   if (boot == "no") {
-    wt <- con_wt(Amat %*% Sigma %*% t(Amat), meq = meq)
     pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
                               df.residual = df.residual, type = type,
                               Amat = Amat, bvec = bvec, meq = meq, 
@@ -561,22 +554,7 @@ conTestScore.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
                                           R = B, parallel = parallel,
                                           ncpus = ncpus, cl = cl,
                                           seed = seed, verbose = verbose)
-  } else if (boot == "mix.weights") {
-    # compute weights based on simulation
-    wt <- mix.boot(object, type = type, meq.alt = meq.alt, 
-                   R = B, parallel = parallel,
-                   ncpus = ncpus, cl = cl,
-                   seed = seed, verbose = verbose)
-    
-    wt <- rev(wt)
-    wt.idx <- which(wt == 0)
-    wt <- wt[-wt.idx]
-    
-    pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
-                              df.residual = df.residual, type = type,
-                              Amat = Amat, bvec = bvec, meq = meq, 
-                              meq.alt = meq.alt)
-  }
+  } 
   
   OUT <- list(CON = object$CON,
               type = type,

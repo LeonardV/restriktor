@@ -8,6 +8,7 @@
 # - add GORIC weights (see p. 104, Kuiper, R.M. Model Selection).
 # - add small sample correction for GORIC, see REF. above.
 # - add support for mlm and glm.
+# - add test-statistic for class of rlm with equality restriktions only.
 ###############################################################################
 restriktor <- function(model, constraints, ...) {
   

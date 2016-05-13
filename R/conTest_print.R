@@ -87,8 +87,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), brief = F
                       print.gap = 2, quote = FALSE)
       } else if (x$type == "C") {
         cat("\n H0: at least one restriktion not strictly true (<=)",
-            "\n HA: all restriktions strictly true (>)",
-            "\n\n")
+            "\n HA: all restriktions strictly true (>)","\n\n")
         print(out.test, quote = FALSE)
         cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
         print(out.rest, quote = FALSE, scientific = FALSE)
@@ -97,8 +96,8 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), brief = F
                       print.gap = 2, quote = FALSE)
       }
   } else { #equality constraints only
-    cat("\n HA: at least one restriktion violated (=)",
-        "\n\n")
+    cat("\n H0: all restriktions active (=)",  
+        "\n HA: at least one restriktion violated (=)", "\n\n")
     print(out.test, quote = FALSE)
     if (!brief) {
       cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")

@@ -164,7 +164,8 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
       }
       R2.reduced <- mss / (mss + rss)
       
-      # compute residual degreees of freedom, corrected for equality constraints. 
+      # compute residual degreees of freedom, corrected for equality constraints.
+      # only for the estimation, not for testing. 
       df.residual <- n - (p - qr(Amat[0:meq,])$rank)
       # compute weighted residuals
       if (is.null(weights)) {
@@ -190,7 +191,7 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
                 residuals = residuals, 
                 fitted = fitted, 
                 weights = weights,
-                df.residual = df.residual, 
+                df.residual = model$df.residual, #df.residual, 
                 R2.org = so$r.squared, R2.reduced = R2.reduced,
                 s2.unc = s2.unc,  
                 s2.restr = s2.restr,  

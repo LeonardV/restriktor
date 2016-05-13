@@ -100,7 +100,7 @@ conRLM.rlm <- function(model, constraints, se = "default", B = 999,
   # unrestrikted scale estimate for the standard deviation
   tau <- so.org$stddev
   # residual degrees of freedom
-  rdf <- so.org$df[2]
+  #rdf <- so.org$df[2]
   # residuals
   residuals <- model$residuals
   # sampel size
@@ -169,7 +169,7 @@ conRLM.rlm <- function(model, constraints, se = "default", B = 999,
                 psi = model$psi,
                 R2.org = R2.org,
                 R2.reduced = R2.org,
-                df.residual = rdf,
+                df.residual = so.org$df[2],
                 s2.unc = tau^2, 
                 s2.restr = tau^2, 
                 loglik = LL.unc, 
@@ -204,7 +204,7 @@ conRLM.rlm <- function(model, constraints, se = "default", B = 999,
     # adjusted summary.rlm function to get the right residual degrees of freedom
     # and standard deviation in case of equality restriktions.
     so.restr <- summary_rlm(rfit, Amat = Amat, meq = meq)
-    rdf <- so.restr$df[2]
+    #rdf <- so.restr$df[2]
     tau.restr <- so.restr$stddev
     
     #R^2 under the restrikted model
@@ -229,7 +229,7 @@ conRLM.rlm <- function(model, constraints, se = "default", B = 999,
                 scale = model$s,
                 R2.org = R2.org,
                 R2.reduced = R2.reduced,
-                df.residual = rdf, # correction for equalities restriktions.
+                df.residual = so.org$df[2], 
                 s2.unc = tau^2, 
                 s2.restr = tau.restr^2, 
                 loglik = LL.restr, 

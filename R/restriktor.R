@@ -1,7 +1,7 @@
 ################################### TO DO ######################################
 # - add weights + down weights to RLM.
 # - implement E-bar test statistic for lm.
-# - add options for no intercept models.
+# - add support for no intercept models.
 # - improve code description.
 # - add debug.
 # - add score test for equality constraints only.

@@ -31,9 +31,9 @@ bread.conRLM <- function(x, ...) {
     
     rval <- con_augmented_information(information = rval, X = xmat, 
                                       b.unrestr = x$b.unrestr, 
-                                      b.restr = x$b.restr, Amat = x$Amat, 
-                                      bvec = x$bvec, 
-                                      meq = x$meq)$inverted.information 
+                                      b.restr = x$b.restr, Amat = x$constraints, 
+                                      bvec = x$rhs, 
+                                      meq = x$neq)$inverted.information 
     return(rval)
 }
 
@@ -95,7 +95,7 @@ meatHC <- function(x,
   diaghat <- diag(X %*% solve(t(X) %*% W %*% X) %*% t(X) %*% W)
   
   p <- NCOL(X)
-  df <- n - (p - qr(x$Amat[0:x$meq,])$rank)
+  df <- n - (p - qr(x$constraints[0:x$neq,])$rank)
   ## the following might work, but "intercept" is also claimed for "coxph"
   ## res <- if(attr(terms(x), "intercept") > 0) estfun(x)[,1] else rowMeans(estfun(x)/X, na.rm = TRUE)
   ## hence better rely on

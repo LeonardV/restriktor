@@ -1,3 +1,6 @@
+# this function is inspired on the summary.orlm() function from the ic.infer 
+# package.
+
 summary.conTest.conLM <- function(x, test = "F", ...) {
   
   if (!("conLM" %in% class(x))) {
@@ -39,7 +42,7 @@ summary.conTest.conLM <- function(x, test = "F", ...) {
       } else {
         format(round(out2$pvalue, 4), nsmall = 4)}, "\n\n", sep = "")
   ###
-  if (!x$meq > 0) {
+  if (!x$neq > 0) {
     CALL$type <- "C"
     out3 <- do.call("conTest", CALL)
     cat("Type C test: H0: at least one restriktion false or active (=)", 

@@ -3,20 +3,30 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
                      parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
                      control = NULL, verbose = FALSE, debug = FALSE, ...) {
   
+  # check class
+  if (!(class(model)[1] %in% c("lm", "mlm"))) {
+    stop("model must be of class lm.")
+  }
+  
   cl <- match.call()
-  #rename for internal use
+  # rename for internal use
   bvec <- rhs; meq <- neq
-  
   # construct constraint matrix/vector.
-  CON_OUT <- con_constraints(model, constraints = constraints, 
+  restr_OUT <- con_constraints(model, constraints = constraints, 
                              bvec = bvec, meq = meq, debug = debug)  
-  CON <- CON_OUT$CON
-  parTable <- CON_OUT$parTable
-  Amat <- CON_OUT$Amat
-  bvec <- CON_OUT$bvec
-  meq <- CON_OUT$meq
+  # a list with useful information about the restriktions.}
+  CON <- restr_OUT$CON
+  # a parameter table with information about the observed variables in the model 
+  # and the imposed restriktions.}
+  parTable <- restr_OUT$parTable
+  # constraints matrix
+  Amat <- restr_OUT$Amat
+  # rhs 
+  bvec <- restr_OUT$bvec
+  # neq
+  meq <- restr_OUT$meq
   
-  #parallel housekeeping
+  # parallel housekeeping
   have_mc <- have_snow <- FALSE
   if (parallel != "no" && ncpus > 1L) {
     if (parallel == "multicore") {
@@ -29,10 +39,7 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
     }  
   }
   
-  # check class
-  if (!(class(model)[1] %in% c("lm", "mlm"))) {
-    stop("model must be of class lm.")
-  }
+  # standard error methods
   if (se == "default") {
     se <- "standard"
   } else if (se == "boot.residual") {
@@ -71,6 +78,31 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
   ll.unc <- con_loglik_lm(X = X, y = y, b = b.unrestr, w = weights)
   LL.unc <- ll.unc$loglik
   
+  # ML unconstrained MSE
+  s2ml.unc <- (s2.unc * model$df.residual) / n
+  invW <- kronecker(solve(s2ml.unc), t(X) %*% X)
+  W <- solve(invW)
+  
+  # compute mixing weights
+  if (bootWt) { # compute mixing weights based on simulation
+    wt <- mix.boot(VCOV = W,
+                   Amat = Amat, 
+                   meq = meq, 
+                   R = R,
+                   parallel = parallel,
+                   ncpus = ncpus,
+                   cl = cl,
+                   seed = seed,
+                   verbose = verbose)
+  } else if (!bootWt & (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
+    wt <- rev(con_wt(Amat %*% W %*% t(Amat), meq = meq))
+  } else if (!bootWt & (meq == nrow(Amat))) { # only equality constraints
+    wt <- rep(0L, ncol(W) + 1)
+    wt.idx <- ncol(W) - meq + 1
+    wt[wt.idx] <- 1
+  }
+  attr(wt, "bootWt") <- bootWt
+  
   # check if the constraints are in line with the data
   if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) & meq == 0) {
     b.restr <- b.unrestr
@@ -78,6 +110,7 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
     
     OUT <- list(CON = CON,
                 parTable = parTable,
+                wt = wt,
                 b.unrestr = b.unrestr,
                 b.restr = b.unrestr,
                 residuals = model$residuals, # unweighted residuals
@@ -129,9 +162,9 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
         }
         rss <- sum(weights * residuals^2)
       }
-      R2.reduced <- mss/(mss + rss)
+      R2.reduced <- mss / (mss + rss)
       
-      # compute residual df corrected for equality constraints. 
+      # compute residual degreees of freedom, corrected for equality constraints. 
       df.residual <- n - (p - qr(Amat[0:meq,])$rank)
       # compute weighted residuals
       if (is.null(weights)) {
@@ -151,18 +184,18 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
 
     OUT <- list(CON = CON,
                 parTable = parTable,
-                b.restr = b.restr, #constrained
-                b.unrestr = b.unrestr, #unconstrained
-                residuals = residuals, #constrained 
-                fitted = fitted, #constrained 
+                wt = wt,
+                b.restr = b.restr, 
+                b.unrestr = b.unrestr, 
+                residuals = residuals, 
+                fitted = fitted, 
                 weights = weights,
-                #df.residual = model$df.residual, # unconstrained
-                df.residual = df.residual, # constrained
+                df.residual = df.residual, 
                 R2.org = so$r.squared, R2.reduced = R2.reduced,
-                s2.unc = s2.unc,  #unconstrained
-                s2.restr = s2.restr,  #constrained
-                loglik = LL.restr, #constrained
-                Sigma = vcov(model), #unconstrained
+                s2.unc = s2.unc,  
+                s2.restr = s2.restr,  
+                loglik = LL.restr, 
+                Sigma = vcov(model), 
                 constraints = Amat, rhs = bvec, neq = meq, iact = out.QP$iact,
                 bootout = NULL, call = cl)
   }
@@ -182,50 +215,18 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
                                                b.restr = b.restr,
                                                Amat = Amat, 
                                                bvec = bvec, meq = meq) 
-      attr(OUT$information, "inverted.information")  <- information$inverted.information
+      attr(OUT$information, "inverted.information") <- information$inverted.information
       attr(OUT$information, "augmented.information") <- information$augmented.information
     } else if (se == "boot.model.based") {
-      OUT$bootout <- con_boot_lm(model, B = B, 
-                                 fixed = TRUE, constraints = Amat,
+      OUT$bootout <- con_boot_lm(model, B = B, fixed = TRUE, constraints = Amat,
                                  rhs = bvec, neq = meq, se = "none",
-                                 parallel = parallel,
-                                 ncpus = ncpus,
-                                 cl = cl)
+                                 parallel = parallel, ncpus = ncpus, cl = cl)
     } else if (se == "boot.standard") {
-      OUT$bootout <- con_boot_lm(model, B = B,
-                                 fixed = FALSE, constraints = Amat,
+      OUT$bootout <- con_boot_lm(model, B = B, fixed = FALSE, constraints = Amat,
                                  rhs = bvec, neq = meq, se = "none",
-                                 parallel = parallel,
-                                 ncpus = ncpus,
-                                 cl = cl)
+                                 parallel = parallel, ncpus = ncpus, cl = cl)
     }
   }
-  
-  # ML unconstrained MSE
-  s2ml.unc <- (s2.unc * model$df.residual) / n
-  invW <- kronecker(solve(s2ml.unc), t(X) %*% X)
-  W <- solve(invW)
-  
-  # compute mixing weights
-  if (bootWt) { # compute mixing weights based on simulation
-    OUT$wt <- mix.boot(VCOV = W,
-                       Amat = Amat, 
-                       meq = meq, 
-                       R = R,
-                       parallel = parallel,
-                       ncpus = ncpus,
-                       cl = cl,
-                       seed = seed,
-                       verbose = verbose)
-  } else if (!bootWt & (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
-    OUT$wt <- rev(con_wt(Amat %*% W %*% t(Amat), meq = meq))
-  } else if (!bootWt & (meq == nrow(Amat))) { # only equality constraints
-    wt <- rep(0L, ncol(W) + 1)
-    wt.idx <- ncol(W) - meq + 1
-    wt[wt.idx] <- 1
-    OUT$wt <- wt
-  }
-  attr(OUT$wt, "bootWt") <- bootWt
   
   if (ncol(y) == 1L) {
     class(OUT) <- c("conLM", "lm")
@@ -233,5 +234,5 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
     class(OUT) <- c("conMLM", "mlm")
   }
     
-    return(OUT)
+    OUT
 }

@@ -1,4 +1,4 @@
-conTest <- function(object, type = "A", ...) {
+conTest <- function(object, type = "summary", ...) {
   
   if (!inherits(object, "conLM")) {
     stop("object must be of class \"conLM\" or \"conRLM\"")

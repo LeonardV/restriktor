@@ -16,11 +16,10 @@ bvec <- rep(0, nrow(Amat))
 meq = 0
 
 test_that("augmented information matrix", {
-  
   I.aug <- restriktor:::con_augmented_information(information = I, 
                                      X = X, 
-                                     b.unconstr = coef(fit.lm), 
-                                     b.constr = coef(fit.lm),  
+                                     b.unrestr = coef(fit.lm), 
+                                     b.restr = coef(fit.lm),  
                                      Amat = Amat, 
                                      bvec = bvec, 
                                      meq = meq)
@@ -28,4 +27,5 @@ test_that("augmented information matrix", {
   expect_that( I.aug, is_a("matrix") )
   expect_that( mean(I.aug), equals(0.1360317, tolerance = 0.000001) )
 })
+
 

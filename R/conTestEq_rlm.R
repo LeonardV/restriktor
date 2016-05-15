@@ -17,6 +17,7 @@ conTestEq.rlm <- function(object, test = "default", ...) {
   # unrestrikted scale estimate
   scale <- model.org$s
   # restriktion stuff
+  CON  <- object$CON
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
@@ -29,7 +30,7 @@ conTestEq.rlm <- function(object, test = "default", ...) {
     }
     
     # here we perform the usual Wald/F test...
-    if (test == "wald" || test == "x2" || test == "chisq" || test == "score") {
+    if (test == "wald" || test == "score") {
       OUT <- robustWaldScores(x = X, y = y, beta0 = beta0, betaA = betaA, 
                               scale = scale, test = test, 
                               cc = ifelse(is.null(cc), 4.685061, cc))
@@ -45,7 +46,7 @@ conTestEq.rlm <- function(object, test = "default", ...) {
       OUT$meq  <- meq
       OUT$b.restr <- object$b.restr
       OUT$b.unrestr <- object$b.unrestr
-    } else if (test == "f" || test == "ftest") {
+    } else if (test == "f") {
       Fmm <- robustFm(x = X, y = y, beta0 = beta0, betaA = betaA, 
                       scale = scale, cc = ifelse(is.null(cc), 4.685061, cc))
       

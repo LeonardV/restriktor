@@ -4,6 +4,7 @@ conTestEq.lm <- function(object, test = "default", ...) {
     stop("weights not supported (yet).")
   }
   
+  CON  <- object$CON
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
@@ -20,7 +21,7 @@ conTestEq.lm <- function(object, test = "default", ...) {
     }
     
     # here we perform the usual Wald/F test...
-    if (test == "wald" || test == "x2" || test == "chisq") {
+    if (test == "wald") {
       OUT <- con_test_Wald(Sigma   = object$Sigma,
                            JAC     = Amat, #CON$ceq.JAC,
                            theta.r = c(Amat %*% object$b.unrestr)) #CON$ceq.theta)
@@ -29,7 +30,7 @@ conTestEq.lm <- function(object, test = "default", ...) {
       OUT$meq  <- meq
       OUT$b.restr <- object$b.restr
       OUT$b.unrestr <- object$b.unrestr
-    } else if (test == "f" || test == "ftest") {
+    } else if (test == "f") {
       Wald <- con_test_Wald(Sigma   = object$Sigma,
                             JAC     = Amat, #CON$ceq.JAC,
                             theta.r = c(Amat %*% object$b.unrestr)) #CON$ceq.theta))
@@ -53,11 +54,11 @@ conTestEq.lm <- function(object, test = "default", ...) {
       n <- dim(X)[1]
       p <- dim(X)[2]
       # MSE 
-      s20 <- sum((y - X%*%object$b.restr)^2) / (n - (p - qr(Amat[0:meq,,drop = FALSE])$rank))
+      s20 <- sum((y - X %*% object$b.restr)^2) / (n - (p - qr(Amat[0:meq,,drop = FALSE])$rank))
       # information matrix
       I  <- 1/s20 * t(X) %*% X
       # score vector
-      d0 <- as.numeric(1/s20 * t(X) %*% (y - X %*% object$b.restr))
+      d0 <- as.numeric(1 / s20 * t(X) %*% (y - X %*% object$b.restr))
       OUT <- list()
       # score test statistic
       OUT$Ts <- as.numeric(d0 %*% solve(I) %*% d0)
@@ -78,8 +79,7 @@ conTestEq.lm <- function(object, test = "default", ...) {
     #length(CON$cin.nonlinear.idx) == 0L
     nrow(Amat != meq)) {
     stop("test not applicable with inequality constraints.")
-  } else if (length(CON$ceq.nonlinear.idx) > 0L ||
-               length(CON$cin.nonlinear.idx) > 0L) {
+  } else if (length(CON$ceq.nonlinear.idx) > 0L || length(CON$cin.nonlinear.idx) > 0L) {
     stop("ERROR: can not handle (yet) nonlinear (in)equality constraints")
   }
 

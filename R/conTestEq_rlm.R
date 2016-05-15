@@ -1,6 +1,6 @@
 conTestEq.rlm <- function(object, test = "default", ...) {
   
-  if(!any(weights(object)) == 1) {
+  if(!any(weights(object) == 1)) {
     stop("weights not supported (yet).")
   }
   

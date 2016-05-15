@@ -56,11 +56,15 @@ conTestEq.lm <- function(object, test = "default", ...) {
       s20 <- sum((y - X%*%object$b.restr)^2) / (n - (p - qr(Amat[0:meq,,drop = FALSE])$rank))
       # information matrix
       I  <- 1/s20 * t(X) %*% X
-      d0 <- 1/s20 * t(X) %*% (y - X %*% object$b.restr)
-      
-      OUT <- con_test_score(I   = I,
-                            JAC = Amat, #CON$ceq.JAC,
-                            d0.r = c(Amat %*% d0)) #CON$ceq.theta))
+      # score vector
+      d0 <- as.numeric(1/s20 * t(X) %*% (y - X %*% object$b.restr))
+      OUT <- list()
+      # score test statistic
+      OUT$Ts <- as.numeric(d0 %*% solve(I) %*% d0)
+      # df
+      OUT$df <- nrow(Amat)
+      # p-value based on chisq
+      OUT$pvalue <- 1 - pchisq(OUT$Ts, df = OUT$df)
       OUT$Amat <- Amat
       OUT$bvec <- bvec
       OUT$meq  <- meq

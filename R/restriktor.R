@@ -9,6 +9,7 @@
 # - add small sample correction for GORIC, see REF. above.
 # - add support for mlm and glm.
 # - add test-statistic for class of rlm with equality restriktions only.
+# - add weights to conTestEq
 ###############################################################################
 restriktor <- function(model, constraints, ...) {
   

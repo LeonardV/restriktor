@@ -72,12 +72,8 @@ conTest <- function(object, type = "summary", ...) {
       stop("type ", sQuote, " unknown.")
     }
   } else if (nrow(Amat) == meq) {
-    #if (class(object)[1] == "conLM") {
-      UseMethod("conTestEq")
-    #} else {
-    #  stop("conRLM ERROR: hypothesis testing with equality restriktions only is not implemented (yet) for rlm.")
-    #}
+      UseMethod("conTestEq") # Wald, F and score test
   } else {
-    stop("Restriktor ERROR: constraints and meq do not match.")
+    stop("Restriktor ERROR: constraints and neq do not match.")
   }
 }  

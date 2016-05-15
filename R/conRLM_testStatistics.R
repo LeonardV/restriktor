@@ -92,10 +92,8 @@ robustFm <- function(x, y, beta0, betaA, scale, cc = 4.685061) {
   
   #asymptotic covariance matrix standardizing constant
   l.hA <- ( 0.5 * (1 / (n - p)) * sum(psi.prime.hA^2) ) / ( (1/n) * sum(psi.prime2.hA) )  
-  out <- 1 / l.hA * (L0 - LA) 
+  OUT <- 1 / l.hA * (L0 - LA) 
     
-  OUT <- out
-  
   OUT
 }
 

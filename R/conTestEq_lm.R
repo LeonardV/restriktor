@@ -1,11 +1,12 @@
 conTestEq.lm <- function(object, test = "default", ...) {
   
-  #  CON <- object$CON
-  #  if (is.null(CON)) { stop("not (yet) possible when constraints input is numerical.") }
+  if(!is.null(weights(object))) {
+    stop("weights not supported (yet).")
+  }
   
   Amat <- object$constraints
   bvec <- object$rhs
-  meq <- object$neq
+  meq  <- object$neq
   
   test <- tolower(test)
   if (#length(CON$ceq.linear.idx)     > 0  && # some linear eq. constraints
@@ -15,7 +16,7 @@ conTestEq.lm <- function(object, test = "default", ...) {
     nrow(Amat) == meq) {
     
     if (test == "default") {
-      test <- "wald"
+      test <- "f"
     }
     
     # here we perform the usual Wald/F test...
@@ -23,11 +24,11 @@ conTestEq.lm <- function(object, test = "default", ...) {
       OUT <- con_test_Wald(Sigma   = object$Sigma,
                            JAC     = Amat, #CON$ceq.JAC,
                            theta.r = c(Amat %*% object$b.unrestr)) #CON$ceq.theta)
-    OUT$Amat <- Amat
-    OUT$bvec <- bvec
-    OUT$meq  <- meq
-    OUT$b.restr <- object$b.restr
-    OUT$b.unrestr <- object$b.unrestr
+      OUT$Amat <- Amat
+      OUT$bvec <- bvec
+      OUT$meq  <- meq
+      OUT$b.restr <- object$b.restr
+      OUT$b.unrestr <- object$b.unrestr
     } else if (test == "f" || test == "ftest") {
       Wald <- con_test_Wald(Sigma   = object$Sigma,
                             JAC     = Amat, #CON$ceq.JAC,
@@ -37,16 +38,36 @@ conTestEq.lm <- function(object, test = "default", ...) {
       OUT$test <- "F"
       OUT$Ts <- Wald$Ts / Wald$df
       OUT$df <- Wald$df
-      #X <- model.matrix(object$model.org)[,,drop=FALSE]
-      OUT$df.residual <- df.residual(object) #nrow(X)-ncol(X)
+      OUT$df.residual <- df.residual(object) 
       OUT$pvalue <- 1 - pf(OUT$Ts, OUT$df, OUT$df.residual)
       OUT$Amat <- Amat
       OUT$bvec <- bvec
       OUT$meq  <- meq
       OUT$b.restr <- object$b.restr
       OUT$b.unrestr <- object$b.unrestr
+    } else if (test == "score") {
+      # response variable
+      y <- as.matrix(object$model.org$model[, attr(object$model.org$terms, "response")])
+      # model matrix
+      X <- model.matrix(object)[,,drop = FALSE]
+      n <- dim(X)[1]
+      p <- dim(X)[2]
+      # MSE 
+      s20 <- sum((y - X%*%object$b.restr)^2) / (n - (p - qr(Amat[0:meq,,drop = FALSE])$rank))
+      # information matrix
+      I  <- 1/s20 * t(X) %*% X
+      d0 <- 1/s20 * t(X) %*% (y - X %*% object$b.restr)
+      
+      OUT <- con_test_score(I   = I,
+                            JAC = Amat, #CON$ceq.JAC,
+                            d0.r = c(Amat %*% d0)) #CON$ceq.theta))
+      OUT$Amat <- Amat
+      OUT$bvec <- bvec
+      OUT$meq  <- meq
+      OUT$b.restr <- object$b.restr
+      OUT$b.unrestr <- object$b.unrestr
     } else {
-      stop("restriktor ERROR: test ", sQuote(test), " not (yet) implemented. Choose \"F\" or \"Wald\"")
+      stop("restriktor ERROR: test ", sQuote(test), " not (yet) implemented.")
     }
   } else if (#length(CON$ceq.nonlinear.idx) == 0L &&
     #length(CON$cin.linear.idx)     > 0L && # some inequalities restr.

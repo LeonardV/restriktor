@@ -7,8 +7,6 @@ model.matrix.conLM <- function(object, ...) {
   model.matrix(object$model.org)
 }
 
-
-
 tukeyChi <- function (x, c = 4.685061, deriv = 0) {
   u <- x / c
   out <- abs(x) > c
@@ -25,4 +23,14 @@ tukeyChi <- function (x, c = 4.685061, deriv = 0) {
     stop("deriv must be in {0,1,2}")
   }
   r
+}
+
+
+# list/numeric/data.frame
+goricWeights <- function(x, ...) {
+  x <- unlist(x)
+  delta <- x - min(x)
+  goric_weights <- exp(-delta / 2) / sum(exp(-delta / 2))
+  OUT <- data.frame(GORIC = x, weight = goric_weights)
+  OUT
 }

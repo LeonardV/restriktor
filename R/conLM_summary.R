@@ -138,8 +138,6 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
       stop("restriktor ERROR: unable to compute penalty for GORIC.")  
     }
     ans$goric <- -2*(z$loglik - PT)
-    delta <- ans$goric - min(ans$goric)
-    attr(ans$goric, "goric_weights") <- exp(-delta / 2) / sum(exp(-delta / 2))
     attr(ans$goric, "penalty") <- PT
     attr(ans$goric, "loglik")  <- z$loglik 
   }

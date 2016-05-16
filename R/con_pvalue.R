@@ -70,16 +70,22 @@ con_pvalue_Chibar <- function(wt, Ts.org, type = "A",
 
 
 ################################################################################
-con_pvalue_boot_parametric <- function(model, Ts.org = NULL, type = "A",
-                                       meq.alt = meq.alt,
-                                       test = "F", R = 9999, 
-                                       p.distr = "N", df = 7, warn = -1L,
-                                       parallel = "no", ncpus = 1L, cl = NULL,
-                                       seed = NULL, control = NULL,
+con_pvalue_boot_parametric <- function(model, Ts.org = NULL, 
+                                       type = "A",
+                                       test = "F", 
+                                       neq.alt = 0L, 
+                                       R = 9999, 
+                                       p.distr = "N", 
+                                       df = 7, 
+                                       parallel = "no", 
+                                       ncpus = 1L, cl = NULL,
+                                       seed = NULL, 
+                                       warn = -1L,
+                                       control = NULL,
                                        verbose = FALSE, ...) {
 
   p.distr <- tolower(p.distr)
-  stopifnot(p.distr %in% c("N","t","chi"))
+  stopifnot(p.distr %in% c("n","t","chi"))
   old_options <- options(); options(warn = warn)
   
   model.org <- model$model.org
@@ -87,9 +93,10 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL, type = "A",
   n <- dim(X)[1]
 
   # constraints   
-  Amat <- model$Amat
-  bvec <- model$bvec
-  meq  <- model$meq
+  Amat <- model$constraints
+  bvec <- model$rhs
+  meq  <- model$neq
+  meq.alt <- neq.alt
   
   #parallel housekeeping
   have_mc <- have_snow <- FALSE
@@ -197,11 +204,17 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL, type = "A",
 
 
 ###################################################################################
-con_pvalue_boot_model_based <- function(model, Ts.org = NULL, type = "A",
-                                        meq.alt = meq.alt,
-                                        test = "F", R = 9999, warn = -1L,
-                                        parallel = "no", ncpus = 1L,
-                                        cl = NULL, seed = NULL, control = NULL,
+con_pvalue_boot_model_based <- function(model, Ts.org = NULL, 
+                                        type = "A",
+                                        test = "F", 
+                                        neq.alt = 0L,
+                                        R = 9999, 
+                                        parallel = "no", 
+                                        ncpus = 1L,
+                                        cl = NULL, 
+                                        seed = NULL, 
+                                        warn = -1L,
+                                        control = NULL,
                                         verbose = FALSE, ...) {
 
   old_options <- options(); options(warn = warn)
@@ -210,10 +223,11 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL, type = "A",
   X <- model.matrix(model)[,,drop=FALSE]
   
   # constraints 
-  Amat <- model$Amat
-  bvec <- model$bvec
-  meq  <- model$meq
-
+  Amat <- model$constraints
+  bvec <- model$rhs
+  meq  <- model$neq
+  meq.alt <- neq.alt
+  
   have_mc <- have_snow <- FALSE
   if (parallel != "no" && ncpus > 1L) {
     if (parallel == "multicore") {

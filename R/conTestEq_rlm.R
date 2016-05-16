@@ -1,4 +1,7 @@
-conTestEq.rlm <- function(object, test = "default", ...) {
+conTestEq.rlm <- function(object, test = "default", boot = "no", 
+                          B = 9999, p.distr = "N", df = 7, 
+                          parallel = "no", ncpus = 1L, cl = NULL, 
+                          seed = 1234, verbose = FALSE, ...) {
   
   if(!any(weights(object) == 1)) {
     stop("weights not supported (yet).")
@@ -73,6 +76,31 @@ conTestEq.rlm <- function(object, test = "default", ...) {
              length(CON$cin.nonlinear.idx) > 0L) {
     stop("ERROR: can not handle (yet) nonlinear (in)equality constraints")
   }
+  
+  if (boot == "parametric") {
+    OUT$pvalue <- con_pvalue_boot_parametric(object, 
+                                             Ts.org = OUT$Ts, 
+                                             type = "A",
+                                             test = test, 
+                                             R = B, 
+                                             p.distr = p.distr,
+                                             df = df, 
+                                             parallel = parallel,
+                                             ncpus = ncpus, cl = cl,
+                                             seed = seed, 
+                                             verbose = verbose)
+  } else if (boot == "model.based") {
+    OUT$pvalue <- con_pvalue_boot_model_based(object, 
+                                              Ts.org = OUT$Ts, 
+                                              type = "A", 
+                                              test = test, 
+                                              R = B, 
+                                              parallel = parallel, 
+                                              ncpus = ncpus, 
+                                              cl = cl, 
+                                              seed = seed, 
+                                              verbose = verbose)
+  } 
   
   class(OUT) <- "conTest"
   

@@ -162,7 +162,7 @@ conRLM.rlm <- function(model, constraints, se = "default", B = 999,
                 b.restr = b.unrestr,
                 residuals = model$residuals,
                 wresid = model$wresid,
-                fitted.values = model$fitted,
+                fitted = model$fitted,
                 weights = model$weights,
                 w = model$w, 
                 scale = model$s, 
@@ -192,6 +192,7 @@ conRLM.rlm <- function(model, constraints, se = "default", B = 999,
     b.restr[abs(b.restr) < ifelse(is.null(control$tol), 
                                   sqrt(.Machine$double.eps), 
                                   control$tol)] <- 0L
+    fitted <- X %*% b.restr
     residuals <- rfit$residuals
     # weights
     weights <- rfit$weights
@@ -223,7 +224,7 @@ conRLM.rlm <- function(model, constraints, se = "default", B = 999,
                 b.restr = b.restr,
                 residuals = residuals,
                 wresid = rfit$wresid,
-                fitted.values = fitted,
+                fitted = fitted,
                 weights = weights,
                 w = w, 
                 scale = model$s,

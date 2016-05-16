@@ -43,6 +43,10 @@ con_constraints <- function(model, constraints, bvec = NULL, meq = 0L,
     stop("no restriktions were specified.") 
   }
   
+  if (length(CON$ceq.nonlinear.idx) > 0L || length(CON$cin.nonlinear.idx) > 0L) {
+    stop("restriktor ERROR: can not handle (yet) nonlinear (in)equality restriktions")
+  }
+  
   if (debug && is.character(constraints)) {
     print(as.data.frame(parTable, stringsAsFactors = FALSE))
     print(CON)

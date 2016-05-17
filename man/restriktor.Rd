@@ -30,18 +30,17 @@ restriktor(model, constraints, ...)
   \item{constraints}{there are two ways to constrain parameters. 
   First, the constraint syntax consists of one or more symbolic
   descriptions, where the syntax can be specified as a literal 
-  string enclosed by single quotes. Only the names of coef(model) 
-  can be used as constraints names. See details for more information. 
+  string enclosed by single quotes. Only the names of \code{coef(model)}
+  can be used as names. See details for more information. 
   
-  Second, the constraints consists of a matrix \eqn{R} (or a vector in 
+  Second, the constraint syntax consists of a matrix \eqn{R} (or a vector in 
   case of one constraint) and defines the left-hand side of the 
   constraint \eqn{R\theta \ge rhs}, where each row represents one 
   constraint. The number of columns needs to correspond to the 
   number of parameters estimated (\eqn{\theta}) by model. The rows 
   should be linear independent, otherwise the function gives an 
-  error. For more information about constructing the matrix \eqn{R} 
-  see details. 
-  }
+  error. For more information about constructing the matrix \eqn{R} and 
+  \eqn{rhs} see details.}
   \item{se}{if "\code{standard}" (default), conventional standard errors 
   are computed based on inverting the observed augmented information 
   matrix. If "const", homoskedastic standard errors are computed. 
@@ -54,31 +53,32 @@ restriktor(model, constraints, ...)
   errors are computed using standard bootstrapping. If "\code{boot.model.based}" 
   or "\code{boot.residual}", bootstrapped standard errors are computed 
   using model-based bootstrapping. If "\code{none}", no standard errors 
-  are computed. 
-  }
-  \item{B}{}
+  are computed.}
+  \item{B}{integer; number of bootstrap draws for \code{se}. The default value 
+   is set to 999. Parallel support is available.}
   \item{rhs}{vector on the right-hand side of the constraints; 
   \eqn{R\theta \ge rhs}. The length of this vector equals the 
   number of rows of the constraints matrix \eqn{R} and consists of zeros 
   by default. Note: only used if constraints input is a matrix or 
-  vector.
-  }
+  vector.}
   \item{neq}{integer (default = 0) treating the number of 
   constraints rows as equality constraints instead of inequality 
   constraints. For example, if \code{neq = 2}, this means that the first 
   two rows of the constraints matrix \eqn{R} are treated as equality 
   constraints. Note: only used if constraints input is a matrix or 
-  vector.
-  }
-  \item{bootWt}{}
-  \item{R}{}
+  vector.}
+  \item{bootWt}{if \code{TRUE}, the chi-bar-square weights are computed based on
+   a simulation approach. If \code{FALSE}, the weights are computed based on 
+   the multivariate normal distribution function.}
+  \item{R}{integer; number of bootstrap draws for \code{bootWt}. The default 
+   value is set to 99999. Parallel support is available.}
   \item{parallel}{the type of parallel operation to be used (if any). If missing, 
   the default is set "no".}
   \item{ncpus}{integer: number of processes to be used in parallel operation: 
   typically one would chose this to the number of available CPUs.}
   \item{cl}{an optional parallel or snow cluster for use if parallel = "snow". 
   If not supplied, a cluster on the local machine is created for the duration of 
-  the conTest call.}
+  the call.}
   \item{seed}{seed value.}
   \item{control}{a list of control arguments: 
     \itemize{
@@ -94,16 +94,12 @@ restriktor(model, constraints, ...)
   \item{debug}{if TRUE, debugging information about the constraints
   is printed out.
   }
-  \item{\ldots}{not used for now.}
+  \item{\ldots}{no additional arguments for now.}
 }
 
 \details{
-  \code{restriktor} is a convenience function that takes a symbolic
-  description as constraint input and translates it to the constraint
-  matrix/vector \eqn{R}, the \eqn{rhs} and \eqn{neq}. The real work 
-  horses are the \code{conLM} and the \code{conRLM} functions. The 
-  constraint syntax can be specified in two ways. First as a 
-  literal string enclosed by single quotes as shown below: 
+  The constraint syntax can be specified in two ways. First as a literal string 
+  enclosed by single quotes as shown below: 
   
   \preformatted{myConstraints <- '
     # 1. inequality constraints
@@ -117,30 +113,29 @@ restriktor(model, constraints, ...)
   
   Second, the above constraints syntax can also be written in 
   matrix/vector notation as:
+  
+  The first column refers to the intercept, the remaining five
+  columns refer to the regression coefficients x1 to x5.
   \preformatted{myConstraints <-
     rbind(c(0, 0, 0,-1, 1, 0), #equality constraint x3 == x4
           c(0, 0, 0, 0,-1, 1), #equality constraint x4 == x5
           c(0, 1, 0, 0, 0, 0), #inequality constraint x1 > rhs
           c(0,-1, 1, 0, 0, 0)) #inequality constraint x1 < x2
   
-  The first column refers to the intercept, the remaining five
-  columns refer to the regression coefficients x1 to x5.
-  
-  #rhs is equal to the number of myConstraints rows.      
-  myRhs <- c(0,0,0,0) 
+#the length of rhs is equal to the number of myConstraints rows.      
+myRhs <- c(0,0,0,0) 
     
-  #the first two rows should be considered as equality constraints
-  myNeq <- 2  
-  }
+#the first two rows should be considered as equality constraints
+myNeq <- 2  
+}
   
-  Blank lines and comments can be used in between the constraints, 
-  and constraints can be split over multiple lines. Both the sharp 
-  (#) and the exclamation (!) characters can be used to start a 
-  comment. Multiple constraints can be placed on a single line if 
-  they are separated by a semicolon (;).
-  
-  There can be three types of symoblic descriptions in the 
-  constraints syntax:
+Blank lines and comments can be used in between the constraints, and 
+constraints can be split over multiple lines. Both the hashtag (#) and 
+the exclamation (!) characters can be used to start a comment. Multiple 
+constraints can be placed on a single line if they are separated by a 
+semicolon (;).
+
+There can be three types of symbolic descriptions in the constraints syntax:
   \enumerate{
   
       \item Equality constraints: The "\code{==}" operator can be used to 
@@ -158,19 +153,16 @@ restriktor(model, constraints, ...)
       using the so-called Delta method.
   }
 
-  Variable names of interaction effects in an lm object and an 
-  rlm object are shown as semi-colons (:) between the variables. 
-  In order to impose restriktions on parameters of interaction 
-  effects, the semi-colon must be replaced by a dot (.). Thus, 
-  an interaction effect "\code{x3:x4}" becomes "\code{x3.x4}" 
-  (e.g., \code{x3.x4 > 0}). In addition, the intercept is shown as 
-  "\code{(Intercept)}". In order to impose restriktions on the intercept 
+  Variable names of interaction effects in objects of class lm and rlm contain 
+  a semi-colon (:) between the variables. To impose constraints on parameters 
+  of interaction effects, the semi-colon must be replaced by a dot (.) 
+  (e.g., \code{x3:x4} becomes \code{x3.x4}). In addition, the intercept variable
+  names is shown as "\code{(Intercept)}". To impose restriktions on the intercept 
   both parentheses must be replaced by a dot "\code{.Intercept.}" 
-  (e.g.,\code{.Intercept. > 10}). Note: in most practical situations 
-  we do not impose restriktions on the intercept because we do not have 
-  prior knowledge about the intercept. Moreover, the sign of the 
-  intercept can be changed arbitrarily by shifting the response 
-  variable \eqn{y}.
+  (e.g.,\code{.Intercept. > 10}). Note: in most practical situations we do 
+  not impose restriktions on the intercept because we do not have prior 
+  knowledge about the intercept. Moreover, the sign of the intercept can be 
+  changed arbitrarily by shifting the response variable \eqn{y}.
   
   Each element can be modified using arithmetic operators. For example, 
   if \code{x2} is expected to be twice as large as \code{x1}, 
@@ -184,7 +176,9 @@ with the following items:
 \item{CON}{a list with useful information about the restriktions.}
 
 \item{parTable}{a parameter table with information about the 
-observed variables in the model and the imposed restriktions.}
+ observed variables in the model and the imposed restriktions.}
+
+\item{wt}{chi-bar-square weights.}
 
 \item{b.restr}{restrikted regression coefficients.}
 
@@ -192,12 +186,21 @@ observed variables in the model and the imposed restriktions.}
 
 \item{residuals}{restrikted residuals.}
 
+\item{wresid}{a working residual, weighted for "inv.var" weights only (rlm only)}
+
 \item{fitted}{restrikted fitted mean values.}
 
 \item{weights}{(only for weighted fits) the specified weights.}
 
+\item{w}{the weights used in the IWLS process (rlm only).}
+
+\item{scale}{the robust scale estimate used (rlm only).}
+
+\item{psi}{the psi function with parameters substituted (rlm only). 
+ Only bisquare for now.}
+
 \item{df.residual}{the residual degrees of freedom. Note: the 
-df is corrected in case of equality constraints.}
+ df is corrected in case of equality constraints.}
 
 \item{R2.org}{unrestrikted R-squared.}
 
@@ -211,13 +214,17 @@ df is corrected in case of equality constraints.}
 
 \item{Sigma}{variance-covariance matrix of unrestrikted model.}
 
-\item{Amat}{matrix with restriktions.}
+\item{constraints}{matrix with restriktions.}
 
-\item{bvec}{vector of right-hand side elements.}
+\item{rhs}{vector of right-hand side elements.}
 
-\item{meq}{number of equality restriktions.}
+\item{neq}{number of equality restriktions.}
 
 \item{iact}{active restriktions.}
+
+\item{converged}{did the IWLS converge (rlm only)?}
+
+\item{iter}{number of iteration needed for convergence (rlm only).}
 
 \item{bootout}{object of class boot. Only available if bootstrapped
 standard errors are requested, else bootout = NULL.} 
@@ -295,14 +302,14 @@ n <- 10
 means <- c(1,2,1,3)
 nm <- length(means)
 group <- as.factor(rep(1:nm, each = n))
-y <- cbind(c(MASS:::mvrnorm(n, mu = means, Sigma = diag(nm)), nrow(n)))
+y <- rnorm(n * nm, rep(means, each = n))
 DATA2 <- data.frame(y, group)
 
 # fit unrestrikted robust linear model
 fit2.rlm <- MASS:::rlm(y ~ group, data = DATA2, method = "MM")
 coef(fit2.rlm)
 
-# increasing means
+## increasing means
 myConstraints2 <- ' group2 > 0
                     group2 < group3
                     group3 < group4
@@ -314,7 +321,7 @@ fit2.con <- restriktor(fit2.rlm, constraints = myConstraints2, se = "HC0")
 summary(fit2.con)
 
 \dontrun{ 
-# increasing means in matrix notation.
+## increasing means in matrix notation.
 myConstraints_mat2 <- rbind(c(0, 1, 0, 0),
                             c(0,-1, 1, 0),
                             c(0, 0,-1, 1))
@@ -322,20 +329,20 @@ myRhs2 <- rep(0L, nrow(myConstraints_mat2))
 myNeq2 <- 0
 
 fit2.con <- restriktor(fit2.rlm, constraints = myConstraints_mat2,
-                       rhs = myRhs2, neq = myNeq2)
+                       rhs = myRhs2, neq = myNeq2, se = "HC0")
 summary(fit2.con)
 }            
 
-# equality restriktions only.
+## equality restriktions only.
 myConstraints3 <- ' group2 == 0
                     group2 == group3
                     group3 == group4
 '
-fit3.con <- restriktor(fit2.lm, constr = myConstraints3)
+fit3.con <- restriktor(fit2.rlm, constr = myConstraints3)
 summary(fit3.con)
 
 
-# combination of equality and inequality restriktions.
+## combination of equality and inequality restriktions.
 myConstraints4 <- ' group2 == 0
                     group3 < group4
 '
@@ -343,13 +350,14 @@ myConstraints4 <- ' group2 == 0
 # fit restikted model and compute model-based bootstrapped 
 # standard errors. We only generate 9 bootstrap samples in this 
 # example; in practice you may wish to use a much higher number.
-fit4.con <- restriktor(fit2.lm, constr = myConstraints4, 
+fit4.con <- restriktor(fit2.rlm, constr = myConstraints4, 
                        se = "boot.model.based", B = 9)
+# an error is probably thrown, due to a too low number of bootstrap draws.
 summary(fit4.con)
 
 # restriktor can also be used to define effects using the := operator 
-# and impose restriktions on them. For example, is the 
-# average effect (AVE) larger than zero?
+# and impose restriktions on them. For example, compute the average 
+# effect (AVE) and impose the restriktion AVE > 0.
 # generate data
 n <- 30
 b0 <- 10; b1 = 0.5; b2 = 1; b3 = 1.5

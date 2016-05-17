@@ -39,11 +39,11 @@ conTestEq.rlm <- function(object, test = "default", boot = "no",
                               cc = ifelse(is.null(cc), 4.685061, cc))
       # df
       OUT$df <- nrow(Amat)
-      OUT$Ts <- OUT$Ts / OUT$df
+      OUT$Ts <- OUT$Ts #/ OUT$df
       # rdf
       OUT$df.residual <- df.residual(object) 
       # p-value based on chisq
-      OUT$pvalue <- 1 - pf(OUT$Ts, OUT$df, OUT$df.residual)
+      OUT$pvalue <- 1 - pchisq(OUT$Ts, df = OUT$df) #1 - pf(OUT$Ts, OUT$df, OUT$df.residual)
       OUT$Amat <- Amat
       OUT$bvec <- bvec
       OUT$meq  <- meq

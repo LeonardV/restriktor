@@ -6,50 +6,59 @@
 \alias{conTestF.rlm}
 \alias{conTestWald.rlm}
 \alias{conTestScore.rlm}
+%\alias{conTestEq.lm}
+%\alias{conTestEq.rlm}
 
-\title{Function for testing (in)equality restrikted hypotheses for
+\title{Function for testing equality and/or inequality restrikted hypotheses for
 linear models}
 \description{\code{conTest} tests linear (in)equality constrained hypotheses for
 linear models by F-, Wald-, likelihood ratio-, and score-tests.}
 
 \usage{
-conTest(object, type = "A", ...)
-\method{conTest}{lm and rlm}(object, type = "A", ...)
+conTest(object, type = "summary", ...)
+\method{conTest}{lm and rlm}(object, type = "summary", ...)
 }
 \arguments{
   \item{object}{an object of class \code{conLM} or \code{conRLM}.} 
-  \item{type}{hypothesis test type "A", "B", or "C". See details for more information.}
-  \item{test}{test statistic; for information about the null-distributions see details.
+  \item{type}{hypothesis test type "A", "B", "C", "global", or "summary" 
+   (default). See details for more information.}
+  \item{test}{test statistic; for information about the null-distribution see 
+   details.
     \itemize{
-      \item for object of class lm; if "F" (default), the F-bar statistic (Kudo, 1963) is
-      computed. If "LRT", a likelihood ratio test statistic (Silvapulle and Sen, 
-      2005, chp 3.) is computed. If "score", a one-sided score test statistic 
-      (Silvapulle, M.J. and Silvapulle, P., 1995) is computed. 
+      \item for object of class lm; if "F" (default), the F-bar statistic 
+      (Silvapulle, 1996) is computed. If "LRT", a likelihood ratio test statistic 
+      (Silvapulle and Sen, 2005, chp 3.) is computed. If "score", a one-sided 
+      score test statistic (Silvapulle, M.J. and Silvapulle, P., 1995) is computed. 
+      In case of equality constraints only, the usual unconstrained F-, Wald-,  
+      LR- and score-test statistic is computed. 
       
       \item for object of class rlm; if "F" (default), a robust likelihood ratio 
       type test statistic (Silvapulle, 1992) is computed. If "Wald", a robust 
       Wald test statistic (Silvapulle, 1996) is computed. If "score", a one-sided 
-      score test statistic (Silvapulle, 1995) is computed.
+      score test statistic (Silvapulle, 1996) is computed. In case of equality 
+      constraints only, unconstrained robust F-, Wald-, score-test statistics 
+      are computed.
     }
   }
   \item{neq.alt}{integer: number of equality restriktions that are maintained 
   under the alternative hypothesis (for hypothesis test type "B"), see Xrd example.}
   \item{boot}{the null-distribution of these test-statistics (except under type 
   "C") takes the form of a mixture of F-distributions. The tail probabilities can 
-  be computed in several ways; if \code{"parametric"}, the p-value is computed 
-  based on the parametric bootstrap. By default, samples are drawn from a normal 
-  distribution with mean zero and varance one. See \code{p.distr} for other 
-  distributional options. If \code{"model.based"}, a model-based bootstrap method 
-  is used. Instead of computing the p-value directly, two approaches are available 
-  to compute the mixing weights. If \code{"mix.weights"}, mixing weights are 
-  computed based on a simulation approach. If \code{"no"} (default), no bootstrap 
-  method is used and the mixing weights are computed using the multivariate normal 
-  distribution function.}
-  \item{B}{integer; number of bootstrap draws. The default value is set to 9999.}
+  be computed directly via bootstrapping; if \code{"parametric"}, the p-value is 
+  computed based on the parametric bootstrap. By default, samples are drawn from 
+  a normal distribution with mean zero and varance one. See \code{p.distr} for 
+  other distributional options. If \code{"model.based"}, a model-based bootstrap 
+  method is used. Instead of computing the p-value via simulation, the p-value
+  can also be computed based on the chi-bar-square weights. If \code{"no"}, the
+  p-value is computed based on the weights obtained via simulation 
+  (\code{bootWt = TRUE}) or using the multivariate normal distribution function 
+  (\code{bootWt = FALSE}).}
+  \item{B}{integer; number of bootstrap draws for \code{boot}. The default value 
+   is set to 9999.}
   \item{p.distr}{If \code{"N"}, samples for the parametric bootstrap are drawn 
   from the normal distribution (default) with mean zero and variance one. If 
   \code{"t"}, samples are drawn from a t-distribution with df = 7 (degrees of 
-  freedom) by default. If \code{"chi"}, samples are drawn from a chi-square 
+  freedom) by default. If \code{"Chi"}, samples are drawn from a chi-square 
   distribution with df = 7 by default. The df can be adjusted via the \code{df} 
   argument.}
   \item{df}{degrees of freedom for \code{p.distr}.}
@@ -67,7 +76,7 @@ conTest(object, type = "A", ...)
       \item \code{absval} tolerance criterion for convergence 
       (default = sqrt(.Machine$double.eps)). Only used for model of class lm.
       \item \code{maxit} the maximum number of iterations for the optimizer 
-      (default = 10000). Only used for model of class mlm (not yet available). 
+      (default = 10000). Only used for model of class mlm (not yet supported). 
       \item \code{tol} numerical tolerance value. Estimates smaller than \code{tol} 
       are set to 0.
     }
@@ -75,43 +84,34 @@ conTest(object, type = "A", ...)
   \item{\dots}{no additional arguments for now.}
 }
 
-\details{
-The following hypothesis tests are implemented:
+\details{The following hypothesis tests are available:
 \itemize{
-  \item Type A: H0: restrictions valid with equality vs. HA: at least one inequality true
-  \item Type B: H0: all restrictions true vs. HA: at least one restriction false
-  \item Type C: H0: restrictions false vs. HA: restrictions true (with inequality)
+  \item Type A: Test H0: all restriktions with equalities ("=") active against 
+   HA: at least one inequality restriktion (">") strictly true.
+  \item Type B: Test H0: all restriktions with inequalities (">") (including some 
+   equalities ("=")) active against HA: at least one restriktion false (some equality 
+   restriktions may be maintained).
+  \item Type C: Test H0: at least one restriktion false ("<") against HA: all 
+   restriktions strikty true (">"). This test is based on the intersection-union
+   principle (Silvapulle and Sen, 2005, chp 5.3). The null-distribution is based 
+   on a t-distribution (one-sided). Note that, this test only makes sense in 
+   case of no equality constraints.
+  \item Type global: equal to Type A but H0 contains additional equality 
+  constraints. The test is comparable with the classical global/omnibus test. 
 }
 
+The exact finite sample distributions of the non-robust F-, score- and LR-test 
+statistics based on restrikted OLS estimates and normally distributed errors, are a mixture 
+of F-distributions under the null hypothesis (Wolak, 1987). In agreement with 
+Silvapulle (1992b), we found that the results based on these mixtures of 
+F-distributions approximate the tail probabilities of the robust tests better 
+than their asymptotic distributions. Therefore, all p-values for hypothesis test
+Type \code{"A"}, \code{"B"} and \code{"global"} are computed based on mixtures 
+of F-distributions. 
 
-TP=11: H0: restriction valid with equality and further linear equalities vs. H1: at least one equality from H0 violated, restriction valid
-
-TP=21: H0: restrictions valid (including some equality restrictions) vs. H1: at least one restriction from H0 violated, some equality restrictions are maintained
-
-Note that TPs 1 and 11 can reject H0 even if H1 is violated by the data. Rejection of H0 does not provide evidence for H1 (but only against H0) in these TPs because H1 is not the opposite of H0. The tests concentrate their power in H1, but are only guaranteed to observe their level for the stated H0.
-
-Also note that TP 3 does not make sense if obj involves equality restrictions (obj$meq>0).
-
-Under TPs 1, 2, 11, and 21, the distributions of test statistics are mixtures of chi-square distributions (df.error=Inf) or beta-distributions (df.error finite) with different degrees of freedom (chi-square) or parameter combinations (beta). Shapiro (1988) gives detailed information on the mixing weights for the different scenarios. Basically, there are two different situations:
-
-If meq=0, the weights are probabilities that a random variable with covariance matrix ui%*%cov%*%t(ui) is realized in the positive orthant or its lower-dimensional faces, respectively (if ui has too few columns, blow up by columns of 0s in appropriate positions) (Shapiro, formulae (5.5) or (5.10), respectively).
-
-If meq > 0 (but not all restrictions are equality restrictions), the weights are probabilities that a random variable with covariance matrix the inverse of the lower right corner of solve(ui%*%cov%*%t(ui)) is realized in the positive orthant or its lower-dimensional faces, respectively (Shapiro, formula (5.9)).
-
-These weights must then be combined with the appropriate degrees of freedom - these can be worked out by realizing that either the null hypothesis or the alternative hypothesis has fixed dimension and the respective mixing degrees of freedom are obtained by taking the difference to the dimension of the respective other hypothesis, which is correct because - given a certain dimension of the inequality-restricted estimate, the inequality-restricted estimate is a projection onto a linear space of that dimension.
-
-The test for TP 3 (cf. e.g. Sasabuchi 1980) is based on the intersection-union principle and simply obtains its p-value as the maximum p-value from testing the individual restrictions.
-
-
-The exact finite sample distributions of the non-robust F-, score- and 
-LR-test statistics based on OLS estimates and normally distributed errors, are 
-a mixture of F-distributions under the null hypothesis (Wolak, 1987). In 
-agreement with Silvapulle (1992b), we found that the results based on these 
-mixtures of F-distributions approximate the tail probabilities of the robust 
-tests better than their asymptotic distributions. Therefore, all p-values are 
-computed based on mixtures of F-distributions.
-
-
+Note: in case of equality constraints only, the null-distribution of the (robust) 
+F-test statistics is based on an F-distribution. The (robust) Wald- and (robust)
+score-test statistics are based on chi-square distributions.
 }
 
 \value{
@@ -120,40 +120,44 @@ computed based on mixtures of F-distributions.
   with the following items:
     
   \item{CON}{a list with useful information about the restriktions.}
-  \item{type}{}
-  \item{b.eqrestr}{}
-  \item{b.unrestr}{}
-  \item{b.restr}{}
-  \item{b.restr.alt}{}
-  \item{constraints}{}
-  \item{rhs}{}
-  \item{neq}{}
-  \item{neq.alt}{}
-  \item{iact}{}
-  \item{df.residual}{}
-  \item{Sigma}{}
-  \item{Ts}{}
-  \item{pvalue}{}
-  \item{model.org}{}
+  \item{type}{same as input.}
+  \item{b.eqrestr}{equality restrikted regression coefficients. Only available 
+   for \code{type = "A"} and \code{type = "global"}, else \code{b.eqrestr = NULL}.}
+  \item{b.unrestr}{unrestrikted regression coefficients.}
+  \item{b.restr}{restrikted regression coefficients.}
+  \item{b.restr.alt}{restrikted regression coefficients under HA if some 
+   equality constraints are maintained.}
+  \item{constraints}{matrix with restriktions.}
+  \item{rhs}{vector of right-hand side elements.}
+  \item{neq}{number of equality restriktions.}
+  \item{neq.alt}{same as input.}
+  \item{iact}{active restriktions}
+  \item{df.residual}{the residual degrees of freedom. Note: the df is corrected 
+   in case of equality constraints.}
+  \item{Sigma}{variance-covariance matrix of unrestrikted model.}
+  \item{Ts}{test-statistic value.}
+  \item{pvalue}{tail probability for \code{Ts}.}
+  \item{model.org}{original model.}
 }
 
 \references{
-Kudo, A. (1963). A multivariate analogue of the one-sided test. \emph{Biometrika}, 
-\bold{50}, 403--418.
+Shapiro, A. (1988). Towards a unified theory of inequality-constrained 
+testing in multivariate analysis. \emph{International Statistical Review} 
+\bold{56}, 49--62.
 
-Silvapulle, M. (1992a). Robust tests of inequality constraints and one-sided 
+Silvapulle, M. (1992). Robust tests of inequality constraints and one-sided 
 hypotheses in the linear model. \emph{Biometrika}, \bold{79}, 621--630.
-
-Silvapulle, M. (1992b). Robust wald-type tests of one-sided hypotheses in 
-the linear model. \emph{Journal of the American Statistical Association}, 
-\bold{87}, 156--161.
 
 Silvapulle, M. and Silvapulle, P. (1995). A score test against one-sided 
 alternatives. \emph{American statistical association}, \bold{90}, 342--349.
 
-Silvapulle, M. (1996). Robust bounded influence tests against one-sided 
-hypotheses in general parametric models. \emph{Statistics & probability 
-letters}, \bold{31}, 45--50.
+Silvapulle, M. (1996) On an F-type statistic for testing one-sided hypotheses and 
+computation of chi-bar-squared weights. \emph{Statistics & probability letters}, 
+\bold{28}, 137--141.
+
+Silvapulle, M. (1996) Robust bounded influence tests against one-sided 
+hypotheses in general parametric models. \emph{Statistics & probability letters}, 
+\bold{31}, 45--50.
 
 Silvapulle, M.J. and Sen, P.K. (2005). \emph{Constrained Statistical Inference}. 
 Wiley, New York
@@ -173,6 +177,7 @@ association}, \bold{82}, 782--793.
 }
 
 \examples{
+  ## example 1:
   # unrestricted linear model for ages (in months) at which an 
   # infant starts to walk alone.
   DATA <- ZelazoKolb1972
@@ -191,7 +196,9 @@ association}, \bold{82}, 782--793.
   # exercises would not have a negative effect of increasing the 
   # mean age at which a child starts to walk. 
   fit1.con <- restriktor(fit1.lm, constraints = "Group2 > 0; Group2 < Group4")
-  summary(fit1.con)
+  
+  # compute F-test
+  conTest(fit1.con)
   
   \dontrun{ 
     # Or in matrix notation.
@@ -202,7 +209,7 @@ association}, \bold{82}, 782--793.
     
     fit1.con <- restriktor(fit1.lm, constraints = myConstraints_mat1,
                            rhs = myRhs1, neq = myNeq1)
-    summary(fit1.con)
+    conTest(fit1.con)
   }            
   
   #########################
@@ -213,23 +220,26 @@ association}, \bold{82}, 782--793.
   means <- c(1,2,1,3)
   nm <- length(means)
   group <- as.factor(rep(1:nm, each = n))
-  y <- cbind(c(MASS:::mvrnorm(n, mu = means, Sigma = diag(nm)), nrow(n)))
+  y <- rnorm(n * nm, rep(means, each = n))
   DATA2 <- data.frame(y, group)
   
-  # fit unrestrikted robust linear model
-  fit2.rlm <- MASS:::rlm(y ~ group, data = DATA2, method = "MM")
-  coef(fit2.rlm)
+  # fit unrestrikted linear model
+  fit2.lm <- lm(y ~ group, data = DATA2)
+  coef(fit2.lm)
   
-  # increasing means
+  ## example 2: increasing means
   myConstraints2 <- ' group2 > 0
-  group2 < group3
-  group3 < group4
-  '
+                      group2 < group3
+                      group3 < group4'
   
   # fit restrikted robust linear model and compute 
   # Huber-White (robust) standard errors.
-  fit2.con <- restriktor(fit2.rlm, constraints = myConstraints2, se = "HC0")
-  summary(fit2.con)
+  fit2.con <- restriktor(fit2.lm, constraints = myConstraints2, se = "HC0")
+  
+  # compute score test type A and compute the tail probability based on the parametric
+  # bootstrap. We only generate 9 bootstrap samples in this example; in 
+  # practice you may wish to use a much higher number.
+  conTest(fit2.con, type = "A", test = "score", boot = "parametric", B = 9)
   
   \dontrun{ 
     # increasing means in matrix notation.
@@ -239,32 +249,37 @@ association}, \bold{82}, 782--793.
     myRhs2 <- rep(0L, nrow(myConstraints_mat2)) 
     myNeq2 <- 0
     
-    fit2.con <- restriktor(fit2.rlm, constraints = myConstraints_mat2,
+    fit2.con <- restriktor(fit2.lm, constraints = myConstraints_mat2,
                            rhs = myRhs2, neq = myNeq2)
-    summary(fit2.con)
+  
+    conTest(fit2.con, type = "A", test = "score", boot = "parametric", B = 9)
   }            
   
-  # equality restriktions only.
-  myConstraints3 <- ' group2 == 0
-  group2 == group3
-  group3 == group4
-  '
+  ## example 3: equality restriktions only.
+  myConstraints3 <- 'group2 == 0
+                     group2 == group3
+                     group3 == group4'
   fit3.con <- restriktor(fit2.lm, constr = myConstraints3)
-  summary(fit3.con)
+  conTest(fit3.con)
   
   
+  ## example 4:
   # combination of equality and inequality restriktions.
   myConstraints4 <- ' group2 == 0
-  group3 < group4
+                      group3 < group4
   '
   
   # fit restikted model and compute model-based bootstrapped 
   # standard errors. We only generate 9 bootstrap samples in this 
   # example; in practice you may wish to use a much higher number.
+  # Note that, a warning message may be throw because of a too low number of
+  # bootstrap samples.
   fit4.con <- restriktor(fit2.lm, constr = myConstraints4, 
                          se = "boot.model.based", B = 9)
-  summary(fit4.con)
+  conTest(fit4.con, type = "B", neq.alt = 1)
   
+  
+  ## example 5:
   # restriktor can also be used to define effects using the := operator 
   # and impose restriktions on them. For example, is the 
   # average effect (AVE) larger than zero?
@@ -281,6 +296,6 @@ association}, \bold{82}, 782--793.
   fit5.lm <- lm(y ~ X*Z, data = DATA3)
   
   fit5.con <- restriktor(fit5.lm, constraints = "AVE := X + 16.86137*X.Z; 
-                                               AVE > 0")
-  summary(fit5.con)
+                                                 AVE > 0")
+  conTest(fit5.con, test = "LRT")
 }

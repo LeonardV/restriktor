@@ -6,8 +6,8 @@
 \alias{conTestF.rlm}
 \alias{conTestWald.rlm}
 \alias{conTestScore.rlm}
-%\alias{conTestEq.lm}
-%\alias{conTestEq.rlm}
+\alias{conTestEq.lm}
+\alias{conTestEq.rlm}
 
 \title{Function for testing equality and/or inequality restrikted hypotheses for
 linear models}

@@ -10,7 +10,7 @@ con_constraints <- function(model, constraints, bvec = NULL, meq = 0L,
                                  partable = parTable,
                                  debug = debug)
     
-    FLAT <- lavaan:::lavParseModelString(constraints)
+    FLAT <- lavParseModelString(constraints)
     CON_FLAT <- attr(FLAT, "constraints")
     LIST <- list()
     lhs <- unlist(lapply(CON_FLAT, "[[", "lhs"))

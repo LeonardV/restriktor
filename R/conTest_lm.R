@@ -453,8 +453,8 @@ conTestScore.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
     U <- 1/sqrt(n) * solve(i) %*% d0
     UI <- t(U) %*% i
     D <- i
-    b <- quadprog:::solve.QP(Dmat = D , dvec = UI, Amat = t(Amat), bvec = bvec, 
-                             meq = meq)$solution
+    b <- solve.QP(Dmat = D , dvec = UI, Amat = t(Amat), bvec = bvec, 
+                  meq = meq)$solution
     Ts <- t(U) %*% i %*% U - ( t(U-b) %*% i %*% (U-b) ) 
     Ts <- as.numeric(n * Ts)
   } else if (type == "A") {
@@ -476,8 +476,8 @@ conTestScore.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
     U <- 1/sqrt(n) * solve(i) %*% d0
     UI <- t(U) %*% i
     D <- i
-    b <- quadprog:::solve.QP(Dmat = D , dvec = UI, Amat = t(Amat), bvec = bvec, 
-                             meq = meq)$solution
+    b <- solve.QP(Dmat = D, dvec = UI, Amat = t(Amat), bvec = bvec, 
+                  meq = meq)$solution
     Ts <- t(U) %*% i %*% U - ( t(U-b) %*% i %*% (U-b) ) 
     Ts <- as.numeric(n*Ts)
   } else if (type == "B") {
@@ -513,9 +513,9 @@ conTestScore.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
         U <- 1/sqrt(n) * solve(i) %*% d0
         UI <- t(U) %*% i
         D <- i
-        b <- quadprog:::solve.QP(Dmat = D, dvec = UI, 
-                                 Amat = t(Amat[1:meq.alt, ,drop = FALSE]), 
-                                 bvec = bvec[1:meq.alt], meq = meq.alt)$solution
+        b <- solve.QP(Dmat = D, dvec = UI, 
+                      Amat = t(Amat[1:meq.alt, ,drop = FALSE]), 
+                      bvec = bvec[1:meq.alt], meq = meq.alt)$solution
         Ts <- t(U) %*% i %*% U - ( t(U-b) %*% i %*% (U-b) ) 
         Ts <- as.numeric(n*Ts)
       }

@@ -306,7 +306,8 @@ y <- rnorm(n * nm, rep(means, each = n))
 DATA2 <- data.frame(y, group)
 
 # fit unrestrikted robust linear model
-fit2.rlm <- MASS:::rlm(y ~ group, data = DATA2, method = "MM")
+library(MASS)
+fit2.rlm <- rlm(y ~ group, data = DATA2, method = "MM")
 coef(fit2.rlm)
 
 ## increasing means

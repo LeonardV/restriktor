@@ -91,7 +91,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), brief = F
         print(out.test, quote = FALSE)
         cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
         print(out.rest, quote = FALSE, scientific = FALSE)
-        cat("\nUnrestrikted estimate:\n")
+        cat("\nunrestrikted estimate:\n")
         print.default(format(x$b.unrestr, digits = digits),
                       print.gap = 2, quote = FALSE)
       }

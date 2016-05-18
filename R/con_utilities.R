@@ -25,7 +25,6 @@ tukeyChi <- function (x, c = 4.685061, deriv = 0) {
   r
 }
 
-
 # list/numeric/data.frame
 goricWeights <- function(x, ...) {
   x <- unlist(x)

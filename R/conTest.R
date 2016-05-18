@@ -38,8 +38,7 @@ conTest <- function(object, type = "summary", ...) {
     if (!is.null(l$control)) {
       if ("B" %in% names(l$control)) {
         if (l$control$B < 9999) {
-          warning("The number of bootstrap samples for computing the mixing weights 
- is too low and may cause spurious results (by default B = 99999).")
+          warning("The number of bootstrap samples for computing the mixing weights is too low and may cause spurious results (by default B = 99999).")
         }
       }
     }

@@ -1,8 +1,11 @@
-conTestEq.lm <- function(object, test = "default", boot = "no", 
+conTestEq.lm <- function(object, test = "F", boot = "no", 
                          B = 9999, p.distr = "N", df = 7, 
                          parallel = "no", ncpus = 1L, cl = NULL, 
                          seed = 1234, verbose = FALSE, ...) {
   
+  if (!("conLM" %in% class(object))) {
+    stop("object must be of class conLM.")
+  }
   if(!is.null(weights(object))) {
     stop("weights not supported (yet).")
   }

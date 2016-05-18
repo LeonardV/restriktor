@@ -1,5 +1,6 @@
-summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", level = 0.95,
-                          GORIC = TRUE, digits = max(3, getOption("digits") - 2),
+summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", 
+                          level = 0.95, GORIC = TRUE, 
+                          digits = max(3, getOption("digits") - 2),
                           signif.stars = getOption("show.signif.stars"), ...) {
   
   z <- object

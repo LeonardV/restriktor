@@ -1,5 +1,5 @@
-# this function is inspired on the summary.orlm() function from the ic.infer 
-# package.
+# this function is largely based on the summary.orlm() function 
+# from the ic.infer package.
 
 summary.conTest.conLM <- function(x, test = "F", ...) {
   

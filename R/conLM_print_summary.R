@@ -1,5 +1,5 @@
 print.summary.conLM <- function(object, digits = max(3, getOption("digits") - 2),
-                          signif.stars = getOption("show.signif.stars"), ...) {
+                                signif.stars = getOption("show.signif.stars"), ...) {
   
   x <- object
   resid <- x$residuals

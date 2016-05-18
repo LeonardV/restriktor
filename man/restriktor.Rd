@@ -12,11 +12,13 @@ inequality restriktions}
 
 \usage{
 restriktor(model, constraints, ...)
-\method{conLM}{lm}(model, constraints, se = "default", B = 999,
+
+\method{conLM}{lm}(model, constraints, se = "standard", B = 999,
       rhs = NULL, neq = 0L, bootWt = FALSE, R = 99999,
       parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, control = NULL, 
       verbose = FALSE, debug = FALSE, ...)
-\method{conRLM}{rlm}(model, constraints, se = "default", B = 999,
+      
+\method{conRLM}{rlm}(model, constraints, se = "standard", B = 999,
        rhs = NULL, neq = 0L, bootWt = FALSE, R = 99999,
        parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, control = NULL, 
        verbose = FALSE, debug = FALSE, ...)
@@ -199,8 +201,7 @@ with the following items:
 \item{psi}{the psi function with parameters substituted (rlm only). 
  Only bisquare for now.}
 
-\item{df.residual}{the residual degrees of freedom. Note: the 
- df is corrected in case of equality constraints.}
+\item{df.residual}{the residual degrees of freedom}
 
 \item{R2.org}{unrestrikted R-squared.}
 

@@ -1,7 +1,7 @@
 con_boot_lm <- function(model, B = 1000, fixed = FALSE, ...) { 
     
-  if (!any(class(model) %in% c("lm", "rlm"))) {
-    stop("ERROR: model must be of class lm or rlm.")
+  if (class(model)[1] != "lm") {
+    stop("ERROR: model must be of class lm")
   }
   # original model formula
   form <- formula(model)
@@ -9,7 +9,7 @@ con_boot_lm <- function(model, B = 1000, fixed = FALSE, ...) {
   # weights
   wt <- weights(model)
   if (is.null(wt)) {
-    wt <- rep(1/nrow(DATA), nrow(DATA))
+    wt <- rep(1, nrow(DATA))
   } # standard bootstrap   
   if (!fixed) {
     bootout <- boot(cbind(wt = wt, DATA), con_bootdata_lm, B,
@@ -17,8 +17,8 @@ con_boot_lm <- function(model, B = 1000, fixed = FALSE, ...) {
   } else { # model based bootstrap
     res <- model$residuals
     fit <- model$fitted.values
-    bootout <- boot(data.frame(DATA, fit = fit, res = res), con_boot_fixed_lm,
-                    B, form = form, ...)
+    bootout <- boot(data.frame(DATA, fit = fit, res = res), 
+                    con_boot_fixed_lm, B, form = form, ...)
   }
   
   OUT <- bootout
@@ -26,4 +26,32 @@ con_boot_lm <- function(model, B = 1000, fixed = FALSE, ...) {
     OUT
 }
 
+
+con_boot_rlm <- function(model, B = 1000, fixed = FALSE, ...) { 
+  
+  if (class(model)[1] != "rlm") {
+    stop("ERROR: model must be of class lm")
+  }
+  # original model formula
+  #form <- formula(model)
+  DATA <- as.data.frame(model$model)
+  # weights
+  wt <- weights(model)
+  if (is.null(wt)) {
+    wt <- rep(1/nrow(DATA), nrow(DATA))
+  } # standard bootstrap   
+  if (!fixed) {
+    bootout <- boot(cbind(wt = wt, DATA), con_bootdata_rlm, 
+                    B, ...)
+  } else { # model based bootstrap
+    res <- model$residuals
+    fit <- model$fitted.values
+    bootout <- boot(data.frame(DATA, fit = fit, res = res), 
+                    con_boot_fixed_rlm, B, ...)
+  }
+  
+  OUT <- bootout
+  
+  OUT
+}
 

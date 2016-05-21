@@ -1,19 +1,33 @@
 con_boot_fixed_lm <- function(data, indices, ...) {
-    # because we need the original model formula, the original model is parsed via the ...
     l <- list(...)
-    # model formula
-    form <- l$form
+    CALL <- as.list(l$CALL)
+    CALL[[1]] <- NULL  
     res <- data$res[indices]
     boot_data <- cbind(data$fit + res, data[ ,2:(ncol(data)-2), drop = FALSE])
     boot_data <- as.data.frame(boot_data)
-    colnames(boot_data) <- colnames(data[ ,1:(ncol(data)-2)])
-    l$model <- lm(form, data = boot_data)
-    out <- do.call("restriktor", l)$b.restr  
+      colnames(boot_data) <- colnames(data[ ,1:(ncol(data)-2)])
+    CALL$data <- boot_data
+    l$model <- do.call("lm", CALL)
+    #l$model <- lm(form, data = boot_data)
+    OUT <- do.call("restriktor", l)$b.restr  
     
-    OUT <- out
-    
-      OUT
+    OUT
 }
 
 
+con_boot_fixed_rlm <- function(data, indices, ...) {
+  l <- list(...)
+  CALL <- as.list(l$CALL)
+  CALL[[1]] <- NULL
+  res <- data$res[indices]
+  boot_data <- cbind(data$fit + res, data[ ,2:(ncol(data)-2), drop = FALSE])
+  boot_data <- as.data.frame(boot_data)
+    colnames(boot_data) <- colnames(data[ ,1:(ncol(data)-2)])
+  CALL$data <- boot_data
+  l$model <- do.call("rlm", CALL)
+  #l$model <- rlm(form, data = boot_data, CALL)
+  OUT <- do.call("restriktor", l)$b.restr  
+  
+  OUT
+}
 

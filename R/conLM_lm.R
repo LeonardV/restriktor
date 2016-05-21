@@ -12,8 +12,11 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
   # rename for internal use
   bvec <- rhs; meq <- neq
   # construct constraint matrix/vector.
-  restr_OUT <- con_constraints(model, constraints = constraints, 
-                             bvec = bvec, meq = meq, debug = debug)  
+  restr_OUT <- con_constraints(model, 
+                               constraints = constraints, 
+                               bvec        = bvec, 
+                               meq         = meq, 
+                               debug       = debug)  
   # a list with useful information about the restriktions.}
   CON <- restr_OUT$CON
   # a parameter table with information about the observed variables in the model 
@@ -75,7 +78,10 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
   }
 
   # compute (weighted) log-likelihood
-  ll.unc <- con_loglik_lm(X = X, y = y, b = b.unrestr, w = weights)
+  ll.unc <- con_loglik_lm(X = X, 
+                          y = y, 
+                          b = b.unrestr, 
+                          w = weights)
   LL.unc <- ll.unc$loglik
   
   # ML unconstrained MSE
@@ -85,15 +91,15 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
   
   # compute mixing weights
   if (bootWt) { # compute mixing weights based on simulation
-    wt <- mix.boot(VCOV = W,
-                   Amat = Amat, 
-                   meq = meq, 
-                   R = R,
+    wt <- mix.boot(VCOV     = W,
+                   Amat     = Amat, 
+                   meq      = meq, 
+                   R        = R,
                    parallel = parallel,
-                   ncpus = ncpus,
-                   cl = cl,
-                   seed = seed,
-                   verbose = verbose)
+                   ncpus    = ncpus,
+                   cl       = cl,
+                   seed     = seed,
+                   verbose  = verbose)
   } else if (!bootWt & (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
     wt <- rev(con_wt(Amat %*% W %*% t(Amat), meq = meq))
   } else if (!bootWt & (meq == nrow(Amat))) { # only equality constraints
@@ -124,19 +130,27 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
                 bootout = NULL, call = cl)  
   } else {
     # compute constrained estimates for lm() and mlm() 
-    out.QP <- con_solver(b.unrestr, X = X, y = y, w = weights, Amat = Amat,
-                         bvec = bvec, meq = meq, 
+    out.QP <- con_solver(b.unrestr, 
+                         X      = X, 
+                         y      = y, 
+                         w      = weights, 
+                         Amat   = Amat,
+                         bvec   = bvec, 
+                         meq    = meq, 
                          absval = ifelse(is.null(control$absval), 
                                          sqrt(.Machine$double.eps), 
                                          control$absval),
-                         maxit = ifelse(is.null(control$maxit), 1e04, 
+                         maxit  = ifelse(is.null(control$maxit), 1e04, 
                                         control$maxit))
     b.restr <- matrix(out.QP$solution, ncol = ncol(y))
     b.restr[abs(b.restr) < ifelse(is.null(control$tol), 
                                   sqrt(.Machine$double.eps), 
                                   control$tol)] <- 0L
     
-    ll.restr <- con_loglik_lm(X = X, y = y, b = b.restr, w = weights)
+    ll.restr <- con_loglik_lm(X = X, 
+                              y = y, 
+                              b = b.restr, 
+                              w = weights)
     LL.restr <- ll.restr$loglik
     # lm
     if (ncol(y) == 1L) {
@@ -211,21 +225,40 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
     if (!(se %in% c("boot.model.based","boot.standard"))) {
       OUT$information <- 1/s2.restr * crossprod(X)
       information <- con_augmented_information(information = OUT$information,
-                                               X = X, 
-                                               b.unrestr = b.unrestr, 
-                                               b.restr = b.restr,
-                                               Amat = Amat, 
-                                               bvec = bvec, meq = meq) 
+                                               X           = X, 
+                                               b.unrestr   = b.unrestr, 
+                                               b.restr     = b.restr,
+                                               Amat        = Amat, 
+                                               bvec        = bvec, 
+                                               meq         = meq) 
+      
       attr(OUT$information, "inverted.information") <- information$inverted.information
       attr(OUT$information, "augmented.information") <- information$augmented.information
+      
     } else if (se == "boot.model.based") {
-      OUT$bootout <- con_boot_lm(model, B = B, fixed = TRUE, constraints = Amat,
-                                 rhs = bvec, neq = meq, se = "none",
-                                 parallel = parallel, ncpus = ncpus, cl = cl)
+      OUT$bootout <- con_boot_lm(model, 
+                                 B           = B, 
+                                 fixed       = TRUE, 
+                                 CALL        = model$call,
+                                 constraints = Amat,
+                                 rhs         = bvec, 
+                                 neq         = meq, 
+                                 se          = "none",
+                                 parallel    = parallel, 
+                                 ncpus       = ncpus, 
+                                 cl          = cl)
     } else if (se == "boot.standard") {
-      OUT$bootout <- con_boot_lm(model, B = B, fixed = FALSE, constraints = Amat,
-                                 rhs = bvec, neq = meq, se = "none",
-                                 parallel = parallel, ncpus = ncpus, cl = cl)
+      OUT$bootout <- con_boot_lm(model, 
+                                 B           = B, 
+                                 fixed       = FALSE, 
+                                 CALL        = model$call,
+                                 constraints = Amat,
+                                 rhs         = bvec, 
+                                 neq         = meq, 
+                                 se          = "none",
+                                 parallel    = parallel, 
+                                 ncpus       = ncpus, 
+                                 cl          = cl)
     }
   }
   

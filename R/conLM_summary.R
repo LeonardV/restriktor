@@ -1,7 +1,5 @@
 summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", 
-                          level = 0.95, GORIC = TRUE, 
-                          digits = max(3, getOption("digits") - 2),
-                          signif.stars = getOption("show.signif.stars"), ...) {
+                          level = 0.95, GORIC = TRUE, ...) {
   
   z <- object
   
@@ -24,7 +22,7 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic",
   meq <- z$neq
   p <- z$model.org$rank
   rdf <- z$df.residual
-  r <- c(z$residuals)
+  #r <- c(z$residuals)
   b.restr <- z$b.restr
   r <- c(weighted.residuals(z))
   

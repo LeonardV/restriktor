@@ -76,8 +76,12 @@ conTestF.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
                                       sqrt(.Machine$double.eps), 
                                       control$tol)] <- 0L
     names(b.eqrestr) <- vnames
-    Ts <- robustFm(x = X, y = y, beta0 = b.eqrestr, betaA = b.restr, 
-                   scale = scale, cc = ifelse(is.null(cc), 4.685061, cc))
+    Ts <- robustFm(x     = X, 
+                   y     = y, 
+                   beta0 = b.eqrestr, 
+                   betaA = b.restr, 
+                   scale = scale, 
+                   cc    = ifelse(is.null(cc), 4.685061, cc))
   } else if (type == "A") {
     call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec,
                     tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
@@ -91,12 +95,20 @@ conTestF.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
                                       sqrt(.Machine$double.eps), 
                                       control$tol)] <- 0L
     names(b.eqrestr) <- vnames
-    Ts <- robustFm(x = X, y = y, beta0 = b.eqrestr, betaA = b.restr, 
-                   scale = scale, cc = ifelse(is.null(cc), 4.685061, cc))
+    Ts <- robustFm(x     = X, 
+                   y     = y, 
+                   beta0 = b.eqrestr, 
+                   betaA = b.restr, 
+                   scale = scale, 
+                   cc    = ifelse(is.null(cc), 4.685061, cc))
   } else if (type == "B") {
     if (meq.alt == 0L) {
-      Ts <- robustFm(x = X, y = y, beta0 = b.restr, betaA = b.unrestr, 
-                     scale = scale, cc = ifelse(is.null(cc), 4.685061, cc))
+      Ts <- robustFm(x     = X, 
+                     y     = y, 
+                     beta0 = b.restr, 
+                     betaA = b.unrestr, 
+                     scale = scale, 
+                     cc    = ifelse(is.null(cc), 4.685061, cc))
     } else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt != 0L && meq.alt <= meq) {
@@ -113,8 +125,12 @@ conTestF.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
                                               sqrt(.Machine$double.eps), 
                                               control$tol)] <- 0L
         names(b.restr.alt) <- vnames
-        Ts <- robustFm(x = X, y = y, beta0 = b.restr, betaA = b.restr.alt, 
-                       scale = scale, cc = ifelse(is.null(cc), 4.685061, cc))
+        Ts <- robustFm(x     = X, 
+                       y     = y, 
+                       beta0 = b.restr, 
+                       betaA = b.restr.alt, 
+                       scale = scale, 
+                       cc    = ifelse(is.null(cc), 4.685061, cc))
       } else {
         stop("neq.alt must not be larger than neq.")
       }
@@ -131,25 +147,40 @@ conTestF.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
   }
   
   if (boot == "no") {
-    pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
-                              df.residual = df.residual, type = type,
-                              Amat = Amat, bvec = bvec, meq = meq, 
-                              meq.alt = meq.alt)
+    pvalue <- con_pvalue_Fbar(wt          = wt, 
+                              Ts.org      = Ts, 
+                              df.residual = df.residual, 
+                              type        = type,
+                              Amat        = Amat, 
+                              bvec        = bvec, 
+                              meq         = meq, 
+                              meq.alt     = meq.alt)
   } else if (boot == "parametric") {
-    pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, 
-                                         test = "F",
-                                         meq.alt = meq.alt,
-                                         R = B, p.distr = p.distr,
-                                         df = df, parallel = parallel,
-                                         ncpus = ncpus, cl = cl,
-                                         seed = seed, verbose = verbose)
+    pvalue <- con_pvalue_boot_parametric(object, 
+                                         Ts.org   = Ts, 
+                                         type     = type, 
+                                         test     = "F",
+                                         meq.alt  = meq.alt,
+                                         R        = B, 
+                                         p.distr  = p.distr,
+                                         df       = df, 
+                                         parallel = parallel,
+                                         ncpus    = ncpus, 
+                                         cl       = cl,
+                                         seed     = seed, 
+                                         verbose  = verbose)
   } else if (boot == "model.based") {
-    pvalue <- con_pvalue_boot_model_based(object, Ts.org = Ts, type = type, 
-                                          test = "F",
-                                          meq.alt = meq.alt,
-                                          R = B, parallel = parallel,
-                                          ncpus = ncpus, cl = cl,
-                                          seed = seed, verbose = verbose)
+    pvalue <- con_pvalue_boot_model_based(object, 
+                                          Ts.org   = Ts, 
+                                          type     = type, 
+                                          test     = "F",
+                                          meq.alt  = meq.alt,
+                                          R        = B, 
+                                          parallel = parallel,
+                                          ncpus    = ncpus, 
+                                          cl       = cl,
+                                          seed     = seed, 
+                                          verbose  = verbose)
   } 
   
   OUT <- list(CON = object$CON,
@@ -257,9 +288,13 @@ conTestWald.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
                                        sqrt(.Machine$double.eps), 
                                        control$tol)] <- 0L
     names(b.eqrestr) <- vnames
-    out0 <- robustWaldScores(x = X, y = y,  beta0 = b.eqrestr, 
-                             betaA = b.restr, scale = scale, test = "Wald", 
-                             cc = ifelse(is.null(cc), 4.685061, cc))
+    out0 <- robustWaldScores(x     = X, 
+                             y     = y,  
+                             beta0 = b.eqrestr, 
+                             betaA = b.restr, 
+                             scale = scale, 
+                             test  = "Wald", 
+                             cc    = ifelse(is.null(cc), 4.685061, cc))
     Ts <- out0$Ts
     Sigma <- out0$V
   } else if (type == "A") {
@@ -276,17 +311,25 @@ conTestWald.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
                                       control$tol)] <- 0L
     names(b.eqrestr) <- vnames
     
-    out1 <- robustWaldScores(x = X, y = y,  beta0 = b.eqrestr, 
-                             betaA = b.restr, scale = scale, test = "Wald", 
-                             cc = ifelse(is.null(cc), 4.685061, cc))
+    out1 <- robustWaldScores(x     = X, 
+                             y     = y,  
+                             beta0 = b.eqrestr, 
+                             betaA = b.restr, 
+                             scale = scale, 
+                             test  = "Wald", 
+                             cc    = ifelse(is.null(cc), 4.685061, cc))
     Ts <- out1$Ts
     Sigma <- out1$V
   }
   else if (type == "B") {
     if (meq.alt == 0L) {
-      out2 <- robustWaldScores(x = X, y = y, beta0 = b.restr, 
-                               betaA = b.unrestr, scale = scale, test = "Wald", 
-                               cc = ifelse(is.null(cc), 4.685061, cc))
+      out2 <- robustWaldScores(x     = X, 
+                               y     = y, 
+                               beta0 = b.restr, 
+                               betaA = b.unrestr, 
+                               scale = scale, 
+                               test  = "Wald", 
+                               cc    = ifelse(is.null(cc), 4.685061, cc))
       Ts <- out2$Ts
       Sigma <- out2$V
     } else {
@@ -305,10 +348,13 @@ conTestWald.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
                                               sqrt(.Machine$double.eps), 
                                               control$tol)] <- 0L
         names(b.restr.alt) <- vnames
-        out3 <- robustWaldScores(x = X, y = y,  beta0 = b.restr, 
-                                 betaA = b.restr.alt, scale = scale, 
-                                 test = "Wald", 
-                                 cc = ifelse(is.null(cc), 4.685061, cc))
+        out3 <- robustWaldScores(x     = X, 
+                                 y     = y,  
+                                 beta0 = b.restr, 
+                                 betaA = b.restr.alt, 
+                                 scale = scale, 
+                                 test  = "Wald", 
+                                 cc    = ifelse(is.null(cc), 4.685061, cc))
         Ts <- out3$Ts
         Sigma <- out3$V
       } else {
@@ -328,25 +374,40 @@ conTestWald.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
   
   if (boot == "no") {
     # compute pvalue based on F-distribution
-    pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
-                              df.residual = df.residual, type = type,
-                              Amat = Amat, bvec = bvec, meq = meq, 
-                              meq.alt = meq.alt)
+    pvalue <- con_pvalue_Fbar(wt          = wt, 
+                              Ts.org      = Ts, 
+                              df.residual = df.residual, 
+                              type        = type,
+                              Amat        = Amat, 
+                              bvec        = bvec, 
+                              meq         = meq, 
+                              meq.alt     = meq.alt)
   } else if (boot == "parametric") {
-    pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, 
-                                         test = "Wald",
-                                         meq.alt = meq.alt,
-                                         R = B, p.distr = p.distr,
-                                         df = df, parallel = parallel,
-                                         ncpus = ncpus, cl = cl,
-                                         seed = seed, verbose = verbose)
+    pvalue <- con_pvalue_boot_parametric(object, 
+                                         Ts.org   = Ts, 
+                                         type     = type, 
+                                         test     = "Wald",
+                                         meq.alt  = meq.alt,
+                                         R        = B, 
+                                         p.distr  = p.distr,
+                                         df       = df, 
+                                         parallel = parallel,
+                                         ncpus    = ncpus, 
+                                         cl       = cl,
+                                         seed     = seed, 
+                                         verbose  = verbose)
   } else if (boot == "model.based") {
-    pvalue <- con_pvalue_boot_model_based(object, Ts.org = Ts, type = type, 
-                                          test = "Wald",
-                                          meq.alt = meq.alt,
-                                          R = B, parallel = parallel,
-                                          ncpus = ncpus, cl = cl,
-                                          seed = seed, verbose = verbose)
+    pvalue <- con_pvalue_boot_model_based(object, 
+                                          Ts.org   = Ts, 
+                                          type     = type, 
+                                          test     = "Wald",
+                                          meq.alt  = meq.alt,
+                                          R        = B, 
+                                          parallel = parallel,
+                                          ncpus    = ncpus, 
+                                          cl       = cl,
+                                          seed     = seed, 
+                                          verbose  = verbose)
   } 
   
   OUT <- list(CON = object$CON,
@@ -455,9 +516,13 @@ conTestScore.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9
                                       sqrt(.Machine$double.eps), 
                                       control$tol)] <- 0L
     names(b.eqrestr) <- vnames
-    out0 <- robustWaldScores(x = X, y = y,  beta0 = b.eqrestr, 
-                             betaA = b.restr, scale = scale, test = "score", 
-                             cc = ifelse(is.null(cc), 4.685061, cc))    
+    out0 <- robustWaldScores(x     = X, 
+                             y     = y,  
+                             beta0 = b.eqrestr, 
+                             betaA = b.restr, 
+                             scale = scale, 
+                             test  = "score", 
+                             cc    = ifelse(is.null(cc), 4.685061, cc))    
     Ts <- out0$Ts
     Sigma <- out0$V
   } else if (type == "A") {
@@ -474,16 +539,24 @@ conTestScore.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9
                                       control$tol)] <- 0L
     names(b.eqrestr) <- vnames
     
-    out1 <- robustWaldScores(x = X, y = y,  beta0 = b.eqrestr, 
-                             betaA = b.restr, scale = scale, test = "score", 
-                             cc = ifelse(is.null(cc), 4.685061, cc))
+    out1 <- robustWaldScores(x     = X, 
+                             y     = y,  
+                             beta0 = b.eqrestr, 
+                             betaA = b.restr, 
+                             scale = scale, 
+                             test  = "score", 
+                             cc    = ifelse(is.null(cc), 4.685061, cc))
     Ts <- out1$Ts
     Sigma <- out1$V
   } else if (type == "B") {
     if (meq.alt == 0L) {
-      out2 <- robustWaldScores(x = X, y = y,  beta0 = b.restr, 
-                               betaA = b.unrestr, scale = scale, test = "score", 
-                               cc = ifelse(is.null(cc), 4.685061, cc))
+      out2 <- robustWaldScores(x     = X, 
+                               y     = y,  
+                               beta0 = b.restr, 
+                               betaA = b.unrestr, 
+                               scale = scale, 
+                               test  = "score", 
+                               cc    = ifelse(is.null(cc), 4.685061, cc))
       Ts <- out2$Ts
       Sigma <- out2$V
     } else {
@@ -502,10 +575,13 @@ conTestScore.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9
                                               sqrt(.Machine$double.eps), 
                                               control$tol)] <- 0L
         names(b.restr.alt) <- vnames
-        out3 <- robustWaldScores(x = X, y = y,  beta0 = b.restr, 
-                                 betaA = b.restr.alt, scale = scale, 
-                                 test = "score", 
-                                 cc = ifelse(is.null(cc), 4.685061, cc))
+        out3 <- robustWaldScores(x     = X, 
+                                 y     = y,  
+                                 beta0 = b.restr, 
+                                 betaA = b.restr.alt, 
+                                 scale = scale, 
+                                 test  = "score", 
+                                 cc    = ifelse(is.null(cc), 4.685061, cc))
         Ts <- out3$Ts
         Sigma <- out3$V
       } else {
@@ -525,25 +601,40 @@ conTestScore.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9
   
   if (boot == "no") {
     # compute pvalue based on F-distribution
-    pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
-                              df.residual = df.residual, type = type,
-                              Amat = Amat, bvec = bvec, meq = meq, 
-                              meq.alt = meq.alt)
+    pvalue <- con_pvalue_Fbar(wt          = wt, 
+                              Ts.org      = Ts, 
+                              df.residual = df.residual, 
+                              type        = type,
+                              Amat        = Amat, 
+                              bvec        = bvec, 
+                              meq         = meq, 
+                              meq.alt     = meq.alt)
   } else if (boot == "parametric") {
-    pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, 
-                                         test = "score",
-                                         meq.alt = meq.alt,
-                                         R = B, p.distr = p.distr,
-                                         df = df, parallel = parallel,
-                                         ncpus = ncpus, cl = cl,
-                                         seed = seed, verbose = verbose)
+    pvalue <- con_pvalue_boot_parametric(object, 
+                                         Ts.org   = Ts, 
+                                         type     = type, 
+                                         test     = "score",
+                                         meq.alt  = meq.alt,
+                                         R        = B, 
+                                         p.distr  = p.distr,
+                                         df       = df, 
+                                         parallel = parallel,
+                                         ncpus    = ncpus, 
+                                         cl       = cl,
+                                         seed     = seed, 
+                                         verbose  = verbose)
   } else if (boot == "model.based") {
-    pvalue <- con_pvalue_boot_model_based(object, Ts.org = Ts, type = type, 
-                                          test = "score",
-                                          meq.alt = meq.alt,
-                                          R = B, parallel = parallel,
-                                          ncpus = ncpus, cl = cl,
-                                          seed = seed, verbose = verbose)
+    pvalue <- con_pvalue_boot_model_based(object, 
+                                          Ts.org   = Ts, 
+                                          type     = type, 
+                                          test     = "score",
+                                          meq.alt  = meq.alt,
+                                          R        = B, 
+                                          parallel = parallel,
+                                          ncpus    = ncpus, 
+                                          cl       = cl,
+                                          seed     = seed, 
+                                          verbose  = verbose)
   } 
   
   OUT <- list(CON = object$CON,

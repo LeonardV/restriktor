@@ -66,12 +66,17 @@ conTestF.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
         stop("Restriktor ERROR: test not ready yet for models without intercept.")      
     } 
     # call quadprog
-    b.eqrestr <- con_solver(b.unrestr, X = X, y = y, w = w, Amat = Amatg,
-                            bvec = bvecg, meq = nrow(Amatg),
+    b.eqrestr <- con_solver(b.unrestr, 
+                            X      = X, 
+                            y      = y, 
+                            w      = w, 
+                            Amat   = Amatg,
+                            bvec   = bvecg, 
+                            meq    = nrow(Amatg),
                             absval = ifelse(is.null(control$absval), 1e-09, 
                                             control$absval),
-                            maxit = ifelse(is.null(control$maxit), 1e04, 
-                                           control$maxit))$solution
+                            maxit  = ifelse(is.null(control$maxit), 1e04, 
+                                            control$maxit))$solution
     # fix estimates to zero 
     b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
@@ -80,12 +85,17 @@ conTestF.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
     # compute global test statistic
     Ts <- c(t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr))
   } else if (type == "A") {
-    b.eqrestr <- con_solver(b.unrestr, X = X, y = y, w = w, Amat = Amat,
-                            bvec = bvec, meq = nrow(Amat),
+    b.eqrestr <- con_solver(b.unrestr, 
+                            X      = X, 
+                            y      = y, 
+                            w      = w, 
+                            Amat   = Amat,
+                            bvec   = bvec, 
+                            meq    = nrow(Amat),
                             absval = ifelse(is.null(control$absval), 1e-09, 
                                             control$absval),
-                            maxit = ifelse(is.null(control$maxit), 1e04, 
-                                           control$maxit))$solution
+                            maxit  = ifelse(is.null(control$maxit), 1e04, 
+                                            control$maxit))$solution
     b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
                                       control$tol)] <- 0L
@@ -99,13 +109,17 @@ conTestF.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
       Ts <- as.vector(t(b.unrestr - b.restr) %*% solve(Sigma, b.unrestr - b.restr))
     } else {
       if (meq.alt != 0L && meq.alt <= meq) {
-        b.restr.alt <- con_solver(b.unrestr, X = X, y = y, w = w, 
-                                  Amat = Amat[1:meq.alt,,drop = FALSE],
-                                  bvec = bvec[1:meq.alt], meq = meq.alt,
+        b.restr.alt <- con_solver(b.unrestr, 
+                                  X      = X, 
+                                  y      = y, 
+                                  w      = w, 
+                                  Amat   = Amat[1:meq.alt,,drop = FALSE],
+                                  bvec   = bvec[1:meq.alt], 
+                                  meq    = meq.alt,
                                   absval = ifelse(is.null(control$absval), 1e-09, 
                                                   control$absval),
-                                  maxit = ifelse(is.null(control$maxit), 1e04, 
-                                                 control$maxit))$solution
+                                  maxit  = ifelse(is.null(control$maxit), 1e04, 
+                                                  control$maxit))$solution
         b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol), 
                                               sqrt(.Machine$double.eps),                                        
                                               control$tol)] <- 0L
@@ -135,23 +149,39 @@ conTestF.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
   }
   
   if (boot == "no") {
-    pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
-                              df.residual = df.residual, type = type,
-                              Amat = Amat, bvec = bvec, meq = meq, 
-                              meq.alt = meq.alt)
+    pvalue <- con_pvalue_Fbar(wt          = wt, 
+                              Ts.org      = Ts, 
+                              df.residual = df.residual, 
+                              type        = type,
+                              Amat        = Amat, 
+                              bvec        = bvec, 
+                              meq         = meq, 
+                              meq.alt     = meq.alt)
    } else if (boot == "parametric") {
-    pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, 
-                                         test = "F", meq.alt = meq.alt, 
-                                         R = B, p.distr = p.distr,
-                                         df = df, parallel = parallel,
-                                         ncpus = ncpus, cl = cl,
-                                         seed = seed, verbose = verbose)
+    pvalue <- con_pvalue_boot_parametric(object, 
+                                         Ts.org   = Ts, 
+                                         type     = type, 
+                                         test     = "F", 
+                                         meq.alt  = meq.alt, 
+                                         R        = B, 
+                                         p.distr  = p.distr,
+                                         df       = df, 
+                                         parallel = parallel,
+                                         ncpus    = ncpus, 
+                                         cl       = cl,
+                                         seed     = seed, 
+                                         verbose  = verbose)
   } else if (boot == "model.based") {
-    pvalue <- con_pvalue_boot_model_based(object, Ts.org = Ts, type = type, 
-                                          test = "F", meq.alt = meq.alt, 
-                                          parallel = parallel, ncpus = ncpus,
-                                          cl = cl, seed = seed, 
-                                          verbose = verbose)
+    pvalue <- con_pvalue_boot_model_based(object, 
+                                          Ts.org   = Ts, 
+                                          type     = type, 
+                                          test     = "F", 
+                                          meq.alt  = meq.alt, 
+                                          parallel = parallel, 
+                                          ncpus    = ncpus,
+                                          cl       = cl, 
+                                          seed     = seed, 
+                                          verbose  = verbose)
   } 
   
   OUT <- list(CON = object$CON,
@@ -243,33 +273,49 @@ conTestLRT.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999
       Amatg <- diag(rep(1, g))
       bvecg <- rep(0, g) 
     } 
-    b.eqrestr <- con_solver(b.unrestr, X = X, y = y, w = w, Amat = Amatg,
-                            bvec = bvecg, meq = nrow(Amatg),
+    b.eqrestr <- con_solver(b.unrestr, 
+                            X      = X, 
+                            y      = y, 
+                            w      = w, 
+                            Amat   = Amatg,
+                            bvec   = bvecg, 
+                            meq    = nrow(Amatg),
                             absval = ifelse(is.null(control$absval), 1e-09, 
                                             control$absval),
-                            maxit = ifelse(is.null(control$maxit), 1e04, 
-                                           control$maxit))$solution
+                            maxit  = ifelse(is.null(control$maxit), 1e04, 
+                                            control$maxit))$solution
     b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
                                       control$tol)] <- 0L
     names(b.eqrestr) <- vnames
-    ll0.out <- con_loglik_lm(X = X, y = y, b = b.eqrestr, w = w)
+    ll0.out <- con_loglik_lm(X = X, 
+                             y = y, 
+                             b = b.eqrestr, 
+                             w = w)
     ll0 <- ll0.out$loglik
     
     ll1 <- object$loglik
     Ts <- -2*(ll0 - ll1)
   } else if (type == "A") {
-    b.eqrestr <- con_solver(b.unrestr, X = X, y = y, w = w, Amat = Amat,
-                            bvec = bvec, meq = nrow(Amat),
+    b.eqrestr <- con_solver(b.unrestr, 
+                            X      = X, 
+                            y      = y, 
+                            w      = w, 
+                            Amat   = Amat,
+                            bvec   = bvec, 
+                            meq    = nrow(Amat),
                             absval = ifelse(is.null(control$absval), 1e-09, 
                                             control$absval),
-                            maxit = ifelse(is.null(control$maxit), 1e04, 
-                                           control$maxit))$solution
+                            maxit  = ifelse(is.null(control$maxit), 1e04, 
+                                            control$maxit))$solution
     b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
                                       control$tol)] <- 0L
     names(b.eqrestr) <- vnames
-    ll0.out <- con_loglik_lm(X = X, y = y, b = b.eqrestr, w = w)
+    ll0.out <- con_loglik_lm(X = X, 
+                             y = y, 
+                             b = b.eqrestr, 
+                             w = w)
     ll0 <- ll0.out$loglik
     
     ll1 <- object$loglik
@@ -277,27 +323,37 @@ conTestLRT.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999
   } else if (type == "B") {
       if (meq.alt == 0L) {
         ll0 <- object$loglik
-        ll1.out <- con_loglik_lm(X = X, y = y, b = b.unrestr, w = w)
+        ll1.out <- con_loglik_lm(X = X, 
+                                 y = y, 
+                                 b = b.unrestr, 
+                                 w = w)
         ll1 <- ll1.out$loglik
         Ts <- -2*(ll0 - ll1)
       }
     else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt > 0L && meq.alt <= meq) {
-        b.restr.alt <- con_solver(b.unrestr, X = X, y = y, w = w,
-                                  Amat = Amat[1:meq.alt,,drop=FALSE],
-                                  bvec=bvec[1:meq.alt], meq = meq.alt,
+        b.restr.alt <- con_solver(b.unrestr, 
+                                  X      = X, 
+                                  y      = y, 
+                                  w      = w,
+                                  Amat   = Amat[1:meq.alt,,drop=FALSE],
+                                  bvec   = bvec[1:meq.alt], 
+                                  meq    = meq.alt,
                                   absval = ifelse(is.null(control$absval), 1e-09, 
                                                   control$absval),
-                                  maxit = ifelse(is.null(control$maxit), 1e04, 
-                                                 control$maxit))$solution
+                                  maxit  = ifelse(is.null(control$maxit), 1e04, 
+                                                  control$maxit))$solution
         b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol),                                        
                                               sqrt(.Machine$double.eps),                                        
                                               control$tol)] <- 0L
         names(b.restr.alt) <- vnames
 
         ll0 <- object$loglik
-        ll1.out <- con_loglik_lm(X = X, y = y, b = b.restr.alt, w = w)
+        ll1.out <- con_loglik_lm(X = X, 
+                                 y = y, 
+                                 b = b.restr.alt, 
+                                 w = w)
         ll1 <- ll1.out$loglik
         Ts <- -2*(ll0 - ll1)
       }
@@ -317,24 +373,40 @@ conTestLRT.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999
   }
   
   if (boot == "no") {
-    pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
-                              df.residual = df.residual, type = type,
-                              Amat = Amat, bvec = bvec, meq = meq, 
-                              meq.alt = meq.alt)
+    pvalue <- con_pvalue_Fbar(wt          = wt, 
+                              Ts.org      = Ts, 
+                              df.residual = df.residual, 
+                              type        = type,
+                              Amat        = Amat, 
+                              bvec        = bvec, 
+                              meq         = meq, 
+                              meq.alt     = meq.alt)
   } else if (boot == "parametric") {
-    pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, 
-                                         test = "LRT", meq.alt = meq.alt,
-                                         R = B, p.distr = p.distr,
-                                         df = df, parallel = parallel,
-                                         ncpus = ncpus, cl = cl,
-                                         seed = seed, verbose = verbose)
+    pvalue <- con_pvalue_boot_parametric(object, 
+                                         Ts.org   = Ts, 
+                                         type     = type, 
+                                         test     = "LRT", 
+                                         meq.alt  = meq.alt,
+                                         R        = B, 
+                                         p.distr  = p.distr,
+                                         df       = df, 
+                                         parallel = parallel,
+                                         ncpus    = ncpus, 
+                                         cl       = cl,
+                                         seed     = seed, 
+                                         verbose  = verbose)
   } else if (boot == "model.based") {
-    pvalue <- con_pvalue_boot_model_based(object, Ts.org = Ts, type = type, 
-                                          test = "LRT",
-                                          meq.alt = meq.alt,
-                                          R = B, parallel = parallel,
-                                          ncpus = ncpus, cl = cl,
-                                          seed = seed, verbose = verbose)
+    pvalue <- con_pvalue_boot_model_based(object, 
+                                          Ts.org   = Ts, 
+                                          type     = type, 
+                                          test     = "LRT",
+                                          meq.alt  = meq.alt,
+                                          R        = B, 
+                                          parallel = parallel,
+                                          ncpus    = ncpus, 
+                                          cl       = cl,
+                                          seed     = seed, 
+                                          verbose  = verbose)
   } 
   
   OUT <- list(CON = object$CON,
@@ -435,12 +507,17 @@ conTestScore.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
       Amatg <- diag(rep(1, g))
       bvecg <- rep(0, g) 
     }
-    b.eqrestr <- con_solver(b.unrestr, X = X, y = y, w = w, Amat = Amatg, 
-                            bvec = bvecg, meq = nrow(Amatg),
+    b.eqrestr <- con_solver(b.unrestr, 
+                            X      = X, 
+                            y      = y, 
+                            w      = w, 
+                            Amat   = Amatg, 
+                            bvec   = bvecg, 
+                            meq    = nrow(Amatg),
                             absval = ifelse(is.null(control$absval), 1e-09, 
                                             control$absval),
-                            maxit = ifelse(is.null(control$maxit), 1e04, 
-                                           control$maxit))$solution
+                            maxit  = ifelse(is.null(control$maxit), 1e04, 
+                                            control$maxit))$solution
     b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
                                       control$tol)] <- 0L
@@ -453,21 +530,29 @@ conTestScore.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
     U <- 1/sqrt(n) * solve(i) %*% d0
     UI <- t(U) %*% i
     D <- i
-    b <- solve.QP(Dmat = D , dvec = UI, Amat = t(Amat), bvec = bvec, 
-                  meq = meq)$solution
+    b <- solve.QP(Dmat = D, 
+                  dvec = UI, 
+                  Amat = t(Amat), 
+                  bvec = bvec, 
+                  meq  = meq)$solution
     Ts <- t(U) %*% i %*% U - ( t(U-b) %*% i %*% (U-b) ) 
     Ts <- as.numeric(n * Ts)
   } else if (type == "A") {
-    b.eqrestr <- con_solver(b.unrestr, X = X, y = y, w = w, Amat = Amat,
-                            bvec = bvec, meq = nrow(Amat),
+    b.eqrestr <- con_solver(b.unrestr, 
+                            X      = X, 
+                            y      = y, 
+                            w      = w, 
+                            Amat   = Amat,
+                            bvec   = bvec, 
+                            meq    = nrow(Amat),
                             absval = ifelse(is.null(control$absval), 1e-09, 
                                             control$absval),
-                            maxit = ifelse(is.null(control$maxit), 1e04, 
-                                           control$maxit))$solution
+                            maxit  = ifelse(is.null(control$maxit), 1e04, 
+                                            control$maxit))$solution
     b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
                                       control$tol)] <- 0L
-      names(b.eqrestr) <- vnames
+    names(b.eqrestr) <- vnames
     
     df <- n - (p - nrow(Amat))
     s20 <- sum(w*(y - X %*% b.eqrestr)^2) / df
@@ -476,8 +561,11 @@ conTestScore.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
     U <- 1/sqrt(n) * solve(i) %*% d0
     UI <- t(U) %*% i
     D <- i
-    b <- solve.QP(Dmat = D, dvec = UI, Amat = t(Amat), bvec = bvec, 
-                  meq = meq)$solution
+    b <- solve.QP(Dmat = D, 
+                  dvec = UI, 
+                  Amat = t(Amat), 
+                  bvec = bvec, 
+                  meq  = meq)$solution
     Ts <- t(U) %*% i %*% U - ( t(U-b) %*% i %*% (U-b) ) 
     Ts <- as.numeric(n*Ts)
   } else if (type == "B") {
@@ -494,13 +582,17 @@ conTestScore.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
       else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt != 0L && meq.alt <= meq) {
-        b.restr.alt <- con_solver(b.unrestr, X = X, y = y, w = w,
-                                  Amat = Amat[1:meq.alt,,drop=FALSE],
-                                  bvec = bvec[1:meq.alt], meq = meq.alt,
+        b.restr.alt <- con_solver(b.unrestr, 
+                                  X      = X, 
+                                  y      = y, 
+                                  w      = w,
+                                  Amat   = Amat[1:meq.alt,,drop=FALSE],
+                                  bvec   = bvec[1:meq.alt], 
+                                  meq    = meq.alt,
                                   absval = ifelse(is.null(control$absval), 1e-09,
                                                   control$absval),
-                                  maxit = ifelse(is.null(control$maxit), 1e04,
-                                                 control$maxit))$solution
+                                  maxit  = ifelse(is.null(control$maxit), 1e04,
+                                                  control$maxit))$solution
         b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol),                                        
                                               sqrt(.Machine$double.eps),                                        
                                               control$tol)] <- 0L
@@ -513,9 +605,11 @@ conTestScore.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
         U <- 1/sqrt(n) * solve(i) %*% d0
         UI <- t(U) %*% i
         D <- i
-        b <- solve.QP(Dmat = D, dvec = UI, 
+        b <- solve.QP(Dmat = D, 
+                      dvec = UI, 
                       Amat = t(Amat[1:meq.alt, ,drop = FALSE]), 
-                      bvec = bvec[1:meq.alt], meq = meq.alt)$solution
+                      bvec = bvec[1:meq.alt], 
+                      meq  = meq.alt)$solution
         Ts <- t(U) %*% i %*% U - ( t(U-b) %*% i %*% (U-b) ) 
         Ts <- as.numeric(n*Ts)
       }
@@ -535,25 +629,40 @@ conTestScore.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
   }
   
   if (boot == "no") {
-    pvalue <- con_pvalue_Fbar(wt = wt, Ts.org = Ts, 
-                              df.residual = df.residual, type = type,
-                              Amat = Amat, bvec = bvec, meq = meq, 
-                              meq.alt = meq.alt)
+    pvalue <- con_pvalue_Fbar(wt          = wt, 
+                              Ts.org      = Ts, 
+                              df.residual = df.residual, 
+                              type        = type,
+                              Amat        = Amat, 
+                              bvec        = bvec, 
+                              meq         = meq, 
+                              meq.alt     = meq.alt)
   } else if (boot == "parametric") {
-    pvalue <- con_pvalue_boot_parametric(object, Ts.org = Ts, type = type, 
-                                         test = "score",
-                                         meq.alt = meq.alt, R = B, 
-                                         p.distr = p.distr, df = df,
+    pvalue <- con_pvalue_boot_parametric(object, 
+                                         Ts.org   = Ts, 
+                                         type     = type, 
+                                         test     = "score",
+                                         meq.alt  = meq.alt, 
+                                         R        = B, 
+                                         p.distr  = p.distr, 
+                                         df       = df,
                                          parallel = parallel,
-                                         ncpus = ncpus, cl = cl,
-                                         seed = seed, verbose = verbose)
+                                         ncpus    = ncpus, 
+                                         cl       = cl,
+                                         seed     = seed, 
+                                         verbose  = verbose)
   } else if (boot == "model.based") {
-    pvalue <- con_pvalue_boot_model_based(object, Ts.org = Ts, type = type, 
-                                          test = "score",
-                                          meq.alt = meq.alt,
-                                          R = B, parallel = parallel,
-                                          ncpus = ncpus, cl = cl,
-                                          seed = seed, verbose = verbose)
+    pvalue <- con_pvalue_boot_model_based(object, 
+                                          Ts.org   = Ts, 
+                                          type     = type, 
+                                          test     = "score",
+                                          meq.alt  = meq.alt,
+                                          R        = B, 
+                                          parallel = parallel,
+                                          ncpus    = ncpus, 
+                                          cl       = cl,
+                                          seed     = seed, 
+                                          verbose  = verbose)
   } 
   
   OUT <- list(CON = object$CON,

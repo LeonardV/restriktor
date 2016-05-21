@@ -1,5 +1,7 @@
 \name{conTest}
 \alias{conTest}
+\alias{print.conTest}
+\alias{summary.conTest}
 \alias{conTestF.lm}
 \alias{conTestLRT.lm}
 \alias{conTestScore.lm}
@@ -10,45 +12,39 @@
 \alias{conTestEq.rlm}
 
 \title{Function for testing equality and/or inequality restrikted 
- hypotheses for linear models}
-\description{\code{conTest} tests linear equality and/or inequality 
- restrikted hypotheses for linear models by F-, Wald-, likelihood 
- ratio-, and score-tests.}
+ hypotheses for (robust) linear models}
+\description{\code{conTest} tests (robust) linear equality and/or 
+inequality restrikted hypotheses for linear models by F-, Wald-, 
+likelihood ratio-, and score-tests.}
 
 \usage{
 conTest(object, type = "summary", ...)
 
-\method{conTestF}{conLM}(object, type = "A", neq.alt = 0, boot = "no", 
-         B = 9999, p.distr = "N", df = 7, parallel = "no", 
+\method{print}{conLM and conRLM}(object, digits = max(3, getOption("digits") - 4), ...)
+\method{summary.conTest.conLM}{conLM and conRLM}(object, test = "F", ...)
+
+\method{conTestF}{conLM and conRLM}(object, type = "A", neq.alt = 0, 
+         boot = "no", B = 9999, p.distr = "N", df = 7, parallel = "no", 
          ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, 
          control = NULL, ...)
+
+\method{conTestScore}{conLM and conRLM}(object, type = "A", neq.alt = 0, 
+             boot = "no", B = 9999, p.distr = "N", df = 7, parallel = "no", 
+             ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, 
+             control = NULL, ...)
+
 \method{conTestLRT}{conLM}(object, type = "A", neq.alt = 0, boot = "no", 
            B = 9999, p.distr = "N", df = 7, parallel = "no", 
            ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, 
            control = NULL, ...)
-\method{conTestScore}{conLM}(object, type = "A", neq.alt = 0, boot = "no", 
-             B = 9999, p.distr = "N", df = 7, parallel = "no", 
-             ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, 
-             control = NULL, ...)
-         
-\method{conTestF}{conRLM}(object, type = "A", neq.alt = 0, boot = "no", 
-         B = 9999, p.distr = "N", df = 7, parallel = "no", 
-         ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, 
-         control = NULL, ...)
+
 \method{conTestWald}{conRLM}(object, type = "A", neq.alt = 0, boot = "no", 
             B = 9999, p.distr = "N", df = 7, parallel = "no", 
             ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, 
             control = NULL, ...)
-\method{conTestScore}{conRLM}(object, type = "A", neq.alt = 0, boot = "no", 
-             B = 9999, p.distr = "N", df = 7, parallel = "no", 
-             ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, 
-             control = NULL, ...)
-         
-\method{conTestEq}{conLM}(object, test = "F", boot = "no", B = 9999, 
-          p.distr = "N", df = 7, parallel = "no", ncpus = 1L, 
-          cl = NULL, seed = 1234, verbose = FALSE, ...)
-\method{conTestEq}{conRLM}(object, test = "F", boot = "no", B = 9999, 
-          p.distr = "N", df = 7, parallel = "no", ncpus = 1L, 
+
+\method{conTestEq}{conLM and conRLM}(object, test = "F", boot = "no", 
+          B = 9999, p.distr = "N", df = 7, parallel = "no", ncpus = 1L, 
           cl = NULL, seed = 1234, verbose = FALSE, ...)
 }
 \arguments{
@@ -107,6 +103,8 @@ conTest(object, type = "summary", ...)
   
   \item{df}{degrees of freedom for \code{p.distr}.}
   
+  \item{digits}{the number of significant digits to use when printing.}
+  
   \item{parallel}{the type of parallel operation to be used 
   (if any). If missing, the default is set "no".}
   
@@ -154,8 +152,8 @@ conTest(object, type = "summary", ...)
   t-distribution (one-sided). Note that, this test only makes 
   sense in case of no equality constraints.
   \item Type global: equal to Type A but H0 contains additional 
-  equality constraints. The test is comparable with the classical 
-  global/omnibus test. 
+  equality constraints. This test is analogue to the global 
+  F-test in lm, where all coefficients but the intercept equal 0.
 }
 
 The exact finite sample distributions of the non-robust F-, 
@@ -173,6 +171,11 @@ Note that, in case of equality constraints only, the
 null-distribution of the (robust) F-test statistics is based on 
 an F-distribution. The (robust) Wald- and (robust) score-test 
 statistics are based on chi-square distributions.
+
+The \code{summary.conTest.conLM} function is a wrapper function, 
+which works for both objects of class \code{conLM} and \code{conRLM}.
+The function computes all available hypohtesis tests and prints
+a nice summary. 
 }
 
 \value{

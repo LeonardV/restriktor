@@ -59,8 +59,9 @@ normal models.}
   \pkg{ic.infer}, which is originally from \pkg{vsn}, authored by Wolfgang Huber, 
   available under LGPL. 
   
-  The output of the \code{conTest} summary function is inspired on the summary 
-  of the \code{ic.test} function from the \pkg{ic.infer} package.
+  The output style of the \code{conTest} print and summary function 
+  is strongly inspired on the summary of the \code{ic.test} function 
+  from the \pkg{ic.infer} package.
   
   It also uses code chunks from the \code{rlm.default} function from the \pkg{MASS} 
   package.  

@@ -1,5 +1,6 @@
-print.conTest <- function(x, digits = max(3, getOption("digits") - 4), brief = FALSE, ...) {
+print.conTest <- function(object, digits = max(3, getOption("digits") - 4), ...) {
 
+  x <- object
   if (!("conTest" %in% class(x))) {
     stop("x must be of class \"conTest\"")
   }
@@ -99,13 +100,11 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), brief = F
     cat("\n H0: all restriktions active (=)",  
         "\n HA: at least one restriktion violated (=)", "\n\n")
     print(out.test, quote = FALSE)
-    if (!brief) {
-      cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
-      print(out.rest, quote = FALSE, scientific = FALSE)
-      cat("\nrestrikted estimate under union of H0 and HA:\n")
-      print.default(format(x$b.restr, digits = digits),
-                    print.gap = 2, quote = FALSE)
-    }
+    cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
+    print(out.rest, quote = FALSE, scientific = FALSE)
+    cat("\nrestrikted estimate under union of H0 and HA:\n")
+    print.default(format(x$b.restr, digits = digits),
+                  print.gap = 2, quote = FALSE)
   }
 }
 

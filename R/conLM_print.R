@@ -1,5 +1,7 @@
-print.conLM <- function(x, digits = max(3, getOption("digits") - 3)) {
+print.conLM <- function(object, digits = max(3, getOption("digits") - 3), 
+                        ...) {
 
+  x <- object
   if (class(x)[1] == "conLM") {
     cat("\nRestriktor: restrikted linear model:\n\n")
   } else if (class(x)[1] == "conRLM") {

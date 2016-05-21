@@ -1,8 +1,9 @@
 # this function is largely based on the summary.orlm() function 
 # from the ic.infer package.
 
-summary.conTest.conLM <- function(x, test = "F", ...) {
+summary.conTest.conLM <- function(object, test = "F", ...) {
   
+  x <- object
   if (!("conLM" %in% class(x))) {
     stop("x must be of class \"conLM\" or \"conRLM\"")
   }

@@ -7,7 +7,7 @@ model.matrix.conLM <- function(object, ...) {
   model.matrix(object$model.org)
 }
 
-tukeyChi <- function (x, c = 4.685061, deriv = 0) {
+tukeyChi <- function(x, c = 4.685061, deriv = 0, ...) {
   u <- x / c
   out <- abs(x) > c
   if (deriv == 0) { # rho function

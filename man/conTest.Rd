@@ -8,8 +8,10 @@
 \alias{conTestF.rlm}
 \alias{conTestWald.rlm}
 \alias{conTestScore.rlm}
+\alias{conTestC.lm}
 \alias{conTestEq.lm}
 \alias{conTestEq.rlm}
+
 
 \title{Function for testing equality and/or inequality restrikted 
  hypotheses for (robust) linear models}
@@ -42,6 +44,8 @@ conTest(object, type = "summary", ...)
             B = 9999, p.distr = "N", df = 7, parallel = "no", 
             ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, 
             control = NULL, ...)
+
+\method{conTestC}{conLM and conRLM}(object, type = "C", ...)
 
 \method{conTestEq}{conLM and conRLM}(object, test = "F", boot = "no", 
           B = 9999, p.distr = "N", df = 7, parallel = "no", ncpus = 1L, 

@@ -1,6 +1,5 @@
 summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", 
                           level = 0.95, GORIC = TRUE, ...) {
-  
   z <- object
   
   if (!inherits(z, "conLM")) {

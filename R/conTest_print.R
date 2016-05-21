@@ -1,6 +1,5 @@
-print.conTest <- function(object, digits = max(3, getOption("digits") - 4), ...) {
+print.conTest <- function(x, digits = max(3, getOption("digits") - 4), ...) {
 
-  x <- object
   if (!("conTest" %in% class(x))) {
     stop("x must be of class \"conTest\"")
   }

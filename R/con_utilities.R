@@ -25,11 +25,19 @@ tukeyChi <- function(x, c = 4.685061, deriv = 0, ...) {
   r
 }
 
-# list/numeric/data.frame
+
+# input list
 goricWeights <- function(x, ...) {
-  x <- unlist(x)
-  delta <- x - min(x)
+  
+  ll    <- unlist(lapply(x, function(x) attr(x$goric, "loglik")))
+  PT    <- unlist(lapply(x, function(x) attr(x$goric, "penalty")))
+  goric <- unlist(lapply(x, function(x) x$goric[1]))
+  df    <- data.frame(loglik = ll, penalty = PT, goric)
+  
+  delta <- df$goric - min(df$goric)
   goric_weights <- exp(-delta / 2) / sum(exp(-delta / 2))
-  OUT <- data.frame(GORIC = x, weight = goric_weights)
+  df$goric_weights <- goric_weights
+  OUT <- df
+  
   OUT
 }

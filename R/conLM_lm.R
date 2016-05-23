@@ -222,7 +222,8 @@ conLM.lm <- function(model, constraints = NULL, se = "default", B = 999,
                 s2.restr = s2.restr,  
                 loglik = LL.restr, 
                 Sigma = vcov(model), 
-                constraints = Amat, rhs = bvec, neq = meq, iact = out.QP$iact,
+                constraints = Amat, rhs = bvec, neq = meq, 
+                iact = out.QP$iact,
                 bootout = NULL, call = cl)
   }
   

@@ -48,8 +48,11 @@ mix.boot <- function(VCOV, Amat, meq,
     
     Z <- rmvnorm(n = 1, mean = rep(0, ncol(W)), sigma = W)
     dvec <- 2*(Z %*% invW)
-    QP <- try(solve.QP(Dmat = Dmat, dvec = dvec, Amat = t(Amat),
-                       bvec = bvec, meq = meq))
+    QP <- try(solve.QP(Dmat = Dmat, 
+                       dvec = dvec, 
+                       Amat = t(Amat),
+                       bvec = bvec, 
+                       meq  = meq))
     if (verbose) {
       cat(" ...active inequality constraints =", QP$iact, "\n")
     }

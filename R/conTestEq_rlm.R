@@ -37,9 +37,13 @@ conTestEq.rlm <- function(object, test = "F", boot = "no",
     
     # here we perform the usual Wald/F test...
     if (test == "wald" || test == "score") {
-      OUT <- robustWaldScores(x = X, y = y, beta0 = beta0, betaA = betaA, 
-                              scale = scale, test = test, 
-                              cc = ifelse(is.null(cc), 4.685061, cc))
+      OUT <- robustWaldScores(x     = X, 
+                              y     = y, 
+                              beta0 = beta0, 
+                              betaA = betaA, 
+                              scale = scale, 
+                              test  = test, 
+                              cc    = ifelse(is.null(cc), 4.685061, cc))
       # df
       OUT$df <- nrow(Amat)
       OUT$Ts <- OUT$Ts #/ OUT$df
@@ -53,8 +57,12 @@ conTestEq.rlm <- function(object, test = "F", boot = "no",
       OUT$b.restr <- object$b.restr
       OUT$b.unrestr <- object$b.unrestr
     } else if (test == "f") {
-      Fmm <- robustFm(x = X, y = y, beta0 = beta0, betaA = betaA, 
-                      scale = scale, cc = ifelse(is.null(cc), 4.685061, cc))
+      Fmm <- robustFm(x     = X, 
+                      y     = y, 
+                      beta0 = beta0, 
+                      betaA = betaA, 
+                      scale = scale, 
+                      cc    = ifelse(is.null(cc), 4.685061, cc))
       
       OUT <- list()
       OUT$test <- "F"
@@ -82,27 +90,28 @@ conTestEq.rlm <- function(object, test = "F", boot = "no",
   
   if (boot == "parametric") {
     OUT$pvalue <- con_pvalue_boot_parametric(object, 
-                                             Ts.org = OUT$Ts, 
-                                             type = "A",
-                                             test = test, 
-                                             R = B, 
-                                             p.distr = p.distr,
-                                             df = df, 
+                                             Ts.org   = OUT$Ts, 
+                                             type     = "A",
+                                             test     = test, 
+                                             R        = B, 
+                                             p.distr  = p.distr,
+                                             df       = df, 
                                              parallel = parallel,
-                                             ncpus = ncpus, cl = cl,
-                                             seed = seed, 
-                                             verbose = verbose)
+                                             ncpus    = ncpus, 
+                                             cl       = cl,
+                                             seed     = seed, 
+                                             verbose  = verbose)
   } else if (boot == "model.based") {
     OUT$pvalue <- con_pvalue_boot_model_based(object, 
-                                              Ts.org = OUT$Ts, 
-                                              type = "A", 
-                                              test = test, 
-                                              R = B, 
+                                              Ts.org   = OUT$Ts, 
+                                              type     = "A", 
+                                              test     = test, 
+                                              R        = B, 
                                               parallel = parallel, 
-                                              ncpus = ncpus, 
-                                              cl = cl, 
-                                              seed = seed, 
-                                              verbose = verbose)
+                                              ncpus    = ncpus, 
+                                              cl       = cl, 
+                                              seed     = seed, 
+                                              verbose  = verbose)
   } 
   
   class(OUT) <- "conTest"

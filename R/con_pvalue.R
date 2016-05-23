@@ -139,8 +139,11 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL,
     CALL <- list(model = boot_model, constraints = Amat, rhs = bvec, neq = meq, 
                  control = control, se = "none")
     boot_conLM <- do.call("restriktor", CALL)
-    boot_conTest <- try(conTest(boot_conLM, type = type, test = test, 
-                                meq.alt = meq.alt, control = control))
+    boot_conTest <- try(conTest(boot_conLM, 
+                                type    = type, 
+                                test    = test, 
+                                meq.alt = meq.alt, 
+                                control = control))
     if (inherits(boot_conTest, "try-error")) {
       if (verbose) cat("FAILED: creating test statistic\n")
       options(old_options)
@@ -303,8 +306,11 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
       CALL <- list(boot_model, constraints = Amat, rhs = bvec, neq = meq, 
                    control = control, se = "none")
       boot_conLM <- do.call("restriktor", CALL)  
-      boot_conTest <- try(conTest(boot_conLM, type = type, test = test, 
-                                  meq.alt = meq.alt, control = control))
+      boot_conTest <- try(conTest(boot_conLM, 
+                                  type    = type, 
+                                  test    = test, 
+                                  meq.alt = meq.alt, 
+                                  control = control))
       if (inherits(boot_conTest, "try-error")) {
         if (verbose) cat("FAILED: creating test statistic\n")
         options(old_options)
@@ -364,6 +370,3 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
     
     OUT
   }
-
-
-

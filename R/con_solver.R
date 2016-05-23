@@ -19,8 +19,11 @@ con_solver <- function(b.unrestr, X, y, w, Amat, bvec, meq,
     yVx <- kronecker(solve(Sigma), t(X)) %*% W %*% as.vector(y)
     dvec <- 2*yVx
     Dmat <- 2*kronecker(solve(Sigma), t(X) %*% W %*% X)
-    out <- solve.QP(Dmat = Dmat, dvec = dvec, Amat = t(Amat),
-                           bvec = bvec, meq = meq)
+    out <- solve.QP(Dmat = Dmat, 
+                    dvec = dvec, 
+                    Amat = t(Amat),
+                    bvec = bvec, 
+                    meq  = meq)
 
     if (abs(out$value - val) <= absval) {
       break

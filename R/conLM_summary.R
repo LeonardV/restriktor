@@ -40,7 +40,9 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic",
       V <- attr(z$information, "inverted")
       se <- sqrt(diag(V))
     } else {
-      V <- sandwich(z, bread. = bread(z), meat. = meatHC(z, type = se.type))
+      V <- sandwich(z, 
+                    bread. = bread(z), 
+                    meat.  = meatHC(z, type = se.type))
       se <- sqrt(diag(V))
     }
     tval <- ifelse(se != 0, b.restr/se, 0L)

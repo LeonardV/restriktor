@@ -91,27 +91,28 @@ conTestEq.lm <- function(object, test = "F", boot = "no",
 
   if (boot == "parametric") {
     OUT$pvalue <- con_pvalue_boot_parametric(object, 
-                                             Ts.org = OUT$Ts, 
-                                             type = "A",
-                                             test = test, 
-                                             R = B, 
-                                             p.distr = p.distr,
-                                             df = df, 
+                                             Ts.org   = OUT$Ts, 
+                                             type     = "A",
+                                             test     = test, 
+                                             R        = B, 
+                                             p.distr  = p.distr,
+                                             df       = df, 
                                              parallel = parallel,
-                                             ncpus = ncpus, cl = cl,
-                                             seed = seed, 
-                                             verbose = verbose)
+                                             ncpus    = ncpus, 
+                                             cl       = cl,
+                                             seed     = seed, 
+                                             verbose  = verbose)
   } else if (boot == "model.based") {
     OUT$pvalue <- con_pvalue_boot_model_based(object, 
-                                              Ts.org = OUT$Ts, 
-                                              type = "A", 
-                                              test = test,
-                                              R = B,
+                                              Ts.org   = OUT$Ts, 
+                                              type     = "A", 
+                                              test     = test,
+                                              R        = B,
                                               parallel = parallel, 
-                                              ncpus = ncpus, 
-                                              cl = cl, 
-                                              seed = seed, 
-                                              verbose = verbose)
+                                              ncpus    = ncpus, 
+                                              cl       = cl, 
+                                              seed     = seed, 
+                                              verbose  = verbose)
   } 
   
   class(OUT) <- "conTest"

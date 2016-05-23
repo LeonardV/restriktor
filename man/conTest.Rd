@@ -198,7 +198,7 @@ a nice summary.
   \item{rhs}{vector of right-hand side elements.}
   \item{neq}{number of equality restriktions.}
   \item{neq.alt}{same as input.}
-  \item{iact}{active restriktions}
+  \item{iact}{active restriktions.}
   \item{df.residual}{the residual degrees of freedom.}
   \item{Sigma}{variance-covariance matrix of unrestrikted model.}
   \item{Ts}{test-statistic value.}

@@ -28,7 +28,6 @@ tukeyChi <- function(x, c = 4.685061, deriv = 0, ...) {
 
 # input list
 goricWeights <- function(x, ...) {
-  
   ll    <- unlist(lapply(x, function(x) attr(x$goric, "loglik")))
   PT    <- unlist(lapply(x, function(x) attr(x$goric, "penalty")))
   goric <- unlist(lapply(x, function(x) x$goric[1]))
@@ -37,7 +36,6 @@ goricWeights <- function(x, ...) {
   delta <- df$goric - min(df$goric)
   goric_weights <- exp(-delta / 2) / sum(exp(-delta / 2))
   df$goric_weights <- goric_weights
-  OUT <- df
   
-  OUT
+  df
 }

@@ -1,4 +1,4 @@
-conLM.lm <- function(model, constraints, se = "default", B = 999,
+conLM.lm <- function(model, constraints = NULL, se = "default", B = 999,
                      rhs = NULL, neq = 0L, bootWt = FALSE, R = 99999,
                      parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
                      control = NULL, verbose = FALSE, debug = FALSE, ...) {
@@ -11,6 +11,13 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
   cl <- match.call()
   # rename for internal use
   bvec <- rhs; meq <- neq
+  
+  if (is.null(constraints)) {
+    constraints <- rbind(rep(0L, length(coef(model))))
+    bvec <- rep(0L, nrow(constraints))
+    meq <- 0L
+  }
+  
   # construct constraint matrix/vector.
   restr_OUT <- con_constraints(model, 
                                constraints = constraints, 
@@ -89,8 +96,12 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
   invW <- kronecker(solve(s2ml.unc), t(X) %*% X)
   W <- solve(invW)
   
-  # compute mixing weights
-  if (bootWt) { # compute mixing weights based on simulation
+  is.augmented <- TRUE
+  ## compute mixing weights
+  if (all(c(Amat) == 0)) { # unrestrikted case
+    wt <- c(rep(0L, p), 1)
+    is.augmented <- FALSE
+  } else if (bootWt) { # compute mixing weights based on simulation
     wt <- mix.boot(VCOV     = W,
                    Amat     = Amat, 
                    meq      = meq, 
@@ -224,16 +235,18 @@ conLM.lm <- function(model, constraints, se = "default", B = 999,
   if (se != "none") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
       OUT$information <- 1/s2.restr * crossprod(X)
-      information <- con_augmented_information(information = OUT$information,
-                                               X           = X, 
-                                               b.unrestr   = b.unrestr, 
-                                               b.restr     = b.restr,
-                                               Amat        = Amat, 
-                                               bvec        = bvec, 
-                                               meq         = meq) 
       
-      attr(OUT$information, "inverted.information") <- information$inverted.information
-      attr(OUT$information, "augmented.information") <- information$augmented.information
+      information.inv <- con_augmented_information(information  = OUT$information,
+                                                   is.augmented = is.augmented,
+                                                   X            = X, 
+                                                   b.unrestr    = b.unrestr, 
+                                                   b.restr      = b.restr,
+                                                   Amat         = Amat, 
+                                                   bvec         = bvec, 
+                                                   meq          = meq) 
+          
+      attr(OUT$information, "inverted")  <- information.inv$information
+      attr(OUT$information, "augmented") <- information.inv$augmented.information
       
     } else if (se == "boot.model.based") {
       OUT$bootout <- con_boot_lm(model, 

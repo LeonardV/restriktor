@@ -37,7 +37,7 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic",
   ans$residuals <- r
   if (is.null(z$bootout) && se.type != "none") {
     if (se.type == "standard") {
-      V <- attr(z$information, "inverted.information")
+      V <- attr(z$information, "inverted")
       se <- sqrt(diag(V))
     } else {
       V <- sandwich(z, bread. = bread(z), meat. = meatHC(z, type = se.type))

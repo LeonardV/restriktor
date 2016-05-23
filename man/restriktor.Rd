@@ -11,14 +11,14 @@ inequality restriktions}
   functions for linear and robust linear models respectively.}
 
 \usage{
-restriktor(model, constraints, ...)
+restriktor(model, constraints = NULL, ...)
 
-\method{conLM}{lm}(model, constraints, se = "standard", B = 999,
+\method{conLM}{lm}(model, constraints = NULL, se = "standard", B = 999,
       rhs = NULL, neq = 0L, bootWt = FALSE, R = 99999,
       parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, control = NULL, 
       verbose = FALSE, debug = FALSE, ...)
       
-\method{conRLM}{rlm}(model, constraints, se = "standard", B = 999,
+\method{conRLM}{rlm}(model, constraints = NULL, se = "standard", B = 999,
        rhs = NULL, neq = 0L, bootWt = FALSE, R = 99999,
        parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, control = NULL, 
        verbose = FALSE, debug = FALSE, ...)
@@ -169,6 +169,10 @@ There can be three types of symbolic descriptions in the constraints syntax:
   Each element can be modified using arithmetic operators. For example, 
   if \code{x2} is expected to be twice as large as \code{x1}, 
   then "\code{2*x2 == x1}". 
+  
+  If \code{constraints = NULL}, the unrestrikted model is fitted. 
+  This can be useful in case of computing GORIC weights, see 
+  \code{\link{goricWeights}}. 
 }
 \value{
 An object of class conLM or conRLM, for which a print and a 
@@ -257,8 +261,9 @@ Wiley, New York
 
 
 \seealso{ 
-  \code{\link{solve.QP}}, 
   \code{\link{conTest}},
+  \code{\link{goricWeights}},
+  \code{\link{solve.QP}}, 
   \code{\link{vcovHC}}
 }
 

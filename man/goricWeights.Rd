@@ -5,7 +5,7 @@
 \description{The \code{goricWeights} function computes GORIC 
 weights, which are comparable to the Akaike weights. 
 }
-\usage{\method{goricWeights}{conLM and conRLM}(x, ...)
+\usage{\method{goricWeights}{summary.conLM and summary.conRLM}(x, ...)
 }
 
 \arguments{
@@ -16,15 +16,11 @@ weights, which are comparable to the Akaike weights.
 }
 
 \details{The GORIC values themselves are not interpretable and 
-the interest lie in their differences. The GORIC can be seen as a 
-likelihood for hypothesis \emph{m}, the GORIC weights represent 
-the weights of evidence of hypothesis \emph{m} give the data and 
-the set of M hypotheses. For example, if hypothesis H1 has a 
-GORIC weight of w_1 = 0.54, and hypothesis H2 has a GORIC weight 
-of w_2 = 0.32. The relative evidence for hypothesis H1 is 
-0.54 / 0.32 = 1.67 more likely than H2. Thus, although H1 is 
-preferred, there is no compelling evidence, since H2 receives 
-quite some supports as well. 
+the interest lie in their differences. The GORIC weights reflect 
+the support of each hypothesis in the set. To compare two hypotheses 
+(and not one to the whole set), one should examine the ratio of the 
+two corresponding GORIC weights. To avoid draweing wrong conclusions
+it is recommended to include the unrestrikted model, see examples.
 }
 
 \value{The function returns a dataframe with the log-likelihood,
@@ -58,12 +54,12 @@ fit1.lm <- lm(Age ~ Group, data = DATA)
 fit1.con <- restriktor(fit1.lm, constraints = "Group2 > 0; Group2 < Group4")
 fit2.con <- restriktor(fit1.lm, constraints = "Group2 > 0; Group2 > Group4")
 fit3.con <- restriktor(fit1.lm, constraints = "Group2 == 0; Group2 < Group4")
-fit4.con <- restriktor(fit1.lm, constraints = "Group2 == 0; Group2 == Group4")
+fitu.con <- restriktor(fit1.lm) # unrestrikted model
 
 sum1.con <- summary(fit1.con)
 sum2.con <- summary(fit2.con)
 sum3.con <- summary(fit3.con)
-sum4.con <- summary(fit4.con)
+sum4.con <- summary(fitu.con)
 
 goricWeights(list(sum1.con, sum2.con, sum3.con, sum4.con))
 }

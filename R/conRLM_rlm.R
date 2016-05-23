@@ -1,5 +1,5 @@
 #compute restrikted robust estimates
-conRLM.rlm <- function(model, constraints, se = "default", B = 999, 
+conRLM.rlm <- function(model, constraints = NULL, se = "default", B = 999, 
                        rhs = NULL, neq = 0L, bootWt = FALSE, R = 99999,
                        parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
                        control = NULL, verbose = FALSE, debug = FALSE, ...) { 
@@ -12,6 +12,13 @@ conRLM.rlm <- function(model, constraints, se = "default", B = 999,
   cl <- match.call()
   # rename for internal use
   bvec <- rhs; meq <- neq
+  
+  if (is.null(constraints)) {
+    constraints <- rbind(rep(0L, length(coef(model))))
+    bvec <- rep(0L, nrow(constraints))
+    meq <- 0L
+  }
+  
   # construct constraint matrix/vector.
   restr_OUT <- con_constraints(model, 
                                constraints = constraints, 
@@ -107,7 +114,8 @@ conRLM.rlm <- function(model, constraints, se = "default", B = 999,
   # residuals
   residuals <- model$residuals
   # sampel size
-  n <- length(residuals)
+  n <- dim(X)[1]
+  p <- dim(X)[2]
   
   # check
   if(ncol(Amat) != length(b.unrestr)) {
@@ -137,8 +145,15 @@ conRLM.rlm <- function(model, constraints, se = "default", B = 999,
   tau2ml <- (tau^2 * so.org$df[2]) / n
   invW <- kronecker(solve(tau2ml), t(X) %*% X)
   W <- solve(invW)
-  # compute mixing weights
-  if (bootWt) { # compute mixing weights based on simulation
+  
+  ## compute mixing weights
+  
+  is.augmented <- TRUE
+  ## compute mixing weights
+  if (all(c(Amat) == 0)) { # unrestrikted case
+    wt <- c(rep(0L, p), 1)
+    is.augmented <- FALSE
+  } else if (bootWt) { # compute mixing weights based on simulation
     wt <- mix.boot(VCOV     = W,
                    Amat     = Amat, 
                    meq      = meq, 
@@ -261,16 +276,17 @@ conRLM.rlm <- function(model, constraints, se = "default", B = 999,
     if (!(se %in% c("boot.model.based","boot.standard"))) {
       #  V <- vcovMM(X = X, resid0 = resid0, residuals = residuals, scale = model$s)  
       OUT$information <- 1/tau^2 * crossprod(X)
-      information <- con_augmented_information(information = OUT$information,
-                                               X           = X, 
-                                               b.unrestr   = b.unrestr, 
-                                               b.restr     = b.restr,
-                                               Amat        = Amat, 
-                                               bvec        = bvec, 
-                                               meq         = meq)
-      
-      attr(OUT$information, "inverted.information")  <- information$inverted.information
-      attr(OUT$information, "augmented.information") <- information$augmented.information        
+      information.inv <- con_augmented_information(information = OUT$information,
+                                                   is.augmented = is.augmented,
+                                                   X           = X, 
+                                                   b.unrestr   = b.unrestr, 
+                                                   b.restr     = b.restr,
+                                                   Amat        = Amat, 
+                                                   bvec        = bvec, 
+                                                   meq         = meq)
+          
+      attr(OUT$information, "inverted")  <- information.inv$information
+      attr(OUT$information, "augmented") <- information.inv$augmented.information
       
     } else if (se == "boot.model.based") { 
       OUT$bootout <- con_boot_rlm(model, 

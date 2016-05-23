@@ -29,12 +29,19 @@ bread.conRLM <- function(x, ...) {
     rval <- chol2inv(qr.R(qr(rval))) * nrow(xmat)
     rval <- solve(rval) #/ x$model.org$s * nrow(xmat)                           #solve(rval)
     
-    rval <- con_augmented_information(information = rval, X = xmat, 
-                                      b.unrestr = x$b.unrestr, 
-                                      b.restr = x$b.restr, Amat = x$constraints, 
-                                      bvec = x$rhs, 
-                                      meq = x$neq)$inverted.information 
-    return(rval)
+    is.augmented = TRUE
+    if (all(c(x$constraints) == 0)) {
+      is.augmented <- FALSE
+    }
+    rval <- con_augmented_information(information  = rval, 
+                                      is.augmented = is.augmented,
+                                      X            = xmat, 
+                                      b.unrestr    = x$b.unrestr, 
+                                      b.restr      = x$b.restr, 
+                                      Amat         = x$constraints, 
+                                      bvec         = x$rhs, 
+                                      meq          = x$neq)
+    return(rval$information)
 }
 
 

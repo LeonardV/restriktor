@@ -78,6 +78,7 @@ con_augmented_information <- function(information  = NULL,
                  cbind(   H.inactive, t(H26),    2*Z, t(H46),      t(H56),           H66)
                )
   }
+  
   if (is.augmented) {
     OUT$information <- try( MASS::ginv(E3, tol = .Machine$double.eps^(3/4))[1:npar, 
                                                                             1:npar, 

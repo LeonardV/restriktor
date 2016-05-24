@@ -15,13 +15,13 @@ restriktor(model, constraints = NULL, ...)
 
 \method{conLM}{lm}(model, constraints = NULL, se = "standard", B = 999,
       rhs = NULL, neq = 0L, bootWt = FALSE, R = 99999,
-      parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, control = NULL, 
-      verbose = FALSE, debug = FALSE, ...)
+      parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
+      control = NULL, verbose = FALSE, debug = FALSE, ...)
       
 \method{conRLM}{rlm}(model, constraints = NULL, se = "standard", B = 999,
        rhs = NULL, neq = 0L, bootWt = FALSE, R = 99999,
-       parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, control = NULL, 
-       verbose = FALSE, debug = FALSE, ...)
+       parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
+       control = NULL, verbose = FALSE, debug = FALSE, ...)
 }
 \arguments{
   \item{model}{a fitted linear model object of class lm, or a fitted robust 
@@ -56,43 +56,51 @@ restriktor(model, constraints = NULL, ...)
   or "\code{boot.residual}", bootstrapped standard errors are computed 
   using model-based bootstrapping. If "\code{none}", no standard errors 
   are computed.}
-  \item{B}{integer; number of bootstrap draws for \code{se}. The default value 
-   is set to 999. Parallel support is available.}
+  \item{B}{integer; number of bootstrap draws for \code{se}. The 
+  default value is set to 999. Parallel support is available.}
   \item{rhs}{vector on the right-hand side of the constraints; 
   \eqn{R\theta \ge rhs}. The length of this vector equals the 
-  number of rows of the constraints matrix \eqn{R} and consists of zeros 
-  by default. Note: only used if constraints input is a matrix or 
-  vector.}
+  number of rows of the constraints matrix \eqn{R} and consists of 
+  zeros by default. Note: only used if constraints input is a 
+  matrix or vector.}
   \item{neq}{integer (default = 0) treating the number of 
   constraints rows as equality constraints instead of inequality 
-  constraints. For example, if \code{neq = 2}, this means that the first 
-  two rows of the constraints matrix \eqn{R} are treated as equality 
-  constraints. Note: only used if constraints input is a matrix or 
-  vector.}
-  \item{bootWt}{if \code{TRUE}, the chi-bar-square weights are computed based on
-   a simulation approach. If \code{FALSE}, the weights are computed based on 
-   the multivariate normal distribution function.}
-  \item{R}{integer; number of bootstrap draws for \code{bootWt}. The default 
-   value is set to 99999. Parallel support is available.}
-  \item{parallel}{the type of parallel operation to be used (if any). If missing, 
-  the default is set "no".}
-  \item{ncpus}{integer: number of processes to be used in parallel operation: 
-  typically one would chose this to the number of available CPUs.}
-  \item{cl}{an optional parallel or snow cluster for use if parallel = "snow". 
-  If not supplied, a cluster on the local machine is created for the duration of 
-  the call.}
+  constraints. For example, if \code{neq = 2}, this means that the 
+  first two rows of the constraints matrix \eqn{R} are treated as 
+  equality constraints. Note: only used if constraints input is a 
+  matrix or vector.}
+  \item{bootWt}{if \code{TRUE}, the chi-bar-square weights are 
+  computed based on a simulation approach. If \code{FALSE}, the 
+  weights are computed based on the multivariate normal distribution 
+  function. These weights are necessary in the \code{summary} function
+  for computing the GORIC value. Moreover, they are re-used for
+  computing the p-value for the test-statistic, unless the p-value 
+  is computed directly via bootstrapping.}
+  \item{R}{integer; number of bootstrap draws for \code{bootWt}. 
+  The default value is set to 99999. Parallel support is available.}
+  \item{parallel}{the type of parallel operation to be used (if any). 
+  If missing, the default is set "no".}
+  \item{ncpus}{integer: number of processes to be used in parallel 
+  operation: typically one would chose this to the number of 
+  available CPUs.}
+  \item{cl}{an optional parallel or snow cluster for use if 
+  parallel = "snow". If not supplied, a cluster on the local machine 
+  is created for the duration of the \code{restriktor} call.}
   \item{seed}{seed value.}
   \item{control}{a list of control arguments: 
     \itemize{
       \item \code{absval} tolerance criterion for convergence 
-      (default = sqrt(.Machine$double.eps)). Only used for model of class lm.
-      \item \code{maxit} the maximum number of iterations for the optimizer 
-      (default = 10000). Only used for model of class mlm (not yet available). 
-      \item \code{tol} numerical tolerance value. Estimates smaller than \code{tol} 
-      are set to 0.
+      (default = sqrt(.Machine$double.eps)). Only used for model 
+      of class lm.
+      \item \code{maxit} the maximum number of iterations for the 
+      optimizer (default = 10000). Only used for model of class mlm 
+      (not yet available). 
+      \item \code{tol} numerical tolerance value. Estimates smaller 
+      than \code{tol} are set to 0.
     }
   }
-  \item{verbose}{logical; if TRUE, information is shown at each bootstrap draw.}
+  \item{verbose}{logical; if TRUE, information is shown at each 
+  bootstrap draw.}
   \item{debug}{if TRUE, debugging information about the constraints
   is printed out.
   }
@@ -100,8 +108,8 @@ restriktor(model, constraints = NULL, ...)
 }
 
 \details{
-  The constraint syntax can be specified in two ways. First as a literal string 
-  enclosed by single quotes as shown below: 
+  The constraint syntax can be specified in two ways. First as a 
+  literal string enclosed by single quotes as shown below: 
   
   \preformatted{myConstraints <- '
     # 1. inequality constraints
@@ -109,62 +117,65 @@ restriktor(model, constraints = NULL, ...)
       x1 < x2
     
     ! 2. equality constraints  
-      x3 == x4; x4 == x5    
-  '  
+      x3 == x4; x4 == x5'  
   }
-  
   Second, the above constraints syntax can also be written in 
   matrix/vector notation as:
   
-  The first column refers to the intercept, the remaining five
-  columns refer to the regression coefficients x1 to x5.
+  (The first column refers to the intercept, the remaining five
+  columns refer to the regression coefficients x1 to x5.)
   \preformatted{myConstraints <-
     rbind(c(0, 0, 0,-1, 1, 0), #equality constraint x3 == x4
           c(0, 0, 0, 0,-1, 1), #equality constraint x4 == x5
           c(0, 1, 0, 0, 0, 0), #inequality constraint x1 > rhs
           c(0,-1, 1, 0, 0, 0)) #inequality constraint x1 < x2
   
-#the length of rhs is equal to the number of myConstraints rows.      
+# the length of rhs is equal to the number of myConstraints rows.      
 myRhs <- c(0,0,0,0) 
     
-#the first two rows should be considered as equality constraints
+# the first two rows should be considered as equality constraints
 myNeq <- 2  
 }
   
-Blank lines and comments can be used in between the constraints, and 
-constraints can be split over multiple lines. Both the hashtag (#) and 
-the exclamation (!) characters can be used to start a comment. Multiple 
-constraints can be placed on a single line if they are separated by a 
-semicolon (;).
+Blank lines and comments can be used in between the constraints, 
+and constraints can be split over multiple lines. Both the 
+hashtag (#) and the exclamation (!) characters can be used to 
+start a comment. Multiple constraints can be placed on a single 
+line if they are separated by a semicolon (;).
 
-There can be three types of symbolic descriptions in the constraints syntax:
+There can be three types of symbolic descriptions in the constraints 
+syntax:
   \enumerate{
   
-      \item Equality constraints: The "\code{==}" operator can be used to 
-      define equality constraints (e.g., \code{x1 == 1} or \code{x1 == x2}).
+      \item Equality constraints: The "\code{==}" operator can be 
+      used to define equality constraints (e.g., \code{x1 == 1} or 
+      \code{x1 == x2}).
       
-      \item Inequality constraints: The "\code{<}" or "\code{>}" operator can be 
-      used to define inequality constraints (e.g., \code{x1 > 1} or \code{x1 < x2}).
+      \item Inequality constraints: The "\code{<}" or "\code{>}" 
+      operator can be used to define inequality constraints 
+      (e.g., \code{x1 > 1} or \code{x1 < x2}).
       
-      \item Newly defined parameters: The "\code{:=}" operator can be used 
-      to define new parameters, which take on values that are an 
-      arbitrary function of the original model parameters. The 
-      function must be specified in terms of the parameter names 
-      in \code{coef(model)} (e.g., \code{new := x1 + 2*x2}). By default, the 
-      standard errors for these defined parameters are computed by 
-      using the so-called Delta method.
+      \item Newly defined parameters: The "\code{:=}" operator can 
+      be used to define new parameters, which take on values that 
+      are an arbitrary function of the original model parameters. 
+      The function must be specified in terms of the parameter names 
+      in \code{coef(model)} (e.g., \code{new := x1 + 2*x2}). By 
+      default, the standard errors for these defined parameters are 
+      computed by using the so-called Delta method.
   }
 
-  Variable names of interaction effects in objects of class lm and rlm contain 
-  a semi-colon (:) between the variables. To impose constraints on parameters 
-  of interaction effects, the semi-colon must be replaced by a dot (.) 
-  (e.g., \code{x3:x4} becomes \code{x3.x4}). In addition, the intercept variable
-  names is shown as "\code{(Intercept)}". To impose restriktions on the intercept 
+  Variable names of interaction effects in objects of class lm and 
+  rlm contain a semi-colon (:) between the variables. To impose 
+  constraints on parameters of interaction effects, the semi-colon 
+  must be replaced by a dot (.) (e.g., \code{x3:x4} becomes 
+  \code{x3.x4}). In addition, the intercept variable names is shown 
+  as "\code{(Intercept)}". To impose restriktions on the intercept 
   both parentheses must be replaced by a dot "\code{.Intercept.}" 
-  (e.g.,\code{.Intercept. > 10}). Note: in most practical situations we do 
-  not impose restriktions on the intercept because we do not have prior 
-  knowledge about the intercept. Moreover, the sign of the intercept can be 
-  changed arbitrarily by shifting the response variable \eqn{y}.
+  (e.g.,\code{.Intercept. > 10}). Note: in most practical situations 
+  we do not impose restriktions on the intercept because we do not 
+  have prior knowledge about the intercept. Moreover, the sign of 
+  the intercept can be changed arbitrarily by shifting the response 
+  variable \eqn{y}.
   
   Each element can be modified using arithmetic operators. For example, 
   if \code{x2} is expected to be twice as large as \code{x1}, 
@@ -192,7 +203,8 @@ with the following items:
 
 \item{residuals}{restrikted residuals.}
 
-\item{wresid}{a working residual, weighted for "inv.var" weights only (rlm only)}
+\item{wresid}{a working residual, weighted for "inv.var" weights 
+only (rlm only)}
 
 \item{fitted}{restrikted fitted mean values.}
 

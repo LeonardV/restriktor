@@ -15,25 +15,25 @@
 
 \title{Function for testing equality and/or inequality restrikted 
  hypotheses for (robust) linear models}
-\description{\code{conTest} tests (robust) linear equality and/or 
-inequality restrikted hypotheses for linear models by F-, Wald-, 
-likelihood ratio-, and score-tests.}
+\description{\code{conTest} tests linear equality and/or 
+inequality restrikted hypotheses for (robust) linear models by F-, 
+Wald-, likelihood ratio-, and score-tests.}
 
 \usage{
 conTest(object, type = "summary", ...)
 
-\method{print}{conLM and conRLM}(object, digits = max(3, getOption("digits") - 4), ...)
+\method{print}{conTest}(object, digits = max(3, getOption("digits") - 4), ...)
 \method{summary.conTest.conLM}{conLM and conRLM}(object, test = "F", ...)
 
 \method{conTestF}{conLM and conRLM}(object, type = "A", neq.alt = 0, 
-         boot = "no", B = 9999, p.distr = "N", df = 7, parallel = "no", 
-         ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, 
-         control = NULL, ...)
+         boot = "no", B = 9999, p.distr = "N", df = 7, 
+         parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
+         verbose = FALSE, control = NULL, ...)
 
 \method{conTestScore}{conLM and conRLM}(object, type = "A", neq.alt = 0, 
-             boot = "no", B = 9999, p.distr = "N", df = 7, parallel = "no", 
-             ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, 
-             control = NULL, ...)
+             boot = "no", B = 9999, p.distr = "N", df = 7, 
+             parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
+             verbose = FALSE, control = NULL, ...)
 
 \method{conTestLRT}{conLM}(object, type = "A", neq.alt = 0, boot = "no", 
            B = 9999, p.distr = "N", df = 7, parallel = "no", 
@@ -48,8 +48,8 @@ conTest(object, type = "summary", ...)
 \method{conTestC}{conLM and conRLM}(object, type = "C", ...)
 
 \method{conTestEq}{conLM and conRLM}(object, test = "F", boot = "no", 
-          B = 9999, p.distr = "N", df = 7, parallel = "no", ncpus = 1L, 
-          cl = NULL, seed = 1234, verbose = FALSE, ...)
+          B = 9999, p.distr = "N", df = 7, parallel = "no", 
+          ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, ...)
 }
 \arguments{
   \item{object}{an object of class \code{conLM} or \code{conRLM}.} 

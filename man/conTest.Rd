@@ -53,6 +53,7 @@ conTest(object, type = "summary", ...)
 }
 \arguments{
   \item{object}{an object of class \code{conLM} or \code{conRLM}.} 
+  \item{x}{an object of class \code{conLM} or \code{conRLM}.} 
   \item{type}{hypothesis test type "A", "B", "C", "global", or 
    "summary" (default). See details for more information.}
   \item{test}{test statistic; for information about the 

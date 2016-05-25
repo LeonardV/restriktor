@@ -36,7 +36,7 @@ information criterion for model selection under inequality constraints.
 \author{Leonard Vanbrabant and Yves Rosseel}
 
 \seealso{ 
-  \code{\link{goric}} 
+  \link[goric:goric]{goric} 
 }
 
 \examples{

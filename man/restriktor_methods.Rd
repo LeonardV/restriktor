@@ -1,6 +1,7 @@
 \name{restriktor-methods}
 \alias{print.conLM}
 \alias{summary.conLM}
+\alias{print.summary.conLM}
 \alias{coef.conLM}
 \alias{model.matrix.conLM}
 
@@ -14,7 +15,7 @@
 \method{summary}{conLM and conRLM}(object, bootCIs = TRUE, 
         bty = "basic", level = 0.95, GORIC = TRUE, ...)
 
-\method{print.summary}{summary.conLM and summary.conRLM}(x, 
+\method{print.summary.conLM}{summary.conLM and summary.conRLM}(x, 
               digits = max(3, getOption("digits") - 2),
               signif.stars = getOption("show.signif.stars"), ...)     
 
@@ -39,7 +40,7 @@
   log-likelihood. The GORIC is a modification of the AIC and the 
   ORIC such that it can be applied to a (in)equality restrikted
   hypotheses in multivariate normal linear models. For more 
-  information see \code{\link{goric}}.}
+  information see \link[goric:goric]{goric}.}
   \item{digits}{the number of significant digits to use when printing.}
   \item{signif.stars}{If TRUE, ‘significance stars’ are printed 
   for each coefficient.}

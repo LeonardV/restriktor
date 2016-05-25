@@ -11,10 +11,7 @@ inequality restriktions}
   functions for linear and robust linear models respectively.}
 
 \usage{
-restriktor(model, constraints = NULL, se = "standard", B = 999,
-           rhs = NULL, neq = 0L, bootWt = FALSE, R = 99999,
-           parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
-           control = NULL, verbose = FALSE, debug = FALSE, ...)
+restriktor(model, constraints = NULL, ...)
 
 \method{conLM}{lm}(model, constraints = NULL, se = "standard", B = 999,
       rhs = NULL, neq = 0L, bootWt = FALSE, R = 99999,
@@ -53,7 +50,7 @@ restriktor(model, constraints = NULL, se = "standard", B = 999,
   errors are computed (a.k.a Huber White). The options "\code{HC1}", 
   "\code{HC2}", "\code{HC3}", "\code{HC4}", "\code{HC4m}", and 
   "\code{HC5}" are refinements of "\code{HC0}". For more details about 
-  heteroskedastic robust standard errors see \code{\link{vcovHC}} in 
+  heteroskedastic robust standard errors see \link[sandwich:vcovHC]{sandwich} in 
   the \pkg{sandwich} package. If "\code{boot.standard}", bootstrapped standard 
   errors are computed using standard bootstrapping. If "\code{boot.model.based}" 
   or "\code{boot.residual}", bootstrapped standard errors are computed 
@@ -278,8 +275,8 @@ Wiley, New York
 \seealso{ 
   \code{\link{conTest}},
   \code{\link{goricWeights}},
-  \code{\link{solve.QP}}, 
-  \code{\link{vcovHC}}
+  \link[quadprog:solve.QP]{quadprog}, 
+  \link[sandwich:vcovHC]{sandwich}
 }
 
 \examples{

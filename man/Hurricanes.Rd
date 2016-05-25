@@ -15,7 +15,7 @@ Warm) on the number of hurricanes from 1950 to 1995.
   \describe{
     \item{\code{Year}}{}
     \item{\code{Hurricanes}}{Number of Hurricanes}
-    \item{\code{El Nino}}{1=Cold, 2=Neutral, 3=Warm}
+    \item{\code{ElNino}}{1=Cold, 2=Neutral, 3=Warm}
   }
 }
 \references{The original source of these data is the National Hurricane Center

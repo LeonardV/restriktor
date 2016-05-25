@@ -1,7 +1,7 @@
 \name{conTest}
 \alias{conTest}
 \alias{print.conTest}
-\alias{summary.conTest}
+\alias{summary.conTest.conLM}
 \alias{conTestF.lm}
 \alias{conTestLRT.lm}
 \alias{conTestScore.lm}
@@ -22,7 +22,7 @@ Wald-, likelihood ratio-, and score-tests.}
 \usage{
 conTest(object, type = "summary", ...)
 
-\method{print}{conTest}(object, digits = max(3, getOption("digits") - 4), ...)
+\method{print}{conTest}(x, digits = max(3, getOption("digits") - 4), ...)
 \method{summary.conTest.conLM}{conLM and conRLM}(object, test = "F", ...)
 
 \method{conTestF}{conLM and conRLM}(object, type = "A", neq.alt = 0, 
@@ -240,9 +240,9 @@ equality constraints in the linear regression model.
 
 
 \seealso{ 
-  \code{\link{solve.QP}}, 
+  \link[quadprog:solve.QP]{quadprog}, 
   \code{\link{conTest}},
-  \code{\link{vcovHC}}
+  \link[sandwich:vcovHC]{sandwich}
 }
 
 \examples{

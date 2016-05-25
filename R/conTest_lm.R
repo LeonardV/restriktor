@@ -1,10 +1,10 @@
 ## computes the F, LRT and score test statistic ##
 ##
 # REF: Silvapulle and Sen (2005). Constrained statistical inference. Chapter 2.
-conTestF.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999, 
-                        p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
-                        cl = NULL, seed = 1234, verbose = FALSE,
-                        control = NULL, ...) {
+conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999, 
+                           p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
+                           cl = NULL, seed = 1234, verbose = FALSE,
+                           control = NULL, ...) {
   
   # rename for internal use
   meq.alt <- neq.alt
@@ -209,10 +209,10 @@ conTestF.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
 
 
 # REF: Silvapulle and Sen (2005). Constrained statistical inference. Chapter 3.
-conTestLRT.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999, 
-                          p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
-                          cl = NULL, seed = 1234, verbose = FALSE,
-                          control = NULL, ...) {
+conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999, 
+                             p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
+                             cl = NULL, seed = 1234, verbose = FALSE,
+                             control = NULL, ...) {
 
   # rename for internal use
   meq.alt <- neq.alt
@@ -435,10 +435,10 @@ conTestLRT.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999
 
 # REF: Silvapulle, M.J. and Silvapulle, P. (1995). A score Test Against One-Sided Alternatives
 # Journal of the American Statistical Association, Vol. 90, No. 429 (Mar., 1995), pp. 342-349
-conTestScore.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999, 
-                            p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
-                            cl = NULL, seed = 1234, verbose = FALSE,
-                            control = NULL, ...) {
+conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999, 
+                               p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
+                               cl = NULL, seed = 1234, verbose = FALSE,
+                               control = NULL, ...) {
   
   # rename for internal use
   meq.alt <- neq.alt
@@ -694,7 +694,7 @@ conTestScore.lm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
 # intersection-union test 
 # REF: S. Sasabuchi (1980). A Test of a Multivariate Normal Mean with Composite 
 # Hypotheses Determined by Linear Inequalities. Biometrika Trust, 67 (2), 429-439.
-conTestC.lm <- function(object, type = "C", ...) {
+conTestC.conLM <- function(object, type = "C", ...) {
   
   if (!("conLM" %in% class(object))) {
     stop("object must be of class conLM.")

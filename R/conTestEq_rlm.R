@@ -1,7 +1,7 @@
-conTestEq.rlm <- function(object, test = "F", boot = "no", 
-                          B = 9999, p.distr = "N", df = 7, 
-                          parallel = "no", ncpus = 1L, cl = NULL, 
-                          seed = 1234, verbose = FALSE, ...) {
+conTestEq.conRLM <- function(object, test = "F", boot = "no", 
+                             B = 9999, p.distr = "N", df = 7, 
+                             parallel = "no", ncpus = 1L, cl = NULL, 
+                             seed = 1234, verbose = FALSE, ...) {
   
   if (!("conRLM" %in% class(object))) {
     stop("object must be of class conRLM.")

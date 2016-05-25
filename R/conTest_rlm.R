@@ -1,7 +1,7 @@
-conTestF.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999, 
-                         p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
-                         cl = NULL, seed = 1234, verbose = FALSE,
-                         control = NULL, ...) {
+conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999, 
+                            p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
+                            cl = NULL, seed = 1234, verbose = FALSE,
+                            control = NULL, ...) {
   
   # rename for internal use
   meq.alt <- neq.alt
@@ -208,10 +208,10 @@ conTestF.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999,
 
 
 
-conTestWald.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999, 
-                            p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
-                            cl = NULL, seed = 1234, verbose = FALSE,
-                            control = NULL, ...) {
+conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999, 
+                               p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
+                               cl = NULL, seed = 1234, verbose = FALSE,
+                               control = NULL, ...) {
   
   # rename for internal use
   meq.alt <- neq.alt
@@ -436,10 +436,10 @@ conTestWald.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
 
 
 
-conTestScore.rlm <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999, 
-                             p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
-                             cl = NULL, seed = 1234, verbose = FALSE,
-                             control = NULL, ...) {
+conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999, 
+                                p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
+                                cl = NULL, seed = 1234, verbose = FALSE,
+                                control = NULL, ...) {
   
   # rename for internal use
   meq.alt <- neq.alt

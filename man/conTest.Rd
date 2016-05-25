@@ -2,15 +2,15 @@
 \alias{conTest}
 \alias{print.conTest}
 \alias{summary.conTest.conLM}
-\alias{conTestF.lm}
-\alias{conTestLRT.lm}
-\alias{conTestScore.lm}
-\alias{conTestF.rlm}
-\alias{conTestWald.rlm}
-\alias{conTestScore.rlm}
-\alias{conTestC.lm}
-\alias{conTestEq.lm}
-\alias{conTestEq.rlm}
+\alias{conTestF.conLM}
+\alias{conTestLRT.conLM}
+\alias{conTestScore.conLM}
+\alias{conTestF.conRLM}
+\alias{conTestWald.conRLM}
+\alias{conTestScore.conRLM}
+\alias{conTestC.conLM}
+\alias{conTestEq.conLM}
+\alias{conTestEq.conRLM}
 
 
 \title{Function for testing equality and/or inequality restrikted 

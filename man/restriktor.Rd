@@ -11,7 +11,10 @@ inequality restriktions}
   functions for linear and robust linear models respectively.}
 
 \usage{
-restriktor(model, constraints = NULL, ...)
+restriktor(model, constraints = NULL, se = "standard", B = 999,
+           rhs = NULL, neq = 0L, bootWt = FALSE, R = 99999,
+           parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
+           control = NULL, verbose = FALSE, debug = FALSE, ...)
 
 \method{conLM}{lm}(model, constraints = NULL, se = "standard", B = 999,
       rhs = NULL, neq = 0L, bootWt = FALSE, R = 99999,

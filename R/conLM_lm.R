@@ -1,4 +1,4 @@
-conLM.lm <- function(model, constraints = NULL, se = "default", B = 999,
+conLM.lm <- function(model, constraints = NULL, se = "standard", B = 999,
                      rhs = NULL, neq = 0L, bootWt = FALSE, R = 99999,
                      parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
                      control = NULL, verbose = FALSE, debug = FALSE, ...) {

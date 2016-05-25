@@ -1,5 +1,5 @@
 #compute restrikted robust estimates
-conRLM.rlm <- function(model, constraints = NULL, se = "default", B = 999, 
+conRLM.rlm <- function(model, constraints = NULL, se = "standard", B = 999, 
                        rhs = NULL, neq = 0L, bootWt = FALSE, R = 99999,
                        parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
                        control = NULL, verbose = FALSE, debug = FALSE, ...) { 

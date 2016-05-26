@@ -58,10 +58,30 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 999
   if (type == "global") {
     # check for intercept
     intercept <- any(attr(terms(model.org), "intercept"))
-    g <- length(b.restr)
+    l <- length(b.restr)
     if (intercept) {
-      Amatg <- cbind(rep(0, (g - 1)), diag(rep(1, g - 1))) 
-      bvecg <- rep(0, g - 1) 
+      bvecg <- bvec
+      Amatg <- cbind(rep(0, (l - 1)), diag(rep(1, l - 1))) 
+      Amatx <- Amatg %*% (diag(rep(1, l)) - t(Amat) %*% 
+                                solve(Amat %*% t(Amat), Amat))
+      if (!all(abs(Amatx) == 0)) {
+        Amatx <- Amatx[!rowSums(abs(Amatx) == 0) == l, , drop = FALSE]
+        if (nrow(Amatx) > 1) {
+          Amat.rref <- GaussianElimination(Amatx)
+          if (Amat.rref$rank == 1) {
+            Amatx <- matrix(Amatx[1, ], 1, ncol(Amatx))
+          } else {
+            if (Amat.rref$rank < nrow(Amatx)) {
+              Amatx <- Amatx[Amat.rref$pivot, , drop = FALSE]
+            }
+          }
+        }
+        Amatg <- rbind(Amatx, Amat)
+        bvecg <- c(rep(0, nrow(Amatx)), bvec)
+      } else {
+        Amatg <- Amat
+        bvecg <- bvec
+      }
     } else {
         stop("Restriktor ERROR: test not ready yet for models without intercept.")      
     } 
@@ -264,15 +284,35 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9
   
   if (type == "global") {
     # check for intercept
-    intercept <- object$model.org$assign[1] == 0L
-    g <- length(object$b.restr)
+    intercept <- any(attr(terms(model.org), "intercept"))
+    l <- length(b.restr)
     if (intercept) {
-      Amatg <- cbind(rep(0, (g - 1)), diag(rep(1, g - 1))) 
-      bvecg <- rep(0, g - 1) 
+      bvecg <- bvec
+      Amatg <- cbind(rep(0, (l - 1)), diag(rep(1, l - 1))) 
+      Amatx <- Amatg %*% (diag(rep(1, l)) - t(Amat) %*% 
+                            solve(Amat %*% t(Amat), Amat))
+      if (!all(abs(Amatx) == 0)) {
+        Amatx <- Amatx[!rowSums(abs(Amatx) == 0) == l, , drop = FALSE]
+        if (nrow(Amatx) > 1) {
+          Amat.rref <- GaussianElimination(Amatx)
+          if (Amat.rref$rank == 1) {
+            Amatx <- matrix(Amatx[1, ], 1, ncol(Amatx))
+          } else {
+            if (Amat.rref$rank < nrow(Amatx)) {
+              Amatx <- Amatx[Amat.rref$pivot, , drop = FALSE]
+            }
+          }
+        }
+        Amatg <- rbind(Amatx, Amat)
+        bvecg <- c(rep(0, nrow(Amatx)), bvec)
+      } else {
+        Amatg <- Amat
+        bvecg <- bvec
+      }
     } else {
-      Amatg <- diag(rep(1, g))
-      bvecg <- rep(0, g) 
+      stop("Restriktor ERROR: test not ready yet for models without intercept.")      
     } 
+    
     b.eqrestr <- con_solver(b.unrestr, 
                             X      = X, 
                             y      = y, 
@@ -498,15 +538,35 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", B =
 
   if (type == "global") {
     # check for intercept
-    intercept <- object$model.org$assign[1] == 0L
-    g <- length(object$b.restr)
+    intercept <- any(attr(terms(model.org), "intercept"))
+    l <- length(b.restr)
     if (intercept) {
-      Amatg <- cbind(rep(0, (g - 1)), diag(rep(1, g - 1))) 
-      bvecg <- rep(0, g - 1) 
+      bvecg <- bvec
+      Amatg <- cbind(rep(0, (l - 1)), diag(rep(1, l - 1))) 
+      Amatx <- Amatg %*% (diag(rep(1, l)) - t(Amat) %*% 
+                            solve(Amat %*% t(Amat), Amat))
+      if (!all(abs(Amatx) == 0)) {
+        Amatx <- Amatx[!rowSums(abs(Amatx) == 0) == l, , drop = FALSE]
+        if (nrow(Amatx) > 1) {
+          Amat.rref <- GaussianElimination(Amatx)
+          if (Amat.rref$rank == 1) {
+            Amatx <- matrix(Amatx[1, ], 1, ncol(Amatx))
+          } else {
+            if (Amat.rref$rank < nrow(Amatx)) {
+              Amatx <- Amatx[Amat.rref$pivot, , drop = FALSE]
+            }
+          }
+        }
+        Amatg <- rbind(Amatx, Amat)
+        bvecg <- c(rep(0, nrow(Amatx)), bvec)
+      } else {
+        Amatg <- Amat
+        bvecg <- bvec
+      }
     } else {
-      Amatg <- diag(rep(1, g))
-      bvecg <- rep(0, g) 
-    }
+      stop("Restriktor ERROR: test not ready yet for models without intercept.")      
+    } 
+    
     b.eqrestr <- con_solver(b.unrestr, 
                             X      = X, 
                             y      = y, 

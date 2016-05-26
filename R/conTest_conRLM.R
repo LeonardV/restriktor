@@ -56,12 +56,32 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
   if (type == "global") {
     # check for intercept
     intercept <- any(attr(terms(model.org), "intercept"))
-    g <- length(object$b.restr)
+    l <- length(b.restr)
     if (intercept) {
-      Amatg <- cbind(rep(0, (g - 1)), diag(rep(1, g - 1))) 
-      bvecg <- rep(0, g - 1) 
+      bvecg <- bvec
+      Amatg <- cbind(rep(0, (l - 1)), diag(rep(1, l - 1))) 
+      Amatx <- Amatg %*% (diag(rep(1, l)) - t(Amat) %*% 
+                            solve(Amat %*% t(Amat), Amat))
+      if (!all(abs(Amatx) == 0)) {
+        Amatx <- Amatx[!rowSums(abs(Amatx) == 0) == l, , drop = FALSE]
+        if (nrow(Amatx) > 1) {
+          Amat.rref <- GaussianElimination(Amatx)
+          if (Amat.rref$rank == 1) {
+            Amatx <- matrix(Amatx[1, ], 1, ncol(Amatx))
+          } else {
+            if (Amat.rref$rank < nrow(Amatx)) {
+              Amatx <- Amatx[Amat.rref$pivot, , drop = FALSE]
+            }
+          }
+        }
+        Amatg <- rbind(Amatx, Amat)
+        bvecg <- c(rep(0, nrow(Amatx)), bvec)
+      } else {
+        Amatg <- Amat
+        bvecg <- bvec
+      }
     } else {
-      stop("Restriktor ERROR: test not applicable (yet) for models without intercept.")      
+      stop("Restriktor ERROR: test not ready yet for models without intercept.")      
     } 
     #fit inequality constrained robust model
     call.my <- list(Amat = Amatg, meq = nrow(Amatg), bvec = bvecg,
@@ -268,12 +288,32 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B =
   if (type == "global") {
     # check for intercept
     intercept <- any(attr(terms(model.org), "intercept"))
-    g <- length(object$b.restr)
+    l <- length(b.restr)
     if (intercept) {
-      Amatg <- cbind(rep(0, (g - 1)), diag(rep(1, g - 1))) 
-      bvecg <- rep(0, g - 1) 
+      bvecg <- bvec
+      Amatg <- cbind(rep(0, (l - 1)), diag(rep(1, l - 1))) 
+      Amatx <- Amatg %*% (diag(rep(1, l)) - t(Amat) %*% 
+                            solve(Amat %*% t(Amat), Amat))
+      if (!all(abs(Amatx) == 0)) {
+        Amatx <- Amatx[!rowSums(abs(Amatx) == 0) == l, , drop = FALSE]
+        if (nrow(Amatx) > 1) {
+          Amat.rref <- GaussianElimination(Amatx)
+          if (Amat.rref$rank == 1) {
+            Amatx <- matrix(Amatx[1, ], 1, ncol(Amatx))
+          } else {
+            if (Amat.rref$rank < nrow(Amatx)) {
+              Amatx <- Amatx[Amat.rref$pivot, , drop = FALSE]
+            }
+          }
+        }
+        Amatg <- rbind(Amatx, Amat)
+        bvecg <- c(rep(0, nrow(Amatx)), bvec)
+      } else {
+        Amatg <- Amat
+        bvecg <- bvec
+      }
     } else {
-      stop("Restriktor ERROR: test not applicable for models without intercept.")      
+      stop("Restriktor ERROR: test not ready yet for models without intercept.")      
     } 
     #fit inequality constrained robust model
     call.my <- list(Amat = Amatg, meq = nrow(Amatg), bvec = bvecg,
@@ -496,12 +536,32 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B 
   if (type == "global") {
     # check for intercept
     intercept <- any(attr(terms(model.org), "intercept"))
-    g <- length(object$b.restr)
+    l <- length(b.restr)
     if (intercept) {
-      Amatg <- cbind(rep(0, (g - 1)), diag(rep(1, g - 1))) 
-      bvecg <- rep(0, g - 1) 
+      bvecg <- bvec
+      Amatg <- cbind(rep(0, (l - 1)), diag(rep(1, l - 1))) 
+      Amatx <- Amatg %*% (diag(rep(1, l)) - t(Amat) %*% 
+                            solve(Amat %*% t(Amat), Amat))
+      if (!all(abs(Amatx) == 0)) {
+        Amatx <- Amatx[!rowSums(abs(Amatx) == 0) == l, , drop = FALSE]
+        if (nrow(Amatx) > 1) {
+          Amat.rref <- GaussianElimination(Amatx)
+          if (Amat.rref$rank == 1) {
+            Amatx <- matrix(Amatx[1, ], 1, ncol(Amatx))
+          } else {
+            if (Amat.rref$rank < nrow(Amatx)) {
+              Amatx <- Amatx[Amat.rref$pivot, , drop = FALSE]
+            }
+          }
+        }
+        Amatg <- rbind(Amatx, Amat)
+        bvecg <- c(rep(0, nrow(Amatx)), bvec)
+      } else {
+        Amatg <- Amat
+        bvecg <- bvec
+      }
     } else {
-      stop("Restriktor ERROR: test not applicable for models without intercept.")      
+      stop("Restriktor ERROR: test not ready yet for models without intercept.")      
     } 
     #fit inequality constrained robust model
     call.my <- list(Amat = Amatg, meq = nrow(Amatg), bvec = bvecg,

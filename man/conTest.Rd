@@ -153,13 +153,17 @@ conTest(object, type = "summary", ...)
   \item Type C: Test H0: at least one restriktion false ("<") 
   against HA: all restriktions strikty true (">"). This test is 
   based on the intersection-union principle (Silvapulle and Sen, 
-  2005, chp 5.3). The null-distribution is based on a 
-  t-distribution (one-sided). Note that, this test only makes 
-  sense in case of no equality constraints.
+  2005, chp 5.3). Note that, this test only makes sense in case 
+  of no equality constraints.
   \item Type global: equal to Type A but H0 contains additional 
   equality constraints. This test is analogue to the global 
   F-test in lm, where all coefficients but the intercept equal 0.
 }
+
+The null-distribution of hypothesis test Type C is based on a 
+t-distribution (one-sided). Its power can be poor in case of many 
+inequalty restriktions. Its main role is to prevent wrong 
+conclusions from significant results from hypothesis test Type A.
 
 The exact finite sample distributions of the non-robust F-, 
 score- and LR-test statistics based on restrikted OLS estimates 

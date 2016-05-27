@@ -14,7 +14,7 @@ GaussianElimination <- function(A, B, tol = sqrt(.Machine$double.eps),
   if (fractions) {
     mass <- require(MASS)
     if (!mass) {
-      stop("fractions=TRUE needs MASS package")
+      stop("fractions = TRUE needs MASS package")
     }
   }
   if ((!is.matrix(A)) || (!is.numeric(A))) {
@@ -64,7 +64,7 @@ GaussianElimination <- function(A, B, tol = sqrt(.Machine$double.eps),
   }
   # 0 rows to bottom
   zeros <- which(apply(A[,1:m], 1, function(x) max(abs(x)) <= tol))
-  if (length(zeros) > 0){
+  if (length(zeros) > 0) {
     zeroRows <- A[zeros,]
     A <- A[-zeros,]
     A <- rbind(A, zeroRows)

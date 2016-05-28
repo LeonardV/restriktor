@@ -30,7 +30,7 @@ restriktor(model, constraints = NULL, ...)
   \code{bisquare} is supported for now, otherwise the function gives an error.} 
   
   \item{constraints}{there are two ways to constrain parameters. 
-  First, the constraint syntax consists of one or more symbolic
+  First, the constraint syntax consists of one or more text-based
   descriptions, where the syntax can be specified as a literal 
   string enclosed by single quotes. Only the names of \code{coef(model)}
   can be used as names. See details for more information. 
@@ -143,7 +143,7 @@ hashtag (#) and the exclamation (!) characters can be used to
 start a comment. Multiple constraints can be placed on a single 
 line if they are separated by a semicolon (;).
 
-There can be three types of symbolic descriptions in the constraints 
+There can be three types of text-based descriptions in the constraints 
 syntax:
   \enumerate{
   

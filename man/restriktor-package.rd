@@ -20,7 +20,10 @@ normal models.}
   model (\code{lm}) or robust linear model (\code{rlm}) subject to 
   equality and/or inequality restriktions. The real work horses 
   are the \code{conLM} and the \code{conRLM} functions for 
-  linear and robust linear models respectively.
+  linear and robust linear models respectively. A major advantage
+  of \pkg{restriktor} is that the constraints can be specified by
+  a text-based description. Users do not have to specify the complex
+  constraint matrix (comparable with a contrast matrix) themselves. 
   
   The function \code{restriktor} offers the possibility to compute 
   (model robust) standard errors under the restriktions. The 

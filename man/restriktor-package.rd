@@ -2,7 +2,7 @@
 \alias{restriktor-package}
 \title{Package for equality and inequality restrikted estimation and hypothesis testing}
 \description{
-Package \code{restriktor} implements estimation, and testing linear equality and 
+Package \code{restriktor} implements estimation and testing linear equality and 
 inequality restriktions about parameters and effects for multivariate (robust) 
 normal models.}
 
@@ -18,7 +18,7 @@ normal models.}
   
   Function \code{restriktor} estimates the parameters of a linear 
   model (\code{lm}) or robust linear model (\code{rlm}) subject to 
-  equality and/or inequality restriktions. The real work horses 
+  linear equality and/or inequality restriktions. The real work horses 
   are the \code{conLM} and the \code{conRLM} functions for 
   linear and robust linear models respectively. A major advantage
   of \pkg{restriktor} is that the constraints can be specified by
@@ -39,8 +39,8 @@ normal models.}
   mixture of chi-square distributions. These mixing weights can 
   be computed using the multivariate normal distribution function 
   or via a simulation approach. Bootstrap methods are available 
-  to avoid calculating the mixing weights and to compute the 
-  p-value directly. Parameters estimates under the null- and 
+  to calculate the mixing weights and to compute the p-value 
+  directly. Parameters estimates under the null- and 
   alternative-hypothesis are available from the summary function. 
   
   The package makes use of various other R packages: \pkg{quadprog} 
@@ -75,13 +75,13 @@ normal models.}
 
 
 \examples{
-# unrestrikted linear model for ages (in months) at which an infant 
-# starts to walk alone.
+# Ages (in months) at which an infant starts to walk alone.
 DATA <- ZelazoKolb1972
 idx <- which(DATA$Group == 3)
 DATA <- DATA[-idx, ]
 DATA$Group <- factor(DATA$Group)
 
+# unrestrikted linear model 
 fit.lm <- lm(Age ~ Group, data = DATA)
 summary(fit.lm)
 

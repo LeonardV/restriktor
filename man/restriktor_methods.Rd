@@ -9,15 +9,13 @@
 \description{Restrikted estimation and confidence intervals for 
 (robust) linear (in)equality restrikted hypotheses.
 }
-\usage{\method{print}{conLM and conRLM}(x, 
-      digits = max(3, getOption("digits") - 3), ...)
+\usage{\method{print}{conLM and conRLM}(x, digits = max(3, getOption("digits") - 3), ...)
 
 \method{summary}{conLM and conRLM}(object, bootCIs = TRUE, 
         bty = "basic", level = 0.95, GORIC = TRUE, ...)
 
-\method{print.summary.conLM}{summary.conLM and summary.conRLM}(x, 
-              digits = max(3, getOption("digits") - 2),
-              signif.stars = getOption("show.signif.stars"), ...)     
+\method{print.summary.conLM}{summary.conLM and summary.conRLM}(x, digits = max(3, getOption("digits") - 2),
+                    signif.stars = getOption("show.signif.stars"), ...)     
 
 \method{coef}{conLM and conRLM}(object, ...)
 
@@ -25,8 +23,10 @@
   
 }
 \arguments{
-  \item{x}{an object of class \code{conLM} or \code{conRLM}.}
   \item{object}{an object of class \code{conLM} or \code{conRLM}.}
+  \item{x}{for \code{print} an object of class \code{conLM} or 
+  \code{conRLM}. For \code{print.summary.conLM} an object of class
+  \code{summary.conLM} or \code{summary.conRLM}.}
   \item{bootCIs}{if TRUE (default), nonparametric bootstrap 
   confidence intervals are generated. Only available if \code{object}
   contains \code{bootout} object.}
@@ -53,7 +53,7 @@
   \code{print.summary.lm}. Additional information is provided 
   about the unrestrikted and restrikted R-square and by default 
   the output of the GORIC. If bootstrapped standard errors are 
-  requested (option \code{se = "bootmethod"} in the 
+  requested (e.g., option \code{se = "boot.model.based"} in the 
   \code{restriktor} function and \code{bootCI = TRUE} in the 
   summary function) standard errors and confidence intervals 
   are provided.
@@ -94,12 +94,12 @@ DATA <- DATA[-idx, ]
 DATA$Group <- factor(DATA$Group)
 
 # fit unrestrikted linear model
-fit1.lm <- lm(Age ~ Group, data = DATA)
+fit.lm <- lm(Age ~ Group, data = DATA)
 
 # restrikted linear model with restriktions that the walking 
 # exercises would not have a negative effect of increasing the 
 # mean age at which a child starts to walk. 
-fit1.con <- restriktor(fit1.lm, constraints = "Group2 > 0; Group2 < Group4")
+fit.con <- restriktor(fit.lm, constraints = "Group2 > 0; Group2 < Group4")
 
-summary(fit1.con)  
+summary(fit.con)  
 }

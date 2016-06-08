@@ -96,12 +96,12 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
                                       sqrt(.Machine$double.eps), 
                                       control$tol)] <- 0L
     names(b.eqrestr) <- vnames
-    Ts <- robustFm(x     = X, 
-                   y     = y, 
-                   beta0 = b.eqrestr, 
-                   betaA = b.restr, 
-                   scale = scale, 
-                   cc    = ifelse(is.null(cc), 4.685061, cc))
+    Ts <- robustFm(x         = X, 
+                   y         = y, 
+                   b.eqrestr = b.eqrestr, 
+                   b.restr   = b.restr, 
+                   scale     = scale, 
+                   cc        = ifelse(is.null(cc), 4.685061, cc))
   } else if (type == "A") {
     call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec,
                     tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
@@ -115,20 +115,20 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
                                       sqrt(.Machine$double.eps), 
                                       control$tol)] <- 0L
     names(b.eqrestr) <- vnames
-    Ts <- robustFm(x     = X, 
-                   y     = y, 
-                   beta0 = b.eqrestr, 
-                   betaA = b.restr, 
-                   scale = scale, 
-                   cc    = ifelse(is.null(cc), 4.685061, cc))
+    Ts <- robustFm(x         = X, 
+                   y         = y, 
+                   b.eqrestr = b.eqrestr, 
+                   b.restr   = b.restr, 
+                   scale     = scale, 
+                   cc        = ifelse(is.null(cc), 4.685061, cc))
   } else if (type == "B") {
     if (meq.alt == 0L) {
-      Ts <- robustFm(x     = X, 
-                     y     = y, 
-                     beta0 = b.restr, 
-                     betaA = b.unrestr, 
-                     scale = scale, 
-                     cc    = ifelse(is.null(cc), 4.685061, cc))
+      Ts <- robustFm(x         = X, 
+                     y         = y, 
+                     b.eqrestr = b.restr, 
+                     b.restr   = b.unrestr, 
+                     scale     = scale, 
+                     cc        = ifelse(is.null(cc), 4.685061, cc))
     } else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt != 0L && meq.alt <= meq) {
@@ -145,12 +145,12 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
                                               sqrt(.Machine$double.eps), 
                                               control$tol)] <- 0L
         names(b.restr.alt) <- vnames
-        Ts <- robustFm(x     = X, 
-                       y     = y, 
-                       beta0 = b.restr, 
-                       betaA = b.restr.alt, 
-                       scale = scale, 
-                       cc    = ifelse(is.null(cc), 4.685061, cc))
+        Ts <- robustFm(x         = X, 
+                       y         = y, 
+                       b.eqrestr = b.restr, 
+                       b.restr   = b.restr.alt, 
+                       scale     = scale, 
+                       cc        = ifelse(is.null(cc), 4.685061, cc))
       } else {
         stop("neq.alt must not be larger than neq.")
       }
@@ -328,13 +328,14 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B =
                                        sqrt(.Machine$double.eps), 
                                        control$tol)] <- 0L
     names(b.eqrestr) <- vnames
-    out0 <- robustWaldScores(x     = X, 
-                             y     = y,  
-                             beta0 = b.eqrestr, 
-                             betaA = b.restr, 
-                             scale = scale, 
-                             test  = "Wald", 
-                             cc    = ifelse(is.null(cc), 4.685061, cc))
+    out0 <- robustWaldScores(x         = X, 
+                             y         = y,  
+                             b.eqrestr = b.eqrestr, 
+                             b.restr   = b.restr, 
+                             b.unrestr = b.unrestr,
+                             scale     = scale, 
+                             test      = "Wald", 
+                             cc        = ifelse(is.null(cc), 4.685061, cc))
     Ts <- out0$Ts
     Sigma <- out0$V
   } else if (type == "A") {
@@ -351,25 +352,27 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B =
                                       control$tol)] <- 0L
     names(b.eqrestr) <- vnames
     
-    out1 <- robustWaldScores(x     = X, 
-                             y     = y,  
-                             beta0 = b.eqrestr, 
-                             betaA = b.restr, 
-                             scale = scale, 
-                             test  = "Wald", 
-                             cc    = ifelse(is.null(cc), 4.685061, cc))
+    out1 <- robustWaldScores(x         = X, 
+                             y         = y,  
+                             b.eqrestr = b.eqrestr, 
+                             b.restr   = b.restr, 
+                             b.unrestr = b.unrestr,
+                             scale     = scale, 
+                             test      = "Wald", 
+                             cc        = ifelse(is.null(cc), 4.685061, cc))
     Ts <- out1$Ts
     Sigma <- out1$V
   }
   else if (type == "B") {
     if (meq.alt == 0L) {
-      out2 <- robustWaldScores(x     = X, 
-                               y     = y, 
-                               beta0 = b.restr, 
-                               betaA = b.unrestr, 
-                               scale = scale, 
-                               test  = "Wald", 
-                               cc    = ifelse(is.null(cc), 4.685061, cc))
+      out2 <- robustWaldScores(x         = X, 
+                               y         = y, 
+                               b.eqrestr = b.restr, 
+                               b.restr   = b.unrestr,
+                               b.unrestr = b.unrestr,
+                               scale     = scale, 
+                               test      = "Wald", 
+                               cc        = ifelse(is.null(cc), 4.685061, cc))
       Ts <- out2$Ts
       Sigma <- out2$V
     } else {
@@ -377,7 +380,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B =
       if (meq.alt != 0L && meq.alt <= meq) {
         call.my <- list(Amat = Amat[1:meq.alt,,drop=FALSE], meq = meq.alt, 
                         bvec = bvec[1:meq.alt],
-                        tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
+                        tol  = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
                                       control$tol))
         # collect all original model arguments and add constraints
         CALL <- c(list(model.org), call.my)
@@ -388,13 +391,14 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B =
                                               sqrt(.Machine$double.eps), 
                                               control$tol)] <- 0L
         names(b.restr.alt) <- vnames
-        out3 <- robustWaldScores(x     = X, 
-                                 y     = y,  
-                                 beta0 = b.restr, 
-                                 betaA = b.restr.alt, 
-                                 scale = scale, 
-                                 test  = "Wald", 
-                                 cc    = ifelse(is.null(cc), 4.685061, cc))
+        out3 <- robustWaldScores(x         = X, 
+                                 y         = y,  
+                                 b.eqrestr = b.restr, 
+                                 b.restr   = b.restr.alt,
+                                 b.unrestr = b.unrestr,
+                                 scale     = scale, 
+                                 test      = "Wald", 
+                                 cc        = ifelse(is.null(cc), 4.685061, cc))
         Ts <- out3$Ts
         Sigma <- out3$V
       } else {
@@ -576,13 +580,14 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B 
                                       sqrt(.Machine$double.eps), 
                                       control$tol)] <- 0L
     names(b.eqrestr) <- vnames
-    out0 <- robustWaldScores(x     = X, 
-                             y     = y,  
-                             beta0 = b.eqrestr, 
-                             betaA = b.restr, 
-                             scale = scale, 
-                             test  = "score", 
-                             cc    = ifelse(is.null(cc), 4.685061, cc))    
+    out0 <- robustWaldScores(x         = X, 
+                             y         = y,  
+                             b.eqrestr = b.eqrestr, 
+                             b.restr   = b.restr, 
+                             b.unrestr = b.unrestr,
+                             scale     = scale, 
+                             test      = "score", 
+                             cc        = ifelse(is.null(cc), 4.685061, cc))    
     Ts <- out0$Ts
     Sigma <- out0$V
   } else if (type == "A") {
@@ -599,24 +604,26 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B 
                                       control$tol)] <- 0L
     names(b.eqrestr) <- vnames
     
-    out1 <- robustWaldScores(x     = X, 
-                             y     = y,  
-                             beta0 = b.eqrestr, 
-                             betaA = b.restr, 
-                             scale = scale, 
-                             test  = "score", 
-                             cc    = ifelse(is.null(cc), 4.685061, cc))
+    out1 <- robustWaldScores(x         = X, 
+                             y         = y,  
+                             b.eqrestr = b.eqrestr, 
+                             b.restr   = b.restr, 
+                             b.unrestr = b.unrestr,
+                             scale     = scale, 
+                             test      = "score", 
+                             cc        = ifelse(is.null(cc), 4.685061, cc))
     Ts <- out1$Ts
     Sigma <- out1$V
   } else if (type == "B") {
     if (meq.alt == 0L) {
-      out2 <- robustWaldScores(x     = X, 
-                               y     = y,  
-                               beta0 = b.restr, 
-                               betaA = b.unrestr, 
-                               scale = scale, 
-                               test  = "score", 
-                               cc    = ifelse(is.null(cc), 4.685061, cc))
+      out2 <- robustWaldScores(x         = X, 
+                               y         = y,  
+                               b.eqrestr = b.restr, 
+                               b.restr   = b.unrestr,
+                               b.unrestr = b.unrestr,
+                               scale     = scale, 
+                               test      = "score", 
+                               cc        = ifelse(is.null(cc), 4.685061, cc))
       Ts <- out2$Ts
       Sigma <- out2$V
     } else {
@@ -635,13 +642,14 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B 
                                               sqrt(.Machine$double.eps), 
                                               control$tol)] <- 0L
         names(b.restr.alt) <- vnames
-        out3 <- robustWaldScores(x     = X, 
-                                 y     = y,  
-                                 beta0 = b.restr, 
-                                 betaA = b.restr.alt, 
-                                 scale = scale, 
-                                 test  = "score", 
-                                 cc    = ifelse(is.null(cc), 4.685061, cc))
+        out3 <- robustWaldScores(x         = X, 
+                                 y         = y,  
+                                 b.eqrestr = b.restr, 
+                                 b.restr   = b.restr.alt,
+                                 b.unrestr = b.unrestr,
+                                 scale     = scale, 
+                                 test      = "score", 
+                                 cc        = ifelse(is.null(cc), 4.685061, cc))
         Ts <- out3$Ts
         Sigma <- out3$V
       } else {

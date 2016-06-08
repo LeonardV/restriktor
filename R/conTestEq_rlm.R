@@ -17,9 +17,9 @@ conTestEq.conRLM <- function(object, test = "F", boot = "no",
   # tukey's bisquare tuning constant
   cc <- model.org$call[["c"]]
   # coefficients under equality restriktions
-  beta0 <- coef(object)
+  b.eqrestr <- coef(object)
   # unrestrikted coefficients
-  betaA <- coef(model.org)
+  b.unrestr <- coef(model.org)
   # unrestrikted scale estimate
   scale <- model.org$s
   # restriktion stuff
@@ -37,13 +37,14 @@ conTestEq.conRLM <- function(object, test = "F", boot = "no",
     
     # here we perform the usual Wald/F test...
     if (test == "wald" || test == "score") {
-      OUT <- robustWaldScores(x     = X, 
-                              y     = y, 
-                              beta0 = beta0, 
-                              betaA = betaA, 
-                              scale = scale, 
-                              test  = test, 
-                              cc    = ifelse(is.null(cc), 4.685061, cc))
+      OUT <- robustWaldScores(x         = X, 
+                              y         = y, 
+                              b.eqrestr = b.eqrestr, 
+                              b.restr   = b.unrestr, 
+                              b.unrestr = b.unrestr,
+                              scale     = scale, 
+                              test      = test, 
+                              cc        = ifelse(is.null(cc), 4.685061, cc))
       # df
       OUT$df <- nrow(Amat)
       OUT$Ts <- OUT$Ts #/ OUT$df
@@ -57,12 +58,12 @@ conTestEq.conRLM <- function(object, test = "F", boot = "no",
       OUT$b.restr <- object$b.restr
       OUT$b.unrestr <- object$b.unrestr
     } else if (test == "f") {
-      Fmm <- robustFm(x     = X, 
-                      y     = y, 
-                      beta0 = beta0, 
-                      betaA = betaA, 
-                      scale = scale, 
-                      cc    = ifelse(is.null(cc), 4.685061, cc))
+      Fmm <- robustFm(x         = X, 
+                      y         = y, 
+                      b.eqrestr = b.eqrestr, 
+                      b.restr   = b.unrestr, 
+                      scale     = scale, 
+                      cc        = ifelse(is.null(cc), 4.685061, cc))
       
       OUT <- list()
       OUT$test <- "F"

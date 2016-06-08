@@ -3,20 +3,13 @@
 # Found on https://stat.ethz.ch/pipermail/r-help/2007-September/140021.html
 # Slightly adapted by LV
 GaussianElimination <- function(A, B, tol = sqrt(.Machine$double.eps), 
-                                verbose = FALSE, fractions = FALSE){
+                                verbose = FALSE) {
   # A: coefficient matrix
   # B: right-hand side vector or matrix
   # tol: tolerance for checking for 0 pivot
   # verbose: if TRUE, print intermediate steps
-  # fractions: try to express nonintegers as rational numbers
   # If B is absent returns the reduced row-echelon form of A.
   # If B is present, reduces A to RREF carrying B along.
-  if (fractions) {
-    mass <- require(MASS)
-    if (!mass) {
-      stop("fractions = TRUE needs MASS package")
-    }
-  }
   if ((!is.matrix(A)) || (!is.numeric(A))) {
     stop("argument must be a numeric matrix")
   }
@@ -51,11 +44,7 @@ GaussianElimination <- function(A, B, tol = sqrt(.Machine$double.eps),
       A[i,] <- row                    # restore current row
       pivot.new <- c(pivot.new, j)
       if (verbose) {
-        if (fractions) {
-          print(fractions(A))
-        } else {
-          print(round(A, round(abs(log(tol,10)))))
-        }
+        print(round(A, round(abs(log(tol,10)))))
       }
       j <- j + 1
       break

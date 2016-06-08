@@ -42,7 +42,7 @@
   hypotheses in multivariate normal linear models. For more 
   information see \link[goric:goric]{goric}.}
   \item{digits}{the number of significant digits to use when printing.}
-  \item{signif.stars}{If TRUE, ‘significance stars’ are printed 
+  \item{signif.stars}{If TRUE, "significance stars are printed 
   for each coefficient.}
   \item{\ldots}{no additional arguments for now.}
 }

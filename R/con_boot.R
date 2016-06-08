@@ -32,7 +32,7 @@ con_boot_lm <- function(model, B = 999, fixed = FALSE, ...) {
 con_boot_rlm <- function(model, B = 999, fixed = FALSE, ...) { 
   
   if (class(model)[1] != "rlm") {
-    stop("ERROR: model must be of class lm")
+    stop("ERROR: model must be of class rlm")
   }
   # original model formula
   #form <- formula(model)

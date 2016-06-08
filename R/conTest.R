@@ -4,7 +4,7 @@ conTest <- function(object, type = "summary", ...) {
     stop("object must be of class \"conLM\" or \"conRLM\"")
   }
   
-  stopifnot(type %in% c("A","B","global","summary"))
+  stopifnot(type %in% c("A","B","C","global","summary"))
   
   l <- list(...)
   Amat <- object$constraints

@@ -32,14 +32,10 @@ robustWaldScores <- function(x, y, b.eqrestr, b.restr, b.unrestr,
   #information matrix 
   V <- Minv %*% Q %*% t(Minv)
 
-  # idx1 <- which(colSums(Amat) != 0L)
-  # idx0 <- which(colSums(Amat) == 0L)
-  # result.V22 <- V[idx1,idx1]
-  # result.W <- n * b.restr[idx1] %*% solve(result.V22, b.restr[idx1])
-  
   # Wald test-statistic
   if (test == "wald") {
-    Ts <- as.numeric(n * c(b.restr-b.eqrestr) %*% solve(V, c(b.restr-b.eqrestr)))
+    Ts <- as.numeric(n * c(b.restr-b.eqrestr) %*% 
+                       solve(V, c(b.restr-b.eqrestr)))
   } else if (test == "score") {
     # Score test-statistic
     res0 <- y - X %*% b.eqrestr

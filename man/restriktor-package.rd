@@ -1,4 +1,4 @@
-\name{restriktor}
+\name{restriktor-package}
 \alias{restriktor-package}
 \title{Package for equality and inequality restrikted estimation and hypothesis testing}
 \description{

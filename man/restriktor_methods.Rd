@@ -9,17 +9,19 @@
 \description{Restrikted estimation and confidence intervals for 
 (robust) linear (in)equality restrikted hypotheses.
 }
-\usage{\method{print}{conLM and conRLM}(x, digits = max(3, getOption("digits") - 3), ...)
+\usage{
 
-\method{summary}{conLM and conRLM}(object, bootCIs = TRUE, 
-        bty = "basic", level = 0.95, GORIC = TRUE, ...)
+\method{print}{conLM}(x, digits = max(3, getOption("digits") - 3), \dots)
 
-\method{print.summary.conLM}{summary.conLM and summary.conRLM}(x, digits = max(3, getOption("digits") - 2),
-                    signif.stars = getOption("show.signif.stars"), ...)     
+\method{summary}{conLM}(object, bootCIs = TRUE, 
+        bty = "basic", level = 0.95, GORIC = TRUE, \dots)
 
-\method{coef}{conLM and conRLM}(object, ...)
+\method{print.summary}{conLM}(x, digits = max(3, getOption("digits") - 2),
+              signif.stars = getOption("show.signif.stars"), \dots)     
 
-\method{model.matrix}{conLM and conRLM}(object, ...)
+\method{coef}{conLM}(object, \dots)
+
+\method{model.matrix}{conLM}(object, \dots)
   
 }
 \arguments{
@@ -40,7 +42,7 @@
   log-likelihood. The GORIC is a modification of the AIC and the 
   ORIC such that it can be applied to a (in)equality restrikted
   hypotheses in multivariate normal linear models. For more 
-  information see \link[goric:goric]{goric}.}
+  information see the \pkg{goric} package.}
   \item{digits}{the number of significant digits to use when printing.}
   \item{signif.stars}{If TRUE, "significance stars are printed 
   for each coefficient.}

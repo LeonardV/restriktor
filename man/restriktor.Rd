@@ -11,23 +11,24 @@ inequality restriktions}
   functions for linear and robust linear models respectively.}
 
 \usage{
-restriktor(model, constraints = NULL, ...)
+restriktor(model, constraints = NULL, \dots)
 
 \method{conLM}{lm}(model, constraints = NULL, se = "standard", B = 999,
       rhs = NULL, neq = 0L, bootWt = FALSE, R = 99999,
       parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
-      control = NULL, verbose = FALSE, debug = FALSE, ...)
+      control = NULL, verbose = FALSE, debug = FALSE, \dots)
       
 \method{conRLM}{rlm}(model, constraints = NULL, se = "standard", B = 999,
        rhs = NULL, neq = 0L, bootWt = FALSE, R = 99999,
        parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
-       control = NULL, verbose = FALSE, debug = FALSE, ...)
+       control = NULL, verbose = FALSE, debug = FALSE, \dots)
 }
 \arguments{
-  \item{model}{a fitted linear model object of class lm, or a fitted robust 
-  linear model object of class rlm. For class rlm, both \code{M} and
-  \code{MM} estimation are supported. For the loss function only the 
-  \code{bisquare} is supported for now, otherwise the function gives an error.} 
+  \item{model}{a fitted linear model object of class "lm", or a 
+  fitted robust linear model object of class "rlm". For class "rlm", 
+  both \code{M} and \code{MM} estimation are supported. For the 
+  loss function only the \code{bisquare} is supported for now, 
+  otherwise the function gives an error.} 
   
   \item{constraints}{there are two ways to constrain parameters. 
   First, the constraint syntax consists of one or more text-based
@@ -50,8 +51,7 @@ restriktor(model, constraints = NULL, ...)
   errors are computed (a.k.a Huber White). The options "\code{HC1}", 
   "\code{HC2}", "\code{HC3}", "\code{HC4}", "\code{HC4m}", and 
   "\code{HC5}" are refinements of "\code{HC0}". For more details about 
-  heteroskedastic robust standard errors see \link[sandwich:vcovHC]{sandwich} in 
-  the \pkg{sandwich} package. If "\code{boot.standard}", bootstrapped standard 
+  heteroskedastic robust standard errors see \code{sandwich()} in the \pkg{sandwich} package. If "\code{boot.standard}", bootstrapped standard 
   errors are computed using standard bootstrapping. If "\code{boot.model.based}" 
   or "\code{boot.residual}", bootstrapped standard errors are computed 
   using model-based bootstrapping. If "\code{none}", no standard errors 
@@ -274,9 +274,7 @@ Wiley, New York
 
 \seealso{ 
   \code{\link{conTest}},
-  \code{\link{goricWeights}},
-  \link[quadprog:solve.QP]{quadprog}, 
-  \link[sandwich:vcovHC]{sandwich}
+  \code{\link{goricWeights}}
 }
 
 \examples{

@@ -20,36 +20,53 @@ inequality restrikted hypotheses for (robust) linear models by F-,
 Wald-, likelihood ratio-, and score-tests.}
 
 \usage{
-conTest(object, type = "summary", ...)
+conTest(object, type = "summary", \dots)
 
-\method{print}{conTest}(x, digits = max(3, getOption("digits") - 4), ...)
-\method{summary.conTest.conLM}{conLM and conRLM}(object, test = "F", ...)
+\method{print}{conTest}(x, digits = max(3, getOption("digits") - 4), \dots)
+\method{summary}{conTest.conLM}(object, test = "F", \dots)
 
-\method{conTestF}{conLM and conRLM}(object, type = "A", neq.alt = 0, 
+\method{conTestF}{conLM}(object, type = "A", neq.alt = 0, 
          boot = "no", B = 9999, p.distr = "N", df = 7, 
          parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
-         verbose = FALSE, control = NULL, ...)
-
-\method{conTestScore}{conLM and conRLM}(object, type = "A", neq.alt = 0, 
-             boot = "no", B = 9999, p.distr = "N", df = 7, 
-             parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
-             verbose = FALSE, control = NULL, ...)
+         verbose = FALSE, control = NULL, \dots)
 
 \method{conTestLRT}{conLM}(object, type = "A", neq.alt = 0, boot = "no", 
            B = 9999, p.distr = "N", df = 7, parallel = "no", 
            ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, 
-           control = NULL, ...)
+           control = NULL, \dots)
+
+\method{conTestScore}{conLM}(object, type = "A", neq.alt = 0, 
+             boot = "no", B = 9999, p.distr = "N", df = 7, 
+             parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
+             verbose = FALSE, control = NULL, \dots)
+
+
+\method{conTestF}{conRLM}(object, type = "A", neq.alt = 0, 
+         boot = "no", B = 9999, p.distr = "N", df = 7, 
+         parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
+         verbose = FALSE, control = NULL, \dots)
 
 \method{conTestWald}{conRLM}(object, type = "A", neq.alt = 0, boot = "no", 
             B = 9999, p.distr = "N", df = 7, parallel = "no", 
             ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, 
-            control = NULL, ...)
+            control = NULL, \dots)
 
-\method{conTestC}{conLM and conRLM}(object, type = "C", ...)
+\method{conTestScore}{conRLM}(object, type = "A", neq.alt = 0, 
+             boot = "no", B = 9999, p.distr = "N", df = 7, 
+             parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
+             verbose = FALSE, control = NULL, \dots)
 
-\method{conTestEq}{conLM and conRLM}(object, test = "F", boot = "no", 
+
+\method{conTestC}{conLM}(object, type = "C", \dots)
+
+\method{conTestEq}{conLM}(object, test = "F", boot = "no", 
           B = 9999, p.distr = "N", df = 7, parallel = "no", 
-          ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, ...)
+          ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, \dots)
+
+\method{conTestEq}{conRLM}(object, test = "F", boot = "no", 
+          B = 9999, p.distr = "N", df = 7, parallel = "no", 
+          ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, \dots)
+          
 }
 \arguments{
   \item{object}{an object of class \code{conLM} or \code{conRLM}.} 
@@ -182,9 +199,8 @@ an F-distribution. The (robust) Wald- and (robust) score-test
 statistics are based on chi-square distributions.
 
 The \code{summary.conTest.conLM} function is a wrapper function, 
-which works for both objects of class \code{conLM} and \code{conRLM}.
-The function computes all available hypohtesis tests and prints
-a nice summary. 
+for objects of class \code{conLM} and \code{conRLM}. The function 
+computes all available hypothesis tests and prints a nice summary. 
 }
 
 \value{
@@ -246,8 +262,7 @@ equality constraints in the linear regression model.
 
 \seealso{ 
   \link[quadprog:solve.QP]{quadprog}, 
-  \code{\link{conTest}},
-  \link[sandwich:vcovHC]{sandwich}
+  \code{\link{conTest}}
 }
 
 \examples{

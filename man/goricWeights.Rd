@@ -5,7 +5,7 @@
 \description{The \code{goricWeights} function computes GORIC 
 weights, which are comparable to the Akaike weights. 
 }
-\usage{\method{goricWeights}{summary.conLM and summary.conRLM}(x, ...)
+\usage{goricWeights(x, \dots)
 }
 
 \arguments{
@@ -35,9 +35,6 @@ information criterion for model selection under inequality constraints.
 
 \author{Leonard Vanbrabant and Yves Rosseel}
 
-\seealso{ 
-  \link[goric:goric]{goric} 
-}
 
 \examples{
 # unrestricted linear model for ages (in months) at which an 

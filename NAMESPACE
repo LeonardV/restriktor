@@ -23,6 +23,13 @@ importFrom("ic.infer",
            #nchoosek, NOT EXPORTED!
            ic.weights)
 
+importFrom("stats", "coef", "df.residual", "dnorm", "fitted",
+           "formula", "frequency", "is.ts", "median", "model.matrix",
+           "naresid", "pchisq", "pf", "pnorm", "printCoefmat", "pt",
+           "quantile", "rchisq", "residuals", "rnorm", "rt", "runif",
+           "sd", "start", "terms", "ts", "update", "var", "vcov",
+           "weighted.residuals", "weights") 
+
 # export ordinary functions defined in this package
 export("restriktor", 
        "conLM.lm", "conRLM.rlm", 
@@ -30,6 +37,15 @@ export("restriktor",
        "conTestLRT.conLM", "conTestScore.conLM", "conTestEq.conLM",
        "conTestEq.conRLM", "conTestScore.conRLM", "conTestWald.conRLM", 
        "goricWeights", "print.conLM", "summary.conLM", "summary.conTest.conLM",
-       "print.summary.conLM", "print.conTest", 
+       #"print.summary.conLM", 
+       "print.conTest", 
        "coef.conLM", "model.matrix.conLM",
        "goricWeights")
+
+S3method(coef, conLM)
+S3method(model.matrix, conLM)
+S3method(print, conLM)
+S3method(print, conTest)
+#S3method(print, summary.conLM)
+S3method(summary, conLM)
+S3method(summary, conTest.conLM) 

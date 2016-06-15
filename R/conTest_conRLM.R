@@ -65,7 +65,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
       if (!all(abs(Amatx) == 0)) {
         Amatx <- Amatx[!rowSums(abs(Amatx) == 0) == l, , drop = FALSE]
         if (nrow(Amatx) > 1) {
-          Amat.rref <- GaussianElimination(Amatx)
+          Amat.rref <- GaussianElimination(t(Amatx))
           if (Amat.rref$rank == 1) {
             Amatx <- matrix(Amatx[1, ], 1, ncol(Amatx))
           } else {
@@ -297,7 +297,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B =
       if (!all(abs(Amatx) == 0)) {
         Amatx <- Amatx[!rowSums(abs(Amatx) == 0) == l, , drop = FALSE]
         if (nrow(Amatx) > 1) {
-          Amat.rref <- GaussianElimination(Amatx)
+          Amat.rref <- GaussianElimination(t(Amatx))
           if (Amat.rref$rank == 1) {
             Amatx <- matrix(Amatx[1, ], 1, ncol(Amatx))
           } else {
@@ -549,7 +549,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B 
       if (!all(abs(Amatx) == 0)) {
         Amatx <- Amatx[!rowSums(abs(Amatx) == 0) == l, , drop = FALSE]
         if (nrow(Amatx) > 1) {
-          Amat.rref <- GaussianElimination(Amatx)
+          Amat.rref <- GaussianElimination(t(Amatx))
           if (Amat.rref$rank == 1) {
             Amatx <- matrix(Amatx[1, ], 1, ncol(Amatx))
           } else {

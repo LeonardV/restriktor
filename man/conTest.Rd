@@ -7,6 +7,7 @@
 \alias{conTestScore.conLM}
 \alias{conTestF.conRLM}
 \alias{conTestWald.conRLM}
+\alias{conTestWald2.conRLM}
 \alias{conTestScore.conRLM}
 \alias{conTestC.conLM}
 \alias{conTestEq.conLM}
@@ -51,6 +52,11 @@ conTest(object, type = "summary", \dots)
             ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, 
             control = NULL, \dots)
 
+\method{conTestWald2}{conRLM}(object, type = "A", neq.alt = 0, boot = "no", 
+             B = 9999, p.distr = "N", df = 7, parallel = "no", 
+             ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, 
+             control = NULL, \dots)
+
 \method{conTestScore}{conRLM}(object, type = "A", neq.alt = 0, 
              boot = "no", B = 9999, p.distr = "N", df = 7, 
              parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
@@ -86,11 +92,12 @@ conTest(object, type = "summary", \dots)
       statistic is computed. 
       
       \item for object of class rlm; if "F" (default), a robust 
-      likelihood ratio type test statistic (Silvapulle, 1992) is 
+      likelihood ratio type test statistic (Silvapulle, 1992a) is 
       computed. If "Wald", a robust Wald test statistic 
-      (Silvapulle, 1996) is computed. If "score", a one-sided 
-      score test statistic (Silvapulle, 1996) is computed. Note 
-      that, in case of equality constraints only, unconstrained 
+      (Silvapulle, 1996) is computed. If "Wald2", a robust Wald test 
+      statistic (Silvapulle, 1992b) is computed. If "score", a 
+      one-sided score test statistic (Silvapulle, 1996) is computed. 
+      Note that, in case of equality constraints only, unconstrained 
       robust F-, Wald-, score-test statistics are computed.
     }
   }
@@ -232,9 +239,13 @@ Shapiro, A. (1988). Towards a unified theory of inequality-constrained
 testing in multivariate analysis. \emph{International Statistical 
 Review} \bold{56}, 49--62.
 
-Silvapulle, M. (1992). Robust tests of inequality constraints and 
+Silvapulle, M. (1992a). Robust tests of inequality constraints and 
 one-sided hypotheses in the linear model. \emph{Biometrika}, 
 \bold{79}, 621--630.
+
+Silvapulle, M. (1992b). Robust Wald-Type Tests of One-Sided Hypotheses 
+in the Linear Model. \emph{Journal of the American Statistical Association}, 
+\bold{87}, 156--161.
 
 Silvapulle, M. and Silvapulle, P. (1995). A score test against 
 one-sided alternatives. \emph{American statistical association}, 

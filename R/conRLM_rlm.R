@@ -147,7 +147,6 @@ conRLM.rlm <- function(model, constraints = NULL, se = "standard", B = 999,
   W <- solve(invW)
   
   ## compute mixing weights
-  
   is.augmented <- TRUE
   ## compute mixing weights
   if (all(c(Amat) == 0)) { # unrestrikted case
@@ -171,7 +170,7 @@ conRLM.rlm <- function(model, constraints = NULL, se = "standard", B = 999,
     wt[wt.idx] <- 1
   }
   attr(wt, "bootWt") <- bootWt
-  
+  attr(wt, "R") <- R
   
   # # check if the constraints are in line with the data    
   if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) & meq == 0) {  

@@ -6,6 +6,7 @@
 # - add support for mlm and glm.
 # - add test-statistic for class of rlm with equality restriktions only.
 # - add weights to conTestEq
+# - check for right function arguments
 ###############################################################################
 restriktor <- function(model, constraints = NULL, ...) {
   

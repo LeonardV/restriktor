@@ -4,7 +4,7 @@ conLM.lm <- function(model, constraints = NULL, se = "standard", B = 999,
                      control = NULL, verbose = FALSE, debug = FALSE, ...) {
   
   # check class
-  if (!(class(model)[1] %in% c("lm", "mlm"))) {
+  if (!(class(model)[1] %in% c("lm"))) {
     stop("model must be of class lm.")
   }
   
@@ -12,6 +12,7 @@ conLM.lm <- function(model, constraints = NULL, se = "standard", B = 999,
   # rename for internal use
   bvec <- rhs; meq <- neq
   
+  # unconstrained case
   if (is.null(constraints)) {
     constraints <- rbind(rep(0L, length(coef(model))))
     bvec <- rep(0L, nrow(constraints))
@@ -111,9 +112,11 @@ conLM.lm <- function(model, constraints = NULL, se = "standard", B = 999,
                           cl       = cl,
                           seed     = seed,
                           verbose  = verbose)
-  } else if (!bootWt & (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
+    # compute mixing weights based on mvtnorm
+  } else if (!bootWt & (meq < nrow(Amat))) { 
     wt <- rev(con_wt(Amat %*% W %*% t(Amat), meq = meq))
-  } else if (!bootWt & (meq == nrow(Amat))) { # only equality constraints
+    # if only equality constraints
+  } else if (!bootWt & (meq == nrow(Amat))) { 
     wt <- rep(0L, ncol(W) + 1)
     wt.idx <- ncol(W) - meq + 1
     wt[wt.idx] <- 1
@@ -140,7 +143,7 @@ conLM.lm <- function(model, constraints = NULL, se = "standard", B = 999,
                 constraints = Amat, rhs = bvec, neq = meq, iact = NULL, 
                 bootout = NULL, call = cl)  
   } else {
-    # compute constrained estimates for lm() and mlm() 
+    # compute constrained estimates for lm()
     out.QP <- con_solver(b.unrestr, 
                          X      = X, 
                          y      = y, 

@@ -153,15 +153,15 @@ conRLM.rlm <- function(model, constraints = NULL, se = "standard", B = 999,
     wt <- c(rep(0L, p), 1)
     is.augmented <- FALSE
   } else if (bootWt) { # compute mixing weights based on simulation
-    wt <- mix.boot(VCOV     = W,
-                   Amat     = Amat, 
-                   meq      = meq, 
-                   R        = R,
-                   parallel = parallel,
-                   ncpus    = ncpus,
-                   cl       = cl,
-                   seed     = seed,
-                   verbose  = verbose)
+    wt <- con_weightsBoot(VCOV     = W,
+                          Amat     = Amat, 
+                          meq      = meq, 
+                          R        = R,
+                          parallel = parallel,
+                          ncpus    = ncpus,
+                          cl       = cl,
+                          seed     = seed,
+                          verbose  = verbose)
   } else if (!bootWt & (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
     wt <- rev(con_wt(Amat %*% W %*% t(Amat), meq = meq))
   } else if (!bootWt & (meq == nrow(Amat))) { # only equality constraints

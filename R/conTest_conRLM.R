@@ -410,27 +410,27 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B =
   # We need to recalculate the weights based on V_hat = Sigam instead on solve(t(X)%*%X)
   # Do we have to? The differences are very small.
   ## compute mixing weights
-  # if (all(c(Amat) == 0)) { # unrestrikted case
-  #   wt <- c(rep(0L, p), 1)
-  # } else if (attr(object$wt, "bootWt")) { # compute mixing weights based on simulation
-  #   wt <- mix.boot(VCOV     = Sigma,
-  #                  Amat     = Amat, 
-  #                  meq      = meq, 
-  #                  R        = attr(object$wt, "R"),
-  #                  parallel = parallel,
-  #                  ncpus    = ncpus,
-  #                  cl       = cl,
-  #                  seed     = seed,
-  #                  verbose  = verbose)
-  # } else if (!attr(object$wt, "bootWt") & (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
-  #   wt <- rev(con_wt(Amat %*% Sigma %*% t(Amat), meq = meq))
-  # } else if (!battr(object$wt, "bootWt") & (meq == nrow(Amat))) { # only equality constraints
-  #   wt <- rep(0L, ncol(Sigma) + 1)
-  #   wt.idx <- ncol(Sigma) - meq + 1
-  #   wt[wt.idx] <- 1
-  # }
+  if (all(c(Amat) == 0)) { # unrestrikted case
+    wt <- c(rep(0L, p), 1)
+  } else if (attr(object$wt, "bootWt")) { # compute mixing weights based on simulation
+    wt <- con_weightsBoot(VCOV     = Sigma,
+                          Amat     = Amat,
+                          meq      = meq,
+                          R        = attr(object$wt, "R"),
+                          parallel = parallel,
+                          ncpus    = ncpus,
+                          cl       = cl,
+                          seed     = seed,
+                          verbose  = verbose)
+  } else if (!attr(object$wt, "bootWt") & (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
+    wt <- rev(con_wt(Amat %*% Sigma %*% t(Amat), meq = meq))
+  } else if (!battr(object$wt, "bootWt") & (meq == nrow(Amat))) { # only equality constraints
+    wt <- rep(0L, ncol(Sigma) + 1)
+    wt.idx <- ncol(Sigma) - meq + 1
+    wt[wt.idx] <- 1
+  }
   
-  wt <- object$wt
+  #wt <- object$wt
   # is this fool proof? 
   # The number of bootstrap samples must be large enough to avoid spurious results.
   wt <- rev(wt)
@@ -908,7 +908,30 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B 
     }
   } 
   
-  wt <- object$wt
+  # We need to recalculate the weights based on V_hat = Sigam instead on solve(t(X)%*%X)
+  # Do we have to? The differences are very small.
+  ## compute mixing weights
+  if (all(c(Amat) == 0)) { # unrestrikted case
+    wt <- c(rep(0L, p), 1)
+  } else if (attr(object$wt, "bootWt")) { # compute mixing weights based on simulation
+    wt <- con_weightsBoot(VCOV     = Sigma,
+                          Amat     = Amat,
+                          meq      = meq,
+                          R        = attr(object$wt, "R"),
+                          parallel = parallel,
+                          ncpus    = ncpus,
+                          cl       = cl,
+                          seed     = seed,
+                          verbose  = verbose)
+  } else if (!attr(object$wt, "bootWt") & (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
+    wt <- rev(con_wt(Amat %*% Sigma %*% t(Amat), meq = meq))
+  } else if (!battr(object$wt, "bootWt") & (meq == nrow(Amat))) { # only equality constraints
+    wt <- rep(0L, ncol(Sigma) + 1)
+    wt.idx <- ncol(Sigma) - meq + 1
+    wt[wt.idx] <- 1
+  }
+  
+  #wt <- object$wt
   # is this fool proof? 
   # The number of bootstrap samples must be large enough to avoid spurious results.
   wt <- rev(wt)

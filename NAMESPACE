@@ -38,10 +38,9 @@ export("restriktor",
        "conTestEq.conRLM", "conTestScore.conRLM", "conTestWald.conRLM", 
        "conTestWald2.conRLM",
        "goricWeights", "print.conLM", "summary.conLM", "summary.conTest.conLM",
-       "print.summary.conLM", 
-       "print.conTest", 
+       "print.summary.conLM", "print.conTest", 
        "coef.conLM", "model.matrix.conLM",
-       "goricWeights")
+       "goricWeights", "con_weightsBoot")
 
 S3method(coef, conLM)
 S3method(model.matrix, conLM)

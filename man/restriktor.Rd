@@ -51,7 +51,8 @@ restriktor(model, constraints = NULL, \dots)
   errors are computed (a.k.a Huber White). The options "\code{HC1}", 
   "\code{HC2}", "\code{HC3}", "\code{HC4}", "\code{HC4m}", and 
   "\code{HC5}" are refinements of "\code{HC0}". For more details about 
-  heteroskedastic robust standard errors see \code{sandwich()} in the \pkg{sandwich} package. If "\code{boot.standard}", bootstrapped standard 
+  heteroskedastic robust standard errors see \code{sandwich()} in 
+  the \pkg{sandwich} package. If "\code{boot.standard}", bootstrapped standard 
   errors are computed using standard bootstrapping. If "\code{boot.model.based}" 
   or "\code{boot.residual}", bootstrapped standard errors are computed 
   using model-based bootstrapping. If "\code{none}", no standard errors 

@@ -105,8 +105,9 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic",
         ans$coefficients <- rbind(ans$coefficients, cbind(b.def, se.def, cis.def))
       }
     } else {
-    ans$coefficients <- cbind(b.restr)
-    colnames(ans$coefficients) <- "Estimate"
+      b.def <- z$CON$def.function(b.restr)
+      ans$coefficients <- cbind(c(b.restr, b.def))
+      colnames(ans$coefficients) <- "Estimate"
     }
   
   ans$rdf <- rdf

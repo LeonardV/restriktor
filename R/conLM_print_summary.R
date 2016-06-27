@@ -8,13 +8,13 @@ print.summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
   bty <- attr(x$se.type, "bty")
   level <- attr(x$se.type, "level")
   
+  cat("Call:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), "\n\n", sep = "")
+  
   if (inherits(x, "summary.conRLM")) {
     cat("Restriktor: restrikted robust linear model:\n\n")
   } else {
     cat("Restriktor: restrikted linear model:\n\n")
   }
-    
-  cat("Call:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), "\n\n", sep = "")
   
   cat(if (!is.null(x$weights) && diff(range(x$weights))) 
     "Weighted ", "Residuals:\n", sep = "")

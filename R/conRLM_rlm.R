@@ -62,8 +62,10 @@ conRLM.rlm <- function(model, constraints = NULL, se = "standard", B = 999,
   if (is.null(method)) model$call[["method"]] <- "M"
   # check (only tukey's bisquare supported)
   psi <- call[["psi"]]
-  if (is.null(psi) && model$call[["method"]] == "M") {
-    stop("only tukey's bisquare loss function is supported.")
+  if (is.null(psi)) {
+    if (model$call[["method"]] == "M") {
+      stop("only tukey's bisquare loss function is supported.")
+    }
   } else {
     if (psi != "psi.bisquare") {
       stop("only tukey's bisquare loss function is supported.")

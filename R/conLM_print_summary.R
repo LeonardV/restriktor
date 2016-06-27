@@ -61,9 +61,9 @@ print.summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
   
    
   if (x$R2.org == x$R2.reduced) {
-   cat("Restrikted model: R2 remains", round(x$R2.org, 4),"\n")
+   cat("Multiple R-squared remains", round(x$R2.org, 4),"\n")
   } else {
-   cat("Restrikted model: R2 reduced from", round(x$R2.org, 4), "to", round(x$R2.reduced, 4),"\n")  
+   cat("Multiple R-squared reduced from", round(x$R2.org, 4), "to", round(x$R2.reduced, 4),"\n")  
   }
 
   goric <- x$goric

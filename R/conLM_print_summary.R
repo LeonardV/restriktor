@@ -54,7 +54,7 @@ print.summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
     } else if (se.type == "boot.standard") {
       se.type <- "standard"
     }
-    cat("---\nBootstrapped standard errors:", se.type ,"\n")
+    cat("\nBootstrapped standard errors:", se.type ,"\n")
   } else {
     cat("\nHeteroskedastic robust standard errors:", se.type ,"\n")
   }

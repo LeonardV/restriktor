@@ -9,13 +9,14 @@ con_pvalue_Fbar <- function(wt, Ts.org, df.residual, type = "A",
     # compute df
     df.bar <- ((ncol(Amat) - 1) - nrow(Amat)):((ncol(Amat) - 1) - meq)    
     # p value based on the chi-square distribution
-    pvalue <- 1-pfbar(Ts.org, df1 = df.bar, df2 = df.residual, wt = rev(wt))
+    pvalue <- 1-pfbar(Ts.org, df1 = df.bar, df2 = df.residual, 
+                      wt = rev(wt))
   } else if(type == "A") {
     # compute df
     df.bar <- 0:(nrow(Amat) - meq)
     # p value based on F-distribution or chi-square distribution
     pvalue <- 1-pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
-                       wt = rev(wt))
+                      wt = rev(wt))
   } else if (type == "B") {
     # compute df
     df.bar <- (meq - meq.alt):(nrow(Amat) - meq.alt)#meq:nrow(Amat)

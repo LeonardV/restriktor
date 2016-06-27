@@ -41,7 +41,7 @@ print.summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
   } 
   printCoefmat(coefs, digits = digits, signif.stars = signif.stars, 
                na.print = "NA")
-  cat("\nResidual standard error:", format(signif(x$s2.restr, 
+  cat("\nResidual standard error:", format(signif(sqrt(x$s2.restr), 
                                                   digits)), "on", rdf, "degrees of freedom")
   #cat("\n")
   if (se.type == "standard") {

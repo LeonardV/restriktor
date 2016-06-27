@@ -114,10 +114,15 @@ conTest(object, type = "summary", \dots)
   one. See \code{p.distr} for other distributional options. If 
   \code{"model.based"}, a model-based bootstrap method is used. 
   Instead of computing the p-value via simulation, the p-value
-  can also be computed based on the chi-bar-square weights. If 
+  can also be computed using the chi-bar-square weights. If 
   \code{"no"}, the p-value is computed based on the weights 
   obtained via simulation (\code{bootWt = TRUE}) or using the 
-  multivariate normal distribution function (\code{bootWt = FALSE}).}
+  multivariate normal distribution function (\code{bootWt = FALSE}).
+  Note that, these weights are already available in the conLM or
+  conRLM objected. However, there are two exception in case of a 
+  conRLM object. If \code{test} = \code{"Wald"} or \code{"score"} 
+  the weights need to be recalculated.
+  }
   
   \item{B}{integer; number of bootstrap draws for \code{boot}. 
   The default value is set to 9999.}

@@ -16,7 +16,7 @@
 \method{summary}{conLM}(object, bootCIs = TRUE, 
         bty = "basic", level = 0.95, GORIC = TRUE, \dots)
 
-\method{print.summary}{conLM}(x, digits = max(3, getOption("digits") - 2),
+\method{print}{summary.conLM}(x, digits = max(3, getOption("digits") - 2),
               signif.stars = getOption("show.signif.stars"), \dots)     
 
 \method{coef}{conLM}(object, \dots)
@@ -26,8 +26,7 @@
 }
 \arguments{
   \item{object}{an object of class \code{conLM} or \code{conRLM}.}
-  \item{x}{for \code{print} an object of class \code{conLM} or 
-  \code{conRLM}. For \code{print.summary.conLM} an object of class
+  \item{x}{an object of class \code{conLM}, \code{conRLM},  
   \code{summary.conLM} or \code{summary.conRLM}.}
   \item{bootCIs}{if TRUE (default), nonparametric bootstrap 
   confidence intervals are generated. Only available if \code{object}

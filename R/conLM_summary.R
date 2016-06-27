@@ -110,6 +110,8 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic",
       colnames(ans$coefficients) <- "Estimate"
     }
   
+  ans$s2.unrestr <- z$s2.unrestr
+  ans$s2.restr   <- z$s2.restr
   ans$rdf <- rdf
   ans$R2.org <- z$R2.org
   if (attr(z$model.org$terms, "intercept") != p) {

@@ -47,7 +47,7 @@ summary.conTest.conLM <- function(object, test = "F", ...) {
     CALL$type <- "C"
     out3 <- do.call("conTest", CALL)
     cat("Type C test: H0: at least one restriktion false or active (=)", 
-        "\n", "        vs. H1: all restriktions strictly true (>)", "\n")
+        "\n", "        vs. HA: all restriktions strictly true (>)", "\n")
     cat("       Test statistic: ", out3$Ts, ",   p-value: ", 
         if (out3$pvalue < 1e-04) {
           "<0.0001"

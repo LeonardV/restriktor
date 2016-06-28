@@ -10,7 +10,9 @@ conTest <- function(object, type = "summary", ...) {
   Amat <- object$constraints
   meq  <- object$neq
   
-  if (nrow(Amat) > meq) {
+  if (nrow(Amat) == 0) {
+    stop("no constraints were specified.")
+  } else if (nrow(Amat) > meq) {
     if (!("test" %in% names(l))) {
       test <- "F"
     } else {

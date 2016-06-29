@@ -113,7 +113,11 @@ conLM.lm <- function(model, constraints = NULL, se = "standard", B = 999,
                           seed     = seed,
                           verbose  = verbose)
     # compute mixing weights based on mvtnorm
-  } else if (!bootWt & (meq < nrow(Amat))) { 
+  } else if (!bootWt & (meq < nrow(Amat))) {
+    #check
+    if ((qr(Amat)$rank < nrow(Amat))) {
+      stop("restriktions matrix must have full row-rank. try set bootWt = TRUE.")
+    }
     wt <- rev(con_wt(Amat %*% W %*% t(Amat), meq = meq))
     # if only equality constraints
   } else if (!bootWt & (meq == nrow(Amat))) { 

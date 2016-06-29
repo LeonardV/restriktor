@@ -167,6 +167,10 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   }
   
   if (boot == "no") {
+    #check
+    if ((qr(Amat)$rank < nrow(Amat))) {
+      stop("restriktions matrix must have full row-rank")
+    }
     pvalue <- con_pvalue_Fbar(wt          = wt, 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
@@ -440,6 +444,10 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   }
   
   if (boot == "no") {
+    #check
+    if ((qr(Amat)$rank < nrow(Amat))) {
+      stop("restriktions matrix must have full row-rank")
+    }
     # compute pvalue based on F-distribution
     pvalue <- con_pvalue_Fbar(wt          = wt, 
                               Ts.org      = Ts, 
@@ -669,6 +677,10 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   }
   
   if (boot == "no") {
+    #check
+    if ((qr(Amat)$rank < nrow(Amat))) {
+      stop("restriktions matrix must have full row-rank")
+    }
     pvalue <- con_pvalue_Fbar(wt          = wt, 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
@@ -941,6 +953,10 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   }
   
   if (boot == "no") {
+    #check
+    if ((qr(Amat)$rank < nrow(Amat))) {
+      stop("restriktions matrix must have full row-rank")
+    }
     # compute pvalue based on F-distribution
     pvalue <- con_pvalue_Fbar(wt          = wt, 
                               Ts.org      = Ts, 

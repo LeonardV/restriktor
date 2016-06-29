@@ -1,4 +1,4 @@
-conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999, 
+conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
                             p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
                             cl = NULL, seed = 1234, verbose = FALSE,
                             control = NULL, ...) {
@@ -181,7 +181,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
                                          type     = type, 
                                          test     = "F",
                                          meq.alt  = meq.alt,
-                                         R        = B, 
+                                         R        = R, 
                                          p.distr  = p.distr,
                                          df       = df, 
                                          parallel = parallel,
@@ -195,7 +195,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
                                           type     = type, 
                                           test     = "F",
                                           meq.alt  = meq.alt,
-                                          R        = B, 
+                                          R        = R, 
                                           parallel = parallel,
                                           ncpus    = ncpus, 
                                           cl       = cl,
@@ -228,7 +228,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 99
 
 
 
-conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999, 
+conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
                                p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
                                cl = NULL, seed = 1234, verbose = FALSE,
                                control = NULL, ...) {
@@ -455,7 +455,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B =
                                          type     = type, 
                                          test     = "Wald",
                                          meq.alt  = meq.alt,
-                                         R        = B, 
+                                         R        = R, 
                                          p.distr  = p.distr,
                                          df       = df, 
                                          parallel = parallel,
@@ -469,7 +469,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B =
                                           type     = type, 
                                           test     = "Wald",
                                           meq.alt  = meq.alt,
-                                          R        = B, 
+                                          R        = R, 
                                           parallel = parallel,
                                           ncpus    = ncpus, 
                                           cl       = cl,
@@ -503,7 +503,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B =
 
 #REF: Silvapulle, M.J. (1992) Robust Wald-Type Test of One-Sided Hypotheses in the linear model.
 #American Statistical Association, 87, 417.
-conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999, 
+conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
                                 p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
                                 cl = NULL, seed = 1234, verbose = FALSE,
                                 control = NULL, ...) {
@@ -683,7 +683,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B 
                                          type     = type, 
                                          test     = "F",
                                          meq.alt  = meq.alt,
-                                         R        = B, 
+                                         R        = R, 
                                          p.distr  = p.distr,
                                          df       = df, 
                                          parallel = parallel,
@@ -697,7 +697,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B 
                                           type     = type, 
                                           test     = "F",
                                           meq.alt  = meq.alt,
-                                          R        = B, 
+                                          R        = R, 
                                           parallel = parallel,
                                           ncpus    = ncpus, 
                                           cl       = cl,
@@ -730,7 +730,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B 
 
 
 
-conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999, 
+conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
                                 p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
                                 cl = NULL, seed = 1234, verbose = FALSE,
                                 control = NULL, ...) {
@@ -956,7 +956,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B 
                                          type     = type, 
                                          test     = "score",
                                          meq.alt  = meq.alt,
-                                         R        = B, 
+                                         R        = R, 
                                          p.distr  = p.distr,
                                          df       = df, 
                                          parallel = parallel,
@@ -970,7 +970,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", B 
                                           type     = type, 
                                           test     = "score",
                                           meq.alt  = meq.alt,
-                                          R        = B, 
+                                          R        = R, 
                                           parallel = parallel,
                                           ncpus    = ncpus, 
                                           cl       = cl,

@@ -2,9 +2,9 @@
 con_pvalue_Fbar <- function(wt, Ts.org, df.residual, type = "A",
                             Amat, bvec, meq = 0L, meq.alt = 0L) {
   #check
-  if ((qr(Amat)$rank < nrow(Amat))) {
-    stop("restriktions matrix must have full row-rank")
-  }
+  #if ((qr(Amat)$rank < nrow(Amat))) {
+  #  stop("restriktions matrix must have full row-rank")
+  #}
   if (type == "global") {
     # compute df
     df.bar <- ((ncol(Amat) - 1) - nrow(Amat)):((ncol(Amat) - 1) - meq)    
@@ -39,9 +39,9 @@ con_pvalue_Fbar <- function(wt, Ts.org, df.residual, type = "A",
 con_pvalue_Chibar <- function(wt, Ts.org, type = "A",
                               Amat, bvec, meq = 0L, meq.alt = 0L) {
   #check
-  if ((qr(Amat)$rank < nrow(Amat))) {
-    stop("Restriktor ERROR: restriktions matrix must have full row-rank")
-  }
+  #if ((qr(Amat)$rank < nrow(Amat))) {
+  #  stop("Restriktor ERROR: restriktions matrix must have full row-rank")
+  #}
   
   if (type == "global") {
     # compute df
@@ -99,6 +99,9 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL,
   meq  <- model$neq
   meq.alt <- neq.alt
   
+  bootWt <- attr(model$wt, "bootWt")
+  bootWt.R <- attr(model$wt, "bootWt.R")
+  
   #parallel housekeeping
   have_mc <- have_snow <- FALSE
   if (parallel != "no" && ncpus > 1L) {
@@ -130,19 +133,22 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL,
     }
   
     xcol <- which(rowSums(attr(model.org$terms, "factors")) > 0)
-    terms <- attr(model.org$terms , "term.labels")
-    DATA <- data.frame(ystar, model.org$model[,xcol])
+    terms <- attr(model.org$terms, "term.labels")[attr(model.org$terms, "order") == 1]
+    DATA <- data.frame(ystar, model.org$model[ ,xcol])
     colnames(DATA) <- c(as.character("ystar"), terms)  
     form <- formula(model.org)
     form[[2]] <- as.name("ystar")
     boot_model <- update(model.org, formula = form, data = DATA)
     
-    CALL <- list(model = boot_model, constraints = Amat, rhs = bvec, neq = meq, 
-                 control = control, se = "none")
+    CALL <- list(model = boot_model, constraints = Amat, 
+                 rhs = bvec, neq = meq, se = "none", 
+                 bootWt = bootWt, bootWt.R = bootWt.R, 
+                 control = control)
     boot_conLM <- do.call("restriktor", CALL)
     boot_conTest <- try(conTest(boot_conLM, 
                                 type    = type, 
-                                test    = test, 
+                                test    = test,
+                                boot    = "no",
                                 meq.alt = meq.alt, 
                                 control = control))
     if (inherits(boot_conTest, "try-error")) {
@@ -199,7 +205,7 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL,
      }
     # > or >= ??? 
     pvalue <- sum(Ts.boot >= Ts.org) / Rboot.tot
-      attr(pvalue, "B") <- Rboot.tot
+      attr(pvalue, "R") <- Rboot.tot
     
     OUT <- pvalue
 
@@ -232,6 +238,10 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
   meq  <- model$neq
   meq.alt <- neq.alt
   
+  bootWt <- attr(model$wt, "bootWt")
+  bootWt.R <- attr(model$wt, "bootWt.R")
+  
+  # parallel housekeeping
   have_mc <- have_snow <- FALSE
   if (parallel != "no" && ncpus > 1L) {
     if (parallel == "multicore") {
@@ -254,7 +264,8 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
       stop("Restriktor ERROR: test not applicable for models without intercept.")      
     }
     call.my <- list(constraints = Amatg, rhs = bvecg, neq = nrow(Amatg), 
-                    control = control, se = "none")
+                    control = control, se = "none",
+                    bootWt = bootWt, bootWt.R = bootWt.R)
     call.lm <- list(model = model.org)
     CALL <- c(call.lm, call.my)
     if (any(duplicated(CALL))) {
@@ -263,7 +274,8 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
     fit <- do.call("restriktor", CALL)
   } else if (type == "A") {
     call.my <- list(constraints = Amat, rhs = bvec, neq = nrow(Amat), 
-                    control = control, se = "none")
+                    control = control, se = "none",
+                    bootWt = bootWt, bootWt.R = bootWt.R)
     call.lm <- list(model = model.org)
     CALL <- c(call.lm, call.my)
     if (any(duplicated(CALL))) {
@@ -272,7 +284,8 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
     fit <- do.call("restriktor", CALL)
   } else if (type == "B") {
       call.my <- list(constraints = Amat, rhs = bvec, neq = meq, 
-                      control = control, se = "none")
+                      control = control, se = "none",
+                      bootWt = bootWt, bootWt.R = bootWt.R)
       call.lm <- list(model = model.org)
       CALL <- c(call.lm, call.my)
       if (any(duplicated(CALL))) {
@@ -296,7 +309,7 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
       idx <- sample(dim(X)[1], replace=TRUE)
       ystar <- as.matrix(c(yhat + r[idx]))
       xcol <- which(rowSums(attr(model.org$terms, "factors")) > 0)
-      terms <- attr(model.org$terms , "term.labels")
+      terms <- attr(model.org$terms , "term.labels")[attr(model.org$terms, "order") == 1]
       DATA <- data.frame(ystar, model.org$model[,xcol])
       colnames(DATA) <- c(as.character("ystar"), terms)
       DATA <- as.data.frame(DATA)
@@ -304,12 +317,14 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
       form[[2]] <- as.name("ystar")
       
       boot_model <- update(model.org, formula = form, data = DATA)
-      CALL <- list(boot_model, constraints = Amat, rhs = bvec, neq = meq, 
-                   control = control, se = "none")
+      CALL <- list(boot_model, constraints = Amat, rhs = bvec, 
+                   neq = meq, control = control, se = "none",
+                   bootWt = bootWt, bootWt.R = bootWt.R)
       boot_conLM <- do.call("restriktor", CALL)  
       boot_conTest <- try(conTest(boot_conLM, 
                                   type    = type, 
                                   test    = test, 
+                                  boot    = "no",
                                   meq.alt = meq.alt, 
                                   control = control))
       if (inherits(boot_conTest, "try-error")) {
@@ -366,7 +381,7 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
     }
     # > or >= ???
     pvalue <- sum(Ts.boot >= Ts.org) / Rboot.tot
-      attr(pvalue, "B") <- Rboot.tot
+      attr(pvalue, "R") <- Rboot.tot
     OUT <- pvalue
     
     OUT

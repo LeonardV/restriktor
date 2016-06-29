@@ -8,7 +8,6 @@ con_boot_fixed_lm <- function(data, indices, ...) {
       colnames(boot_data) <- colnames(data[ ,1:(ncol(data)-2)])
     CALL$data <- boot_data
     l$model <- do.call("lm", CALL)
-    #l$model <- lm(form, data = boot_data)
     OUT <- do.call("restriktor", l)$b.restr  
     
     OUT
@@ -25,7 +24,6 @@ con_boot_fixed_rlm <- function(data, indices, ...) {
     colnames(boot_data) <- colnames(data[ ,1:(ncol(data)-2)])
   CALL$data <- boot_data
   l$model <- do.call("rlm", CALL)
-  #l$model <- rlm(form, data = boot_data, CALL)
   OUT <- do.call("restriktor", l)$b.restr  
   
   OUT

@@ -1,5 +1,5 @@
 conLM.lm <- function(model, constraints = NULL, se = "standard", B = 999,
-                     rhs = NULL, neq = 0L, bootWt = FALSE, R = 99999,
+                     rhs = NULL, neq = 0L, bootWt = FALSE, bootWt.R = 99999,
                      parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
                      control = NULL, verbose = FALSE, debug = FALSE, ...) {
   
@@ -106,7 +106,7 @@ conLM.lm <- function(model, constraints = NULL, se = "standard", B = 999,
     wt <- con_weightsBoot(VCOV     = W,
                           Amat     = Amat, 
                           meq      = meq, 
-                          R        = R,
+                          R        = bootWt.R,
                           parallel = parallel,
                           ncpus    = ncpus,
                           cl       = cl,
@@ -122,6 +122,7 @@ conLM.lm <- function(model, constraints = NULL, se = "standard", B = 999,
     wt[wt.idx] <- 1
   }
   attr(wt, "bootWt") <- bootWt
+  attr(wt, "bootWt.R") <- bootWt.R
   
   # check if the constraints are in line with the data
   if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) & meq == 0) {
@@ -261,6 +262,8 @@ conLM.lm <- function(model, constraints = NULL, se = "standard", B = 999,
                                  rhs         = bvec, 
                                  neq         = meq, 
                                  se          = "none",
+                                 bootWt      = bootWt,
+                                 bootWt.R    = bootWt.R,
                                  parallel    = parallel, 
                                  ncpus       = ncpus, 
                                  cl          = cl)
@@ -273,6 +276,8 @@ conLM.lm <- function(model, constraints = NULL, se = "standard", B = 999,
                                  rhs         = bvec, 
                                  neq         = meq, 
                                  se          = "none",
+                                 bootWt      = bootWt,
+                                 bootWt.R    = bootWt.R,
                                  parallel    = parallel, 
                                  ncpus       = ncpus, 
                                  cl          = cl)

@@ -1,7 +1,7 @@
 ## computes the F, LRT and score test statistic ##
 ##
 # REF: Silvapulle and Sen (2005). Constrained statistical inference. Chapter 2.
-conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999, 
+conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
                            p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
                            cl = NULL, seed = 1234, verbose = FALSE,
                            control = NULL, ...) {
@@ -184,7 +184,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 999
                                          type     = type, 
                                          test     = "F", 
                                          meq.alt  = meq.alt, 
-                                         R        = B, 
+                                         R        = R, 
                                          p.distr  = p.distr,
                                          df       = df, 
                                          parallel = parallel,
@@ -197,7 +197,8 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 999
                                           Ts.org   = Ts, 
                                           type     = type, 
                                           test     = "F", 
-                                          meq.alt  = meq.alt, 
+                                          meq.alt  = meq.alt,
+                                          R        = R,
                                           parallel = parallel, 
                                           ncpus    = ncpus,
                                           cl       = cl, 
@@ -230,7 +231,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 999
 
 
 # REF: Silvapulle and Sen (2005). Constrained statistical inference. Chapter 3.
-conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999, 
+conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
                              p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
                              cl = NULL, seed = 1234, verbose = FALSE,
                              control = NULL, ...) {
@@ -428,7 +429,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9
                                          type     = type, 
                                          test     = "LRT", 
                                          meq.alt  = meq.alt,
-                                         R        = B, 
+                                         R        = R, 
                                          p.distr  = p.distr,
                                          df       = df, 
                                          parallel = parallel,
@@ -442,7 +443,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9
                                           type     = type, 
                                           test     = "LRT",
                                           meq.alt  = meq.alt,
-                                          R        = B, 
+                                          R        = R, 
                                           parallel = parallel,
                                           ncpus    = ncpus, 
                                           cl       = cl,
@@ -476,7 +477,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9
 
 # REF: Silvapulle, M.J. and Silvapulle, P. (1995). A score Test Against One-Sided Alternatives
 # Journal of the American Statistical Association, Vol. 90, No. 429 (Mar., 1995), pp. 342-349
-conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", B = 9999, 
+conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
                                p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
                                cl = NULL, seed = 1234, verbose = FALSE,
                                control = NULL, ...) {
@@ -704,7 +705,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", B =
                                          type     = type, 
                                          test     = "score",
                                          meq.alt  = meq.alt, 
-                                         R        = B, 
+                                         R        = R, 
                                          p.distr  = p.distr, 
                                          df       = df,
                                          parallel = parallel,
@@ -718,7 +719,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", B =
                                           type     = type, 
                                           test     = "score",
                                           meq.alt  = meq.alt,
-                                          R        = B, 
+                                          R        = R, 
                                           parallel = parallel,
                                           ncpus    = ncpus, 
                                           cl       = cl,

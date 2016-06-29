@@ -9,7 +9,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     cat("\nRestriktor: restrikted hypothesis test type", x$type, "\n")
     if (x$type != "C") {
       if (x$boot != "no") {
-        cat("( Number of successful bootstrap draws:", attr(x$pvalue, "B"),")\n")
+        cat("( Number of successful bootstrap draws:", attr(x$pvalue, "R"),")\n")
       }
     }
   }

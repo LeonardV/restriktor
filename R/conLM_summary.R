@@ -104,10 +104,15 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic",
         } 
         ans$coefficients <- rbind(ans$coefficients, cbind(b.def, se.def, cis.def))
       }
-    } else {
+  } else if (is.null(z$bootout) && se.type == "none" && !any(z$parTable$op == ":=")) {
+    ans$coefficients <- cbind(b.restr)
+    colnames(ans$coefficients) <- "Estimate"
+  } else if (is.null(z$bootout) && se.type == "none" && any(z$parTable$op == ":=")) {
       b.def <- z$CON$def.function(b.restr)
       ans$coefficients <- cbind(c(b.restr, b.def))
       colnames(ans$coefficients) <- "Estimate"
+  } else {
+      stop("restriktor ERROR")
     }
   
   ans$s2.unrestr <- z$s2.unrestr

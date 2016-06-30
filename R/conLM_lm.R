@@ -1,11 +1,11 @@
-conLM.lm <- function(model, constraints = NULL, se = "standard", B = 999,
+conLM.lm <- function(object, constraints = NULL, se = "standard", B = 999,
                      rhs = NULL, neq = 0L, bootWt = FALSE, bootWt.R = 99999,
                      parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
                      control = NULL, verbose = FALSE, debug = FALSE, ...) {
   
   # check class
-  if (!(class(model)[1] %in% c("lm"))) {
-    stop("model must be of class lm.")
+  if (!(class(object)[1] %in% c("lm"))) {
+    stop("object must be of class lm.")
   }
   
   cl <- match.call()
@@ -14,20 +14,20 @@ conLM.lm <- function(model, constraints = NULL, se = "standard", B = 999,
   
   # unconstrained case
   if (is.null(constraints)) {
-    constraints <- rbind(rep(0L, length(coef(model))))
+    constraints <- rbind(rep(0L, length(coef(object))))
     bvec <- rep(0L, nrow(constraints))
     meq <- 0L
   }
   
   # construct constraint matrix/vector.
-  restr_OUT <- con_constraints(model, 
+  restr_OUT <- con_constraints(object, 
                                constraints = constraints, 
                                bvec        = bvec, 
                                meq         = meq, 
                                debug       = debug)  
   # a list with useful information about the restriktions.}
   CON <- restr_OUT$CON
-  # a parameter table with information about the observed variables in the model 
+  # a parameter table with information about the observed variables in the object 
   # and the imposed restriktions.}
   parTable <- restr_OUT$parTable
   # constraints matrix
@@ -65,19 +65,19 @@ conLM.lm <- function(model, constraints = NULL, se = "standard", B = 999,
   }
   
   # model summary
-  so <- summary(model)
+  so <- summary(object)
   # response variable
-  y <- as.matrix(model$model[, attr(model$terms, "response")])
+  y <- as.matrix(object$model[, attr(object$terms, "response")])
   # model matrix
-  X <- model.matrix(model)[,,drop = FALSE]
+  X <- model.matrix(object)[,,drop = FALSE]
   # residual variance
   s2.unc <- so$sigma^2
   # weigths
-  weights <- weights(model)
+  weights <- weights(object)
   # sample size
   n <- dim(X)[1]
   # unconstrained estimates
-  b.unrestr <- coef(model)
+  b.unrestr <- coef(object)
   # number of parameters
   p <- length(b.unrestr)
   
@@ -93,7 +93,7 @@ conLM.lm <- function(model, constraints = NULL, se = "standard", B = 999,
   LL.unc <- ll.unc$loglik
   
   # ML unconstrained MSE
-  s2ml.unc <- (s2.unc * model$df.residual) / n
+  s2ml.unc <- (s2.unc * object$df.residual) / n
   invW <- kronecker(solve(s2ml.unc), t(X) %*% X)
   W <- solve(invW)
   
@@ -138,13 +138,13 @@ conLM.lm <- function(model, constraints = NULL, se = "standard", B = 999,
                 wt = wt,
                 b.unrestr = b.unrestr,
                 b.restr = b.unrestr,
-                residuals = model$residuals, # unweighted residuals
-                fitted = model$fitted,
-                weights = model$weights,
-                df.residual = model$df.residual,
+                residuals = object$residuals, # unweighted residuals
+                fitted = object$fitted,
+                weights = object$weights,
+                df.residual = object$df.residual,
                 R2.org = so$r.squared, R2.reduced = so$r.squared,
                 s2.unc = s2.unc, s2.restr = s2.unc, 
-                loglik = LL.unc, Sigma = vcov(model),
+                loglik = LL.unc, Sigma = vcov(object),
                 constraints = Amat, rhs = bvec, neq = meq, iact = NULL, 
                 bootout = NULL, call = cl)  
   } else {
@@ -180,14 +180,14 @@ conLM.lm <- function(model, constraints = NULL, se = "standard", B = 999,
       
       # compute R^2
       if (is.null(weights)) {
-        mss <- if (attr(model$terms, "intercept")) {
+        mss <- if (attr(object$terms, "intercept")) {
           sum((fitted - mean(fitted))^2)
         } else {
           sum(fitted^2)
         }
         rss <- sum(residuals^2)
       } else {
-        mss <- if (attr(model$terms, "intercept")) {
+        mss <- if (attr(object$terms, "intercept")) {
           m <- sum(weights * fitted / sum(weights))
           sum(weights * (fitted - m)^2)
         } else {
@@ -211,7 +211,7 @@ conLM.lm <- function(model, constraints = NULL, se = "standard", B = 999,
         rownames(b.restr) <- rownames(b.unrestr)
         colnames(b.restr) <- colnames(b.unrestr)
       fitted <- X %*% b.restr
-      df <- model$df.residual
+      df <- object$df.residual
       df.residual <- df + qr(Amat[0:meq,])$rank
       se <- "none"
     }
@@ -224,19 +224,19 @@ conLM.lm <- function(model, constraints = NULL, se = "standard", B = 999,
                 residuals = residuals, 
                 fitted = fitted, 
                 weights = weights,
-                df.residual = model$df.residual, #df.residual, 
+                df.residual = object$df.residual, #df.residual, 
                 R2.org = so$r.squared, R2.reduced = R2.reduced,
                 s2.unc = s2.unc,  
                 s2.restr = s2.restr,  
                 loglik = LL.restr, 
-                Sigma = vcov(model), 
+                Sigma = vcov(object), 
                 constraints = Amat, rhs = bvec, neq = meq, 
                 iact = out.QP$iact,
                 bootout = NULL, call = cl)
   }
   
-  # original model
-  OUT$model.org <- model
+  # original object
+  OUT$model.org <- object
   # type standard error
   OUT$se <- se
   # compute standard errors based on the augmented inverted information matrix or
@@ -258,10 +258,10 @@ conLM.lm <- function(model, constraints = NULL, se = "standard", B = 999,
       attr(OUT$information, "augmented") <- information.inv$information.augmented
       
     } else if (se == "boot.model.based") {
-      OUT$bootout <- con_boot_lm(model, 
+      OUT$bootout <- con_boot_lm(object, 
                                  B           = B, 
                                  fixed       = TRUE, 
-                                 CALL        = model$call,
+                                 CALL        = object$call,
                                  constraints = Amat,
                                  rhs         = bvec, 
                                  neq         = meq, 
@@ -272,10 +272,10 @@ conLM.lm <- function(model, constraints = NULL, se = "standard", B = 999,
                                  ncpus       = ncpus, 
                                  cl          = cl)
     } else if (se == "boot.standard") {
-      OUT$bootout <- con_boot_lm(model, 
+      OUT$bootout <- con_boot_lm(object, 
                                  B           = B, 
                                  fixed       = FALSE, 
-                                 CALL        = model$call,
+                                 CALL        = object$call,
                                  constraints = Amat,
                                  rhs         = bvec, 
                                  neq         = meq, 

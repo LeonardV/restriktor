@@ -1,12 +1,12 @@
 #compute restrikted robust estimates
-conRLM.rlm <- function(model, constraints = NULL, se = "standard", B = 999, 
+conRLM.rlm <- function(object, constraints = NULL, se = "standard", B = 999, 
                        rhs = NULL, neq = 0L, bootWt = FALSE, bootWt.R = 99999,
                        parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
                        control = NULL, verbose = FALSE, debug = FALSE, ...) { 
   
   # check class
-  if (!(class(model)[1] == "rlm")) {
-    stop("Restriktor ERROR: model must be of class rlm.")
+  if (!(class(object)[1] == "rlm")) {
+    stop("Restriktor ERROR: object must be of class rlm.")
   }
   
   cl <- match.call()
@@ -14,20 +14,20 @@ conRLM.rlm <- function(model, constraints = NULL, se = "standard", B = 999,
   bvec <- rhs; meq <- neq
   
   if (is.null(constraints)) {
-    constraints <- rbind(rep(0L, length(coef(model))))
+    constraints <- rbind(rep(0L, length(coef(object))))
     bvec <- rep(0L, nrow(constraints))
     meq <- 0L
   }
   
   # construct constraint matrix/vector.
-  restr_OUT <- con_constraints(model, 
+  restr_OUT <- con_constraints(object, 
                                constraints = constraints, 
                                bvec        = bvec, 
                                meq         = meq, 
                                debug       = debug)  
   # a list with useful information about the restriktions.}
   CON <- restr_OUT$CON
-  # a parameter table with information about the observed variables in the model 
+  # a parameter table with information about the observed variables in the object 
   # and the imposed restriktions.}
   parTable <- restr_OUT$parTable
   # constraints matrix
@@ -56,14 +56,14 @@ conRLM.rlm <- function(model, constraints = NULL, se = "standard", B = 999,
   ## only the tukey's bisquare loss function is supported by restriktor.
   
   # original model function call
-  call <- as.list(model$call)
+  call <- as.list(object$call)
   # which method M or MM estimation
   method <- call[["method"]]
-  if (is.null(method)) model$call[["method"]] <- "M"
+  if (is.null(method)) object$call[["method"]] <- "M"
   # check (only tukey's bisquare supported)
   psi <- call[["psi"]]
   if (is.null(psi)) {
-    if (model$call[["method"]] == "M") {
+    if (object$call[["method"]] == "M") {
       stop("only tukey's bisquare loss function is supported.")
     }
   } else {
@@ -73,46 +73,46 @@ conRLM.rlm <- function(model, constraints = NULL, se = "standard", B = 999,
   }
   # tukeys bisquare tuning constant
   cc <- call[["c"]]
-  if (is.null(cc)) model$call[["c"]] <- 4.685061
+  if (is.null(cc)) object$call[["c"]] <- 4.685061
   # prior weights for each case
-  weights <- model$weights
+  weights <- object$weights
   if (any(weights != 1L)) stop("weights are not implemented (yet).")            # FIXME
   # weights method, inverse of the variance or case 
   wt.method <- call[["wt.method"]]
-  if (is.null(wt.method)) model$call[["wt.method"]] <- "inv.var"
+  if (is.null(wt.method)) object$call[["wt.method"]] <- "inv.var"
   # initial down-weighting for each case
   w <- call[["w"]]
-  if (is.null(w)) model$call[["w"]] <- rep(1, length(weights))
+  if (is.null(w)) object$call[["w"]] <- rep(1, length(weights))
   # scale estimator - depends on method
   scale.est <- call[["scale.est"]]
-  if (is.null(scale.est)) model$call[["scale.est"]] <- "MAD"
+  if (is.null(scale.est)) object$call[["scale.est"]] <- "MAD"
   # tuning constant used for Huber proposal 2 scale estimation.
   k2 <- call[["k2"]]
-  if (is.null(k2)) model$call[["k2"]] <- 1.345
+  if (is.null(k2)) object$call[["k2"]] <- 1.345
   # the stopping criterion is based on changes in this vector
   test.vec <- call[["test.vec"]]
-  if (is.null(test.vec)) model$call[["test.vec"]] <- "resid"
+  if (is.null(test.vec)) object$call[["test.vec"]] <- "resid"
   # the limit on the number of IWLS iterations.
   maxit <- call[["maxit"]]
-  if (is.null(maxit)) model$call[["maxit"]] <- 20
+  if (is.null(maxit)) object$call[["maxit"]] <- 20
   # the accuracy for the stopping criterion.
   acc <- call[["acc"]]
-  if (is.null(acc)) model$call[["acc"]] <- 1e-4
+  if (is.null(acc)) object$call[["acc"]] <- 1e-4
   
   # response varialbe
-  y <- as.matrix(model$model[, attr(model$terms, "response")])
+  y <- as.matrix(object$model[, attr(object$terms, "response")])
   # model matrix
-  X  <- model.matrix(model)[ , ,drop = FALSE]
+  X  <- model.matrix(object)[ , ,drop = FALSE]
   # model summary
-  so.org <- summary(model)
+  so.org <- summary(object)
   # unrestrikted coefficients
-  b.unrestr <- coef(model)  
+  b.unrestr <- coef(object)  
   # unrestrikted scale estimate for the standard deviation
   tau <- so.org$stddev
   # residual degrees of freedom
   #rdf <- so.org$df[2]
   # residuals
-  residuals <- model$residuals
+  residuals <- object$residuals
   # sampel size
   n <- dim(X)[1]
   p <- dim(X)[2]
@@ -124,7 +124,7 @@ conRLM.rlm <- function(model, constraints = NULL, se = "standard", B = 999,
   
   # compute R-squared 
   # acknowledment: code taken from the lmrob() function from the robustbase package
-  df.int <- ifelse(attr(model$terms, "intercept"), 1L, 0L)
+  df.int <- ifelse(attr(object$terms, "intercept"), 1L, 0L)
   y.mean <- if (df.int == 1L) { 
     sum(weights * y) / sum(weights) 
     } else { 0L }
@@ -184,22 +184,22 @@ conRLM.rlm <- function(model, constraints = NULL, se = "standard", B = 999,
                 wt = wt,
                 b.unrestr = b.unrestr,
                 b.restr = b.unrestr,
-                residuals = model$residuals,
-                wresid = model$wresid,
-                fitted = model$fitted,
-                weights = model$weights,
-                w = model$w, 
-                scale = model$s, 
-                psi = model$psi,
+                residuals = object$residuals,
+                wresid = object$wresid,
+                fitted = object$fitted,
+                weights = object$weights,
+                w = object$w, 
+                scale = object$s, 
+                psi = object$psi,
                 R2.org = R2.org,
                 R2.reduced = R2.org,
                 df.residual = so.org$df[2],
                 s2.unc = tau^2, 
                 s2.restr = tau^2, 
                 loglik = LL.unc, 
-                Sigma = vcov(model),                                            #probably not so robust!
+                Sigma = vcov(object),                                            #probably not so robust!
                 constraints = Amat, rhs = bvec, neq = meq, iact = 0L,
-                converged = model$converged, iter = model$iter,
+                converged = object$converged, iter = object$iter,
                 bootout = NULL, call = cl)
   } else {
     # add constraints to model 
@@ -209,7 +209,7 @@ conRLM.rlm <- function(model, constraints = NULL, se = "standard", B = 999,
                     tol  = ifelse (is.null(control$tol), 
                                    sqrt(.Machine$double.eps), control$tol))
     # collect all original model arguments and add constraints
-    CALL <- c(list(model), call.my)
+    CALL <- c(list(object), call.my)
     CALL <- CALL[!duplicated(CALL)]
     # fit constraint robust liner model
     rfit <- do.call("conRLM_fit", CALL)
@@ -239,8 +239,8 @@ conRLM.rlm <- function(model, constraints = NULL, se = "standard", B = 999,
     #rdf <- so.restr$df[2]
     tau.restr <- so.restr$stddev
     
-    #R^2 under the restrikted model
-    df.int <- if (attr(model$terms, "intercept")) { 1L } else { 0L }
+    #R^2 under the restrikted object
+    df.int <- if (attr(object$terms, "intercept")) { 1L } else { 0L }
     resp.mean <- if (df.int == 1L) { sum(weights * y) / sum(weights) } else { 0 }
     yMy <- sum(weights * (y - resp.mean)^2)
     rMr <- sum(weights * residuals^2)
@@ -258,20 +258,20 @@ conRLM.rlm <- function(model, constraints = NULL, se = "standard", B = 999,
                 fitted = fitted,
                 weights = weights,
                 w = w, 
-                scale = model$s,
+                scale = object$s,
                 R2.org = R2.org,
                 R2.reduced = R2.reduced,
                 df.residual = so.org$df[2], 
                 s2.unc = tau^2, 
                 s2.restr = tau.restr^2, 
                 loglik = LL.restr, 
-                Sigma = vcov(model),                                             #probably not so robust???
+                Sigma = vcov(object),                                             #probably not so robust???
                 constraints = Amat, rhs = bvec, neq = meq, iact = rfit$iact,
                 converged = rfit$converged, iter = rfit$iter,
                 bootout = NULL, call = cl)
   }
   
-  OUT$model.org <- model
+  OUT$model.org <- object
   OUT$CON <- if (is.character(constraints)) { CON }
   OUT$se <- se 
   
@@ -292,10 +292,10 @@ conRLM.rlm <- function(model, constraints = NULL, se = "standard", B = 999,
       attr(OUT$information, "augmented") <- information.inv$information.augmented
       
     } else if (se == "boot.model.based") { 
-      OUT$bootout <- con_boot_rlm(model, 
+      OUT$bootout <- con_boot_rlm(object, 
                                   B           = B, 
                                   fixed       = TRUE,
-                                  CALL        = model$call,
+                                  CALL        = object$call,
                                   constraints = Amat,
                                   rhs         = bvec, 
                                   neq         = meq, 
@@ -306,10 +306,10 @@ conRLM.rlm <- function(model, constraints = NULL, se = "standard", B = 999,
                                   ncpus       = ncpus, 
                                   cl          = cl)
     } else if (se == "boot.standard") {
-      OUT$bootout <- con_boot_rlm(model, 
+      OUT$bootout <- con_boot_rlm(object, 
                                   B           = B, 
                                   fixed       = FALSE,
-                                  CALL        = model$call,
+                                  CALL        = object$call,
                                   constraints = Amat,
                                   rhs         = bvec, 
                                   neq         = meq, 

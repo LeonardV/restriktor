@@ -102,7 +102,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
     b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
                                       control$tol)] <- 0L
-      names(b.eqrestr) <- vnames
+    names(b.eqrestr) <- vnames
     # compute global test statistic
     Ts <- c(t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr))
   } else if (type == "A") {
@@ -120,7 +120,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
     b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
                                       control$tol)] <- 0L
-      names(b.eqrestr) <- vnames
+    names(b.eqrestr) <- vnames
     # compute test statistic for hypothesis test type A
     Ts <- c(t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr))
   } else if (type == "B") {

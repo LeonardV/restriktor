@@ -11,20 +11,20 @@ inequality restriktions}
   functions for linear and robust linear models respectively.}
 
 \usage{
-restriktor(model, constraints = NULL, \dots)
+restriktor(object, constraints = NULL, \dots)
 
-\method{conLM}{lm}(model, constraints = NULL, se = "standard", B = 999,
-      rhs = NULL, neq = 0L, bootWt = FALSE, R = 99999,
+\method{conLM}{lm}(object, constraints = NULL, se = "standard", B = 999,
+      rhs = NULL, neq = 0L, bootWt = FALSE, bootWt.R = 99999,
       parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
       control = NULL, verbose = FALSE, debug = FALSE, \dots)
       
-\method{conRLM}{rlm}(model, constraints = NULL, se = "standard", B = 999,
-       rhs = NULL, neq = 0L, bootWt = FALSE, R = 99999,
+\method{conRLM}{rlm}(object, constraints = NULL, se = "standard", B = 999,
+       rhs = NULL, neq = 0L, bootWt = FALSE, bootWt.R = 99999,
        parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
        control = NULL, verbose = FALSE, debug = FALSE, \dots)
 }
 \arguments{
-  \item{model}{a fitted linear model object of class "lm", or a 
+  \item{object}{a fitted linear model object of class "lm", or a 
   fitted robust linear model object of class "rlm". For class "rlm", 
   both \code{M} and \code{MM} estimation are supported. For the 
   loss function only the \code{bisquare} is supported for now, 
@@ -77,7 +77,7 @@ restriktor(model, constraints = NULL, \dots)
   for computing the GORIC value. Moreover, they are re-used for
   computing the p-value for the test-statistic, unless the p-value 
   is computed directly via bootstrapping.}
-  \item{R}{integer; number of bootstrap draws for \code{bootWt}. 
+  \item{bootWt.R}{integer; number of bootstrap draws for \code{bootWt}. 
   The default value is set to 99999. Parallel support is available.}
   \item{parallel}{the type of parallel operation to be used (if any). 
   If missing, the default is set "no".}

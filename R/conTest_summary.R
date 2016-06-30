@@ -53,12 +53,12 @@ summary.conTest.conLM <- function(object, test = "F", ...) {
           "<0.0001"
         } else {
           format(round(out3$pvalue, 4), nsmall = 4)}, "\n\n", sep = "")
-    cat("Type C test is based on a t-distribution (one-sided),", 
-        "\nall other tests are based on mixture of F distributions.\n\n")
+    cat("Note: Type C test is based on a t-distribution (one-sided),", 
+        "\n      all other tests are based on mixture of F distributions.\n\n")
   }
   else {
-    cat("All tests are based on mixture of F distributions", 
-        "\n(Type C test is not applicable because of equality restriktions)\n\n")
+    cat("Note: All tests are based on mixture of F distributions", 
+        "\n      (Type C test is not applicable because of equality restriktions)\n\n")
   }
   
 }

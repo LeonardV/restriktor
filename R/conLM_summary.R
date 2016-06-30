@@ -136,7 +136,7 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic",
     if (bootWt) { # compute mixing weights based on simulation
       PT <- 1 + sum( (0 : ncol(Amat)) * wt)
     } else if (!bootWt & ((meq < nrow(Amat)) && !all(c(Amat) == 0))) { 
-    #  wt <- rev(con_wt(Amat %*% W %*% t(Amat), meq = meq))
+    #  wt <- rev(con_weights(Amat %*% W %*% t(Amat), meq = meq))
       start.idx <- 1 + (ncol(Amat) - nrow(Amat) - 1)
       end.idx <- ncol(Amat) - meq
       PT <- 1 + sum(start.idx:end.idx * wt)      

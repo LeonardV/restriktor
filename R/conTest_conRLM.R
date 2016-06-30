@@ -423,7 +423,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                           seed     = seed,
                           verbose  = verbose)
   } else if (!attr(object$wt, "bootWt") & (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
-    wt <- rev(con_wt(Amat %*% Sigma %*% t(Amat), meq = meq))
+    wt <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
   } else if (!battr(object$wt, "bootWt") & (meq == nrow(Amat))) { # only equality constraints
     wt <- rep(0L, ncol(Sigma) + 1)
     wt.idx <- ncol(Sigma) - meq + 1
@@ -924,7 +924,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                           seed     = seed,
                           verbose  = verbose)
   } else if (!attr(object$wt, "bootWt") & (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
-    wt <- rev(con_wt(Amat %*% Sigma %*% t(Amat), meq = meq))
+    wt <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
   } else if (!battr(object$wt, "bootWt") & (meq == nrow(Amat))) { # only equality constraints
     wt <- rep(0L, ncol(Sigma) + 1)
     wt.idx <- ncol(Sigma) - meq + 1

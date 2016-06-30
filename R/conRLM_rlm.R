@@ -167,7 +167,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard", B = 999,
     if ((qr(Amat)$rank < nrow(Amat))) {
       stop("restriktions matrix must have full row-rank. try set bootWt = TRUE.")
     }
-    wt <- rev(con_wt(Amat %*% W %*% t(Amat), meq = meq))
+    wt <- rev(con_weights(Amat %*% W %*% t(Amat), meq = meq))
   } else if (!bootWt & (meq == nrow(Amat))) { # only equality constraints
     wt <- rep(0L, ncol(W) + 1)
     wt.idx <- ncol(W) - meq + 1

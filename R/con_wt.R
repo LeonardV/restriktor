@@ -1,7 +1,7 @@
 # compute weights based on multivariate normal distribution function.
 # REF: Groeping, U. Inference with linear Equality and Inequality constraints
 # using R: The Package ic.infer. 
-con_wt <- function(cov, meq) {
+con_weights <- function(cov, meq) {
   if (meq == 0L) {
     wt.bar <- ic.weights(cov)
   } else if (meq > 0) {

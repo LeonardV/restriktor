@@ -1,26 +1,26 @@
-con_boot_lm <- function(model, B = 999, fixed = FALSE, ...) { 
+con_boot_lm <- function(object, B = 999, fixed = FALSE, ...) { 
     
-  if (class(model)[1] != "lm") {
-    stop("ERROR: model must be of class lm")
+  if (class(object)[1] != "lm") {
+    stop("ERROR: object must be of class lm")
   }
-  # original model formula
-  #form <- formula(model)
-  DATA <- as.data.frame(model$model)
+  # original object formula
+  #form <- formula(object)
+  DATA <- as.data.frame(object$model)
   # weights
-  wt <- weights(model)
+  wt <- weights(object)
   if (is.null(wt)) {
     wt <- rep(1, nrow(DATA))
   } # standard bootstrap   
   if (!fixed) {
     bootout <- boot(cbind(wt = wt, DATA), 
                     con_bootdata_lm, 
-                    B = B, ...)
+                    R = B, ...)
                     #form = form, ...)
   } else { # model based bootstrap
-    res <- model$residuals
-    fit <- model$fitted.values
+    res <- object$residuals
+    fit <- object$fitted.values
     bootout <- boot(data.frame(DATA, fit = fit, res = res), 
-                    con_boot_fixed_lm, B, ...)
+                    con_boot_fixed_lm, R = B, ...)
   }
   
   OUT <- bootout
@@ -29,16 +29,16 @@ con_boot_lm <- function(model, B = 999, fixed = FALSE, ...) {
 }
 
 
-con_boot_rlm <- function(model, B = 999, fixed = FALSE, ...) { 
+con_boot_rlm <- function(object, B = 999, fixed = FALSE, ...) { 
   
-  if (class(model)[1] != "rlm") {
-    stop("ERROR: model must be of class rlm")
+  if (class(object)[1] != "rlm") {
+    stop("ERROR: object must be of class rlm")
   }
   # original model formula
-  #form <- formula(model)
-  DATA <- as.data.frame(model$model)
+  #form <- formula(object)
+  DATA <- as.data.frame(object$model)
   # weights
-  wt <- weights(model)
+  wt <- weights(object)
   if (is.null(wt)) {
     wt <- rep(1/nrow(DATA), nrow(DATA))
   } # standard bootstrap   
@@ -46,8 +46,8 @@ con_boot_rlm <- function(model, B = 999, fixed = FALSE, ...) {
     bootout <- boot(cbind(wt = wt, DATA), con_bootdata_rlm, 
                     B, ...)
   } else { # model based bootstrap
-    res <- model$residuals
-    fit <- model$fitted.values
+    res <- object$residuals
+    fit <- object$fitted.values
     bootout <- boot(data.frame(DATA, fit = fit, res = res), 
                     con_boot_fixed_rlm, B, ...)
   }

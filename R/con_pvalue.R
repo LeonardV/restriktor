@@ -140,7 +140,7 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL,
     form[[2]] <- as.name("ystar")
     boot_model <- update(model.org, formula = form, data = DATA)
     
-    CALL <- list(model = boot_model, constraints = Amat, 
+    CALL <- list(object = boot_model, constraints = Amat, 
                  rhs = bvec, neq = meq, se = "none", 
                  bootWt = bootWt, bootWt.R = bootWt.R, 
                  control = control)
@@ -266,7 +266,7 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
     call.my <- list(constraints = Amatg, rhs = bvecg, neq = nrow(Amatg), 
                     control = control, se = "none",
                     bootWt = bootWt, bootWt.R = bootWt.R)
-    call.lm <- list(model = model.org)
+    call.lm <- list(object = model.org)
     CALL <- c(call.lm, call.my)
     if (any(duplicated(CALL))) {
       stop("duplicated elements in CALL.list")
@@ -276,7 +276,7 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
     call.my <- list(constraints = Amat, rhs = bvec, neq = nrow(Amat), 
                     control = control, se = "none",
                     bootWt = bootWt, bootWt.R = bootWt.R)
-    call.lm <- list(model = model.org)
+    call.lm <- list(object = model.org)
     CALL <- c(call.lm, call.my)
     if (any(duplicated(CALL))) {
       stop("duplicated elements in CALL.list")
@@ -286,7 +286,7 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
       call.my <- list(constraints = Amat, rhs = bvec, neq = meq, 
                       control = control, se = "none",
                       bootWt = bootWt, bootWt.R = bootWt.R)
-      call.lm <- list(model = model.org)
+      call.lm <- list(object = model.org)
       CALL <- c(call.lm, call.my)
       if (any(duplicated(CALL))) {
         stop("duplicated elements in CALL.list")
@@ -317,7 +317,7 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
       form[[2]] <- as.name("ystar")
       
       boot_model <- update(model.org, formula = form, data = DATA)
-      CALL <- list(boot_model, constraints = Amat, rhs = bvec, 
+      CALL <- list(object = boot_model, constraints = Amat, rhs = bvec, 
                    neq = meq, control = control, se = "none",
                    bootWt = bootWt, bootWt.R = bootWt.R)
       boot_conLM <- do.call("restriktor", CALL)  

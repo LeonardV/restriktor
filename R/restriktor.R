@@ -2,10 +2,8 @@
 # - add weights + down weights to RLM.
 # - implement E-bar test statistic for lm.
 # - add support for no intercept objects.
-# - add small sample correction for GORIC, see REF. above.
+# - add small sample correction for GORIC
 # - add support for mlm and glm.
-# - add test-statistic for class of rlm with equality restriktions only.
-# - add weights to conTestEq
 # - check for right function arguments
 ###############################################################################
 restriktor <- function(object, constraints = NULL, ...) {

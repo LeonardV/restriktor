@@ -27,38 +27,38 @@ conTest(object, type = "summary", \dots)
 \method{summary}{conTest.conLM}(object, test = "F", \dots)
 
 \method{conTestF}{conLM}(object, type = "A", neq.alt = 0, 
-         boot = "no", B = 9999, p.distr = "N", df = 7, 
+         boot = "no", R = 9999, p.distr = "N", df = 7, 
          parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
          verbose = FALSE, control = NULL, \dots)
 
 \method{conTestLRT}{conLM}(object, type = "A", neq.alt = 0, boot = "no", 
-           B = 9999, p.distr = "N", df = 7, parallel = "no", 
+           R = 9999, p.distr = "N", df = 7, parallel = "no", 
            ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, 
            control = NULL, \dots)
 
 \method{conTestScore}{conLM}(object, type = "A", neq.alt = 0, 
-             boot = "no", B = 9999, p.distr = "N", df = 7, 
+             boot = "no", R = 9999, p.distr = "N", df = 7, 
              parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
              verbose = FALSE, control = NULL, \dots)
 
 
 \method{conTestF}{conRLM}(object, type = "A", neq.alt = 0, 
-         boot = "no", B = 9999, p.distr = "N", df = 7, 
+         boot = "no", R = 9999, p.distr = "N", df = 7, 
          parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
          verbose = FALSE, control = NULL, \dots)
 
 \method{conTestWald}{conRLM}(object, type = "A", neq.alt = 0, boot = "no", 
-            B = 9999, p.distr = "N", df = 7, parallel = "no", 
+            R = 9999, p.distr = "N", df = 7, parallel = "no", 
             ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, 
             control = NULL, \dots)
 
 \method{conTestWald2}{conRLM}(object, type = "A", neq.alt = 0, boot = "no", 
-             B = 9999, p.distr = "N", df = 7, parallel = "no", 
+             R = 9999, p.distr = "N", df = 7, parallel = "no", 
              ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, 
              control = NULL, \dots)
 
 \method{conTestScore}{conRLM}(object, type = "A", neq.alt = 0, 
-             boot = "no", B = 9999, p.distr = "N", df = 7, 
+             boot = "no", R = 9999, p.distr = "N", df = 7, 
              parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
              verbose = FALSE, control = NULL, \dots)
 
@@ -66,11 +66,11 @@ conTest(object, type = "summary", \dots)
 \method{conTestC}{conLM}(object, type = "C", \dots)
 
 \method{conTestEq}{conLM}(object, test = "F", boot = "no", 
-          B = 9999, p.distr = "N", df = 7, parallel = "no", 
+          R = 9999, p.distr = "N", df = 7, parallel = "no", 
           ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, \dots)
 
 \method{conTestEq}{conRLM}(object, test = "F", boot = "no", 
-          B = 9999, p.distr = "N", df = 7, parallel = "no", 
+          R = 9999, p.distr = "N", df = 7, parallel = "no", 
           ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, \dots)
           
 }
@@ -124,7 +124,7 @@ conTest(object, type = "summary", \dots)
   the weights need to be recalculated.
   }
   
-  \item{B}{integer; number of bootstrap draws for \code{boot}. 
+  \item{R}{integer; number of bootstrap draws for \code{boot}. 
   The default value is set to 9999.}
   
   \item{p.distr}{If \code{"N"}, samples for the parametric 
@@ -345,7 +345,7 @@ fit2.con <- restriktor(fit2.lm, constraints = myConstraints2, se = "HC0")
 # on the parametric bootstrap. We only generate 9 bootstrap samples 
 # in this example; in practice you may wish to use a much higher 
 # number.
-conTest(fit2.con, type = "A", test = "score", boot = "parametric", B = 9)
+conTest(fit2.con, type = "A", test = "score", boot = "parametric", R = 9)
 
 \dontrun{ 
   # increasing means in matrix notation.
@@ -358,7 +358,7 @@ conTest(fit2.con, type = "A", test = "score", boot = "parametric", B = 9)
   fit2.con <- restriktor(fit2.lm, constraints = myConstraints_mat2,
                          rhs = myRhs2, neq = myNeq2)
 
-  conTest(fit2.con, type = "A", test = "score", boot = "parametric", B = 9)
+  conTest(fit2.con, type = "A", test = "score", boot = "parametric", R = 9)
 }            
 
 ## example 3: equality restriktions only.
@@ -381,7 +381,7 @@ myConstraints4 <- ' group2 == 0
 # Note that, a warning message may be thrown because the number of 
 # bootstrap samples is too low.
 fit4.con <- restriktor(fit2.lm, constr = myConstraints4, 
-                       se = "boot.model.based", B = 9)
+                       se = "boot.model.based", R = 9)
 conTest(fit4.con, type = "B", neq.alt = 1)
 
 

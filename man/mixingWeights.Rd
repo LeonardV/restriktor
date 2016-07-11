@@ -60,7 +60,7 @@ be used directly and is called by the \code{conTest} function.
 \value{The function returns a vector with the mixing weights}
 
 \references{
-  Kudô, A. (1963). A multivariate analogue of the one-sided test. 
+  Kudo, A. (1963). A multivariate analogue of the one-sided test. 
   \emph{Biometrika}, \bold{50}, 403-418.
 
   Silvapulle, M.J. and Sen, P.K. (2005, p.79). \emph{Constrained 

@@ -1,3 +1,4 @@
+# standard bootstrap
 con_bootdata_lm <- function(data, indices, ...) {
   l <- list(...)
   CALL <- as.list(l$CALL)

@@ -1,3 +1,4 @@
+# model based bootstrap
 con_boot_fixed_lm <- function(data, indices, ...) {
     l <- list(...)
     CALL <- as.list(l$CALL)

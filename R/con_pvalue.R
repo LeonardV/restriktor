@@ -70,7 +70,7 @@ con_pvalue_Chibar <- function(wt, Ts.org, type = "A",
 }
 
 
-################################################################################
+############################ parametric bootstrap ##############################
 con_pvalue_boot_parametric <- function(model, Ts.org = NULL, 
                                        type = "A",
                                        test = "F", 
@@ -213,7 +213,7 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL,
 }
 
 
-###################################################################################
+########################### model based bootstrap ##############################
 con_pvalue_boot_model_based <- function(model, Ts.org = NULL, 
                                         type = "A",
                                         test = "F", 
@@ -253,7 +253,7 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
       ncpus <- 1L
     }  
   }
-
+  # estimate null model under different hypothesis tests
   if (type == "global") {
     intercept <- model.org$assign[1] == 0L
     g <- length(model$b.restr)
@@ -261,7 +261,7 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
       Amatg <- cbind(rep(0, (g - 1)), diag(rep(1, g - 1))) 
       bvecg <- rep(0, g - 1) 
     } else {
-      stop("Restriktor ERROR: test not applicable for models without intercept.")      
+      stop("restriktor ERROR: test not applicable for models without intercept (yet).")      
     }
     call.my <- list(constraints = Amatg, rhs = bvecg, neq = nrow(Amatg), 
                     control = control, se = "none",
@@ -269,7 +269,7 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
     call.lm <- list(object = model.org)
     CALL <- c(call.lm, call.my)
     if (any(duplicated(CALL))) {
-      stop("duplicated elements in CALL.list")
+      stop("restriktor ERROR: duplicated elements in CALL.list")
     }
     fit <- do.call("restriktor", CALL)
   } else if (type == "A") {
@@ -279,7 +279,7 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
     call.lm <- list(object = model.org)
     CALL <- c(call.lm, call.my)
     if (any(duplicated(CALL))) {
-      stop("duplicated elements in CALL.list")
+      stop("restriktor ERROR: duplicated elements in CALL.list")
     }
     fit <- do.call("restriktor", CALL)
   } else if (type == "B") {
@@ -289,13 +289,13 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
       call.lm <- list(object = model.org)
       CALL <- c(call.lm, call.my)
       if (any(duplicated(CALL))) {
-        stop("duplicated elements in CALL.list")
+        stop("restriktor ERROR: duplicated elements in CALL.list")
       }
       fit <- do.call("restriktor", CALL)
     }
 
     # compute residuals under H0
-    r <- residuals(fit)
+    r    <- residuals(fit)
     yhat <- fitted(fit)
 
     Ts.boot <- vector("numeric", R)
@@ -303,14 +303,14 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
       if (!is.null(seed))
         set.seed(seed + b)
       if (!exists(".Random.seed", envir = .GlobalEnv))
-        runif(1)
+        runif(1) 
       RNGstate <- .Random.seed
 
-      idx <- sample(dim(X)[1], replace=TRUE)
+      idx   <- sample(dim(X)[1], replace = TRUE)
       ystar <- as.matrix(c(yhat + r[idx]))
-      xcol <- which(rowSums(attr(model.org$terms, "factors")) > 0)
+      xcol  <- which(rowSums(attr(model.org$terms, "factors")) > 0)
       terms <- attr(model.org$terms , "term.labels")[attr(model.org$terms, "order") == 1]
-      DATA <- data.frame(ystar, model.org$model[,xcol])
+      DATA  <- data.frame(ystar, model.org$model[,xcol])
       colnames(DATA) <- c(as.character("ystar"), terms)
       DATA <- as.data.frame(DATA)
       form <- formula(model.org)

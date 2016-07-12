@@ -10,6 +10,9 @@ conTestEq.conRLM <- function(object, test = "F", boot = "no",
     stop("weights not supported (yet).")
   }
   
+  test <- tolower(test)
+  stopifnot(test %in% c("f","wald","wald2","score"))
+  
   model.org <- object$model.org
   y <- as.matrix(object$model.org$model[, attr(object$model.org$terms, "response")])
   # model matrix
@@ -22,13 +25,14 @@ conTestEq.conRLM <- function(object, test = "F", boot = "no",
   b.unrestr <- coef(model.org)
   # unrestrikted scale estimate
   scale <- model.org$s
+  # scale estimate used for the standard errors
+  tau <- object$s2.unc
   # restriktion stuff
   CON  <- object$CON
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
   
-  test <- tolower(test)
   if (nrow(Amat) == meq) {
     
     if (test == "default") {
@@ -57,6 +61,25 @@ conTestEq.conRLM <- function(object, test = "F", boot = "no",
       OUT$meq  <- meq
       OUT$b.restr <- object$b.restr
       OUT$b.unrestr <- object$b.unrestr
+    } else if (test == "wald2") {  
+      Wald2 <- robustWaldXX(x         = X, 
+                            b.eqrestr = b.eqrestr, 
+                            b.restr   = b.unrestr, 
+                            b.unrestr = b.unrestr, 
+                            tau       = tau)
+      OUT <- list()
+      OUT$Ts <- Wald2 #/ OUT$df
+      OUT$df <- nrow(Amat)
+      # rdf
+      OUT$df.residual <- df.residual(object) 
+      # p-value based on chisq
+      OUT$pvalue <- 1 - pchisq(OUT$Ts, df = OUT$df) #1 - pf(OUT$Ts, OUT$df, OUT$df.residual)
+      OUT$Amat <- Amat
+      OUT$bvec <- bvec
+      OUT$meq  <- meq
+      OUT$b.restr <- object$b.restr
+      OUT$b.unrestr <- object$b.unrestr 
+      
     } else if (test == "f") {
       Fmm <- robustFm(x         = X, 
                       y         = y, 

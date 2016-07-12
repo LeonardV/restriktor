@@ -10,12 +10,14 @@ conTestEq.conLM <- function(object, test = "F", boot = "no",
     stop("weights not supported (yet).")
   }
   
+  test <- tolower(test)
+  stopifnot(test %in% c("f","wald","score"))
+  
   CON  <- object$CON
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
   
-  test <- tolower(test)
   if (#length(CON$ceq.linear.idx)     > 0  && # some linear eq. constraints
     #length(CON$ceq.nonlinear.idx) == 0L && # no nonlinear eq. constraints
     #length(CON$cin.linear.idx)    == 0L && # no inequality constraints

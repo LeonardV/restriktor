@@ -55,8 +55,6 @@ be used directly and is called by the \code{conTest} function.
   \item{\ldots}{no additional arguments for now.}
 }
 
-\details{}
-
 \value{The function returns a vector with the mixing weights}
 
 \references{

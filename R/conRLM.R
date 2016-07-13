@@ -11,17 +11,12 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard", B = 999,
   
   cl <- match.call()
   # rename for internal use
+  Amat <- constraints
   bvec <- rhs; meq <- neq
-  
-  if (is.null(constraints)) {
-    constraints <- rbind(rep(0L, length(coef(object))))
-    bvec <- rep(0L, nrow(constraints))
-    meq <- 0L
-  }
   
   # construct constraint matrix/vector.
   restr_OUT <- con_constraints(object, 
-                               constraints = constraints, 
+                               constraints = Amat, 
                                bvec        = bvec, 
                                meq         = meq, 
                                debug       = debug)  
@@ -36,6 +31,21 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard", B = 999,
   bvec <- restr_OUT$bvec
   # neq
   meq <- restr_OUT$meq
+  
+  # unconstrained case
+  if (is.null(constraints)) {
+    Amat <- rbind(rep(0L, length(coef(object))))
+    bvec <- rep(0L, nrow(Amat))
+    meq  <- 0L
+  # constraints input is a matrix 
+  } else if (is.matrix(constraints)) {
+    Amat <- constraints
+    bvec <- rhs
+    if (is.null(bvec)) {
+      bvec <- rep(0L, nrow(Amat))
+    }
+    meq  <- neq
+  }
   
   # standard error stuff
   if (se == "default") {
@@ -179,7 +189,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard", B = 999,
   # # check if the constraints are in line with the data    
   if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) & meq == 0) {  
     b.restr <- b.unrestr
-    OUT <- list(CON = NULL,
+    OUT <- list(CON = CON,
                 parTable = parTable,
                 wt = wt,
                 b.unrestr = b.unrestr,
@@ -231,14 +241,36 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard", B = 999,
                               w = weights)
     LL.restr <- ll.restr$loglik
     
-    # adjusted summary.rlm function to get the right residual degrees of freedom
-    # and standard deviation in case of equality restriktions.
-    so.restr <- summary_rlm(rfit, 
-                            Amat = Amat, 
-                            meq = meq)
-    #rdf <- so.restr$df[2]
-    tau.restr <- so.restr$stddev
-    
+    # we need the right residual degrees of freedom in case of equality constraints
+    # to compute the standard deviation tau.
+    if (length(object$call[["wt.method"]]) && object$call[["wt.method"]] == "case") {
+      rdf <- sum(weights) - p
+      w   <- rfit$psi(rfit$wresid/rfit$s)
+      S   <- sum(weights * (rfit$wresid * w)^2) / rdf
+      std <- summary(rfit)$stddev / sqrt(S)
+      
+      if (!is.null(Amat)) {
+        rdf <- sum(weights) - (p - qr(Amat[0:meq,])$rank)
+        S.new <- sum(weights * (rfit$wresid * w)^2) / rdf
+        tau.restr <- (summary(rfit)$stddev / sqrt(S)) * sqrt(S.new)
+      } else {
+        tau.restr <- std * sqrt(S)
+      }
+    } else {
+      rdf <- n - p
+      w   <- rfit$psi(rfit$wresid/rfit$s)
+      S   <- sum((rfit$wresid * w)^2) / rdf
+      std <- summary(rfit)$stddev / sqrt(S)
+      
+      if (!is.null(Amat)) {
+        rdf <- n - (p - qr(Amat[0:meq,])$rank)
+        S.new <- sum((rfit$wresid * w)^2) / rdf
+        tau.restr <- (summary(rfit)$stddev / sqrt(S)) * sqrt(S.new)
+      } else {
+        tau.restr <- std * sqrt(S)
+      }
+    }
+      
     #R^2 under the restrikted object
     df.int <- if (attr(object$terms, "intercept")) { 1L } else { 0L }
     resp.mean <- if (df.int == 1L) { sum(weights * y) / sum(weights) } else { 0 }
@@ -248,7 +280,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard", B = 999,
     correc <- 1.207617 
     R2.reduced <- (yMy - rMr) / (yMy + rMr * (correc - 1))
     
-    OUT <- list(CON = NULL,
+    OUT <- list(CON = CON,
                 parTable = parTable,
                 wt = wt,
                 b.unrestr = b.unrestr,
@@ -272,7 +304,6 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard", B = 999,
   }
   
   OUT$model.org <- object
-  OUT$CON <- if (is.character(constraints)) { CON }
   OUT$se <- se 
   
   if (se != "none") {

@@ -99,5 +99,4 @@ con_constraints_rhs_bvec <- function(object, constraints = NULL) {
                                partable = lavpartable)
 
   c(CON$ceq.rhs, CON$cin.rhs)
-
 }

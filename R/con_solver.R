@@ -1,7 +1,7 @@
 #REF: Zheng, S., Guo, J. Shi, N.Z, Tian, G.L (2012). Likelihood-based approaches 
-# formultivariate linear models under inequality constraints for incomplete data.
+# for multivariate linear models under inequality constraints for incomplete data.
 # Journal of Statistical Planning and Inference 142, 2926-2942.
-con_solver <- function(b.unrestr, X, y, w, Amat, bvec, meq,
+con_solver <- function(X, y, b.unrestr, w, Amat, bvec, meq,
                        maxit = 10000, absval = sqrt(.Machine$double.eps)) {
   val <- 0
   y <- as.matrix(y)
@@ -13,8 +13,9 @@ con_solver <- function(b.unrestr, X, y, w, Amat, bvec, meq,
   W <- diag(w)
   
   for (i in 1:maxit) {
+    # dividing by n or (n-p-rank(meq)). Probably only needed for mlm.
     Sigma <- (t(y - X %*% matrix(b.unrestr, ncol = ncol(y))) %*% W %*%
-                (y - X %*% matrix(b.unrestr, ncol = ncol(y)))) / n               # dividing by n or (n-p-rank(meq)) does not influnce the solution!
+                (y - X %*% matrix(b.unrestr, ncol = ncol(y)))) / n  
     
     yVx <- kronecker(solve(Sigma), t(X)) %*% W %*% as.vector(y)
     dvec <- 2*yVx

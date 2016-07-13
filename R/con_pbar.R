@@ -1,5 +1,5 @@
-#acknowlegment: taken from ic.infer package 
-#F-distribution added by LV
+# pchibar taken from ic.infer package 
+# pfbar added by LV
   pfbar <- function(x, df1, df2, wt) {
     if (x <= 0) {
       return(0)

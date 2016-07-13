@@ -98,6 +98,8 @@ con_weightsBoot <- function(VCOV, Amat, meq,
     }
   }
   # compute the number of positive components of W.
+  # ncol(W) = maximum number of constraints
+  # iact    = number of active inequality constraints
   dimL <- ncol(W) - iact
   wt <- sapply(1:(ncol(W) + 1), function(x) sum(x == (dimL + 1))) / R
   

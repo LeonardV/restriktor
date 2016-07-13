@@ -1,6 +1,7 @@
+# taken from package ic.infer.
 # function for calculating all subsets of size k from n objects
 # taken from package vsn (provided by Wolfgang Huber under LGPL)
-# slightly modified to also work for n=k=2 by Ulrike Groemping (ic.infer package)
+# slightly modified to also work for n=k=2 by Ulrike Groemping.
 nchoosek <- function (n, k) {
     if (!is.numeric(n) || !is.numeric(k) || is.na(n) || is.na(k) ||
         length(n) != 1 || length(k) != 1) {

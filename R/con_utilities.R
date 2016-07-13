@@ -1,4 +1,5 @@
-# utility functions
+## utility functions
+
 coef.conLM <- function(object, ...)  {
   object$b.restr
 }
@@ -28,6 +29,9 @@ tukeyChi <- function(x, c = 4.685061, deriv = 0, ...) {
 
 # input list
 goricWeights <- function(x, ...) {
+  if (!is.list(x)) {
+    stop("restriktor ERROR: x must be a list.")
+  }
   ll    <- unlist(lapply(x, function(x) attr(x$goric, "loglik")))
   PT    <- unlist(lapply(x, function(x) attr(x$goric, "penalty")))
   goric <- unlist(lapply(x, function(x) x$goric[1]))

@@ -1,7 +1,7 @@
 # adjusted functions from the sandwich package.
 sandwich <- function(x, bread. = bread, meat. = meat, ...) {
-  if(is.function(bread.)) bread. <- bread.(x)
-  if(is.function(meat.)) meat. <- meat.(x, ...)
+  if (is.function(bread.)) { bread. <- bread.(x) }
+  if (is.function(meat.)) { meat. <- meat.(x, ...) }
   n <- NROW(estfun(x))
   return(1/n * (bread. %*% meat. %*% bread.))
 }
@@ -20,19 +20,16 @@ bread.conLM <- function(x, ...) {
 bread.conRLM <- function(x, ...) {
     xmat <- model.matrix(x)
     wts <- weights(x)
-    if (is.null(wts)) {
-      wts <- 1
-    }
+    if (is.null(wts)) { wts <- 1 }
     res <- residuals(x)
     psi_deriv <- function(z) x$model.org$psi(z, deriv = 1)
     rval <- sqrt(abs(as.vector(psi_deriv(res / x$model.org$s) / x$model.org$s))) * wts * xmat    
     rval <- chol2inv(qr.R(qr(rval))) * nrow(xmat)
     rval <- solve(rval) #/ x$model.org$s * nrow(xmat)                           #solve(rval)
     
-    is.augmented = TRUE
-    if (all(c(x$constraints) == 0)) {
-      is.augmented <- FALSE
-    }
+    is.augmented <- TRUE
+    if (all(c(x$constraints) == 0)) { is.augmented <- FALSE }
+    
     rval <- con_augmented_information(information  = rval, 
                                       is.augmented = is.augmented,
                                       X            = xmat, 
@@ -53,29 +50,41 @@ estfun <- function(x, ...) {
 estfun.conLM <- function(x, ...) {
   xmat <- model.matrix(x)
   xmat <- naresid(x$na.action, xmat)
-  if(any(alias <- is.na(coef(x)))) xmat <- xmat[, !alias, drop = FALSE]
+  if (any(alias <- is.na(coef(x)))) { 
+    xmat <- xmat[, !alias, drop = FALSE] 
+  }
   wts <- weights(x)
-  if(is.null(wts)) wts <- 1
+  if (is.null(wts)) { wts <- 1 }
   res <- residuals(x)
   rval <- as.vector(res) * wts * xmat
   attr(rval, "assign") <- NULL
   attr(rval, "contrasts") <- NULL
-  if(is.zoo(res)) rval <- zoo(rval, index(res), attr(res, "frequency"))
-  if(is.ts(res)) rval <- ts(rval, start = start(res), frequency = frequency(res))
+  if (is.zoo(res)) {
+    rval <- zoo(rval, index(res), attr(res, "frequency"))
+  }
+  if (is.ts(res)) {
+    rval <- ts(rval, start = start(res), frequency = frequency(res))
+  }
+  
   return(rval)
 }
 
 estfun.conRLM <- function(x, ...) {
   xmat <- model.matrix(x)
   wts <- weights(x)
-  if(is.null(wts)) wts <- 1
+  if (is.null(wts)) { wts <- 1 }
   res <- residuals(x)
   psi <- function(z) x$model.org$psi(z) * z
   rval <- as.vector(psi(res/x$model.org$s)) * wts * xmat
   attr(rval, "assign") <- NULL
   attr(rval, "contrasts") <- NULL
-  if(is.ts(res)) rval <- ts(rval, start = start(res), frequency = frequency(res))
-  if(is.zoo(res)) rval <- zoo(rval, index(res), attr(res, "frequency"))
+  if (is.ts(res)) {
+    rval <- ts(rval, start = start(res), frequency = frequency(res))
+  }
+  if (is.zoo(res)) {
+    rval <- zoo(rval, index(res), attr(res, "frequency"))
+  }
+  
   return(rval)
 }
 
@@ -83,9 +92,9 @@ estfun.conRLM <- function(x, ...) {
 meatHC <- function(x, 
                    type = c("HC3", "const", "HC", "HC0", "HC1", "HC2", "HC4", "HC4m", "HC5"),
                    omega = NULL) {
-  ## extract X
+  
   X <- model.matrix(x$model.org)
-  if(any(alias <- is.na(coef(x)))) X <- X[, !alias, drop = FALSE]
+  if (any(alias <- is.na(coef(x)))) X <- X[, !alias, drop = FALSE]
   attr(X, "assign") <- NULL
   n <- NROW(X)
   
@@ -99,9 +108,12 @@ meatHC <- function(x,
         W <- diag(n)
       }
   } 
+  
+  # hat matrix
   diaghat <- diag(X %*% solve(t(X) %*% W %*% X) %*% t(X) %*% W)
   
   p <- NCOL(X)
+  # correct df for equality constraints
   df <- n - (p - qr(x$constraints[0:x$neq,])$rank)
   ## the following might work, but "intercept" is also claimed for "coxph"
   ## res <- if(attr(terms(x), "intercept") > 0) estfun(x)[,1] else rowMeans(estfun(x)/X, na.rm = TRUE)
@@ -112,10 +124,10 @@ meatHC <- function(x,
   res[apply(abs(ef) < .Machine$double.eps, 1L, all)] <- 0
   
   ## if omega not specified, set up using type
-  if(is.null(omega)) {
+  if (is.null(omega)) {
     type <- match.arg(type)
-    if(type == "HC") type <- "HC0"
-    switch(type,
+    if (type == "HC") type <- "HC0"
+    switch (type,
            "const" = { omega <- function(residuals, diaghat, df) rep(1, length(residuals)) * sum(residuals^2)/df },
            "HC0"   = { omega <- function(residuals, diaghat, df) residuals^2 },
            "HC1"   = { omega <- function(residuals, diaghat, df) residuals^2 * length(residuals)/df },
@@ -145,7 +157,7 @@ meatHC <- function(x,
   }
   
   ## process omega
-  if(is.function(omega)) omega <- omega(res, diaghat, df)
+  if (is.function(omega)) { omega <- omega(res, diaghat, df) }
   rval <- sqrt(omega) * X
   rval <- crossprod(rval)/n
   

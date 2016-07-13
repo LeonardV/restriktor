@@ -9,19 +9,15 @@ conLM.lm <- function(object, constraints = NULL, se = "standard", B = 999,
   }
   
   cl <- match.call()
-  # rename for internal use
-  bvec <- rhs; meq <- neq
   
-  # unconstrained case
-  if (is.null(constraints)) {
-    constraints <- rbind(rep(0L, length(coef(object))))
-    bvec <- rep(0L, nrow(constraints))
-    meq <- 0L
-  }
+  # rename for internal use
+  Amat <- constraints
+  bvec <- rhs 
+  meq  <- neq
   
   # construct constraint matrix/vector.
   restr_OUT <- con_constraints(object, 
-                               constraints = constraints, 
+                               constraints = Amat, 
                                bvec        = bvec, 
                                meq         = meq, 
                                debug       = debug)  
@@ -36,6 +32,21 @@ conLM.lm <- function(object, constraints = NULL, se = "standard", B = 999,
   bvec <- restr_OUT$bvec
   # neq
   meq <- restr_OUT$meq
+
+  # unconstrained case
+  if (is.null(constraints)) {
+    Amat <- rbind(rep(0L, length(coef(object))))
+    bvec <- rep(0L, nrow(Amat))
+    meq  <- 0L
+    # constraints input is a matrix 
+  } else if (is.matrix(constraints)) {
+    Amat <- constraints
+    bvec <- rhs
+    if (is.null(bvec)) {
+      bvec <- rep(0L, nrow(Amat))
+    }
+    meq  <- neq
+  }
   
   # parallel housekeeping
   have_mc <- have_snow <- FALSE
@@ -149,18 +160,18 @@ conLM.lm <- function(object, constraints = NULL, se = "standard", B = 999,
                 bootout = NULL, call = cl)  
   } else {
     # compute constrained estimates for lm()
-    out.QP <- con_solver(b.unrestr, 
-                         X      = X, 
-                         y      = y, 
-                         w      = weights, 
-                         Amat   = Amat,
-                         bvec   = bvec, 
-                         meq    = meq, 
-                         absval = ifelse(is.null(control$absval), 
+    out.QP <- con_solver(X         = X, 
+                         y         = y, 
+                         b.unrestr = b.unrestr, 
+                         w         = weights, 
+                         Amat      = Amat,
+                         bvec      = bvec, 
+                         meq       = meq, 
+                         absval    = ifelse(is.null(control$absval), 
                                          sqrt(.Machine$double.eps), 
                                          control$absval),
-                         maxit  = ifelse(is.null(control$maxit), 1e04, 
-                                        control$maxit))
+                         maxit     = ifelse(is.null(control$maxit), 1e04, 
+                                         control$maxit))
     b.restr <- matrix(out.QP$solution, ncol = ncol(y))
     b.restr[abs(b.restr) < ifelse(is.null(control$tol), 
                                   sqrt(.Machine$double.eps), 
@@ -207,6 +218,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard", B = 999,
         s2.restr <- sum(weights * residuals^2) / df.residual
       }
     } else { #mlm <FIXME>
+      stop("mlm not implemented (yet)")
       residuals <- y - fitted
         rownames(b.restr) <- rownames(b.unrestr)
         colnames(b.restr) <- colnames(b.unrestr)
@@ -291,7 +303,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard", B = 999,
   if (ncol(y) == 1L) {
     class(OUT) <- c("conLM", "lm")
   } else if (ncol(y) > 1L) {
-    class(OUT) <- c("conMLM", "mlm")
+    class(OUT) <- c("conMLM", "mlm", "conLM", "lm")
   }
     
     OUT

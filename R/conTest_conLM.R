@@ -87,17 +87,17 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
         stop("Restriktor ERROR: test not ready yet for models without intercept.")      
     } 
     # call quadprog
-    b.eqrestr <- con_solver(b.unrestr, 
-                            X      = X, 
-                            y      = y, 
-                            w      = w, 
-                            Amat   = Amatg,
-                            bvec   = bvecg, 
-                            meq    = nrow(Amatg),
-                            absval = ifelse(is.null(control$absval), 1e-09, 
-                                            control$absval),
-                            maxit  = ifelse(is.null(control$maxit), 1e04, 
-                                            control$maxit))$solution
+    b.eqrestr <- con_solver(X         = X, 
+                            y         = y, 
+                            b.unrestr = b.unrestr,
+                            w         = w, 
+                            Amat      = Amatg,
+                            bvec      = bvecg, 
+                            meq       = nrow(Amatg),
+                            absval    = ifelse(is.null(control$absval), 1e-09, 
+                                               control$absval),
+                            maxit     = ifelse(is.null(control$maxit), 1e04, 
+                                               control$maxit))$solution
     # fix estimates to zero 
     b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
@@ -106,17 +106,17 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
     # compute global test statistic
     Ts <- c(t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr))
   } else if (type == "A") {
-    b.eqrestr <- con_solver(b.unrestr, 
-                            X      = X, 
-                            y      = y, 
-                            w      = w, 
-                            Amat   = Amat,
-                            bvec   = bvec, 
-                            meq    = nrow(Amat),
-                            absval = ifelse(is.null(control$absval), 1e-09, 
-                                            control$absval),
-                            maxit  = ifelse(is.null(control$maxit), 1e04, 
-                                            control$maxit))$solution
+    b.eqrestr <- con_solver(X         = X, 
+                            y         = y, 
+                            b.unrestr = b.unrestr,
+                            w         = w, 
+                            Amat      = Amat,
+                            bvec      = bvec, 
+                            meq       = nrow(Amat),
+                            absval    = ifelse(is.null(control$absval), 1e-09, 
+                                               control$absval),
+                            maxit     = ifelse(is.null(control$maxit), 1e04, 
+                                               control$maxit))$solution
     b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
                                       control$tol)] <- 0L
@@ -130,17 +130,17 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
       Ts <- as.vector(t(b.unrestr - b.restr) %*% solve(Sigma, b.unrestr - b.restr))
     } else {
       if (meq.alt != 0L && meq.alt <= meq) {
-        b.restr.alt <- con_solver(b.unrestr, 
-                                  X      = X, 
-                                  y      = y, 
-                                  w      = w, 
-                                  Amat   = Amat[1:meq.alt,,drop = FALSE],
-                                  bvec   = bvec[1:meq.alt], 
-                                  meq    = meq.alt,
-                                  absval = ifelse(is.null(control$absval), 1e-09, 
-                                                  control$absval),
-                                  maxit  = ifelse(is.null(control$maxit), 1e04, 
-                                                  control$maxit))$solution
+        b.restr.alt <- con_solver(X         = X, 
+                                  y         = y, 
+                                  b.unrestr = b.unrestr,
+                                  w         = w, 
+                                  Amat      = Amat[1:meq.alt,,drop = FALSE],
+                                  bvec      = bvec[1:meq.alt], 
+                                  meq       = meq.alt,
+                                  absval    = ifelse(is.null(control$absval), 1e-09, 
+                                                     control$absval),
+                                  maxit     = ifelse(is.null(control$maxit), 1e04, 
+                                                     control$maxit))$solution
         b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol), 
                                               sqrt(.Machine$double.eps),                                        
                                               control$tol)] <- 0L
@@ -315,17 +315,17 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
       stop("Restriktor ERROR: test not ready yet for models without intercept.")      
     } 
     
-    b.eqrestr <- con_solver(b.unrestr, 
-                            X      = X, 
-                            y      = y, 
-                            w      = w, 
-                            Amat   = Amatg,
-                            bvec   = bvecg, 
-                            meq    = nrow(Amatg),
-                            absval = ifelse(is.null(control$absval), 1e-09, 
-                                            control$absval),
-                            maxit  = ifelse(is.null(control$maxit), 1e04, 
-                                            control$maxit))$solution
+    b.eqrestr <- con_solver(X         = X, 
+                            y         = y, 
+                            b.unrestr = b.unrestr, 
+                            w         = w, 
+                            Amat      = Amatg,
+                            bvec      = bvecg, 
+                            meq       = nrow(Amatg),
+                            absval    = ifelse(is.null(control$absval), 1e-09, 
+                                               control$absval),
+                            maxit     = ifelse(is.null(control$maxit), 1e04, 
+                                               control$maxit))$solution
     b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
                                       control$tol)] <- 0L
@@ -339,17 +339,17 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
     ll1 <- object$loglik
     Ts <- -2*(ll0 - ll1)
   } else if (type == "A") {
-    b.eqrestr <- con_solver(b.unrestr, 
-                            X      = X, 
-                            y      = y, 
-                            w      = w, 
-                            Amat   = Amat,
-                            bvec   = bvec, 
-                            meq    = nrow(Amat),
-                            absval = ifelse(is.null(control$absval), 1e-09, 
-                                            control$absval),
-                            maxit  = ifelse(is.null(control$maxit), 1e04, 
-                                            control$maxit))$solution
+    b.eqrestr <- con_solver(X         = X, 
+                            y         = y, 
+                            b.unrestr = b.unrestr,
+                            w         = w, 
+                            Amat      = Amat,
+                            bvec      = bvec, 
+                            meq       = nrow(Amat),
+                            absval    = ifelse(is.null(control$absval), 1e-09, 
+                                               control$absval),
+                            maxit     = ifelse(is.null(control$maxit), 1e04, 
+                                               control$maxit))$solution
     b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
                                       control$tol)] <- 0L
@@ -375,17 +375,17 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
     else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt > 0L && meq.alt <= meq) {
-        b.restr.alt <- con_solver(b.unrestr, 
-                                  X      = X, 
-                                  y      = y, 
-                                  w      = w,
-                                  Amat   = Amat[1:meq.alt,,drop=FALSE],
-                                  bvec   = bvec[1:meq.alt], 
-                                  meq    = meq.alt,
-                                  absval = ifelse(is.null(control$absval), 1e-09, 
-                                                  control$absval),
-                                  maxit  = ifelse(is.null(control$maxit), 1e04, 
-                                                  control$maxit))$solution
+        b.restr.alt <- con_solver(X         = X, 
+                                  y         = y, 
+                                  b.unrestr = b.unrestr,
+                                  w         = w,
+                                  Amat      = Amat[1:meq.alt,,drop=FALSE],
+                                  bvec      = bvec[1:meq.alt], 
+                                  meq       = meq.alt,
+                                  absval    = ifelse(is.null(control$absval), 1e-09, 
+                                                     control$absval),
+                                  maxit     = ifelse(is.null(control$maxit), 1e04, 
+                                                     control$maxit))$solution
         b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol),                                        
                                               sqrt(.Machine$double.eps),                                        
                                               control$tol)] <- 0L
@@ -569,17 +569,17 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
       stop("Restriktor ERROR: test not ready yet for models without intercept.")      
     } 
     
-    b.eqrestr <- con_solver(b.unrestr, 
-                            X      = X, 
-                            y      = y, 
-                            w      = w, 
-                            Amat   = Amatg, 
-                            bvec   = bvecg, 
-                            meq    = nrow(Amatg),
-                            absval = ifelse(is.null(control$absval), 1e-09, 
-                                            control$absval),
-                            maxit  = ifelse(is.null(control$maxit), 1e04, 
-                                            control$maxit))$solution
+    b.eqrestr <- con_solver(X         = X, 
+                            y         = y, 
+                            b.unrestr = b.unrestr,
+                            w         = w, 
+                            Amat      = Amatg, 
+                            bvec      = bvecg, 
+                            meq       = nrow(Amatg),
+                            absval    = ifelse(is.null(control$absval), 1e-09, 
+                                               control$absval),
+                            maxit     = ifelse(is.null(control$maxit), 1e04, 
+                                               control$maxit))$solution
     b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
                                       control$tol)] <- 0L
@@ -600,17 +600,17 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     Ts <- t(U) %*% i %*% U - ( t(U-b) %*% i %*% (U-b) ) 
     Ts <- as.numeric(n * Ts)
   } else if (type == "A") {
-    b.eqrestr <- con_solver(b.unrestr, 
-                            X      = X, 
-                            y      = y, 
-                            w      = w, 
-                            Amat   = Amat,
-                            bvec   = bvec, 
-                            meq    = nrow(Amat),
-                            absval = ifelse(is.null(control$absval), 1e-09, 
-                                            control$absval),
-                            maxit  = ifelse(is.null(control$maxit), 1e04, 
-                                            control$maxit))$solution
+    b.eqrestr <- con_solver(X         = X, 
+                            y         = y, 
+                            b.unrestr = b.unrestr,
+                            w         = w, 
+                            Amat      = Amat,
+                            bvec      = bvec, 
+                            meq       = nrow(Amat),
+                            absval    = ifelse(is.null(control$absval), 1e-09, 
+                                               control$absval),
+                            maxit     = ifelse(is.null(control$maxit), 1e04, 
+                                               control$maxit))$solution
     b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
                                       control$tol)] <- 0L
@@ -644,17 +644,17 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
       else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt != 0L && meq.alt <= meq) {
-        b.restr.alt <- con_solver(b.unrestr, 
-                                  X      = X, 
-                                  y      = y, 
-                                  w      = w,
-                                  Amat   = Amat[1:meq.alt,,drop=FALSE],
-                                  bvec   = bvec[1:meq.alt], 
-                                  meq    = meq.alt,
-                                  absval = ifelse(is.null(control$absval), 1e-09,
-                                                  control$absval),
-                                  maxit  = ifelse(is.null(control$maxit), 1e04,
-                                                  control$maxit))$solution
+        b.restr.alt <- con_solver(X         = X, 
+                                  y         = y, 
+                                  b.unrestr = b.unrestr,
+                                  w         = w,
+                                  Amat      = Amat[1:meq.alt,,drop=FALSE],
+                                  bvec      = bvec[1:meq.alt], 
+                                  meq       = meq.alt,
+                                  absval    = ifelse(is.null(control$absval), 1e-09,
+                                                     control$absval),
+                                  maxit     = ifelse(is.null(control$maxit), 1e04,
+                                                     control$maxit))$solution
         b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol),                                        
                                               sqrt(.Machine$double.eps),                                        
                                               control$tol)] <- 0L

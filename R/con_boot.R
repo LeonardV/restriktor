@@ -12,9 +12,9 @@ con_boot_lm <- function(object, B = 999, fixed = FALSE, ...) {
     wt <- rep(1, nrow(DATA))
   } # standard bootstrap   
   if (!fixed) {
-    bootout <- boot(cbind(wt = wt, DATA), 
+    bootout <- boot(DATA,  
                     con_bootdata_lm, 
-                    R = B, ...)
+                    R = B, wt = wt, ...)
                     #form = form, ...)
   } else { # model based bootstrap
     res <- object$residuals

@@ -6,7 +6,7 @@
 \title{Estimating linear regression models with equality and/or 
 inequality restriktions}
 \description{Function \code{restriktor} estimates the parameters of a linear model (\code{lm}) 
-  or robust linear model (\code{rlm}) subject to equality and/or inequality 
+  or robust linear model (\code{rlm}) subject to linear equality and/or linear inequality 
   restriktions. The real work horses are the \code{conLM} and the \code{conRLM} 
   functions for linear and robust linear models respectively.}
 
@@ -73,10 +73,11 @@ restriktor(object, constraints = NULL, \dots)
   \item{bootWt}{if \code{TRUE}, the chi-bar-square weights are 
   computed based on a simulation approach. If \code{FALSE}, the 
   weights are computed based on the multivariate normal distribution 
-  function. These weights are necessary in the \code{summary} function
-  for computing the GORIC value. Moreover, they are re-used for
-  computing the p-value for the test-statistic, unless the p-value 
-  is computed directly via bootstrapping.}
+  function with additional Monte Carlo steps. These weights are 
+  necessary in the \code{summary} function for computing the GORIC 
+  value. Moreover, they are re-used in the \code{\link{conTest}} 
+  function for computing the p-value for the test-statistic, 
+  unless the p-value is computed directly via bootstrapping.}
   \item{bootWt.R}{integer; number of bootstrap draws for \code{bootWt}. 
   The default value is set to 99999. Parallel support is available.}
   \item{parallel}{the type of parallel operation to be used (if any). 

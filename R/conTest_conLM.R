@@ -1,6 +1,7 @@
 ## computes the F, LRT and score test statistic ##
-##
-# REF: Silvapulle and Sen (2005). Constrained statistical inference. Chapter 2.
+# REFs: 
+# Silvapulle and Sen (2005). Constrained statistical inference. Chapter 2.
+# Wolak, F. An exact test for multiple inequality and equality constraints in the linear regression model Journal of the American statistical association, 1987, 82, 782-793
 conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
                            p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
                            cl = NULL, seed = 1234, verbose = FALSE,
@@ -231,6 +232,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
 
 
 # REF: Silvapulle and Sen (2005). Constrained statistical inference. Chapter 3.
+# Wolak, F. An exact test for multiple inequality and equality constraints in the linear regression model Journal of the American statistical association, 1987, 82, 782-793
 conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
                              p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
                              cl = NULL, seed = 1234, verbose = FALSE,
@@ -616,7 +618,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                       control$tol)] <- 0L
     names(b.eqrestr) <- vnames
     
-    df <- n - (p - nrow(Amat))
+    df <- n - (p - nrow(Amat))                                                  
     s20 <- sum(w*(y - X %*% b.eqrestr)^2) / df
     d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b.eqrestr)))
     i <- 1/s20 * (t(X) %*% W %*% X)
@@ -754,8 +756,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
 
 # hypothesis test type C is based on a t-distribution.
 # intersection-union test 
-# REF: S. Sasabuchi (1980). A Test of a Multivariate Normal Mean with Composite 
-# Hypotheses Determined by Linear Inequalities. Biometrika Trust, 67 (2), 429-439.
+# REF: S. Sasabuchi (1980). A Test of a Multivariate Normal Mean with Composite Hypotheses Determined by Linear Inequalities. Biometrika Trust, 67 (2), 429-439.
 conTestC.conLM <- function(object, type = "C", ...) {
   
   if (!("conLM" %in% class(object))) {

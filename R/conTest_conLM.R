@@ -600,8 +600,8 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     #               meq  = meq)$solution
     # Ts <- t(U) %*% i %*% U - ( t(U-b) %*% i %*% (U-b) ) 
     ###############################################
-    df1 <- n - (p - qr(Amat[0:meq,])$rank)
     df0 <- n - (p - nrow(Amatg))   
+    df1 <- n - (p - qr(Amat[0:meq,])$rank)
     s20 <- sum((y - X %*% b.eqrestr)^2) / df0
     s21 <- sum((y - X %*% b.restr)^2) / df1
     d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b.eqrestr)))
@@ -641,12 +641,10 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     #               meq  = meq)$solution
     # Ts <- t(U) %*% i %*% U - ( t(U-b) %*% i %*% (U-b) )
     ###############################################
-    df1 <- n - (p - qr(Amat[0:meq,])$rank)
     df0 <- n - (p - nrow(Amat))   
+    df1 <- n - (p - qr(Amat[0:meq,])$rank)
     s20 <- sum((y - X %*% b.eqrestr)^2) / df0
     s21 <- sum((y - X %*% b.restr)^2) / df1
-    df <- n - (p - nrow(Amat))                                                  
-    s20 <- sum(w*(y - X %*% b.eqrestr)^2) / df
     d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b.eqrestr)))
     d1 <- 1/s21 * (t(X) %*% (w*(y - X %*% b.restr)))
     I0 <- 1/s20 * (t(X) %*% X)

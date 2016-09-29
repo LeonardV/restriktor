@@ -11,8 +11,7 @@
   }
   
 
-  pchibar <- function (x, df1, wt) 
-  {
+  pchibar <- function (x, df1, wt) {
     if (x <= 0) {
       return(0)
     }
@@ -21,3 +20,6 @@
     cdf <- cdf + sum(pchisq(x, df1[!zed]) * wt[!zed])
     return(cdf)
   }
+
+  
+  

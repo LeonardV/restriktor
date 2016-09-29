@@ -626,6 +626,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                       control$tol)] <- 0L
     names(b.eqrestr) <- vnames
     
+    ######################################################
     # df0 <- n - (p - nrow(Amat))                                                  
     # s20 <- sum(w*(y - X %*% b.eqrestr)^2) / df0
     #d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b.eqrestr)))
@@ -644,6 +645,8 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     df0 <- n - (p - nrow(Amat))   
     s20 <- sum((y - X %*% b.eqrestr)^2) / df0
     s21 <- sum((y - X %*% b.restr)^2) / df1
+    df <- n - (p - nrow(Amat))                                                  
+    s20 <- sum(w*(y - X %*% b.eqrestr)^2) / df
     d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b.eqrestr)))
     d1 <- 1/s21 * (t(X) %*% (w*(y - X %*% b.restr)))
     I0 <- 1/s20 * (t(X) %*% X)

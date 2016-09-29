@@ -37,11 +37,12 @@ normal models.}
   F, Wald/LRT and score test-statistics are available. The 
   null-distribution of these test-statistics takes the form of a 
   mixture of chi-square distributions. These mixing weights can 
-  be computed using the multivariate normal distribution function 
-  or via a simulation approach. Bootstrap methods are available 
-  to calculate the mixing weights and to compute the p-value 
-  directly. Parameters estimates under the null- and 
-  alternative-hypothesis are available from the summary function. 
+  be computed using the multivariate normal distribution function
+  with additional Monte Carlo steps or via a simulation approach. 
+  Bootstrap methods are available to calculate the mixing weights 
+  and to compute the p-value directly. Parameters estimates under 
+  the null- and alternative-hypothesis are available from the 
+  summary function. 
   
   The package makes use of various other R packages: \pkg{quadprog} 
   is used for restrikted estimation, \pkg{boot} for bootstrapping, 

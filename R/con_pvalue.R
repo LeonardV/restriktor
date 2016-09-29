@@ -30,6 +30,7 @@ con_pvalue_Fbar <- function(wt, Ts.org, df.residual, type = "A",
   out <- pvalue
     attr(out, "wt") <- wt
     attr(out, "df.bar") <- df.bar
+    attr(out, "df.residual") <- df.residual
   
   out    
 }
@@ -65,6 +66,7 @@ con_pvalue_Chibar <- function(wt, Ts.org, type = "A",
   out <- pvalue
     attr(out, "wt") <- wt
     attr(out, "df.bar") <- df.bar
+    attr(out, "df.residual") <- df.residual
   
   out
 }

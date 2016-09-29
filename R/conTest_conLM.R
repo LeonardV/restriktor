@@ -1,6 +1,7 @@
 ## computes the F, LRT and score test statistic ##
-##
-# REF: Silvapulle and Sen (2005). Constrained statistical inference. Chapter 2.
+# REFs: 
+# Silvapulle and Sen (2005). Constrained statistical inference. Chapter 2.
+# Wolak, F. An exact test for multiple inequality and equality constraints in the linear regression model Journal of the American statistical association, 1987, 82, 782-793
 conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
                            p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
                            cl = NULL, seed = 1234, verbose = FALSE,
@@ -231,6 +232,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
 
 
 # REF: Silvapulle and Sen (2005). Constrained statistical inference. Chapter 3.
+# Wolak, F. An exact test for multiple inequality and equality constraints in the linear regression model Journal of the American statistical association, 1987, 82, 782-793
 conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
                              p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
                              cl = NULL, seed = 1234, verbose = FALSE,
@@ -475,8 +477,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
 }
 
 
-# REF: Silvapulle, M.J. and Silvapulle, P. (1995). A score Test Against One-Sided Alternatives
-# Journal of the American Statistical Association, Vol. 90, No. 429 (Mar., 1995), pp. 342-349
+# REF: Robertson, Wright and Dykstra (1988, p. 321). Order constrained statistical inference.
 conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
                                p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
                                cl = NULL, seed = 1234, verbose = FALSE,
@@ -585,20 +586,29 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                       control$tol)] <- 0L
       names(b.eqrestr) <- vnames
     
-    df <- n-(p-nrow(Amatg)) 
-    s20 <- sum(w*(y - X %*% b.eqrestr)^2) / df
+    # df0 <- n-(p-nrow(Amatg)) 
+    # s20 <- sum(w*(y - X %*% b.eqrestr)^2) / df0
+    # d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b.eqrestr)))
+    # i <- 1/s20 * (t(X) %*% W %*% X) / n
+    # U <- 1/sqrt(n) * solve(i) %*% d0
+    # UI <- t(U) %*% i
+    # D <- i
+    # b <- solve.QP(Dmat = D, 
+    #               dvec = UI, 
+    #               Amat = t(Amat), 
+    #               bvec = bvec, 
+    #               meq  = meq)$solution
+    # Ts <- t(U) %*% i %*% U - ( t(U-b) %*% i %*% (U-b) ) 
+    ###############################################
+    df1 <- n - (p - qr(Amat[0:meq,])$rank)
+    df0 <- n - (p - nrow(Amatg))   
+    s20 <- sum((y - X %*% b.eqrestr)^2) / df0
+    s21 <- sum((y - X %*% b.restr)^2) / df1
     d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b.eqrestr)))
-    i <- 1/s20 * (t(X) %*% W %*% X)
-    U <- 1/sqrt(n) * solve(i) %*% d0
-    UI <- t(U) %*% i
-    D <- i
-    b <- solve.QP(Dmat = D, 
-                  dvec = UI, 
-                  Amat = t(Amat), 
-                  bvec = bvec, 
-                  meq  = meq)$solution
-    Ts <- t(U) %*% i %*% U - ( t(U-b) %*% i %*% (U-b) ) 
-    Ts <- as.numeric(n * Ts)
+    d1 <- 1/s21 * (t(X) %*% (w*(y - X %*% b.restr)))
+    I0 <- 1/s20 * (t(X) %*% X)
+    Ts <- t(c(d0 - d1)) %*% solve(I0) %*% c(d0 - d1)
+    ###############################################
   } else if (type == "A") {
     b.eqrestr <- con_solver(X         = X, 
                             y         = y, 
@@ -616,30 +626,48 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                       control$tol)] <- 0L
     names(b.eqrestr) <- vnames
     
-    df <- n - (p - nrow(Amat))
-    s20 <- sum(w*(y - X %*% b.eqrestr)^2) / df
+    # df0 <- n - (p - nrow(Amat))                                                  
+    # s20 <- sum(w*(y - X %*% b.eqrestr)^2) / df0
+    #d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b.eqrestr)))
+    # i <- 1/s20 * (t(X) %*% W %*% X) / n
+    # U <- 1/sqrt(n) * solve(i) %*% d0
+    # UI <- t(U) %*% i
+    # D <- i
+    # b <- solve.QP(Dmat = D,
+    #               dvec = UI,
+    #               Amat = t(Amat),
+    #               bvec = bvec,
+    #               meq  = meq)$solution
+    # Ts <- t(U) %*% i %*% U - ( t(U-b) %*% i %*% (U-b) )
+    ###############################################
+    df1 <- n - (p - qr(Amat[0:meq,])$rank)
+    df0 <- n - (p - nrow(Amat))   
+    s20 <- sum((y - X %*% b.eqrestr)^2) / df0
+    s21 <- sum((y - X %*% b.restr)^2) / df1
     d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b.eqrestr)))
-    i <- 1/s20 * (t(X) %*% W %*% X)
-    U <- 1/sqrt(n) * solve(i) %*% d0
-    UI <- t(U) %*% i
-    D <- i
-    b <- solve.QP(Dmat = D, 
-                  dvec = UI, 
-                  Amat = t(Amat), 
-                  bvec = bvec, 
-                  meq  = meq)$solution
-    Ts <- t(U) %*% i %*% U - ( t(U-b) %*% i %*% (U-b) ) 
-    Ts <- as.numeric(n*Ts)
+    d1 <- 1/s21 * (t(X) %*% (w*(y - X %*% b.restr)))
+    I0 <- 1/s20 * (t(X) %*% X)
+    Ts <- t(c(d0 - d1)) %*% solve(I0) %*% c(d0 - d1)
+    ###############################################
   } else if (type == "B") {
       if (meq.alt == 0L) {
-        df <- n - (p - qr(Amat[0:meq,])$rank)
-        s20 <- sum(w*(y - X %*% b.restr)^2) / df
+        # df0 <- n - (p - qr(Amat[0:meq,])$rank)
+        # s20 <- sum(w*(y - X %*% b.restr)^2) / df0
+        # d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b.restr)))
+        # i <- 1/s20 * (t(X) %*% W %*% X) / n
+        # U <- 1/sqrt(n) * solve(i) %*% d0
+        # UI <- t(U) %*% i
+        # Ts <- t(U) %*% i %*% U 
+        ###############################################
+        df0 <- n - (p - qr(Amat[0:meq,])$rank)
+        df1 <- n - p   
+        s20 <- sum((y - X %*% b.restr)^2) / df0
+        s21 <- sum((y - X %*% b.unrestr)^2) / df1
         d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b.restr)))
-        i <- 1/s20 * (t(X) %*% W %*% X)
-        U <- 1/sqrt(n) * solve(i) %*% d0
-        UI <- t(U) %*% i
-        Ts <- t(U) %*% i %*% U 
-        Ts <- as.numeric(n*Ts)
+        d1 <- 1/s21 * (t(X) %*% (w*(y - X %*% b.unrestr)))
+        I0 <- 1/s20 * (t(X) %*% X)
+        Ts <- t(c(d0 - d1)) %*% solve(I0) %*% c(d0 - d1)
+        ###############################################
       }
       else {
       # some equality may be preserved in the alternative hypothesis.
@@ -660,20 +688,28 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                               control$tol)] <- 0L
         names(b.restr.alt) <- vnames
         
-        df <- n - (p - qr(Amat[0:meq,])$rank)
-        s20 <- sum(w*(y - X %*% b.restr)^2) / df
+        # df0 <- n - (p - qr(Amat[0:meq,])$rank)
+        # s20 <- sum(w*(y - X %*% b.restr)^2) / df0
+        # d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b.restr)))
+        # i <- 1/s20 * (t(X) %*% W %*% X) / n
+        # U <- 1/sqrt(n) * solve(i) %*% d0
+        # UI <- t(U) %*% i
+        # D <- i
+        # b <- solve.QP(Dmat = D, 
+        #               dvec = UI, 
+        #               Amat = t(Amat[1:meq.alt, ,drop = FALSE]), 
+        #               bvec = bvec[1:meq.alt], 
+        #               meq  = meq.alt)$solution
+        # Ts <- t(U) %*% i %*% U - ( t(U-b) %*% i %*% (U-b) ) 
+        ###############################################
+        df1 <- df0 <- n - (p - qr(Amat[0:meq,])$rank)
+        s20 <- sum((y - X %*% b.restr)^2) / df0
+        s21 <- sum((y - X %*% b.restr.alt)^2) / df1
         d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b.restr)))
-        i <- 1/s20 * (t(X) %*% W %*% X)
-        U <- 1/sqrt(n) * solve(i) %*% d0
-        UI <- t(U) %*% i
-        D <- i
-        b <- solve.QP(Dmat = D, 
-                      dvec = UI, 
-                      Amat = t(Amat[1:meq.alt, ,drop = FALSE]), 
-                      bvec = bvec[1:meq.alt], 
-                      meq  = meq.alt)$solution
-        Ts <- t(U) %*% i %*% U - ( t(U-b) %*% i %*% (U-b) ) 
-        Ts <- as.numeric(n*Ts)
+        d1 <- 1/s21 * (t(X) %*% (w*(y - X %*% b.restr.alt)))
+        I0 <- 1/s20 * (t(X) %*% X)
+        Ts <- t(c(d0 - d1)) %*% solve(I0) %*% c(d0 - d1)
+        ###############################################
       }
       else {
       stop("neq.alt must not be larger than neq.")
@@ -754,8 +790,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
 
 # hypothesis test type C is based on a t-distribution.
 # intersection-union test 
-# REF: S. Sasabuchi (1980). A Test of a Multivariate Normal Mean with Composite 
-# Hypotheses Determined by Linear Inequalities. Biometrika Trust, 67 (2), 429-439.
+# REF: S. Sasabuchi (1980). A Test of a Multivariate Normal Mean with Composite Hypotheses Determined by Linear Inequalities. Biometrika Trust, 67 (2), 429-439.
 conTestC.conLM <- function(object, type = "C", ...) {
   
   if (!("conLM" %in% class(object))) {

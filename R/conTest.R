@@ -51,7 +51,7 @@ conTest <- function(object, type = "summary", ...) {
           UseMethod("conTestLRT")
         } else if (test == "score") {
           UseMethod("conTestScore")
-        }
+        } 
       } else if (class(object)[1] == "conRLM") { 
         if (!(test %in% c("F","Wald","Wald2","score"))) {
           stop("restriktor ERROR: test ", sQuote(test), " unknown. Choose F, Wald, Wald2 or score.")  

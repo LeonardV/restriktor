@@ -207,6 +207,7 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL,
      }
     # > or >= ??? 
     pvalue <- sum(Ts.boot >= Ts.org) / Rboot.tot
+      attr(pvalue, "Ts.boot") <- Ts.boot
       attr(pvalue, "R") <- Rboot.tot
     
     OUT <- pvalue
@@ -383,6 +384,7 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
     }
     # > or >= ???
     pvalue <- sum(Ts.boot >= Ts.org) / Rboot.tot
+      attr(pvalue, "Ts.boot") <- Ts.boot
       attr(pvalue, "R") <- Rboot.tot
     OUT <- pvalue
     

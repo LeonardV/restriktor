@@ -23,7 +23,7 @@ Wald-, likelihood ratio-, and score-tests.}
 \usage{
 conTest(object, type = "summary", \dots)
 
-\method{print}{conTest}(x, digits = max(3, getOption("digits") - 4), \dots)
+\method{print}{conTest}(x, digits = max(3, getOption("digits") - 2), \dots)
 \method{summary}{conTest.conLM}(object, test = "F", \dots)
 
 \method{conTestF}{conLM}(object, type = "A", neq.alt = 0, 

@@ -90,9 +90,8 @@
 # unrestricted linear model for ages (in months) at which an 
 # infant starts to walk alone.
 DATA <- ZelazoKolb1972
-idx <- which(DATA$Group == 3)
+idx <- which(DATA$Group == "Control")
 DATA <- DATA[-idx, ]
-DATA$Group <- factor(DATA$Group)
 
 # fit unrestrikted linear model
 fit.lm <- lm(Age ~ Group, data = DATA)
@@ -100,7 +99,7 @@ fit.lm <- lm(Age ~ Group, data = DATA)
 # restrikted linear model with restriktions that the walking 
 # exercises would not have a negative effect of increasing the 
 # mean age at which a child starts to walk. 
-fit.con <- restriktor(fit.lm, constraints = "Group2 > 0; Group2 < Group4")
+fit.con <- restriktor(fit.lm, constraints = "GroupPassive > 0; GroupPassive < GroupNo")
 
 summary(fit.con)  
 }

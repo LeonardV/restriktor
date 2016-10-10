@@ -117,7 +117,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                    b.restr   = b.restr, 
                    scale     = scale, 
                    cc        = ifelse(is.null(cc), 4.685061, cc))
-  } else if (type == "A") {
+  } else if (type == "A" | type == "Ax") {
     call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec,
                     tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
                                   control$tol))
@@ -371,7 +371,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                              cc        = ifelse(is.null(cc), 4.685061, cc))
     Ts <- out0$Ts
     Sigma <- out0$V
-  } else if (type == "A") {
+  } else if (type == "A" | type == "Ax") {
     call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec,
                     tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
                                   control$tol))
@@ -658,7 +658,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                        b.restr   = b.restr, 
                        b.unrestr = b.unrestr, 
                        tau       = tau)
-  } else if (type == "A") {
+  } else if (type == "A" | type == "Ax") {
     call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec,
                     tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
                                   control$tol))
@@ -908,7 +908,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                              cc        = ifelse(is.null(cc), 4.685061, cc))    
     Ts <- out0$Ts
     Sigma <- out0$V
-  } else if (type == "A") {
+  } else if (type == "A" | type == "Ax") {
     call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec,
                     tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
                                   control$tol))

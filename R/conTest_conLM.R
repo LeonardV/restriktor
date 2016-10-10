@@ -33,6 +33,8 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   X <- model.matrix(object)[,,drop=FALSE]
   # response variable
   y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
+  # sample size
+  n <- dim(X)[1]
   # weights
   w <- weights(model.org)
   # unconstrained df
@@ -69,8 +71,15 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   # check for intercept
   intercept <- any(attr(terms(model.org), "intercept"))
   
-  if (type == "global") {
+  if (type == "global" && intercept) {
     AmatG <- cbind(rep(0, (p - 1)), diag(rep(1, p - 1))) 
+    AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*% 
+                          solve(Amat %*% t(Amat), Amat))
+    if (all(abs(AmatX) < tol)) { 
+      type <- "Ax" 
+    }
+  } else if (type == "global" && !intercept) {
+    AmatG <- diag(rep(1, p))
     AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*% 
                           solve(Amat %*% t(Amat), Amat))
     if (all(abs(AmatX) < tol)) { 
@@ -97,9 +106,20 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
       AmatG <- Amat
       bvecG <- bvec
     }
-    attr(Amat, "Amat_Global") <- AmatG
-    attr(bvec, "bvec_Global") <- bvecG
     
+    # if (!intercept) {
+    #   AmatG.old <- AmatG
+    #   AmatG <- diag(rep(1, p))
+    #   bvecG.old <- bvecG
+    #   bvecG <- rep(as.numeric(NA), p)
+    #   if (is.null(w)) { 
+    #     W <- diag(rep(1, n))
+    #   } else {
+    #     W <- diag(w)
+    #   }
+    #   bvecG[1:p] <- solve(t(rep(1,n))%*%W%*%rep(1,n)) %*% t(rep(1,n))%*%W%*%y
+    # }
+    # 
     # call quadprog
     b.eqrestr <- con_solver(X         = X, 
                             y         = y, 
@@ -112,14 +132,32 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                                                control$absval),
                             maxit     = ifelse(is.null(control$maxit), 1e04, 
                                                control$maxit))$solution
-    # fix estimates to zero 
+  
+    # fix estimates < tol to zero 
     b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
                                       control$tol)] <- 0L
     names(b.eqrestr) <- vnames
     # compute global test statistic
     Ts <- c(t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr))
+    
+    # if (!intercept) {
+    #   bvecG <- bvecG.old
+    #   AmatG <- AmatG.old
+    # }
+    attr(Amat, "Amat_Global") <- AmatG
+    attr(bvec, "bvec_Global") <- bvecG
   } else if (type == "A" | type == "Ax") {
+     # if (!intercept && type == "Ax") {
+     #   bvec.old <- bvec
+     #   bvec <- rep(as.numeric(NA), p)
+     #   if (is.null(w)) { 
+     #     W <- diag(rep(1, n))
+     #   } else {
+     #     W <- diag(w)
+     #   }
+     #   bvec[1:p] <- solve(t(rep(1,n))%*%W%*%rep(1,n)) %*% t(rep(1,n))%*%W%*%y
+     # }
     b.eqrestr <- con_solver(X         = X, 
                             y         = y, 
                             b.unrestr = b.unrestr,
@@ -137,6 +175,9 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
     names(b.eqrestr) <- vnames
     # compute test statistic for hypothesis test type A
     Ts <- c(t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr))
+#    if (!intercept && type == "Ax") {
+#      bvec <- bvec.old
+#    }
   } else if (type == "B") {
     if (meq.alt == 0L) {
       # compute test statistic for hypothesis test type B when no equalities are
@@ -369,7 +410,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
     
     ll1 <- object$loglik
     Ts <- -2*(ll0 - ll1)
-  } else if (type == "A") {
+  } else if (type == "A" | type == "Ax") {
     b.eqrestr <- con_solver(X         = X, 
                             y         = y, 
                             b.unrestr = b.unrestr,
@@ -655,7 +696,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     I0 <- 1/s20 * (t(X) %*% X)
     Ts <- t(c(d0 - d1)) %*% solve(I0) %*% c(d0 - d1)
     ###############################################
-  } else if (type == "A") {
+  } else if (type == "A" | type == "Ax") {
     b.eqrestr <- con_solver(X         = X, 
                             y         = y, 
                             b.unrestr = b.unrestr,

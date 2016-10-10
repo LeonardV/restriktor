@@ -11,7 +11,7 @@
 }
 \usage{
 
-\method{print}{conLM}(x, digits = max(3, getOption("digits") - 3), \dots)
+\method{print}{conLM}(x, digits = max(3, getOption("digits") - 2), \dots)
 
 \method{summary}{conLM}(object, bootCIs = TRUE, 
         bty = "basic", level = 0.95, GORIC = TRUE, \dots)

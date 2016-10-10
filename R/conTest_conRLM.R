@@ -42,49 +42,64 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   b.restr <- object$b.restr
   b.eqrestr <- NULL
   b.restr.alt <- NULL
+  # length parameter vector
+  p <- length(b.unrestr)
   # variable names
   vnames <- names(b.unrestr)
   # constraints stuff
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
+  #control
+  control <- object$control
   
+  # check for equalities only
   if (meq == nrow(Amat)) {
     stop("test not applicable for object with equality restriktions only.")
   }
   
+  if (is.null(control$tol)) {
+    tol <- sqrt(.Machine$double.eps)
+  } else {
+    tol <- control$tol
+  }
+  
+  # check for intercept
+  intercept <- any(attr(terms(model.org), "intercept"))
+  
   if (type == "global") {
-    # check for intercept
-    intercept <- any(attr(terms(model.org), "intercept"))
-    l <- length(b.restr)
-    if (intercept) {
-      bvecg <- bvec
-      Amatg <- cbind(rep(0, (l - 1)), diag(rep(1, l - 1))) 
-      Amatx <- Amatg %*% (diag(rep(1, l)) - t(Amat) %*% 
-                            solve(Amat %*% t(Amat), Amat))
-      if (!all(abs(Amatx) == 0)) {
-        Amatx <- Amatx[!rowSums(abs(Amatx) == 0) == l, , drop = FALSE]
-        if (nrow(Amatx) > 1) {
-          Amat.rref <- GaussianElimination(t(Amatx))
-          if (Amat.rref$rank == 1) {
-            Amatx <- matrix(Amatx[1, ], 1, ncol(Amatx))
-          } else {
-            if (Amat.rref$rank < nrow(Amatx)) {
-              Amatx <- Amatx[Amat.rref$pivot, , drop = FALSE]
-            }
+    AmatG <- cbind(rep(0, (p - 1)), diag(rep(1, p - 1))) 
+    AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*% 
+                          solve(Amat %*% t(Amat), Amat))
+    if (all(abs(AmatX) < tol)) { 
+      type <- "Ax" 
+    }
+  }
+  
+  if (type == "global") {
+    if (!all(abs(AmatX) == 0)) {
+      AmatX <- AmatX[!rowSums(abs(AmatX) == 0) == p, , drop = FALSE]
+      if (nrow(AmatX) > 1) {
+        Amat.rref <- GaussianElimination(t(AmatX))
+        if (Amat.rref$rank == 1) {
+          AmatX <- matrix(AmatX[1, ], 1, ncol(AmatX))
+        } else {
+          if (Amat.rref$rank < nrow(AmatX)) {
+            AmatX <- AmatX[Amat.rref$pivot, , drop = FALSE]
           }
         }
-        Amatg <- rbind(Amatx, Amat)
-        bvecg <- c(rep(0, nrow(Amatx)), bvec)
-      } else {
-        Amatg <- Amat
-        bvecg <- bvec
       }
+      AmatG <- rbind(AmatX, Amat)
+      bvecG <- c(rep(0, nrow(AmatX)), bvec)
     } else {
-      stop("Restriktor ERROR: test not ready yet for models without intercept.")      
-    } 
+      AmatG <- Amat
+      bvecG <- bvec
+    }
+    attr(Amat, "Amat_Global") <- AmatG
+    attr(bvec, "bvec_Global") <- bvecG
+    
     #fit inequality constrained robust model
-    call.my <- list(Amat = Amatg, meq = nrow(Amatg), bvec = bvecg,
+    call.my <- list(Amat = AmatG, meq = nrow(AmatG), bvec = bvecG,
                     tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
                                   control$tol))
     # collect all original model arguments and add constraints
@@ -162,6 +177,9 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   # The number of bootstrap samples must be large enough to avoid spurious results.
   wt <- rev(wt)
   if (attr(object$wt, "bootWt")) {
+    if (attr(object$wt, "bootWt.R") < 999) {
+      stop("Restriktor ERROR: increase the number of bootstrap draws. Preferably to a large number e.g., bootWt.R = 99999")
+    }
     wt.idx <- which(wt == 0)
     wt <- wt[-wt.idx]
   }
@@ -274,49 +292,64 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   b.restr <- object$b.restr
   b.eqrestr <- NULL
   b.restr.alt <- NULL
+  # length parameter vector
+  p <- length(b.unrestr)
   # variable names
   vnames <- names(b.unrestr)
   # constraints stuff
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
+  #control
+  control <- object$control
   
+  # check for equalities only
   if (meq == nrow(Amat)) {
     stop("test not applicable for object with equality restriktions only.")
   }
   
+  if (is.null(control$tol)) {
+    tol <- sqrt(.Machine$double.eps)
+  } else {
+    tol <- control$tol
+  }
+  
+  # check for intercept
+  intercept <- any(attr(terms(model.org), "intercept"))
+  
   if (type == "global") {
-    # check for intercept
-    intercept <- any(attr(terms(model.org), "intercept"))
-    l <- length(b.restr)
-    if (intercept) {
-      bvecg <- bvec
-      Amatg <- cbind(rep(0, (l - 1)), diag(rep(1, l - 1))) 
-      Amatx <- Amatg %*% (diag(rep(1, l)) - t(Amat) %*% 
-                            solve(Amat %*% t(Amat), Amat))
-      if (!all(abs(Amatx) == 0)) {
-        Amatx <- Amatx[!rowSums(abs(Amatx) == 0) == l, , drop = FALSE]
-        if (nrow(Amatx) > 1) {
-          Amat.rref <- GaussianElimination(t(Amatx))
-          if (Amat.rref$rank == 1) {
-            Amatx <- matrix(Amatx[1, ], 1, ncol(Amatx))
-          } else {
-            if (Amat.rref$rank < nrow(Amatx)) {
-              Amatx <- Amatx[Amat.rref$pivot, , drop = FALSE]
-            }
+    AmatG <- cbind(rep(0, (p - 1)), diag(rep(1, p - 1))) 
+    AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*% 
+                          solve(Amat %*% t(Amat), Amat))
+    if (all(abs(AmatX) < tol)) { 
+      type <- "Ax" 
+    }
+  }
+  
+  if (type == "global") {
+    if (!all(abs(AmatX) == 0)) {
+      AmatX <- AmatX[!rowSums(abs(AmatX) == 0) == p, , drop = FALSE]
+      if (nrow(AmatX) > 1) {
+        Amat.rref <- GaussianElimination(t(AmatX))
+        if (Amat.rref$rank == 1) {
+          AmatX <- matrix(AmatX[1, ], 1, ncol(AmatX))
+        } else {
+          if (Amat.rref$rank < nrow(AmatX)) {
+            AmatX <- AmatX[Amat.rref$pivot, , drop = FALSE]
           }
         }
-        Amatg <- rbind(Amatx, Amat)
-        bvecg <- c(rep(0, nrow(Amatx)), bvec)
-      } else {
-        Amatg <- Amat
-        bvecg <- bvec
       }
+      AmatG <- rbind(AmatX, Amat)
+      bvecG <- c(rep(0, nrow(AmatX)), bvec)
     } else {
-      stop("Restriktor ERROR: test not ready yet for models without intercept.")      
-    } 
+      AmatG <- Amat
+      bvecG <- bvec
+    }
+    attr(Amat, "Amat_Global") <- AmatG
+    attr(bvec, "bvec_Global") <- bvecG
+    
     #fit inequality constrained robust model
-    call.my <- list(Amat = Amatg, meq = nrow(Amatg), bvec = bvecg,
+    call.my <- list(Amat = AmatG, meq = nrow(AmatG), bvec = bvecG,
                     tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
                                   control$tol))
     # collect all original model arguments and add constraints
@@ -407,8 +440,8 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     }
   } 
   
-  # We need to recalculate the weights based on V_hat = Sigam instead on solve(t(X)%*%X)
-  # Do we have to? The differences are very small.
+  # We need to recalculate the weights based on V_hat = Sigma instead on solve(t(X)%*%X)
+  # Do we have to? The differences look very small.
   ## compute mixing weights
   if (all(c(Amat) == 0)) { # unrestrikted case
     wt <- c(rep(0L, p), 1)
@@ -424,7 +457,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                           verbose  = verbose)
   } else if (!attr(object$wt, "bootWt") & (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
     wt <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
-  } else if (!battr(object$wt, "bootWt") & (meq == nrow(Amat))) { # only equality constraints
+  } else if (!attr(object$wt, "bootWt") & (meq == nrow(Amat))) { # only equality constraints
     wt <- rep(0L, ncol(Sigma) + 1)
     wt.idx <- ncol(Sigma) - meq + 1
     wt[wt.idx] <- 1
@@ -435,6 +468,9 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   # The number of bootstrap samples must be large enough to avoid spurious results.
   wt <- rev(wt)
   if (attr(object$wt, "bootWt")) {
+    if (attr(object$wt, "bootWt.R") < 999) {
+      stop("Restriktor ERROR: increase the number of bootstrap draws. Preferably to a large number e.g., bootWt.R = 99999")
+    }
     wt.idx <- which(wt == 0)
     wt <- wt[-wt.idx]
   }
@@ -531,66 +567,81 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   # original model
   model.org <- object$model.org
   # tukey's bisquare tuning constant
-  cc <- model.org$call[["c"]]
+#  cc <- model.org$call[["c"]]
   # model matrix
   X <- model.matrix(model.org)[,,drop=FALSE]
   # response variable
-  y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
+#  y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
   Sigma <- object$Sigma
   # unconstrained scale
-  scale <- model.org$s
+#  scale <- model.org$s
   tau <- object$s2.unc
   # parameter estimates
   b.unrestr <- object$b.unrestr
   b.restr <- object$b.restr
   b.eqrestr <- NULL
   b.restr.alt <- NULL
+  # length parameter vector
+  p <- length(b.unrestr)
   # variable names
   vnames <- names(b.unrestr)
   # constraints stuff
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
+  #control
+  control <- object$control
   
+  # check for equalities only
   if (meq == nrow(Amat)) {
     stop("test not applicable for object with equality restriktions only.")
   }
   
+  if (is.null(control$tol)) {
+    tol <- sqrt(.Machine$double.eps)
+  } else {
+    tol <- control$tol
+  }
+  
+  # check for intercept
+  intercept <- any(attr(terms(model.org), "intercept"))
+  
   if (type == "global") {
-    # check for intercept
-    intercept <- any(attr(terms(model.org), "intercept"))
-    l <- length(b.restr)
-    if (intercept) {
-      bvecg <- bvec
-      Amatg <- cbind(rep(0, (l - 1)), diag(rep(1, l - 1))) 
-      Amatx <- Amatg %*% (diag(rep(1, l)) - t(Amat) %*% 
-                            solve(Amat %*% t(Amat), Amat))
-      if (!all(abs(Amatx) == 0)) {
-        Amatx <- Amatx[!rowSums(abs(Amatx) == 0) == l, , drop = FALSE]
-        if (nrow(Amatx) > 1) {
-          Amat.rref <- GaussianElimination(t(Amatx))
-          if (Amat.rref$rank == 1) {
-            Amatx <- matrix(Amatx[1, ], 1, ncol(Amatx))
-          } else {
-            if (Amat.rref$rank < nrow(Amatx)) {
-              Amatx <- Amatx[Amat.rref$pivot, , drop = FALSE]
-            }
+    AmatG <- cbind(rep(0, (p - 1)), diag(rep(1, p - 1))) 
+    AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*% 
+                          solve(Amat %*% t(Amat), Amat))
+    if (all(abs(AmatX) < tol)) { 
+      type <- "Ax" 
+    }
+  }
+  
+  if (type == "global") {
+    if (!all(abs(AmatX) == 0)) {
+      AmatX <- AmatX[!rowSums(abs(AmatX) == 0) == p, , drop = FALSE]
+      if (nrow(AmatX) > 1) {
+        Amat.rref <- GaussianElimination(t(AmatX))
+        if (Amat.rref$rank == 1) {
+          AmatX <- matrix(AmatX[1, ], 1, ncol(AmatX))
+        } else {
+          if (Amat.rref$rank < nrow(AmatX)) {
+            AmatX <- AmatX[Amat.rref$pivot, , drop = FALSE]
           }
         }
-        Amatg <- rbind(Amatx, Amat)
-        bvecg <- c(rep(0, nrow(Amatx)), bvec)
-      } else {
-        Amatg <- Amat
-        bvecg <- bvec
       }
+      AmatG <- rbind(AmatX, Amat)
+      bvecG <- c(rep(0, nrow(AmatX)), bvec)
     } else {
-      stop("Restriktor ERROR: test not ready yet for models without intercept.")      
-    } 
+      AmatG <- Amat
+      bvecG <- bvec
+    }
+    attr(Amat, "Amat_Global") <- AmatG
+    attr(bvec, "bvec_Global") <- bvecG
+    
     #fit inequality constrained robust model
-    call.my <- list(Amat = Amatg, meq = nrow(Amatg), bvec = bvecg,
+    call.my <- list(Amat = AmatG, meq = nrow(AmatG), bvec = bvecG,
                     tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
                                   control$tol))
     # collect all original model arguments and add constraints
@@ -664,6 +715,9 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   # The number of bootstrap samples must be large enough to avoid spurious results.
   wt <- rev(wt)
   if (attr(object$wt, "bootWt")) {
+    if (attr(object$wt, "bootWt.R") < 999) {
+      stop("Restriktor ERROR: increase the number of bootstrap draws. Preferably to a large number e.g., bootWt.R = 99999")
+    }
     wt.idx <- which(wt == 0)
     wt <- wt[-wt.idx]
   }
@@ -776,49 +830,63 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   b.restr <- object$b.restr
   b.eqrestr <- NULL
   b.restr.alt <- NULL
+  p <- length(b.unrestr)
   # variable names
   vnames <- names(b.unrestr)
   # constraints stuff
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
+  #control
+  control <- object$control
   
+  # check for equalities only
   if (meq == nrow(Amat)) {
     stop("test not applicable for object with equality restriktions only.")
   }
   
+  if (is.null(control$tol)) {
+    tol <- sqrt(.Machine$double.eps)
+  } else {
+    tol <- control$tol
+  }
+  
+  # check for intercept
+  intercept <- any(attr(terms(model.org), "intercept"))
+  
   if (type == "global") {
-    # check for intercept
-    intercept <- any(attr(terms(model.org), "intercept"))
-    l <- length(b.restr)
-    if (intercept) {
-      bvecg <- bvec
-      Amatg <- cbind(rep(0, (l - 1)), diag(rep(1, l - 1))) 
-      Amatx <- Amatg %*% (diag(rep(1, l)) - t(Amat) %*% 
-                            solve(Amat %*% t(Amat), Amat))
-      if (!all(abs(Amatx) == 0)) {
-        Amatx <- Amatx[!rowSums(abs(Amatx) == 0) == l, , drop = FALSE]
-        if (nrow(Amatx) > 1) {
-          Amat.rref <- GaussianElimination(t(Amatx))
-          if (Amat.rref$rank == 1) {
-            Amatx <- matrix(Amatx[1, ], 1, ncol(Amatx))
-          } else {
-            if (Amat.rref$rank < nrow(Amatx)) {
-              Amatx <- Amatx[Amat.rref$pivot, , drop = FALSE]
-            }
+    AmatG <- cbind(rep(0, (p - 1)), diag(rep(1, p - 1))) 
+    AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*% 
+                          solve(Amat %*% t(Amat), Amat))
+    if (all(abs(AmatX) < tol)) { 
+      type <- "Ax" 
+    }
+  }
+  
+  if (type == "global") {
+    if (!all(abs(AmatX) == 0)) {
+      AmatX <- AmatX[!rowSums(abs(AmatX) == 0) == p, , drop = FALSE]
+      if (nrow(AmatX) > 1) {
+        Amat.rref <- GaussianElimination(t(AmatX))
+        if (Amat.rref$rank == 1) {
+          AmatX <- matrix(AmatX[1, ], 1, ncol(AmatX))
+        } else {
+          if (Amat.rref$rank < nrow(AmatX)) {
+            AmatX <- AmatX[Amat.rref$pivot, , drop = FALSE]
           }
         }
-        Amatg <- rbind(Amatx, Amat)
-        bvecg <- c(rep(0, nrow(Amatx)), bvec)
-      } else {
-        Amatg <- Amat
-        bvecg <- bvec
       }
+      AmatG <- rbind(AmatX, Amat)
+      bvecG <- c(rep(0, nrow(AmatX)), bvec)
     } else {
-      stop("Restriktor ERROR: test not ready yet for models without intercept.")      
-    } 
+      AmatG <- Amat
+      bvecG <- bvec
+    }
+    attr(Amat, "Amat_Global") <- AmatG
+    attr(bvec, "bvec_Global") <- bvecG
+    
     #fit inequality constrained robust model
-    call.my <- list(Amat = Amatg, meq = nrow(Amatg), bvec = bvecg,
+    call.my <- list(Amat = AmatG, meq = nrow(AmatG), bvec = bvecG,
                     tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
                                   control$tol))
     # collect all original model arguments and add constraints
@@ -925,7 +993,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                           verbose  = verbose)
   } else if (!attr(object$wt, "bootWt") & (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
     wt <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
-  } else if (!battr(object$wt, "bootWt") & (meq == nrow(Amat))) { # only equality constraints
+  } else if (!attr(object$wt, "bootWt") & (meq == nrow(Amat))) { # only equality constraints
     wt <- rep(0L, ncol(Sigma) + 1)
     wt.idx <- ncol(Sigma) - meq + 1
     wt[wt.idx] <- 1
@@ -936,6 +1004,9 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   # The number of bootstrap samples must be large enough to avoid spurious results.
   wt <- rev(wt)
   if (attr(object$wt, "bootWt")) {
+    if (attr(object$wt, "bootWt.R") < 999) {
+      stop("Restriktor ERROR: increase the number of bootstrap draws. Preferably to a large number e.g., bootWt.R = 99999")
+    }
     wt.idx <- which(wt == 0)
     wt <- wt[-wt.idx]
   }

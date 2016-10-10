@@ -1,4 +1,4 @@
-print.conLM <- function(x, digits = max(3, getOption("digits") - 3), 
+print.conLM <- function(x, digits = max(3, getOption("digits") - 2), 
                         ...) {
 
   cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), "\n", sep = "")

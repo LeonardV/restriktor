@@ -1,10 +1,9 @@
 ################################### TO DO ######################################
 # - add weights + down weights to RLM.
 # - implement E-bar test statistic for lm.
-# - add support for no intercept objects.
+# - fix global test for no intercept models.
 # - add small sample correction for GORIC
 # - add support for mlm and glm.
-# - check for right function arguments
 ###############################################################################
 restriktor <- function(object, constraints = NULL, ...) {
   

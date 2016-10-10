@@ -15,38 +15,48 @@ conLM.lm <- function(object, constraints = NULL, se = "standard", B = 999,
   bvec <- rhs 
   meq  <- neq
   
-  # construct constraint matrix/vector.
-  restr_OUT <- con_constraints(object, 
-                               constraints = Amat, 
-                               bvec        = bvec, 
-                               meq         = meq, 
-                               debug       = debug)  
-  # a list with useful information about the restriktions.}
-  CON <- restr_OUT$CON
-  # a parameter table with information about the observed variables in the object 
-  # and the imposed restriktions.}
-  parTable <- restr_OUT$parTable
-  # constraints matrix
-  Amat <- restr_OUT$Amat
-  # rhs 
-  bvec <- restr_OUT$bvec
-  # neq
-  meq <- restr_OUT$meq
-
-  # unconstrained case
-  if (is.null(constraints)) {
-    Amat <- rbind(rep(0L, length(coef(object))))
+  # response variable
+  y <- as.matrix(object$model[, attr(object$terms, "response")])
+  # model matrix
+  X <- model.matrix(object)[,,drop = FALSE]
+  # model summary
+  so <- summary(object)
+  # unconstrained residual variance (weighted)
+  s2.unc <- so$sigma^2
+  # weigths
+  weights <- weights(object)
+  # unconstrained estimates
+  b.unrestr <- coef(object)
+  # number of parameters
+  p <- length(coef(object))
+  # sample size
+  n <- dim(X)[1]
+  
+  # deal with constraints
+  if (!is.null(constraints)) {
+    restr_OUT <- con_constraints(object, 
+                                 constraints = Amat, 
+                                 bvec        = bvec, 
+                                 meq         = meq, 
+                                 debug       = debug)  
+    # a list with useful information about the restriktions.}
+    CON <- restr_OUT$CON
+    # a parameter table with information about the observed variables in the object 
+    # and the imposed restriktions.}
+    parTable <- restr_OUT$parTable
+    # constraints matrix
+    Amat <- restr_OUT$Amat
+    # rhs 
+    bvec <- restr_OUT$bvec
+    # neq
+    meq <- restr_OUT$meq
+  } else if (is.null(constraints)) { # no constraints specified - needed for GORIC to include unconstrained model
+    CON <- NULL
+    parTable <- NULL
+    Amat <- rbind(rep(0L, p))
     bvec <- rep(0L, nrow(Amat))
     meq  <- 0L
-    # constraints input is a matrix 
-  } else if (is.matrix(constraints)) {
-    Amat <- constraints
-    bvec <- rhs
-    if (is.null(bvec)) {
-      bvec <- rep(0L, nrow(Amat))
-    }
-    meq  <- neq
-  }
+  } 
   
   # parallel housekeeping
   have_mc <- have_snow <- FALSE
@@ -74,26 +84,8 @@ conLM.lm <- function(object, constraints = NULL, se = "standard", B = 999,
   if (se == "boot.model.based" & any(Amat[,1] == 1)) { 
     stop("no restriktions on intercept possible for 'se = boot.model.based' bootstrap method.")
   }
-  
-  # model summary
-  so <- summary(object)
-  # response variable
-  y <- as.matrix(object$model[, attr(object$terms, "response")])
-  # model matrix
-  X <- model.matrix(object)[,,drop = FALSE]
-  # residual variance
-  s2.unc <- so$sigma^2
-  # weigths
-  weights <- weights(object)
-  # sample size
-  n <- dim(X)[1]
-  # unconstrained estimates
-  b.unrestr <- coef(object)
-  # number of parameters
-  p <- length(b.unrestr)
-  
   if(ncol(Amat) != length(b.unrestr)) {
-    stop("length coefficients and ncol(constraints) must be identical")
+    stop("length coefficients and the number of columns constraints-matrix must be identical")
   }
 
   # compute (weighted) log-likelihood
@@ -104,9 +96,9 @@ conLM.lm <- function(object, constraints = NULL, se = "standard", B = 999,
   LL.unc <- ll.unc$loglik
   
   # ML unconstrained MSE
-  s2ml.unc <- (s2.unc * object$df.residual) / n
-  invW <- kronecker(solve(s2ml.unc), t(X) %*% X)
-  W <- solve(invW)
+  #s2ml.unc <- s2.unc * object$df.residual / n
+  #invW <- kronecker(solve(s2.unc), t(X) %*% X)
+  W <- vcov(object)#solve(invW)
   
   is.augmented <- TRUE
   ## compute mixing weights
@@ -130,16 +122,16 @@ conLM.lm <- function(object, constraints = NULL, se = "standard", B = 999,
       stop("restriktions matrix must have full row-rank. try set bootWt = TRUE.")
     }
     wt <- rev(con_weights(Amat %*% W %*% t(Amat), meq = meq))
-    # if only equality constraints
+  # only equality constraints
   } else if (!bootWt & (meq == nrow(Amat))) { 
     wt <- rep(0L, ncol(W) + 1)
     wt.idx <- ncol(W) - meq + 1
     wt[wt.idx] <- 1
   }
   attr(wt, "bootWt") <- bootWt
-  attr(wt, "bootWt.R") <- bootWt.R
+  if (bootWt) { attr(wt, "bootWt.R") <- bootWt.R } 
   
-  # check if the constraints are in line with the data
+  # check if the constraints are not in line with the data, else skip optimization
   if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) & meq == 0) {
     b.restr <- b.unrestr
     s2.restr <- s2.unc
@@ -156,8 +148,9 @@ conLM.lm <- function(object, constraints = NULL, se = "standard", B = 999,
                 R2.org = so$r.squared, R2.reduced = so$r.squared,
                 s2.unc = s2.unc, s2.restr = s2.unc, 
                 loglik = LL.unc, Sigma = vcov(object),
-                constraints = Amat, rhs = bvec, neq = meq, iact = NULL, 
-                bootout = NULL, call = cl)  
+                constraints = Amat, rhs = bvec, neq = meq, 
+                iact = NULL, bootout = NULL, control = control, 
+                call = cl)  
   } else {
     # compute constrained estimates for lm()
     out.QP <- con_solver(X         = X, 
@@ -219,13 +212,13 @@ conLM.lm <- function(object, constraints = NULL, se = "standard", B = 999,
       }
     } else { #mlm <FIXME>
       stop("mlm not implemented (yet)")
-      residuals <- y - fitted
-        rownames(b.restr) <- rownames(b.unrestr)
-        colnames(b.restr) <- colnames(b.unrestr)
-      fitted <- X %*% b.restr
-      df <- object$df.residual
-      df.residual <- df + qr(Amat[0:meq,])$rank
-      se <- "none"
+      # residuals <- y - fitted
+      #   rownames(b.restr) <- rownames(b.unrestr)
+      #   colnames(b.restr) <- colnames(b.unrestr)
+      # fitted <- X %*% b.restr
+      # df <- object$df.residual
+      # df.residual <- df + qr(Amat[0:meq,])$rank
+      # se <- "none"
     }
 
     OUT <- list(CON = CON,
@@ -243,8 +236,8 @@ conLM.lm <- function(object, constraints = NULL, se = "standard", B = 999,
                 loglik = LL.restr, 
                 Sigma = vcov(object), 
                 constraints = Amat, rhs = bvec, neq = meq, 
-                iact = out.QP$iact,
-                bootout = NULL, call = cl)
+                iact = out.QP$iact, bootout = NULL, 
+                control = control, call = cl)
   }
   
   # original object

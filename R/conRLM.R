@@ -12,40 +12,53 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard", B = 999,
   cl <- match.call()
   # rename for internal use
   Amat <- constraints
-  bvec <- rhs; meq <- neq
+  bvec <- rhs
+  meq <- neq
   
-  # construct constraint matrix/vector.
-  restr_OUT <- con_constraints(object, 
-                               constraints = Amat, 
-                               bvec        = bvec, 
-                               meq         = meq, 
-                               debug       = debug)  
-  # a list with useful information about the restriktions.}
-  CON <- restr_OUT$CON
-  # a parameter table with information about the observed variables in the object 
-  # and the imposed restriktions.}
-  parTable <- restr_OUT$parTable
-  # constraints matrix
-  Amat <- restr_OUT$Amat
-  # rhs 
-  bvec <- restr_OUT$bvec
-  # neq
-  meq <- restr_OUT$meq
+  # response varialbe
+  y <- as.matrix(object$model[, attr(object$terms, "response")])
+  # model matrix
+  X  <- model.matrix(object)[ , ,drop = FALSE]
+  # model summary
+  so.org <- summary(object)
+  # unrestrikted coefficients
+  b.unrestr <- coef(object)  
+  # unrestrikted scale estimate for the standard deviation
+  tau <- so.org$stddev
+  # residual degrees of freedom
+  #rdf <- so.org$df[2]
+  # residuals
+  residuals <- object$residuals
+  # sampel size
+  n <- dim(X)[1]
+  # number of parameters
+  p <- dim(X)[2]
   
-  # unconstrained case
-  if (is.null(constraints)) {
-    Amat <- rbind(rep(0L, length(coef(object))))
+  # deal with constraints
+  if (!is.null(constraints)) {
+    restr_OUT <- con_constraints(object, 
+                                 constraints = Amat, 
+                                 bvec        = bvec, 
+                                 meq         = meq, 
+                                 debug       = debug)  
+    # a list with useful information about the restriktions.}
+    CON <- restr_OUT$CON
+    # a parameter table with information about the observed variables in the object 
+    # and the imposed restriktions.}
+    parTable <- restr_OUT$parTable
+    # constraints matrix
+    Amat <- restr_OUT$Amat
+    # rhs 
+    bvec <- restr_OUT$bvec
+    # neq
+    meq <- restr_OUT$meq
+  } else if (is.null(constraints)) { # no constraints specified - needed for GORIC to include unconstrained model
+    CON <- NULL
+    parTable <- NULL
+    Amat <- rbind(rep(0L, p))
     bvec <- rep(0L, nrow(Amat))
     meq  <- 0L
-  # constraints input is a matrix 
-  } else if (is.matrix(constraints)) {
-    Amat <- constraints
-    bvec <- rhs
-    if (is.null(bvec)) {
-      bvec <- rep(0L, nrow(Amat))
-    }
-    meq  <- neq
-  }
+  } 
   
   # standard error stuff
   if (se == "default") {
@@ -109,27 +122,10 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard", B = 999,
   acc <- call[["acc"]]
   if (is.null(acc)) object$call[["acc"]] <- 1e-4
   
-  # response varialbe
-  y <- as.matrix(object$model[, attr(object$terms, "response")])
-  # model matrix
-  X  <- model.matrix(object)[ , ,drop = FALSE]
-  # model summary
-  so.org <- summary(object)
-  # unrestrikted coefficients
-  b.unrestr <- coef(object)  
-  # unrestrikted scale estimate for the standard deviation
-  tau <- so.org$stddev
-  # residual degrees of freedom
-  #rdf <- so.org$df[2]
-  # residuals
-  residuals <- object$residuals
-  # sampel size
-  n <- dim(X)[1]
-  p <- dim(X)[2]
   
   # check
   if(ncol(Amat) != length(b.unrestr)) {
-    stop("restriktor ERROR: length coefficients and ncol(Amat) must be identical")
+    stop("length coefficients and the number of columns constraints-matrix must be identical")
   }
   
   # compute R-squared 
@@ -152,9 +148,9 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard", B = 999,
   LL.unc <- ll.unc$loglik
   
   # ML unconstrained MSE
-  tau2ml <- (tau^2 * so.org$df[2]) / n
-  invW <- kronecker(solve(tau2ml), t(X) %*% X)
-  W <- solve(invW)
+  #tau2ml <- (tau^2 * so.org$df[2]) / n
+  #invW <- kronecker(solve(tau2ml), t(X) %*% X)
+  W <- vcov(object) #solve(invW)
   
   ## compute mixing weights
   is.augmented <- TRUE
@@ -184,7 +180,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard", B = 999,
     wt[wt.idx] <- 1
   }
   attr(wt, "bootWt") <- bootWt
-  attr(wt, "bootWt.R") <- bootWt.R
+  if (bootWt) { attr(wt, "bootWt.R") <- bootWt.R }
   
   # # check if the constraints are in line with the data    
   if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) & meq == 0) {  
@@ -200,6 +196,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard", B = 999,
                 weights = object$weights,
                 w = object$w, 
                 scale = object$s, 
+                scale.restr = object$s,
                 psi = object$psi,
                 R2.org = R2.org,
                 R2.reduced = R2.org,
@@ -210,7 +207,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard", B = 999,
                 Sigma = vcov(object),                                            #probably not so robust!
                 constraints = Amat, rhs = bvec, neq = meq, iact = 0L,
                 converged = object$converged, iter = object$iter,
-                bootout = NULL, call = cl)
+                bootout = NULL, control = control, call = cl)
   } else {
     # add constraints to model 
     call.my <- list(Amat = Amat, 
@@ -241,11 +238,10 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard", B = 999,
                               w = weights)
     LL.restr <- ll.restr$loglik
     
-    # we need the right residual degrees of freedom in case of equality constraints
-    # to compute the standard deviation tau.
+    # in case of equality constraints we need to correct the residual df 
     if (length(object$call[["wt.method"]]) && object$call[["wt.method"]] == "case") {
       rdf <- sum(weights) - p
-      w   <- rfit$psi(rfit$wresid/rfit$s)
+      w   <- rfit$psi(rfit$wresid/rfit$scale)
       S   <- sum(weights * (rfit$wresid * w)^2) / rdf
       std <- summary(rfit)$stddev / sqrt(S)
       
@@ -258,7 +254,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard", B = 999,
       }
     } else {
       rdf <- n - p
-      w   <- rfit$psi(rfit$wresid/rfit$s)
+      w   <- rfit$psi(rfit$wresid/rfit$scale)
       S   <- sum((rfit$wresid * w)^2) / rdf
       std <- summary(rfit)$stddev / sqrt(S)
       
@@ -291,6 +287,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard", B = 999,
                 weights = weights,
                 w = w, 
                 scale = object$s,
+                scale.restr = rfit$scale,
                 R2.org = R2.org,
                 R2.reduced = R2.reduced,
                 df.residual = so.org$df[2], 
@@ -300,7 +297,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard", B = 999,
                 Sigma = vcov(object),                                             #probably not so robust???
                 constraints = Amat, rhs = bvec, neq = meq, iact = rfit$iact,
                 converged = rfit$converged, iter = rfit$iter,
-                bootout = NULL, call = cl)
+                bootout = NULL, control = control, call = cl)
   }
   
   OUT$model.org <- object
@@ -310,14 +307,14 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard", B = 999,
     if (!(se %in% c("boot.model.based","boot.standard"))) {
       #  V <- vcovMM(X = X, resid0 = resid0, residuals = residuals, scale = model$s)  
       OUT$information <- 1/tau^2 * crossprod(X)
-      information.inv <- con_augmented_information(information = OUT$information,
+      information.inv <- con_augmented_information(information  = OUT$information,
                                                    is.augmented = is.augmented,
-                                                   X           = X, 
-                                                   b.unrestr   = b.unrestr, 
-                                                   b.restr     = b.restr,
-                                                   Amat        = Amat, 
-                                                   bvec        = bvec, 
-                                                   meq         = meq)
+                                                   X            = X, 
+                                                   b.unrestr    = b.unrestr, 
+                                                   b.restr      = b.restr,
+                                                   Amat         = Amat, 
+                                                   bvec         = bvec, 
+                                                   meq          = meq)
           
       attr(OUT$information, "inverted")  <- information.inv$information
       attr(OUT$information, "augmented") <- information.inv$information.augmented
@@ -355,5 +352,6 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard", B = 999,
   
   class(OUT) <- c("conRLM","conLM","rlm","lm")
   
-  return(OUT)
+  OUT
+
 }

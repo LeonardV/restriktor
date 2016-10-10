@@ -7,9 +7,32 @@ summary.conTest.conLM <- function(object, test = "F", ...) {
   if (!("conLM" %in% class(x))) {
     stop("x must be of class \"conLM\" or \"conRLM\"")
   }
+  
+  vnames <- names(x$b.unrestr)
+  Amat <- x$constraints
+  meq <- x$neq
+  bvec <- x$rhs
+  
+  colnames(Amat) <- vnames
+  out.rest <- cbind(Amat, c(rep("   ==", meq), rep("   >=", nrow(Amat) -
+                                                       meq)), bvec)
+  
+  rownames(out.rest) <- paste(1:nrow(out.rest), ":", sep = "")
+  
+  colnames(out.rest)[(ncol(Amat) + 1):ncol(out.rest)] <- c("op", "rhs")
+  out.rest <- cbind(rep(" ", nrow(out.rest)), out.rest)
+  out.rest[x$iact, 1] <- "A"
+  if (nrow(Amat) == meq) {
+    out.rest[1:nrow(Amat), 1] <- "A"
+  }  
+  out.rest <- as.data.frame(out.rest)
+  names(out.rest)[1] <- ""
+  
   ldots <- list(...)
   ldots$type <- NULL
   CALL <- c(list(object = x, test = test), ldots)
+  
+  # fit hypothesis tests
   CALL$type <- "global"
   out0 <- do.call("conTest", CALL)
   CALL$type <- "A"
@@ -17,31 +40,49 @@ summary.conTest.conLM <- function(object, test = "F", ...) {
   CALL$type <- "B"
   out2 <- do.call("conTest", CALL)
   
-  cat("\nRestriktor: hypothesis tests (", x$df.residual, "error degrees of freedom ):\n", 
-      "\n")
-  cat("Global test under the inequality restriktions:", "\n")
-  ###
+  OUT <- list()
+  
+  cat("\nRestriktor: hypothesis tests (", x$df.residual, "error degrees of freedom ):\n")
+  cat("\n(rows indicated with an \"A\" are active (=) restriktions)\n")
+  print(out.rest, quote = FALSE, scientific = FALSE)
+  
+  cat("\n\nGlobal test: H0: all parameters are restrikted to be equal", "\n", 
+      "        vs. HA: at least one restriktion strictly true", "\n")
   cat("       Test statistic: ", out0$Ts, ",   p-value: ", 
       if (out0$pvalue < 1e-04) {
         "<0.0001"
       } else {
-        format(round(out0$pvalue, 4), nsmall = 4)}, "\n\n", sep = "")
+        format(out0$pvalue, digits = 4)
+      }, "\n\n", sep = "")
+  
+  OUT$Global$Ts <- out0$Ts 
+  OUT$Global$pvalue <- out0$pvalue[1]
+  
   ###
   cat("Type A test: H0: all restriktions active (=)", "\n", 
-      "        vs. HA: at least one restriktion strictly true (>)", "\n")
+      "        vs. HA: at least one inequality restriktion strictly true", "\n")
   cat("       Test statistic: ", out1$Ts, ",   p-value: ", 
       if (out1$pvalue < 1e-04) {
         "<0.0001"
       } else {
-        format(round(out1$pvalue, 4), nsmall = 4)}, "\n\n", sep = "")
+        format(out1$pvalue, digits = 4)
+      }, "\n\n", sep = "")
+  
+  OUT$TPA$Ts <- out1$Ts 
+  OUT$TPA$pvalue <- out1$pvalue[1]
   ###
   cat("Type B test: H0: all restriktions true", "\n", 
-      "        vs. HA: at least one restriktion false", "\n")
+      "        vs. HA: at least one restriktion violated ", "\n")
   cat("       Test statistic: ", out2$Ts, ",   p-value: ", 
       if (out2$pvalue < 1e-04) {
         "<0.0001"
       } else {
-        format(round(out2$pvalue, 4), nsmall = 4)}, "\n\n", sep = "")
+        format(out2$pvalue, digits = 4)
+      }, "\n\n", sep = "")
+  
+  OUT$TPB$Ts <- out2$Ts 
+  OUT$TPB$pvalue <- out2$pvalue[1]
+  
   ###
   if (x$neq == 0) {
     CALL$type <- "C"
@@ -52,13 +93,19 @@ summary.conTest.conLM <- function(object, test = "F", ...) {
         if (out3$pvalue < 1e-04) {
           "<0.0001"
         } else {
-          format(round(out3$pvalue, 4), nsmall = 4)}, "\n\n", sep = "")
+          format(out3$pvalue, digits = 4)
+        }, "\n\n", sep = "")
     cat("Note: Type C test is based on a t-distribution (one-sided),", 
-        "\n      all other tests are based on mixture of F distributions.\n\n")
+        "\n      all other tests are based on mixture of F-distributions.\n\n")
+  
+    OUT$TPC$Ts <- out3$Ts 
+    OUT$TPC$pvalue <- out3$pvalue[1]
   }
   else {
-    cat("Note: All tests are based on mixture of F distributions", 
+    cat("Note: All tests are based on mixture of F-distributions", 
         "\n      (Type C test is not applicable because of equality restriktions)\n\n")
   }
   
+  
+  invisible(OUT)
 }

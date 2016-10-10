@@ -91,14 +91,24 @@ conRLM_fit <- function(model,
     # Can we check this without QP?
     # Is this fool proof?
     if (meq > 0L) {
-      Dmat <- diag(ncol(Amat))
-      dvec <- cbind(rep(1, ncol(Amat)))
-      QP <- solve.QP(Dmat, dvec, t(Amat[1:meq,,drop = FALSE]), bvec[1:meq], 
-                     meq = nrow(Amat[1:meq,,drop = FALSE]))$solution
+      Dmat <- crossprod(x)
+      dvec <- t(x)%*%y
+      QP <- solve.QP(Dmat, dvec, t(Amat[1:meq,,drop = FALSE]), bvec[1:meq],
+                     meq = meq)$solution
       QP[abs(QP) < tol] <- 0L
       x.idx <- QP %in% 0
+  
+      # Dmat <- diag(ncol(Amat))
+      # dvec <- cbind(rep(1, ncol(Amat)))
+      # QP <- solve.QP(Dmat, dvec, t(Amat[1:meq,,drop = FALSE]), bvec[1:meq],
+      #                meq = nrow(Amat[1:meq,,drop = FALSE]))$solution
+      # QP[abs(QP) < tol] <- 0L
+      # x.idx <- QP %in% 0
+      
+      intercept <- FALSE
+      if (x.idx[1] == TRUE) { intercept <- TRUE } 
       temp <- do.call("lqs",
-                      c(list(x = x[,!x.idx, drop = FALSE], y, intercept = FALSE, 
+                      c(list(x = x[,!x.idx, drop = FALSE], y, intercept = intercept, 
                              method = "S", k0 = 1.54764), lqs.control)) 
       coef  <- temp$coefficients
       resid <- temp$residuals

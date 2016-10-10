@@ -1,18 +1,19 @@
-print.conTest <- function(x, digits = max(3, getOption("digits") - 4), ...) {
+print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
 
   if (!("conTest" %in% class(x))) {
     stop("x must be of class \"conTest\"")
   }
-  if (nrow(x$Amat) == x$meq) {
-    cat("\nRestriktor: restrikted hypothesis test\n")
-  } else {
-    cat("\nRestriktor: restrikted hypothesis test type", x$type, "\n")
-    if (x$type != "C") {
-      if (x$boot != "no") {
-        cat("( Number of successful bootstrap draws:", attr(x$pvalue, "R"),")\n")
-      }
+  
+  cat("\nRestriktor: restrikted hypothesis test\n")
+  
+  if (x$type == "Ax") { x$type <- "global" }
+  
+  if (x$type != "C" && nrow(x$Amat) > x$meq) {
+    if (x$boot != "no") {
+      cat("( Number of successful bootstrap draws:", attr(x$pvalue, "R"),")\n")
     }
   }
+
   vnames <- names(x$b.unrestr)
   Amat <- x$Amat
   colnames(Amat) <- vnames
@@ -37,7 +38,8 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), ...) {
 
   if (nrow(x$Amat) > x$meq) {
     if (x$type == "global") {
-      cat("\nGlobal model test:\n\n")
+      cat("\n\nGlobal test: H0: all parameters are restrikted to be equal", "\n", 
+          "        vs. HA: at least one restriktion strictly true", "\n\n")
       print(out.test, quote = FALSE, scientific = FALSE)
       cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
       print(out.rest, quote = FALSE, scientific = FALSE)
@@ -47,10 +49,9 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       cat("\nrestrikted estimate under union of H0 and HA:\n")
       print.default(format(x$b.restr, digits = digits),
                     print.gap = 2, quote = FALSE)
-    
     } else if (x$type == "A") {
-      cat("\n H0: all restriktions active (=)",
-          "\n HA: at least one restriktion strictly true (>)","\n\n")
+      cat("\n\nType A test: H0: all restriktions active (=)", "\n", 
+          "        vs. HA: at least one inequality restriktion strictly true", "\n\n")
       print(out.test, quote = FALSE, scientific = FALSE)        
       cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
       print(out.rest, quote = FALSE, scientific = FALSE)
@@ -61,8 +62,8 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       print.default(format(x$b.restr, digits = digits),
                     print.gap = 2, quote = FALSE)
     } else if (x$type == "B" && x$meq.alt == 0L) {
-      cat("\n H0: all restriktions true (>=)",
-          "\n HA: at least one restriktion violated (<)", "\n\n")
+      cat("\n\nType B test: H0: all restriktions true", "\n", 
+          "        vs. HA: at least one restriktion violated ", "\n\n")
       print(out.test, quote = FALSE)
       cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
       print(out.rest, quote = FALSE, scientific = FALSE)
@@ -86,8 +87,8 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), ...) {
         print.default(format(x$b.restr.alt, digits = digits),
                       print.gap = 2, quote = FALSE)
       } else if (x$type == "C") {
-        cat("\n H0: at least one restriktion not strictly true (<=)",
-            "\n HA: all restriktions strictly true (>)","\n\n")
+        cat("\n\nType C test: H0: at least one restriktion false or active (=)", 
+            "\n", "        vs. HA: all restriktions strictly true (>)", "\n\n")
         print(out.test, quote = FALSE)
         cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
         print(out.rest, quote = FALSE, scientific = FALSE)
@@ -96,13 +97,16 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 4), ...) {
                       print.gap = 2, quote = FALSE)
       }
   } else { #equality constraints only
-    cat("\n H0: all restriktions active (=)",  
-        "\n HA: at least one restriktion violated (=)", "\n\n")
+    cat("\n\nClassical test: H0: all restriktions active (=)", 
+        "\n", "           vs. HA: at least one equality restriktion violated", "\n\n")
     print(out.test, quote = FALSE)
-    cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
+    cat("\n\n(all rows are active restriktions under H0, H1 is unrestrikted!)\n")
     print(out.rest, quote = FALSE, scientific = FALSE)
-    cat("\nrestrikted estimate under union of H0 and HA:\n")
+    cat("\nrestrikted estimate under H0:\n")
     print.default(format(x$b.restr, digits = digits),
+                  print.gap = 2, quote = FALSE)
+    cat("\nunrestrikted estimate:\n")
+    print.default(format(x$b.unrestr, digits = digits),
                   print.gap = 2, quote = FALSE)
   }
 }

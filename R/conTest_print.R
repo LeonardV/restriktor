@@ -6,7 +6,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
   
   cat("\nRestriktor: restrikted hypothesis test\n")
   
-  if (x$type == "Ax") { x$type <- "global" }
+  if (x$type == "Ax" && !is.null(x$typ3)) { x$type <- "global" }
   
   if (x$type != "C" && nrow(x$Amat) > x$meq) {
     if (x$boot != "no") {

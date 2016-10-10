@@ -7,22 +7,24 @@ con_pvalue_Fbar <- function(wt, Ts.org, df.residual, type = "A",
   #}
   if (type == "global") {
     # compute df
-    df.bar <- ((ncol(Amat) - 1) - nrow(Amat)):((ncol(Amat) - 1) - meq)    
+    bvecG <- attr(bvec, "bvec_Global")
+#    df.bar <- ((ncol(Amat) - 1) - nrow(Amat)):((ncol(Amat) - 1) - meq)    
+    df.bar <- (length(bvecG) - nrow(Amat)):(length(bvecG) - meq)
     # p value based on the chi-square distribution
-    pvalue <- 1-pfbar(Ts.org, df1 = df.bar, df2 = df.residual, 
-                      wt = rev(wt))
-  } else if(type == "A") {
+    pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual, 
+                        wt = rev(wt))
+  } else if(type == "A" | type == "Ax") {
     # compute df
     df.bar <- 0:(nrow(Amat) - meq)
     # p value based on F-distribution or chi-square distribution
-    pvalue <- 1-pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
-                      wt = rev(wt))
+    pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
+                        wt = rev(wt))
   } else if (type == "B") {
     # compute df
     df.bar <- (meq - meq.alt):(nrow(Amat) - meq.alt)#meq:nrow(Amat)
     # p value based on F-distribution or chi-square distribution
-    pvalue <- 1-pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
-                       wt = wt)
+    pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
+                        wt = wt)
   } else  {
     stop("hypothesis test type ", sQuote(type), " unknown.")
   }
@@ -46,19 +48,22 @@ con_pvalue_Chibar <- function(wt, Ts.org, type = "A",
   
   if (type == "global") {
     # compute df
-    df.bar <- ((ncol(Amat) - 1) - nrow(Amat)):((ncol(Amat) - 1) - meq)    
+    bvecG <- attr(bvec, "bvec_Global")
+    #    df.bar <- ((ncol(Amat) - 1) - nrow(Amat)):((ncol(Amat) - 1) - meq)    
+    df.bar <- (length(bvecG) - nrow(Amat)):(length(bvecG) - meq)
+#    df.bar <- ((ncol(Amat) - 1) - nrow(Amat)):((ncol(Amat) - 1) - meq)    
     # p value based on the chi-square distribution
-    pvalue <- 1-pchibar(Ts.org, df1 = df.bar, wt = rev(wt))
+    pvalue <- 1 - pchibar(Ts.org, df1 = df.bar, wt = rev(wt))
   }  else if (type == "A") {
     # compute df
     df.bar <- 0:(nrow(Amat) - meq)
     # p value based on th chi-square distribution
-    pvalue <- 1-pchibar(Ts.org, df1 = df.bar, wt = rev(wt))
+    pvalue <- 1 - pchibar(Ts.org, df1 = df.bar, wt = rev(wt))
   } else if (type == "B") {
     # compute df
     df.bar <- (meq - meq.alt):(nrow(Amat) - meq.alt)#meq:nrow(Amat)
     # p value based on th chi-square distribution
-    pvalue <- 1-pchibar(Ts.org, df1 = df.bar, wt = wt)
+    pvalue <- 1 - pchibar(Ts.org, df1 = df.bar, wt = wt)
   } else  {
     stop("hypothesis test type ", sQuote(type), " unknown.")
   }
@@ -206,7 +211,7 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL,
                " bootstrap draws were successful")
      }
     # > or >= ??? 
-    pvalue <- sum(Ts.boot >= Ts.org) / Rboot.tot
+    pvalue <- sum(Ts.boot >= as.numeric(Ts.org)) / Rboot.tot
       attr(pvalue, "Ts.boot") <- Ts.boot
       attr(pvalue, "R") <- Rboot.tot
     
@@ -383,7 +388,7 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
               " bootstrap draws were successful")
     }
     # > or >= ???
-    pvalue <- sum(Ts.boot >= Ts.org) / Rboot.tot
+    pvalue <- sum(Ts.boot >= as.numeric(Ts.org)) / Rboot.tot
       attr(pvalue, "Ts.boot") <- Ts.boot
       attr(pvalue, "R") <- Rboot.tot
     OUT <- pvalue

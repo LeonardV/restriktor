@@ -6,7 +6,11 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
   
   cat("\nRestriktor: restrikted hypothesis test\n")
   
-  if (x$type == "Ax" && !is.null(x$type)) { x$type <- "global" }
+  if (!is.null(x$type) && !is.null(attr(x$type, "org_global"))) {
+    x$type <- "global" 
+  }
+  
+  #if (x$type == "Ax" && !is.null(x$type)) { x$type <- "global" }
   
   if (x$type != "C" && nrow(x$Amat) > x$meq) {
     if (x$boot != "no") {
@@ -38,7 +42,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
 
   if (nrow(x$Amat) > x$meq) {
     if (x$type == "global") {
-      cat("\n\nGlobal test: H0: all parameters are restrikted to be equal", "\n", 
+      cat("\nGlobal test: H0: all parameters are restrikted to be equal", "\n", 
           "        vs. HA: at least one restriktion strictly true", "\n\n")
       print(out.test, quote = FALSE, scientific = FALSE)
       cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")

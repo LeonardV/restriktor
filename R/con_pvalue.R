@@ -1,19 +1,23 @@
 # mixture of F distributions.
 con_pvalue_Fbar <- function(wt, Ts.org, df.residual, type = "A",
                             Amat, bvec, meq = 0L, meq.alt = 0L) {
-  #check
-  #if ((qr(Amat)$rank < nrow(Amat))) {
-  #  stop("restriktions matrix must have full row-rank")
-  #}
   if (type == "global") {
     # compute df
-    bvecG <- attr(bvec, "bvec_Global")
-#    df.bar <- ((ncol(Amat) - 1) - nrow(Amat)):((ncol(Amat) - 1) - meq)    
+    bvecG <- attr(bvec, "bvec_global")
+    #df.bar <- ((ncol(Amat) - 1) - nrow(Amat)):((ncol(Amat) - 1) - meq)    
     df.bar <- (length(bvecG) - nrow(Amat)):(length(bvecG) - meq)
+    
+    # for testing purposes
+    # r <- qr(attr(Amat, "Amat_global"))$rank
+    # q <- qr(Amat)$rank
+    # i <- 0:q
+    # #r - q + i
+    # 1 - pfbar(Ts.org, df1 = r-q+i-1, df2 = df.residual, wt = rev(wt))
+    
     # p value based on the chi-square distribution
     pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual, 
                         wt = rev(wt))
-  } else if(type == "A" | type == "Ax") {
+  } else if(type == "A") {
     # compute df
     df.bar <- 0:(nrow(Amat) - meq)
     # p value based on F-distribution or chi-square distribution
@@ -48,10 +52,9 @@ con_pvalue_Chibar <- function(wt, Ts.org, type = "A",
   
   if (type == "global") {
     # compute df
-    bvecG <- attr(bvec, "bvec_Global")
+    bvecG <- attr(bvec, "bvec_global")
     #    df.bar <- ((ncol(Amat) - 1) - nrow(Amat)):((ncol(Amat) - 1) - meq)    
     df.bar <- (length(bvecG) - nrow(Amat)):(length(bvecG) - meq)
-#    df.bar <- ((ncol(Amat) - 1) - nrow(Amat)):((ncol(Amat) - 1) - meq)    
     # p value based on the chi-square distribution
     pvalue <- 1 - pchibar(Ts.org, df1 = df.bar, wt = rev(wt))
   }  else if (type == "A") {
@@ -142,7 +145,7 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL,
     xcol <- which(rowSums(attr(model.org$terms, "factors")) > 0)
     terms <- attr(model.org$terms, "term.labels")[attr(model.org$terms, "order") == 1]
     DATA <- data.frame(ystar, model.org$model[ ,xcol])
-    colnames(DATA) <- c(as.character("ystar"), terms)  
+      colnames(DATA) <- c(as.character("ystar"), terms)  
     form <- formula(model.org)
     form[[2]] <- as.name("ystar")
     boot_model <- update(model.org, formula = form, data = DATA)
@@ -152,11 +155,12 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL,
                  bootWt = bootWt, bootWt.R = bootWt.R, 
                  control = control)
     boot_conLM <- do.call("restriktor", CALL)
+    
     boot_conTest <- try(conTest(boot_conLM, 
                                 type    = type, 
                                 test    = test,
                                 boot    = "no",
-                                meq.alt = meq.alt, 
+                                neq.alt = meq.alt, 
                                 control = control))
     if (inherits(boot_conTest, "try-error")) {
       if (verbose) cat("FAILED: creating test statistic\n")
@@ -238,7 +242,8 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
   old_options <- options(); options(warn = warn)
   
   model.org <- model$model.org
-  X <- model.matrix(model)[,,drop=FALSE]
+  y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
+  X <- model.matrix(model.org)[,,drop=FALSE]
   
   # constraints 
   Amat <- model$constraints
@@ -261,34 +266,18 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
       ncpus <- 1L
     }  
   }
+  
+  if (!is.null(attr(type, "org_global"))) {
+    type <- "global"
+  }
+  
   # estimate null model under different hypothesis tests
-  if (type == "global") {
-    intercept <- model.org$assign[1] == 0L
-    g <- length(model$b.restr)
-    if (intercept) {
-      Amatg <- cbind(rep(0, (g - 1)), diag(rep(1, g - 1))) 
-      bvecg <- rep(0, g - 1) 
-    } else {
-      stop("restriktor ERROR: test not applicable for models without intercept (yet).")      
-    }
-    call.my <- list(constraints = Amatg, rhs = bvecg, neq = nrow(Amatg), 
-                    control = control, se = "none",
-                    bootWt = bootWt, bootWt.R = bootWt.R)
-    call.lm <- list(object = model.org)
-    CALL <- c(call.lm, call.my)
-    if (any(duplicated(CALL))) {
-      stop("restriktor ERROR: duplicated elements in CALL.list")
-    }
-    fit <- do.call("restriktor", CALL)
-  } else if (type == "A") {
+  if (type == "A") {
     call.my <- list(constraints = Amat, rhs = bvec, neq = nrow(Amat), 
                     control = control, se = "none",
                     bootWt = bootWt, bootWt.R = bootWt.R)
     call.lm <- list(object = model.org)
     CALL <- c(call.lm, call.my)
-    if (any(duplicated(CALL))) {
-      stop("restriktor ERROR: duplicated elements in CALL.list")
-    }
     fit <- do.call("restriktor", CALL)
   } else if (type == "B") {
       call.my <- list(constraints = Amat, rhs = bvec, neq = meq, 
@@ -296,16 +285,27 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
                       bootWt = bootWt, bootWt.R = bootWt.R)
       call.lm <- list(object = model.org)
       CALL <- c(call.lm, call.my)
-      if (any(duplicated(CALL))) {
-        stop("restriktor ERROR: duplicated elements in CALL.list")
-      }
       fit <- do.call("restriktor", CALL)
     }
 
     # compute residuals under H0
-    r    <- residuals(fit)
-    yhat <- fitted(fit)
-
+    if (type != "global") {
+      r    <- residuals(fit)
+      yhat <- fitted(fit)
+    } else { # if type == global, we can skip the restriktor() function
+      N <- dim(X)[1]
+      w <- weights(model.org)
+      W <- diag(w)
+      if (!is.null(w)) { 
+        yhat <- 1/sum(w) * sum(W %*% y) 
+      } 
+      else {
+        yhat <- mean(y)
+      }
+      yhat <- cbind(rep(yhat, N))
+      r    <- y - as.numeric(yhat)
+    }
+  
     Ts.boot <- vector("numeric", R)
     fn <- function(b) {
       if (!is.null(seed))
@@ -319,8 +319,7 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
       xcol  <- which(rowSums(attr(model.org$terms, "factors")) > 0)
       terms <- attr(model.org$terms , "term.labels")[attr(model.org$terms, "order") == 1]
       DATA  <- data.frame(ystar, model.org$model[,xcol])
-      colnames(DATA) <- c(as.character("ystar"), terms)
-      DATA <- as.data.frame(DATA)
+        colnames(DATA) <- c(as.character("ystar"), terms)
       form <- formula(model.org)
       form[[2]] <- as.name("ystar")
       
@@ -328,12 +327,13 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
       CALL <- list(object = boot_model, constraints = Amat, rhs = bvec, 
                    neq = meq, control = control, se = "none",
                    bootWt = bootWt, bootWt.R = bootWt.R)
+      
       boot_conLM <- do.call("restriktor", CALL)  
       boot_conTest <- try(conTest(boot_conLM, 
                                   type    = type, 
                                   test    = test, 
                                   boot    = "no",
-                                  meq.alt = meq.alt, 
+                                  neq.alt = meq.alt, 
                                   control = control))
       if (inherits(boot_conTest, "try-error")) {
         if (verbose) cat("FAILED: creating test statistic\n")

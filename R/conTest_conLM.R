@@ -74,29 +74,22 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
     if (intercept) { 
       AmatG <- cbind(rep(0, (p - 1)), diag(rep(1, p - 1))) 
     } else {
-      AmatG <- diag(rep(1, p))  
+      AmatG <- diag(1, p)
+        for (i in 1:p) {
+          AmatG[i,i-1] <- -1
+        }
+      AmatG <- AmatG[-1,]
     }
     AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*% 
                           solve(Amat %*% t(Amat), Amat))
     
-    # only if the constraints under h0 and ha are equal.
+    bvecG <- rep(0L, nrow(AmatG))
+    
     if (all(abs(AmatX) < tol)) { 
       type <- "A"
       attr(type, "org_global") <- "org_global"
     }
     
-    bvecG <- rep(0L, nrow(AmatG))
-    if (!intercept) {
-      bvecG <- rep(as.numeric(NA), p)
-      if (!is.null(w)) {
-        W <- diag(w)
-        #bvecG[1:p] <- solve(t(rep(1,n))%*%W%*%rep(1,n)) %*% t(rep(1,n))%*%W%*%y  
-        bvecG[1:p] <- solve(sum(w)) * sum(W %*% y)
-      } else {
-        #bvecG[1:p] <- solve(n) %*% t(rep(1,n))%*%y  
-        bvecG[1:p] <- solve(n) * sum(y)
-      }
-    }
     attr(Amat, "Amat_global") <- AmatG
     attr(bvec, "bvec_global") <- bvecG
     
@@ -316,37 +309,29 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
   
   # check for intercept
   intercept <- any(attr(terms(model.org), "intercept"))
-  
   if (type == "global") {
-    AmatG <- cbind(rep(0, (p - 1)), diag(rep(1, p - 1))) 
+    if (intercept) { 
+      AmatG <- cbind(rep(0, (p - 1)), diag(rep(1, p - 1))) 
+    } else {
+      AmatG <- diag(1, p)
+      for (i in 1:p) {
+        AmatG[i,i-1] <- -1
+      }
+      AmatG <- AmatG[-1,]
+    }
     AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*% 
                           solve(Amat %*% t(Amat), Amat))
+    
+    bvecG <- rep(0L, nrow(AmatG))
+    
     if (all(abs(AmatX) < tol)) { 
-      type <- "Ax" 
+      type <- "A"
+      attr(type, "org_global") <- "org_global"
     }
-  }
-  
-  if (type == "global") {
-    if (!all(abs(AmatX) == 0)) {
-      AmatX <- AmatX[!rowSums(abs(AmatX) == 0) == p, , drop = FALSE]
-      if (nrow(AmatX) > 1) {
-        Amat.rref <- GaussianElimination(t(AmatX))
-        if (Amat.rref$rank == 1) {
-          AmatX <- matrix(AmatX[1, ], 1, ncol(AmatX))
-        } else {
-          if (Amat.rref$rank < nrow(AmatX)) {
-            AmatX <- AmatX[Amat.rref$pivot, , drop = FALSE]
-          }
-        }
-      }
-      AmatG <- rbind(AmatX, Amat)
-      bvecG <- c(rep(0, nrow(AmatX)), bvec)
-    } else {
-      AmatG <- Amat
-      bvecG <- bvec
-    }
-    attr(Amat, "Amat_Global") <- AmatG
-    attr(bvec, "bvec_Global") <- bvecG
+    
+    attr(Amat, "Amat_global") <- AmatG
+    attr(bvec, "bvec_global") <- bvecG
+    
     b.eqrestr <- con_solver(X         = X, 
                             y         = y, 
                             b.unrestr = b.unrestr, 
@@ -585,37 +570,28 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   
   # check for intercept
   intercept <- any(attr(terms(model.org), "intercept"))
-  
   if (type == "global") {
-    AmatG <- cbind(rep(0, (p - 1)), diag(rep(1, p - 1))) 
+    if (intercept) { 
+      AmatG <- cbind(rep(0, (p - 1)), diag(rep(1, p - 1))) 
+    } else {
+      AmatG <- diag(1, p)
+      for (i in 1:p) {
+        AmatG[i,i-1] <- -1
+      }
+      AmatG <- AmatG[-1,]
+    }
     AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*% 
                           solve(Amat %*% t(Amat), Amat))
+    
+    bvecG <- rep(0L, nrow(AmatG))
+    
     if (all(abs(AmatX) < tol)) { 
-      type <- "Ax" 
+      type <- "A"
+      attr(type, "org_global") <- "org_global"
     }
-  }
-  
-  if (type == "global") {
-    if (!all(abs(AmatX) == 0)) {
-      AmatX <- AmatX[!rowSums(abs(AmatX) == 0) == p, , drop = FALSE]
-      if (nrow(AmatX) > 1) {
-        Amat.rref <- GaussianElimination(t(AmatX))
-        if (Amat.rref$rank == 1) {
-          AmatX <- matrix(AmatX[1, ], 1, ncol(AmatX))
-        } else {
-          if (Amat.rref$rank < nrow(AmatX)) {
-            AmatX <- AmatX[Amat.rref$pivot, , drop = FALSE]
-          }
-        }
-      }
-      AmatG <- rbind(AmatX, Amat)
-      bvecG <- c(rep(0, nrow(AmatX)), bvec)
-    } else {
-      AmatG <- Amat
-      bvecG <- bvec
-    }
-    attr(Amat, "Amat_Global") <- AmatG
-    attr(bvec, "bvec_Global") <- bvecG
+    
+    attr(Amat, "Amat_global") <- AmatG
+    attr(bvec, "bvec_global") <- bvecG
 
     b.eqrestr <- con_solver(X         = X, 
                             y         = y, 

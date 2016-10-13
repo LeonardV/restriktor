@@ -320,10 +320,10 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard", B = 999,
       attr(OUT$information, "augmented") <- information.inv$information.augmented
       
     } else if (se == "boot.model.based") { 
-      OUT$bootout <- con_boot_rlm(object, 
+      OUT$bootout <- con_boot_lm(object, 
                                   B           = B, 
                                   fixed       = TRUE,
-                                  CALL        = object$call,
+                                  object.org  = object,
                                   constraints = Amat,
                                   rhs         = bvec, 
                                   neq         = meq, 
@@ -334,10 +334,10 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard", B = 999,
                                   ncpus       = ncpus, 
                                   cl          = cl)
     } else if (se == "boot.standard") {
-      OUT$bootout <- con_boot_rlm(object, 
+      OUT$bootout <- con_boot_lm(object, 
                                   B           = B, 
                                   fixed       = FALSE,
-                                  CALL        = object$call,
+                                  object.org  = object,
                                   constraints = Amat,
                                   rhs         = bvec, 
                                   neq         = meq, 

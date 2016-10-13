@@ -4,6 +4,7 @@
 # - fix global test for no intercept models.
 # - add small sample correction for GORIC
 # - add support for mlm and glm.
+# - check if argument input is valid
 ###############################################################################
 restriktor <- function(object, constraints = NULL, ...) {
   

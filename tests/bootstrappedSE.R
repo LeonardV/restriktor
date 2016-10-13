@@ -3,7 +3,7 @@
 # include weights
 # lm and rlm
 
-n = 100
+n = 50
 X <- cbind(1, mvtnorm:::rmvnorm(n, mean=rep(0,3), sigma=diag(3)))
 colnames(X) <- c("intercept","x1","x2","x3")
 betas <- c(1,0,0,0) 

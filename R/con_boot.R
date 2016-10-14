@@ -1,5 +1,7 @@
-con_boot_lm <- function(object, B = 999, fixed = FALSE, ...) { 
+con_boot_lm <- function(B = 999, fixed = FALSE, ...) { 
     
+  l <- list(...)
+  object <- l$object
   if (!any(class(object) %in% c("lm", "rlm"))) {
     stop("ERROR: object must be of class lm or rlm")
   }

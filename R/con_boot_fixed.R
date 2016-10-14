@@ -1,7 +1,7 @@
 # model based bootstrap
 con_boot_fixed_lm <- function(data, indices, ...) {
-    CALL <- list(...)
-    object <- CALL$object.org
+    l <- list(...)
+    object <- l$object
     res <- data$res[indices]
     DATA <- cbind(data$fit + res, data[ ,2:(ncol(data)-2), drop = FALSE])
     DATA <- as.data.frame(DATA)
@@ -9,9 +9,9 @@ con_boot_fixed_lm <- function(data, indices, ...) {
     form <- formula(object)
     p <- length(attr(object$terms, "term.labels")) + 1
     DATA <- data[indices,1:p]
-    CALL$object <- update(object, formula = form, data = DATA)
+    l$object <- update(object, formula = form, data = DATA)
     
-    OUT <- do.call("restriktor", CALL)$b.restr  
+    OUT <- do.call("restriktor", l)$b.restr  
     
     OUT
 }

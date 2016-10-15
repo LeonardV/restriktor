@@ -317,7 +317,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard", B = 999,
                                                    meq          = meq)
           
       attr(OUT$information, "inverted")  <- information.inv$information
-      attr(OUT$information, "augmented") <- information.inv$information.augmented
+      attr(OUT$information, "inverted.augmented") <- information.inv$information.augmented
       
     } else if (se == "boot.model.based") { 
       OUT$bootout <- con_boot_lm(object      = object, 

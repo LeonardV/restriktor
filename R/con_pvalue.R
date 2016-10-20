@@ -11,8 +11,7 @@ con_pvalue_Fbar <- function(wt, Ts.org, df.residual, type = "A",
     # r <- qr(attr(Amat, "Amat_global"))$rank
     # q <- qr(Amat)$rank
     # i <- 0:q
-    # #r - q + i
-    # 1 - pfbar(Ts.org, df1 = r-q+i-1, df2 = df.residual, wt = rev(wt))
+    # 1 - pfbar(Ts.org, df1 = r-q+i, df2 = df.residual, wt = rev(wt))
     
     # p value based on the chi-square distribution
     pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual, 

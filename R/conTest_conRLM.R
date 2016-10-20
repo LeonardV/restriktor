@@ -104,6 +104,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     names(b.eqrestr) <- vnames
     Ts <- robustFm(x         = X, 
                    y         = y, 
+                   b.unrestr = b.unrestr,
                    b.eqrestr = b.eqrestr, 
                    b.restr   = b.restr, 
                    scale     = scale, 
@@ -123,6 +124,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     names(b.eqrestr) <- vnames
     Ts <- robustFm(x         = X, 
                    y         = y, 
+                   b.unrestr = b.unrestr,
                    b.eqrestr = b.eqrestr, 
                    b.restr   = b.restr, 
                    scale     = scale, 
@@ -131,6 +133,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     if (meq.alt == 0L) {
       Ts <- robustFm(x         = X, 
                      y         = y, 
+                     b.unrestr = b.unrestr,
                      b.eqrestr = b.restr, 
                      b.restr   = b.unrestr, 
                      scale     = scale, 
@@ -153,6 +156,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
         names(b.restr.alt) <- vnames
         Ts <- robustFm(x         = X, 
                        y         = y, 
+                       b.unrestr = b.unrestr,
                        b.eqrestr = b.restr, 
                        b.restr   = b.restr.alt, 
                        scale     = scale, 

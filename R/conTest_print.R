@@ -54,7 +54,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
       print.default(format(x$b.restr, digits = digits),
                     print.gap = 2, quote = FALSE)
     } else if (x$type == "A") {
-      cat("\n\nType A test: H0: all restriktions active (=)", "\n", 
+      cat("\nType A test: H0: all restriktions active (=)", "\n", 
           "        vs. HA: at least one inequality restriktion strictly true", "\n\n")
       print(out.test, quote = FALSE, scientific = FALSE)        
       cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
@@ -66,7 +66,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
       print.default(format(x$b.restr, digits = digits),
                     print.gap = 2, quote = FALSE)
     } else if (x$type == "B" && x$meq.alt == 0L) {
-      cat("\n\nType B test: H0: all restriktions true", "\n", 
+      cat("\nType B test: H0: all restriktions true", "\n", 
           "        vs. HA: at least one restriktion violated ", "\n\n")
       print(out.test, quote = FALSE)
       cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
@@ -78,8 +78,8 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
       print.default(format(x$b.unrestr, digits = digits),
                     print.gap = 2, quote = FALSE)
     } else if (x$type == "B" && x$meq.alt > 0L) {
-        cat("\n H0: all restriktions true (>= or =)",
-            "\n HA: at least one restriktion violated (<), some =-restriktions maintained",
+      cat("\nType B test: H0: all restriktions true (>= or =)", "\n,
+                   vs. HA: at least one restriktion violated (<), some =-restriktions maintained",
             "\n\n")
         print(out.test, quote = FALSE)
         cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
@@ -91,7 +91,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
         print.default(format(x$b.restr.alt, digits = digits),
                       print.gap = 2, quote = FALSE)
       } else if (x$type == "C") {
-        cat("\n\nType C test: H0: at least one restriktion false or active (=)", 
+        cat("\nType C test: H0: at least one restriktion false or active (=)", 
             "\n", "        vs. HA: all restriktions strictly true (>)", "\n\n")
         print(out.test, quote = FALSE)
         cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")

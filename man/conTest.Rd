@@ -21,7 +21,7 @@ inequality restrikted hypotheses for (robust) linear models by F-,
 Wald-, likelihood ratio-, and score-tests.}
 
 \usage{
-conTest(object, type = "summary", \dots)
+conTest(object, type = "summary", test = "F", \dots)
 
 \method{print}{conTest}(x, digits = max(3, getOption("digits") - 2), \dots)
 \method{summary}{conTest.conLM}(object, test = "F", \dots)

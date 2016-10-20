@@ -67,33 +67,38 @@ robustWaldScores <- function(x, y, b.eqrestr, b.restr, b.unrestr,
 
 
 
-## robust Fm test statistic ##
-robustFm <- function(x, y, b.eqrestr, b.restr, scale, cc = 4.685061) {
-  
+################# robust Fm test statistic ######################
+# REF: Mervyn J. Silvapulle (1992). Robust Tests of Inequality 
+# Constraints and One-Sided Hypotheses in the Linear Model, 
+# Biometrika, 79, 3, 621-630.
+robustFm <- function(x, y, b.unrestr, b.eqrestr, b.restr, scale, 
+                     cc = 4.685061) {
   X <- x
   n <- dim(X)[1]
   p <- dim(X)[2]
   
-  #compute residuals under null and alternative model
+  #compute residuals under null, restrikted and unconstrained model
   resid0 <- y - X %*% b.eqrestr
-  residA <- y - X %*% b.restr
+  resid1 <- y - X %*% b.restr
+  resid2 <- y - X %*% b.unrestr
   
   #residuals / scale
   rstar0 <- as.numeric(resid0 / scale)                                               
-  rstarA <- as.numeric(residA / scale)
+  rstar1 <- as.numeric(resid1 / scale)
+  rstar2 <- as.numeric(resid2 / scale)
   
   L0 <- sum(tukeyChi(rstar0, cc, deriv = 0))
-  LA <- sum(tukeyChi(rstarA, cc, deriv = 0))
+  L1 <- sum(tukeyChi(rstar1, cc, deriv = 0))
   
   #first derivative rho function
-  psi.prime.hA <- tukeyChi(rstarA, cc, deriv = 1) 
+  psi.prime.h2 <- tukeyChi(rstar2, cc, deriv = 1) 
   #second derivative rho function
-  psi.prime2.hA <- tukeyChi(rstarA, cc, deriv = 2) 
+  psi.prime2.h2 <- tukeyChi(rstar2, cc, deriv = 2) 
   
   #asymptotic covariance matrix standardizing constant
-  l.hA <- ( 0.5 * (1 / (n - p)) * sum(psi.prime.hA^2) ) / 
-                                  ( (1/n) * sum(psi.prime2.hA) )  
-  OUT <- 1 / l.hA * (L0 - LA) 
+  lambda <- ( 0.5 * (1 / (n - p)) * sum(psi.prime.h2^2) ) / 
+                                  ( (1/n) * sum(psi.prime2.h2) )  
+  OUT <- 1 / lambda * (L0 - L1) 
     
   OUT
 }

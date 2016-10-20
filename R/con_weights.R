@@ -33,8 +33,7 @@ con_weightsBoot <- function(VCOV, Amat, meq,
   }
   
   bvec <- rep(0L, nrow(Amat))
-  W <- VCOV 
-  invW <- solve(W) 
+  invW <- solve(VCOV) 
   Dmat <- 2*invW
   
   iact <- vector("numeric", ncol(Amat))
@@ -48,7 +47,7 @@ con_weightsBoot <- function(VCOV, Amat, meq,
       runif(1)
     RNGstate <- .Random.seed
     
-    Z <- rmvnorm(n = 1, mean = rep(0, ncol(W)), sigma = W)
+    Z <- rmvnorm(n = 1, mean = rep(0, ncol(VCOV)), sigma = VCOV)
     dvec <- 2*(Z %*% invW)
     QP <- try(solve.QP(Dmat = Dmat, 
                        dvec = dvec, 
@@ -98,11 +97,11 @@ con_weightsBoot <- function(VCOV, Amat, meq,
       error.idx <- c(error.idx, b)
     }
   }
-  # compute the number of positive components of W.
-  # ncol(W) = maximum number of constraints
+  # compute the number of positive components of VCOV.
+  # ncol(VCOV) = maximum number of constraints
   # iact    = number of active inequality constraints
-  dimL <- ncol(W) - iact
-  wt <- sapply(1:(ncol(W) + 1), function(x) sum(x == (dimL + 1))) / R
+  dimL <- ncol(VCOV) - iact
+  wt <- sapply(1:(ncol(VCOV) + 1), function(x) sum(x == (dimL + 1))) / R
   
   OUT <- wt
   

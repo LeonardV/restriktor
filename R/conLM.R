@@ -8,7 +8,11 @@ conLM.lm <- function(object, constraints = NULL, se = "standard", B = 999,
     stop("object must be of class lm.")
   }
   
-  cl <- match.call()
+  # timing
+  start.time0 <- start.time <- proc.time()[3]; timing <- list()
+  
+  # store call
+  mc <- match.call()
   
   # rename for internal use
   Amat <- constraints
@@ -31,6 +35,9 @@ conLM.lm <- function(object, constraints = NULL, se = "standard", B = 999,
   p <- length(coef(object))
   # sample size
   n <- dim(X)[1]
+  
+  timing$preparation <- (proc.time()[3] - start.time)
+  start.time <- proc.time()[3]
   
   # deal with constraints
   if (!is.null(constraints)) {
@@ -58,6 +65,8 @@ conLM.lm <- function(object, constraints = NULL, se = "standard", B = 999,
     meq  <- 0L
   } 
   
+  timing$constraints <- (proc.time()[3] - start.time)
+  start.time <- proc.time()[3]
   # parallel housekeeping
   have_mc <- have_snow <- FALSE
   if (parallel != "no" && ncpus > 1L) {
@@ -95,6 +104,8 @@ conLM.lm <- function(object, constraints = NULL, se = "standard", B = 999,
                           w = weights)
   LL.unc <- ll.unc$loglik
   
+  timing$LLik <- (proc.time()[3] - start.time)
+  start.time <- proc.time()[3]
   # ML unconstrained MSE
   #s2ml.unc <- s2.unc * object$df.residual / n
   #invW <- kronecker(solve(s2.unc), t(X) %*% X)
@@ -131,26 +142,37 @@ conLM.lm <- function(object, constraints = NULL, se = "standard", B = 999,
   attr(wt, "bootWt") <- bootWt
   if (bootWt) { attr(wt, "bootWt.R") <- bootWt.R } 
   
+  timing$level_prob <- (proc.time()[3] - start.time)
+  start.time <- proc.time()[3]
+  
   # check if the constraints are not in line with the data, else skip optimization
   if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) & meq == 0) {
     b.restr <- b.unrestr
     s2.restr <- s2.unc
     
-    OUT <- list(CON = CON,
-                parTable = parTable,
-                wt = wt,
-                b.unrestr = b.unrestr,
-                b.restr = b.unrestr,
-                residuals = object$residuals, # unweighted residuals
-                fitted = object$fitted,
-                weights = object$weights,
+    OUT <- list(CON         = CON,
+                call        = mc,
+                timing      = timing,
+                parTable    = parTable,
+                wt          = wt,
+                b.unrestr   = b.unrestr,
+                b.restr     = b.unrestr,
+                residuals   = object$residuals, # unweighted residuals
+                fitted      = object$fitted,
+                weights     = object$weights,
                 df.residual = object$df.residual,
-                R2.org = so$r.squared, R2.reduced = so$r.squared,
-                s2.unc = s2.unc, s2.restr = s2.unc, 
-                loglik = LL.unc, Sigma = vcov(object),
-                constraints = Amat, rhs = bvec, neq = meq, 
-                iact = NULL, bootout = NULL, control = control, 
-                call = cl)  
+                R2.org      = so$r.squared, 
+                R2.reduced  = so$r.squared,
+                s2.unc      = s2.unc, 
+                s2.restr    = s2.unc, 
+                loglik      = LL.unc, 
+                Sigma       = vcov(object),
+                constraints = Amat, 
+                rhs         = bvec, 
+                neq         = meq, 
+                iact        = NULL, 
+                bootout     = NULL, 
+                control     = control)  
   } else {
     # compute constrained estimates for lm()
     out.QP <- con_solver(X         = X, 
@@ -170,11 +192,17 @@ conLM.lm <- function(object, constraints = NULL, se = "standard", B = 999,
                                   sqrt(.Machine$double.eps), 
                                   control$tol)] <- 0L
     
+    timing$optim <- (proc.time()[3] - start.time)
+    start.time <- proc.time()[3]
+    
     ll.restr <- con_loglik_lm(X = X, 
                               y = y, 
                               b = b.restr, 
                               w = weights)
     LL.restr <- ll.restr$loglik
+    
+    timing$conLLik <- (proc.time()[3] - start.time)
+    start.time <- proc.time()[3]
     # lm
     if (ncol(y) == 1L) {
       b.restr <- as.vector(b.restr)
@@ -201,6 +229,9 @@ conLM.lm <- function(object, constraints = NULL, se = "standard", B = 999,
       }
       R2.reduced <- mss / (mss + rss)
       
+      timing$R2 <- (proc.time()[3] - start.time)
+      start.time <- proc.time()[3]
+      
       # compute residual degreees of freedom, corrected for equality constraints.
       # only for the estimation, not for testing. 
       df.residual <- n - (p - qr(Amat[0:meq,])$rank)
@@ -221,23 +252,29 @@ conLM.lm <- function(object, constraints = NULL, se = "standard", B = 999,
       # se <- "none"
     }
 
-    OUT <- list(CON = CON,
-                parTable = parTable,
-                wt = wt,
-                b.restr = b.restr, 
-                b.unrestr = b.unrestr, 
-                residuals = residuals, 
-                fitted = fitted, 
-                weights = weights,
-                df.residual = object$df.residual, #df.residual, 
-                R2.org = so$r.squared, R2.reduced = R2.reduced,
-                s2.unc = s2.unc,  
-                s2.restr = s2.restr,  
-                loglik = LL.restr, 
-                Sigma = vcov(object), 
-                constraints = Amat, rhs = bvec, neq = meq, 
-                iact = out.QP$iact, bootout = NULL, 
-                control = control, call = cl)
+    OUT <- list(CON         = CON,
+                call        = mc,
+                timing      = timing,
+                parTable    = parTable,
+                wt          = wt,
+                b.unrestr   = b.unrestr,
+                b.restr     = b.restr,
+                residuals   = residuals, # unweighted residuals
+                fitted      = fitted,
+                weights     = weights,
+                df.residual = object$df.residual,
+                R2.org      = so$r.squared, 
+                R2.reduced  = R2.reduced,
+                s2.unc      = s2.unc, 
+                s2.restr    = s2.restr, 
+                loglik      = LL.restr, 
+                Sigma       = vcov(object),
+                constraints = Amat, 
+                rhs         = bvec, 
+                neq         = meq, 
+                iact        = out.QP$iact, 
+                bootout     = NULL, 
+                control     = control)
   }
   
   # original object
@@ -262,6 +299,8 @@ conLM.lm <- function(object, constraints = NULL, se = "standard", B = 999,
       attr(OUT$information, "inverted")  <- information.inv$information
       attr(OUT$information, "inverted.augmented") <- information.inv$information.augmented
       
+      timing$inv_aug_information <- (proc.time()[3] - start.time)
+      start.time <- proc.time()[3]
     } else if (se == "boot.model.based") {
       OUT$bootout <- con_boot_lm(object      = object, 
                                  B           = B, 
@@ -275,6 +314,8 @@ conLM.lm <- function(object, constraints = NULL, se = "standard", B = 999,
                                  parallel    = parallel, 
                                  ncpus       = ncpus, 
                                  cl          = cl)
+      timing$boot_model_based <- (proc.time()[3] - start.time)
+      start.time <- proc.time()[3]
     } else if (se == "boot.standard") {
       OUT$bootout <- con_boot_lm(object      = object, 
                                  B           = B, 
@@ -288,8 +329,12 @@ conLM.lm <- function(object, constraints = NULL, se = "standard", B = 999,
                                  parallel    = parallel, 
                                  ncpus       = ncpus, 
                                  cl          = cl)
+      timing$boot_standard <- (proc.time()[3] - start.time)
+      start.time <- proc.time()[3]
     }
   }
+  
+  OUT$timing$total <- (proc.time()[3] - start.time0)
   
   if (ncol(y) == 1L) {
     class(OUT) <- c("conLM", "lm")

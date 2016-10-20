@@ -3,6 +3,7 @@
 # include weights
 # lm and rlm
 
+library(restriktor)
 n = 50
 X <- cbind(1, mvtnorm:::rmvnorm(n, mean=rep(0,3), sigma=diag(3)))
 colnames(X) <- c("intercept","x1","x2","x3")
@@ -65,3 +66,4 @@ summary(fit.ic.con, bty = "basic")
 summary(fit.nic.con, bty = "basic")
 summary(fit.ic.w.con, bty = "basic")
 summary(fit.nic.w.con, bty = "basic")
+

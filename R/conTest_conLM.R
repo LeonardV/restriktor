@@ -1,7 +1,9 @@
-## computes the F, LRT and score test statistic ##
+######### computes the F, LRT and score test statistic ##########
 # REFs: 
 # Silvapulle and Sen (2005). Constrained statistical inference. Chapter 2.
-# Wolak, F. An exact test for multiple inequality and equality constraints in the linear regression model Journal of the American statistical association, 1987, 82, 782-793
+# Wolak, F. An exact test for multiple inequality and equality 
+# constraints in the linear regression model Journal of the American 
+# statistical association, 1987, 82, 782-793
 conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
                            p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
                            cl = NULL, seed = 1234, verbose = FALSE,

@@ -83,6 +83,7 @@ conTestEq.conRLM <- function(object, test = "F", boot = "no",
     } else if (test == "f") {
       Fmm <- robustFm(x         = X, 
                       y         = y, 
+                      b.unrestr = b.unrestr, 
                       b.eqrestr = b.eqrestr, 
                       b.restr   = b.unrestr, 
                       scale     = scale, 

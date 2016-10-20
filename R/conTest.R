@@ -1,10 +1,12 @@
-conTest <- function(object, type = "summary", ...) {
+conTest <- function(object, type = "summary", test = "F", ...) {
   
+  # some checks
   if (!inherits(object, "conLM")) {
     stop("object must be of class \"conLM\" or \"conRLM\"")
   }
-  
-  stopifnot(type %in% c("A","B","C","global","summary"))
+  if( !(type %in% c("A","B","C","global","summary")) ) {
+    stop("restriktor ERROR: type ", sQuote(type), " unknown. \nPlease, choose from \"A\", \"B\", \"C\", \"global\", or \"summary\".")
+  }
   
   l <- list(...)
   Amat <- object$constraints
@@ -13,21 +15,10 @@ conTest <- function(object, type = "summary", ...) {
   if (all(Amat == 0)) {
     stop("Restriktor ERROR: no constraints specified!")
   } else if (nrow(Amat) > meq) {
-    if (!("test" %in% names(l))) {
-      test <- "F"
-    } else {
-      test <- l$test
-    }
-    if (!("boot" %in% names(l))) {
-      boot <- "no"
-    } else {
-      boot <- l$boot
-    }
-    # check
-    if (boot == "no") {
-      # acknowledgement: check for too many inequality constraints is taken from 
-      # the ic.infer package. Prevent long runs with late aborts because of too 
-      # low memory.
+    boot <- l$boot
+    if (!is.null(boot) && boot == "no") {
+      # Prevents long runs with late aborts because of too low memory.
+      # acknowledgement: taken from the ic.infer package (Gromping, 2010)
       if (nrow(Amat) - meq - 2 > 2) {
         if (!is.numeric(try(matrix(0, floor((nrow(Amat) - meq -
                                                2)/2), choose(nrow(Amat) - meq, floor((nrow(Amat) - meq -
@@ -74,7 +65,7 @@ conTest <- function(object, type = "summary", ...) {
       stop("type ", sQuote, " unknown.")
     }
   } else if (nrow(Amat) == meq) {
-      UseMethod("conTestEq") # Wald, F and score test
+      UseMethod("conTestEq") # classical Wald, F and score test
   } else {
     stop("Restriktor ERROR: constraints and neq do not match.")
   }

@@ -219,23 +219,25 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                                           verbose  = verbose)
   } 
   
-  OUT <- list(CON = object$CON,
-              type = type,
-              boot = boot,
-              b.eqrestr = b.eqrestr,
-              b.unrestr = b.unrestr,
-              b.restr = b.restr,
+  OUT <- list(CON         = object$CON,
+              type        = type,
+              boot        = boot,
+              b.eqrestr   = b.eqrestr,
+              b.unrestr   = b.unrestr,
+              b.restr     = b.restr,
               b.restr.alt = b.restr.alt,
-              Amat = Amat,
-              bvec = bvec,
-              meq = meq,
-              meq.alt = meq.alt,
-              iact = object$iact,
+              Amat        = Amat,
+              bvec        = bvec,
+              meq         = meq,
+              meq.alt     = meq.alt,
+              iact        = object$iact,
               df.residual = df.residual,
-              Sigma = Sigma,
-              Ts = Ts,
-              pvalue = pvalue,
-              model.org = model.org)
+              Sigma       = Sigma,
+              Ts          = Ts,
+              pvalue      = pvalue,
+              R2.org      = object$R2.org,
+              R2.reduced  = object$R2.reduced,
+              model.org   = model.org)
 
   class(OUT) <- "conTest"
 
@@ -473,23 +475,25 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
                                           verbose  = verbose)
   } 
   
-  OUT <- list(CON = object$CON,
-              type = type,
-              boot = boot,
-              b.eqrestr = b.eqrestr,
-              b.unrestr = b.unrestr,
-              b.restr = b.restr,
+  OUT <- list(CON         = object$CON,
+              type        = type,
+              boot        = boot,
+              b.eqrestr   = b.eqrestr,
+              b.unrestr   = b.unrestr,
+              b.restr     = b.restr,
               b.restr.alt = b.restr.alt,
-              Amat = Amat,
-              bvec = bvec,
-              meq = meq,
-              meq.alt = meq.alt,
-              iact = object$iact,
+              Amat        = Amat,
+              bvec        = bvec,
+              meq         = meq,
+              meq.alt     = meq.alt,
+              iact        = object$iact,
               df.residual = df.residual,
-              Sigma = Sigma,
-              Ts = Ts,
-              pvalue = pvalue,
-              model.org = object$model.org)
+              Sigma       = Sigma,
+              Ts          = Ts,
+              pvalue      = pvalue,
+              R2.org      = object$R2.org,
+              R2.reduced  = object$R2.reduced,
+              model.org   = object$model.org)
 
   class(OUT) <- "conTest"
 
@@ -792,23 +796,25 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                           verbose  = verbose)
   } 
   
-  OUT <- list(CON = object$CON,
-              type = type,
-              boot = boot,
-              b.eqrestr = b.eqrestr,
-              b.unrestr = b.unrestr,
-              b.restr = b.restr,
+  OUT <- list(CON         = object$CON,
+              type        = type,
+              boot        = boot,
+              b.eqrestr   = b.eqrestr,
+              b.unrestr   = b.unrestr,
+              b.restr     = b.restr,
               b.restr.alt = b.restr.alt,
-              Amat = Amat,
-              bvec = bvec,
-              meq = meq,
-              meq.alt = meq.alt,
-              iact = object$iact,
+              Amat        = Amat,
+              bvec        = bvec,
+              meq         = meq,
+              meq.alt     = meq.alt,
+              iact        = object$iact,
               df.residual = df.residual,
-              Sigma = Sigma,
-              Ts = Ts,
-              pvalue = pvalue,
-              model.org = object$model.org)
+              Sigma       = Sigma,
+              Ts          = Ts,
+              pvalue      = pvalue,
+              R2.org      = object$R2.org,
+              R2.reduced  = object$R2.reduced,
+              model.org   = object$model.org)
   
   class(OUT) <- "conTest"
   
@@ -843,12 +849,14 @@ conTestC.conLM <- function(object, type = "C", ...) {
   }
   
   OUT <- list(type = "C",
-              Ts = Ts, 
-              pvalue = pvalue,
-              b.unrestr = b.unrestr,
-              Amat = Amat,
-              bvec = bvec,
-              meq = meq)
+              b.unrestr   = b.unrestr,
+              Amat        = Amat,
+              bvec        = bvec,
+              meq         = meq,
+              Ts          = Ts, 
+              pvalue      = pvalue,
+              R2.org      = object$R2.org,
+              R2.reduced  = object$R2.reduced)
   
   class(OUT) <- "conTest"
   

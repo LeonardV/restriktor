@@ -39,12 +39,17 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
                                    if (x$pvalue < 1e-04) { "<0.0001" } 
                                    else { sprintf("%.4f", x$pvalue) })
   names(out.test) <- c(" Test statistic", "p-value")
-
+  
   if (nrow(x$Amat) > x$meq) {
     if (x$type == "global") {
       cat("\nGlobal test: H0: all parameters are restrikted to be equal", "\n", 
           "        vs. HA: at least one restriktion strictly true", "\n\n")
       print(out.test, quote = FALSE, scientific = FALSE)
+      if (x$R2.org == x$R2.reduced) {
+        cat("\nMultiple R-squared remains", round(x$R2.org, 4),"\n")
+      } else {
+        cat("\nMultiple R-squared reduced from", round(x$R2.org, 4), "to", round(x$R2.reduced, 4),"\n")  
+      }
       cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
       print(out.rest, quote = FALSE, scientific = FALSE)
       cat("\nrestrikted estimate under H0:\n")
@@ -57,6 +62,11 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
       cat("\nType A test: H0: all restriktions active (=)", "\n", 
           "        vs. HA: at least one inequality restriktion strictly true", "\n\n")
       print(out.test, quote = FALSE, scientific = FALSE)        
+      if (x$R2.org == x$R2.reduced) {
+        cat("\nMultiple R-squared remains", round(x$R2.org, 4),"\n")
+      } else {
+        cat("\nMultiple R-squared reduced from", round(x$R2.org, 4), "to", round(x$R2.reduced, 4),"\n")  
+      }
       cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
       print(out.rest, quote = FALSE, scientific = FALSE)
       cat("\nrestrikted estimate under H0:\n")
@@ -69,6 +79,11 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
       cat("\nType B test: H0: all restriktions true", "\n", 
           "        vs. HA: at least one restriktion violated ", "\n\n")
       print(out.test, quote = FALSE)
+      if (x$R2.org == x$R2.reduced) {
+        cat("\nMultiple R-squared remains", round(x$R2.org, 4),"\n")
+      } else {
+        cat("\nMultiple R-squared reduced from", round(x$R2.org, 4), "to", round(x$R2.reduced, 4),"\n")  
+      }
       cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
       print(out.rest, quote = FALSE, scientific = FALSE)
       cat("\nrestrikted estimate under H0:\n")
@@ -81,19 +96,29 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
       cat("\nType B test: H0: all restriktions true (>= or =)", "\n,
                    vs. HA: at least one restriktion violated (<), some =-restriktions maintained",
             "\n\n")
-        print(out.test, quote = FALSE)
-        cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
-        print(out.rest, quote = FALSE, scientific = FALSE)
-        cat("\nrestrikted estimate under H0:\n")
-        print.default(format(x$b.restr, digits = digits),
-                      print.gap = 2, quote = FALSE)
-        cat("\nrestrikted estimate under HA:\n")
-        print.default(format(x$b.restr.alt, digits = digits),
-                      print.gap = 2, quote = FALSE)
+      print(out.test, quote = FALSE)
+      if (x$R2.org == x$R2.reduced) {
+        cat("\nMultiple R-squared remains", round(x$R2.org, 4),"\n")
+      } else {
+        cat("\nMultiple R-squared reduced from", round(x$R2.org, 4), "to", round(x$R2.reduced, 4),"\n")  
+      }
+      cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
+      print(out.rest, quote = FALSE, scientific = FALSE)
+      cat("\nrestrikted estimate under H0:\n")
+      print.default(format(x$b.restr, digits = digits),
+                    print.gap = 2, quote = FALSE)
+      cat("\nrestrikted estimate under HA:\n")
+      print.default(format(x$b.restr.alt, digits = digits),
+                    print.gap = 2, quote = FALSE)
       } else if (x$type == "C") {
         cat("\nType C test: H0: at least one restriktion false or active (=)", 
             "\n", "        vs. HA: all restriktions strictly true (>)", "\n\n")
         print(out.test, quote = FALSE)
+        if (x$R2.org == x$R2.reduced) {
+          cat("\nMultiple R-squared remains", round(x$R2.org, 4),"\n")
+        } else {
+          cat("\nMultiple R-squared reduced from", round(x$R2.org, 4), "to", round(x$R2.reduced, 4),"\n")  
+        }
         cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
         print(out.rest, quote = FALSE, scientific = FALSE)
         cat("\nunrestrikted estimate:\n")
@@ -104,6 +129,11 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
     cat("\n\nClassical test: H0: all restriktions active (=)", 
         "\n", "           vs. HA: at least one equality restriktion violated", "\n\n")
     print(out.test, quote = FALSE)
+    if (x$R2.org == x$R2.reduced) {
+      cat("\nMultiple R-squared remains", round(x$R2.org, 4),"\n")
+    } else {
+      cat("\nMultiple R-squared reduced from", round(x$R2.org, 4), "to", round(x$R2.reduced, 4),"\n")  
+    }
     cat("\n\n(all rows are active restriktions under H0, H1 is unrestrikted!)\n")
     print(out.rest, quote = FALSE, scientific = FALSE)
     cat("\nrestrikted estimate under H0:\n")

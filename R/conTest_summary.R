@@ -26,7 +26,7 @@ summary.conTest.conLM <- function(object, test = "F", ...) {
     out.rest[1:nrow(Amat), 1] <- "A"
   }  
   out.rest <- as.data.frame(out.rest)
-  names(out.rest)[1] <- ""
+    names(out.rest)[1] <- ""
   
   ldots <- list(...)
   ldots$type <- NULL
@@ -43,10 +43,15 @@ summary.conTest.conLM <- function(object, test = "F", ...) {
   OUT <- list()
   
   cat("\nRestriktor: hypothesis tests (", x$df.residual, "error degrees of freedom ):\n")
+  if (x$R2.org == x$R2.reduced) {
+    cat("\nMultiple R-squared remains", round(x$R2.org, 4),"\n")
+  } else {
+    cat("\nMultiple R-squared reduced from", round(x$R2.org, 4), "to", round(x$R2.reduced, 4),"\n")  
+  }
   cat("\n(rows indicated with an \"A\" are active (=) restriktions)\n")
   print(out.rest, quote = FALSE, scientific = FALSE)
-  
-  cat("\n\nGlobal test: H0: all parameters are restrikted to be equal", "\n", 
+  cat("\nOverview of all available hypothesis tests:\n")
+  cat("\nGlobal test: H0: all parameters are restrikted to be equal", "\n", 
       "        vs. HA: at least one restriktion strictly true", "\n")
   cat("       Test statistic: ", out0$Ts, ",   p-value: ", 
       if (out0$pvalue < 1e-04) {

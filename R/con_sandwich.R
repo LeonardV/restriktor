@@ -1,7 +1,7 @@
 # adjusted functions from the sandwich package.
 # adapted by LV
 
-sandwich <- function(x, bread. = bread, meat. = meat, ...) {
+sandwich <- function(x, bread. = bread, meat. = meatHC, ...) {
   if (is.function(bread.)) { bread. <- bread.(x) }
   if (is.function(meat.)) { meat. <- meat.(x, ...) }
   n <- NROW(estfun(x))
@@ -9,17 +9,17 @@ sandwich <- function(x, bread. = bread, meat. = meat, ...) {
 }
 
 
-meat <- function(x, adjust = FALSE, ...)
-{
-  if (is.list(x) && !is.null(x$na.action)) class(x$na.action) <- "omit"
-  psi <- estfun(x, ...)
-  k <- NCOL(psi)
-  n <- NROW(psi)
-  rval <- crossprod(as.matrix(psi))/n
-  if (adjust) rval <- n/(n-k) * rval
-  rownames(rval) <- colnames(rval) <- colnames(psi)
-  return(rval)
-}
+# meat <- function(x, adjust = FALSE, ...)
+# {
+#   if (is.list(x) && !is.null(x$na.action)) class(x$na.action) <- "omit"
+#   psi <- estfun(x, ...)
+#   k <- NCOL(psi)
+#   n <- NROW(psi)
+#   rval <- crossprod(as.matrix(psi))/n
+#   if (adjust) rval <- n/(n-k) * rval
+#   rownames(rval) <- colnames(rval) <- colnames(psi)
+#   return(rval)
+# }
 
 
 bread <- function(x, ...) {
@@ -113,19 +113,37 @@ meatHC <- function(x,
   attr(X, "assign") <- NULL
   n <- NROW(X)
   
-  ## get hat values and residual degrees of freedom
+  ### get hat values and residual degrees of freedom ###
   if (inherits(x, "conRLM")) {
-    W <- diag(x$model.org$w)                                     #constrained or unconstrained
+    #W <- sqrt(x$model.org$w)                                     #constrained or unconstrained?
+    # sqrt of the weights
+    rW <- sqrt(x$w)
   } else if (class(x)[1] == "conLM") {
       if (!is.null(x$weights)) {
-        W <- diag(x$weights)
+        rW <- sqrt(x$weights)
       } else {
-        W <- diag(n)
+        rW <- rep(1, n)
       }
   } 
   
-  # hat matrix
-  diaghat <- diag(X %*% solve(t(X) %*% W %*% X) %*% t(X) %*% W)
+  ### compute hat matrix ###
+  ### code added by LV ###
+  
+  ## matrix form ##
+  # diaghat <- diag(X %*% solve(t(X) %*% W %*% X) %*% t(X) %*% W)
+  
+  # QR factorization #
+  # rescaled X
+  rWX <- rW * X
+  # QR factorization
+  QR <- qr.default(rWX)
+  Q <- qr.qy(QR, diag(1, nrow = nrow(QR$qr), ncol = QR$rank))
+  # for weighted least squares
+  Q1 <- (1 / rW) * Q
+  Q2 <- rW * Q
+  ## diagonal
+  diaghat <- rowSums(Q1 * Q2)  
+  
   
   p <- NCOL(X)
   # correct df for equality constraints

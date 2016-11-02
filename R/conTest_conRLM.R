@@ -22,6 +22,9 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   if (boot == "residual") {
     boot <- "model.based"
   }
+  if (is.null(object$wt)) {
+    stop("restriktor ERROR: no chi-square-bar weights computed. Set Wt = TRUE in the restriktor() function.")
+  }
   
   # original model
   model.org <- object$model.org
@@ -267,6 +270,9 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   if (boot == "residual") {
     boot <- "model.based"
   }  
+  if (is.null(object$wt)) {
+    stop("restriktor ERROR: no chi-square-bar weights computed. Set Wt = TRUE in the restriktor() function.")
+  }
   
   # original model
   model.org <- object$model.org
@@ -553,6 +559,9 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   if (boot == "residual") {
     boot <- "model.based"
   }
+  if (is.null(object$wt)) {
+    stop("restriktor ERROR: no chi-square-bar weights computed. Set Wt = TRUE in the restriktor() function.")
+  }
   
   # original model
   model.org <- object$model.org
@@ -790,6 +799,9 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   }  
   if (boot == "residual") {
     boot <- "model.based"
+  }
+  if (is.null(object$wt)) {
+    stop("restriktor ERROR: no chi-square-bar weights computed. Set Wt = TRUE in the restriktor() function.")
   }
   
   # original model

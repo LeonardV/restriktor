@@ -28,6 +28,9 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   if (boot == "residual") {
     boot <- "model.based"
   }
+  if (is.null(object$wt)) {
+    stop("restriktor ERROR: no chi-square-bar weights computed. Set Wt = TRUE in the restriktor() function.")
+  }
   
   # original model
   model.org <- object$model.org
@@ -166,9 +169,10 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
 
   # The test statistics based on inequality constraints are often
   # distributed as mixtures of chi-squares. These mixing weights can be computed
-  # using the multivariate normal distribution or via bootstrapping. The
-  # pvalue can also be computed directly via the parametric bootstrap or model
-  # based bootstrap, without fist computing the mixing weights.
+  # using the multivariate normal distribution with additional Monte Carlo steps
+  # or via bootstrapping. The pvalue can also be computed directly via 
+  # the parametric bootstrap or model based bootstrap, without fist computing 
+  # the mixing weights.
   
   wt <- object$wt
   # is this fool proof? 
@@ -271,7 +275,10 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
   if (boot == "residual") {
     boot <- "model.based"
   }
-
+  if (is.null(object$wt)) {
+    stop("restriktor ERROR: no chi-square-bar weights computed. Set Wt = TRUE in the restriktor() function.")
+  }
+  
   # original model
   model.org <- object$model.org
   # model matrix
@@ -525,6 +532,9 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   }
   if (boot == "residual") {
     boot <- "model.based"
+  }
+  if (is.null(object$wt)) {
+    stop("restriktor ERROR: no chi-square-bar weights computed. Set Wt = TRUE in the restriktor() function.")
   }
   
   # original model

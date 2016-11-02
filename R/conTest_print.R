@@ -129,11 +129,6 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
     cat("\n\nClassical test: H0: all restriktions active (=)", 
         "\n", "           vs. HA: at least one equality restriktion violated", "\n\n")
     print(out.test, quote = FALSE)
-    if (x$R2.org == x$R2.reduced) {
-      cat("\nMultiple R-squared remains", round(x$R2.org, 4),"\n")
-    } else {
-      cat("\nMultiple R-squared reduced from", round(x$R2.org, 4), "to", round(x$R2.reduced, 4),"\n")  
-    }
     cat("\n\n(all rows are active restriktions under H0, H1 is unrestrikted!)\n")
     print(out.rest, quote = FALSE, scientific = FALSE)
     cat("\nrestrikted estimate under H0:\n")

@@ -1,8 +1,10 @@
 #compute restrikted robust estimates
-conRLM.rlm <- function(object, constraints = NULL, se = "standard", B = 999, 
-                       rhs = NULL, neq = 0L, bootWt = FALSE, bootWt.R = 99999,
-                       parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
-                       control = NULL, verbose = FALSE, debug = FALSE, ...) { 
+conRLM.rlm <- function(object, constraints = NULL, se = "standard", 
+                       B = 999, rhs = NULL, neq = 0L, Wt = TRUE,
+                       bootWt = FALSE, bootWt.R = 99999,
+                       parallel = "no", ncpus = 1L, cl = NULL, 
+                       seed = NULL, control = NULL, verbose = FALSE, 
+                       debug = FALSE, ...) { 
   
   # check class
   if (!(class(object)[1] == "rlm")) {
@@ -175,35 +177,39 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard", B = 999,
   
   ## compute mixing weights
   is.augmented <- TRUE
-  ## compute mixing weights
-  if (all(c(Amat) == 0)) { # unrestrikted case
-    wt <- c(rep(0L, p), 1)
-    is.augmented <- FALSE
-  } else if (bootWt) { # compute mixing weights based on simulation
-    wt <- con_weightsBoot(VCOV     = Sigma,
-                          Amat     = Amat, 
-                          meq      = meq, 
-                          R        = bootWt.R,
-                          parallel = parallel,
-                          ncpus    = ncpus,
-                          cl       = cl,
-                          seed     = seed,
-                          verbose  = verbose)
-  } else if (!bootWt & (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
-    #check
-    if ((qr(Amat)$rank < nrow(Amat))) {
-      stop("restriktions matrix must have full row-rank. try set bootWt = TRUE.")
+  if (Wt) {
+    ## compute mixing weights
+    if (all(c(Amat) == 0)) { # unrestrikted case
+      wt <- c(rep(0L, p), 1)
+      is.augmented <- FALSE
+    } else if (bootWt) { # compute mixing weights based on simulation
+      wt <- con_weightsBoot(VCOV     = Sigma,
+                            Amat     = Amat, 
+                            meq      = meq, 
+                            R        = bootWt.R,
+                            parallel = parallel,
+                            ncpus    = ncpus,
+                            cl       = cl,
+                            seed     = seed,
+                            verbose  = verbose)
+    } else if (!bootWt & (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
+      #check
+      if ((qr(Amat)$rank < nrow(Amat))) {
+        stop("restriktions matrix must have full row-rank. try set bootWt = TRUE.")
+      }
+      wt <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
+    } else if (!bootWt & (meq == nrow(Amat))) { # only equality constraints
+      wt <- rep(0L, ncol(Sigma) + 1)
+      wt.idx <- ncol(Sigma) - meq + 1
+      wt[wt.idx] <- 1
     }
-    wt <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
-  } else if (!bootWt & (meq == nrow(Amat))) { # only equality constraints
-    wt <- rep(0L, ncol(Sigma) + 1)
-    wt.idx <- ncol(Sigma) - meq + 1
-    wt[wt.idx] <- 1
+    attr(wt, "bootWt") <- bootWt
+    if (bootWt) { attr(wt, "bootWt.R") <- bootWt.R }
+  } else {
+    wt <- NULL
   }
-  attr(wt, "bootWt") <- bootWt
-  if (bootWt) { attr(wt, "bootWt.R") <- bootWt.R }
   
-  timing$level_prob <- (proc.time()[3] - start.time)
+  timing$wt <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
   
   # # check if the constraints are in line with the data    

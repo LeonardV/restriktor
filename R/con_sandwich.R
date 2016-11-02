@@ -8,6 +8,7 @@ sandwich <- function(x, bread. = bread, meat. = meat, ...) {
   return(1/n * (bread. %*% meat. %*% bread.))
 }
 
+
 meat <- function(x, adjust = FALSE, ...)
 {
   if (is.list(x) && !is.null(x$na.action)) class(x$na.action) <- "omit"

@@ -1,10 +1,25 @@
 # adjusted functions from the sandwich package.
+# adapted by LV
+
 sandwich <- function(x, bread. = bread, meat. = meat, ...) {
   if (is.function(bread.)) { bread. <- bread.(x) }
   if (is.function(meat.)) { meat. <- meat.(x, ...) }
   n <- NROW(estfun(x))
   return(1/n * (bread. %*% meat. %*% bread.))
 }
+
+meat <- function(x, adjust = FALSE, ...)
+{
+  if (is.list(x) && !is.null(x$na.action)) class(x$na.action) <- "omit"
+  psi <- estfun(x, ...)
+  k <- NCOL(psi)
+  n <- NROW(psi)
+  rval <- crossprod(as.matrix(psi))/n
+  if (adjust) rval <- n/(n-k) * rval
+  rownames(rval) <- colnames(rval) <- colnames(psi)
+  return(rval)
+}
+
 
 bread <- function(x, ...) {
   UseMethod("bread")
@@ -59,13 +74,12 @@ estfun.conLM <- function(x, ...) {
   rval <- as.vector(res) * wts * xmat
   attr(rval, "assign") <- NULL
   attr(rval, "contrasts") <- NULL
-  if (is.zoo(res)) {
-    rval <- zoo(rval, index(res), attr(res, "frequency"))
-  }
-  if (is.ts(res)) {
-    rval <- ts(rval, start = start(res), frequency = frequency(res))
-  }
-  
+#  if (is.zoo(res)) {
+#    rval <- zoo(rval, index(res), attr(res, "frequency"))
+#  }
+#  if (is.ts(res)) {
+#    rval <- ts(rval, start = start(res), frequency = frequency(res))
+#  }
   return(rval)
 }
 
@@ -78,12 +92,12 @@ estfun.conRLM <- function(x, ...) {
   rval <- as.vector(psi(res/x$model.org$s)) * wts * xmat
   attr(rval, "assign") <- NULL
   attr(rval, "contrasts") <- NULL
-  if (is.ts(res)) {
-    rval <- ts(rval, start = start(res), frequency = frequency(res))
-  }
-  if (is.zoo(res)) {
-    rval <- zoo(rval, index(res), attr(res, "frequency"))
-  }
+#  if (is.ts(res)) {
+#    rval <- ts(rval, start = start(res), frequency = frequency(res))
+#  }
+#  if (is.zoo(res)) {
+#    rval <- zoo(rval, index(res), attr(res, "frequency"))
+#  }
   
   return(rval)
 }
@@ -100,7 +114,7 @@ meatHC <- function(x,
   
   ## get hat values and residual degrees of freedom
   if (inherits(x, "conRLM")) {
-    W <- diag(x$model.org$w)                                                              #constrained or unconstrained
+    W <- diag(x$model.org$w)                                     #constrained or unconstrained
   } else if (class(x)[1] == "conLM") {
       if (!is.null(x$weights)) {
         W <- diag(x$weights)

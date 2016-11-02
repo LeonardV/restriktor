@@ -13,15 +13,17 @@ inequality restriktions}
 \usage{
 restriktor(object, constraints = NULL, \dots)
 
-\method{conLM}{lm}(object, constraints = NULL, se = "standard", B = 999,
-      rhs = NULL, neq = 0L, bootWt = FALSE, bootWt.R = 99999,
-      parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
-      control = NULL, verbose = FALSE, debug = FALSE, \dots)
+\method{conLM}{lm}(object, constraints = NULL, se = "standard", 
+      B = 999, rhs = NULL, neq = 0L, Wt = TRUE, bootWt = FALSE, 
+      bootWt.R = 99999, parallel = "no", ncpus = 1L, cl = NULL, 
+      seed = NULL, control = NULL, verbose = FALSE, debug = FALSE, 
+      \dots)
       
-\method{conRLM}{rlm}(object, constraints = NULL, se = "standard", B = 999,
-       rhs = NULL, neq = 0L, bootWt = FALSE, bootWt.R = 99999,
-       parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
-       control = NULL, verbose = FALSE, debug = FALSE, \dots)
+\method{conRLM}{rlm}(object, constraints = NULL, se = "standard", 
+      B = 999, rhs = NULL, neq = 0L, Wt = TRUE, bootWt = FALSE, 
+      bootWt.R = 99999, parallel = "no", ncpus = 1L, cl = NULL, 
+      seed = NULL, control = NULL, verbose = FALSE, debug = FALSE, 
+      \dots)
 }
 \arguments{
   \item{object}{a fitted linear model object of class "lm", or a 
@@ -70,6 +72,7 @@ restriktor(object, constraints = NULL, \dots)
   first two rows of the constraints matrix \eqn{R} are treated as 
   equality constraints. Note: only used if constraints input is a 
   matrix or vector.}
+  \item{Wt}{if \code{FALSE}, no chi-bar-square weights are computed.}
   \item{bootWt}{if \code{TRUE}, the chi-bar-square weights are 
   computed based on a simulation approach. If \code{FALSE}, the 
   weights are computed based on the multivariate normal distribution 
@@ -356,7 +359,7 @@ myConstraints3 <- ' group2 == 0
                     group2 == group3
                     group3 == group4
 '
-fit3.con <- restriktor(fit2.rlm, constr = myConstraints3)
+fit3.con <- restriktor(fit2.rlm, constraints = myConstraints3)
 summary(fit3.con)
 
 
@@ -368,7 +371,7 @@ myConstraints4 <- ' group2 == 0
 # fit restikted model and compute model-based bootstrapped 
 # standard errors. We only generate 9 bootstrap samples in this 
 # example; in practice you may wish to use a much higher number.
-fit4.con <- restriktor(fit2.rlm, constr = myConstraints4, 
+fit4.con <- restriktor(fit2.rlm, constraints = myConstraints4, 
                        se = "boot.model.based", B = 9)
 # an error is probably thrown, due to a too low number of bootstrap draws.
 summary(fit4.con)

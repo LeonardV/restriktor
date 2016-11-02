@@ -16,8 +16,8 @@ importFrom("boot",
            boot,
            boot.ci)
 
-importFrom("zoo",
-           is.zoo)
+importFrom("MASS",
+           psi.bisquare)
 
 importFrom("ic.infer",
            #nchoosek, NOT EXPORTED!

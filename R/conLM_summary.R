@@ -125,7 +125,7 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic",
     ans$R2.reduced <- 0
   }
   
-  if (GORIC) {
+  if (GORIC && !is.null(z$wt)) {
     wt <- z$wt
     bootWt <- attr(wt, "bootWt")
     # compute goric

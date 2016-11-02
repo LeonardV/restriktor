@@ -4,9 +4,15 @@ conTest <- function(object, type = "summary", test = "F", ...) {
   if (!inherits(object, "conLM")) {
     stop("object must be of class \"conLM\" or \"conRLM\"")
   }
-  if( !(type %in% c("A","B","C","global","summary")) ) {
-    stop("restriktor ERROR: type ", sQuote(type), " unknown. \nPlease, choose from \"A\", \"B\", \"C\", \"global\", or \"summary\".")
+  if (type != "global" && type != "summary") {
+    type <- toupper(type)
   }
+  if ( !(type %in% c("A","B","C","global","summary")) ) {
+    stop("restriktor ERROR: hypothesis type ", sQuote(type), " unknown. \nPlease, choose from \"A\", \"B\", \"C\", \"global\", or \"summary\".")
+  }
+  if (is.null(object$wt)) {
+    stop("restriktor ERROR: no chi-square-bar weights computed. Set Wt = TRUE in the restriktor() function.")
+  } 
   
   l <- list(...)
   Amat <- object$constraints

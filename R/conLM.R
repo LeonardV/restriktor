@@ -7,7 +7,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   
   # check class
   if (!(class(object)[1] %in% c("lm"))) {
-    stop("object must be of class lm.")
+    stop("Restriktor ERROR: object must be of class lm.")
   }
   
   # timing
@@ -67,6 +67,22 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
     meq  <- 0L
   } 
   
+  # compute the reduced row-echelon form of the constraints matrix
+  rAmat <- GaussianElimination(t(Amat))
+  if (!bootWt) {
+    if (rAmat$rank < nrow(Amat)) {
+      stop(paste("Restriktor ERROR: The constraint matrix must have full row-rank ( choose e.g. rows", 
+                 paste(rAmat$pivot, collapse = " "), ", or try to set bootWt = TRUE)"))
+    }
+  } else {
+    if (rAmat$rank < nrow(Amat) && !(se %in% c("none", "boot.model.based", "boot.standard"))) {
+      se <- "none"
+      warning(paste("Restriktor Warning: No standard errors could be computed. 
+                      The constraint matrix must have full row-rank ( choose e.g. rows", 
+                    paste(rAmat$pivot, collapse = " "), ")"))  
+    }
+  }
+  
   timing$constraints <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
   # parallel housekeeping
@@ -90,13 +106,15 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   }
   if (!(se %in% c("none","standard","const","boot.model.based","boot.standard",
                   "HC","HC0","HC1","HC2","HC3","HC4","HC4m","HC5"))) {
-    stop("standard error method ", sQuote(se), " unknown.")
+    stop("Restriktor ERROR: standard error method ", sQuote(se), " unknown.")
   }
-  if (se == "boot.model.based" & any(Amat[,1] == 1)) { 
-    stop("no restriktions on intercept possible for 'se = boot.model.based' bootstrap method.")
+  if (attr(object$terms, "intercept")) {
+    if (se == "boot.model.based" & any(Amat[,1] == 1)) { 
+      stop("Restriktor ERROR: no restriktions on intercept possible for 'se = boot.model.based' bootstrap method.")
+    }
   }
   if(ncol(Amat) != length(b.unrestr)) {
-    stop("length coefficients and the number of columns constraints-matrix must be identical")
+    stop("Restriktor ERROR: length coefficients and the number of columns constraints-matrix must be identical")
   }
 
   # compute (weighted) log-likelihood
@@ -133,9 +151,9 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
       # compute mixing weights based on mvtnorm
     } else if (!bootWt & (meq < nrow(Amat))) {
       #check
-      if ((qr(Amat)$rank < nrow(Amat))) {
-        stop("restriktions matrix must have full row-rank. try set bootWt = TRUE.")
-      }
+    #  if ((qr(Amat)$rank < nrow(Amat))) {
+    #    stop("restriktions matrix must have full row-rank. ry set bootWt = TRUE.")
+    #  }
       wt <- rev(con_weights(Amat %*% W %*% t(Amat), meq = meq))
     # only equality constraints
     } else if (!bootWt & (meq == nrow(Amat))) { 

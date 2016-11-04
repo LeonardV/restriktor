@@ -73,9 +73,20 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     meq  <- 0L
   } 
   
-  # check
-  if(ncol(Amat) != length(b.unrestr)) {
-    stop("Restriktor ERROR: the columns of \"constraints\" does not match with the number of parameters.")
+  # compute the reduced row-echelon form of the constraints matrix
+  rAmat <- GaussianElimination(t(Amat))
+  if (!bootWt) {
+    if (rAmat$rank < nrow(Amat)) {
+      stop(paste("Restriktor ERROR: The constraint matrix must have full row-rank ( choose e.g. rows", 
+                 paste(rAmat$pivot, collapse = " "), ", or try to set bootWt = TRUE)"))
+    }
+  } else {
+    if (rAmat$rank < nrow(Amat) && !(se %in% c("none", "boot.model.based", "boot.standard"))) {
+      se <- "none"
+      warning(paste("Restriktor Warning: No standard errors could be computed. 
+                      The constraint matrix must have full row-rank ( choose e.g. rows", 
+                    paste(rAmat$pivot, collapse = " "), ")"))  
+    }
   }
   
   timing$constraints <- (proc.time()[3] - start.time)
@@ -89,11 +100,15 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   }
   if (!(se %in% c("none","standard","const","boot.model.based","boot.standard","HC","HC0",
                   "HC1","HC2","HC3","HC4","HC4m","HC5"))) {
-    stop("standard error method ", sQuote(se), " unknown.")
+    stop("Restriktor ERROR: standard error method ", sQuote(se), " unknown.")
   }
   if (se == "boot.model.based" & any(Amat[,1] == 1)) { 
-    stop("no restriktions on intercept possible for 'se = boot.model.based' bootstrap method.")
+    stop("Restriktor ERROR: no restriktions on intercept possible for 'se = boot.model.based' bootstrap method.")
   }
+  if(ncol(Amat) != length(b.unrestr)) {
+    stop("Restriktor ERROR: the columns of \"constraints\" does not match with the number of parameters.")
+  }
+  
   
   ## extract all available options from the original model, else
   ## asign default settings from rlm. Except for the psi function, because
@@ -108,11 +123,11 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   psi <- call[["psi"]]
   if (is.null(psi)) {
     if (object$call[["method"]] == "M") {
-      stop("only tukey's bisquare loss function is supported.")
+      stop("Restriktor ERROR: only tukey's bisquare loss function is supported.")
     }
   } else {
     if (psi != "psi.bisquare") {
-      stop("only tukey's bisquare loss function is supported.")
+      stop("Restriktor ERROR: only tukey's bisquare loss function is supported.")
     }
   }
   # tukeys bisquare tuning constant
@@ -120,7 +135,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   if (is.null(cc)) { object$call[["c"]] <- 4.685061 }
   # prior weights for each case
   weights <- object$weights
-  if (any(weights != 1L)) stop("weights are not implemented (yet).")            # FIXME
+  if (any(weights != 1L)) stop("Restriktor ERROR: prior weights are not implemented (yet).")            # FIXME
   # weights method, inverse of the variance or case 
   wt.method <- call[["wt.method"]]
   if (is.null(wt.method)) { object$call[["wt.method"]] <- "inv.var" }
@@ -194,9 +209,9 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                             verbose  = verbose)
     } else if (!bootWt & (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
       #check
-      if ((qr(Amat)$rank < nrow(Amat))) {
-        stop("restriktions matrix must have full row-rank. try set bootWt = TRUE.")
-      }
+    #  if ((qr(Amat)$rank < nrow(Amat))) {
+    #    stop("Restriktor ERROR: constraint matrix must have full row-rank. try set bootWt = TRUE.")
+    #  }
       wt <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
     } else if (!bootWt & (meq == nrow(Amat))) { # only equality constraints
       wt <- rep(0L, ncol(Sigma) + 1)

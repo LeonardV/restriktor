@@ -5,7 +5,7 @@ summary.conTest.conLM <- function(object, test = "F", ...) {
   
   x <- object
   if (!("conLM" %in% class(x))) {
-    stop("x must be of class \"conLM\" or \"conRLM\"")
+    stop("Restriktor ERROR: object must be of class \"conLM\" or \"conRLM\"")
   }
   
   vnames <- names(x$b.unrestr)
@@ -32,6 +32,16 @@ summary.conTest.conLM <- function(object, test = "F", ...) {
   ldots$type <- NULL
   CALL <- c(list(object = x, test = test), ldots)
   
+  rAmat <- GaussianElimination(t(Amat))
+  if ( (rAmat$rank < nrow(Amat)) && (is.null(ldots$boot) || boot == "no") ) {
+    stop(paste("Restriktor ERROR: The constraint matrix must have full row-rank ( choose e.g. rows", 
+                  paste(rAmat$pivot, collapse = " "), "). Try boot = \"parametric\" or \"model.based\"."))
+  } else if (rAmat$rank < nrow(Amat)) {
+    warning(paste("Restriktor ERROR: global test could not be computed. 
+                    The constraint matrix must have full row-rank ( choose e.g. rows", 
+                  paste(rAmat$pivot, collapse = " "), ")"))
+  }
+    
   # fit hypothesis tests
   CALL$type <- "global"
   out0 <- do.call("conTest", CALL)
@@ -51,17 +61,22 @@ summary.conTest.conLM <- function(object, test = "F", ...) {
   cat("\n(rows indicated with an \"A\" are active (=) restriktions)\n")
   print(out.rest, quote = FALSE, scientific = FALSE)
   cat("\nOverview of all available hypothesis tests:\n")
-  cat("\nGlobal test: H0: all parameters are restrikted to be equal", "\n", 
-      "        vs. HA: at least one restriktion strictly true", "\n")
-  cat("       Test statistic: ", out0$Ts, ",   p-value: ", 
-      if (out0$pvalue < 1e-04) {
-        "<0.0001"
-      } else {
-        format(out0$pvalue, digits = 4)
-      }, "\n\n", sep = "")
   
-  OUT$Global$Ts <- out0$Ts 
-  OUT$Global$pvalue <- out0$pvalue[1]
+  if (!is.null(out0)) {
+    cat("\nGlobal test: H0: all parameters are restrikted to be equal", "\n", 
+        "        vs. HA: at least one restriktion strictly true", "\n")
+    cat("       Test statistic: ", out0$Ts, ",   p-value: ", 
+        if (out0$pvalue < 1e-04) {
+          "<0.0001"
+        } else {
+          format(out0$pvalue, digits = 4)
+        }, "\n\n", sep = "")
+    
+    OUT$Global$Ts <- out0$Ts 
+    OUT$Global$pvalue <- out0$pvalue[1]
+  } else {
+    cat("\n")
+  }
   
   ###
   cat("Type A test: H0: all restriktions active (=)", "\n", 

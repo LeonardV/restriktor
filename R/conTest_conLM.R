@@ -14,16 +14,16 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   
   # checks
   if (!("conLM" %in% class(object))) {
-    stop("object must be of class conLM.")
+    stop("Restriktor ERROR: object must be of class conLM.")
   }
   if (type != "global") {
     type <- toupper(type)
   }    
   if(!(type %in% c("A","B","global"))) {
-    stop("type must be \"A\", \"B\", or \"global\"")
+    stop("Restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
   }
   if(!(boot %in% c("no","residual","model.based","parametric","mix.weights"))) {
-    stop("ERROR: boot method unknown.")
+    stop("Restriktor ERROR: boot method unknown.")
   }
   if (boot == "residual") {
     boot <- "model.based"
@@ -64,7 +64,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   
   # check for equalities only
   if (meq == nrow(Amat)) {
-    stop("test not applicable for object with equality restriktions only.")
+    stop("Restriktor ERROR: test not applicable for object with equality restriktions only.")
   }
   
   if (is.null(control$tol)) {
@@ -73,6 +73,13 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
     tol <- control$tol
   }
   
+  rAmat <- GaussianElimination(t(Amat))
+  if (type == "global" && (rAmat$rank < nrow(Amat))) {
+    warning(paste("Restriktor ERROR: global test could not be computed. 
+                    The constraint matrix must have full row-rank ( choose e.g. rows", 
+                  paste(rAmat$pivot, collapse = " "), ")"))
+    return(NULL)
+  }
   # check for intercept
   intercept <- any(attr(terms(model.org), "intercept"))
   if (type == "global") {
@@ -87,7 +94,6 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
     }
     AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*% 
                           solve(Amat %*% t(Amat), Amat))
-    
     bvecG <- rep(0L, nrow(AmatG))
     
     if (all(abs(AmatX) < tol)) { 

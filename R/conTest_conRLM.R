@@ -8,16 +8,16 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   
   # checks
   if (!("conRLM" %in% class(object))) {
-    stop("object must be of class conRLM.")
+    stop("Restriktor ERROR: object must be of class conRLM.")
   }
   if (type != "global") {
     type <- toupper(type)
   }  
   if(!(type %in% c("A","B","global"))) {
-    stop("type must be \"A\", \"B\", or \"global\"")
+    stop("Restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
   }
   if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix.weights"))) {
-    stop("ERROR: boot method unknown.")
+    stop("Restriktor ERROR: boot method unknown.")
   }
   if (boot == "residual") {
     boot <- "model.based"
@@ -58,13 +58,21 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   
   # check for equalities only
   if (meq == nrow(Amat)) {
-    stop("test not applicable for object with equality restriktions only.")
+    stop("Restriktor ERROR: test not applicable for object with equality restriktions only.")
   }
   
   if (is.null(control$tol)) {
     tol <- sqrt(.Machine$double.eps)
   } else {
     tol <- control$tol
+  }
+  
+  rAmat <- GaussianElimination(t(Amat))
+  if (type == "global" && (rAmat$rank < nrow(Amat))) {
+    warning(paste("Restriktor ERROR: global test could not be computed. 
+                    The constraint matrix must have full row-rank ( choose e.g. rows", 
+                  paste(rAmat$pivot, collapse = " "), ")"))
+    return(NULL)
   }
   
   # check for intercept
@@ -165,7 +173,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                        scale     = scale, 
                        cc        = ifelse(is.null(cc), 4.685061, cc))
       } else {
-        stop("neq.alt must not be larger than neq.")
+        stop("Restriktor ERROR: neq.alt must not be larger than neq.")
       }
     }
   } 
@@ -256,16 +264,16 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   
   # checks
   if (!("conRLM" %in% class(object))) {
-    stop("object must be of class conRLM.")
+    stop("Restriktor ERROR: object must be of class conRLM.")
   }
   if (type != "global") {
     type <- toupper(type)
   } 
   if(!(type %in% c("A","B","global"))) {
-    stop("type must be \"A\", \"B\", or \"global\"")
+    stop("Restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
   }
   if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix.weights"))) {
-    stop("ERROR: boot method unknown.")
+    stop("Restriktor ERROR: boot method unknown.")
   }
   if (boot == "residual") {
     boot <- "model.based"
@@ -308,13 +316,21 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   
   # check for equalities only
   if (meq == nrow(Amat)) {
-    stop("test not applicable for object with equality restriktions only.")
+    stop("Restriktor ERROR: test not applicable for object with equality restriktions only.")
   }
   
   if (is.null(control$tol)) {
     tol <- sqrt(.Machine$double.eps)
   } else {
     tol <- control$tol
+  }
+  
+  rAmat <- GaussianElimination(t(Amat))
+  if (type == "global" && (rAmat$rank < nrow(Amat))) {
+    warning(paste("Restriktor ERROR: global test could not be computed. 
+                    The constraint matrix must have full row-rank ( choose e.g. rows", 
+                  paste(rAmat$pivot, collapse = " "), ")"))
+    return(NULL)
   }
   
   # check for intercept
@@ -429,7 +445,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
         Ts <- out3$Ts
         Sigma <- out3$V
       } else {
-        stop("neq.alt must not be larger than neq.")
+        stop("Restriktor ERROR: neq.alt must not be larger than neq.")
       }
     }
   } 
@@ -545,16 +561,16 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   
   # checks
   if (!("conRLM" %in% class(object))) {
-    stop("object must be of class conRLM.")
+    stop("Restriktor ERROR: object must be of class conRLM.")
   }
   if (type != "global") {
     type <- toupper(type)
   }  
   if(!(type %in% c("A","B","global"))) {
-    stop("type must be \"A\", \"B\", or \"global\"")
+    stop("Restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
   }
   if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix.weights"))) {
-    stop("ERROR: boot method unknown.")
+    stop("Restriktor ERROR: boot method unknown.")
   }
   if (boot == "residual") {
     boot <- "model.based"
@@ -596,13 +612,21 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   
   # check for equalities only
   if (meq == nrow(Amat)) {
-    stop("test not applicable for object with equality restriktions only.")
+    stop("Restriktor ERROR: test not applicable for object with equality restriktions only.")
   }
   
   if (is.null(control$tol)) {
     tol <- sqrt(.Machine$double.eps)
   } else {
     tol <- control$tol
+  }
+  
+  rAmat <- GaussianElimination(t(Amat))
+  if (type == "global" && (rAmat$rank < nrow(Amat))) {
+    warning(paste("Restriktor ERROR: global test could not be computed. 
+                    The constraint matrix must have full row-rank ( choose e.g. rows", 
+                  paste(rAmat$pivot, collapse = " "), ")"))
+    return(NULL)
   }
   
   # check for intercept
@@ -695,7 +719,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                            b.unrestr = b.restr.alt, 
                            tau       = tau)
       } else {
-        stop("neq.alt must not be larger than neq.")
+        stop("Restriktor ERROR: neq.alt must not be larger than neq.")
       }
     }
   } 
@@ -786,16 +810,16 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   
   # checks
   if (!("conRLM" %in% class(object))) {
-    stop("object must be of class conRLM.")
+    stop("Restriktor ERROR: object must be of class conRLM.")
   }
   if (type != "global") {
     type <- toupper(type)
   }  
   if(!(type %in% c("A","B","global"))) {
-    stop("type must be \"A\", \"B\", or \"global\"")
+    stop("Restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
   }  
   if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix.weights"))) {
-    stop("ERROR: boot method unknown.")
+    stop("Restriktor ERROR: boot method unknown.")
   }  
   if (boot == "residual") {
     boot <- "model.based"
@@ -837,13 +861,21 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   
   # check for equalities only
   if (meq == nrow(Amat)) {
-    stop("test not applicable for object with equality restriktions only.")
+    stop("Restriktor ERROR: test not applicable for object with equality restriktions only.")
   }
   
   if (is.null(control$tol)) {
     tol <- sqrt(.Machine$double.eps)
   } else {
     tol <- control$tol
+  }
+  
+  rAmat <- GaussianElimination(t(Amat))
+  if (type == "global" && (rAmat$rank < nrow(Amat))) {
+    warning(paste("Restriktor ERROR: global test could not be computed. 
+                    The constraint matrix must have full row-rank ( choose e.g. rows", 
+                  paste(rAmat$pivot, collapse = " "), ")"))
+    return(NULL)
   }
   
   # check for intercept
@@ -957,7 +989,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
         Ts <- out3$Ts
         Sigma <- out3$V
       } else {
-        stop("neq.alt must not be larger than neq.")
+        stop("Restriktor ERROR: neq.alt must not be larger than neq.")
       }
     }
   } 

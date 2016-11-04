@@ -28,10 +28,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   if (boot == "residual") {
     boot <- "model.based"
   }
-  if (is.null(object$wt)) {
-    stop("restriktor ERROR: no chi-square-bar weights computed. Set Wt = TRUE in the restriktor() function.")
-  }
-  
+
   # original model
   model.org <- object$model.org
   # model matrix
@@ -73,13 +70,6 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
     tol <- control$tol
   }
   
-  rAmat <- GaussianElimination(t(Amat))
-  if (type == "global" && (rAmat$rank < nrow(Amat))) {
-    warning(paste("Restriktor ERROR: global test could not be computed. 
-                    The constraint matrix must have full row-rank ( choose e.g. rows", 
-                  paste(rAmat$pivot, collapse = " "), ")"))
-    return(NULL)
-  }
   # check for intercept
   intercept <- any(attr(terms(model.org), "intercept"))
   if (type == "global") {
@@ -92,8 +82,8 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
         }
       AmatG <- AmatG[-1,]
     }
-    AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*% 
-                          solve(Amat %*% t(Amat), Amat))
+    AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*%            
+                          MASS::ginv(Amat %*% t(Amat)) %*% Amat)
     bvecG <- rep(0L, nrow(AmatG))
     
     if (all(abs(AmatX) < tol)) { 
@@ -168,7 +158,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
         # be preserved in the alternative hypothesis.
         Ts <- as.vector(t(b.restr - b.restr.alt) %*% solve(Sigma, b.restr - b.restr.alt))
       } else {
-        stop("neq.alt must not be larger than neq.")
+        stop("Restriktor ERROR: neq.alt must not be larger than neq.")
       }
     }
   } 
@@ -180,54 +170,58 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   # the parametric bootstrap or model based bootstrap, without fist computing 
   # the mixing weights.
   
-  wt <- object$wt
-  # is this fool proof? 
-  # The number of bootstrap samples must be large enough to avoid spurious results.
-  wt <- rev(wt)
-  if (attr(object$wt, "bootWt")) {
-    if (attr(object$wt, "bootWt.R") < 999) {
-      stop("Restriktor ERROR: increase the number of bootstrap draws. Preferably to a large number e.g., bootWt.R = 99999")
+  if (!is.null(object$wt) && boot == "no") {
+    wt <- object$wt
+    # is this fool proof? 
+    # The number of bootstrap samples must be large enough to avoid spurious results.
+    wt <- rev(wt)
+    if (attr(object$wt, "bootWt")) {
+      if (attr(object$wt, "bootWt.R") < 999) {
+        stop("Restriktor ERROR: increase the number of bootstrap draws. Preferably to a large number e.g., bootWt.R = 99999")
+      }
+      wt.idx <- which(wt == 0)
+      wt <- wt[-wt.idx]
     }
-    wt.idx <- which(wt == 0)
-    wt <- wt[-wt.idx]
-  }
-  
-  if (boot == "no") {
-    pvalue <- con_pvalue_Fbar(wt          = wt, 
-                              Ts.org      = Ts, 
-                              df.residual = df.residual, 
-                              type        = type,
-                              Amat        = Amat, 
-                              bvec        = bvec, 
-                              meq         = meq, 
-                              meq.alt     = meq.alt)
+    
+    #if (boot == "no") {                                            # FIXME: if conTest(boot = "parametric")  boot is set to "no", see con_pvalue.R
+      pvalue <- con_pvalue_Fbar(wt          = wt, 
+                                Ts.org      = Ts, 
+                                df.residual = df.residual, 
+                                type        = type,
+                                Amat        = Amat, 
+                                bvec        = bvec, 
+                                meq         = meq, 
+                                meq.alt     = meq.alt)
+    #}
    } else if (boot == "parametric") {
-    pvalue <- con_pvalue_boot_parametric(object, 
-                                         Ts.org   = Ts, 
-                                         type     = type, 
-                                         test     = "F", 
-                                         meq.alt  = meq.alt, 
-                                         R        = R, 
-                                         p.distr  = p.distr,
-                                         df       = df, 
-                                         parallel = parallel,
-                                         ncpus    = ncpus, 
-                                         cl       = cl,
-                                         seed     = seed, 
-                                         verbose  = verbose)
-  } else if (boot == "model.based") {
-    pvalue <- con_pvalue_boot_model_based(object, 
+     pvalue <- con_pvalue_boot_parametric(object, 
                                           Ts.org   = Ts, 
                                           type     = type, 
                                           test     = "F", 
-                                          meq.alt  = meq.alt,
-                                          R        = R,
-                                          parallel = parallel, 
-                                          ncpus    = ncpus,
-                                          cl       = cl, 
+                                          meq.alt  = meq.alt, 
+                                          R        = R, 
+                                          p.distr  = p.distr,
+                                          df       = df, 
+                                          parallel = parallel,
+                                          ncpus    = ncpus, 
+                                          cl       = cl,
                                           seed     = seed, 
                                           verbose  = verbose)
-  } 
+   } else if (boot == "model.based") {
+     pvalue <- con_pvalue_boot_model_based(object, 
+                                           Ts.org   = Ts, 
+                                           type     = type, 
+                                           test     = "F", 
+                                           meq.alt  = meq.alt,
+                                           R        = R,
+                                           parallel = parallel, 
+                                           ncpus    = ncpus,
+                                           cl       = cl, 
+                                           seed     = seed, 
+                                           verbose  = verbose)
+   } else {
+     pvalue <- as.numeric(NA)
+   } 
   
   OUT <- list(CON         = object$CON,
               type        = type,
@@ -267,16 +261,16 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
   
   # checks
   if (!("conLM" %in% class(object))) {
-    stop("object must be of class conLM.")
+    stop("Restriktor ERROR: object must be of class conLM.")
   }
   if (type != "global") {
     type <- toupper(type)
   }  
   if(!(type %in% c("A","B","global"))) {
-    stop("type must be \"A\", \"B\", or \"global\"")
+    stop("Restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
   }
   if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix.weights"))) {
-    stop("ERROR: boot method unknown.")
+    stop("Restriktor ERROR: boot method unknown.")
   }
   if (boot == "residual") {
     boot <- "model.based"
@@ -315,7 +309,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
   
   # check for equalities only
   if (meq == nrow(Amat)) {
-    stop("test not applicable for object with equality restriktions only.")
+    stop("Restriktor ERROR: test not applicable for object with equality restriktions only.")
   }
   
   if (is.null(control$tol)) {
@@ -336,8 +330,8 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
       }
       AmatG <- AmatG[-1,]
     }
-    AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*% 
-                          solve(Amat %*% t(Amat), Amat))
+    AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*%            
+                          MASS::ginv(Amat %*% t(Amat)) %*% Amat)
     
     bvecG <- rep(0L, nrow(AmatG))
     
@@ -434,24 +428,24 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
         Ts <- -2*(ll0 - ll1)
       }
       else {
-        stop("neq.alt must not be larger than neq.")
+        stop("Restriktor ERROR: neq.alt must not be larger than neq.")
       }
     }
   } 
   
-  wt <- object$wt
-  # is this fool proof? 
-  # The number of bootstrap samples must be large enough to avoid spurious results.
-  wt <- rev(wt)
-  if (attr(object$wt, "bootWt")) {
-    if (attr(object$wt, "bootWt.R") < 999) {
-      stop("Restriktor ERROR: increase the number of bootstrap draws. Preferably to a large number e.g., bootWt.R = 99999")
+  if (!is.null(object$wt) && boot == "no") {
+    wt <- object$wt
+    # is this fool proof? 
+    # The number of bootstrap samples must be large enough to avoid spurious results.
+    wt <- rev(wt)
+    if (attr(object$wt, "bootWt")) {
+      if (attr(object$wt, "bootWt.R") < 999) {
+        stop("Restriktor ERROR: increase the number of bootstrap draws. Preferably to a large number e.g., bootWt.R = 99999")
+      }
+      wt.idx <- which(wt == 0)
+      wt <- wt[-wt.idx]
     }
-    wt.idx <- which(wt == 0)
-    wt <- wt[-wt.idx]
-  }
   
-  if (boot == "no") {
     pvalue <- con_pvalue_Fbar(wt          = wt, 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
@@ -486,7 +480,9 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
                                           cl       = cl,
                                           seed     = seed, 
                                           verbose  = verbose)
-  } 
+  } else {
+    pvalue <- as.numeric(NA)
+  }  
   
   OUT <- list(CON         = object$CON,
               type        = type,
@@ -525,16 +521,16 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   
   # checks
   if (!("conLM" %in% class(object))) {
-    stop("object must be of class conLM.")
+    stop("Restriktor ERROR: object must be of class conLM.")
   }
   if (type != "global") {
     type <- toupper(type)
   }  
   if(!(type %in% c("A","B","global"))) {
-    stop("type must be \"A\", \"B\", or \"global\"")
+    stop("Restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
   }
   if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix.weights"))) {
-    stop("ERROR: boot method unknown.")
+    stop("Restriktor ERROR: boot method unknown.")
   }
   if (boot == "residual") {
     boot <- "model.based"
@@ -581,7 +577,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   
   # check for equalities only
   if (meq == nrow(Amat)) {
-    stop("test not applicable for object with equality restriktions only.")
+    stop("Restriktor ERROR: test not applicable for object with equality restriktions only.")
   }
   
   if (is.null(control$tol)) {
@@ -602,8 +598,8 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
       }
       AmatG <- AmatG[-1,]
     }
-    AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*% 
-                          solve(Amat %*% t(Amat), Amat))
+    AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*%            
+                          MASS::ginv(Amat %*% t(Amat)) %*% Amat)
     
     bvecG <- rep(0L, nrow(AmatG))
     
@@ -758,24 +754,24 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
         ###############################################
       }
       else {
-      stop("neq.alt must not be larger than neq.")
+      stop("Restriktor ERROR: neq.alt must not be larger than neq.")
       }
     }
   } 
   
-  wt <- object$wt
-  wt <- rev(wt)
-  # is this fool proof? 
-  # The number of bootstrap samples must be large enough to avoid spurious results.
-  if (attr(object$wt, "bootWt")) {
-    if (attr(object$wt, "bootWt.R") < 999) {
-      stop("Restriktor ERROR: increase the number of bootstrap draws. Preferably to a large number e.g., bootWt.R = 99999")
+  if (!is.null(object$wt) && boot == "no") {
+    wt <- object$wt
+    wt <- rev(wt)
+    # is this fool proof? 
+    # The number of bootstrap samples must be large enough to avoid spurious results.
+    if (attr(object$wt, "bootWt")) {
+      if (attr(object$wt, "bootWt.R") < 999) {
+        stop("Restriktor ERROR: increase the number of bootstrap draws. Preferably to a large number e.g., bootWt.R = 99999")
+      }
+      wt.idx <- which(wt == 0)
+      wt <- wt[-wt.idx]
     }
-    wt.idx <- which(wt == 0)
-    wt <- wt[-wt.idx]
-  }
   
-  if (boot == "no") {
     pvalue <- con_pvalue_Fbar(wt          = wt, 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
@@ -810,7 +806,9 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                           cl       = cl,
                                           seed     = seed, 
                                           verbose  = verbose)
-  } 
+  } else {
+    pvalue <- as.numeric(NA)
+  }  
   
   OUT <- list(CON         = object$CON,
               type        = type,
@@ -845,7 +843,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
 conTestC.conLM <- function(object, type = "C", ...) {
   
   if (!("conLM" %in% class(object))) {
-    stop("object must be of class conLM.")
+    stop("Restriktor ERROR: object must be of class conLM.")
   }
   
   Amat <- object$constraints
@@ -861,7 +859,7 @@ conTestC.conLM <- function(object, type = "C", ...) {
                           sqrt(diag(Amat %*% Sigma %*% t(Amat)))))
     pvalue <- 1 - pt(Ts, df.residual)
   } else {
-    stop("test not applicable with equality restriktions.")
+    stop("Restriktor ERROR: test not applicable with equality restriktions.")
   }
   
   OUT <- list(type = "C",

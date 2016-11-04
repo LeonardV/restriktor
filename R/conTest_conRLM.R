@@ -22,9 +22,6 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   if (boot == "residual") {
     boot <- "model.based"
   }
-  if (is.null(object$wt)) {
-    stop("restriktor ERROR: no chi-square-bar weights computed. Set Wt = TRUE in the restriktor() function.")
-  }
   
   # original model
   model.org <- object$model.org
@@ -67,14 +64,6 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     tol <- control$tol
   }
   
-  rAmat <- GaussianElimination(t(Amat))
-  if (type == "global" && (rAmat$rank < nrow(Amat))) {
-    warning(paste("Restriktor ERROR: global test could not be computed. 
-                    The constraint matrix must have full row-rank ( choose e.g. rows", 
-                  paste(rAmat$pivot, collapse = " "), ")"))
-    return(NULL)
-  }
-  
   # check for intercept
   intercept <- any(attr(terms(model.org), "intercept"))
   if (type == "global") {
@@ -87,8 +76,8 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
       }
       AmatG <- AmatG[-1,]
     }
-    AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*% 
-                          solve(Amat %*% t(Amat), Amat))
+    AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*%            
+                          MASS::ginv(Amat %*% t(Amat)) %*% Amat)
     
     bvecG <- rep(0L, nrow(AmatG))
     
@@ -178,19 +167,19 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     }
   } 
   
-  wt <- object$wt
-  # is this fool proof? 
-  # The number of bootstrap samples must be large enough to avoid spurious results.
-  wt <- rev(wt)
-  if (attr(object$wt, "bootWt")) {
-    if (attr(object$wt, "bootWt.R") < 999) {
-      stop("Restriktor ERROR: increase the number of bootstrap draws. Preferably to a large number e.g., bootWt.R = 99999")
+  if (!is.null(object$wt) && boot == "no") {
+    wt <- object$wt
+    # is this fool proof? 
+    # The number of bootstrap samples must be large enough to avoid spurious results.
+    wt <- rev(wt)
+    if (attr(object$wt, "bootWt")) {
+      if (attr(object$wt, "bootWt.R") < 999) {
+        stop("Restriktor ERROR: increase the number of bootstrap draws. Preferably to a large number e.g., bootWt.R = 99999")
+      }
+      wt.idx <- which(wt == 0)
+      wt <- wt[-wt.idx]
     }
-    wt.idx <- which(wt == 0)
-    wt <- wt[-wt.idx]
-  }
-  
-  if (boot == "no") {
+    
     pvalue <- con_pvalue_Fbar(wt          = wt, 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
@@ -225,7 +214,9 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                                           cl       = cl,
                                           seed     = seed, 
                                           verbose  = verbose)
-  } 
+  } else {
+    pvalue <- as.numeric(NA)
+  }  
   
   OUT <- list(CON         = object$CON,
               type        = type,
@@ -278,9 +269,6 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   if (boot == "residual") {
     boot <- "model.based"
   }  
-  if (is.null(object$wt)) {
-    stop("restriktor ERROR: no chi-square-bar weights computed. Set Wt = TRUE in the restriktor() function.")
-  }
   
   # original model
   model.org <- object$model.org
@@ -325,14 +313,6 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     tol <- control$tol
   }
   
-  rAmat <- GaussianElimination(t(Amat))
-  if (type == "global" && (rAmat$rank < nrow(Amat))) {
-    warning(paste("Restriktor ERROR: global test could not be computed. 
-                    The constraint matrix must have full row-rank ( choose e.g. rows", 
-                  paste(rAmat$pivot, collapse = " "), ")"))
-    return(NULL)
-  }
-  
   # check for intercept
   intercept <- any(attr(terms(model.org), "intercept"))
   if (type == "global") {
@@ -345,8 +325,8 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
       }
       AmatG <- AmatG[-1,]
     }
-    AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*% 
-                          solve(Amat %*% t(Amat), Amat))
+    AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*%            
+                          MASS::ginv(Amat %*% t(Amat)) %*% Amat)
     
     bvecG <- rep(0L, nrow(AmatG))
     
@@ -453,39 +433,42 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   # We need to recalculate the weights based on V_hat = Sigma instead on solve(t(X)%*%X)
   # Do we have to? The differences look very small.
   ## compute mixing weights
-  if (all(c(Amat) == 0)) { # unrestrikted case
-    wt <- c(rep(0L, p), 1)
-  } else if (attr(object$wt, "bootWt")) { # compute mixing weights based on simulation
-    wt <- con_weightsBoot(VCOV     = Sigma,
-                          Amat     = Amat,
-                          meq      = meq,
-                          R        = attr(object$wt, "bootWt.R"),
-                          parallel = parallel,
-                          ncpus    = ncpus,
-                          cl       = cl,
-                          seed     = seed,
-                          verbose  = verbose)
-  } else if (!attr(object$wt, "bootWt") & (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
-    wt <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
-  } else if (!attr(object$wt, "bootWt") & (meq == nrow(Amat))) { # only equality constraints
-    wt <- rep(0L, ncol(Sigma) + 1)
-    wt.idx <- ncol(Sigma) - meq + 1
-    wt[wt.idx] <- 1
+  if (!is.null(object$wt)) {
+    if (all(c(Amat) == 0)) { # unrestrikted case
+      wt <- c(rep(0L, p), 1)
+    } else if (attr(object$wt, "bootWt")) { # compute mixing weights based on simulation
+      wt <- con_weightsBoot(VCOV     = Sigma,
+                            Amat     = Amat,
+                            meq      = meq,
+                            R        = attr(object$wt, "bootWt.R"),
+                            parallel = parallel,
+                            ncpus    = ncpus,
+                            cl       = cl,
+                            seed     = seed,
+                            verbose  = verbose)
+    } else if (!attr(object$wt, "bootWt") && (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
+      wt <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
+    } else if (!attr(object$wt, "bootWt") && (meq == nrow(Amat))) { # only equality constraints
+      wt <- rep(0L, ncol(Sigma) + 1)
+      wt.idx <- ncol(Sigma) - meq + 1
+      wt[wt.idx] <- 1
+    }
   }
+  
   
   #wt <- object$wt
   # is this fool proof? 
   # The number of bootstrap samples must be large enough to avoid spurious results.
-  wt <- rev(wt)
-  if (attr(object$wt, "bootWt")) {
-    if (attr(object$wt, "bootWt.R") < 999) {
-      stop("Restriktor ERROR: increase the number of bootstrap draws. Preferably to a large number e.g., bootWt.R = 99999")
+  if (!is.null(object$wt) && boot == "no") {
+    wt <- rev(wt)
+    if (attr(object$wt, "bootWt")) {
+      if (attr(object$wt, "bootWt.R") < 999) {
+        stop("Restriktor ERROR: increase the number of bootstrap draws. Preferably to a large number e.g., bootWt.R = 99999")
+      }
+      wt.idx <- which(wt == 0)
+      wt <- wt[-wt.idx]
     }
-    wt.idx <- which(wt == 0)
-    wt <- wt[-wt.idx]
-  }
   
-  if (boot == "no") {
     # compute pvalue based on F-distribution
     pvalue <- con_pvalue_Fbar(wt          = wt, 
                               Ts.org      = Ts, 
@@ -521,7 +504,9 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                           cl       = cl,
                                           seed     = seed, 
                                           verbose  = verbose)
-  } 
+  } else {
+    pvalue <- as.numeric(NA)
+  }  
   
   OUT <- list(CON         = object$CON,
               type        = type,
@@ -575,9 +560,6 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   if (boot == "residual") {
     boot <- "model.based"
   }
-  if (is.null(object$wt)) {
-    stop("restriktor ERROR: no chi-square-bar weights computed. Set Wt = TRUE in the restriktor() function.")
-  }
   
   # original model
   model.org <- object$model.org
@@ -621,14 +603,6 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     tol <- control$tol
   }
   
-  rAmat <- GaussianElimination(t(Amat))
-  if (type == "global" && (rAmat$rank < nrow(Amat))) {
-    warning(paste("Restriktor ERROR: global test could not be computed. 
-                    The constraint matrix must have full row-rank ( choose e.g. rows", 
-                  paste(rAmat$pivot, collapse = " "), ")"))
-    return(NULL)
-  }
-  
   # check for intercept
   intercept <- any(attr(terms(model.org), "intercept"))
   if (type == "global") {
@@ -641,8 +615,8 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
       }
       AmatG <- AmatG[-1,]
     }
-    AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*% 
-                          solve(Amat %*% t(Amat), Amat))
+    AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*%            
+                          MASS::ginv(Amat %*% t(Amat)) %*% Amat)
     
     bvecG <- rep(0L, nrow(AmatG))
     
@@ -724,19 +698,19 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     }
   } 
   
-  wt <- object$wt
-  # is this fool proof? 
-  # The number of bootstrap samples must be large enough to avoid spurious results.
-  wt <- rev(wt)
-  if (attr(object$wt, "bootWt")) {
-    if (attr(object$wt, "bootWt.R") < 999) {
-      stop("Restriktor ERROR: increase the number of bootstrap draws. Preferably to a large number e.g., bootWt.R = 99999")
+  if (!is.null(object$wt) && boot == "no") {
+    wt <- object$wt
+    # is this fool proof? 
+    # The number of bootstrap samples must be large enough to avoid spurious results.
+    wt <- rev(wt)
+    if (attr(object$wt, "bootWt")) {
+      if (attr(object$wt, "bootWt.R") < 999) {
+        stop("Restriktor ERROR: increase the number of bootstrap draws. Preferably to a large number e.g., bootWt.R = 99999")
+      }
+      wt.idx <- which(wt == 0)
+      wt <- wt[-wt.idx]
     }
-    wt.idx <- which(wt == 0)
-    wt <- wt[-wt.idx]
-  }
-  
-  if (boot == "no") {
+    
     pvalue <- con_pvalue_Fbar(wt          = wt, 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
@@ -771,6 +745,8 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                                           cl       = cl,
                                           seed     = seed, 
                                           verbose  = verbose)
+  } else {
+    pvalue <- as.numeric(NA)
   } 
   
   OUT <- list(CON         = object$CON,
@@ -824,9 +800,6 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   if (boot == "residual") {
     boot <- "model.based"
   }
-  if (is.null(object$wt)) {
-    stop("restriktor ERROR: no chi-square-bar weights computed. Set Wt = TRUE in the restriktor() function.")
-  }
   
   # original model
   model.org <- object$model.org
@@ -870,14 +843,6 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     tol <- control$tol
   }
   
-  rAmat <- GaussianElimination(t(Amat))
-  if (type == "global" && (rAmat$rank < nrow(Amat))) {
-    warning(paste("Restriktor ERROR: global test could not be computed. 
-                    The constraint matrix must have full row-rank ( choose e.g. rows", 
-                  paste(rAmat$pivot, collapse = " "), ")"))
-    return(NULL)
-  }
-  
   # check for intercept
   intercept <- any(attr(terms(model.org), "intercept"))
   if (type == "global") {
@@ -890,8 +855,8 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
       }
       AmatG <- AmatG[-1,]
     }
-    AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*% 
-                          solve(Amat %*% t(Amat), Amat))
+    AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*%            
+                          MASS::ginv(Amat %*% t(Amat)) %*% Amat)
     
     bvecG <- rep(0L, nrow(AmatG))
     
@@ -1020,16 +985,16 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   #wt <- object$wt
   # is this fool proof? 
   # The number of bootstrap samples must be large enough to avoid spurious results.
-  wt <- rev(wt)
-  if (attr(object$wt, "bootWt")) {
-    if (attr(object$wt, "bootWt.R") < 999) {
-      stop("Restriktor ERROR: increase the number of bootstrap draws. Preferably to a large number e.g., bootWt.R = 99999")
+  if (!is.null(object$wt) && boot == "no") {
+    wt <- rev(wt)
+    if (attr(object$wt, "bootWt")) {
+      if (attr(object$wt, "bootWt.R") < 999) {
+        stop("Restriktor ERROR: increase the number of bootstrap draws. Preferably to a large number e.g., bootWt.R = 99999")
+      }
+      wt.idx <- which(wt == 0)
+      wt <- wt[-wt.idx]
     }
-    wt.idx <- which(wt == 0)
-    wt <- wt[-wt.idx]
-  }
-  
-  if (boot == "no") {
+    
     # compute pvalue based on F-distribution
     pvalue <- con_pvalue_Fbar(wt          = wt, 
                               Ts.org      = Ts, 
@@ -1065,7 +1030,9 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                                           cl       = cl,
                                           seed     = seed, 
                                           verbose  = verbose)
-  } 
+  } else {
+    pvalue <- as.numeric(NA)
+  }  
   
   OUT <- list(CON         = object$CON,
               type        = type,

@@ -35,9 +35,13 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
   out.rest <- as.data.frame(out.rest)
   names(out.rest)[1] <- ""
 
-  out.test <- c(sprintf("%.4f", x$Ts), 
-                                   if (x$pvalue < 1e-04) { "<0.0001" } 
-                                   else { sprintf("%.4f", x$pvalue) })
+  if (!is.na(x$pvalue)) {
+    out.test <- c(sprintf("%.4f", x$Ts), 
+                  if (x$pvalue < 1e-04) { "<0.0001" } 
+                  else { sprintf("%.4f", x$pvalue) })  
+  } else {
+    out.test <- c(sprintf("%.4f", x$Ts), as.numeric(NA)) 
+  }
   names(out.test) <- c(" Test statistic", "p-value")
   
   if (nrow(x$Amat) > x$meq) {

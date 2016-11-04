@@ -35,13 +35,10 @@ summary.conTest.conLM <- function(object, test = "F", ...) {
   rAmat <- GaussianElimination(t(Amat))
   if ( (rAmat$rank < nrow(Amat)) && (is.null(ldots$boot) || boot == "no") ) {
     stop(paste("Restriktor ERROR: The constraint matrix must have full row-rank ( choose e.g. rows", 
-                  paste(rAmat$pivot, collapse = " "), "). Try boot = \"parametric\" or \"model.based\"."))
-  } else if (rAmat$rank < nrow(Amat)) {
-    warning(paste("Restriktor ERROR: global test could not be computed. 
-                    The constraint matrix must have full row-rank ( choose e.g. rows", 
-                  paste(rAmat$pivot, collapse = " "), ")"))
-  }
-    
+                  paste(rAmat$pivot, collapse = " "), "). 
+                    Try boot = \"parametric\" or \"model.based\"."))
+  } 
+  
   # fit hypothesis tests
   CALL$type <- "global"
   out0 <- do.call("conTest", CALL)
@@ -66,12 +63,14 @@ summary.conTest.conLM <- function(object, test = "F", ...) {
     cat("\nGlobal test: H0: all parameters are restrikted to be equal", "\n", 
         "        vs. HA: at least one restriktion strictly true", "\n")
     cat("       Test statistic: ", out0$Ts, ",   p-value: ", 
-        if (out0$pvalue < 1e-04) {
-          "<0.0001"
-        } else {
-          format(out0$pvalue, digits = 4)
-        }, "\n\n", sep = "")
-    
+    if (!is.na(out0$pvalue) && out0$pvalue < 1e-04) { 
+      "<0.0001"
+    } else if (!is.na(out0$pvalue)) { 
+      format(out0$pvalue, digits = 4)
+    } else {
+      as.numeric(NA)
+    }, "\n\n", sep = "")
+
     OUT$Global$Ts <- out0$Ts 
     OUT$Global$pvalue <- out0$pvalue[1]
   } else {
@@ -79,47 +78,61 @@ summary.conTest.conLM <- function(object, test = "F", ...) {
   }
   
   ###
-  cat("Type A test: H0: all restriktions active (=)", "\n", 
-      "        vs. HA: at least one inequality restriktion strictly true", "\n")
-  cat("       Test statistic: ", out1$Ts, ",   p-value: ", 
-      if (out1$pvalue < 1e-04) {
-        "<0.0001"
-      } else {
-        format(out1$pvalue, digits = 4)
-      }, "\n\n", sep = "")
-  
-  OUT$TPA$Ts <- out1$Ts 
-  OUT$TPA$pvalue <- out1$pvalue[1]
+  if (!is.null(out1)) {
+    cat("Type A test: H0: all restriktions active (=)", "\n", 
+        "        vs. HA: at least one inequality restriktion strictly true", "\n")
+    cat("       Test statistic: ", out1$Ts, ",   p-value: ", 
+    if (!is.na(out1$pvalue) && out1$pvalue < 1e-04) { 
+      "<0.0001"
+    } else if (!is.na(out1$pvalue)) { 
+      format(out1$pvalue, digits = 4)
+    } else {
+      as.numeric(NA)
+    }, "\n\n", sep = "")
+    
+    OUT$TPA$Ts <- out1$Ts 
+    OUT$TPA$pvalue <- out1$pvalue[1]
+  } else {
+    cat("\n")
+  }
   ###
-  cat("Type B test: H0: all restriktions true", "\n", 
-      "        vs. HA: at least one restriktion violated ", "\n")
-  cat("       Test statistic: ", out2$Ts, ",   p-value: ", 
-      if (out2$pvalue < 1e-04) {
-        "<0.0001"
-      } else {
-        format(out2$pvalue, digits = 4)
-      }, "\n\n", sep = "")
-  
-  OUT$TPB$Ts <- out2$Ts 
-  OUT$TPB$pvalue <- out2$pvalue[1]
+  if (!is.null(out2)) {
+    cat("Type B test: H0: all restriktions true", "\n", 
+        "        vs. HA: at least one restriktion violated ", "\n")
+    cat("       Test statistic: ", out2$Ts, ",   p-value: ", 
+    if (!is.na(out2$pvalue) && out2$pvalue < 1e-04) { 
+      "<0.0001"
+    } else if (!is.na(out2$pvalue)) { 
+      format(out2$pvalue, digits = 4)
+    } else {
+      as.numeric(NA)
+    }, "\n\n", sep = "")
+    
+    OUT$TPB$Ts <- out2$Ts 
+    OUT$TPB$pvalue <- out2$pvalue[1]
+  } else {
+    cat("\n")
+  }
   
   ###
   if (x$neq == 0) {
-    CALL$type <- "C"
-    out3 <- do.call("conTest", CALL)
-    cat("Type C test: H0: at least one restriktion false or active (=)", 
-        "\n", "        vs. HA: all restriktions strictly true (>)", "\n")
-    cat("       Test statistic: ", out3$Ts, ",   p-value: ", 
-        if (out3$pvalue < 1e-04) {
-          "<0.0001"
-        } else {
-          format(out3$pvalue, digits = 4)
-        }, "\n\n", sep = "")
-    cat("Note: Type C test is based on a t-distribution (one-sided),", 
-        "\n      all other tests are based on mixture of F-distributions.\n\n")
-  
-    OUT$TPC$Ts <- out3$Ts 
-    OUT$TPC$pvalue <- out3$pvalue[1]
+      CALL$type <- "C"
+      out3 <- do.call("conTest", CALL)
+      cat("Type C test: H0: at least one restriktion false or active (=)", 
+          "\n", "        vs. HA: all restriktions strictly true (>)", "\n")
+      cat("       Test statistic: ", out3$Ts, ",   p-value: ", 
+      if (!is.na(out3$pvalue) && out3$pvalue < 1e-04) { 
+        "<0.0001"
+      } else if (!is.na(out3$pvalue)) { 
+        format(out3$pvalue, digits = 4)
+      } else {
+        as.numeric(NA)
+      }, "\n\n", sep = "")
+      cat("Note: Type C test is based on a t-distribution (one-sided),", 
+          "\n      all other tests are based on mixture of F-distributions.\n\n")
+    
+      OUT$TPC$Ts <- out3$Ts 
+      OUT$TPC$pvalue <- out3$pvalue[1]
   }
   else {
     cat("Note: All tests are based on mixture of F-distributions", 

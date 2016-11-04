@@ -151,7 +151,7 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL,
     
     CALL <- list(object = boot_model, constraints = Amat, 
                  rhs = bvec, neq = meq, se = "none", 
-                 bootWt = bootWt, bootWt.R = bootWt.R, 
+                 Wt = FALSE, #bootWt = bootWt, bootWt.R = bootWt.R, 
                  control = control)
     boot_conLM <- do.call("restriktor", CALL)
     
@@ -273,15 +273,15 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
   # estimate null model under different hypothesis tests
   if (type == "A") {
     call.my <- list(constraints = Amat, rhs = bvec, neq = nrow(Amat), 
-                    control = control, se = "none",
-                    bootWt = bootWt, bootWt.R = bootWt.R)
+                    control = control, se = "none", Wt = FALSE)
+                    #bootWt = bootWt, bootWt.R = bootWt.R)
     call.lm <- list(object = model.org)
     CALL <- c(call.lm, call.my)
     fit <- do.call("restriktor", CALL)
   } else if (type == "B") {
       call.my <- list(constraints = Amat, rhs = bvec, neq = meq, 
-                      control = control, se = "none",
-                      bootWt = bootWt, bootWt.R = bootWt.R)
+                      control = control, se = "none", Wt = FALSE)
+                      #bootWt = bootWt, bootWt.R = bootWt.R)
       call.lm <- list(object = model.org)
       CALL <- c(call.lm, call.my)
       fit <- do.call("restriktor", CALL)
@@ -325,13 +325,13 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
       boot_model <- update(model.org, formula = form, data = DATA)
       CALL <- list(object = boot_model, constraints = Amat, rhs = bvec, 
                    neq = meq, control = control, se = "none",
-                   bootWt = bootWt, bootWt.R = bootWt.R)
+                   Wt = FALSE)#bootWt = bootWt, bootWt.R = bootWt.R)
       
       boot_conLM <- do.call("restriktor", CALL)  
       boot_conTest <- try(conTest(boot_conLM, 
                                   type    = type, 
                                   test    = test, 
-                                  boot    = "no",
+                                  boot    = "no",                # arbitrary, check is based on Wt
                                   neq.alt = meq.alt, 
                                   control = control))
       if (inherits(boot_conTest, "try-error")) {

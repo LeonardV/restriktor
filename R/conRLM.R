@@ -75,17 +75,20 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   
   # compute the reduced row-echelon form of the constraints matrix
   rAmat <- GaussianElimination(t(Amat))
-  if (!bootWt) {
-    if (rAmat$rank < nrow(Amat)) {
+  if (Wt && !bootWt) {
+    if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
       stop(paste("Restriktor ERROR: The constraint matrix must have full row-rank ( choose e.g. rows", 
                  paste(rAmat$pivot, collapse = " "), ", or try to set bootWt = TRUE)"))
     }
   } else {
-    if (rAmat$rank < nrow(Amat) && !(se %in% c("none", "boot.model.based", "boot.standard"))) {
+    if (rAmat$rank < nrow(Amat) && 
+        !(se %in% c("none", "boot.model.based", "boot.standard")) && 
+        rAmat$rank != 0L) {
       se <- "none"
       warning(paste("Restriktor Warning: No standard errors could be computed. 
                       The constraint matrix must have full row-rank ( choose e.g. rows", 
-                    paste(rAmat$pivot, collapse = " "), ")"))  
+                    paste(rAmat$pivot, collapse = " "), "). 
+                      Try to set se = \"boot.model.based\" or \"boot.standard\"."))  
     }
   }
   

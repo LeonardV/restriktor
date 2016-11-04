@@ -10,9 +10,6 @@ conTest <- function(object, type = "summary", test = "F", ...) {
   if ( !(type %in% c("A","B","C","global","summary")) ) {
     stop("restriktor ERROR: hypothesis type ", sQuote(type), " unknown. \nPlease, choose from \"A\", \"B\", \"C\", \"global\", or \"summary\".")
   }
-  if (is.null(object$wt)) {
-    stop("restriktor ERROR: no chi-square-bar weights computed. Set Wt = TRUE in the restriktor() function.")
-  } 
   
   l <- list(...)
   Amat <- object$constraints
@@ -35,6 +32,10 @@ conTest <- function(object, type = "summary", test = "F", ...) {
                      " elements cannot be created", sep = ""))
       }
     } 
+  
+  #  if (is.null(object$wt) && boot == "no") {
+  #    stop("restriktor ERROR: no chi-square-bar weights computed. Set Wt = TRUE in the restriktor() function.")
+  #  } 
     
     # check
     if (type %in% c("A","B","global")) {

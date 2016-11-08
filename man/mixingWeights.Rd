@@ -1,8 +1,8 @@
 \name{con_weightsBoot}
 \alias{con_weightsBoot}
 
-\title{function for computing the mixing weights based on Monte 
-Carlo simulation.}
+\title{function for computing the chi-bar-square weights based on 
+Monte Carlo simulation.}
 \description{The null-distribution of the test statistics under 
 inequality constraints takes the form of mixtures of chi-square 
 distributions. This function computes the mixing weights. It can

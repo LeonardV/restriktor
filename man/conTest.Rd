@@ -13,9 +13,8 @@
 \alias{conTestEq.conLM}
 \alias{conTestEq.conRLM}
 
-
-\title{Function for testing equality and/or inequality restrikted 
- hypotheses for (robust) linear models}
+\title{Function for testing (in)equality restrikted hypotheses 
+for linear models}
 \description{\code{conTest} tests linear equality and/or 
 inequality restrikted hypotheses for (robust) linear models by F-, 
 Wald-, likelihood ratio-, and score-tests.}

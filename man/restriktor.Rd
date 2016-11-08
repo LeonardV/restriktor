@@ -3,8 +3,7 @@
 \alias{conLM.lm}
 \alias{conRLM.rlm}
 
-\title{Estimating linear regression models with equality and/or 
-inequality restriktions}
+\title{Estimating linear regression models with (in)equality restriktions}
 \description{Function \code{restriktor} estimates the parameters of a linear model (\code{lm}) 
   or robust linear model (\code{rlm}) subject to linear equality and/or linear inequality 
   restriktions. The real work horses are the \code{conLM} and the \code{conRLM} 

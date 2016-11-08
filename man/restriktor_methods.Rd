@@ -1,4 +1,5 @@
 \name{restriktor-methods}
+\alias{restriktor-methods}
 \alias{print.conLM}
 \alias{summary.conLM}
 \alias{print.summary.conLM}
@@ -6,7 +7,7 @@
 \alias{model.matrix.conLM}
 
 \title{Methods for restriktor}
-\description{Restrikted estimation and confidence intervals for 
+\description{Restrikted estimation and confidence intervals for  
 (robust) linear (in)equality restrikted hypotheses.
 }
 \usage{

@@ -2,7 +2,7 @@
 \alias{ZelazoKolb1972}
 \docType{data}
 \title{
-Zelazo, Zelazo and Kolb Dataset - "Walking" in the newborn (4 treatment groups)
+"Walking" in the newborn (4 treatment groups)
 }
 \description{
 The Zelazo, Zelazo and Kolb (1972) dataset consists of ages (in months) at which 

@@ -26,14 +26,14 @@ conTest(object, type = "summary", test = "F", \dots)
 \method{summary}{conTest.conLM}(object, test = "F", \dots)
 
 \method{conTestF}{conLM}(object, type = "A", neq.alt = 0, 
-         boot = "no", R = 9999, p.distr = "N", df = 7, 
-         parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
-         verbose = FALSE, control = NULL, \dots)
+             boot = "no", R = 9999, p.distr = "N", df = 7, 
+             parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
+             verbose = FALSE, control = NULL, \dots)
 
-\method{conTestLRT}{conLM}(object, type = "A", neq.alt = 0, boot = "no", 
-           R = 9999, p.distr = "N", df = 7, parallel = "no", 
-           ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, 
-           control = NULL, \dots)
+\method{conTestLRT}{conLM}(object, type = "A", neq.alt = 0, 
+             boot = "no", R = 9999, p.distr = "N", df = 7, 
+             parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
+             verbose = FALSE, control = NULL, \dots)
 
 \method{conTestScore}{conLM}(object, type = "A", neq.alt = 0, 
              boot = "no", R = 9999, p.distr = "N", df = 7, 

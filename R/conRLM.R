@@ -33,7 +33,8 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   b.unrestr <- coef(object)
   # vcov
   Sigma <- vcov(object) #solve(invW)
-  # unrestrikted scale estimate for the standard deviation
+  # unrestrikted scale estimate for the standard deviation: 
+  # tau^2 * solve(t(X)%*%X) equals vcov(object)
   tau <- so.org$stddev
   # residual degrees of freedom
   #rdf <- so.org$df[2]
@@ -252,8 +253,8 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 R2.org      = R2.org,
                 R2.reduced  = R2.org,
                 df.residual = so.org$df[2],
-                s2.unc      = tau^2, 
-                s2.restr    = tau^2, 
+                s2.unc      = tau, 
+                s2.restr    = tau, 
                 loglik      = LL.unc, 
                 Sigma       = Sigma,                                            #probably not so robust!
                 constraints = Amat, 
@@ -363,8 +364,8 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 R2.org      = R2.org,
                 R2.reduced  = R2.reduced,
                 df.residual = so.org$df[2], 
-                s2.unc      = tau^2, 
-                s2.restr    = tau.restr^2, 
+                s2.unc      = tau, 
+                s2.restr    = tau.restr, 
                 loglik      = LL.restr, 
                 Sigma       = Sigma,                                             #probably not so robust???
                 constraints = Amat, 

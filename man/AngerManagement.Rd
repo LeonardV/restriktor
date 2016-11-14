@@ -16,7 +16,7 @@
 \format{
   A data frame of 40 observations of 4 treatment variables and covariate age.
   \describe{
-    \item{\code{Aggression}}{reduction in aggression levels}
+    \item{\code{Anger}}{reduction in aggression levels}
     \item{\code{Group}}{No, Physical, Behavioral, Both}
     \item{\code{Age}}{persons' age}
   }

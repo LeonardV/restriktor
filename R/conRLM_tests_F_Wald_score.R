@@ -106,9 +106,9 @@ robustFm <- function(x, y, b.unrestr, b.eqrestr, b.restr, scale,
 
 ## robust Wald statistic, Silvapulle (1992) ##
 robustWaldXX <- function(x, b.eqrestr, b.restr, b.unrestr, tau) {
-  x <- scale(x, center = TRUE, scale = FALSE)
-  TsWald <- c(( (t(b.unrestr-b.eqrestr)%*%(t(x)%*%x)%*%(b.unrestr-b.eqrestr)) -
-                (t(b.unrestr-b.restr)%*%(t(x)%*%x)%*%(b.unrestr-b.restr)) ) / tau)
+  #x <- scale(x, center = TRUE, scale = FALSE)
+  TsWald <- as.numeric(( (t(b.unrestr-b.eqrestr)%*%(t(x)%*%x)%*%(b.unrestr-b.eqrestr)) -
+                (t(b.unrestr-b.restr)%*%(t(x)%*%x)%*%(b.unrestr-b.restr)) ) / tau^2)
 
   TsWald
 }

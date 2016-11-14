@@ -70,7 +70,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
     tol <- control$tol
   }
   
-  # check for intercept
+  # check for intercept                                          
   intercept <- any(attr(terms(model.org), "intercept"))
   if (type == "global") {
     if (intercept) { 
@@ -84,16 +84,22 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
     }
     AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*%            
                           MASS::ginv(Amat %*% t(Amat)) %*% Amat)
-    bvecG <- rep(0L, nrow(AmatG))
     
     if (all(abs(AmatX) < tol)) { 
       type <- "A"
-      attr(type, "org_global") <- "org_global"
+    } else {
+      # remove all rows with only zeros
+      AmatX  <- AmatX[!rowSums(abs(AmatX) < tol) == p,, drop = FALSE]
+      rAmatX <- GaussianElimination(t(AmatX), tol = tol)
+      AmatX  <- AmatX[rAmatX$pivot,, drop = FALSE]
     }
-    
-    attr(Amat, "Amat_global") <- AmatG
-    attr(bvec, "bvec_global") <- bvecG
-    
+    AmatG <- rbind(AmatX, Amat)
+    bvecG <- c(rep(0, nrow(AmatX)), bvec)
+      attr(Amat, "Amat_global") <- AmatG
+      attr(bvec, "bvec_global") <- bvecG
+  }
+  
+  if (type == "global") {
     # call quadprog
     b.eqrestr <- con_solver(X         = X, 
                             y         = y, 
@@ -275,9 +281,6 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
   if (boot == "residual") {
     boot <- "model.based"
   }
-  if (is.null(object$wt)) {
-    stop("restriktor ERROR: no chi-square-bar weights computed. Set Wt = TRUE in the restriktor() function.")
-  }
   
   # original model
   model.org <- object$model.org
@@ -318,7 +321,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
     tol <- control$tol
   }
   
-  # check for intercept
+  # check for intercept                                          
   intercept <- any(attr(terms(model.org), "intercept"))
   if (type == "global") {
     if (intercept) { 
@@ -333,16 +336,21 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
     AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*%            
                           MASS::ginv(Amat %*% t(Amat)) %*% Amat)
     
-    bvecG <- rep(0L, nrow(AmatG))
-    
     if (all(abs(AmatX) < tol)) { 
       type <- "A"
-      attr(type, "org_global") <- "org_global"
+    } else {
+      # remove all rows with only zeros
+      AmatX  <- AmatX[!rowSums(abs(AmatX) < tol) == p,, drop = FALSE]
+      rAmatX <- GaussianElimination(t(AmatX), tol = tol)
+      AmatX  <- AmatX[rAmatX$pivot,, drop = FALSE]
     }
-    
+    AmatG <- rbind(AmatX, Amat)
+    bvecG <- c(rep(0, nrow(AmatX)), bvec)
     attr(Amat, "Amat_global") <- AmatG
     attr(bvec, "bvec_global") <- bvecG
-    
+  }
+  
+  if (type == "global") {  
     b.eqrestr <- con_solver(X         = X, 
                             y         = y, 
                             b.unrestr = b.unrestr, 
@@ -366,7 +374,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
     
     ll1 <- object$loglik
     Ts <- -2*(ll0 - ll1)
-  } else if (type == "A" | type == "Ax") {
+  } else if (type == "A") {
     b.eqrestr <- con_solver(X         = X, 
                             y         = y, 
                             b.unrestr = b.unrestr,
@@ -387,8 +395,8 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
                              b = b.eqrestr, 
                              w = w)
     ll0 <- ll0.out$loglik
-    
     ll1 <- object$loglik
+    
     Ts <- -2*(ll0 - ll1)
   } else if (type == "B") {
       if (meq.alt == 0L) {
@@ -535,9 +543,6 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   if (boot == "residual") {
     boot <- "model.based"
   }
-  if (is.null(object$wt)) {
-    stop("restriktor ERROR: no chi-square-bar weights computed. Set Wt = TRUE in the restriktor() function.")
-  }
   
   # original model
   model.org <- object$model.org
@@ -586,7 +591,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     tol <- control$tol
   }
   
-  # check for intercept
+  # check for intercept                                          
   intercept <- any(attr(terms(model.org), "intercept"))
   if (type == "global") {
     if (intercept) { 
@@ -601,16 +606,21 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*%            
                           MASS::ginv(Amat %*% t(Amat)) %*% Amat)
     
-    bvecG <- rep(0L, nrow(AmatG))
-    
     if (all(abs(AmatX) < tol)) { 
       type <- "A"
-      attr(type, "org_global") <- "org_global"
+    } else {
+      # remove all rows with only zeros
+      AmatX  <- AmatX[!rowSums(abs(AmatX) < tol) == p,, drop = FALSE]
+      rAmatX <- GaussianElimination(t(AmatX), tol = tol)
+      AmatX  <- AmatX[rAmatX$pivot,, drop = FALSE]
     }
-    
+    AmatG <- rbind(AmatX, Amat)
+    bvecG <- c(rep(0, nrow(AmatX)), bvec)
     attr(Amat, "Amat_global") <- AmatG
     attr(bvec, "bvec_global") <- bvecG
+  }
 
+  if (type == "global") {
     b.eqrestr <- con_solver(X         = X, 
                             y         = y, 
                             b.unrestr = b.unrestr,
@@ -650,7 +660,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     I0 <- 1/s20 * (t(X) %*% X)
     Ts <- t(c(d0 - d1)) %*% solve(I0) %*% c(d0 - d1)
     ###############################################
-  } else if (type == "A" | type == "Ax") {
+  } else if (type == "A") {
     b.eqrestr <- con_solver(X         = X, 
                             y         = y, 
                             b.unrestr = b.unrestr,

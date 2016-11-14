@@ -64,7 +64,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     tol <- control$tol
   }
   
-  # check for intercept
+  # check for intercept                                          
   intercept <- any(attr(terms(model.org), "intercept"))
   if (type == "global") {
     if (intercept) { 
@@ -79,15 +79,21 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*%            
                           MASS::ginv(Amat %*% t(Amat)) %*% Amat)
     
-    bvecG <- rep(0L, nrow(AmatG))
-    
     if (all(abs(AmatX) < tol)) { 
       type <- "A"
-      attr(type, "org_global") <- "org_global"
+    } else {
+      # remove all rows with only zeros
+      AmatX  <- AmatX[!rowSums(abs(AmatX) < tol) == p,, drop = FALSE]
+      rAmatX <- GaussianElimination(t(AmatX), tol = tol)
+      AmatX  <- AmatX[rAmatX$pivot,, drop = FALSE]
     }
-    
+    AmatG <- rbind(AmatX, Amat)
+    bvecG <- c(rep(0, nrow(AmatX)), bvec)
     attr(Amat, "Amat_global") <- AmatG
     attr(bvec, "bvec_global") <- bvecG
+  }
+  
+  if (type == "global") {
     
     #fit inequality constrained robust model
     call.my <- list(Amat = AmatG, meq = nrow(AmatG), bvec = bvecG,
@@ -109,7 +115,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                    b.restr   = b.restr, 
                    scale     = scale, 
                    cc        = ifelse(is.null(cc), 4.685061, cc))
-  } else if (type == "A" | type == "Ax") {
+  } else if (type == "A") {
     call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec,
                     tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
                                   control$tol))
@@ -313,7 +319,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     tol <- control$tol
   }
   
-  # check for intercept
+  # check for intercept                                          
   intercept <- any(attr(terms(model.org), "intercept"))
   if (type == "global") {
     if (intercept) { 
@@ -328,16 +334,21 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*%            
                           MASS::ginv(Amat %*% t(Amat)) %*% Amat)
     
-    bvecG <- rep(0L, nrow(AmatG))
-    
     if (all(abs(AmatX) < tol)) { 
       type <- "A"
-      attr(type, "org_global") <- "org_global"
+    } else {
+      # remove all rows with only zeros
+      AmatX  <- AmatX[!rowSums(abs(AmatX) < tol) == p,, drop = FALSE]
+      rAmatX <- GaussianElimination(t(AmatX), tol = tol)
+      AmatX  <- AmatX[rAmatX$pivot,, drop = FALSE]
     }
-    
+    AmatG <- rbind(AmatX, Amat)
+    bvecG <- c(rep(0, nrow(AmatX)), bvec)
     attr(Amat, "Amat_global") <- AmatG
     attr(bvec, "bvec_global") <- bvecG
-    
+  }
+  
+  if (type == "global") {
     #fit inequality constrained robust model
     call.my <- list(Amat = AmatG, meq = nrow(AmatG), bvec = bvecG,
                     tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
@@ -361,7 +372,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                              cc        = ifelse(is.null(cc), 4.685061, cc))
     Ts <- out0$Ts
     Sigma <- out0$V
-  } else if (type == "A" | type == "Ax") {
+  } else if (type == "A") {
     call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec,
                     tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
                                   control$tol))
@@ -603,7 +614,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     tol <- control$tol
   }
   
-  # check for intercept
+  # check for intercept                                          
   intercept <- any(attr(terms(model.org), "intercept"))
   if (type == "global") {
     if (intercept) { 
@@ -618,16 +629,21 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*%            
                           MASS::ginv(Amat %*% t(Amat)) %*% Amat)
     
-    bvecG <- rep(0L, nrow(AmatG))
-    
     if (all(abs(AmatX) < tol)) { 
       type <- "A"
-      attr(type, "org_global") <- "org_global"
+    } else {
+      # remove all rows with only zeros
+      AmatX  <- AmatX[!rowSums(abs(AmatX) < tol) == p,, drop = FALSE]
+      rAmatX <- GaussianElimination(t(AmatX), tol = tol)
+      AmatX  <- AmatX[rAmatX$pivot,, drop = FALSE]
     }
-    
+    AmatG <- rbind(AmatX, Amat)
+    bvecG <- c(rep(0, nrow(AmatX)), bvec)
     attr(Amat, "Amat_global") <- AmatG
     attr(bvec, "bvec_global") <- bvecG
-    
+  }
+  
+  if (type == "global") {
     #fit inequality constrained robust model
     call.my <- list(Amat = AmatG, meq = nrow(AmatG), bvec = bvecG,
                     tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
@@ -646,7 +662,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                        b.restr   = b.restr, 
                        b.unrestr = b.unrestr, 
                        tau       = tau)
-  } else if (type == "A" | type == "Ax") {
+  } else if (type == "A") {
     call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec,
                     tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
                                   control$tol))
@@ -843,7 +859,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     tol <- control$tol
   }
   
-  # check for intercept
+  # check for intercept                                          
   intercept <- any(attr(terms(model.org), "intercept"))
   if (type == "global") {
     if (intercept) { 
@@ -858,16 +874,21 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     AmatX <- AmatG %*% (diag(rep(1, p)) - t(Amat) %*%            
                           MASS::ginv(Amat %*% t(Amat)) %*% Amat)
     
-    bvecG <- rep(0L, nrow(AmatG))
-    
     if (all(abs(AmatX) < tol)) { 
       type <- "A"
-      attr(type, "org_global") <- "org_global"
+    } else {
+      # remove all rows with only zeros
+      AmatX  <- AmatX[!rowSums(abs(AmatX) < tol) == p,, drop = FALSE]
+      rAmatX <- GaussianElimination(t(AmatX), tol = tol)
+      AmatX  <- AmatX[rAmatX$pivot,, drop = FALSE]
     }
-    
+    AmatG <- rbind(AmatX, Amat)
+    bvecG <- c(rep(0, nrow(AmatX)), bvec)
     attr(Amat, "Amat_global") <- AmatG
     attr(bvec, "bvec_global") <- bvecG
-    
+  }
+  
+  if (type == "global") {
     #fit inequality constrained robust model
     call.my <- list(Amat = AmatG, meq = nrow(AmatG), bvec = bvecG,
                     tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
@@ -891,7 +912,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                              cc        = ifelse(is.null(cc), 4.685061, cc))    
     Ts <- out0$Ts
     Sigma <- out0$V
-  } else if (type == "A" | type == "Ax") {
+  } else if (type == "A") {
     call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec,
                     tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
                                   control$tol))

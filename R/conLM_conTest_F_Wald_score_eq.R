@@ -34,6 +34,7 @@ conTestEq.conLM <- function(object, test = "F", boot = "no",
       OUT <- con_test_Wald(Sigma   = object$Sigma,
                            JAC     = Amat,         
                            theta.r = Amat %*% object$b.unrestr - object$rhs) #object$CON$ceq.function(theta))  
+      names(OUT$Ts) <- "Wald"
       OUT$Amat <- Amat
       OUT$bvec <- bvec
       OUT$meq  <- meq
@@ -46,8 +47,8 @@ conTestEq.conLM <- function(object, test = "F", boot = "no",
                             JAC     = Amat,
                             theta.r = Amat%*%object$b.unrestr - object$rhs) #object$CON$ceq.function(theta))
       # convert Wald to F
-      OUT$test <- "F"
       OUT$Ts <- Wald$Ts / Wald$df
+        names(OUT$Ts) <- "F"
       OUT$df <- Wald$df
       OUT$df.residual <- df.residual(object) 
       OUT$pvalue <- 1 - pf(OUT$Ts, OUT$df, OUT$df.residual)
@@ -71,7 +72,9 @@ conTestEq.conLM <- function(object, test = "F", boot = "no",
       # score vector
       d0 <- c(1 / s20 * t(X) %*% (y - X %*% object$b.restr))
       # score test statistic
+      #OUT$test <- "Score"
       OUT$Ts <- as.numeric(d0 %*% solve(info) %*% d0)
+        names(OUT$Ts) <- "Score"
       # df
       OUT$df <- nrow(Amat)
       # p-value based on chisq

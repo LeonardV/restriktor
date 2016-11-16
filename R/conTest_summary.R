@@ -49,7 +49,12 @@ summary.conTest.conLM <- function(object, test = "F", ...) {
   
   OUT <- list()
   
-  cat("\nRestriktor: hypothesis tests (", x$df.residual, "error degrees of freedom ):\n")
+  if (nrow(Amat) == meq) {
+    cat("\nRestriktor: restrikted hypothesis tests (", x$df, "degrees of freedom ):\n")
+  } else {
+    cat("\nRestriktor: restrikted hypothesis tests (", x$df.residual, "error degrees of freedom ):\n")
+  }
+  
   if (x$R2.org == x$R2.reduced) {
     cat("\nMultiple R-squared remains", round(x$R2.org, 4),"\n")
   } else {

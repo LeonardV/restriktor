@@ -21,9 +21,9 @@ con_test_Wald <- function(Sigma, JAC, theta.r) {
     # p-value based on chisq
     Wald.pvalue <- 1 - pchisq(Wald, df = Wald.df)
 
-    OUT <- list(test = "Wald",
-                Ts = Wald,
-                df = Wald.df,
+    OUT <- list(test   = "Wald",
+                Ts     = Wald,
+                df     = Wald.df,
                 pvalue = Wald.pvalue)
 
     OUT

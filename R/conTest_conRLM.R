@@ -173,6 +173,9 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     }
   } 
   
+  names(Ts) <- "F"
+  
+  
   if (!is.null(object$wt) && boot == "no") {
     wt <- object$wt
     # is this fool proof? 
@@ -440,6 +443,8 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
       }
     }
   } 
+  
+  names(Ts) <- "Wald"
   
   # We need to recalculate the weights based on V_hat = Sigma instead on solve(t(X)%*%X)
   # Do we have to? The differences look very small.
@@ -714,6 +719,8 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     }
   } 
   
+  names(Ts) <- "Wald2"
+  
   if (!is.null(object$wt) && boot == "no") {
     wt <- object$wt
     # is this fool proof? 
@@ -979,6 +986,8 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
       }
     }
   } 
+  
+  names(Ts) <- "Score"
   
   # We need to recalculate the weights based on V_hat = Sigam instead on solve(t(X)%*%X)
   # Do we have to? The differences are very small.

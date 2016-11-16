@@ -169,6 +169,8 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
     }
   } 
 
+  names(Ts) <- "F"
+  
   # The test statistics based on inequality constraints are often
   # distributed as mixtures of chi-squares. These mixing weights can be computed
   # using the multivariate normal distribution with additional Monte Carlo steps
@@ -440,6 +442,8 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
       }
     }
   } 
+  
+  names(Ts) <- "LRT"
   
   if (!is.null(object$wt) && boot == "no") {
     wt <- object$wt
@@ -768,6 +772,8 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
       }
     }
   } 
+  
+  names(Ts) <- "Score"
   
   if (!is.null(object$wt) && boot == "no") {
     wt <- object$wt

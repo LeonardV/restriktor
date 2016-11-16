@@ -4,7 +4,12 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
     stop("x must be of class \"conTest\"")
   }
   
-  cat("\nRestriktor: restrikted hypothesis test\n")
+  #cat("\nRestriktor: restrikted hypothesis test\n")
+  if (nrow(x$Amat) == x$meq) {
+    cat("\nRestriktor: restrikted hypothesis tests (", x$df, "degrees of freedom ):\n")
+  } else {
+    cat("\nRestriktor: restrikted hypothesis tests (", x$df.residual, "error degrees of freedom ):\n")
+  }
   
   if (!is.null(x$type) && !is.null(attr(x$type, "org_global"))) {
     x$type <- "global" 
@@ -42,7 +47,9 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
   } else {
     out.test <- c(sprintf("%.4f", x$Ts), as.numeric(NA)) 
   }
-  names(out.test) <- c(" Test statistic", "p-value")
+  #names(out.test) <- c(" Test statistic", "p-value")
+  names(out.test)[1] <- sprintf(" %s%s", names(x$Ts),"-test statistic")
+  names(out.test)[2] <- sprintf("%s", "p-value")
   
   if (nrow(x$Amat) > x$meq) {
     if (x$type == "global") {
@@ -130,8 +137,8 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
                       print.gap = 2, quote = FALSE)
       }
   } else { #equality constraints only
-    cat("\n\nClassical test: H0: all restriktions active (=)", 
-        "\n", "           vs. HA: at least one equality restriktion violated", "\n\n")
+    cat("\n\n","classical test: H0: all restriktions active (=)", 
+        "\n","            vs. HA: at least one equality restriktion violated", "\n\n")
     print(out.test, quote = FALSE)
     cat("\n\n(all rows are active restriktions under H0, H1 is unrestrikted!)\n")
     print(out.rest, quote = FALSE, scientific = FALSE)

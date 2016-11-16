@@ -34,8 +34,8 @@ robustWaldScores <- function(x, y, b.eqrestr, b.restr, b.unrestr,
 
   # Wald test-statistic
   if (test == "wald") {
-    Ts <- as.numeric(n * c(b.restr-b.eqrestr) %*% 
-                       solve(V, c(b.restr-b.eqrestr)))
+    Ts <- as.numeric(n * c(b.restr - b.eqrestr) %*% 
+                       solve(V, c(b.restr - b.eqrestr)))
   } else if (test == "score") {
     # Score test-statistic
     res0 <- y - X %*% b.eqrestr
@@ -55,7 +55,7 @@ robustWaldScores <- function(x, y, b.eqrestr, b.restr, b.unrestr,
     ZA <- (t(X) %*% weightsZA) / n  
       
     result.C <- M %*% V %*% t(M)
-    Ts <- as.numeric(n * t(ZA-Z0) %*% solve(result.C, (ZA-Z0)))
+    Ts <- as.numeric(n * t(ZA - Z0) %*% solve(result.C, (ZA - Z0)))
   } 
 
   OUT <- list(Ts = Ts,

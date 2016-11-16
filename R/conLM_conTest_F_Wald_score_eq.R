@@ -30,20 +30,22 @@ conTestEq.conLM <- function(object, test = "F", boot = "no",
     
     # here we perform the usual Wald/F test...
     if (test == "wald") {
+      #theta.r <- object$b.unrestr
       OUT <- con_test_Wald(Sigma   = object$Sigma,
-                           JAC     = Amat, #CON$ceq.JAC,
-                           theta.r = c(Amat %*% object$b.unrestr)) #CON$ceq.theta)
+                           JAC     = Amat,         
+                           theta.r = Amat %*% object$b.unrestr - object$rhs) #object$CON$ceq.function(theta))  
       OUT$Amat <- Amat
       OUT$bvec <- bvec
       OUT$meq  <- meq
       OUT$b.restr <- object$b.restr
       OUT$b.unrestr <- object$b.unrestr
     } else if (test == "f") {
-      Wald <- con_test_Wald(Sigma   = object$Sigma,
-                            JAC     = Amat, #CON$ceq.JAC,
-                            theta.r = c(Amat %*% object$b.unrestr)) #CON$ceq.theta))
-      # convert Wald to F
       OUT <- list()
+      #theta <- object$b.unrestr
+      Wald <- con_test_Wald(Sigma   = object$Sigma,
+                            JAC     = Amat,
+                            theta.r = Amat%*%object$b.unrestr - object$rhs) #object$CON$ceq.function(theta))
+      # convert Wald to F
       OUT$test <- "F"
       OUT$Ts <- Wald$Ts / Wald$df
       OUT$df <- Wald$df
@@ -55,6 +57,7 @@ conTestEq.conLM <- function(object, test = "F", boot = "no",
       OUT$b.restr <- object$b.restr
       OUT$b.unrestr <- object$b.unrestr
     } else if (test == "score") {
+      OUT <- list()
       # response variable
       y <- as.matrix(object$model.org$model[, attr(object$model.org$terms, "response")])
       # model matrix
@@ -64,12 +67,11 @@ conTestEq.conLM <- function(object, test = "F", boot = "no",
       # MSE 
       s20 <- sum((y - X %*% object$b.restr)^2) / (n - (p - qr(Amat[0:meq,,drop = FALSE])$rank))
       # information matrix
-      I  <- 1/s20 * t(X) %*% X
+      info  <- 1/s20 * crossprod(X)
       # score vector
-      d0 <- as.numeric(1 / s20 * t(X) %*% (y - X %*% object$b.restr))
-      OUT <- list()
+      d0 <- c(1 / s20 * t(X) %*% (y - X %*% object$b.restr))
       # score test statistic
-      OUT$Ts <- as.numeric(d0 %*% solve(I) %*% d0)
+      OUT$Ts <- as.numeric(d0 %*% solve(info) %*% d0)
       # df
       OUT$df <- nrow(Amat)
       # p-value based on chisq

@@ -187,7 +187,7 @@ syntax:
   
   If \code{constraints = NULL}, the unrestrikted model is fitted. 
   This can be useful in case of computing GORIC weights, see 
-  \code{\link{goricWeights}}. 
+  \code{\link{goric}}. 
 }
 \value{
 An object of class conLM or conRLM, for which a print and a 
@@ -278,7 +278,7 @@ Wiley, New York
 
 \seealso{ 
   \code{\link{conTest}},
-  \code{\link{goricWeights}}
+  \code{\link{goric}}
 }
 
 \examples{

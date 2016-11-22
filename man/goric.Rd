@@ -1,11 +1,11 @@
-\name{goricWeights}
-\alias{goricWeights}
+\name{goric}
+\alias{goric}
 
 \title{Generalized Order-Restrikted Information Criterion Weights}
 \description{The \code{goricWeights} function computes GORIC 
 weights, which are comparable to the Akaike weights. 
 }
-\usage{goricWeights(x, \dots)
+\usage{goric(x, \dots)
 }
 
 \arguments{
@@ -57,5 +57,5 @@ sum2.con <- summary(fit2.con)
 sum3.con <- summary(fit3.con)
 sum4.con <- summary(fitu.con)
 
-goricWeights(list(sum1.con, sum2.con, sum3.con, sum4.con))
+goric(list(sum1.con, sum2.con, sum3.con, sum4.con))
 }

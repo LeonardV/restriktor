@@ -28,7 +28,7 @@ tukeyChi <- function(x, c = 4.685061, deriv = 0, ...) {
 
 
 # input list
-goricWeights <- function(x, ...) {
+goric <- function(x, ...) {
   if (!is.list(x)) {
     stop("restriktor ERROR: x must be a list.")
   }

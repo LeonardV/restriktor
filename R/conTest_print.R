@@ -54,7 +54,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
   if (nrow(x$Amat) > x$meq) {
     if (x$type == "global") {
       cat("\nGlobal test: H0: all parameters are restrikted to be equal", "\n", 
-          "        vs. HA: at least one restriktion strictly true", "\n\n")
+          "        vs. HA: at least one restriktion is strictly true", "\n\n")
       print(out.test, quote = FALSE, scientific = FALSE)
       if (x$R2.org == x$R2.reduced) {
         cat("\nMultiple R-squared remains", round(x$R2.org, 4),"\n")
@@ -70,8 +70,8 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
       print.default(format(x$b.restr, digits = digits),
                     print.gap = 2, quote = FALSE)
     } else if (x$type == "A") {
-      cat("\nType A test: H0: all restriktions active (=)", "\n", 
-          "        vs. HA: at least one inequality restriktion strictly true", "\n\n")
+      cat("\nType A test: H0: all restriktions are active (=)", "\n", 
+          "        vs. HA: at least one inequality restriktion is strictly true", "\n\n")
       print(out.test, quote = FALSE, scientific = FALSE)        
       if (x$R2.org == x$R2.reduced) {
         cat("\nMultiple R-squared remains", round(x$R2.org, 4),"\n")
@@ -87,8 +87,8 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
       print.default(format(x$b.restr, digits = digits),
                     print.gap = 2, quote = FALSE)
     } else if (x$type == "B" && x$meq.alt == 0L) {
-      cat("\nType B test: H0: all restriktions true", "\n", 
-          "        vs. HA: at least one restriktion violated ", "\n\n")
+      cat("\nType B test: H0: all restriktions are true", "\n", 
+          "        vs. HA: at least one restriktion is violated ", "\n\n")
       print(out.test, quote = FALSE)
       if (x$R2.org == x$R2.reduced) {
         cat("\nMultiple R-squared remains", round(x$R2.org, 4),"\n")
@@ -104,8 +104,8 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
       print.default(format(x$b.unrestr, digits = digits),
                     print.gap = 2, quote = FALSE)
     } else if (x$type == "B" && x$meq.alt > 0L) {
-      cat("\nType B test: H0: all restriktions true (>= or =)", "\n,
-                   vs. HA: at least one restriktion violated (<), some =-restriktions maintained",
+      cat("\nType B test: H0: all restriktions are true (>= or =)", "\n,
+                   vs. HA: at least one restriktion is violated (<), some =-restriktions maintained",
             "\n\n")
       print(out.test, quote = FALSE)
       if (x$R2.org == x$R2.reduced) {
@@ -122,8 +122,8 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
       print.default(format(x$b.restr.alt, digits = digits),
                     print.gap = 2, quote = FALSE)
       } else if (x$type == "C") {
-        cat("\nType C test: H0: at least one restriktion false or active (=)", 
-            "\n", "        vs. HA: all restriktions strictly true (>)", "\n\n")
+        cat("\nType C test: H0: at least one restriktion is false or active (=)", 
+            "\n", "        vs. HA: all restriktions are strictly true (>)", "\n\n")
         print(out.test, quote = FALSE)
         if (x$R2.org == x$R2.reduced) {
           cat("\nMultiple R-squared remains", round(x$R2.org, 4),"\n")
@@ -137,8 +137,8 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
                       print.gap = 2, quote = FALSE)
       }
   } else { #equality constraints only
-    cat("\n\n","classical test: H0: all restriktions active (=)", 
-        "\n","            vs. HA: at least one equality restriktion violated", "\n\n")
+    cat("\n\n","classical test: H0: all restriktions are active (=)", 
+        "\n","            vs. HA: at least one equality restriktion is violated", "\n\n")
     print(out.test, quote = FALSE)
     cat("\n\n(all rows are active restriktions under H0, H1 is unrestrikted!)\n")
     print(out.rest, quote = FALSE, scientific = FALSE)

@@ -5,14 +5,15 @@
 \description{The \code{goricWeights} function computes GORIC 
 weights, which are comparable to the Akaike weights. 
 }
-\usage{goric(x, \dots)
+\usage{goric(object, \dots)
 }
 
 \arguments{
-  \item{x}{a list with objects of class \code{summary.conLM} or
-  \code{summary.conRLM}.}
+  \item{object}{a fitted restriktor object of class conLM or conRLM.}
   
-  \item{\ldots}{no additional arguments for now.}
+  \item{\ldots}{further fitted restriktor objects of class conLM or conRLM.}
+  
+  \item{digits}{the number of significant digits to use when printing.}
 }
 
 \details{The GORIC values themselves are not interpretable and 
@@ -47,15 +48,10 @@ DATA <- DATA[-idx, ]
 fit1.lm <- lm(Age ~ Group, data = DATA)
 
 # some artificial restriktions
-fit1.con <- restriktor(fit1.lm, constraints = "GroupPassive > 0;  GroupPassive < GroupNo")
-fit2.con <- restriktor(fit1.lm, constraints = "GroupPassive > 0;  GroupPassive > GroupNo")
-fit3.con <- restriktor(fit1.lm, constraints = "GroupPassive == 0; GroupPassive < GroupNo")
-fitu.con <- restriktor(fit1.lm) # unrestrikted model
+restr1 <- restriktor(fit1.lm, constraints = "GroupPassive > 0;  GroupPassive < GroupNo")
+restr2 <- restriktor(fit1.lm, constraints = "GroupPassive > 0;  GroupPassive > GroupNo")
+restr3 <- restriktor(fit1.lm, constraints = "GroupPassive == 0; GroupPassive < GroupNo")
+restr4 <- restriktor(fit1.lm) # unrestrikted model
 
-sum1.con <- summary(fit1.con)
-sum2.con <- summary(fit2.con)
-sum3.con <- summary(fit3.con)
-sum4.con <- summary(fitu.con)
-
-goric(list(sum1.con, sum2.con, sum3.con, sum4.con))
+goric(restr1, restr2, restr3, restr4)
 }

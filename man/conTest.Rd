@@ -1,5 +1,6 @@
 \name{conTest}
 \alias{conTest}
+\alias{iht}
 \alias{print.conTest}
 \alias{summary.conTest.conLM}
 \alias{conTestF.conLM}
@@ -13,8 +14,7 @@
 \alias{conTestEq.conLM}
 \alias{conTestEq.conRLM}
 
-\title{Function for testing (in)equality restrikted hypotheses 
-for linear models}
+\title{Function for informative hypothesis testing}
 \description{\code{conTest} tests linear equality and/or 
 inequality restrikted hypotheses for (robust) linear models by F-, 
 Wald-, likelihood ratio-, and score-tests.}
@@ -26,14 +26,14 @@ conTest(object, type = "summary", test = "F", \dots)
 \method{summary}{conTest.conLM}(object, test = "F", \dots)
 
 \method{conTestF}{conLM}(object, type = "A", neq.alt = 0, 
-             boot = "no", R = 9999, p.distr = "N", df = 7, 
-             parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
-             verbose = FALSE, control = NULL, \dots)
+          boot = "no", R = 9999, p.distr = "N", df = 7, 
+          parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
+          verbose = FALSE, control = NULL, \dots)
 
 \method{conTestLRT}{conLM}(object, type = "A", neq.alt = 0, 
-             boot = "no", R = 9999, p.distr = "N", df = 7, 
-             parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
-             verbose = FALSE, control = NULL, \dots)
+           boot = "no", R = 9999, p.distr = "N", df = 7, 
+           parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
+           verbose = FALSE, control = NULL, \dots)
 
 \method{conTestScore}{conLM}(object, type = "A", neq.alt = 0, 
              boot = "no", R = 9999, p.distr = "N", df = 7, 

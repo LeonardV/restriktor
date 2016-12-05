@@ -66,7 +66,7 @@ summary.conTest.conLM <- function(object, test = "F", ...) {
   
   if (!is.null(out0)) {
     cat("\nGlobal test: H0: all parameters are restrikted to be equal", "\n", 
-        "        vs. HA: at least one restriktion strictly true", "\n")
+        "        vs. HA: at least one restriktion strictly is true", "\n")
     cat("       Test statistic: ", out0$Ts, ",   p-value: ", 
     if (!is.na(out0$pvalue) && out0$pvalue < 1e-04) { 
       "<0.0001"
@@ -78,14 +78,16 @@ summary.conTest.conLM <- function(object, test = "F", ...) {
 
     OUT$Global$Ts <- out0$Ts 
     OUT$Global$pvalue <- out0$pvalue[1]
+    OUT$Global$df.bar <- attr(out0$pvalue, "df.bar")
+    OUT$Global$df.residual <- attr(out0$pvalue, "df.residual")
   } else {
     cat("\n")
   }
   
   ###
   if (!is.null(out1)) {
-    cat("Type A test: H0: all restriktions active (=)", "\n", 
-        "        vs. HA: at least one inequality restriktion strictly true", "\n")
+    cat("Type A test: H0: all restriktions are active (=)", "\n", 
+        "        vs. HA: at least one inequality restriktion is strictly true", "\n")
     cat("       Test statistic: ", out1$Ts, ",   p-value: ", 
     if (!is.na(out1$pvalue) && out1$pvalue < 1e-04) { 
       "<0.0001"
@@ -97,13 +99,15 @@ summary.conTest.conLM <- function(object, test = "F", ...) {
     
     OUT$TPA$Ts <- out1$Ts 
     OUT$TPA$pvalue <- out1$pvalue[1]
+    OUT$TPA$df.bar <- attr(out1$pvalue, "df.bar")
+    OUT$TPA$df.residual <- attr(out1$pvalue, "df.residual")
   } else {
     cat("\n")
   }
   ###
   if (!is.null(out2)) {
-    cat("Type B test: H0: all restriktions true", "\n", 
-        "        vs. HA: at least one restriktion violated ", "\n")
+    cat("Type B test: H0: all restriktions are true", "\n", 
+        "        vs. HA: at least one restriktion is violated ", "\n")
     cat("       Test statistic: ", out2$Ts, ",   p-value: ", 
     if (!is.na(out2$pvalue) && out2$pvalue < 1e-04) { 
       "<0.0001"
@@ -115,6 +119,8 @@ summary.conTest.conLM <- function(object, test = "F", ...) {
     
     OUT$TPB$Ts <- out2$Ts 
     OUT$TPB$pvalue <- out2$pvalue[1]
+    OUT$TPB$df.bar <- attr(out2$pvalue, "df.bar")
+    OUT$TPB$df.residual <- attr(out2$pvalue, "df.residual")
   } else {
     cat("\n")
   }
@@ -123,8 +129,8 @@ summary.conTest.conLM <- function(object, test = "F", ...) {
   if (x$neq == 0) {
       CALL$type <- "C"
       out3 <- do.call("conTest", CALL)
-      cat("Type C test: H0: at least one restriktion false or active (=)", 
-          "\n", "        vs. HA: all restriktions strictly true (>)", "\n")
+      cat("Type C test: H0: at least one restriktion is false or active (=)", 
+          "\n", "        vs. HA: all restriktions are strictly true (>)", "\n")
       cat("       Test statistic: ", out3$Ts, ",   p-value: ", 
       if (!is.na(out3$pvalue) && out3$pvalue < 1e-04) { 
         "<0.0001"
@@ -134,13 +140,14 @@ summary.conTest.conLM <- function(object, test = "F", ...) {
         as.numeric(NA)
       }, "\n\n", sep = "")
       cat("Note: Type C test is based on a t-distribution (one-sided),", 
-          "\n      all other tests are based on mixture of F-distributions.\n\n")
+          "\n      all other tests are based on a mixture of F-distributions.\n\n")
     
       OUT$TPC$Ts <- out3$Ts 
       OUT$TPC$pvalue <- out3$pvalue[1]
+      OUT$TPC$df.residual <- attr(out3$pvalue, "df.residual")
   }
   else {
-    cat("Note: All tests are based on mixture of F-distributions", 
+    cat("Note: All tests are based on a mixture of F-distributions", 
         "\n      (Type C test is not applicable because of equality restriktions)\n\n")
   }
   

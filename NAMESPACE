@@ -33,7 +33,7 @@ importFrom("stats", "coef", "df.residual", "dnorm", "fitted",
 # export ordinary functions defined in this package
 export("restriktor", 
        "conLM.lm", "conRLM.rlm", 
-       "conTest", 
+       "conTest", "iht",
        "conTestC.conLM", "conTestF.conLM", "conTestF.conRLM", 
        "conTestLRT.conLM", "conTestScore.conLM", "conTestEq.conLM",
        "conTestEq.conRLM", "conTestScore.conRLM", "conTestWald.conRLM", 

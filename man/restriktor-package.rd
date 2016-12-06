@@ -10,8 +10,8 @@ normal models.}
   \tabular{ll}{
   Package: \tab restriktor\cr
   Type: \tab Package\cr
-  Version: \tab 0.1-30\cr
-  Date: \tab 2016-10-10\cr
+  Version: \tab 0.1-40\cr
+  Date: \tab 2016-12-06\cr
   License: \tab GPL (>=2)\cr
   LazyLoad: \tab yes\cr
   }

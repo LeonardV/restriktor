@@ -5,7 +5,7 @@
 \description{The \code{goricWeights} function computes GORIC 
 weights, which are comparable to the Akaike weights. 
 }
-\usage{goric(object, \dots)
+\usage{goric(object, \dots, digits = max(3, getOption("digits") - 2))
 }
 
 \arguments{

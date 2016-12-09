@@ -166,7 +166,7 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL,
       options(old_options)
       return(NULL)
     }
-    OUT <- boot_conTest$Ts
+    OUT <- boot_conTest[[1]]$Ts
   
     if (verbose) {
       cat("iteration =", b, "...Ts =", OUT, "\n")
@@ -215,8 +215,9 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL,
      }
     # > or >= ??? 
     pvalue <- sum(Ts.boot >= as.numeric(Ts.org)) / Rboot.tot
-      attr(pvalue, "Ts.boot") <- Ts.boot
-      attr(pvalue, "R") <- Rboot.tot
+      attr(pvalue, "boot_type") <- "parametric"
+      attr(pvalue, "R")         <- Rboot.tot
+      attr(pvalue, "Ts_boot")   <- Ts.boot
     
     OUT <- pvalue
 
@@ -266,7 +267,7 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
     }  
   }
   
-  if (!is.null(attr(type, "org_global"))) {
+  if (!is.null(attr(type, "type_org"))) {
     type <- "global"
   }
   
@@ -339,7 +340,7 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
         options(old_options)
         return(NULL)
       }
-      OUT <- boot_conTest$Ts
+      OUT <- boot_conTest[[1]]$Ts
     
       if (verbose) {
         cat("iteration =", b, "...Ts =", OUT, "\n")
@@ -388,8 +389,11 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
     }
     # > or >= ???
     pvalue <- sum(Ts.boot >= as.numeric(Ts.org)) / Rboot.tot
-      attr(pvalue, "Ts.boot") <- Ts.boot
-      attr(pvalue, "R") <- Rboot.tot
+      attr(pvalue, "boot_type") <- "model.based"
+      attr(pvalue, "R")         <- Rboot.tot
+      attr(pvalue, "Ts_boot")   <- Ts.boot
+      
+    
     OUT <- pvalue
     
     OUT

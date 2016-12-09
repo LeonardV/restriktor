@@ -1,15 +1,13 @@
 conTest <- function(object, type = "summary", test = "F", ...) {
   
   # some checks
-  if (!inherits(object, "conLM")) {
+  if (!inherits(object, c("conLM","conRLM"))) {
     stop("object must be of class \"conLM\" or \"conRLM\"")
   }
-  if (type != "global" && type != "summary") {
-    type <- toupper(type)
-  }
-  if ( !(type %in% c("A","B","C","global","summary")) ) {
-    stop("restriktor ERROR: hypothesis type ", sQuote(type), " unknown. \nPlease, choose from \"A\", \"B\", \"C\", \"global\", or \"summary\".")
-  }
+  
+  test <- tolower(test)
+  type <- tolower(type)
+  stopifnot(type %in% c("global","a","b","c","summary"))
   
   l <- list(...)
   Amat <- object$constraints
@@ -33,41 +31,37 @@ conTest <- function(object, type = "summary", test = "F", ...) {
       }
     } 
   
-  #  if (is.null(object$wt) && boot == "no") {
-  #    stop("restriktor ERROR: no chi-square-bar weights computed. Set Wt = TRUE in the restriktor() function.")
-  #  } 
-    
     # check
-    if (type %in% c("A","B","global")) {
+    if (type %in% c("a","b","global")) {
       if (class(object)[1] == "conLM") {
-        if (!(test %in% c("F","LRT","score"))) {
+        if (!(test %in% c("f","lrt","score"))) {
           stop("restriktor ERROR: test ", sQuote(test), " unknown. Choose F, LRT or score.")  
         } 
-        if (test == "F") {
+        if (test == "f") {
           UseMethod("conTestF")
-        } else if (test == "LRT") {
+        } else if (test == "lrt") {
           UseMethod("conTestLRT")
         } else if (test == "score") {
           UseMethod("conTestScore")
         } 
       } else if (class(object)[1] == "conRLM") { 
-        if (!(test %in% c("F","Wald","Wald2","score"))) {
+        if (!(test %in% c("f","wald","wald2","score"))) {
           stop("restriktor ERROR: test ", sQuote(test), " unknown. Choose F, Wald, Wald2 or score.")  
         } 
-        if (test == "F") {
+        if (test == "f") {
           UseMethod("conTestF")
-        } else if (test == "Wald") {
+        } else if (test == "wald") {
           UseMethod("conTestWald")
-        } else if (test == "Wald2") {
+        } else if (test == "wald2") {
           UseMethod("conTestWald2")
         } else if (test == "score") {
           UseMethod("conTestScore")
         } 
       }
-    } else if (type == "C") {
+    } else if (type == "c") {
       UseMethod("conTestC")
     } else if (type == "summary") {
-      UseMethod("summary.conTest")     
+      UseMethod("conTestSummary")     
     } else {
       stop("type ", sQuote, " unknown.")
     }

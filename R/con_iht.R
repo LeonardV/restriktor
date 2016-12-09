@@ -1,0 +1,3 @@
+iht <- function(...) {
+  conTest(...)
+}

@@ -1,0 +1,139 @@
+conTestEq.conLM <- function(object, test = "F", boot = "no", 
+                            R = 9999, p.distr = "N", df = 7, 
+                            parallel = "no", ncpus = 1L, cl = NULL, 
+                            seed = 1234, verbose = FALSE, ...) {
+  
+  if (!("conLM" %in% class(object))) {
+    stop("object must be of class conLM.")
+  }
+  if(!is.null(weights(object))) {
+    stop("weights not supported (yet).")
+  }
+  
+  test <- tolower(test)
+  stopifnot(test %in% c("f","wald","score"))
+  
+  OUT <- CON  <- object$CON
+  Amat <- object$constraints
+  bvec <- object$rhs
+  meq  <- object$neq
+  
+  if (#length(CON$ceq.linear.idx)     > 0  && # some linear eq. constraints
+    #length(CON$ceq.nonlinear.idx) == 0L && # no nonlinear eq. constraints
+    #length(CON$cin.linear.idx)    == 0L && # no inequality constraints
+    #length(CON$cin.nonlinear.idx) == 0L
+    nrow(Amat) == meq) {
+    
+    if (test == "default") {
+      test <- "f"
+    }
+    
+    # here we perform the usual Wald/F test...
+    if (test == "wald") {
+      #theta.r <- object$b.unrestr
+      OUT$Ts <- con_test_Wald(Sigma   = object$Sigma,
+                              JAC     = Amat,         
+                              theta.r = Amat %*% object$b.unrestr - object$rhs) #object$CON$ceq.function(theta))  
+      names(OUT$Ts) <- "Wald"
+      OUT$Amat <- Amat
+      OUT$bvec <- bvec
+      OUT$meq  <- meq
+      OUT$b.restr <- object$b.restr
+      OUT$b.unrestr <- object$b.unrestr
+    } else if (test == "f") {
+      OUT <- list()
+      #theta <- object$b.unrestr
+      Wald <- con_test_Wald(Sigma   = object$Sigma,
+                            JAC     = Amat,
+                            theta.r = Amat%*%object$b.unrestr - object$rhs) #object$CON$ceq.function(theta))
+      # convert Wald to F
+      OUT$Ts <- Wald$Ts / Wald$df
+        names(OUT$Ts) <- "F"
+      OUT$df <- Wald$df
+      OUT$df.residual <- df.residual(object) 
+      OUT$pvalue <- 1 - pf(OUT$Ts, OUT$df, OUT$df.residual)
+      OUT$Amat <- Amat
+      OUT$bvec <- bvec
+      OUT$meq  <- meq
+      OUT$b.restr <- object$b.restr
+      OUT$b.unrestr <- object$b.unrestr
+    } else if (test == "score") {
+      OUT <- list()
+      # response variable
+      y <- as.matrix(object$model.org$model[, attr(object$model.org$terms, "response")])
+      # model matrix
+      X <- model.matrix(object)[,,drop = FALSE]
+      n <- dim(X)[1]
+      p <- dim(X)[2]
+      # MSE 
+      s20 <- sum((y - X %*% object$b.restr)^2) / (n - (p - qr(Amat[0:meq,,drop = FALSE])$rank))
+      # information matrix
+      info  <- 1/s20 * crossprod(X)
+      # score vector
+      d0 <- c(1 / s20 * t(X) %*% (y - X %*% object$b.restr))
+      # score test statistic
+      #OUT$test <- "Score"
+      OUT$Ts <- as.numeric(d0 %*% solve(info) %*% d0)
+        names(OUT$Ts) <- "Score"
+      # df
+      OUT$df <- nrow(Amat)
+      # p-value based on chisq
+      OUT$pvalue <- 1 - pchisq(OUT$Ts, df = OUT$df)
+      OUT$Amat <- Amat
+      OUT$bvec <- bvec
+      OUT$meq  <- meq
+      OUT$b.restr <- object$b.restr
+      OUT$b.unrestr <- object$b.unrestr
+    } else {
+      stop("restriktor ERROR: test ", sQuote(test), " not (yet) implemented.")
+    }
+  } else if (#length(CON$ceq.nonlinear.idx) == 0L &&
+    #length(CON$cin.linear.idx)     > 0L && # some inequalities restr.
+    #length(CON$cin.nonlinear.idx) == 0L
+    nrow(Amat != meq)) {
+    stop("test not applicable with inequality constraints.")
+  } else if (length(CON$ceq.nonlinear.idx) > 0L || length(CON$cin.nonlinear.idx) > 0L) {
+    stop("ERROR: can not handle (yet) nonlinear (in)equality constraints")
+  }
+
+  OUT$boot <- boot
+  
+  if (boot == "parametric") {
+    OUT$pvalue <- con_pvalue_boot_parametric(object, 
+                                             Ts.org   = OUT$Ts, 
+                                             type     = "A",
+                                             test     = test, 
+                                             R        = R, 
+                                             p.distr  = p.distr,
+                                             df       = df, 
+                                             parallel = parallel,
+                                             ncpus    = ncpus, 
+                                             cl       = cl,
+                                             seed     = seed, 
+                                             verbose  = verbose)
+  } else if (boot == "model.based") {
+    OUT$pvalue <- con_pvalue_boot_model_based(object, 
+                                              Ts.org   = OUT$Ts, 
+                                              type     = "A", 
+                                              test     = test,
+                                              R        = R,
+                                              parallel = parallel, 
+                                              ncpus    = ncpus, 
+                                              cl       = cl, 
+                                              seed     = seed, 
+                                              verbose  = verbose)
+  } 
+  
+  OUT$R2.org      <- object$R2.org
+  OUT$R2.reduced  <- object$R2.reduced
+  
+  OUT <- list(OUT)
+    names(OUT) <- "ceq"
+  
+  class(OUT) <- "conTest"
+
+  OUT
+}
+
+
+

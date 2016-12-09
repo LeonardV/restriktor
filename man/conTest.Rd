@@ -2,7 +2,7 @@
 \alias{conTest}
 \alias{iht}
 \alias{print.conTest}
-\alias{summary.conTest.conLM}
+\alias{conTestSummary.conLM}
 \alias{conTestF.conLM}
 \alias{conTestLRT.conLM}
 \alias{conTestScore.conLM}
@@ -23,7 +23,9 @@ Wald-, likelihood ratio-, and score-tests.}
 conTest(object, type = "summary", test = "F", \dots)
 
 \method{print}{conTest}(x, digits = max(3, getOption("digits") - 2), \dots)
-\method{summary}{conTest.conLM}(object, test = "F", \dots)
+
+
+\method{conTestSummary}{conLM}(object, test = "F", ...)
 
 \method{conTestF}{conLM}(object, type = "A", neq.alt = 0, 
           boot = "no", R = 9999, p.distr = "N", df = 7, 

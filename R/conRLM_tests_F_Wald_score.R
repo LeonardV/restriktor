@@ -36,6 +36,7 @@ robustWaldScores <- function(x, y, b.eqrestr, b.restr, b.unrestr,
   if (test == "wald") {
     Ts <- as.numeric(n * c(b.restr - b.eqrestr) %*% 
                        solve(V, c(b.restr - b.eqrestr)))
+    names(Ts) <- "Wald"
   } else if (test == "score") {
     # Score test-statistic
     res0 <- y - X %*% b.eqrestr
@@ -56,6 +57,7 @@ robustWaldScores <- function(x, y, b.eqrestr, b.restr, b.unrestr,
       
     result.C <- M %*% V %*% t(M)
     Ts <- as.numeric(n * t(ZA - Z0) %*% solve(result.C, (ZA - Z0)))
+    names(Ts) <- "Score"
   } 
 
   OUT <- list(Ts = Ts,
@@ -98,17 +100,20 @@ robustFm <- function(x, y, b.unrestr, b.eqrestr, b.restr, scale,
   #asymptotic covariance matrix standardizing constant
   lambda <- ( 0.5 * (1 / (n - p)) * sum(psi.prime.h2^2) ) / 
                                   ( (1/n) * sum(psi.prime2.h2) )  
-  OUT <- 1 / lambda * (L0 - L1) 
-    
-  OUT
+  Ts <- 1 / lambda * (L0 - L1) 
+  names(Ts) <- "F"
+  
+  Ts
 }
 
 
 ## robust Wald statistic, Silvapulle (1992) ##
 robustWaldXX <- function(x, b.eqrestr, b.restr, b.unrestr, tau) {
   #x <- scale(x, center = TRUE, scale = FALSE)
-  TsWald <- as.numeric(( (t(b.unrestr-b.eqrestr)%*%(t(x)%*%x)%*%(b.unrestr-b.eqrestr)) -
-                (t(b.unrestr-b.restr)%*%(t(x)%*%x)%*%(b.unrestr-b.restr)) ) / tau^2)
+  Ts <- as.numeric(( (t(b.unrestr-b.eqrestr)%*%(t(x)%*%x)%*%(b.unrestr-b.eqrestr)) -
+                     (t(b.unrestr-b.restr)%*%(t(x)%*%x)%*%(b.unrestr-b.restr)) ) / tau^2)
 
-  TsWald
+  names(Ts) <- "Wald"
+  
+  Ts
 }

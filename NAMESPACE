@@ -24,23 +24,31 @@ importFrom("ic.infer",
            ic.weights)
 
 importFrom("stats", "coef", "df.residual", "dnorm", "fitted",
-           "formula", "frequency", "is.ts", "median", "model.matrix",
+           "formula", "frequency", "median", "model.matrix",
            "naresid", "pchisq", "pf", "pnorm", "printCoefmat", "pt",
            "quantile", "rchisq", "residuals", "rnorm", "rt", "runif",
-           "sd", "start", "terms", "ts", "update", "var", "vcov",
+           "sd", "start", "terms", "update", "var", "vcov",
            "weighted.residuals", "weights") 
 
 # export ordinary functions defined in this package
 export("restriktor", 
-       "conLM.lm", "conRLM.rlm", 
+       "conLM.lm", 
+       "conRLM.rlm", 
        "conTest", "iht",
-       "conTestC.conLM", "conTestF.conLM", "conTestF.conRLM", 
-       "conTestLRT.conLM", "conTestScore.conLM", "conTestEq.conLM",
-       "conTestEq.conRLM", "conTestScore.conRLM", "conTestWald.conRLM", 
+       "conTestF.conLM", 
+       "conTestF.conRLM", 
+       "conTestLRT.conLM", 
+       "conTestScore.conLM", 
+       "conTestScore.conRLM", 
+       "conTestWald.conRLM", 
        "conTestWald2.conRLM",
+       "conTestC.conLM", 
+       "conTestEq.conLM",
+       "conTestEq.conRLM", 
        "goric", 
-       "print.conLM", "summary.conLM", "summary.conTest.conLM",
-       "print.summary.conLM", "print.conTest", 
+       "print.conLM", "print.summary.conLM",
+       "summary.conLM", "conTestSummary.conLM",
+       "print.conTest", 
        "coef.conLM", "model.matrix.conLM",
        "con_weightsBoot")
 
@@ -50,4 +58,4 @@ S3method(print, conLM)
 S3method(print, conTest)
 S3method(print, summary.conLM)
 S3method(summary, conLM)
-S3method(summary, conTest.conLM) 
+#S3method(summary, conTest.conLM) 

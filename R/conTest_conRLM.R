@@ -81,6 +81,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     
     if (all(abs(AmatX) < tol)) { 
       type <- "A"
+        attr(type, "type_org") <- "global"
     } else {
       # remove all rows with only zeros
       AmatX  <- AmatX[!rowSums(abs(AmatX) < tol) == p,, drop = FALSE]
@@ -227,6 +228,11 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     pvalue <- as.numeric(NA)
   }  
   
+  # necessary for the print function
+  if (!is.null(attr(type, "type_org"))) {
+    type <- "global"
+  }
+  
   OUT <- list(CON         = object$CON,
               type        = type,
               boot        = boot,
@@ -246,6 +252,9 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
               R2.org      = object$R2.org,
               R2.reduced  = object$R2.reduced,
               model.org   = model.org)
+  
+  OUT <- list(OUT)
+  names(OUT) <- type
   
   class(OUT) <- "conTest"
   
@@ -339,6 +348,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     
     if (all(abs(AmatX) < tol)) { 
       type <- "A"
+        attr(type, "type_org") <- "global"
     } else {
       # remove all rows with only zeros
       AmatX  <- AmatX[!rowSums(abs(AmatX) < tol) == p,, drop = FALSE]
@@ -524,6 +534,11 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     pvalue <- as.numeric(NA)
   }  
   
+  # necessary for the print function
+  if (!is.null(attr(type, "type_org"))) {
+    type <- "global"
+  }
+  
   OUT <- list(CON         = object$CON,
               type        = type,
               boot        = boot,
@@ -543,6 +558,9 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
               R2.org      = object$R2.org,
               R2.reduced  = object$R2.reduced,
               model.org   = model.org)
+  
+  OUT <- list(OUT)
+  names(OUT) <- type
   
   class(OUT) <- "conTest"
   
@@ -636,6 +654,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     
     if (all(abs(AmatX) < tol)) { 
       type <- "A"
+        attr(type, "type_org") <- "global"
     } else {
       # remove all rows with only zeros
       AmatX  <- AmatX[!rowSums(abs(AmatX) < tol) == p,, drop = FALSE]
@@ -772,6 +791,11 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     pvalue <- as.numeric(NA)
   } 
   
+  # necessary for the print function
+  if (!is.null(attr(type, "type_org"))) {
+    type <- "global"
+  }
+  
   OUT <- list(CON         = object$CON,
               type        = type,
               boot        = boot,
@@ -791,6 +815,9 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
               R2.org      = object$R2.org,
               R2.reduced  = object$R2.reduced,
               model.org   = model.org)
+  
+  OUT <- list(OUT)
+  names(OUT) <- type
   
   class(OUT) <- "conTest"
   
@@ -883,6 +910,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     
     if (all(abs(AmatX) < tol)) { 
       type <- "A"
+        attr(type, "type_org") <- "global"
     } else {
       # remove all rows with only zeros
       AmatX  <- AmatX[!rowSums(abs(AmatX) < tol) == p,, drop = FALSE]
@@ -1064,6 +1092,11 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     pvalue <- as.numeric(NA)
   }  
   
+  # necessary for the print function
+  if (!is.null(attr(type, "type_org"))) {
+    type <- "global"
+  }
+  
   OUT <- list(CON         = object$CON,
               type        = type,
               boot        = boot,
@@ -1083,6 +1116,9 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
               R2.org      = object$R2.org,
               R2.reduced  = object$R2.reduced,
               model.org   = model.org)
+  
+  OUT <- list(OUT)
+  names(OUT) <- type
   
   class(OUT) <- "conTest"
   

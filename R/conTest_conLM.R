@@ -87,6 +87,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
     
     if (all(abs(AmatX) < tol)) { 
       type <- "A"
+        attr(type, "type_org") <- "global"
     } else {
       # remove all rows with only zeros
       AmatX  <- AmatX[!rowSums(abs(AmatX) < tol) == p,, drop = FALSE]
@@ -231,6 +232,11 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
      pvalue <- as.numeric(NA)
    } 
   
+  # necessary for the print function
+  if (!is.null(attr(type, "type_org"))) {
+    type <- "global"
+  }
+  
   OUT <- list(CON         = object$CON,
               type        = type,
               boot        = boot,
@@ -251,6 +257,9 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
               R2.reduced  = object$R2.reduced,
               model.org   = model.org)
 
+  OUT <- list(OUT)
+    names(OUT) <- type
+  
   class(OUT) <- "conTest"
 
   OUT
@@ -340,6 +349,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
     
     if (all(abs(AmatX) < tol)) { 
       type <- "A"
+        attr(type, "type_org") <- "global"
     } else {
       # remove all rows with only zeros
       AmatX  <- AmatX[!rowSums(abs(AmatX) < tol) == p,, drop = FALSE]
@@ -496,6 +506,11 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
     pvalue <- as.numeric(NA)
   }  
   
+  # necessary for the print function
+  if (!is.null(attr(type, "type_org"))) {
+    type <- "global"
+  }
+  
   OUT <- list(CON         = object$CON,
               type        = type,
               boot        = boot,
@@ -516,6 +531,9 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
               R2.reduced  = object$R2.reduced,
               model.org   = object$model.org)
 
+  OUT <- list(OUT)
+  names(OUT) <- type
+  
   class(OUT) <- "conTest"
 
   OUT
@@ -612,6 +630,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     
     if (all(abs(AmatX) < tol)) { 
       type <- "A"
+        attr(type, "type_org") <- "global"
     } else {
       # remove all rows with only zeros
       AmatX  <- AmatX[!rowSums(abs(AmatX) < tol) == p,, drop = FALSE]
@@ -826,6 +845,11 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     pvalue <- as.numeric(NA)
   }  
   
+  # necessary for the print function
+  if (!is.null(attr(type, "type_org"))) {
+    type <- "global"
+  }
+  
   OUT <- list(CON         = object$CON,
               type        = type,
               boot        = boot,
@@ -846,6 +870,9 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
               R2.reduced  = object$R2.reduced,
               model.org   = object$model.org)
   
+  OUT <- list(OUT)
+  names(OUT) <- type
+  
   class(OUT) <- "conTest"
   
   OUT
@@ -858,27 +885,31 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
 # REF: S. Sasabuchi (1980). A Test of a Multivariate Normal Mean with Composite Hypotheses Determined by Linear Inequalities. Biometrika Trust, 67 (2), 429-439.
 conTestC.conLM <- function(object, type = "C", ...) {
   
-  if (!("conLM" %in% class(object))) {
-    stop("Restriktor ERROR: object must be of class conLM.")
+  if (!(inherits(object, c("conLM","conRLM")))) {
+    stop("Restriktor ERROR: object must be of class conLM or conRLM.")
   }
   
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
-  model.org <- object$model.org
-  Sigma <- vcov(model.org) 
-  df.residual <- object$df.residual
-  b.unrestr <- object$b.unrestr
-    
-  if (meq == 0L) {
-    Ts <- as.vector(min((Amat %*% b.unrestr - bvec) / 
-                          sqrt(diag(Amat %*% Sigma %*% t(Amat)))))
-    pvalue <- 1 - pt(Ts, df.residual)
-  } else {
+  
+  if (meq > 0L) {
     stop("Restriktor ERROR: test not applicable with equality restriktions.")
   }
   
-  OUT <- list(type = "C",
+  #model.org <- object$model.org
+  b.unrestr   <- object$b.unrestr
+  Sigma       <- object$Sigma
+  df.residual <- object$df.residual
+    
+  Ts <- as.vector(min((Amat %*% b.unrestr - bvec) / 
+                        sqrt(diag(Amat %*% Sigma %*% t(Amat)))))
+  
+  names(Ts) <- "t"
+  
+  pvalue <- 1 - pt(Ts, df.residual)
+  
+  OUT <- list(type        = type,
               b.unrestr   = b.unrestr,
               Amat        = Amat,
               bvec        = bvec,
@@ -887,6 +918,9 @@ conTestC.conLM <- function(object, type = "C", ...) {
               pvalue      = pvalue,
               R2.org      = object$R2.org,
               R2.reduced  = object$R2.reduced)
+  
+  OUT <- list(OUT)
+    names(OUT) <- type
   
   class(OUT) <- "conTest"
   

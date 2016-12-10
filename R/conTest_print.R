@@ -10,7 +10,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
   
   cat("\nRestriktor: restrikted hypothesis tests (", x[[1]]$df.residual, "error degrees of freedom ):\n")
   
-  if (length(x) == 1) {
+  if (length(x) == 1 && !(names(x) %in% c("C"))) {
     if (x[[1]]$boot %in% c("parametric", "model.based")) {
       cat("( Number of successful bootstrap draws:", attr(x[[1]]$pvalue, "R"),")\n")
     }

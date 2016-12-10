@@ -143,7 +143,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
     if (meq.alt == 0L) {
       # compute test statistic for hypothesis test type B when no equalities are
       # preserved in the alternative hypothesis.
-      Ts <- as.vector(t(b.unrestr - b.restr) %*% solve(Sigma, b.unrestr - b.restr))
+      Ts <- c(t(b.unrestr - b.restr) %*% solve(Sigma, b.unrestr - b.restr))
     } else {
       if (meq.alt != 0L && meq.alt <= meq) {
         b.restr.alt <- con_solver(X         = X, 
@@ -163,7 +163,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
         names(b.restr.alt) <- vnames
         # compute test statistic for hypothesis test type B when some equalities may 
         # be preserved in the alternative hypothesis.
-        Ts <- as.vector(t(b.restr - b.restr.alt) %*% solve(Sigma, b.restr - b.restr.alt))
+        Ts <- c(t(b.restr - b.restr.alt) %*% solve(Sigma, b.restr - b.restr.alt))
       } else {
         stop("Restriktor ERROR: neq.alt must not be larger than neq.")
       }
@@ -455,7 +455,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
   
   names(Ts) <- "LRT"
   
-  if (!is.null(object$wt) && boot == "no") {
+  if (!is.null(object$wt) && boot == "no") { 
     wt <- object$wt
     # is this fool proof? 
     # The number of bootstrap samples must be large enough to avoid spurious results.
@@ -903,12 +903,12 @@ conTestC.conLM <- function(object, type = "C", ...) {
   df.residual <- object$df.residual
     
   Ts <- as.vector(min((Amat %*% b.unrestr - bvec) / 
-                        sqrt(diag(Amat %*% Sigma %*% t(Amat)))))
+                        sqrt(diag(Amat %*% Sigma %*% t(Amat))))) 
   
   names(Ts) <- "t"
   
   pvalue <- 1 - pt(Ts, df.residual)
-  
+
   OUT <- list(type        = type,
               b.unrestr   = b.unrestr,
               Amat        = Amat,

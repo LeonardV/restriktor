@@ -127,7 +127,7 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL,
   Ts.boot <- vector("numeric", R)
    fn <- function(b) {
     if (!is.null(seed)) {
-	    set.seed(seed + b)
+	    set.seed(seed + b) 
     }  
     if (!exists(".Random.seed", envir = .GlobalEnv))
       runif(1)
@@ -151,7 +151,7 @@ con_pvalue_boot_parametric <- function(model, Ts.org = NULL,
     
     CALL <- list(object = boot_model, constraints = Amat, 
                  rhs = bvec, neq = meq, se = "none", 
-                 Wt = FALSE, #bootWt = bootWt, bootWt.R = bootWt.R, 
+                 Wt = FALSE, 
                  control = control)
     boot_conLM <- do.call("restriktor", CALL)
     
@@ -280,13 +280,13 @@ con_pvalue_boot_model_based <- function(model, Ts.org = NULL,
     CALL <- c(call.lm, call.my)
     fit <- do.call("restriktor", CALL)
   } else if (type == "B") {
-      call.my <- list(constraints = Amat, rhs = bvec, neq = meq, 
-                      control = control, se = "none", Wt = FALSE)
-                      #bootWt = bootWt, bootWt.R = bootWt.R)
-      call.lm <- list(object = model.org)
-      CALL <- c(call.lm, call.my)
-      fit <- do.call("restriktor", CALL)
-    }
+    call.my <- list(constraints = Amat, rhs = bvec, neq = meq, 
+                    control = control, se = "none", Wt = FALSE)
+                    #bootWt = bootWt, bootWt.R = bootWt.R)
+    call.lm <- list(object = model.org)
+    CALL <- c(call.lm, call.my)
+    fit <- do.call("restriktor", CALL)
+  }
 
     # compute residuals under H0
     if (type != "global") {

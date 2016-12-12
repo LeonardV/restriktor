@@ -40,7 +40,7 @@ summary(fit.nic.w.con, bty = "basic")
 
 ################### rlm ################
 
-# rlm - boot.standardlibrary(MASS)
+library(MASS)
 fit.ic.rlm  <- rlm(y ~ 1 + x1 + x2 + x3, data = DATA, method = "MM")
 fit.nic.rlm <- rlm(y ~ -1 + x1 + x2 + x3, data = DATA, method = "MM")
 fit.ic.w.rlm  <- rlm(y ~ 1 + x1 + x2 + x3, data = DATA, weights = abs(rnorm(n)), method = "MM")

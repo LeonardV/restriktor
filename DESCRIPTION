@@ -11,8 +11,8 @@ Authors@R: c(person(given = "Yves", family = "Rosseel",
 Description: Allow for easy-to-use testing of linear equality and inequality 
   restriktions about parameters and effects, in linear and robust linear 
   statistical models.
-Depends: R(>= 3.0.0), MASS
-Imports: boot, ic.infer, lavaan, mvtnorm, quadprog
+Depends: R(>= 3.0.0)
+Imports: boot, ic.infer, lavaan, MASS, mvtnorm, quadprog
 License: GPL (>= 2)
 LazyData: yes
 Packaged: 2016-12-06 20:03:39 UTC; leonard

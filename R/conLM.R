@@ -198,7 +198,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                 constraints = Amat, 
                 rhs         = bvec, 
                 neq         = meq, 
-                iact        = NULL, 
+                iact        = 0L, 
                 bootout     = NULL, 
                 control     = control)  
   } else {

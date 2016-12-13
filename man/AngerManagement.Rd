@@ -22,6 +22,9 @@
   }
 }
 
+\references{Hoijtink, H. Informative Hypotheses: Theory and Practice 
+for Behavioral and Social Scientists Boca Raton, FL: Taylor & Francis, 2012.
+}
 
 \examples{
   head(AngerManagement)

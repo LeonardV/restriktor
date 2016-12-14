@@ -914,6 +914,7 @@ conTestC.conLM <- function(object, type = "C", ...) {
               Amat        = Amat,
               bvec        = bvec,
               meq         = meq,
+              df.residual = df.residual,
               Ts          = Ts, 
               pvalue      = pvalue,
               R2.org      = object$R2.org,

@@ -32,7 +32,7 @@ conTestEq.conRLM <- function(object, test = "F", boot = "no",
   
   CON$Amat <- Amat <- object$constraints
   CON$bvec <- object$rhs
-  CON$meq <- meq <- object$neq
+  CON$meq  <- meq <- object$neq
   
   if (nrow(Amat) == meq) {
     

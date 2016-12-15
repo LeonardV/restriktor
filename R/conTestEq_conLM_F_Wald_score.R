@@ -16,7 +16,7 @@ conTestEq.conLM <- function(object, test = "F", boot = "no",
   CON  <- object$CON
   CON$Amat <- Amat <- object$constraints
   CON$bvec <- object$rhs
-  CON$meq <- meq <- object$neq
+  CON$meq  <- meq <- object$neq
   
   if (#length(CON$ceq.linear.idx)     > 0  && # some linear eq. constraints
     #length(CON$ceq.nonlinear.idx) == 0L && # no nonlinear eq. constraints

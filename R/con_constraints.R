@@ -55,11 +55,11 @@ con_constraints <- function(model, constraints, bvec = NULL, meq = 0L,
     print(CON)
   }
   
-  OUT <- list(CON = CON, 
+  OUT <- list(CON      = CON, 
               parTable = parTable,
-              Amat = Amat, 
-              bvec = bvec, 
-              meq = meq)
+              Amat     = Amat, 
+              bvec     = bvec, 
+              meq      = meq)
   
   OUT
 }
@@ -72,7 +72,7 @@ con_constraints_ceq_amat <- function(object, constraints = NULL) {
 
     # parse the constraints
     CON <- lav_constraints_parse(constraints = constraints,
-                                 partable = lavpartable)
+                                 partable    = lavpartable)
 
     CON$ceq.JAC
 }
@@ -99,7 +99,7 @@ con_constraints_rhs_bvec <- function(object, constraints = NULL) {
 
   # parse the constraints
   CON <- lav_constraints_parse(constraints = constraints,
-                               partable = lavpartable)
+                               partable    = lavpartable)
 
   c(CON$ceq.rhs, CON$cin.rhs)
 }

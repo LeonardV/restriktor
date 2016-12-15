@@ -15,4 +15,3 @@ con_boot_fixed_lm <- function(data, indices, ...) {
     
     OUT
 }
-

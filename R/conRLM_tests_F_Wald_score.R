@@ -36,7 +36,8 @@ robustWaldScores <- function(x, y, b.eqrestr, b.restr, b.unrestr,
   if (test == "wald") {
     Ts <- as.numeric(n * c(b.restr - b.eqrestr) %*% 
                        solve(V, c(b.restr - b.eqrestr)))
-    names(Ts) <- "Wald"
+    
+    test <- "Wald"
   } else if (test == "score") {
     # Score test-statistic
     res0 <- y - X %*% b.eqrestr
@@ -57,10 +58,12 @@ robustWaldScores <- function(x, y, b.eqrestr, b.restr, b.unrestr,
       
     result.C <- M %*% V %*% t(M)
     Ts <- as.numeric(n * t(ZA - Z0) %*% solve(result.C, (ZA - Z0)))
-    names(Ts) <- "Score"
+    
+    test <- "Score"
   } 
 
-  OUT <- list(Ts = Ts,
+  OUT <- list(test = test,
+              Ts = Ts,
               V  = V)
   
   OUT
@@ -101,9 +104,11 @@ robustFm <- function(x, y, b.unrestr, b.eqrestr, b.restr, scale,
   lambda <- ( 0.5 * (1 / (n - p)) * sum(psi.prime.h2^2) ) / 
                                   ( (1/n) * sum(psi.prime2.h2) )  
   Ts <- 1 / lambda * (L0 - L1) 
-  names(Ts) <- "F"
   
-  Ts
+  OUT <- list(test = "F",
+              Ts   = Ts)
+  
+  OUT
 }
 
 
@@ -113,7 +118,8 @@ robustWaldXX <- function(x, b.eqrestr, b.restr, b.unrestr, tau) {
   Ts <- as.numeric(( (t(b.unrestr-b.eqrestr)%*%(t(x)%*%x)%*%(b.unrestr-b.eqrestr)) -
                      (t(b.unrestr-b.restr)%*%(t(x)%*%x)%*%(b.unrestr-b.restr)) ) / tau^2)
 
-  names(Ts) <- "Wald"
+  OUT <- list(test = "Wald",
+              Ts   = Ts)
   
-  Ts
+  OUT
 }

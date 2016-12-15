@@ -115,7 +115,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                    b.eqrestr = b.eqrestr, 
                    b.restr   = b.restr, 
                    scale     = scale, 
-                   cc        = ifelse(is.null(cc), 4.685061, cc))
+                   cc        = ifelse(is.null(cc), 4.685061, cc))$Ts
   } else if (type == "A") {
     call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec,
                     tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
@@ -135,7 +135,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                    b.eqrestr = b.eqrestr, 
                    b.restr   = b.restr, 
                    scale     = scale, 
-                   cc        = ifelse(is.null(cc), 4.685061, cc))
+                   cc        = ifelse(is.null(cc), 4.685061, cc))$Ts
   } else if (type == "B") {
     if (meq.alt == 0L) {
       Ts <- robustFm(x         = X, 
@@ -144,7 +144,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                      b.eqrestr = b.restr, 
                      b.restr   = b.unrestr, 
                      scale     = scale, 
-                     cc        = ifelse(is.null(cc), 4.685061, cc))
+                     cc        = ifelse(is.null(cc), 4.685061, cc))$Ts
     } else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt != 0L && meq.alt <= meq) {
@@ -167,15 +167,12 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                        b.eqrestr = b.restr, 
                        b.restr   = b.restr.alt, 
                        scale     = scale, 
-                       cc        = ifelse(is.null(cc), 4.685061, cc))
+                       cc        = ifelse(is.null(cc), 4.685061, cc))$Ts
       } else {
         stop("Restriktor ERROR: neq.alt must not be larger than neq.")
       }
     }
   } 
-  
-  names(Ts) <- "F"
-  
   
   if (!is.null(object$wt) && boot == "no") {
     wt <- object$wt
@@ -234,23 +231,24 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   }
   
   OUT <- list(CON         = object$CON,
-              type        = type,
-              boot        = boot,
-              b.eqrestr   = b.eqrestr,
-              b.unrestr   = b.unrestr,
-              b.restr     = b.restr,
-              b.restr.alt = b.restr.alt,
               Amat        = Amat,
               bvec        = bvec,
               meq         = meq,
               meq.alt     = meq.alt,
               iact        = object$iact,
-              df.residual = df.residual,
-              Sigma       = Sigma,
+              type        = type,
+              test        = "F",
               Ts          = Ts,
+              df.residual = df.residual,
               pvalue      = pvalue,
+              b.eqrestr   = b.eqrestr,
+              b.unrestr   = b.unrestr,
+              b.restr     = b.restr,
+              b.restr.alt = b.restr.alt,
+              Sigma       = Sigma,
               R2.org      = object$R2.org,
               R2.reduced  = object$R2.reduced,
+              boot        = boot,
               model.org   = model.org)
   
   OUT <- list(OUT)
@@ -454,8 +452,6 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     }
   } 
   
-  names(Ts) <- "Wald"
-  
   # We need to recalculate the weights based on V_hat = Sigma instead on solve(t(X)%*%X)
   # Do we have to? The differences look very small.
   ## compute mixing weights
@@ -540,23 +536,24 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   }
   
   OUT <- list(CON         = object$CON,
-              type        = type,
-              boot        = boot,
-              b.eqrestr   = b.eqrestr,
-              b.unrestr   = b.unrestr,
-              b.restr     = b.restr,
-              b.restr.alt = b.restr.alt,
               Amat        = Amat,
               bvec        = bvec,
               meq         = meq,
               meq.alt     = meq.alt,
               iact        = object$iact,
-              df.residual = df.residual,
-              Sigma       = Sigma,
+              type        = type,
+              test        = "Wald",
               Ts          = Ts,
+              df.residual = df.residual,
               pvalue      = pvalue,
+              b.eqrestr   = b.eqrestr,
+              b.unrestr   = b.unrestr,
+              b.restr     = b.restr,
+              b.restr.alt = b.restr.alt,
+              Sigma       = Sigma,
               R2.org      = object$R2.org,
               R2.reduced  = object$R2.reduced,
+              boot        = boot,
               model.org   = model.org)
   
   OUT <- list(OUT)
@@ -685,7 +682,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                        b.eqrestr = b.eqrestr, 
                        b.restr   = b.restr, 
                        b.unrestr = b.unrestr, 
-                       tau       = tau)
+                       tau       = tau)$Ts
   } else if (type == "A") {
     call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec,
                     tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
@@ -703,14 +700,14 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                        b.eqrestr = b.eqrestr, 
                        b.restr   = b.restr, 
                        b.unrestr = b.unrestr, 
-                       tau       = tau)
+                       tau       = tau)$Ts
   } else if (type == "B") {
     if (meq.alt == 0L) {
       Ts <- robustWaldXX(x         = X, 
                          b.eqrestr = b.restr, 
                          b.restr   = b.unrestr, 
                          b.unrestr = b.unrestr, 
-                         tau       = tau)
+                         tau       = tau)$Ts
     } else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt != 0L && meq.alt <= meq) {
@@ -731,14 +728,12 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                            b.eqrestr = b.restr, 
                            b.restr   = b.restr.alt, 
                            b.unrestr = b.restr.alt, 
-                           tau       = tau)
+                           tau       = tau)$Ts
       } else {
         stop("Restriktor ERROR: neq.alt must not be larger than neq.")
       }
     }
   } 
-  
-  names(Ts) <- "Wald2"
   
   if (!is.null(object$wt) && boot == "no") {
     wt <- object$wt
@@ -765,7 +760,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     pvalue <- con_pvalue_boot_parametric(object, 
                                          Ts.org   = Ts, 
                                          type     = type, 
-                                         test     = "F",
+                                         test     = "Wald2",
                                          meq.alt  = meq.alt,
                                          R        = R, 
                                          p.distr  = p.distr,
@@ -779,7 +774,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     pvalue <- con_pvalue_boot_model_based(object, 
                                           Ts.org   = Ts, 
                                           type     = type, 
-                                          test     = "F",
+                                          test     = "Wald2",
                                           meq.alt  = meq.alt,
                                           R        = R, 
                                           parallel = parallel,
@@ -797,23 +792,24 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   }
   
   OUT <- list(CON         = object$CON,
-              type        = type,
-              boot        = boot,
-              b.eqrestr   = b.eqrestr,
-              b.unrestr   = b.unrestr,
-              b.restr     = b.restr,
-              b.restr.alt = b.restr.alt,
               Amat        = Amat,
               bvec        = bvec,
               meq         = meq,
               meq.alt     = meq.alt,
               iact        = object$iact,
-              df.residual = df.residual,
-              Sigma       = Sigma,
+              type        = type,
+              test        = "Wald2",
               Ts          = Ts,
+              df.residual = df.residual,
               pvalue      = pvalue,
+              b.eqrestr   = b.eqrestr,
+              b.unrestr   = b.unrestr,
+              b.restr     = b.restr,
+              b.restr.alt = b.restr.alt,
+              Sigma       = Sigma,
               R2.org      = object$R2.org,
               R2.reduced  = object$R2.reduced,
+              boot        = boot,
               model.org   = model.org)
   
   OUT <- list(OUT)
@@ -944,7 +940,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                              b.unrestr = b.unrestr,
                              scale     = scale, 
                              test      = "score", 
-                             cc        = ifelse(is.null(cc), 4.685061, cc))    
+                             cc        = ifelse(is.null(cc), 4.685061, cc))
     Ts <- out0$Ts
     Sigma <- out0$V
   } else if (type == "A") {
@@ -1014,8 +1010,6 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
       }
     }
   } 
-  
-  names(Ts) <- "Score"
   
   # We need to recalculate the weights based on V_hat = Sigam instead on solve(t(X)%*%X)
   # Do we have to? The differences are very small.
@@ -1098,23 +1092,24 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   }
   
   OUT <- list(CON         = object$CON,
-              type        = type,
-              boot        = boot,
-              b.eqrestr   = b.eqrestr,
-              b.unrestr   = b.unrestr,
-              b.restr     = b.restr,
-              b.restr.alt = b.restr.alt,
               Amat        = Amat,
               bvec        = bvec,
               meq         = meq,
               meq.alt     = meq.alt,
               iact        = object$iact,
-              df.residual = df.residual,
-              Sigma       = Sigma,
+              type        = type,
+              test        = "Score",
               Ts          = Ts,
+              df.residual = df.residual,
               pvalue      = pvalue,
+              b.eqrestr   = b.eqrestr,
+              b.unrestr   = b.unrestr,
+              b.restr     = b.restr,
+              b.restr.alt = b.restr.alt,
+              Sigma       = Sigma,
               R2.org      = object$R2.org,
               R2.reduced  = object$R2.reduced,
+              boot        = boot,
               model.org   = model.org)
   
   OUT <- list(OUT)

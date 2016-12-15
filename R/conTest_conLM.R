@@ -170,8 +170,6 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
     }
   } 
 
-  names(Ts) <- "F"
-  
   # The test statistics based on inequality constraints are often
   # distributed as mixtures of chi-squares. These mixing weights can be computed
   # using the multivariate normal distribution with additional Monte Carlo steps
@@ -192,16 +190,14 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
       wt <- wt[-wt.idx]
     }
     
-    #if (boot == "no") {                                            # FIXME: if conTest(boot = "parametric")  boot is set to "no", see con_pvalue.R
-      pvalue <- con_pvalue_Fbar(wt          = wt, 
-                                Ts.org      = Ts, 
-                                df.residual = df.residual, 
-                                type        = type,
-                                Amat        = Amat, 
-                                bvec        = bvec, 
-                                meq         = meq, 
-                                meq.alt     = meq.alt)
-    #}
+    pvalue <- con_pvalue_Fbar(wt          = wt, 
+                              Ts.org      = Ts, 
+                              df.residual = df.residual, 
+                              type        = type,
+                              Amat        = Amat, 
+                              bvec        = bvec, 
+                              meq         = meq, 
+                              meq.alt     = meq.alt)
    } else if (boot == "parametric") {
      pvalue <- con_pvalue_boot_parametric(object, 
                                           Ts.org   = Ts, 
@@ -238,23 +234,24 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   }
   
   OUT <- list(CON         = object$CON,
-              type        = type,
-              boot        = boot,
-              b.eqrestr   = b.eqrestr,
-              b.unrestr   = b.unrestr,
-              b.restr     = b.restr,
-              b.restr.alt = b.restr.alt,
               Amat        = Amat,
               bvec        = bvec,
               meq         = meq,
               meq.alt     = meq.alt,
               iact        = object$iact,
-              df.residual = df.residual,
-              Sigma       = Sigma,
+              type        = type,
+              test        = "F",
               Ts          = Ts,
+              df.residual = df.residual,
               pvalue      = pvalue,
+              b.eqrestr   = b.eqrestr,
+              b.unrestr   = b.unrestr,
+              b.restr     = b.restr,
+              b.restr.alt = b.restr.alt,
+              Sigma       = Sigma,
               R2.org      = object$R2.org,
               R2.reduced  = object$R2.reduced,
+              boot        = boot,
               model.org   = model.org)
 
   OUT <- list(OUT)
@@ -453,8 +450,6 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
     }
   } 
   
-  names(Ts) <- "LRT"
-  
   if (!is.null(object$wt) && boot == "no") { 
     wt <- object$wt
     # is this fool proof? 
@@ -512,24 +507,25 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
   }
   
   OUT <- list(CON         = object$CON,
-              type        = type,
-              boot        = boot,
-              b.eqrestr   = b.eqrestr,
-              b.unrestr   = b.unrestr,
-              b.restr     = b.restr,
-              b.restr.alt = b.restr.alt,
               Amat        = Amat,
               bvec        = bvec,
               meq         = meq,
               meq.alt     = meq.alt,
               iact        = object$iact,
-              df.residual = df.residual,
-              Sigma       = Sigma,
+              type        = type,
+              test        = "LRT",
               Ts          = Ts,
+              df.residual = df.residual,
               pvalue      = pvalue,
+              b.eqrestr   = b.eqrestr,
+              b.unrestr   = b.unrestr,
+              b.restr     = b.restr,
+              b.restr.alt = b.restr.alt,
+              Sigma       = Sigma,
               R2.org      = object$R2.org,
               R2.reduced  = object$R2.reduced,
-              model.org   = object$model.org)
+              boot        = boot,
+              model.org   = model.org)
 
   OUT <- list(OUT)
   names(OUT) <- type
@@ -792,8 +788,6 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     }
   } 
   
-  names(Ts) <- "Score"
-  
   if (!is.null(object$wt) && boot == "no") {
     wt <- object$wt
     wt <- rev(wt)
@@ -851,24 +845,25 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   }
   
   OUT <- list(CON         = object$CON,
-              type        = type,
-              boot        = boot,
-              b.eqrestr   = b.eqrestr,
-              b.unrestr   = b.unrestr,
-              b.restr     = b.restr,
-              b.restr.alt = b.restr.alt,
               Amat        = Amat,
               bvec        = bvec,
               meq         = meq,
               meq.alt     = meq.alt,
               iact        = object$iact,
-              df.residual = df.residual,
-              Sigma       = Sigma,
+              type        = type,
+              test        = "Score",
               Ts          = Ts,
+              df.residual = df.residual,
               pvalue      = pvalue,
+              b.eqrestr   = b.eqrestr,
+              b.unrestr   = b.unrestr,
+              b.restr     = b.restr,
+              b.restr.alt = b.restr.alt,
+              Sigma       = Sigma,
               R2.org      = object$R2.org,
               R2.reduced  = object$R2.reduced,
-              model.org   = object$model.org)
+              boot        = boot,
+              model.org   = model.org)
   
   OUT <- list(OUT)
   names(OUT) <- type
@@ -880,9 +875,10 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
 
 
 
-# hypothesis test type C is based on a t-distribution.
-# intersection-union test 
-# REF: S. Sasabuchi (1980). A Test of a Multivariate Normal Mean with Composite Hypotheses Determined by Linear Inequalities. Biometrika Trust, 67 (2), 429-439.
+## hypothesis test type C is based on a t-distribution.
+## intersection-union test 
+## REF: S. Sasabuchi (1980). A Test of a Multivariate Normal Mean with 
+## Composite Hypotheses Determined by Linear Inequalities. Biometrika Trust, 67 (2), 429-439.
 conTestC.conLM <- function(object, type = "C", ...) {
   
   if (!(inherits(object, c("conLM","conRLM")))) {
@@ -897,7 +893,6 @@ conTestC.conLM <- function(object, type = "C", ...) {
     stop("Restriktor ERROR: test not applicable with equality restriktions.")
   }
   
-  #model.org <- object$model.org
   b.unrestr   <- object$b.unrestr
   Sigma       <- object$Sigma
   df.residual <- object$df.residual
@@ -905,20 +900,26 @@ conTestC.conLM <- function(object, type = "C", ...) {
   Ts <- as.vector(min((Amat %*% b.unrestr - bvec) / 
                         sqrt(diag(Amat %*% Sigma %*% t(Amat))))) 
   
-  names(Ts) <- "t"
-  
   pvalue <- 1 - pt(Ts, df.residual)
 
-  OUT <- list(type        = type,
-              b.unrestr   = b.unrestr,
+  OUT <- list(CON         = object$CON,
               Amat        = Amat,
               bvec        = bvec,
               meq         = meq,
+              meq.alt     = 0L,
+              iact        = object$iact,
+              type        = type,
+              test        = "t",
+              Ts          = Ts,
               df.residual = df.residual,
-              Ts          = Ts, 
               pvalue      = pvalue,
+              b.unrestr   = b.unrestr,
+              b.restr     = object$b.restr,
+              Sigma       = Sigma,
               R2.org      = object$R2.org,
-              R2.reduced  = object$R2.reduced)
+              R2.reduced  = object$R2.reduced,
+              boot        = "no",
+              model.org   = object$model.org)
   
   OUT <- list(OUT)
     names(OUT) <- type

@@ -107,7 +107,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
     } else {
       out.test <- c(sprintf("%.4f", x$Ts), as.numeric(NA)) 
     }
-    names(out.test)[1] <- sprintf(" %s%s", names(x$Ts),"-test statistic")
+    names(out.test)[1] <- sprintf(" %s%s", x$test,"-test statistic")
     names(out.test)[2] <- sprintf("%s", "p-value")
     
     if (nrow(x$Amat) > x$meq) {

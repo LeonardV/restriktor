@@ -2,8 +2,7 @@
 # If method = "M", the original coef and scale are used as starting value.
 # For method = "MM", the original coef and scale can only be used in case of 
 # no equality constraints.
-conRLM_fit <- function(model,  
-                       Amat = NULL, bvec = NULL, meq = 0L, 
+conRLM_fit <- function(model, Amat = NULL, bvec = NULL, meq = 0L, 
                        tol = sqrt(.Machine$double.eps), ...) {
     
  # acknowledgement: the irls.delta(); irls.rrxwr(); wmad() functions are taken 
@@ -78,7 +77,7 @@ conRLM_fit <- function(model,
     wt <- NULL
   }
 
-  psi <- psi.bisquare
+  psi <- MASS::psi.bisquare
   # M-estimation
   if (method == "M") {
     coef <- model$coefficient
@@ -92,23 +91,13 @@ conRLM_fit <- function(model,
     # Is this fool proof?
     if (meq > 0L) {
       Dmat <- crossprod(x)
-      dvec <- t(x)%*%y
+      dvec <- t(x) %*% y
       QP <- solve.QP(Dmat, dvec, t(Amat[1:meq,,drop = FALSE]), bvec[1:meq],
                      meq = meq)$solution
       QP[abs(QP) < tol] <- 0L
       x.idx <- QP %in% 0
-  
-      # Dmat <- diag(ncol(Amat))
-      # dvec <- cbind(rep(1, ncol(Amat)))
-      # QP <- solve.QP(Dmat, dvec, t(Amat[1:meq,,drop = FALSE]), bvec[1:meq],
-      #                meq = nrow(Amat[1:meq,,drop = FALSE]))$solution
-      # QP[abs(QP) < tol] <- 0L
-      # x.idx <- QP %in% 0
-      
-      intercept <- FALSE
-      if (x.idx[1] == TRUE) { intercept <- TRUE } 
       temp <- do.call("lqs",
-                      c(list(x = x[,!x.idx, drop = FALSE], y, intercept = intercept, 
+                      c(list(x = x[,!x.idx, drop = FALSE], y, intercept = FALSE, 
                              method = "S", k0 = 1.54764), lqs.control)) 
       coef  <- temp$coefficients
       resid <- temp$residuals

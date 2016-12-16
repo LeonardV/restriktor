@@ -145,7 +145,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
                       print.gap = 2, quote = FALSE)
       } else if (x$type == "B" && x$meq.alt == 0L) {
         cat("\nType B test: H0: all restriktions are true", "\n", 
-            "        vs. HA: at least one restriktion is violated ", "\n\n")
+            "        vs. HA: at least one restriktion is violated", "\n\n")
         print(out.test, quote = FALSE)
         if (!is.null(df.bar)) {
           cat("\nThis test is based on a mixture of F-distributions",  
@@ -160,8 +160,8 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
         print.default(format(x$b.unrestr, digits = digits),
                       print.gap = 2, quote = FALSE)
       } else if (x$type == "B" && x$meq.alt > 0L) {
-        cat("\nType B test: H0: all restriktions are true (>= or =)", "\n,
-                     vs. HA: at least one restriktion is violated (<), some =-restriktions maintained",
+        cat("\nType B test: H0: all restriktions are true (>= or =)", "\n",
+            "        vs. HA: at least one restriktion is violated (<), some =-restriktions maintained",
               "\n\n")
         print(out.test, quote = FALSE)
         if (!is.null(df.bar)) {
@@ -180,7 +180,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
           cat("\nType C test: H0: at least one restriktion is false or active (=)", 
               "\n", "        vs. HA: all restriktions are strictly true (>)", "\n\n")
           print(out.test, quote = FALSE)
-          cat("\nThis test is based on a t-distributions on", x$df.residual, "residual degrees of freedom.")
+          cat("\nThis test is based on a one-sided t-distributions on", x$df.residual, "residual degrees of freedom.")
           cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
           print(out.rest, quote = FALSE, scientific = FALSE)
           cat("\nunrestrikted estimate:\n")

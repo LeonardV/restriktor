@@ -145,7 +145,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
       # preserved in the alternative hypothesis.
       Ts <- c(t(b.unrestr - b.restr) %*% solve(Sigma, b.unrestr - b.restr))
     } else {
-      if (meq.alt != 0L && meq.alt <= meq) {
+      if (meq.alt > 0L && meq.alt <= meq) {
         b.restr.alt <- con_solver(X         = X, 
                                   y         = y, 
                                   b.unrestr = b.unrestr,
@@ -742,7 +742,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
       }
       else {
       # some equality may be preserved in the alternative hypothesis.
-      if (meq.alt != 0L && meq.alt <= meq) {
+      if (meq.alt > 0L && meq.alt <= meq) {
         b.restr.alt <- con_solver(X         = X, 
                                   y         = y, 
                                   b.unrestr = b.unrestr,

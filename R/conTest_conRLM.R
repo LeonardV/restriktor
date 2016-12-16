@@ -147,7 +147,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                      cc        = ifelse(is.null(cc), 4.685061, cc))$Ts
     } else {
       # some equality may be preserved in the alternative hypothesis.
-      if (meq.alt != 0L && meq.alt <= meq) {
+      if (meq.alt > 0L && meq.alt <= meq) {
         call.my <- list(Amat = Amat[1:meq.alt, , drop = FALSE], 
                         meq = meq.alt, bvec = bvec[1:meq.alt],
                         tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
@@ -422,7 +422,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
       Sigma <- out2$V
     } else {
       # some equality may be preserved in the alternative hypothesis.
-      if (meq.alt != 0L && meq.alt <= meq) {
+      if (meq.alt > 0L && meq.alt <= meq) {
         call.my <- list(Amat = Amat[1:meq.alt,,drop=FALSE], meq = meq.alt, 
                         bvec = bvec[1:meq.alt],
                         tol  = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
@@ -710,7 +710,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                          tau       = tau)$Ts
     } else {
       # some equality may be preserved in the alternative hypothesis.
-      if (meq.alt != 0L && meq.alt <= meq) {
+      if (meq.alt > 0L && meq.alt <= meq) {
         call.my <- list(Amat = Amat[1:meq.alt, , drop = FALSE], 
                         meq = meq.alt, bvec = bvec[1:meq.alt],
                         tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
@@ -981,7 +981,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
       Sigma <- out2$V
     } else {
       # some equality may be preserved in the alternative hypothesis.
-      if (meq.alt != 0L && meq.alt <= meq) {
+      if (meq.alt > 0L && meq.alt <= meq) {
         call.my <- list(Amat = Amat[1:meq.alt,,drop=FALSE], meq = meq.alt, 
                         bvec = bvec[1:meq.alt],
                         tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 

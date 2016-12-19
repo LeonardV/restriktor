@@ -21,7 +21,6 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic",
   meq <- z$neq
   p <- z$model.org$rank
   rdf <- z$df.residual
-  #r <- c(z$residuals)
   b.restr <- z$b.restr
   r <- c(weighted.residuals(z))
   
@@ -125,25 +124,24 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic",
     ans$R2.reduced <- 0
   }
   
+  ## compute goric
   if (GORIC && !is.null(z$wt)) {
     wt <- z$wt
     bootWt <- attr(wt, "bootWt")
-    # compute goric
-    # REF: Kuiper, R.M.; Hoijtink, H.J.A.; Silvapulle, M. J. (2012) 
-    # Journal of statistical planning and inference, volume 142, pp. 2454 - 2463
-    ## TO DO: add small sample corrections
-    # compute penalty term
-    if (bootWt) { # compute mixing weights based on simulation
-      PT <- 1 + sum( (0 : ncol(Amat)) * wt)
-    } else if (!bootWt & ((meq < nrow(Amat)) && !all(c(Amat) == 0))) { 
-    #  wt <- rev(con_weights(Amat %*% W %*% t(Amat), meq = meq))
-      start.idx <- 1 + (ncol(Amat) - nrow(Amat) - 1)
-      end.idx <- ncol(Amat) - meq
-      PT <- 1 + sum(start.idx:end.idx * wt)      
-    } else if (!bootWt & (meq == nrow(Amat))) { # only equality constraints
-      PT <- 1 + sum( (0 : ncol(Amat)) * wt)
-    } else if (all(c(Amat) == 0)) { # unconstrained
-      PT <- 1 + sum( (0 : ncol(Amat)) * wt)
+    ## REF: Kuiper, R.M.; Hoijtink, H.J.A.; Silvapulle, M. J. (2012) 
+    ## Journal of statistical planning and inference, volume 142, pp. 2454 - 2463
+    
+    # compute penalty term based on simulated level probabilities (wt)
+    # The value 1 is the penalty for estimating the variance.
+    if (bootWt) { 
+      PT <- 1 + sum(0 : ncol(Amat) * wt)
+      # unconstrained case
+    } else if (!bootWt && all(c(Amat) == 0)) {
+      PT <- p + 1
+    } else if (!bootWt) {
+      min_C <- ncol(Amat) - nrow(Amat)
+      max_C <- ncol(Amat) - meq
+      PT <- 1 + sum(min_C : max_C * wt) 
     } else {
       stop("restriktor ERROR: unable to compute penalty for GORIC.")  
     }

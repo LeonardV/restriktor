@@ -1,6 +1,6 @@
 \name{restriktor-package}
 \alias{restriktor-package}
-\title{Package for equality and inequality restrikted estimation and hypothesis testing}
+\title{Package for equality and inequality restricted estimation and hypothesis testing}
 \description{
 Package \code{restriktor} implements estimation and testing linear equality and 
 inequality restriktions about parameters and effects for multivariate (robust) 
@@ -22,34 +22,34 @@ normal models.}
   are the \code{conLM} and the \code{conRLM} functions for 
   linear and robust linear models respectively. A major advantage
   of \pkg{restriktor} is that the constraints can be specified by
-  a text-based description. Users do not have to specify the complex
-  constraint matrix (comparable with a contrast matrix) themselves. 
+  a text-based description. This means that users do not have to 
+  specify the complex constraint matrix (comparable with a contrast 
+  matrix) themselves. 
   
   The function \code{restriktor} offers the possibility to compute 
   (model robust) standard errors under the restriktions. The 
   parameter estimates can also be bootstrapped, where bootstrapped 
   standard errors and confidence intervals are available via the 
   summary function. Moreover, the function computes the Generalized 
-  Order-restrikted Information Criterion (GORIC), which is a 
+  Order-restricted Information Criterion (GORIC), which is a 
   modification of the AIC and the ORIC.
   
-  Function \code{conTest} conducts restrikted hypothesis tests. 
-  F, Wald/LRT and score test-statistics are available. The 
-  null-distribution of these test-statistics takes the form of a 
-  mixture of chi-square distributions. These mixing weights can 
-  be computed using the multivariate normal distribution function
-  with additional Monte Carlo steps or via a simulation approach. 
+  Function \code{iht} (alias \code{conTest}) conducts restricted 
+  hypothesis tests. F, Wald/LRT and score test-statistics are available. 
+  The null-distribution of these test-statistics takes the form of a 
+  mixture of F-distributions. The mixing weights (a.k.a. chi-bar-square 
+  weights) can be computed using the multivariate normal distribution 
+  function with additional Monte Carlo steps or via a simulation approach. 
   Bootstrap methods are available to calculate the mixing weights 
   and to compute the p-value directly. Parameters estimates under 
   the null- and alternative-hypothesis are available from the 
   summary function. 
   
   The package makes use of various other R packages: \pkg{quadprog} 
-  is used for restrikted estimation, \pkg{boot} for bootstrapping, 
+  is used for restricted estimation, \pkg{boot} for bootstrapping, 
   \pkg{ic.infer} for computing the mixing weights based on the 
   multivariate normal distribution, \pkg{lavaan} for parsing the 
-  constraint syntax, and \pkg{zoo} is need for computing sandwich 
-  estimators for time series. 
+  constraint syntax. 
 }
 
 \value{
@@ -66,9 +66,9 @@ normal models.}
   \code{nchoosek} from \pkg{ic.infer}, which is originally from 
   \pkg{vsn}, authored by Wolfgang Huber, available under LGPL. 
   
-  The output style of the \code{conTest} print and summary function 
-  is strongly inspired on the summary of the \code{ic.test} function 
-  from the \pkg{ic.infer} package.
+  The output style of the \code{iht} print function is strongly 
+  inspired on the summary of the \code{ic.test} function from the 
+  \pkg{ic.infer} package.
   
   It also uses code chunks from the \code{rlm.default} function 
   from the \pkg{MASS} package.  
@@ -76,21 +76,23 @@ normal models.}
 
 
 \examples{
-# Ages (in months) at which an infant starts to walk alone.
+## Data preparation
+## Ages (in months) at which an infant starts to walk alone.
 DATA <- ZelazoKolb1972
 idx <- which(DATA$Group == "Control")
 DATA <- DATA[-idx, ]
 
-# unrestrikted linear model 
-fit.lm <- lm(Age ~ Group, data = DATA)
-summary(fit.lm)
+## unrestricted linear model 
+fit_lm <- lm(Age ~ -1 + Group, data = DATA)
+summary(fit_lm)
 
-# restrikted linear model with restriktions that the walking 
-# exercises would not have a negative effect of increasing the 
-# mean age at which a child starts to walk. 
+## restricted linear model with restriktions that the walking 
+## exercises would not have a negative effect of increasing the 
+## mean age at which a child starts to walk. 
 
-fit.con <- restriktor(fit.lm, constraints = "GroupPassive > 0; GroupPassive < GroupNo")
-summary(fit.con)
+fit_con <- restriktor(fit_lm, constraints = "GroupActive < GroupPassive; 
+                                             GroupPassive < GroupNo")
+summary(fit_con)
 }
 
 \references{
@@ -133,7 +135,7 @@ summary(fit.con)
 
 \author{ Leonard Vanbrabant and Yves Rosseel - Ghent University}
 \seealso{ 
-See also \code{\link{restriktor}}, \code{\link{conTest}}, 
+See also \code{\link{restriktor}}, \code{\link{iht}}, 
           packages \pkg{boot}, \pkg{goric}, \pkg{ic.infer}, 
           \pkg{mvtnorm}, and \pkg{quadprog}.
 }

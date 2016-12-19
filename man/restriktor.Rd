@@ -3,11 +3,12 @@
 \alias{conLM.lm}
 \alias{conRLM.rlm}
 
-\title{Estimating linear regression models with (in)equality restriktions}
+\title{Estimating linear regression models with (in)equality restrictions}
 \description{Function \code{restriktor} estimates the parameters of a linear model (\code{lm}) 
-  or robust linear model (\code{rlm}) subject to linear equality and/or linear inequality 
-  restriktions. The real work horses are the \code{conLM} and the \code{conRLM} 
-  functions for linear and robust linear models respectively.}
+  or robust linear model (\code{rlm}) subject to linear equality 
+  and/or linear inequality restrictions. The real work horses are 
+  the \code{conLM} and the \code{conRLM} functions for linear and 
+  robust linear models respectively.}
 
 \usage{
 restriktor(object, constraints = NULL, \dots)
@@ -19,10 +20,10 @@ restriktor(object, constraints = NULL, \dots)
       \dots)
       
 \method{conRLM}{rlm}(object, constraints = NULL, se = "standard", 
-      B = 999, rhs = NULL, neq = 0L, Wt = TRUE, bootWt = FALSE, 
-      bootWt.R = 99999, parallel = "no", ncpus = 1L, cl = NULL, 
-      seed = NULL, control = NULL, verbose = FALSE, debug = FALSE, 
-      \dots)
+       B = 999, rhs = NULL, neq = 0L, Wt = TRUE, bootWt = FALSE, 
+       bootWt.R = 99999, parallel = "no", ncpus = 1L, cl = NULL, 
+       seed = NULL, control = NULL, verbose = FALSE, debug = FALSE, 
+       \dots)
 }
 \arguments{
   \item{object}{a fitted linear model object of class "lm", or a 
@@ -52,8 +53,8 @@ restriktor(object, constraints = NULL, \dots)
   errors are computed (a.k.a Huber White). The options "\code{HC1}", 
   "\code{HC2}", "\code{HC3}", "\code{HC4}", "\code{HC4m}", and 
   "\code{HC5}" are refinements of "\code{HC0}". For more details about 
-  heteroskedastic robust standard errors see \code{sandwich()} in 
-  the \pkg{sandwich} package. If "\code{boot.standard}", bootstrapped standard 
+  heteroskedastic robust standard errors see the \pkg{sandwich} 
+  package. If "\code{boot.standard}", bootstrapped standard 
   errors are computed using standard bootstrapping. If "\code{boot.model.based}" 
   or "\code{boot.residual}", bootstrapped standard errors are computed 
   using model-based bootstrapping. If "\code{none}", no standard errors 
@@ -77,7 +78,7 @@ restriktor(object, constraints = NULL, \dots)
   weights are computed based on the multivariate normal distribution 
   function with additional Monte Carlo steps. These weights are 
   necessary in the \code{summary} function for computing the GORIC 
-  value. Moreover, they are re-used in the \code{\link{conTest}} 
+  value. Moreover, they are re-used in the \code{\link{iht}} 
   function for computing the p-value for the test-statistic, 
   unless the p-value is computed directly via bootstrapping.}
   \item{bootWt.R}{integer; number of bootstrap draws for \code{bootWt}. 
@@ -123,6 +124,10 @@ restriktor(object, constraints = NULL, \dots)
     ! 2. equality constraints  
       x3 == x4; x4 == x5'  
   }
+  The variable names x1 to x5 refer to the corresponding regression
+  coefficient. Thus, constraints are impose on regression coefficients
+  and not on the data.
+  
   Second, the above constraints syntax can also be written in 
   matrix/vector notation as:
   
@@ -173,10 +178,10 @@ syntax:
   constraints on parameters of interaction effects, the semi-colon 
   must be replaced by a dot (.) (e.g., \code{x3:x4} becomes 
   \code{x3.x4}). In addition, the intercept variable names is shown 
-  as "\code{(Intercept)}". To impose restriktions on the intercept 
+  as "\code{(Intercept)}". To impose restrictions on the intercept 
   both parentheses must be replaced by a dot "\code{.Intercept.}" 
   (e.g.,\code{.Intercept. > 10}). Note: in most practical situations 
-  we do not impose restriktions on the intercept because we do not 
+  we do not impose restrictions on the intercept because we do not 
   have prior knowledge about the intercept. Moreover, the sign of 
   the intercept can be changed arbitrarily by shifting the response 
   variable \eqn{y}.
@@ -185,32 +190,34 @@ syntax:
   if \code{x2} is expected to be twice as large as \code{x1}, 
   then "\code{2*x2 == x1}". 
   
-  If \code{constraints = NULL}, the unrestrikted model is fitted. 
-  This can be useful in case of computing GORIC weights, see 
-  \code{\link{goric}}. 
+  If \code{constraints = NULL}, the unrestricted model is fitted.
 }
 \value{
 An object of class conLM or conRLM, for which a print and a 
 summary method are available. More specifically, it is a list 
 with the following items:
 
-\item{CON}{a list with useful information about the restriktions.}
+\item{CON}{a list with useful information about the restrictions.}
+
+\item{call}{the matched call.}
+
+\item{timing}{how much time several tasks take.}
 
 \item{parTable}{a parameter table with information about the 
- observed variables in the model and the imposed restriktions.}
+ observed variables in the model and the imposed restrictions.}
 
 \item{wt}{chi-bar-square weights.}
 
-\item{b.restr}{restrikted regression coefficients.}
+\item{b.unrestr}{unrestricted regression coefficients.}
 
-\item{b.unrestr}{unrestrikted regression coefficients.}
+\item{b.restr}{restricted regression coefficients.}
 
-\item{residuals}{restrikted residuals.}
+\item{residuals}{restricted residuals.}
+
+\item{fitted}{restricted fitted mean values.}
 
 \item{wresid}{a working residual, weighted for "inv.var" weights 
 only (rlm only)}
-
-\item{fitted}{restrikted fitted mean values.}
 
 \item{weights}{(only for weighted fits) the specified weights.}
 
@@ -223,25 +230,25 @@ only (rlm only)}
 
 \item{df.residual}{the residual degrees of freedom}
 
-\item{R2.org}{unrestrikted R-squared.}
+\item{R2.org}{unrestricted R-squared.}
 
-\item{R2.reduced}{restrikted R-squared.}
+\item{R2.reduced}{restricted R-squared.}
 
-\item{s2.unc}{mean squared error of unrestrikted model.}
+\item{s2.unc}{mean squared error of unrestricted model.}
 
-\item{s2.restr}{mean squared error of restrikted model.}
+\item{s2.restr}{mean squared error of restricted model.}
 
-\item{loglik}{restrikted log-likelihood.}
+\item{loglik}{restricted log-likelihood.}
 
-\item{Sigma}{variance-covariance matrix of unrestrikted model.}
+\item{Sigma}{variance-covariance matrix of unrestricted model.}
 
-\item{constraints}{matrix with restriktions.}
+\item{constraints}{matrix with restrictions.}
 
 \item{rhs}{vector of right-hand side elements.}
 
-\item{neq}{number of equality restriktions.}
+\item{neq}{number of equality restrictions.}
 
-\item{iact}{active restriktions.}
+\item{iact}{active restrictions.}
 
 \item{converged}{did the IWLS converge (rlm only)?}
 
@@ -249,8 +256,6 @@ only (rlm only)}
 
 \item{bootout}{object of class boot. Only available if bootstrapped
 standard errors are requested, else bootout = NULL.} 
-
-\item{call}{the matched call.}
 
 \item{model.org}{original model.}
 
@@ -277,38 +282,39 @@ Wiley, New York
 
 
 \seealso{ 
-  \code{\link{conTest}},
+  \code{\link{iht}},
   \code{\link{goric}}
 }
 
 \examples{
-# unrestricted linear model for ages (in months) at which an 
+## unrestricted linear model for ages (in months) at which an 
 # infant starts to walk alone.
 DATA <- ZelazoKolb1972
 idx <- which(DATA$Group == "Control")
 DATA <- DATA[-idx, ]
 
-# fit unrestrikted linear model
-fit1.lm <- lm(Age ~ Group, data = DATA)
+# fit unrestricted linear model
+fit1.lm <- lm(Age ~ -1 + Group, data = DATA)
 
-# the variable names can be used to impose restriktions on
+# the variable names can be used to impose restrictions on
 # the corresponding regression parameters.
 coef(fit1.lm)
 
-# restrikted linear model with restriktions that the walking 
+# restricted linear model with restrictions that the walking 
 # exercises would not have a negative effect of increasing the 
 # mean age at which a child starts to walk. 
-fit1.con <- restriktor(fit1.lm, constraints = "GroupPassive > 0; GroupPassive < GroupNo")
+fit1.con <- restriktor(fit1.lm, constraints = "GroupActive < GroupPassive; 
+                                               GroupPassive < GroupNo")
 summary(fit1.con)
 
 \dontrun{ 
 # Or in matrix notation.
-myConstraints_mat1 <- rbind(c(0, 1, 0),
-                            c(0,-1, 1))
-myRhs1 <- rep(0L, nrow(myConstraints_mat1)) 
+Amat1 <- rbind(c(-1, 1, 0),
+               c( 0,-1, 1))
+myRhs1 <- rep(0L, nrow(Amat1)) 
 myNeq1 <- 0
 
-fit1.con <- restriktor(fit1.lm, constraints = myConstraints_mat1,
+fit1.con <- restriktor(fit1.lm, constraints = Amat1,
                        rhs = myRhs1, neq = myNeq1)
 summary(fit1.con)
 }            
@@ -324,37 +330,38 @@ group <- as.factor(rep(1:nm, each = n))
 y <- rnorm(n * nm, rep(means, each = n))
 DATA2 <- data.frame(y, group)
 
-# fit unrestrikted robust linear model
+# fit unrestricted robust linear model
 library(MASS)
-fit2.rlm <- rlm(y ~ group, data = DATA2, method = "MM")
+fit2.rlm <- rlm(y ~ -1 + group, data = DATA2, method = "MM")
 coef(fit2.rlm)
 
 ## increasing means
-myConstraints2 <- ' group2 > 0
+myConstraints2 <- ' group1 < group2
                     group2 < group3
                     group3 < group4
 '
 
-# fit restrikted robust linear model and compute 
+# fit restricted robust linear model and compute 
 # Huber-White (robust) standard errors.
-fit2.con <- restriktor(fit2.rlm, constraints = myConstraints2, se = "HC0")
+fit2.con <- restriktor(fit2.rlm, constraints = myConstraints2, 
+                       se = "HC0")
 summary(fit2.con)
 
 \dontrun{ 
 ## increasing means in matrix notation.
-myConstraints_mat2 <- rbind(c(0, 1, 0, 0),
-                            c(0,-1, 1, 0),
-                            c(0, 0,-1, 1))
-myRhs2 <- rep(0L, nrow(myConstraints_mat2)) 
+Amat2 <- rbind(c(-1, 1, 0, 0),
+               c( 0,-1, 1, 0),
+               c( 0, 0,-1, 1))
+myRhs2 <- rep(0L, nrow(Amat2)) 
 myNeq2 <- 0
 
-fit2.con <- restriktor(fit2.rlm, constraints = myConstraints_mat2,
+fit2.con <- restriktor(fit2.rlm, constraints = Amat2,
                        rhs = myRhs2, neq = myNeq2, se = "HC0")
 summary(fit2.con)
 }            
 
-## equality restriktions only.
-myConstraints3 <- ' group2 == 0
+## equality restrictions only.
+myConstraints3 <- ' group1 == group2
                     group2 == group3
                     group3 == group4
 '
@@ -362,12 +369,12 @@ fit3.con <- restriktor(fit2.rlm, constraints = myConstraints3)
 summary(fit3.con)
 
 
-## combination of equality and inequality restriktions.
-myConstraints4 <- ' group2 == 0
-                    group3 < group4
+## combination of equality and inequality restrictions.
+myConstraints4 <- ' group1 == group2
+                    group3  < group4
 '
 
-# fit restikted model and compute model-based bootstrapped 
+# fit restricted model and compute model-based bootstrapped 
 # standard errors. We only generate 9 bootstrap samples in this 
 # example; in practice you may wish to use a much higher number.
 fit4.con <- restriktor(fit2.rlm, constraints = myConstraints4, 
@@ -376,8 +383,8 @@ fit4.con <- restriktor(fit2.rlm, constraints = myConstraints4,
 summary(fit4.con)
 
 # restriktor can also be used to define effects using the := operator 
-# and impose restriktions on them. For example, compute the average 
-# effect (AVE) and impose the restriktion AVE > 0.
+# and impose restrictions on them. For example, compute the average 
+# effect (AVE) and impose the restriction AVE > 0.
 # generate data
 n <- 30
 b0 <- 10; b1 = 0.5; b2 = 1; b3 = 1.5

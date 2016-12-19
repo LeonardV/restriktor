@@ -16,7 +16,7 @@
 
 \title{Function for informative hypothesis testing}
 \description{\code{conTest} tests linear equality and/or 
-inequality restrikted hypotheses for (robust) linear models by F-, 
+inequality restricted hypotheses for (robust) linear models by F-, 
 Wald-, likelihood ratio-, and score-tests.}
 
 \usage{
@@ -86,7 +86,7 @@ conTest(object, type = "summary", test = "F", \dots)
       \item for object of class lm; if "F" (default), the F-bar 
       statistic (Silvapulle, 1996) is computed. If "LRT", a 
       likelihood ratio test statistic (Silvapulle and Sen, 2005, 
-      chp 3.) is computed. If "score", a one-sided score test 
+      chp 3.) is computed. If "score", a score test 
       statistic (Silvapulle, M.J. and Silvapulle, P., 1995) is 
       computed. Note that, in case of equality constraints only, 
       the usual unconstrained F-, Wald-, LR- and score-test 
@@ -97,12 +97,12 @@ conTest(object, type = "summary", test = "F", \dots)
       computed. If "Wald", a robust Wald test statistic 
       (Silvapulle, 1996) is computed. If "Wald2", a robust Wald test 
       statistic (Silvapulle, 1992b) is computed. If "score", a 
-      one-sided score test statistic (Silvapulle, 1996) is computed. 
+      score test statistic (Silvapulle, 1996) is computed. 
       Note that, in case of equality constraints only, unconstrained 
       robust F-, Wald-, score-test statistics are computed.
     }
   }
-  \item{neq.alt}{integer: number of equality restriktions that 
+  \item{neq.alt}{integer: number of equality constraints that 
   are maintained under the alternative hypothesis (for hypothesis 
   test type "B"), see example 4.}
   
@@ -173,15 +173,15 @@ conTest(object, type = "summary", test = "F", \dots)
 
 \details{The following hypothesis tests are available:
 \itemize{
-  \item Type A: Test H0: all restriktions with equalities ("=") 
-  active against HA: at least one inequality restriktion (">") 
+  \item Type A: Test H0: all constraints with equalities ("=") 
+  active against HA: at least one inequality restriction (">") 
   strictly true.
-  \item Type B: Test H0: all restriktions with inequalities (">") 
+  \item Type B: Test H0: all constraints with inequalities (">") 
   (including some equalities ("=")) active against HA: at least 
-  one restriktion false (some equality restriktions may be 
+  one restriction false (some equality constraints may be 
   maintained).
-  \item Type C: Test H0: at least one restriktion false ("<") 
-  against HA: all restriktions strikty true (">"). This test is 
+  \item Type C: Test H0: at least one restriction false ("<") 
+  against HA: all constraints strikty true (">"). This test is 
   based on the intersection-union principle (Silvapulle and Sen, 
   2005, chp 5.3). Note that, this test only makes sense in case 
   of no equality constraints.
@@ -192,11 +192,11 @@ conTest(object, type = "summary", test = "F", \dots)
 
 The null-distribution of hypothesis test Type C is based on a 
 t-distribution (one-sided). Its power can be poor in case of many 
-inequalty restriktions. Its main role is to prevent wrong 
+inequalty constraints. Its main role is to prevent wrong 
 conclusions from significant results from hypothesis test Type A.
 
 The exact finite sample distributions of the non-robust F-, 
-score- and LR-test statistics based on restrikted OLS estimates 
+score- and LR-test statistics based on restricted OLS estimates 
 and normally distributed errors, are a mixture of F-distributions 
 under the null hypothesis (Wolak, 1987). In agreement with 
 Silvapulle (1992), we found that the results based on these 
@@ -219,24 +219,28 @@ computes all available hypothesis tests and prints a nice summary.
 \value{
   An object of class conTest, for which a print is available. 
   More specifically, it is a list with the following items:
-  \item{CON}{a list with useful information about the restriktions.}
+  \item{CON}{a list with useful information about the constraints.}
+  \item{Amat}{constraints matrix.}
+  \item{bvec}{vector of right-hand side elements.}
+  \item{meq}{number of equality constraints.}
+  \item{meq.alt}{same as input neq.alt.}
+  \item{iact}{number of active constraints.}
   \item{type}{same as input.}
-  \item{b.eqrestr}{equality restrikted regression coefficients. 
+  \item{test}{same as input.}
+  \item{Ts}{test-statistic value.}
+  \item{df.residual}{the residual degrees of freedom.}
+  \item{pvalue}{tail probability for \code{Ts}.}
+  \item{b.eqrestr}{equality restricted regression coefficients. 
   Only available for \code{type = "A"} and \code{type = "global"}, 
   else \code{b.eqrestr = NULL}.}
-  \item{b.unrestr}{unrestrikted regression coefficients.}
-  \item{b.restr}{restrikted regression coefficients.}
-  \item{b.restr.alt}{restrikted regression coefficients under HA 
+  \item{b.unrestr}{unrestricted regression coefficients.}
+  \item{b.restr}{restricted regression coefficients.}
+  \item{b.restr.alt}{restricted regression coefficients under HA 
   if some equality constraints are maintained.}
-  \item{constraints}{matrix with restriktions.}
-  \item{rhs}{vector of right-hand side elements.}
-  \item{neq}{number of equality restriktions.}
-  \item{neq.alt}{same as input.}
-  \item{iact}{active restriktions.}
-  \item{df.residual}{the residual degrees of freedom.}
-  \item{Sigma}{variance-covariance matrix of unrestrikted model.}
-  \item{Ts}{test-statistic value.}
-  \item{pvalue}{tail probability for \code{Ts}.}
+  \item{Sigma}{variance-covariance matrix of unrestricted model.}
+  \item{R2.org}{unrestricted R-squared.}
+  \item{R2.reduced}{restricted R-squared.}
+  \item{boot}{same as input.}
   \item{model.org}{original model.}
 }
 
@@ -290,29 +294,30 @@ DATA <- ZelazoKolb1972
 idx <- which(DATA$Group == "Control")
 DATA <- DATA[-idx, ]
 
-# fit unrestrikted linear model
-fit1.lm <- lm(Age ~ Group, data = DATA)
+# fit unrestricted linear model
+fit1.lm <- lm(Age ~ -1 + Group, data = DATA)
 
-# the variable names can be used to impose restriktions on
+# the variable names can be used to impose constraints on
 # the corresponding regression parameters.
 coef(fit1.lm)
 
-# restrikted linear model with restriktions that the walking 
+# restricted linear model with constraints that the walking 
 # exercises would not have a negative effect of increasing the 
 # mean age at which a child starts to walk. 
-fit1.con <- restriktor(fit1.lm, constraints = "GroupPassive > 0; GroupPassive < GroupNo")
+fit1.con <- restriktor(fit1.lm, constraints = "GroupActive < GroupPassive; 
+                                               GroupPassive < GroupNo")
 
 # compute F-test
 conTest(fit1.con)
 
 \dontrun{ 
   # Or in matrix notation.
-  myConstraints_mat1 <- rbind(c(0, 1, 0),
-                              c(0,-1, 1))
-  myRhs1 <- rep(0L, nrow(myConstraints_mat1)) 
+  Amat1 <- rbind(c(-1, 1, 0),
+                 c( 0,-1, 1))
+  myRhs1 <- rep(0L, nrow(Amat1)) 
   myNeq1 <- 0
   
-  fit1.con <- restriktor(fit1.lm, constraints = myConstraints_mat1,
+  fit1.con <- restriktor(fit1.lm, constraints = Amat1,
                          rhs = myRhs1, neq = myNeq1)
   conTest(fit1.con)
 }            
@@ -328,41 +333,41 @@ group <- as.factor(rep(1:nm, each = n))
 y <- rnorm(n * nm, rep(means, each = n))
 DATA2 <- data.frame(y, group)
 
-# fit unrestrikted linear model
-fit2.lm <- lm(y ~ group, data = DATA2)
+# fit unrestricted linear model
+fit2.lm <- lm(y ~ -1 + group, data = DATA2)
 coef(fit2.lm)
 
 ## example 2: increasing means
-myConstraints2 <- ' group2 > 0
+myConstraints2 <- ' group1 < group2
                     group2 < group3
                     group3 < group4'
 
-# fit restrikted robust linear model and compute 
+# fit restricted robust linear model and compute 
 # Huber-White (robust) standard errors.
 fit2.con <- restriktor(fit2.lm, constraints = myConstraints2, se = "HC0")
 
-# compute score test type A and compute the tail probability based 
-# on the parametric bootstrap. We only generate 9 bootstrap samples 
-# in this example; in practice you may wish to use a much higher 
-# number.
+# compute score test for hypothesis test Type A and compute the tail 
+# probability based on the parametric bootstrap. We only generate 9 
+# bootstrap samples in this example; in practice you may wish to 
+# use a much higher number.
 conTest(fit2.con, type = "A", test = "score", boot = "parametric", R = 9)
 
 \dontrun{ 
   # increasing means in matrix notation.
-  myConstraints_mat2 <- rbind(c(0, 1, 0, 0),
-                              c(0,-1, 1, 0),
-                              c(0, 0,-1, 1))
-  myRhs2 <- rep(0L, nrow(myConstraints_mat2)) 
+  Amat2 <- rbind(c(-1, 1, 0, 0),
+                 c( 0,-1, 1, 0),
+                 c( 0, 0,-1, 1))
+  myRhs2 <- rep(0L, nrow(Amat2)) 
   myNeq2 <- 0
   
-  fit2.con <- restriktor(fit2.lm, constraints = myConstraints_mat2,
+  fit2.con <- restriktor(fit2.lm, constraints = Amat2,
                          rhs = myRhs2, neq = myNeq2)
 
   conTest(fit2.con, type = "A", test = "score", boot = "parametric", R = 9)
 }            
 
-## example 3: equality restriktions only.
-myConstraints3 <- 'group2 == 0
+## example 3: equality constraints only.
+myConstraints3 <- 'group1 == group2
                    group2 == group3
                    group3 == group4'
 fit3.con <- restriktor(fit2.lm, constr = myConstraints3)
@@ -370,9 +375,9 @@ conTest(fit3.con)
 
 
 ## example 4:
-# combination of equality and inequality restriktions.
-myConstraints4 <- ' group2 == 0
-                    group3 < group4
+# combination of equality and inequality constraints.
+myConstraints4 <- ' group1 == group2
+                    group3  < group4
 '
 
 # fit restikted model and compute model-based bootstrapped 
@@ -387,7 +392,7 @@ conTest(fit4.con, type = "B", neq.alt = 1)
 
 ## example 5:
 # restriktor can also be used to define effects using the := operator 
-# and impose restriktions on them. For example, is the 
+# and impose constraints on them. For example, is the 
 # average effect (AVE) larger than zero?
 # generate data
 n <- 30

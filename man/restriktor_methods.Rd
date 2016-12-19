@@ -7,8 +7,8 @@
 \alias{model.matrix.conLM}
 
 \title{Methods for restriktor}
-\description{Restrikted estimation and confidence intervals for  
-(robust) linear (in)equality restrikted hypotheses.
+\description{restricted estimation and confidence intervals for  
+(robust) linear (in)equality restricted hypotheses.
 }
 \usage{
 
@@ -27,8 +27,7 @@
 }
 \arguments{
   \item{object}{an object of class \code{conLM} or \code{conRLM}.}
-  \item{x}{an object of class \code{conLM}, \code{conRLM},  
-  \code{summary.conLM} or \code{summary.conRLM}.}
+  \item{x}{an object of class \code{conLM}, \code{conRLM}.}
   \item{bootCIs}{if TRUE (default), nonparametric bootstrap 
   confidence intervals are generated. Only available if \code{object}
   contains \code{bootout} object.}
@@ -37,10 +36,10 @@
   "basic","perc","bca"}. The value \code{"stud"} is not supported.
   For more details see \code{\link{boot.ci}}.}
   \item{level}{the confidence level of the interval (default = 0.95).}
-  \item{GORIC}{if TRUE (default), the Generalized Order-Restrikted 
+  \item{GORIC}{if TRUE (default), the Generalized Order-restricted 
   Information Criterion value is computed, the penalty term and the
   log-likelihood. The GORIC is a modification of the AIC and the 
-  ORIC such that it can be applied to a (in)equality restrikted
+  ORIC such that it can be applied to a (in)equality restricted
   hypotheses in multivariate normal linear models. For more 
   information see the \pkg{goric} package.}
   \item{digits}{the number of significant digits to use when printing.}
@@ -49,11 +48,11 @@
   \item{\ldots}{no additional arguments for now.}
 }
 \details{
-  The function \code{print} returns the restrikted coefficients.
+  The function \code{print} returns the restricted coefficients.
   The output from the \code{print.summary.conLM} function provides 
   information that is comparable with the output from 
   \code{print.summary.lm}. Additional information is provided 
-  about the unrestrikted and restrikted R-square and by default 
+  about the unrestricted and restricted R-square and by default 
   the output of the GORIC. If bootstrapped standard errors are 
   requested (e.g., option \code{se = "boot.model.based"} in the 
   \code{restriktor} function and \code{bootCI = TRUE} in the 
@@ -63,7 +62,7 @@
 
 \value{
   The function \code{summary} computes and returns a list of 
-  summary statistics of the fitted unrestrikted and restrikted 
+  summary statistics of the fitted unrestricted and restricted 
   (robust) linear model given in \code{object}, plus
   
   \item{se.type}{type of standard error computed, equal to input 
@@ -79,9 +78,9 @@
   
   \item{rdf}{residual degrees of freedom.}
   
-  \item{R2.org}{unrestrikted R-squared.}
+  \item{R2.org}{unrestricted R-squared.}
   
-  \item{R2.reduced}{restrikted R-squared.}
+  \item{R2.reduced}{restricted R-squared.}
   
   \item{goric}{goric value and attributed its penalty term and
   log-likelihood.}
@@ -94,10 +93,10 @@ DATA <- ZelazoKolb1972
 idx <- which(DATA$Group == "Control")
 DATA <- DATA[-idx, ]
 
-# fit unrestrikted linear model
+# fit unrestricted linear model
 fit.lm <- lm(Age ~ Group, data = DATA)
 
-# restrikted linear model with restriktions that the walking 
+# restricted linear model with restrictions that the walking 
 # exercises would not have a negative effect of increasing the 
 # mean age at which a child starts to walk. 
 fit.con <- restriktor(fit.lm, constraints = "GroupPassive > 0; GroupPassive < GroupNo")

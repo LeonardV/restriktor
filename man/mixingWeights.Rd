@@ -4,9 +4,9 @@
 \title{function for computing the chi-bar-square weights based on 
 Monte Carlo simulation.}
 \description{The null-distribution of the test statistics under 
-inequality constraints takes the form of mixtures of chi-square 
-distributions. This function computes the mixing weights. It can
-be used directly and is called by the \code{conTest} function.
+inequality constraints takes the form of mixtures of F-distributions. 
+This function computes these mixing weights (a.k.a chi-bar-square weights). 
+It can be used directly and is called by the \code{iht} function.
 }
 \usage{con_weightsBoot(VCOV, Amat, meq, 
                 R = 9999, parallel = c("no", "multicore", "snow"),
@@ -28,10 +28,9 @@ be used directly and is called by the \code{conTest} function.
   
   \item{meq}{integer (default = 0) treating the number of 
   constraints rows as equality constraints instead of inequality 
-  constraints. For example, if \code{neq = 2}, this means that the 
+  constraints. For example, if \code{meq = 2}, this means that the 
   first two rows of the constraints matrix \eqn{R} are treated as 
-  equality constraints. Note: only used if constraints input is a 
-  matrix or vector.}
+  equality constraints. }
   
   \item{R}{integer; number of bootstrap draws for \code{bootWt}. 
   The default value is set to 99999. Parallel support is available.}
@@ -58,9 +57,6 @@ be used directly and is called by the \code{conTest} function.
 \value{The function returns a vector with the mixing weights}
 
 \references{
-  Kudo, A. (1963). A multivariate analogue of the one-sided test. 
-  \emph{Biometrika}, \bold{50}, 403-418.
-
   Silvapulle, M.J. and Sen, P.K. (2005, p.79). \emph{Constrained 
   Statistical Inference}. Wiley, New York.
 }

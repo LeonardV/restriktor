@@ -95,7 +95,7 @@ conRLM_fit <- function(model, Amat = NULL, bvec = NULL, meq = 0L,
       QP <- solve.QP(Dmat, dvec, t(Amat[1:meq,,drop = FALSE]), bvec[1:meq],
                      meq = meq)$solution
       QP[abs(QP) < tol] <- 0L
-      x.idx <- QP %in% 0
+      x.idx <- QP %in% 0L
       temp <- do.call("lqs",
                       c(list(x = x[,!x.idx, drop = FALSE], y, intercept = FALSE, 
                              method = "S", k0 = 1.54764), lqs.control)) 

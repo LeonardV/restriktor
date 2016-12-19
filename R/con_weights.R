@@ -12,9 +12,9 @@ con_weights <- function(cov, meq) {
 }
 
 
-# compute weights based on simulation.
-#REF: Silvapulle and Sen (2005, p. 79). Constrained Statistical Inference: Order, 
-# Inequality, and Shape Constraints. Hoboken, {NJ}: Wiley
+## compute weights based on simulation.
+## REF: Silvapulle and Sen (2005, p. 79). Constrained Statistical Inference: Order, 
+## Inequality, and Shape Constraints. Hoboken, {NJ}: Wiley
 con_weightsBoot <- function(VCOV, Amat, meq, 
                             R = 9999, parallel = c("no", "multicore", "snow"),
                             ncpus = 1L, cl = NULL, seed = NULL, 

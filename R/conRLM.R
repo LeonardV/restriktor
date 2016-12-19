@@ -106,8 +106,10 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                   "HC1","HC2","HC3","HC4","HC4m","HC5"))) {
     stop("Restriktor ERROR: standard error method ", sQuote(se), " unknown.")
   }
-  if (se == "boot.model.based" & any(Amat[,1] == 1)) { 
-    stop("Restriktor ERROR: no restriktions on intercept possible for 'se = boot.model.based' bootstrap method.")
+  if (attr(object$terms, "intercept")) {
+    if (se == "boot.model.based" & any(Amat[,1] == 1)) { 
+      stop("Restriktor ERROR: no restriktions on intercept possible for 'se = boot.model.based' bootstrap method.")
+    }
   }
   if(ncol(Amat) != length(b.unrestr)) {
     stop("Restriktor ERROR: the columns of \"constraints\" does not match with the number of parameters.")

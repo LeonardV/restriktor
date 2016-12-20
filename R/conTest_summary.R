@@ -1,4 +1,4 @@
-conTestSummary.conLM <- function(object, test = "F", ...) {
+conTest_summary.conLM <- function(object, test = "F", ...) {
   
   x <- object
   if (!(inherits(object, c("conLM","conRLM")))) {

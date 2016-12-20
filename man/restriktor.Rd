@@ -288,24 +288,24 @@ Wiley, New York
 
 \examples{
 ## unrestricted linear model for ages (in months) at which an 
-# infant starts to walk alone.
-DATA <- ZelazoKolb1972
-idx <- which(DATA$Group == "Control")
-DATA <- DATA[-idx, ]
+## infant starts to walk alone.
+
+# prepare data
+DATA1 <- subset(ZelazoKolb1972, Group != "Control")
 
 # fit unrestricted linear model
-fit1.lm <- lm(Age ~ -1 + Group, data = DATA)
+fit1_lm <- lm(Age ~ -1 + Group, data = DATA1)
 
 # the variable names can be used to impose restrictions on
 # the corresponding regression parameters.
-coef(fit1.lm)
+coef(fit1_lm)
 
 # restricted linear model with restrictions that the walking 
 # exercises would not have a negative effect of increasing the 
 # mean age at which a child starts to walk. 
-fit1.con <- restriktor(fit1.lm, constraints = "GroupActive < GroupPassive; 
+fit1_con <- restriktor(fit1_lm, constraints = "GroupActive < GroupPassive; 
                                                GroupPassive < GroupNo")
-summary(fit1.con)
+summary(fit1_con)
 
 \dontrun{ 
 # Or in matrix notation.
@@ -314,9 +314,9 @@ Amat1 <- rbind(c(-1, 1, 0),
 myRhs1 <- rep(0L, nrow(Amat1)) 
 myNeq1 <- 0
 
-fit1.con <- restriktor(fit1.lm, constraints = Amat1,
+fit1_con <- restriktor(fit1_lm, constraints = Amat1,
                        rhs = myRhs1, neq = myNeq1)
-summary(fit1.con)
+summary(fit1_con)
 }            
 
 #########################
@@ -343,9 +343,9 @@ myConstraints2 <- ' group1 < group2
 
 # fit restricted robust linear model and compute 
 # Huber-White (robust) standard errors.
-fit2.con <- restriktor(fit2.rlm, constraints = myConstraints2, 
+fit2_con <- restriktor(fit2.rlm, constraints = myConstraints2, 
                        se = "HC0")
-summary(fit2.con)
+summary(fit2_con)
 
 \dontrun{ 
 ## increasing means in matrix notation.
@@ -355,9 +355,9 @@ Amat2 <- rbind(c(-1, 1, 0, 0),
 myRhs2 <- rep(0L, nrow(Amat2)) 
 myNeq2 <- 0
 
-fit2.con <- restriktor(fit2.rlm, constraints = Amat2,
+fit2_con <- restriktor(fit2.rlm, constraints = Amat2,
                        rhs = myRhs2, neq = myNeq2, se = "HC0")
-summary(fit2.con)
+summary(fit2_con)
 }            
 
 ## equality restrictions only.
@@ -365,8 +365,8 @@ myConstraints3 <- ' group1 == group2
                     group2 == group3
                     group3 == group4
 '
-fit3.con <- restriktor(fit2.rlm, constraints = myConstraints3)
-summary(fit3.con)
+fit3_con <- restriktor(fit2.rlm, constraints = myConstraints3)
+summary(fit3_con)
 
 
 ## combination of equality and inequality restrictions.
@@ -377,10 +377,10 @@ myConstraints4 <- ' group1 == group2
 # fit restricted model and compute model-based bootstrapped 
 # standard errors. We only generate 9 bootstrap samples in this 
 # example; in practice you may wish to use a much higher number.
-fit4.con <- restriktor(fit2.rlm, constraints = myConstraints4, 
+fit4_con <- restriktor(fit2.rlm, constraints = myConstraints4, 
                        se = "boot.model.based", B = 9)
 # an error is probably thrown, due to a too low number of bootstrap draws.
-summary(fit4.con)
+summary(fit4_con)
 
 # restriktor can also be used to define effects using the := operator 
 # and impose restrictions on them. For example, compute the average 
@@ -395,9 +395,9 @@ y <- b0 + b1*X + b2*Z + b3*X*Z + rnorm(n, 0, sd = 10)
 DATA3 = data.frame(cbind(y, X, Z))
 
 # fit linear model with interaction
-fit5.lm <- lm(y ~ X*Z, data = DATA3)
+fit5_lm <- lm(y ~ X*Z, data = DATA3)
 
-fit5.con <- restriktor(fit5.lm, constraints = "AVE := X + 16.86137*X.Z; 
+fit5_con <- restriktor(fit5_lm, constraints = "AVE := X + 16.86137*X.Z; 
                                                AVE > 0")
-summary(fit5.con)
+summary(fit5_con)
 }

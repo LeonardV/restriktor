@@ -61,12 +61,12 @@ conTest <- function(object, type = "summary", test = "F", ...) {
     } else if (type == "c") {
       UseMethod("conTestC")
     } else if (type == "summary") {
-      UseMethod("conTestSummary")     
+      UseMethod("conTest_summary")     
     } else {
       stop("type ", sQuote, " unknown.")
     }
   } else if (nrow(Amat) == meq) {
-      UseMethod("conTestEq") # classical Wald, F and score test with equality constraints only
+      UseMethod("conTest_ceq") # classical Wald, F and score test with equality constraints only
   } else {
     stop("Restriktor ERROR: constraints and neq do not match.")
   }

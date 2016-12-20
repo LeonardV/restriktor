@@ -38,20 +38,20 @@ information criterion for model selection under inequality constraints.
 
 
 \examples{
-# unrestricted linear model for ages (in months) at which an 
-# infant starts to walk alone.
-DATA <- ZelazoKolb1972
-idx <- which(DATA$Group == "Control")
-DATA <- DATA[-idx, ]
+## unrestricted linear model for ages (in months) at which an 
+## infant starts to walk alone.
 
+# prepare data
+DATA <- subset(ZelazoKolb1972, Group != "Control")
+  
 # fit unrestrikted linear model
-fit1.lm <- lm(Age ~ Group, data = DATA)
+fit1_lm <- lm(Age ~ Group, data = DATA)
 
 # some artificial restriktions
-restr1 <- restriktor(fit1.lm, constraints = "GroupPassive > 0;  GroupPassive < GroupNo")
-restr2 <- restriktor(fit1.lm, constraints = "GroupPassive > 0;  GroupPassive > GroupNo")
-restr3 <- restriktor(fit1.lm, constraints = "GroupPassive == 0; GroupPassive < GroupNo")
-restr4 <- restriktor(fit1.lm) # unrestrikted model
+restr1 <- restriktor(fit1_lm, constraints = "GroupPassive > 0;  GroupPassive < GroupNo")
+restr2 <- restriktor(fit1_lm, constraints = "GroupPassive > 0;  GroupPassive > GroupNo")
+restr3 <- restriktor(fit1_lm, constraints = "GroupPassive == 0; GroupPassive < GroupNo")
+restr4 <- restriktor(fit1_lm) # unrestrikted model
 
 goric(restr1, restr2, restr3, restr4)
 }

@@ -9,9 +9,9 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
   bvec <- x[[1]]$bvec
   
   if (!is.null(attr(x[[1]]$pvalue, "boot_type")) || length(x) > 1 || "ceq" %in% names(x)) {
-  cat("\nRestriktor: restrikted hypothesis tests (", x[[1]]$df.residual, "residual degrees of freedom ):\n")
+  cat("\nRestriktor: restricted hypothesis tests (", x[[1]]$df.residual, "residual degrees of freedom ):\n")
   } else {
-    cat("\nRestriktor: restrikted hypothesis tests:\n")
+    cat("\nRestriktor: restricted hypothesis tests:\n")
   }
   if (length(x) == 1 && !(names(x) %in% c("C"))) {
     if (x[[1]]$boot %in% c("parametric", "model.based")) {
@@ -21,31 +21,31 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
   if ((x[[1]]$R2.org - x[[1]]$R2.reduced) < 1e-08) {
     cat("\nMultiple R-squared remains", round(x[[1]]$R2.org, 4),"\n")
   } else {
-    cat("\nMultiple R-squared reduced from", round(x[[1]]$R2.org, 4), "to", round(x[[1]]$R2.reduced, 4),"\n")  
+    cat("\nMultiple R-squared reduced from", round(x[[1]]$R2.org, 4), "to", round(x[[1]]$R2.reduced, 4),"\n\n")  
   }
   
   vnames <- names(x[[1]]$b.unrestr)
   colnames(Amat) <- vnames
   out.rest <- cbind(Amat, c(rep("   ==", meq), rep("   >=", nrow(Amat) - 
-                                                     meq)), bvec)
+                                                     meq)), bvec, " ")
   
   rownames(out.rest) <- paste(1:nrow(out.rest), ":", sep = "")
   
-  colnames(out.rest)[(ncol(Amat) + 1):ncol(out.rest)] <- c("op", "rhs")
-  out.rest <- cbind(rep(" ", nrow(out.rest)), out.rest)
-  out.rest[x[[1]]$iact, 1] <- "A"
+  colnames(out.rest)[(ncol(Amat) + 1):ncol(out.rest)] <- c("op", "rhs", "active")
+  out.rest[x[[1]]$iact, 7] <- TRUE
   # in case of equality constraints only all constraints are active (=)
   if (nrow(Amat) == meq) {
-    out.rest[1:nrow(Amat), 1] <- "A"
+    out.rest[1:nrow(Amat), 7] <- TRUE
   }  
   out.rest <- as.data.frame(out.rest)
-  names(out.rest)[1] <- ""
   
   if (length(x) > 1L) {
-    cat("\n(rows indicated with an \"A\" are active restriktions)\n")
+    cat("\nConstraint matrix and information about which constraint is active:\n\n")
     print(out.rest, quote = FALSE, scientific = FALSE)
     
-    cat("\nGlobal test: H0: all parameters are restrikted to be equal", "\n", 
+    cat("\n\nOverview of all available hypothesis tests:\n")
+    
+    cat("\nGlobal test: H0: all parameters are restricted to be equal", "\n", 
         "        vs. HA: at least one restriktion strictly is true", "\n")
     cat("       Test statistic: ", x$global$Ts, ",   p-value: ", 
         if (!is.na(x$global$pvalue) && x$global$pvalue < 1e-04) { 
@@ -112,19 +112,19 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
     
     if (nrow(x$Amat) > x$meq) {
       if (x$type == "global") {
-        cat("\nGlobal test: H0: all parameters are restrikted to be equal", "\n", 
+        cat("\nGlobal test: H0: all parameters are restricted to be equal", "\n", 
             "        vs. HA: at least one restriktion is strictly true", "\n\n")
         print(out.test, quote = FALSE, scientific = FALSE)
         if (!is.null(df.bar)) {
-          cat("\nThis test is based on a mixture of F-distributions",  
-              "\non", df.bar, "degrees of freedom and", x$df.residual, "residual degrees of freedom.")
+          cat("\nThis test is based on a mixture of F-distributions on", df.bar, 
+              "\ndegrees of freedom and", x$df.residual, "residual degrees of freedom.\n\n")
         }
-        cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
+        cat("\nConstraint matrix and information about which constraint is active:\n\n")
         print(out.rest, quote = FALSE, scientific = FALSE)
-        cat("\nrestrikted estimate under H0:\n")
+        cat("\nrestricted estimate under H0:\n")
         print.default(format(x$b.eqrestr, digits = digits),
                       print.gap = 2, quote = FALSE)
-        cat("\nrestrikted estimate under union of H0 and HA:\n")
+        cat("\nrestricted estimate under union of H0 and HA:\n")
         print.default(format(x$b.restr, digits = digits),
                       print.gap = 2, quote = FALSE)
       } else if (x$type == "A") {
@@ -132,15 +132,15 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
             "        vs. HA: at least one inequality restriktion is strictly true", "\n\n")
         print(out.test, quote = FALSE, scientific = FALSE)        
         if (!is.null(df.bar)) {
-        cat("\nThis test is based on a mixture of F-distributions",  
-            "\non", df.bar, "degrees of freedom and", x$df.residual, "residual degrees of freedom.")
+        cat("\nThis test is based on a mixture of F-distributions on", df.bar, 
+            "\ndegrees of freedom and", x$df.residual, "residual degrees of freedom.\n\n")
         } 
-        cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
+        cat("\nConstraint matrix and information about which constraint is active:\n\n")
         print(out.rest, quote = FALSE, scientific = FALSE)
-        cat("\nrestrikted estimate under H0:\n")
+        cat("\nrestricted estimate under H0:\n")
         print.default(format(x$b.eqrestr, digits = digits),
                       print.gap = 2, quote = FALSE)
-        cat("\nrestrikted estimate under union of H0 and HA:\n")
+        cat("\nrestricted estimate under union of H0 and HA:\n")
         print.default(format(x$b.restr, digits = digits),
                       print.gap = 2, quote = FALSE)
       } else if (x$type == "B" && x$meq.alt == 0L) {
@@ -148,15 +148,15 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
             "        vs. HA: at least one restriktion is violated", "\n\n")
         print(out.test, quote = FALSE)
         if (!is.null(df.bar)) {
-          cat("\nThis test is based on a mixture of F-distributions",  
-              "\non", df.bar, "degrees of freedom and", x$df.residual, "residual degrees of freedom.")
+          cat("\nThis test is based on a mixture of F-distributions on", df.bar, 
+              "\ndegrees of freedom and", x$df.residual, "residual degrees of freedom.\n\n")
         }
-        cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
+        cat("\nConstraint matrix and information about which constraint is active:\n\n")
         print(out.rest, quote = FALSE, scientific = FALSE)
-        cat("\nrestrikted estimate under H0:\n")
+        cat("\nrestricted estimate under H0:\n")
         print.default(format(x$b.restr, digits = digits),
                       print.gap = 2, quote = FALSE)
-        cat("\nUnrestrikted estimate:\n")
+        cat("\nUnrestricted estimate:\n")
         print.default(format(x$b.unrestr, digits = digits),
                       print.gap = 2, quote = FALSE)
       } else if (x$type == "B" && x$meq.alt > 0L) {
@@ -165,25 +165,26 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
               "\n\n")
         print(out.test, quote = FALSE)
         if (!is.null(df.bar)) {
-          cat("\nThis test is based on a mixture of F-distributions",  
-              "\non", df.bar, "degrees of freedom and", x$df.residual, "residual degrees of freedom.")
+          cat("\nThis test is based on a mixture of F-distributions on", df.bar, 
+              "\ndegrees of freedom and", x$df.residual, "residual degrees of freedom.\n\n")
         }
-        cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
+        cat("\nConstraint matrix and information about which constraint is active:\n\n")
         print(out.rest, quote = FALSE, scientific = FALSE)
-        cat("\nrestrikted estimate under H0:\n")
+        cat("\nrestricted estimate under H0:\n")
         print.default(format(x$b.restr, digits = digits),
                       print.gap = 2, quote = FALSE)
-        cat("\nrestrikted estimate under HA:\n")
+        cat("\nrestricted estimate under HA:\n")
         print.default(format(x$b.restr.alt, digits = digits),
                       print.gap = 2, quote = FALSE)
         } else if (x$type == "C") {
           cat("\nType C test: H0: at least one restriktion is false or active (=)", 
               "\n", "        vs. HA: all restriktions are strictly true (>)", "\n\n")
           print(out.test, quote = FALSE)
-          cat("\nThis test is based on a one-sided t-distributions on", x$df.residual, "residual degrees of freedom.")
-          cat("\n\n(rows indicated with an \"A\" are active restriktions)\n")
+          cat("\nThis test is based on a one-sided t-distributions on", x$df.residual, 
+              "residual \ndegrees of freedom.\n\n")
+          cat("\nConstraint matrix and information about which constraint is active:\n\n")
           print(out.rest, quote = FALSE, scientific = FALSE)
-          cat("\nunrestrikted estimate:\n")
+          cat("\nunrestricted estimate:\n")
           print.default(format(x$b.unrestr, digits = digits),
                         print.gap = 2, quote = FALSE)
         }
@@ -191,12 +192,12 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
       cat("\n","classical test: H0: all restriktions are active (=)", 
           "\n","            vs. HA: at least one equality restriktion is violated", "\n\n")
       print(out.test, quote = FALSE)
-      cat("\n\n(all rows are active restriktions under H0, H1 is unrestrikted!)\n")
+      cat("\n\n(all rows are active restriktions under H0, H1 is unrestricted!)\n")
       print(out.rest, quote = FALSE, scientific = FALSE)
-      cat("\nrestrikted estimate under H0:\n")
+      cat("\nrestricted estimate under H0:\n")
       print.default(format(x$b.restr, digits = digits),
                     print.gap = 2, quote = FALSE)
-      cat("\nunrestrikted estimate:\n")
+      cat("\nunrestricted estimate:\n")
       print.default(format(x$b.unrestr, digits = digits),
                     print.gap = 2, quote = FALSE)
     }

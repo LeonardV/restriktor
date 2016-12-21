@@ -61,9 +61,10 @@ print.summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
   
    
   if (x$R2.org == x$R2.reduced) {
-   cat("Multiple R-squared remains", round(x$R2.org, 4),"\n")
+   cat("Multiple R-squared remains", sprintf("%5.3f", x$R2.org),"\n")
   } else {
-   cat("Multiple R-squared reduced from", round(x$R2.org, 4), "to", round(x$R2.reduced, 4),"\n")  
+   cat("Multiple R-squared reduced from", sprintf("%5.3f", x$R2.org), "to", 
+       sprintf("%5.3f", x$R2.reduced),"\n")  
   }
 
   goric <- x$goric

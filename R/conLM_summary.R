@@ -150,9 +150,9 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic",
     attr(ans$goric, "loglik")  <- z$loglik 
   }
   
-  if (class(object)[1] == "conLM") {
+  if (!inherits(z, "conRLM")) {
     class(ans) <- "summary.conLM"
-  } else if (class(object)[1] == "conRLM") {
+  } else if (inherits(z, "conRLM")) {
     class(ans) <- c("summary.conLM","summary.conRLM")
   } 
     

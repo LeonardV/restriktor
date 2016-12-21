@@ -33,7 +33,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
   
   colnames(out.rest)[(ncol(Amat) + 1):ncol(out.rest)] <- c("op", "rhs", "active")
   out.rest[x[[1]]$iact, 7] <- TRUE
-  # in case of equality constraints only all constraints are active (=)
+  # in case of equality constraints only all constraints are active (==)
   if (nrow(Amat) == meq) {
     out.rest[1:nrow(Amat), 7] <- TRUE
   }  
@@ -56,7 +56,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
           as.numeric(NA)
         }, "\n\n", sep = "")
     ###
-    cat("Type A test: H0: all restriktions are active (=)", "\n", 
+    cat("Type A test: H0: all restriktions are active (==)", "\n", 
         "        vs. HA: at least one inequality restriktion is strictly true", "\n")
     cat("       Test statistic: ", x$A$Ts, ",   p-value: ", 
         if (!is.na(x$A$pvalue) && x$A$pvalue < 1e-04) { 
@@ -79,7 +79,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
         }, "\n\n", sep = "")
     ###
     if (length(x) == 4 && meq == 0) {
-      cat("Type C test: H0: at least one restriktion is false or active (=)", 
+      cat("Type C test: H0: at least one restriktion is false or active (==)", 
           "\n", "        vs. HA: all restriktions are strictly true (>)", "\n")
       cat("       Test statistic: ", x$C$Ts, ",   p-value: ", 
           if (!is.na(x$C$pvalue) && x$C$pvalue < 1e-04) { 
@@ -128,7 +128,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
         print.default(format(x$b.restr, digits = digits),
                       print.gap = 2, quote = FALSE)
       } else if (x$type == "A") {
-        cat("\nType A test: H0: all restriktions are active (=)", "\n", 
+        cat("\nType A test: H0: all restriktions are active (==)", "\n", 
             "        vs. HA: at least one inequality restriktion is strictly true", "\n\n")
         print(out.test, quote = FALSE, scientific = FALSE)        
         if (!is.null(df.bar)) {
@@ -177,7 +177,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
         print.default(format(x$b.restr.alt, digits = digits),
                       print.gap = 2, quote = FALSE)
         } else if (x$type == "C") {
-          cat("\nType C test: H0: at least one restriktion is false or active (=)", 
+          cat("\nType C test: H0: at least one restriktion is false or active (==)", 
               "\n", "        vs. HA: all restriktions are strictly true (>)", "\n\n")
           print(out.test, quote = FALSE)
           cat("\nThis test is based on a one-sided t-distributions on", x$df.residual, 
@@ -189,7 +189,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
                         print.gap = 2, quote = FALSE)
         }
     } else { #equality constraints only
-      cat("\n","classical test: H0: all restriktions are active (=)", 
+      cat("\n","classical test: H0: all restriktions are active (==)", 
           "\n","            vs. HA: at least one equality restriktion is violated", "\n\n")
       print(out.test, quote = FALSE)
       cat("\n\n(all rows are active restriktions under H0, H1 is unrestricted!)\n")

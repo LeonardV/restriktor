@@ -3,9 +3,9 @@ print.conLM <- function(x, digits = max(3, getOption("digits") - 2),
 
   cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), "\n", sep = "")
   
-  if (class(x)[1] == "conLM") {
+  if (!inherits(x, "conRLM")) {
     cat("\nRestriktor: restrikted linear model:\n\n")
-  } else if (class(x)[1] == "conRLM") {
+  } else if (inherits(x,"conRLM")) {
     cat("\nRestriktor: restrikted robust linear model:\n\n")
   }
   

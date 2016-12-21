@@ -188,52 +188,56 @@ Statistical Inference}. Wiley, New York
 \examples{
 library(MASS)
 ## example 1:
-# unrestricted linear model for ages (in months) at which an 
+# the data consist of ages (in months) at which an 
 # infant starts to walk alone.
 
 # prepare data
 DATA1 <- subset(ZelazoKolb1972, Group != "Control")
 
-# fit unrestricted linear model
+# fit unrestricted robust linear model
 fit1_rlm <- rlm(Age ~ -1 + Group, data = DATA1, method = "MM")
 
 # the variable names can be used to impose constraints on
 # the corresponding regression parameters.
 coef(fit1_rlm)
 
-# restricted linear model with constraints that the walking 
+# constraint syntax: assuming that the walking 
 # exercises would not have a negative effect of increasing the 
 # mean age at which a child starts to walk. 
-fit1_con <- restriktor(fit1_rlm, constraints = ' GroupActive  < GroupPassive; 
-                                                 GroupPassive < GroupNo ')
+myConstraints1 <- ' GroupActive  < GroupPassive; 
+                    GroupPassive < GroupNo '
 
-# compute Wald-test
-conTest(fit1_con, test = "Wald")
+conTest(fit1_rlm, myConstraints1, test = "Wald")
+
+
+# another way is to first fit the restricted model
+fit_restr1 <- restriktor(fit1_rlm, constraints = myConstraints1)
+
+conTest(fit_restr1, test = "Wald")
 
 \dontrun{ 
   # Or in matrix notation.
-  Amat1 <- rbind(c(-1, 1, 0),
-                 c( 0,-1, 1))
+  Amat1 <- rbind(c(-1, 0,  1),
+                 c( 0, 1, -1))
   myRhs1 <- rep(0L, nrow(Amat1)) 
   myNeq1 <- 0
   
-  fit1_con <- restriktor(fit1_rlm, constraints = Amat1,
-                         rhs = myRhs1, neq = myNeq1)
-  conTest(fit1_con, test = "Wald")
+  conTest(fit1_rlm, constraints = Amat1, test = "Wald",
+          rhs = myRhs1, neq = myNeq1)
 }            
 
 #########################
 ## Artificial examples ##
 #########################
 # generate data
-n <- 10
+n <- 20
 means <- c(1,2,1,3)
 nm <- length(means)
 group <- as.factor(rep(1:nm, each = n))
 y <- rnorm(n * nm, rep(means, each = n))
 DATA2 <- data.frame(y, group)
 
-# fit unrestricted linear model
+# fit unrestricted robust linear model
 fit2_rlm <- rlm(y ~ -1 + group, data = DATA2, method = "MM")
 coef(fit2_rlm)
 
@@ -242,15 +246,18 @@ myConstraints2 <- ' group1 < group2
                     group2 < group3
                     group3 < group4 '
 
-# fit restricted robust linear model and compute 
-# Huber-White (robust) standard errors.
-fit2_con <- restriktor(fit2_rlm, constraints = myConstraints2, se = "HC0")
-
-# compute Wald test for hypothesis test Type A and compute the tail 
+# compute F-test for hypothesis test Type A and compute the tail 
 # probability based on the parametric bootstrap. We only generate 9 
 # bootstrap samples in this example; in practice you may wish to 
 # use a much higher number.
-conTest(fit2_con, type = "A", test = "Wald", boot = "parametric", R = 9)
+conTest(fit2_rlm, constraints = myConstraints2, type = "A", 
+        test = "Wald", boot = "parametric", R = 9)
+
+
+# or fit restricted robust linear model
+fit2_con <- restriktor(fit2_rlm, constraints = myConstraints2)
+
+conTest(fit2_con, test = "Wald")
 
 \dontrun{ 
   # increasing means in matrix notation.
@@ -259,20 +266,19 @@ conTest(fit2_con, type = "A", test = "Wald", boot = "parametric", R = 9)
                  c( 0, 0,-1, 1))
   myRhs2 <- rep(0L, nrow(Amat2)) 
   myNeq2 <- 0
-  
-  fit2_con <- restriktor(fit2_rlm, constraints = Amat2,
-                         rhs = myRhs2, neq = myNeq2)
 
-  conTest(fit2_con, type = "A", test = "Wald", boot = "parametric", R = 9)
+  conTest(fit2_con, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
+          type = "A", test = "Wald", boot = "parametric", R = 9)
 }            
-
 
 ## example 3:
 # combination of equality and inequality constraints.
 myConstraints3 <- ' group1 == group2
                     group3  < group4 '
 
-# fit restikted model and compute model-based bootstrapped 
+conTest(fit2_rlm, constraints = myConstraints3, type = "B", test = "Wald", neq.alt = 1)
+
+# fit robust resticted model and compute model-based bootstrapped 
 # standard errors. We only generate 9 bootstrap samples in this 
 # example; in practice you may wish to use a much higher number.
 # Note that, a warning message may be thrown because the number of 
@@ -296,9 +302,16 @@ y <- b0 + b1*X + b2*Z + b3*X*Z + rnorm(n, 0, sd = 10)
 DATA3 = data.frame(cbind(y, X, Z))
 
 # fit linear model with interaction
-fit4_rlm <- rlm(y ~ X*Z, data = DATA3, method = "MM")
+fit3_rlm <- rlm(y ~ X*Z, data = DATA3, method = "MM")
 
-fit4_con <- restriktor(fit4_rlm, constraints = ' AVE := X + 16.86137*X.Z; 
+# constraint syntax
+myConstraints4 <- ' AVE := X + 16.86137*X.Z; 
+                    AVE > 0 '
+
+conTest(fit3_rlm, constraints = myConstraints4, test = "Wald")
+
+# or
+fit3_con <- restriktor(fit3_rlm, constraints = ' AVE := X + 16.86137*X.Z; 
                                                  AVE > 0 ')
-conTest(fit4_con, test = "Wald")
+conTest(fit3_con, test = "Wald")
 }

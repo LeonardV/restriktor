@@ -116,7 +116,7 @@ equality constraints in the linear regression model.
 
 \examples{
 ## example 1:
-# unrestricted linear model for ages (in months) at which an 
+# the data consist of ages (in months) at which an 
 # infant starts to walk alone.
 
 # prepare data
@@ -129,19 +129,24 @@ fit1_lm <- lm(Age ~ -1 + Group, data = DATA1)
 # the corresponding regression parameters.
 coef(fit1_lm)
 
-# restricted linear model with constraints that the walking 
+# constraint syntax: assuming that the walking 
 # exercises would not have a negative effect of increasing the 
 # mean age at which a child starts to walk. 
-fit1_con <- restriktor(fit1_lm, constraints = ' GroupActive  < GroupPassive; 
-                                                GroupPassive < GroupNo ')
+myConstraints1 <- ' GroupActive  < GroupPassive; 
+                    GroupPassive < GroupNo '
 
-# compute F-test
-conTest(fit1_con)
+conTest(fit1_lm, myConstraints1)
+
+
+# another way is to first fit the restricted model
+fit_restr1 <- restriktor(fit1_lm, constraints = myConstraints1)
+
+conTest(fit_restr1)
 
 \dontrun{ 
   # Or in matrix notation.
-  Amat1 <- rbind(c(-1, 1, 0),
-                 c( 0,-1, 1))
+  Amat1 <- rbind(c(-1, 0,  1),
+                 c( 0, 1, -1))
   myRhs1 <- rep(0L, nrow(Amat1)) 
   myNeq1 <- 0
   
@@ -149,7 +154,5 @@ conTest(fit1_con)
                          rhs = myRhs1, neq = myNeq1)
   conTest(fit1_con)
 }            
-
-
 
 }

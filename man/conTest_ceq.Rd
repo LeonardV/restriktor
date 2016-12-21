@@ -123,7 +123,7 @@ in general parametric models. \emph{Statistics & probability letters},
 
 \examples{
 ## example 1:
-# unrestricted linear model for ages (in months) at which an 
+# the data consist of ages (in months) at which an 
 # infant starts to walk alone.
 
 # prepare data
@@ -136,70 +136,29 @@ fit1_lm <- lm(Age ~ -1 + Group, data = DATA1)
 # the corresponding regression parameters.
 coef(fit1_lm)
 
-# restricted linear model with constraints that the walking 
+# constraint syntax: assuming that the walking 
 # exercises would not have a negative effect of increasing the 
 # mean age at which a child starts to walk. 
-fit1_con <- restriktor(fit1_lm, constraints = ' GroupActive  == GroupPassive; 
-                                                GroupPassive == GroupNo ')
+myConstraints1 <- ' GroupActive  == GroupPassive; 
+                    GroupPassive == GroupNo '
 
-# compute F-test
-conTest(fit1_con, test = "F")
+conTest(fit1_lm, myConstraints1)
+
+
+# another way is to first fit the restricted model
+fit_restr1 <- restriktor(fit1_lm, constraints = myConstraints1)
+
+conTest(fit_restr1)
 
 \dontrun{ 
   # Or in matrix notation.
-  Amat1 <- rbind(c(-1, 1, 0),
-                 c( 0,-1, 1))
+  Amat1 <- rbind(c(-1, 0,  1),
+                 c( 0, 1, -1))
   myRhs1 <- rep(0L, nrow(Amat1)) 
   myNeq1 <- 2
   
-  fit1_con <- restriktor(fit1_lm, constraints = Amat1,
-                         rhs = myRhs1, neq = myNeq1)
-  conTest(fit1_con, test = "F")
+  conTest(fit1_lm, constraints = Amat1,
+          rhs = myRhs1, neq = myNeq1)
 }            
-
-#########################
-## Artificial examples ##
-#########################
-# generate data
-n <- 10
-means <- c(1,2,1,3)
-nm <- length(means)
-group <- as.factor(rep(1:nm, each = n))
-y <- rnorm(n * nm, rep(means, each = n))
-DATA2 <- data.frame(y, group)
-
-# fit unrestricted linear model
-fit2_lm <- lm(y ~ -1 + group, data = DATA2)
-coef(fit2_lm)
-
-## example 2: increasing means
-myConstraints2 <- ' group1 == group2
-                    group2 == group3
-                    group3 == group4 '
-
-# fit restricted robust linear model and compute 
-# Huber-White (robust) standard errors.
-fit2_con <- restriktor(fit2_lm, constraints = myConstraints2, se = "HC0")
-
-# compute F test for hypothesis test Type A and compute the tail 
-# probability based on the parametric bootstrap. We only generate 9 
-# bootstrap samples in this example; in practice you may wish to 
-# use a much higher number.
-conTest(fit2_con, type = "A", test = "F", boot = "parametric", R = 9)
-
-\dontrun{ 
-  # increasing means in matrix notation.
-  Amat2 <- rbind(c(-1, 1, 0, 0),
-                 c( 0,-1, 1, 0),
-                 c( 0, 0,-1, 1))
-  myRhs2 <- rep(0L, nrow(Amat2)) 
-  myNeq2 <- 3
-  
-  fit2_con <- restriktor(fit2_lm, constraints = Amat2,
-                         rhs = myRhs2, neq = myNeq2)
-
-  conTest(fit2_con, type = "A", test = "F", boot = "parametric", R = 9)
-}            
-
 
 }

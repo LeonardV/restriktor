@@ -104,8 +104,8 @@
   # restricted linear model with restrictions that the walking 
   # exercises would not have a negative effect of increasing the 
   # mean age at which a child starts to walk. 
-  fit_con <- restriktor(fit_lm, constraints = "GroupActive  < GroupPassive; 
-                                               GroupPassive < GroupNo")
+  fit_con <- restriktor(fit_lm, constraints = ' GroupActive  < GroupPassive; 
+                                                GroupPassive < GroupNo ')
   
   summary(fit_con)
 }

@@ -122,7 +122,7 @@ restriktor(object, constraints = NULL, \dots)
       x1 < x2
     
     ! 2. equality constraints  
-      x3 == x4; x4 == x5'  
+      x3 == x4; x4 == x5 '  
   }
   The variable names x1 to x5 refer to the corresponding regression
   coefficient. Thus, constraints are impose on regression coefficients
@@ -193,7 +193,7 @@ syntax:
   If \code{constraints = NULL}, the unrestricted model is fitted.
 }
 \value{
-An object of class conLM or conRLM, for which a print and a 
+An object of class restriktor, for which a print and a 
 summary method are available. More specifically, it is a list 
 with the following items:
 
@@ -303,8 +303,8 @@ coef(fit1_lm)
 # restricted linear model with restrictions that the walking 
 # exercises would not have a negative effect of increasing the 
 # mean age at which a child starts to walk. 
-fit1_con <- restriktor(fit1_lm, constraints = "GroupActive < GroupPassive; 
-                                               GroupPassive < GroupNo")
+fit1_con <- restriktor(fit1_lm, constraints = ' GroupActive  < GroupPassive; 
+                                                GroupPassive < GroupNo ')
 summary(fit1_con)
 
 \dontrun{ 
@@ -338,8 +338,7 @@ coef(fit2.rlm)
 ## increasing means
 myConstraints2 <- ' group1 < group2
                     group2 < group3
-                    group3 < group4
-'
+                    group3 < group4 '
 
 # fit restricted robust linear model and compute 
 # Huber-White (robust) standard errors.
@@ -363,16 +362,14 @@ summary(fit2_con)
 ## equality restrictions only.
 myConstraints3 <- ' group1 == group2
                     group2 == group3
-                    group3 == group4
-'
+                    group3 == group4 '
 fit3_con <- restriktor(fit2.rlm, constraints = myConstraints3)
 summary(fit3_con)
 
 
 ## combination of equality and inequality restrictions.
 myConstraints4 <- ' group1 == group2
-                    group3  < group4
-'
+                    group3  < group4 '
 
 # fit restricted model and compute model-based bootstrapped 
 # standard errors. We only generate 9 bootstrap samples in this 
@@ -397,7 +394,7 @@ DATA3 = data.frame(cbind(y, X, Z))
 # fit linear model with interaction
 fit5_lm <- lm(y ~ X*Z, data = DATA3)
 
-fit5_con <- restriktor(fit5_lm, constraints = "AVE := X + 16.86137*X.Z; 
-                                               AVE > 0")
+fit5_con <- restriktor(fit5_lm, constraints = ' AVE := X + 16.86137*X.Z; 
+                                                AVE > 0 ')
 summary(fit5_con)
 }

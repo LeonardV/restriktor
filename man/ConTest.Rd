@@ -1,33 +1,41 @@
 \name{conTest}
 \alias{conTest}
 \alias{iht}
-\alias{conTestF.conLM}
-\alias{conTestF.conRLM}
 
-\title{Function for informative hypothesis testing}
-\description{\code{conTest} tests linear equality and/or 
-inequality restricted hypotheses for (robust) linear models by F-, Wald-, 
-likelihood ratio-, and score-tests. 
+\title{function for informative hypothesis testing}
+\description{\code{conTest} tests linear equality and/or inequality restricted 
+hypotheses for linear models. 
 }
 
 \usage{
-conTest(object, type = "summary", test = "F", \dots)
-
-\method{conTestF}{conLM}(object, type = "A", neq.alt = 0, 
-         boot = "no", R = 9999, p.distr = "N", df = 7, 
-         parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
-         verbose = FALSE, control = NULL, \dots)
-
-
-\method{conTestF}{conRLM}(object, type = "A", neq.alt = 0, 
-         boot = "no", R = 9999, p.distr = "N", df = 7, 
-         parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
-         verbose = FALSE, control = NULL, \dots)
-
+conTest(object, constraints = NULL, type = "summary", test = "F", 
+        rhs = NULL, neq = 0, \dots)
 }
 
 \arguments{
-  \item{object}{an object of class \code{conLM} or \code{conRLM}.} 
+  \item{object}{an object of class \code{lm} or \code{rlm}. In this case, the constraint syntax
+  needs to be specified
+  
+  OR
+  
+  an object of class \code{restriktor}. The constraints are inherit from the 
+  fitted restriktor object and do not to be specified again.
+  } 
+  
+  \item{constraints}{there are two ways to constrain parameters. 
+  First, the constraint syntax consists of one or more text-based
+  descriptions, where the syntax can be specified as a literal 
+  string enclosed by single quotes. Only the names of \code{coef(model)}
+  can be used as names. See details \code{\link{restriktor}} for more information. 
+  
+  Second, the constraint syntax consists of a matrix \eqn{R} (or a vector in 
+  case of one constraint) and defines the left-hand side of the 
+  constraint \eqn{R\theta \ge rhs}, where each row represents one 
+  constraint. The number of columns needs to correspond to the 
+  number of parameters estimated (\eqn{\theta}) by model. The rows 
+  should be linear independent, otherwise the function gives an 
+  error. For more information about constructing the matrix \eqn{R} and 
+  \eqn{rhs} see the details in the \code{\link{restriktor}} function.}
   
   \item{type}{hypothesis test type "A", "B", "C", "global", or 
    "summary" (default). See details for more information.}
@@ -55,73 +63,22 @@ conTest(object, type = "summary", test = "F", \dots)
     }
   }
  
-
-\item{neq.alt}{integer: number of equality constraints that 
-    are maintained under the alternative hypothesis (for hypothesis 
-    test type "B"), see example 4.}
+  \item{rhs}{vector on the right-hand side of the constraints; 
+  \eqn{R\theta \ge rhs}. The length of this vector equals the 
+  number of rows of the constraints matrix \eqn{R} and consists of 
+  zeros by default. Note: only used if constraints input is a 
+  matrix or vector.}
   
-    \item{boot}{the null-distribution of these test-statistics 
-    (except under type "C") takes the form of a mixture of 
-    F-distributions. The tail probabilities can be computed directly 
-    via bootstrapping; if \code{"parametric"}, the p-value is 
-    computed based on the parametric bootstrap. By default, samples 
-    are drawn from a normal distribution with mean zero and varance 
-    one. See \code{p.distr} for other distributional options. If 
-    \code{"model.based"}, a model-based bootstrap method is used. 
-    Instead of computing the p-value via simulation, the p-value
-    can also be computed using the chi-bar-square weights. If 
-    \code{"no"}, the p-value is computed based on the weights 
-    obtained via simulation (\code{bootWt = TRUE}) or using the 
-    multivariate normal distribution function (\code{bootWt = FALSE}).
-    Note that, these weights are already available in the conLM or
-    conRLM objected. However, there are two exception in case of a 
-    conRLM object. If \code{test} = \code{"Wald"} or \code{"score"} 
-    the weights need to be recalculated.
-    }
-  
-    \item{R}{integer; number of bootstrap draws for \code{boot}. 
-    The default value is set to 9999.}
-    
-    \item{p.distr}{If \code{"N"}, samples for the parametric 
-    bootstrap are drawn from the normal distribution (default) with 
-    mean zero and variance one. If \code{"t"}, samples are drawn 
-    from a t-distribution with df = 7 (degrees of freedom) by 
-    default. If \code{"Chi"}, samples are drawn from a chi-square 
-    distribution with df = 7 by default. The df can be adjusted via 
-    the \code{df} argument.}
-    
-    \item{df}{degrees of freedom for \code{p.distr}.}
-    
-    \item{parallel}{the type of parallel operation to be used 
-    (if any). If missing, the default is set "no".}
-    
-    \item{ncpus}{integer: number of processes to be used in parallel 
-    operation: typically one would chose this to the number of 
-    available CPUs.}
-    
-    \item{cl}{an optional parallel or snow cluster for use if 
-    parallel = "snow". If not supplied, a cluster on the local 
-    machine is created for the duration of the conTest call.}
-    
-    \item{seed}{seed value. The default value is set to 1234.}
-    
-    \item{verbose}{logical; if TRUE, information is shown at each 
-    bootstrap draw.}
-    
-    \item{control}{a list of control arguments: 
-      \itemize{
-        \item \code{absval} tolerance criterion for convergence 
-        (default = sqrt(.Machine$double.eps)). Only used for model 
-        of class lm.
-        \item \code{maxit} the maximum number of iterations for the 
-        optimizer (default = 10000). Only used for model of class 
-        mlm (not yet supported). 
-        \item \code{tol} numerical tolerance value. Estimates 
-        smaller than \code{tol} are set to 0.
-      }
-    }
+  \item{neq}{integer (default = 0) treating the number of 
+  constraints rows as equality constraints instead of inequality 
+  constraints. For example, if \code{neq = 2}, this means that the 
+  first two rows of the constraints matrix \eqn{R} are treated as 
+  equality constraints. Note: only used if constraints input is a 
+  matrix or vector.}
 
-  \item{\dots}{no futher arguments for now.}
+  
+  \item{\dots}{futher options for the \code{conTest} and/or \code{restriktor}
+  function. See details for more information.}
 
 }
 
@@ -153,18 +110,18 @@ conclusions from significant results from hypothesis test Type A.
 The exact finite sample distributions of the non-robust F-, 
 score- and LR-test statistics based on restricted OLS estimates 
 and normally distributed errors, are a mixture of F-distributions 
-under the null hypothesis (Wolak, 1987). In agreement with 
-Silvapulle (1992), we found that the results based on these 
-mixtures of F-distributions approximate the tail probabilities of 
-the robust tests better than their asymptotic distributions. 
-Therefore, all p-values for hypothesis test Type \code{"A"}, 
-\code{"B"} and \code{"global"} are computed based on mixtures of 
-F-distributions. 
+under the null hypothesis (Wolak, 1987). 
 
 Note that, in case of equality constraints only, the 
 null-distribution of the (robust) F-test statistics is based on 
 an F-distribution. The (robust) Wald- and (robust) score-test 
 statistics are based on chi-square distributions.
+
+If object is of class \code{lm} or \code{rlm}, the \code{conTest} function
+internally calls the \code{restriktor} function. Arguments for the 
+\code{\link{restriktor}} function can be passed on via the \code{\ldots}. Additional
+arguments for the \code{conTest} function can also passed on via the \code{\ldots}.
+See for example \code{\link{conTestF}} for all available arguments.
 
 }
 
@@ -240,7 +197,7 @@ equality constraints in the linear regression model.
 
 \examples{
 ## example 1:
-# unrestricted linear model for ages (in months) at which an 
+# the data consist of ages (in months) at which an 
 # infant starts to walk alone.
 
 # prepare data
@@ -253,25 +210,29 @@ fit1_lm <- lm(Age ~ -1 + Group, data = DATA1)
 # the corresponding regression parameters.
 coef(fit1_lm)
 
-# restricted linear model with constraints that the walking 
+# constraint syntax: assuming that the walking 
 # exercises would not have a negative effect of increasing the 
 # mean age at which a child starts to walk. 
-fit1_con <- restriktor(fit1_lm, constraints = "GroupActive < GroupPassive; 
-                                               GroupPassive < GroupNo")
+myConstraints1 <- ' GroupActive  < GroupPassive; 
+                    GroupPassive < GroupNo '
 
-# compute F-test
-conTest(fit1_con)
+conTest(fit1_lm, myConstraints1)
+
+
+# another way is to first fit the restricted model
+fit_restr1 <- restriktor(fit1_lm, constraints = myConstraints1)
+
+conTest(fit_restr1)
 
 \dontrun{ 
   # Or in matrix notation.
-  Amat1 <- rbind(c(-1, 1, 0),
-                 c( 0,-1, 1))
+  Amat1 <- rbind(c(-1, 0,  1),
+                 c( 0, 1, -1))
   myRhs1 <- rep(0L, nrow(Amat1)) 
   myNeq1 <- 0
   
-  fit1_con <- restriktor(fit1_lm, constraints = Amat1,
-                         rhs = myRhs1, neq = myNeq1)
-  conTest(fit1_con)
+  conTest(fit1_lm, constraints = Amat1,
+          rhs = myRhs1, neq = myNeq1)
 }            
 
 #########################
@@ -292,17 +253,20 @@ coef(fit2_lm)
 ## example 2: increasing means
 myConstraints2 <- ' group1 < group2
                     group2 < group3
-                    group3 < group4'
+                    group3 < group4 '
 
-# fit restricted robust linear model and compute 
-# Huber-White (robust) standard errors.
-fit2_con <- restriktor(fit2_lm, constraints = myConstraints2, se = "HC0")
-
-# compute score test for hypothesis test Type A and compute the tail 
+# compute F-test for hypothesis test Type A and compute the tail 
 # probability based on the parametric bootstrap. We only generate 9 
 # bootstrap samples in this example; in practice you may wish to 
 # use a much higher number.
-conTest(fit2_con, type = "A", test = "score", boot = "parametric", R = 9)
+conTest(fit2_lm, constraints = myConstraints2, type = "A", 
+        boot = "parametric", R = 9)
+
+
+# or fit restricted linear model
+fit2_con <- restriktor(fit2_lm, constraints = myConstraints2)
+
+conTest(fit2_con)
 
 \dontrun{ 
   # increasing means in matrix notation.
@@ -311,17 +275,19 @@ conTest(fit2_con, type = "A", test = "score", boot = "parametric", R = 9)
                  c( 0, 0,-1, 1))
   myRhs2 <- rep(0L, nrow(Amat2)) 
   myNeq2 <- 0
-  
-  fit2_con <- restriktor(fit2_lm, constraints = Amat2,
-                         rhs = myRhs2, neq = myNeq2)
 
-  conTest(fit2_con, type = "A", test = "score", boot = "parametric", R = 9)
+  conTest(fit2_con, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
+          type = "A", boot = "parametric", R = 9)
 }            
 
 ## example 3: equality constraints only.
-myConstraints3 <- 'group1 == group2
-                   group2 == group3
-                   group3 == group4'
+myConstraints3 <- ' group1 == group2
+                    group2 == group3
+                    group3 == group4 '
+
+conTest(fit2_lm, constraints = myConstraints3)
+
+# or
 fit3_con <- restriktor(fit2_lm, constr = myConstraints3)
 conTest(fit3_con)
 
@@ -329,10 +295,11 @@ conTest(fit3_con)
 ## example 4:
 # combination of equality and inequality constraints.
 myConstraints4 <- ' group1 == group2
-                    group3  < group4
-'
+                    group3  < group4 '
 
-# fit restikted model and compute model-based bootstrapped 
+conTest(fit2_lm, constraints = myConstraints4, type = "B", neq.alt = 1)
+
+# fit resticted model and compute model-based bootstrapped 
 # standard errors. We only generate 9 bootstrap samples in this 
 # example; in practice you may wish to use a much higher number.
 # Note that, a warning message may be thrown because the number of 
@@ -358,7 +325,14 @@ DATA3 = data.frame(cbind(y, X, Z))
 # fit linear model with interaction
 fit5_lm <- lm(y ~ X*Z, data = DATA3)
 
-fit5_con <- restriktor(fit5_lm, constraints = "AVE := X + 16.86137*X.Z; 
-                                               AVE > 0")
-conTest(fit5_con, test = "LRT")
+# constraint syntax
+myConstraints5 <- ' AVE := X + 16.86137*X.Z; 
+                    AVE > 0 '
+
+conTest(fit5_lm, constraints = myConstraints5)
+
+# or
+fit5_con <- restriktor(fit5_lm, constraints = ' AVE := X + 16.86137*X.Z; 
+                                                AVE > 0 ')
+conTest(fit5_con)
 }

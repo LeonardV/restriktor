@@ -432,7 +432,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   
   OUT$timing$total <- (proc.time()[3] - start.time0)
   
-  class(OUT) <- c("conRLM","conLM","rlm","lm")
+  class(OUT) <- c("restriktor", "conRLM", "conLM")
   
   OUT
 

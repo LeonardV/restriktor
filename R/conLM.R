@@ -361,9 +361,9 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   OUT$timing$total <- (proc.time()[3] - start.time0)
   
   if (ncol(y) == 1L) {
-    class(OUT) <- c("conLM", "lm")
+    class(OUT) <- c("restriktor", "conLM", "lm")
   } else if (ncol(y) > 1L) {
-    class(OUT) <- c("conMLM", "mlm", "conLM", "lm")
+    class(OUT) <- c("restriktor", "conMLM", "mlm")
   }
     
     OUT

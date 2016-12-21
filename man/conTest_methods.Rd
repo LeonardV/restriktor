@@ -38,6 +38,6 @@
   fit_con <- restriktor(fit_lm, constraints = "GroupActive  < GroupPassive; 
                                                GroupPassive < GroupNo")
   
-  fit_con  
+  conTest(fit_con)
 }
   

@@ -204,20 +204,16 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
       wt <- c(rep(0L, p), 1)
       is.augmented <- FALSE
     } else if (bootWt) { # compute mixing weights based on simulation
-      wt <- con_weightsBoot(VCOV     = Sigma,
-                            Amat     = Amat, 
-                            meq      = meq, 
-                            R        = bootWt.R,
-                            parallel = parallel,
-                            ncpus    = ncpus,
-                            cl       = cl,
-                            seed     = seed,
-                            verbose  = verbose)
+      wt <- con_weights_boot(VCOV     = Sigma,
+                             Amat     = Amat, 
+                             meq      = meq, 
+                             R        = bootWt.R,
+                             parallel = parallel,
+                             ncpus    = ncpus,
+                             cl       = cl,
+                             seed     = seed,
+                             verbose  = verbose)
     } else if (!bootWt & (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
-      #check
-    #  if ((qr(Amat)$rank < nrow(Amat))) {
-    #    stop("Restriktor ERROR: constraint matrix must have full row-rank. try set bootWt = TRUE.")
-    #  }
       wt <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
     } else if (!bootWt & (meq == nrow(Amat))) { # only equality constraints
       wt <- rep(0L, ncol(Sigma) + 1)

@@ -459,15 +459,15 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     if (all(c(Amat) == 0)) { # unrestrikted case
       wt <- c(rep(0L, p), 1)
     } else if (attr(object$wt, "bootWt")) { # compute mixing weights based on simulation
-      wt <- con_weightsBoot(VCOV     = Sigma,
-                            Amat     = Amat,
-                            meq      = meq,
-                            R        = attr(object$wt, "bootWt.R"),
-                            parallel = parallel,
-                            ncpus    = ncpus,
-                            cl       = cl,
-                            seed     = seed,
-                            verbose  = verbose)
+      wt <- con_weights_boot(VCOV     = Sigma,
+                             Amat     = Amat,
+                             meq      = meq,
+                             R        = attr(object$wt, "bootWt.R"),
+                             parallel = parallel,
+                             ncpus    = ncpus,
+                             cl       = cl,
+                             seed     = seed,
+                             verbose  = verbose)
     } else if (!attr(object$wt, "bootWt") && (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
       wt <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
     } else if (!attr(object$wt, "bootWt") && (meq == nrow(Amat))) { # only equality constraints
@@ -1017,15 +1017,15 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   if (all(c(Amat) == 0)) { # unrestrikted case
     wt <- c(rep(0L, p), 1)
   } else if (attr(object$wt, "bootWt")) { # compute mixing weights based on simulation
-    wt <- con_weightsBoot(VCOV     = Sigma,
-                          Amat     = Amat,
-                          meq      = meq,
-                          R        = attr(object$wt, "bootWt.R"),
-                          parallel = parallel,
-                          ncpus    = ncpus,
-                          cl       = cl,
-                          seed     = seed,
-                          verbose  = verbose)
+    wt <- con_weights_boot(VCOV     = Sigma,
+                           Amat     = Amat,
+                           meq      = meq,
+                           R        = attr(object$wt, "bootWt.R"),
+                           parallel = parallel,
+                           ncpus    = ncpus,
+                           cl       = cl,
+                           seed     = seed,
+                           verbose  = verbose)
   } else if (!attr(object$wt, "bootWt") & (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
     wt <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
   } else if (!attr(object$wt, "bootWt") & (meq == nrow(Amat))) { # only equality constraints

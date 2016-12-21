@@ -1,10 +1,15 @@
 \name{restriktor-methods}
 \alias{restriktor-methods}
 \alias{print.conLM}
+\alias{print.conRLM}
 \alias{summary.conLM}
+\alias{summary.conRLM}
 \alias{print.summary.conLM}
+\alias{print.summary.conRLM}
 \alias{coef.conLM}
+\alias{coef.conRLM}
 \alias{model.matrix.conLM}
+\alias{model.matrix.conRLM}
 
 \title{Methods for restriktor}
 \description{restricted estimation and confidence intervals for  

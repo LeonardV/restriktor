@@ -1,5 +1,6 @@
 \name{conTest_summary}
 \alias{conTest_summary.conLM}
+\alias{conTest_summary.conRLM}
 
 \title{function for computing all available hypothesis tests
 

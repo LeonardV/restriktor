@@ -142,21 +142,17 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
       wt <- c(rep(0L, p), 1)
       is.augmented <- FALSE
     } else if (bootWt) { # compute mixing weights based on simulation
-      wt <- con_weightsBoot(VCOV     = W,
-                            Amat     = Amat, 
-                            meq      = meq, 
-                            R        = bootWt.R,
-                            parallel = parallel,
-                            ncpus    = ncpus,
-                            cl       = cl,
-                            seed     = seed,
-                            verbose  = verbose)
+      wt <- con_weights_boot(VCOV     = W,
+                             Amat     = Amat, 
+                             meq      = meq, 
+                             R        = bootWt.R,
+                             parallel = parallel,
+                             ncpus    = ncpus,
+                             cl       = cl,
+                             seed     = seed,
+                             verbose  = verbose)
       # compute mixing weights based on mvtnorm
     } else if (!bootWt & (meq < nrow(Amat))) {
-      #check
-    #  if ((qr(Amat)$rank < nrow(Amat))) {
-    #    stop("restriktions matrix must have full row-rank. ry set bootWt = TRUE.")
-    #  }
       wt <- rev(con_weights(Amat %*% W %*% t(Amat), meq = meq))
     # only equality constraints
     } else if (!bootWt & (meq == nrow(Amat))) { 

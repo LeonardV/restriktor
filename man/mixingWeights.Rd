@@ -1,5 +1,5 @@
-\name{con_weightsBoot}
-\alias{con_weightsBoot}
+\name{con_weights_boot}
+\alias{con_weights_boot}
 
 \title{function for computing the chi-bar-square weights based on 
 Monte Carlo simulation.}
@@ -8,7 +8,7 @@ inequality constraints takes the form of mixtures of F-distributions.
 This function computes these mixing weights (a.k.a chi-bar-square weights). 
 It can be used directly and is called by the \code{iht} function.
 }
-\usage{con_weightsBoot(VCOV, Amat, meq, 
+\usage{con_weights_boot(VCOV, Amat, meq, 
                 R = 9999, parallel = c("no", "multicore", "snow"),
                 ncpus = 1L, cl = NULL, seed = NULL, verbose = FALSE, ...)
 }
@@ -70,6 +70,6 @@ Amat <- rbind(c(0,1))
 meq <- 0L
 # we only generate 999 bootstrap samples in this 
 # example; in practice you may wish to use a much higher number.
-wt <- con_weightsBoot(W, Amat, meq, R = 999)
+wt <- con_weights_boot(W, Amat, meq, R = 999)
 wt
 }

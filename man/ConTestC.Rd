@@ -1,5 +1,6 @@
 \name{conTestC}
 \alias{conTestC.conLM}
+\alias{conTestC.conRLM}
 
 \title{Hypothesis test Type C
 }

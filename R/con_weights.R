@@ -15,10 +15,10 @@ con_weights <- function(cov, meq) {
 ## compute weights based on simulation.
 ## REF: Silvapulle and Sen (2005, p. 79). Constrained Statistical Inference: Order, 
 ## Inequality, and Shape Constraints. Hoboken, {NJ}: Wiley
-con_weightsBoot <- function(VCOV, Amat, meq, 
-                            R = 9999, parallel = c("no", "multicore", "snow"),
-                            ncpus = 1L, cl = NULL, seed = NULL, 
-                            verbose = FALSE, ...) {
+con_weights_boot <- function(VCOV, Amat, meq, 
+                             R = 9999, parallel = c("no", "multicore", "snow"),
+                             ncpus = 1L, cl = NULL, seed = NULL, 
+                             verbose = FALSE, ...) {
   
   
   parallel <- match.arg(parallel)
@@ -32,7 +32,7 @@ con_weightsBoot <- function(VCOV, Amat, meq,
       ncpus <- 1L
   }
   
-  bvec <- rep(0L, nrow(Amat))
+  bvec <- rep(0L, nrow(Amat)) # weights do not depend on bvec.
   invW <- solve(VCOV) 
   Dmat <- 2*invW
   

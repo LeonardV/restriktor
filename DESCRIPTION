@@ -1,5 +1,5 @@
 Package: restriktor
-Title: Restrikted statistical estimation and inference for linear models
+Title: Restrikted Statistical Estimation and Inference for Linear Models
 Version: 0.1-40
 Authors@R: c(person(given = "Yves", family = "Rosseel",
                     role  = c("cre"),

@@ -19,25 +19,29 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
     }
   }
   if ((x[[1]]$R2.org - x[[1]]$R2.reduced) < 1e-08) {
-    cat("\nMultiple R-squared remains", round(x[[1]]$R2.org, 4),"\n")
+    cat("\nMultiple R-squared remains", sprintf("%5.3f", x[[1]]$R2.org),"\n\n")
   } else {
-    cat("\nMultiple R-squared reduced from", round(x[[1]]$R2.org, 4), "to", round(x[[1]]$R2.reduced, 4),"\n\n")  
+    cat("\nMultiple R-squared reduced from", sprintf("%5.3f", x[[1]]$R2.org), "to", 
+        sprintf("%5.3f", x[[1]]$R2.reduced),"\n\n")  
   }
   
   vnames <- names(x[[1]]$b.unrestr)
   colnames(Amat) <- vnames
-  out.rest <- cbind(Amat, c(rep("   ==", meq), rep("   >=", nrow(Amat) - 
+  
+  out.rest <- cbind(round(Amat, 4), c(rep("   ==", meq), rep("   >=", nrow(Amat) - 
                                                      meq)), bvec, " ")
   
   rownames(out.rest) <- paste(1:nrow(out.rest), ":", sep = "")
   
   colnames(out.rest)[(ncol(Amat) + 1):ncol(out.rest)] <- c("op", "rhs", "active")
-  out.rest[x[[1]]$iact, 7] <- TRUE
+  idx <- ncol(out.rest)
+  out.rest[x[[1]]$iact, idx] <- TRUE
   # in case of equality constraints only all constraints are active (==)
   if (nrow(Amat) == meq) {
-    out.rest[1:nrow(Amat), 7] <- TRUE
+    out.rest[1:nrow(Amat), idx] <- TRUE
   }  
   out.rest <- as.data.frame(out.rest)
+  
   
   if (length(x) > 1L) {
     cat("\nConstraint matrix and information about which constraint is active:\n\n")

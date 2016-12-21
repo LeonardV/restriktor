@@ -60,7 +60,7 @@ print.summary.conLM <- function(x, digits = max(3, getOption("digits") - 2),
   }
   
    
-  if (x$R2.org == x$R2.reduced) {
+  if ((x$R2.org - x$R2.reduced) < 1e-08) {
    cat("Multiple R-squared remains", sprintf("%5.3f", x$R2.org),"\n")
   } else {
    cat("Multiple R-squared reduced from", sprintf("%5.3f", x$R2.org), "to", 

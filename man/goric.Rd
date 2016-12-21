@@ -2,7 +2,7 @@
 \alias{goric}
 
 \title{Generalized Order-Restrikted Information Criterion Weights}
-\description{The \code{goricWeights} function computes GORIC 
+\description{The \code{goric} function computes GORIC 
 weights, which are comparable to the Akaike weights. 
 }
 \usage{goric(object, \dots, digits = max(3, getOption("digits") - 2))

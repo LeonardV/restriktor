@@ -61,7 +61,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   
   # check for equalities only
   if (meq == nrow(Amat)) {
-    stop("Restriktor ERROR: test not applicable for object with equality restriktions only.")
+    stop("Restriktor ERROR: test not applicable for object with equality restrictions only.")
   }
   
   if (is.null(control$tol)) {
@@ -320,7 +320,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
   
   # check for equalities only
   if (meq == nrow(Amat)) {
-    stop("Restriktor ERROR: test not applicable for object with equality restriktions only.")
+    stop("Restriktor ERROR: test not applicable for object with equality restrictions only.")
   }
   
   if (is.null(control$tol)) {
@@ -600,7 +600,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   
   # check for equalities only
   if (meq == nrow(Amat)) {
-    stop("Restriktor ERROR: test not applicable for object with equality restriktions only.")
+    stop("Restriktor ERROR: test not applicable for object with equality restrictions only.")
   }
   
   if (is.null(control$tol)) {
@@ -890,7 +890,7 @@ conTestC.restriktor <- function(object, ...) {
   meq  <- object$neq
   
   if (meq > 0L) {
-    stop("Restriktor ERROR: test not applicable with equality restriktions.")
+    stop("Restriktor ERROR: test not applicable with equality restrictions.")
   }
   
   b.unrestr   <- object$b.unrestr

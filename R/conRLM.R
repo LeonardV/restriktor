@@ -55,10 +55,10 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                                  bvec        = bvec, 
                                  meq         = meq, 
                                  debug       = debug)  
-    # a list with useful information about the restriktions.}
+    # a list with useful information about the restrictions.}
     CON <- restr_OUT$CON
     # a parameter table with information about the observed variables in the object 
-    # and the imposed restriktions.}
+    # and the imposed restrictions.}
     parTable <- restr_OUT$parTable
     # constraints matrix
     Amat <- restr_OUT$Amat
@@ -108,7 +108,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   }
   if (attr(object$terms, "intercept")) {
     if (se == "boot.model.based" & any(Amat[,1] == 1)) { 
-      stop("Restriktor ERROR: no restriktions on intercept possible",
+      stop("Restriktor ERROR: no restrictions on intercept possible",
            "\nfor 'se = boot.model.based' bootstrap method.")
     }
   }

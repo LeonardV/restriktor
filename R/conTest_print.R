@@ -9,9 +9,9 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
   bvec <- x[[1]]$bvec
   
   if (!is.null(attr(x[[1]]$pvalue, "boot_type")) || length(x) > 1 || "ceq" %in% names(x)) {
-  cat("\nRestriktor: restricted hypothesis tests (", x[[1]]$df.residual, "residual degrees of freedom ):\n")
+  cat("\nRestrictor: restricted hypothesis tests (", x[[1]]$df.residual, "residual degrees of freedom ):\n")
   } else {
-    cat("\nRestriktor: restricted hypothesis tests:\n")
+    cat("\nRestrictor: restricted hypothesis tests:\n")
   }
   if (length(x) == 1 && !(names(x) %in% c("C"))) {
     if (x[[1]]$boot %in% c("parametric", "model.based")) {
@@ -49,43 +49,55 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
     
     cat("\n\nOverview of all available hypothesis tests:\n")
     
-    cat("\nGlobal test: H0: all parameters are restricted to be equal", "\n", 
-        "        vs. HA: at least one restriktion strictly is true", "\n")
-    cat("       Test statistic: ", x$global$Ts, ",   p-value: ", 
-        if (!is.na(x$global$pvalue) && x$global$pvalue < 1e-04) { 
-          "<0.0001"
-        } else if (!is.na(x$global$pvalue)) { 
-          format(x$global$pvalue, digits = 4)
-        } else {
-          as.numeric(NA)
-        }, "\n\n", sep = "")
+    if (!is.null(x$global)) {
+      cat("\nGlobal test: H0: all parameters are restricted to be equal (==)\n", 
+          "        vs. HA: at least one inequality restriction is strictly true (>)\n")
+      cat("       Test statistic: ", sprintf("%.4f", x$global$Ts), ",   p-value: ", 
+          if (!is.na(x$global$pvalue) && x$global$pvalue < 1e-04) { 
+            "<0.0001"
+          } else if (!is.na(x$global$pvalue)) { 
+            format(x$global$pvalue, digits = 4)
+          } else {
+            as.numeric(NA)
+          }, "\n\n", sep = "")
+    }
     ###
-    cat("Type A test: H0: all restriktions are active (==)", "\n", 
-        "        vs. HA: at least one inequality restriktion is strictly true", "\n")
-    cat("       Test statistic: ", x$A$Ts, ",   p-value: ", 
-        if (!is.na(x$A$pvalue) && x$A$pvalue < 1e-04) { 
-          "<0.0001"
-        } else if (!is.na(x$A$pvalue)) { 
-          format(x$A$pvalue, digits = 4)
-        } else {
-          as.numeric(NA)
-        }, "\n\n", sep = "")
+    if (!is.null(x$A)) {
+      cat("Type A test: H0: all restrictions are equalities (==)", "\n", 
+          "        vs. HA: at least one inequality restriction is strictly true (>)\n")
+      cat("       Test statistic: ", sprintf("%.4f", x$A$Ts), ",   p-value: ", 
+          if (!is.na(x$A$pvalue) && x$A$pvalue < 1e-04) { 
+            "<0.0001"
+          } else if (!is.na(x$A$pvalue)) { 
+            format(x$A$pvalue, digits = 4)
+          } else {
+            as.numeric(NA)
+          }, "\n\n", sep = "")
+    }
     ###
-    cat("Type B test: H0: all restriktions are true", "\n", 
-        "        vs. HA: at least one restriktion is violated ", "\n")
-    cat("       Test statistic: ", x$B$Ts, ",   p-value: ", 
-        if (!is.na(x$B$pvalue) && x$B$pvalue < 1e-04) { 
-          "<0.0001"
-        } else if (!is.na(x$B$pvalue)) { 
-          format(x$B$pvalue, digits = 4)
-        } else {
-          as.numeric(NA)
-        }, "\n\n", sep = "")
+    if (!is.null(x$B)) {
+      if (x$B$meq.alt == 0L) {
+        cat("Type B test: H0: all restrictions hold in the population\n", 
+            "        vs. HA: at least one restriction is violated\n")
+      } else if (x$B$meq.alt > 0L) {
+        cat("Type B test: H0: all restrictions hold in the population\n", 
+            "        vs. HA: at least one restriction is violated (<),", 
+            "\n                  some equality restrictions are maintained\n")
+      }
+      cat("       Test statistic: ", sprintf("%.4f", x$B$Ts), ",   p-value: ", 
+          if (!is.na(x$B$pvalue) && x$B$pvalue < 1e-04) { 
+            "<0.0001"
+          } else if (!is.na(x$B$pvalue)) { 
+            format(x$B$pvalue, digits = 4)
+          } else {
+            as.numeric(NA)
+          }, "\n\n", sep = "")
+    }
     ###
-    if (length(x) == 4 && meq == 0) {
-      cat("Type C test: H0: at least one restriktion is false or active (==)", 
-          "\n", "        vs. HA: all restriktions are strictly true (>)", "\n")
-      cat("       Test statistic: ", x$C$Ts, ",   p-value: ", 
+    if (!is.null(x$C)) {
+      cat("Type C test: H0: at least one restriction is false or active (==)", 
+          "\n", "        vs. HA: all restrictions are strictly true (>)\n")
+      cat("       Test statistic: ", sprintf("%.4f", x$C$Ts), ",   p-value: ", 
           if (!is.na(x$C$pvalue) && x$C$pvalue < 1e-04) { 
             "<0.0001"
           } else if (!is.na(x$C$pvalue)) { 
@@ -95,11 +107,11 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
           }, "\n\n", sep = "")
       cat("Note: Type C test is based on a t-distribution (one-sided),", 
           "\n      all other tests are based on a mixture of F-distributions.\n\n")
-    }
-    else {
+    } else {
       cat("Note: All tests are based on a mixture of F-distributions", 
-          "\n      (Type C test is not applicable because of equality restriktions)\n\n")
+          "\n      (Type C test is not applicable because of equality restrictions)\n\n")
     }
+
   } else {
     x <- x[[1]]
     df.bar <- attr(x$pvalue, "df.bar")
@@ -116,8 +128,8 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
     
     if (nrow(x$Amat) > x$meq) {
       if (x$type == "global") {
-        cat("\nGlobal test: H0: all parameters are restricted to be equal", "\n", 
-            "        vs. HA: at least one restriktion is strictly true", "\n\n")
+        cat("\nGlobal test: H0: all parameters are restricted to be equal (==)", "\n", 
+            "        vs. HA: at least one inequality restriction is strictly true (>)\n\n")
         print(out.test, quote = FALSE, scientific = FALSE)
         if (!is.null(df.bar)) {
           cat("\nThis test is based on a mixture of F-distributions on", df.bar, 
@@ -132,8 +144,8 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
         print.default(format(x$b.restr, digits = digits),
                       print.gap = 2, quote = FALSE)
       } else if (x$type == "A") {
-        cat("\nType A test: H0: all restriktions are active (==)", "\n", 
-            "        vs. HA: at least one inequality restriktion is strictly true", "\n\n")
+        cat("Type A test: H0: all restrictions are equalities (==)", "\n", 
+            "        vs. HA: at least one inequality restriction is strictly true (>)\n\n")
         print(out.test, quote = FALSE, scientific = FALSE)        
         if (!is.null(df.bar)) {
         cat("\nThis test is based on a mixture of F-distributions on", df.bar, 
@@ -148,8 +160,8 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
         print.default(format(x$b.restr, digits = digits),
                       print.gap = 2, quote = FALSE)
       } else if (x$type == "B" && x$meq.alt == 0L) {
-        cat("\nType B test: H0: all restriktions are true", "\n", 
-            "        vs. HA: at least one restriktion is violated", "\n\n")
+        cat("Type B test: H0: all restrictions hold in the population", "\n", 
+            "        vs. HA: at least one restriction is violated\n\n")
         print(out.test, quote = FALSE)
         if (!is.null(df.bar)) {
           cat("\nThis test is based on a mixture of F-distributions on", df.bar, 
@@ -164,9 +176,9 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
         print.default(format(x$b.unrestr, digits = digits),
                       print.gap = 2, quote = FALSE)
       } else if (x$type == "B" && x$meq.alt > 0L) {
-        cat("\nType B test: H0: all restriktions are true (>= or =)", "\n",
-            "        vs. HA: at least one restriktion is violated (<), some =-restriktions maintained",
-              "\n\n")
+        cat("Type B test: H0: all restrictions hold in the population", "\n", 
+            "        vs. HA: at least one restriction is violated (<),", 
+            "\n                  some equality restrictions are maintained\n\n")
         print(out.test, quote = FALSE)
         if (!is.null(df.bar)) {
           cat("\nThis test is based on a mixture of F-distributions on", df.bar, 
@@ -181,8 +193,8 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
         print.default(format(x$b.restr.alt, digits = digits),
                       print.gap = 2, quote = FALSE)
         } else if (x$type == "C") {
-          cat("\nType C test: H0: at least one restriktion is false or active (==)", 
-              "\n", "        vs. HA: all restriktions are strictly true (>)", "\n\n")
+          cat("\nType C test: H0: at least one restriction is false or active (==)", 
+              "\n", "        vs. HA: all restrictions are strictly true (>)\n\n")
           print(out.test, quote = FALSE)
           cat("\nThis test is based on a one-sided t-distributions on", x$df.residual, 
               "residual \ndegrees of freedom.\n\n")
@@ -193,10 +205,10 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
                         print.gap = 2, quote = FALSE)
         }
     } else { #equality constraints only
-      cat("\n","classical test: H0: all restriktions are active (==)", 
-          "\n","            vs. HA: at least one equality restriktion is violated", "\n\n")
+      cat("\n","classical test: H0: all restrictions are active (==)", 
+          "\n","            vs. HA: at least one equality restriction is violated\n\n")
       print(out.test, quote = FALSE)
-      cat("\n\n(all rows are active restriktions under H0, H1 is unrestricted!)\n")
+      cat("\n\n(all rows are active restrictions under H0, H1 is unrestricted!)\n")
       print(out.rest, quote = FALSE, scientific = FALSE)
       cat("\nrestricted estimate under H0:\n")
       print.default(format(x$b.restr, digits = digits),
@@ -207,4 +219,3 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
     }
   }
 }
-

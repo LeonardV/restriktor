@@ -90,9 +90,12 @@ summary(fit_lm)
 ## exercises would not have a negative effect of increasing the 
 ## mean age at which a child starts to walk. 
 
-fit_con <- restriktor(fit_lm, constraints = "GroupActive < GroupPassive; 
-                                             GroupPassive < GroupNo")
+myConstraints <- ' GroupActive  < GroupPassive; 
+                   GroupPassive < GroupNo '
+                   
+fit_con <- restriktor(fit_lm, constraints = myConstraints)
 summary(fit_con)
+
 }
 
 \references{

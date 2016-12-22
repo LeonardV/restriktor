@@ -4,7 +4,6 @@ con_pvalue_Fbar <- function(wt, Ts.org, df.residual, type = "A",
   if (type == "global") {
     # compute df
     bvecG <- attr(bvec, "bvec_global")
-    #df.bar <- ((ncol(Amat) - 1) - nrow(Amat)):((ncol(Amat) - 1) - meq)    
     df.bar <- (length(bvecG) - nrow(Amat)):(length(bvecG) - meq)
     
     # for testing purposes

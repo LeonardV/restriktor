@@ -1,7 +1,7 @@
 restriktor <- function(object, constraints = NULL, ...) {
   
   # check the class of object
-  if (!any(class(object) %in% c("lm", "rlm"))) {
+  if (!inherits(object, c("lm", "rlm"))) {
     stop("restriktor only works for lm(), rlm()")
   }
   

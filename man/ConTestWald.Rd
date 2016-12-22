@@ -1,4 +1,5 @@
 \name{conTestWald}
+\alias{conTestWald}
 \alias{conTestWald.conRLM}
 \alias{conTestWald2.conRLM}
 

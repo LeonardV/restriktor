@@ -103,8 +103,6 @@ con_weights_boot <- function(VCOV, Amat, meq,
   dimL <- ncol(VCOV) - iact
   wt <- sapply(1:(ncol(VCOV) + 1), function(x) sum(x == (dimL + 1))) / R
   
-  OUT <- wt
-  
-  OUT
+  wt
 }
 

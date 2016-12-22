@@ -1,4 +1,5 @@
 \name{conTestScore}
+\alias{conTestScore}
 \alias{conTestScore.conLM}
 \alias{conTestScore.conRLM}
 

@@ -6,7 +6,7 @@ Monte Carlo simulation.}
 \description{The null-distribution of the test statistics under 
 inequality constraints takes the form of mixtures of F-distributions. 
 This function computes these mixing weights (a.k.a chi-bar-square weights). 
-It can be used directly and is called by the \code{iht} function.
+It can be used directly and is called by the \code{conTest} function.
 }
 \usage{con_weights_boot(VCOV, Amat, meq, 
                 R = 9999, parallel = c("no", "multicore", "snow"),

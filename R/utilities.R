@@ -1,5 +1,5 @@
 ## utility functions
-coef.conLM <- function(object, ...)  {
+coef.restriktor <- function(object, ...)  {
   
   b_def <- c()
   b_restr <- object$b.restr
@@ -12,7 +12,7 @@ coef.conLM <- function(object, ...)  {
   OUT
 }
 
-model.matrix.conLM <- function(object, ...) {
+model.matrix.restriktor <- function(object, ...) {
   model.matrix(object$model.org)
 }
 

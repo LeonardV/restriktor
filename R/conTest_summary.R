@@ -1,8 +1,8 @@
-conTest_summary.conLM <- function(object, test = "F", ...) {
+conTest_summary.restriktor <- function(object, test = "F", ...) {
   
   x <- object
-  if (!(inherits(object, c("conLM","conRLM")))) {
-    stop("Restriktor ERROR: object must be of class \"conLM\" or \"conRLM\"")
+  if (!(inherits(object, "restriktor"))) {
+    stop("Restriktor ERROR: object must be of class restriktor")
   }
   
   ldots <- list(...)

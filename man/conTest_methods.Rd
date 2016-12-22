@@ -4,7 +4,7 @@
 \alias{print.conTest}
 
 \title{Methods for conTest}
-\description{The print() function prints the output of objects of class \code{conTest}. 
+\description{Print function for objects of class \code{conTest}. 
 }
 
 \usage{

@@ -113,11 +113,13 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   }
   if (attr(object$terms, "intercept")) {
     if (se == "boot.model.based" & any(Amat[,1] == 1)) { 
-      stop("Restriktor ERROR: no restriktions on intercept possible for 'se = boot.model.based' bootstrap method.")
+      stop("Restriktor ERROR: no restriktions on intercept possible",
+           "\nfor 'se = boot.model.based' bootstrap method.")
     }
   }
   if(ncol(Amat) != length(b.unrestr)) {
-    stop("Restriktor ERROR: length coefficients and the number of columns constraints-matrix must be identical")
+    stop("Restriktor ERROR: length coefficients and the number of",
+         "\ncolumns constraints-matrix must be identical")
   }
 
   # compute (weighted) log-likelihood
@@ -257,7 +259,6 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
       start.time <- proc.time()[3]
       
       # compute residual degreees of freedom, corrected for equality constraints.
-      # only for the estimation, not for testing. 
       df.residual <- n - (p - qr(Amat[0:meq,])$rank)
       # compute weighted residuals
       if (is.null(weights)) {
@@ -361,9 +362,9 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   OUT$timing$total <- (proc.time()[3] - start.time0)
   
   if (ncol(y) == 1L) {
-    class(OUT) <- c("restriktor", "conLM", "lm")
+    class(OUT) <- c("restriktor", "conLM")
   } else if (ncol(y) > 1L) {
-    class(OUT) <- c("restriktor", "conMLM", "mlm")
+    class(OUT) <- c("restriktor", "conMLM")
   }
     
     OUT

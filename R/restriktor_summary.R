@@ -1,8 +1,8 @@
-summary.conLM <- function(object, bootCIs = TRUE, bty = "basic", 
-                          level = 0.95, GORIC = TRUE, ...) {
+summary.restriktor <- function(object, bootCIs = TRUE, bty = "basic", 
+                               level = 0.95, GORIC = TRUE, ...) {
   z <- object
   
-  if (!inherits(z, "conLM")) {
+  if (!inherits(z, "restriktor")) {
     stop("object of class ", sQuote(class(z)), " is not supported.")
   }
   # bty = "stud" needs bootstrap variances
@@ -151,9 +151,9 @@ summary.conLM <- function(object, bootCIs = TRUE, bty = "basic",
   }
   
   if (!inherits(z, "conRLM")) {
-    class(ans) <- "summary.conLM"
+    class(ans) <- c("summary.restriktor","summary.conLM")
   } else if (inherits(z, "conRLM")) {
-    class(ans) <- c("summary.conLM","summary.conRLM")
+    class(ans) <- c("summary.restriktor","summary.conRLM")
   } 
     
   ans

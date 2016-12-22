@@ -11,5 +11,5 @@ con_loglik_lm <- function(X, y, b, w = NULL) {
 
   OUT <- list(loglik = ll, Sigma = S)
 
-    OUT
+  OUT
 }

@@ -86,10 +86,10 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
         !(se %in% c("none", "boot.model.based", "boot.standard")) && 
         rAmat$rank != 0L) {
       se <- "none"
-      warning(paste("Restriktor Warning: No standard errors could be computed. 
-                      The constraint matrix must have full row-rank ( choose e.g. rows", 
-                    paste(rAmat$pivot, collapse = " "), "). 
-                      Try to set se = \"boot.model.based\" or \"boot.standard\"."))  
+      warning(paste("Restriktor Warning: No standard errors could be computed.", 
+                    "\nThe constraint matrix must have full row-rank ( choose e.g. rows", 
+                    paste(rAmat$pivot, collapse = " "), ").",
+                    "\nTry to set se = \"boot.model.based\" or \"boot.standard\"."))  
     }
   }
   
@@ -108,11 +108,13 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   }
   if (attr(object$terms, "intercept")) {
     if (se == "boot.model.based" & any(Amat[,1] == 1)) { 
-      stop("Restriktor ERROR: no restriktions on intercept possible for 'se = boot.model.based' bootstrap method.")
+      stop("Restriktor ERROR: no restriktions on intercept possible",
+           "\nfor 'se = boot.model.based' bootstrap method.")
     }
   }
   if(ncol(Amat) != length(b.unrestr)) {
-    stop("Restriktor ERROR: the columns of \"constraints\" does not match with the number of parameters.")
+    stop("Restriktor ERROR: the columns of constraints does not", 
+         "\nmatch with the number of parameters.")
   }
   
   
@@ -432,7 +434,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   
   OUT$timing$total <- (proc.time()[3] - start.time0)
   
-  class(OUT) <- c("restriktor", "conRLM", "conLM")
+  class(OUT) <- c("restriktor", "conRLM")
   
   OUT
 

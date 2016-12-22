@@ -879,10 +879,10 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
 ## intersection-union test 
 ## REF: S. Sasabuchi (1980). A Test of a Multivariate Normal Mean with 
 ## Composite Hypotheses Determined by Linear Inequalities. Biometrika Trust, 67 (2), 429-439.
-conTestC.conLM <- function(object, ...) {
+conTestC.restriktor <- function(object, ...) {
   
-  if (!(inherits(object, c("conLM","conRLM")))) {
-    stop("Restriktor ERROR: object must be of class conLM or conRLM.")
+  if (!(inherits(object, "restriktor"))) {
+    stop("Restriktor ERROR: object must be of class restriktor.")
   }
   
   Amat <- object$constraints

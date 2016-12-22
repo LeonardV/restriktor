@@ -1,16 +1,18 @@
 # standard bootstrap
-con_bootdata_lm <- function(data, indices, ...) {
-  l <- list(...)
-  object <- l$object
+con_boot_data <- function(data, indices, ...) {
+  ldots <- list(...)
+  z <- ldots$object
   # original model formula
-  form <- formula(object)
+  form <- formula(z)
   # in case of weights, the data.frame includes the weights
-  p <- length(attr(object$terms, "term.labels")) + 1
+  p <- length(attr(z$terms, "term.labels")) + 1
   # resample data
   DATA <- data[indices,1:p]
   # update lm object with boot data
-  l$object <- update(object, formula = form, data = DATA)
+  ldots$object <- update(z, formula = form, data = DATA)
   # calll restriktor
-  do.call("restriktor", l)$b.restr
+  OUT <- do.call("restriktor", ldots)$b.restr
+  
+  OUT
 }
 

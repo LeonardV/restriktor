@@ -7,14 +7,14 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
     type <- tolower(type)
     stopifnot(type %in% c("global","a","b","c","summary"))
     
-    l <- list(...)
+    ldots <- list(...)
     Amat <- object$constraints
     meq  <- object$neq
     
     if (all(Amat == 0)) {
       stop("Restriktor ERROR: no constraints specified!")
     } else if (nrow(Amat) > meq) {
-      boot <- l$boot
+      boot <- ldots$boot
       if (!is.null(boot) && boot == "no") {
         # Prevents long runs with late aborts because of too low memory.
         # acknowledgement: taken from the ic.infer package (Gromping, 2010)
@@ -73,6 +73,7 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
     if (is.null(ldots$se)) { 
       ldots$se <- "none"
     }
+    
     m_restr <- match(names(ldots), c("se", "B", "Wt", "bootWt", "bootWt.R", 
                                      "parallel", "ncpus", "cl", "seed", "control", 
                                      "verbose", "debug"), 0L)

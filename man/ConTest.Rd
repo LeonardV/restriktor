@@ -3,8 +3,8 @@
 \alias{iht}
 
 \title{function for informative hypothesis testing}
-\description{\code{conTest} tests linear equality and/or inequality restricted 
-hypotheses for linear models. 
+\description{\code{conTest} tests linear equality and/or inequality 
+restricted hypotheses for linear models. 
 }
 
 \usage{
@@ -13,13 +13,13 @@ conTest(object, constraints = NULL, type = "summary", test = "F",
 }
 
 \arguments{
-  \item{object}{an object of class \code{lm} or \code{rlm}. In this case, the constraint syntax
-  needs to be specified
+  \item{object}{an object of class \code{lm} or \code{rlm}. In this 
+  case, the constraint syntax needs to be specified
   
   OR
   
-  an object of class \code{restriktor}. The constraints are inherit from the 
-  fitted restriktor object and do not to be specified again.
+  an object of class \code{restriktor}. The constraints are inherited 
+  from the fitted restriktor object and do not to be specified again.
   } 
   
   \item{constraints}{there are two ways to constrain parameters. 
@@ -77,8 +77,8 @@ conTest(object, constraints = NULL, type = "summary", test = "F",
   matrix or vector.}
 
   
-  \item{\dots}{futher options for the \code{conTest} and/or \code{restriktor}
-  function. See details for more information.}
+  \item{\dots}{futher options for the \code{conTest} and/or 
+  \code{restriktor} function. See details for more information.}
 
 }
 
@@ -110,12 +110,15 @@ conclusions from significant results from hypothesis test Type A.
 The exact finite sample distributions of the non-robust F-, 
 score- and LR-test statistics based on restricted OLS estimates 
 and normally distributed errors, are a mixture of F-distributions 
-under the null hypothesis (Wolak, 1987). 
+under the null hypothesis (Wolak, 1987). For the robust tests, we 
+found that the results based on these mixtures of F-distributions 
+approximate the tail probabilities better than their asymptotic 
+distributions. 
 
 Note that, in case of equality constraints only, the 
-null-distribution of the (robust) F-test statistics is based on 
-an F-distribution. The (robust) Wald- and (robust) score-test 
-statistics are based on chi-square distributions.
+null-distribution of the (non-)robust F-test statistics are 
+based on an F-distribution. The (non-)robust Wald- and (non-)robust 
+score-test statistics are based on chi-square distributions.
 
 If object is of class \code{lm} or \code{rlm}, the \code{conTest} function
 internally calls the \code{restriktor} function. Arguments for the 

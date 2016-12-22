@@ -1,15 +1,10 @@
 \name{restriktor-methods}
 \alias{restriktor-methods}
-\alias{print.conLM}
-\alias{print.conRLM}
-\alias{summary.conLM}
-\alias{summary.conRLM}
-\alias{print.summary.conLM}
-\alias{print.summary.conRLM}
-\alias{coef.conLM}
-\alias{coef.conRLM}
-\alias{model.matrix.conLM}
-\alias{model.matrix.conRLM}
+\alias{print.restriktor}
+\alias{summary.restriktor}
+\alias{print.summary.restriktor}
+\alias{coef.restriktor}
+\alias{model.matrix.restriktor}
 
 \title{Methods for restriktor}
 \description{restricted estimation and confidence intervals for  
@@ -17,22 +12,22 @@
 }
 \usage{
 
-\method{print}{conLM}(x, digits = max(3, getOption("digits") - 2), \dots)
+\method{print}{restriktor}(x, digits = max(3, getOption("digits") - 2), \dots)
 
-\method{summary}{conLM}(object, bootCIs = TRUE, 
+\method{summary}{restriktor}(object, bootCIs = TRUE, 
         bty = "basic", level = 0.95, GORIC = TRUE, \dots)
 
-\method{print}{summary.conLM}(x, digits = max(3, getOption("digits") - 2),
+\method{print}{summary.restriktor}(x, digits = max(3, getOption("digits") - 2),
               signif.stars = getOption("show.signif.stars"), \dots)     
 
-\method{coef}{conLM}(object, \dots)
+\method{coef}{restriktor}(object, \dots)
 
-\method{model.matrix}{conLM}(object, \dots)
+\method{model.matrix}{restriktor}(object, \dots)
   
 }
 \arguments{
-  \item{object}{an object of class \code{conLM} or \code{conRLM}.}
-  \item{x}{an object of class \code{conLM}, \code{conRLM}.}
+  \item{object}{an object of class \code{restriktor}.}
+  \item{x}{an object of class \code{restriktor}.}
   \item{bootCIs}{if TRUE (default), nonparametric bootstrap 
   confidence intervals are generated. Only available if \code{object}
   contains \code{bootout} object.}

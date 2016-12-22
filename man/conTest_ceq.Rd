@@ -1,12 +1,12 @@
 \name{conTest_ceq}
+\alias{conTest_ceq}
 \alias{conTest_ceq.conLM}
 \alias{conTest_ceq.conRLM}
 
-\title{F-, Wald-, and score-tests for (robust) iht with equality constraints only}
+\title{Tests for iht with equality constraints only}
 \description{\code{conTest_ceq} tests linear equality restricted hypotheses for
 (robust) linear models by F-, Wald-, and score-tests. It can be used directly 
 and is called by the \code{conTest} function if all restrictions are equalities.
-
 }
 
 \usage{

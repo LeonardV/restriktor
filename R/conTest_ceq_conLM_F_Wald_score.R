@@ -3,7 +3,7 @@ conTest_ceq.conLM <- function(object, test = "F", boot = "no",
                               parallel = "no", ncpus = 1L, cl = NULL, 
                               seed = 1234, verbose = FALSE, ...) {
   
-  if (!("conLM" %in% class(object))) {
+  if (!inherits(object, "conLM")) {
     stop("object must be of class conLM.")
   }
   if(!is.null(weights(object))) {

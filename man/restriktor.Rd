@@ -363,6 +363,7 @@ summary(fit2_con)
 myConstraints3 <- ' group1 == group2
                     group2 == group3
                     group3 == group4 '
+                    
 fit3_con <- restriktor(fit2.rlm, constraints = myConstraints3)
 summary(fit3_con)
 

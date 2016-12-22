@@ -1,6 +1,6 @@
 \name{conTest_summary}
-\alias{conTest_summary.conLM}
-\alias{conTest_summary.conRLM}
+\alias{conTest_summary}
+\alias{conTest_summary.restriktor}
 
 \title{function for computing all available hypothesis tests
 
@@ -8,18 +8,17 @@
 \description{conTest_summary computes all available hypothesis tests and returns
 and object of class \code{conTest} for which a print function is available. The 
 \code{conTest_summary} can be used directly and is called by the \code{conTest} 
-function if \code{type = "summary"}. Robust linear models are also supported by
-the \code{conTest_summary.conLM} function.
+function if \code{type = "summary"}. 
 }
 
 \usage{
 
-\method{conTest_summary}{conLM}(object, test = "F", ...)
+\method{conTest_summary}{restriktor}(object, test = "F", ...)
 
 }
 
 \arguments{
-  \item{object}{an object of class \code{conLM} or \code{conRLM}.} 
+  \item{object}{an object of class \code{restriktor}.} 
   
   \item{test}{test statistic; for information about the 
    null-distribution see details.
@@ -43,8 +42,8 @@ the \code{conTest_summary.conLM} function.
 
 
 \value{
-  A list with all available hypothesis test. Each list contains also a list with 
-  the following items:
+  An object of class conTest, for which a print is available. 
+  More specifically, it is a list with the following items:
   \item{CON}{a list with useful information about the constraints.}
   \item{Amat}{constraints matrix.}
   \item{bvec}{vector of right-hand side elements.}

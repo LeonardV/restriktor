@@ -1,23 +1,22 @@
 \name{conTestC}
-\alias{conTestC.conLM}
-\alias{conTestC.conRLM}
+\alias{conTestC}
+\alias{conTestC.restriktor}
 
 \title{Hypothesis test Type C
 }
 \description{\code{conTestC} tests linear inequality restricted hypotheses for (robust) 
 linear models by a one-sided t-test. This method is based on the union-intersection
-principle. For more information see details. Robust linear models are also supported
-via the \code{conTestC.conLM} function.
+principle. For more information see details. 
 }
 
 \usage{
 
-\method{conTestC}{conLM}(object, \dots)
+\method{conTestC}{restriktor}(object, \dots)
 
 }
 
 \arguments{
-  \item{object}{an object of class \code{conLM} or \code{conRLM}.} 
+  \item{object}{an object of class \code{restriktor}.} 
   
   \item{\dots}{no additional arguments for now.}
 }

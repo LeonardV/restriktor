@@ -16,7 +16,7 @@ goric <- function(object, ..., digits = max(3, getOption("digits") - 2)) {
   idx <- which(isrestr)
   objectnames <- vector("character", length(idx))
   for (i in idx) { 
-    objectnames[i] <- CALL[[i]]
+    objectnames[i] <- as.character(CALL[[i]])
   }
   
   ll    <- unlist(lapply(isSummary, function(x) attr(x$goric, "loglik")))

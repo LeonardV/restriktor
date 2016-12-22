@@ -2,11 +2,13 @@
 \alias{conTestC}
 \alias{conTestC.restriktor}
 
-\title{Hypothesis test Type C
+\title{one-sided t-test for iht
 }
-\description{\code{conTestC} tests linear inequality restricted hypotheses for (robust) 
-linear models by a one-sided t-test. This method is based on the union-intersection
-principle. For more information see details. 
+\description{\code{conTestC} tests linear inequality restricted 
+hypotheses for (robust) linear models by a one-sided t-test. This 
+method is based on the union-intersection principle. It is called 
+by the \code{conTest} function if all restrictions are equalities.
+For more information see details. 
 }
 
 \usage{

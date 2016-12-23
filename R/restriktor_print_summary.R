@@ -11,9 +11,9 @@ print.summary.restriktor <- function(x, digits = max(3, getOption("digits") - 2)
   cat("Call:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), "\n\n", sep = "")
   
   if (inherits(x, "summary.conRLM")) {
-    cat("Restriktor: restrikted robust linear model:\n\n")
+    cat("Restriktor: restricted robust linear model:\n\n")
   } else {
-    cat("Restriktor: restrikted linear model:\n\n")
+    cat("Restriktor: restricted linear model:\n\n")
   }
   
   cat(if (!is.null(x$weights) && diff(range(x$weights))) 
@@ -34,7 +34,7 @@ print.summary.restriktor <- function(x, digits = max(3, getOption("digits") - 2)
   
   coefs <- x$coefficients
   if (se.type %in% c("boot.model.based", "boot.standard") & bootCIs) {
-    cat("\nCoefficients from restrikted model\nwith",
+    cat("\nCoefficients from restricted model\nwith",
       100 * level, "pct bootstrap confidence intervals (",bty,"):\n ")  
   } else {
     cat("\nCoefficients:\n")
@@ -73,7 +73,7 @@ print.summary.restriktor <- function(x, digits = max(3, getOption("digits") - 2)
     PT <- attr(goric, "penalty")
     result_goric <- c(ll, PT, goric)
     names(result_goric) <- c("Loglik", "Penalty", "Goric")
-    cat("\nGeneralized Order-Restrikted Information Criterion:\n")
+    cat("\nGeneralized Order-Restricted Information Criterion:\n")
     print(result_goric, digits = digits)
   }  
   cat("\n")

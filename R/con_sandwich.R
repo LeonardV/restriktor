@@ -118,7 +118,7 @@ meatHC <- function(x,
     #W <- sqrt(x$model.org$w)                                     #constrained or unconstrained?
     # sqrt of the weights
     rW <- sqrt(x$w)
-  } else if (class(x)[1] == "conLM") {
+  } else if (inherits(x, "conLM")) {
       if (!is.null(x$weights)) {
         rW <- sqrt(x$weights)
       } else {
@@ -126,8 +126,20 @@ meatHC <- function(x,
       }
   } 
   
+  
   ### compute hat matrix ###
   ### code added by LV ###
+  
+  # in rare situations, it may happen that the weight equals 0.
+  # to avoid computational issues, we replace the zero with 1e-08
+  idx.rW <- which(rW == 0)
+  rW[idx.rW] <- 1e-08
+  
+  if (any(rW) == 0L) {
+    warning("Restriktor WARNING: weights ", idx.rW, " are exactly zero. This causes problems for", 
+            "\ncomputing the hat-matrix. To compute the ", sQuote(type), " standard errors, we added a small",
+            "\nnumber 1e-08. Note that the results may not be trustworthy.")
+  }
   
   ## matrix form ##
   # diaghat <- diag(X %*% solve(t(X) %*% W %*% X) %*% t(X) %*% W)

@@ -5,9 +5,8 @@ con_boot_data <- function(data, indices, ...) {
   # original model formula
   form <- formula(z)
   # in case of weights, the data.frame includes the weights
-  p <- length(attr(z$terms, "term.labels")) + 1
   # resample data
-  DATA <- data[indices,1:p]
+  DATA <- data[indices,1:ncol(data)]
   # update lm object with boot data
   ldots$object <- update(z, formula = form, data = DATA)
   # calll restriktor

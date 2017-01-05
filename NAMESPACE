@@ -17,7 +17,8 @@ importFrom("boot",
            boot.ci)
 
 importFrom("MASS",
-           psi.bisquare)
+           psi.bisquare,
+           psi.huber)
 
 importFrom("ic.infer",
            #nchoosek, NOT EXPORTED!
@@ -28,23 +29,20 @@ importFrom("stats", "coef", "df.residual", "dnorm", "fitted",
            "naresid", "pchisq", "pf", "pnorm", "printCoefmat", "pt",
            "quantile", "rchisq", "residuals", "rnorm", "rt", "runif",
            "sd", "start", "terms", "update", "var", "vcov",
-           "weighted.residuals", "weights") 
+           "weighted.residuals", "weights", "gaussian", "lm.fit",
+           "lm.wfit", "mad") 
 
 # export ordinary functions defined in this package
 export("restriktor", 
-       "conLM.lm", 
-       "conRLM.rlm", 
+       "conLM.lm", "conRLM.rlm", "conGLM.glm",
        "conTest", "iht",
-       "conTestF.conLM", 
-       "conTestF.conRLM", 
+       "conTestF.conLM", "conTestF.conRLM", 
        "conTestLRT.conLM", 
-       "conTestScore.conLM", 
-       "conTestScore.conRLM", 
+       "conTestScore.conLM", "conTestScore.conRLM", 
        "conTestWald.conRLM", 
        "conTestWald2.conRLM",
        "conTestC.restriktor", 
-       "conTest_ceq.conLM",
-       "conTest_ceq.conRLM", 
+       "conTest_ceq.conLM", "conTest_ceq.conRLM", 
        "goric", 
        "print.restriktor", "print.summary.restriktor",
        "summary.restriktor", "conTest_summary.restriktor",

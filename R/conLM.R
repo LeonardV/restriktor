@@ -2,7 +2,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                      B = 999, rhs = NULL, neq = 0L, Wt = TRUE, 
                      bootWt = FALSE, bootWt.R = 99999,
                      parallel = "no", ncpus = 1L, cl = NULL, 
-                     seed = NULL, control = NULL, verbose = FALSE, 
+                     seed = NULL, control = list(), verbose = FALSE, 
                      debug = FALSE, ...) {
   
   # check class
@@ -28,11 +28,11 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   # model summary
   so <- summary(object)
   # unconstrained residual variance (weighted)
-  s2.unc <- so$sigma^2
+  s2_unrestr <- so$sigma^2
   # weigths
   weights <- weights(object)
   # unconstrained estimates
-  b.unrestr <- coef(object)
+  b_unrestr <- coef(object)
   # number of parameters
   p <- length(coef(object))
   # sample size
@@ -59,7 +59,8 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
     bvec <- restr_OUT$bvec
     # neq
     meq <- restr_OUT$meq
-  } else if (is.null(constraints)) { # no constraints specified - needed for GORIC to include unconstrained model
+  } else if (is.null(constraints)) { 
+    # no constraints specified - needed for GORIC to include unconstrained model
     CON <- NULL
     parTable <- NULL
     Amat <- rbind(rep(0L, p))
@@ -117,23 +118,22 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
            "\nfor 'se = boot.model.based' bootstrap method.")
     }
   }
-  if(ncol(Amat) != length(b.unrestr)) {
+  if(ncol(Amat) != length(b_unrestr)) {
     stop("Restriktor ERROR: length coefficients and the number of",
          "\ncolumns constraints-matrix must be identical")
   }
 
   # compute (weighted) log-likelihood
-  ll.unc <- con_loglik_lm(X = X, 
+  ll_unc <- con_loglik_lm(X = X, 
                           y = y, 
-                          b = b.unrestr, 
-                          w = weights)
-  LL.unc <- ll.unc$loglik
+                          b = b_unrestr, 
+                          w = weights)$loglik
   
   timing$LLik <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
   # ML unconstrained MSE
-  #s2ml.unc <- s2.unc * object$df.residual / n
-  #invW <- kronecker(solve(s2.unc), t(X) %*% X)
+  #s2ml.unc <- s2_unrestr * object$df.residual / n
+  #invW <- kronecker(solve(s2_unrestr), t(X) %*% X)
   W <- vcov(object)#solve(invW)
   
   is.augmented <- TRUE
@@ -143,7 +143,8 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
     if (all(c(Amat) == 0)) { # unrestrikted case
       wt <- c(rep(0L, p), 1)
       is.augmented <- FALSE
-    } else if (bootWt) { # compute mixing weights based on simulation
+    } else if (bootWt) { 
+      # compute mixing weights based on simulation
       wt <- con_weights_boot(VCOV     = W,
                              Amat     = Amat, 
                              meq      = meq, 
@@ -153,11 +154,11 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                              cl       = cl,
                              seed     = seed,
                              verbose  = verbose)
-      # compute mixing weights based on mvtnorm
     } else if (!bootWt & (meq < nrow(Amat))) {
+      # compute mixing weights based on mvtnorm
       wt <- rev(con_weights(Amat %*% W %*% t(Amat), meq = meq))
-    # only equality constraints
-    } else if (!bootWt & (meq == nrow(Amat))) { 
+    } else if (!bootWt & (meq == nrow(Amat))) {
+      # only equality constraints
       wt <- rep(0L, ncol(W) + 1)
       wt.idx <- ncol(W) - meq + 1
       wt[wt.idx] <- 1
@@ -172,26 +173,26 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   start.time <- proc.time()[3]
   
   # check if the constraints are not in line with the data, else skip optimization
-  if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) & meq == 0) {
-    b.restr <- b.unrestr
-    s2.restr <- s2.unc
+  if (all(Amat %*% c(b_unrestr) - bvec >= 0 * bvec) & meq == 0) {
+    b_restr <- b_unrestr
+    s2_restr <- s2_unrestr
     
     OUT <- list(CON         = CON,
                 call        = mc,
                 timing      = timing,
                 parTable    = parTable,
                 wt          = wt,
-                b.unrestr   = b.unrestr,
-                b.restr     = b.unrestr,
+                b_unrestr   = b_unrestr,
+                b_restr     = b_unrestr,
                 residuals   = object$residuals, # unweighted residuals
                 fitted      = object$fitted,
                 weights     = object$weights,
                 df.residual = object$df.residual,
-                R2.org      = so$r.squared, 
-                R2.reduced  = so$r.squared,
-                s2.unc      = s2.unc, 
-                s2.restr    = s2.unc, 
-                loglik      = LL.unc, 
+                R2_org      = so$r.squared, 
+                R2_reduced  = so$r.squared,
+                s2_unrestr  = s2_unrestr, 
+                s2_restr    = s2_unrestr, 
+                loglik      = ll_unc, 
                 Sigma       = W,
                 constraints = Amat, 
                 rhs         = bvec, 
@@ -203,7 +204,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
     # compute constrained estimates for lm()
     out.QP <- con_solver(X         = X, 
                          y         = y, 
-                         b.unrestr = b.unrestr, 
+                         b_unrestr = b_unrestr, 
                          w         = weights, 
                          Amat      = Amat,
                          bvec      = bvec, 
@@ -213,27 +214,23 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                                          control$absval),
                          maxit     = ifelse(is.null(control$maxit), 1e04, 
                                          control$maxit))
-    b.restr <- matrix(out.QP$solution, ncol = ncol(y))
-    b.restr[abs(b.restr) < ifelse(is.null(control$tol), 
+    b_restr <- matrix(out.QP$solution, ncol = ncol(y))
+    b_restr[abs(b_restr) < ifelse(is.null(control$tol), 
                                   sqrt(.Machine$double.eps), 
                                   control$tol)] <- 0L
     
     timing$optim <- (proc.time()[3] - start.time)
     start.time <- proc.time()[3]
     
-    ll.restr <- con_loglik_lm(X = X, 
+    ll_restr <- con_loglik_lm(X = X, 
                               y = y, 
-                              b = b.restr, 
-                              w = weights)
-    LL.restr <- ll.restr$loglik
-    
-    timing$conLLik <- (proc.time()[3] - start.time)
-    start.time <- proc.time()[3]
+                              b = b_restr, 
+                              w = weights)$loglik
     # lm
     if (ncol(y) == 1L) {
-      b.restr <- as.vector(b.restr)
-        names(b.restr) <- names(b.unrestr)
-      fitted <- X %*% b.restr
+      b_restr <- as.vector(b_restr)
+        names(b_restr) <- names(b_unrestr)
+      fitted <- X %*% b_restr
       residuals <- y - fitted
       
       # compute R^2
@@ -253,7 +250,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
         }
         rss <- sum(weights * residuals^2)
       }
-      R2.reduced <- mss / (mss + rss)
+      R2_reduced <- mss / (mss + rss)
       
       timing$R2 <- (proc.time()[3] - start.time)
       start.time <- proc.time()[3]
@@ -262,16 +259,16 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
       df.residual <- n - (p - qr(Amat[0:meq,])$rank)
       # compute weighted residuals
       if (is.null(weights)) {
-        s2.restr <- sum(residuals^2) / df.residual  
+        s2_restr <- sum(residuals^2) / df.residual  
       } else {
-        s2.restr <- sum(weights * residuals^2) / df.residual
+        s2_restr <- sum(weights * residuals^2) / df.residual
       }
     } else { #mlm <FIXME>
       stop("mlm not implemented (yet)")
       # residuals <- y - fitted
-      #   rownames(b.restr) <- rownames(b.unrestr)
-      #   colnames(b.restr) <- colnames(b.unrestr)
-      # fitted <- X %*% b.restr
+      #   rownames(b_restr) <- rownames(b_unrestr)
+      #   colnames(b_restr) <- colnames(b_unrestr)
+      # fitted <- X %*% b_restr
       # df <- object$df.residual
       # df.residual <- df + qr(Amat[0:meq,])$rank
       # se <- "none"
@@ -282,17 +279,17 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                 timing      = timing,
                 parTable    = parTable,
                 wt          = wt,
-                b.unrestr   = b.unrestr,
-                b.restr     = b.restr,
+                b_unrestr   = b_unrestr,
+                b_restr     = b_restr,
                 residuals   = residuals, # unweighted residuals
                 fitted      = fitted,
                 weights     = weights,
                 df.residual = object$df.residual,
-                R2.org      = so$r.squared, 
-                R2.reduced  = R2.reduced,
-                s2.unc      = s2.unc, 
-                s2.restr    = s2.restr, 
-                loglik      = LL.restr, 
+                R2_org      = so$r.squared, 
+                R2_reduced  = R2_reduced,
+                s2_unrestr  = s2_unrestr, 
+                s2_restr    = s2_restr, 
+                loglik      = ll_restr, 
                 Sigma       = W,
                 constraints = Amat, 
                 rhs         = bvec, 
@@ -303,20 +300,20 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   }
   
   # original object
-  OUT$model.org <- object
+  OUT$model_org <- object
   # type standard error
   OUT$se <- se
   # compute standard errors based on the augmented inverted information matrix or
   # based on the standard bootstrap or model.based bootstrap
   if (se != "none") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
-      OUT$information <- 1/s2.restr * crossprod(X)
+      OUT$information <- 1/s2_restr * crossprod(X)
       
       information.inv <- con_augmented_information(information  = OUT$information,
                                                    is.augmented = is.augmented,
                                                    X            = X, 
-                                                   b.unrestr    = b.unrestr, 
-                                                   b.restr      = b.restr,
+                                                   b_unrestr    = b_unrestr, 
+                                                   b_restr      = b_restr,
                                                    Amat         = Amat, 
                                                    bvec         = bvec, 
                                                    meq          = meq) 

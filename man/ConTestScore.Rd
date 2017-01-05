@@ -142,25 +142,25 @@ F-distributions.
   \item{Amat}{constraints matrix.}
   \item{bvec}{vector of right-hand side elements.}
   \item{meq}{number of equality constraints.}
-  \item{meq.alt}{same as input neq.alt.}
+  \item{meq_alt}{same as input neq.alt.}
   \item{iact}{number of active constraints.}
   \item{type}{same as input.}
   \item{test}{same as input.}
   \item{Ts}{test-statistic value.}
   \item{df.residual}{the residual degrees of freedom.}
   \item{pvalue}{tail probability for \code{Ts}.}
-  \item{b.eqrestr}{equality restricted regression coefficients. 
+  \item{b_eqrestr}{equality restricted regression coefficients. 
   Only available for \code{type = "A"} and \code{type = "global"}, 
   else \code{b.eqrestr = NULL}.}
-  \item{b.unrestr}{unrestricted regression coefficients.}
-  \item{b.restr}{restricted regression coefficients.}
-  \item{b.restr.alt}{restricted regression coefficients under HA 
+  \item{b_unrestr}{unrestricted regression coefficients.}
+  \item{b_restr}{restricted regression coefficients.}
+  \item{b_restr_alt}{restricted regression coefficients under HA 
   if some equality constraints are maintained.}
   \item{Sigma}{variance-covariance matrix of unrestricted model.}
-  \item{R2.org}{unrestricted R-squared.}
-  \item{R2.reduced}{restricted R-squared.}
+  \item{R2_org}{unrestricted R-squared.}
+  \item{R2_reduced}{restricted R-squared.}
   \item{boot}{same as input.}
-  \item{model.org}{original model.}
+  \item{model_org}{original model.}
 }
 
 \references{

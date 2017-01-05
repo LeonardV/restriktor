@@ -4,7 +4,7 @@
 \description{
 Package \code{restriktor} implements estimation and testing linear equality and 
 inequality restriktions about parameters and effects for multivariate (robust) 
-normal models.}
+normal models and generalized linear models.}
 
 \details{
   \tabular{ll}{
@@ -17,9 +17,10 @@ normal models.}
   }
   
   Function \code{restriktor} estimates the parameters of a linear 
-  model (\code{lm}) or robust linear model (\code{rlm}) subject to 
-  linear equality and/or inequality restriktions. The real work horses 
-  are the \code{conLM} and the \code{conRLM} functions for 
+  model (\code{lm}), a robust linear model (\code{rlm}) or a
+  generalized linear model (\code{glm}) subject to linear equality 
+  and/or inequality restriktions. The real work horses are the 
+  \code{conLM}, the \code{conRLM}, and the \code{conGLM} functions for 
   linear and robust linear models respectively. A major advantage
   of \pkg{restriktor} is that the constraints can be specified by
   a text-based description. This means that users do not have to 
@@ -54,7 +55,7 @@ normal models.}
 
 \value{
   The output of function \code{restriktor} belongs to S3 class 
-  \code{conLM} or \code{conRLM}.  
+  \code{conLM}, \code{conRLM} or \code{conGLM}.  
   
   The output of function \code{conTest} belongs to S3 class \code{conTest}. 
   
@@ -69,9 +70,6 @@ normal models.}
   The output style of the \code{iht} print function is strongly 
   inspired on the summary of the \code{ic.test} function from the 
   \pkg{ic.infer} package.
-  
-  It also uses code chunks from the \code{rlm.default} function 
-  from the \pkg{MASS} package.  
 }
 
 

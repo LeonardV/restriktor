@@ -88,10 +88,10 @@ and is called by the \code{conTest} function if all restrictions are equalities.
   \item{Ts}{test-statistic value.}
   \item{df.residual}{the residual degrees of freedom.}
   \item{pvalue}{tail probability for \code{Ts}.}
-  \item{b.unrestr}{unrestricted regression coefficients.}
-  \item{b.restr}{restricted regression coefficients.}
-  \item{R2.org}{unrestricted R-squared.}
-  \item{R2.reduced}{restricted R-squared.}
+  \item{b_unrestr}{unrestricted regression coefficients.}
+  \item{b_restr}{restricted regression coefficients.}
+  \item{R2_org}{unrestricted R-squared.}
+  \item{R2_reduced}{restricted R-squared.}
 }
 
 \references{

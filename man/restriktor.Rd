@@ -2,13 +2,15 @@
 \alias{restriktor}
 \alias{conLM.lm}
 \alias{conRLM.rlm}
+\alias{conGLM.glm}
 
 \title{Estimating linear regression models with (in)equality restrictions}
-\description{Function \code{restriktor} estimates the parameters of a linear model (\code{lm}) 
-  or robust linear model (\code{rlm}) subject to linear equality 
+\description{Function \code{restriktor} estimates the parameters 
+  of a linear model (\code{lm}), a robust linear model (\code{rlm}) 
+  or a generalized linear model (\code{glm}) subject to linear equality 
   and/or linear inequality restrictions. The real work horses are 
-  the \code{conLM} and the \code{conRLM} functions for linear and 
-  robust linear models respectively.}
+  the \code{conLM}, \code{conRLM} and the \code{conGLM} functions 
+  for linear, robust linear and generalized linear models respectively.}
 
 \usage{
 restriktor(object, constraints = NULL, \dots)
@@ -16,21 +18,26 @@ restriktor(object, constraints = NULL, \dots)
 \method{conLM}{lm}(object, constraints = NULL, se = "standard", 
       B = 999, rhs = NULL, neq = 0L, Wt = TRUE, bootWt = FALSE, 
       bootWt.R = 99999, parallel = "no", ncpus = 1L, cl = NULL, 
-      seed = NULL, control = NULL, verbose = FALSE, debug = FALSE, 
+      seed = NULL, control = list(), verbose = FALSE, debug = FALSE, 
       \dots)
       
 \method{conRLM}{rlm}(object, constraints = NULL, se = "standard", 
        B = 999, rhs = NULL, neq = 0L, Wt = TRUE, bootWt = FALSE, 
        bootWt.R = 99999, parallel = "no", ncpus = 1L, cl = NULL, 
-       seed = NULL, control = NULL, verbose = FALSE, debug = FALSE, 
+       seed = NULL, control = list(), verbose = FALSE, debug = FALSE, 
+       \dots)
+       
+\method{conGLM}{glm}(object, constraints = NULL, se = "standard", 
+       B = 999, rhs = NULL, neq = 0L, Wt = TRUE, bootWt = FALSE, 
+       bootWt.R = 99999, parallel = "no", ncpus = 1L, cl = NULL, 
+       seed = NULL, control = list(), verbose = FALSE, debug = FALSE, 
        \dots)
 }
+
 \arguments{
-  \item{object}{a fitted linear model object of class "lm", or a 
-  fitted robust linear model object of class "rlm". For class "rlm", 
-  both \code{M} and \code{MM} estimation are supported. For the 
-  loss function only the \code{bisquare} is supported for now, 
-  otherwise the function gives an error.} 
+  \item{object}{a fitted linear model object of class "lm", "rlm"
+  or "glm". For class "rlm" only the loss function \code{bisquare} 
+  is supported for now, otherwise the function gives an error.} 
   
   \item{constraints}{there are two ways to constrain parameters. 
   First, the constraint syntax consists of one or more text-based
@@ -173,8 +180,8 @@ syntax:
       computed by using the so-called Delta method.
   }
 
-  Variable names of interaction effects in objects of class lm and 
-  rlm contain a semi-colon (:) between the variables. To impose 
+  Variable names of interaction effects in objects of class lm, 
+  rlm and glm contain a semi-colon (:) between the variables. To impose 
   constraints on parameters of interaction effects, the semi-colon 
   must be replaced by a dot (.) (e.g., \code{x3:x4} becomes 
   \code{x3.x4}). In addition, the intercept variable names is shown 
@@ -198,70 +205,40 @@ summary method are available. More specifically, it is a list
 with the following items:
 
 \item{CON}{a list with useful information about the restrictions.}
-
 \item{call}{the matched call.}
-
 \item{timing}{how much time several tasks take.}
-
 \item{parTable}{a parameter table with information about the 
  observed variables in the model and the imposed restrictions.}
-
 \item{wt}{chi-bar-square weights.}
-
-\item{b.unrestr}{unrestricted regression coefficients.}
-
-\item{b.restr}{restricted regression coefficients.}
-
+\item{b_unrestr}{unrestricted regression coefficients.}
+\item{b_restr}{restricted regression coefficients.}
 \item{residuals}{restricted residuals.}
-
 \item{fitted}{restricted fitted mean values.}
-
 \item{wresid}{a working residual, weighted for "inv.var" weights 
 only (rlm only)}
-
 \item{weights}{(only for weighted fits) the specified weights.}
-
 \item{w}{the weights used in the IWLS process (rlm only).}
-
 \item{scale}{the robust scale estimate used (rlm only).}
-
 \item{psi}{the psi function with parameters substituted (rlm only). 
  Only bisquare for now.}
-
 \item{df.residual}{the residual degrees of freedom}
-
-\item{R2.org}{unrestricted R-squared.}
-
-\item{R2.reduced}{restricted R-squared.}
-
-\item{s2.unc}{mean squared error of unrestricted model.}
-
-\item{s2.restr}{mean squared error of restricted model.}
-
+\item{R2_org}{unrestricted R-squared.}
+\item{R2_reduced}{restricted R-squared.}
+\item{s2_unrestr}{mean squared error of unrestricted model.}
+\item{s2_restr}{mean squared error of restricted model.}
 \item{loglik}{restricted log-likelihood.}
-
 \item{Sigma}{variance-covariance matrix of unrestricted model.}
-
 \item{constraints}{matrix with restrictions.}
-
 \item{rhs}{vector of right-hand side elements.}
-
 \item{neq}{number of equality restrictions.}
-
 \item{iact}{active restrictions.}
-
 \item{converged}{did the IWLS converge (rlm only)?}
-
 \item{iter}{number of iteration needed for convergence (rlm only).}
-
 \item{bootout}{object of class boot. Only available if bootstrapped
 standard errors are requested, else bootout = NULL.} 
-
-\item{model.org}{original model.}
-
+\item{model_org}{original model.}
 \item{se}{as input. This information is needed in the summary 
 function.}
-
 \item{information}{observed information matrix with the inverted 
 information matrix and the augmented information matrix as attributes.}
 }

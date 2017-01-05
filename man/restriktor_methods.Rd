@@ -65,7 +65,7 @@
   summary statistics of the fitted unrestricted and restricted 
   (robust) linear model given in \code{object}, plus
   
-  \item{se.type}{type of standard error computed, equal to input 
+  \item{se_type}{type of standard error computed, equal to input 
   \code{se} in the \code{restriktor} function.}
   
   \item{residuals}{the weighted residuals.}
@@ -78,9 +78,9 @@
   
   \item{rdf}{residual degrees of freedom.}
   
-  \item{R2.org}{unrestricted R-squared.}
+  \item{R2_org}{unrestricted R-squared.}
   
-  \item{R2.reduced}{restricted R-squared.}
+  \item{R2_reduced}{restricted R-squared.}
   
   \item{goric}{goric value and attributed its penalty term and
   log-likelihood.}

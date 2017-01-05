@@ -2,9 +2,9 @@
 coef.restriktor <- function(object, ...)  {
   
   b_def <- c()
-  b_restr <- object$b.restr
+  b_restr <- object$b_restr
   if (any(object$parTable$op == ":=")) {
-    b_def <- object$CON$def.function(object$b.restr)
+    b_def <- object$CON$def.function(object$b_restr)
   }
   
   OUT <- c(b_restr, b_def)
@@ -13,7 +13,7 @@ coef.restriktor <- function(object, ...)  {
 }
 
 model.matrix.restriktor <- function(object, ...) {
-  model.matrix(object$model.org)
+  model.matrix(object$model_org)
 }
 
 tukeyChi <- function(x, c = 4.685061, deriv = 0, ...) {

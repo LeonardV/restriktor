@@ -19,40 +19,40 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "basic",
   
   Amat <- z$constraints
   meq <- z$neq
-  p <- z$model.org$rank
+  p <- z$model_org$rank
   rdf <- z$df.residual
-  b.restr <- z$b.restr
+  b_restr <- z$b_restr
   r <- c(weighted.residuals(z))
   
   ans <- z[c("call", if (!is.null(z$weights)) "weights")]
-  ans$model.org <- z$model.org
+  ans$model_org <- z$model_org
   
-  se.type <- z$se
-  ans$se.type <- se.type
-    attr(ans$se.type, "bootCIs") <- bootCIs    
-    attr(ans$se.type, "level") <- level    
-    attr(ans$se.type, "bty") <- bty
+  se_type <- z$se
+  ans$se_type <- se_type
+    attr(ans$se_type, "bootCIs") <- bootCIs    
+    attr(ans$se_type, "level") <- level    
+    attr(ans$se_type, "bty") <- bty
 
   ans$residuals <- r
-  if (is.null(z$bootout) && se.type != "none") {
-    if (se.type == "standard") {
+  if (is.null(z$bootout) && se_type != "none") {
+    if (se_type == "standard") {
       V <- attr(z$information, "inverted")
       se <- sqrt(diag(V))
     } else {
       V <- sandwich(z, 
                     bread. = bread(z), 
-                    meat.  = meatHC(z, type = se.type))
+                    meat.  = meatHC(z, type = se_type))
       se <- sqrt(diag(V))
     }
-    tval <- ifelse(se != 0, b.restr/se, 0L)
-    ans$coefficients <- cbind(b.restr, se, tval, 2 * pt(abs(tval), 
+    tval <- ifelse(se != 0, b_restr/se, 0L)
+    ans$coefficients <- cbind(b_restr, se, tval, 2 * pt(abs(tval), 
                                                     rdf, lower.tail = FALSE))
-    dimnames(ans$coefficients) <- list(names(b.restr),
+    dimnames(ans$coefficients) <- list(names(b_restr),
                                        c("Estimate", "Std. Error", "t value", "Pr(>|t|)"))
     # add new defined parameters 
     if (any(z$parTable$op == ":=")) {
-      b.def <- z$CON$def.function(b.restr)
-      JAC <- lav_func_jacobian_complex(func = z$CON$def.function, x = b.restr)
+      b.def <- z$CON$def.function(b_restr)
+      JAC <- lav_func_jacobian_complex(func = z$CON$def.function, x = b_restr)
       def.cov <- JAC %*% V %*% t(JAC)
       diag.def.cov <- diag(def.cov)
       diag.def.cov[ diag.def.cov < 0 ] <- as.numeric(NA)
@@ -62,10 +62,10 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "basic",
                                                         2 * pt(abs(tval.def), 
                                                                rdf, lower.tail = FALSE)))
     }
-  } else if (bootCIs && (ans$se.type %in% c("boot.model.based", "boot.standard"))) {
-      cis <- matrix(0, length(z$b.restr), 2)
+  } else if (bootCIs && (ans$se_type %in% c("boot.model.based", "boot.standard"))) {
+      cis <- matrix(0, length(z$b_restr), 2)
       colnames(cis) <- c("lower", "upper")
-      for (i in 1:length(z$b.restr)) {
+      for (i in 1:length(z$b_restr)) {
         if (!bty %in% c("norm", "perc")) { # basic and adjusted percentile
           cis[i, ] <- boot.ci(z$bootout, conf = level,
                               type = bty, index = i)[[bty]][4:5]
@@ -79,12 +79,12 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "basic",
         }  
       }
       se <- apply(z$bootout$t, 2, sd)
-      ans$coefficients <- cbind(b.restr, se, cis)
+      ans$coefficients <- cbind(b_restr, se, cis)
       colnames(ans$coefficients) <- c("Estimate", "Std. Error", "Lower", "Upper")
       # bootstrapped standard errors for newly defined parameters
       if (any(z$parTable$op == ":=")) {
-        b.def <- z$CON$def.function(b.restr)
-        JAC <- lav_func_jacobian_complex(func = z$CON$def.function, x = b.restr)
+        b.def <- z$CON$def.function(b_restr)
+        JAC <- lav_func_jacobian_complex(func = z$CON$def.function, x = b_restr)
         bootout.def <- matrix(apply(z$bootout$t, 1, function(x) JAC %*% x), nrow(JAC))
         se.def <- apply(bootout.def, 1, function(x) sd(x))
         cis.def <- matrix(0, length(b.def), 2)
@@ -103,26 +103,38 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "basic",
         } 
         ans$coefficients <- rbind(ans$coefficients, cbind(b.def, se.def, cis.def))
       }
-  } else if (is.null(z$bootout) && se.type == "none" && !any(z$parTable$op == ":=")) {
-    ans$coefficients <- cbind(b.restr)
+  } else if (is.null(z$bootout) && se_type == "none" && !any(z$parTable$op == ":=")) {
+    ans$coefficients <- cbind(b_restr)
     colnames(ans$coefficients) <- "Estimate"
-  } else if (is.null(z$bootout) && se.type == "none" && any(z$parTable$op == ":=")) {
-      b.def <- z$CON$def.function(b.restr)
-      ans$coefficients <- cbind(c(b.restr, b.def))
+  } else if (is.null(z$bootout) && se_type == "none" && any(z$parTable$op == ":=")) {
+      b.def <- z$CON$def.function(b_restr)
+      ans$coefficients <- cbind(c(b_restr, b.def))
       colnames(ans$coefficients) <- "Estimate"
   } else {
       stop("restriktor ERROR")
     }
   
-  ans$s2.unrestr <- z$s2.unrestr
-  ans$s2.restr   <- z$s2.restr
+  ans$s2_unrestr <- z$s2_unrestr
+  ans$s2_restr   <- z$s2_restr
   ans$rdf <- rdf
-  ans$R2.org <- z$R2.org
-  if (attr(z$model.org$terms, "intercept") != p) {
-    ans$R2.reduced <- z$R2.reduced
-  } else {
-    ans$R2.reduced <- 0
+  
+  if (inherits(z, c("conLM", "conRLM"))) {
+    ans$R2_org <- z$R2_org
+    if (attr(z$model_org$terms, "intercept") != p) {
+      ans$R2_reduced <- z$R2_reduced
+    } else {
+      ans$R2_reduced <- 0
+    }
   }
+  
+  if (inherits(z, "conGLM")) {
+  ans$family <- z$family
+  ans$dispersion_restr <- z$dispersion_restr  
+  ans$deviance_null <- z$deviance_null
+  ans$deviance <- z$deviance
+  ans$df.residual_null <- z$df.residual_null
+  }
+    
   
   ## compute goric
   if (GORIC && !is.null(z$wt)) {
@@ -132,7 +144,7 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "basic",
     ## Journal of statistical planning and inference, volume 142, pp. 2454 - 2463
     
     # compute penalty term based on simulated level probabilities (wt)
-    # The value 1 is the penalty for estimating the variance.
+    # The value 1 is the penalty for estimating the variance/dispersion parameter.
     if (bootWt) { 
       PT <- 1 + sum(0 : ncol(Amat) * wt)
       # unconstrained case
@@ -145,15 +157,23 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "basic",
     } else {
       stop("restriktor ERROR: unable to compute penalty for GORIC.")  
     }
-    ans$goric <- -2*(z$loglik - PT)
+    if (inherits(z, "conLM")) {
+      ans$goric <- -2*(z$loglik - PT)
+    } else if (inherits(z, "conGLM")) {
+      #ans$goric <- -2*z$loglik / z$dispersion + 2*PT
+      #ans$goric <- -2*z$loglik / 1 + 2*PT
+      ans$goric <- -2*(z$loglik - PT)
+    }
     attr(ans$goric, "penalty") <- PT
     attr(ans$goric, "loglik")  <- z$loglik 
   }
   
-  if (!inherits(z, "conRLM")) {
-    class(ans) <- c("summary.restriktor","summary.conLM")
-  } else if (inherits(z, "conRLM")) {
-    class(ans) <- c("summary.restriktor","summary.conRLM")
+  if (inherits(z, "conRLM")) {
+    class(ans) <- c("summary.restriktor", "summary.conRLM")
+  } else if (inherits(z, "conLM")) {
+    class(ans) <- c("summary.restriktor", "summary.conLM")
+  } else if (inherits(z, "conGLM")) {
+    class(ans) <- c("summary.restriktor", "summary.conGLM")
   } 
     
   ans

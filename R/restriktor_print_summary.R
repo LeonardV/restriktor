@@ -3,17 +3,19 @@ print.summary.restriktor <- function(x, digits = max(3, getOption("digits") - 2)
   
   resid <- x$residuals
   rdf <- x$rdf
-  se.type <- x$se.type[1]
-  bootCIs <- attr(x$se.type, "bootCIs")
-  bty <- attr(x$se.type, "bty")
-  level <- attr(x$se.type, "level")
+  se_type <- x$se_type[1]
+  bootCIs <- attr(x$se_type, "bootCIs")
+  bty <- attr(x$se_type, "bty")
+  level <- attr(x$se_type, "level")
   
   cat("Call:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), "\n\n", sep = "")
   
   if (inherits(x, "summary.conRLM")) {
     cat("Restriktor: restricted robust linear model:\n\n")
-  } else {
+  } else if (inherits(x, "summary.conLM")) {
     cat("Restriktor: restricted linear model:\n\n")
+  } else if (inherits(x, "summary.conGLM")) {
+    cat("Restriktor: restricted generalized linear model:\n\n")
   }
   
   cat(if (!is.null(x$weights) && diff(range(x$weights))) 
@@ -33,7 +35,7 @@ print.summary.restriktor <- function(x, digits = max(3, getOption("digits") - 2)
   }
   
   coefs <- x$coefficients
-  if (se.type %in% c("boot.model.based", "boot.standard") & bootCIs) {
+  if (se_type %in% c("boot.model.based", "boot.standard") & bootCIs) {
     cat("\nCoefficients from restricted model\nwith",
       100 * level, "pct bootstrap confidence intervals (",bty,"):\n ")  
   } else {
@@ -41,32 +43,46 @@ print.summary.restriktor <- function(x, digits = max(3, getOption("digits") - 2)
   } 
   printCoefmat(coefs, digits = digits, signif.stars = signif.stars, 
                na.print = "NA")
-  cat("\nResidual standard error:", format(signif(sqrt(x$s2.restr), 
-                                                  digits)), "on", rdf, "degrees of freedom")
+  
+  if (inherits(x, c("summary.conLM", "summary.conRLM"))) {
+    cat("\nResidual standard error:", format(signif(sqrt(x$s2_restr), 
+                                                    digits)), "on", rdf, "degrees of freedom")
+  } 
+  
   #cat("\n")
-  if (se.type == "standard") {
-    cat("\nStandard errors:", se.type ,"\n")
-  } else if (se.type == "const") {
+  if (se_type == "standard") {
+    cat("\nStandard errors:", se_type ,"\n")
+  } else if (se_type == "const") {
     cat("\nHomoskedastic standard errors.\n")
-  } else if (se.type %in% c("boot.model.based", "boot.standard")) {
-    if (se.type == "boot.model.based") {
-      se.type <- "model-based"
-    } else if (se.type == "boot.standard") {
-      se.type <- "standard"
+  } else if (se_type %in% c("boot.model.based", "boot.standard")) {
+    if (se_type == "boot.model.based") {
+      se_type <- "model-based"
+    } else if (se_type == "boot.standard") {
+      se_type <- "standard"
     }
-    cat("\nBootstrapped standard errors:", se.type ,"\n")
+    cat("\nBootstrapped standard errors:", se_type ,"\n")
   } else {
-    cat("\nHeteroskedastic robust standard errors:", se.type ,"\n")
+    cat("\nHeteroskedastic robust standard errors:", se_type ,"\n")
   }
   
-   
-  if ((x$R2.org - x$R2.reduced) < 1e-08) {
-   cat("Multiple R-squared remains", sprintf("%5.3f", x$R2.org),"\n")
-  } else {
-   cat("Multiple R-squared reduced from", sprintf("%5.3f", x$R2.org), "to", 
-       sprintf("%5.3f", x$R2.reduced),"\n")  
+  if (!(inherits(x, "summary.conGLM"))) { 
+    if ((x$R2_org - x$R2_reduced) < 1e-08) {
+     cat("Multiple R-squared remains", sprintf("%5.3f", x$R2_org),"\n")
+    } else {
+     cat("Multiple R-squared reduced from", sprintf("%5.3f", x$R2_org), "to", 
+         sprintf("%5.3f", x$R2_reduced),"\n")  
+    }
   }
-
+  
+  if (inherits(x, "summary.conGLM")) {
+  cat("\n(Dispersion parameter for ", x$family$family, " family taken to be ", 
+      format(x$dispersion_restr), ")\n\n", apply(cbind(paste(format(c("Null", 
+                                                                "Residual"), justify = "right"), "deviance:"), format(unlist(x[c("deviance_null", 
+                                                                                                                                 "deviance")]), digits = max(5L, digits + 1L)), " on", 
+                                                 format(unlist(x[c("df.residual_null", "rdf")])), " degrees of freedom\n"), 
+                                           1L, paste, collapse = " "), sep = "")
+  }
+  
   goric <- x$goric
   if (!is.null(goric)) {
     ll <- attr(goric, "loglik") 

@@ -11,7 +11,7 @@ con_boot_fixed <- function(data, indices, ...) {
     DATA <- data[indices,1:ncol(data)]
     ldots$object <- update(z, formula = form, data = DATA)
     
-    OUT <- do.call("restriktor", ldots)$b.restr  
+    OUT <- do.call("restriktor", ldots)$b_restr  
     
     OUT
 }

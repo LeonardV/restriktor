@@ -13,20 +13,20 @@ conTest_ceq.conRLM <- function(object, test = "F", boot = "no",
   test <- tolower(test)
   stopifnot(test %in% c("f","wald","wald2","score"))
   
-  model.org <- object$model.org
-  y <- as.matrix(object$model.org$model[, attr(object$model.org$terms, "response")])
+  model_org <- object$model_org
+  y <- as.matrix(object$model_org$model[, attr(object$model_org$terms, "response")])
   # model matrix
   X <- model.matrix(object)[,,drop = FALSE]
   # tukey's bisquare tuning constant
-  cc <- model.org$call[["c"]]
+  cc <- model_org$call[["c"]]
   # coefficients under equality restriktions
-  b.eqrestr <- coef(object)
+  b_eqrestr <- coef(object)
   # unrestrikted coefficients
-  b.unrestr <- coef(model.org)
+  b_unrestr <- coef(model_org)
   # unrestrikted scale estimate
-  scale <- model.org$s
+  scale <- model_org$s
   # scale estimate used for the standard errors
-  tau <- object$s2.unc
+  tau <- object$s2_unrestr
   # restriktion stuff
   CON  <- object$CON
   
@@ -44,9 +44,9 @@ conTest_ceq.conRLM <- function(object, test = "F", boot = "no",
     if (test == "f") {
       F_out <- robustFm(x         = X, 
                         y         = y, 
-                        b.unrestr = b.unrestr, 
-                        b.eqrestr = b.eqrestr, 
-                        b.restr   = b.unrestr, 
+                        b_unrestr = b_unrestr, 
+                        b_eqrestr = b_eqrestr, 
+                        b_restr   = b_unrestr, 
                         scale     = scale, 
                         cc        = ifelse(is.null(cc), 4.685061, cc))
           
@@ -58,14 +58,14 @@ conTest_ceq.conRLM <- function(object, test = "F", boot = "no",
       OUT$df.residual <- df.residual(object) 
       # p-value based on chisq
       OUT$pvalue <- 1 - pf(OUT$Ts, OUT$df, OUT$df.residual)
-      OUT$b.restr <- object$b.restr
-      OUT$b.unrestr <- object$b.unrestr
+      OUT$b_restr <- object$b_restr
+      OUT$b_unrestr <- object$b_unrestr
     } else if (test == "wald" || test == "score") {
       WaldScore_out <- robustWaldScores(x         = X, 
                                         y         = y, 
-                                        b.eqrestr = b.eqrestr, 
-                                        b.restr   = b.unrestr, 
-                                        b.unrestr = b.unrestr,
+                                        b_eqrestr = b_eqrestr, 
+                                        b_restr   = b_unrestr, 
+                                        b_unrestr = b_unrestr,
                                         scale     = scale, 
                                         test      = test, 
                                         cc        = ifelse(is.null(cc), 4.685061, cc))
@@ -74,20 +74,20 @@ conTest_ceq.conRLM <- function(object, test = "F", boot = "no",
       OUT$df.residual <- df.residual(object) 
       # p-value based on chisq
       OUT$pvalue <- 1 - pchisq(OUT$Ts, df = OUT$df) 
-      OUT$b.restr <- object$b.restr
-      OUT$b.unrestr <- object$b.unrestr
+      OUT$b_restr <- object$b_restr
+      OUT$b_unrestr <- object$b_unrestr
     } else if (test == "wald2") {  
       Wald2_out <- robustWaldXX(x         = X, 
-                                b.eqrestr = b.eqrestr, 
-                                b.restr   = b.unrestr, 
-                                b.unrestr = b.unrestr, 
+                                b_eqrestr = b_eqrestr, 
+                                b_restr   = b_unrestr, 
+                                b_unrestr = b_unrestr, 
                                 tau       = tau)
       OUT <- append(CON, Wald2_out)
       
       OUT$df <- nrow(Amat)
       OUT$pvalue <- 1 - pchisq(OUT$Ts, df = OUT$df) 
-      OUT$b.restr <- object$b.restr
-      OUT$b.unrestr <- object$b.unrestr 
+      OUT$b_restr <- object$b_restr
+      OUT$b_unrestr <- object$b_unrestr 
     } else {
       stop("restriktor ERROR: test ", sQuote(test), " not (yet) implemented.")
     }
@@ -102,7 +102,7 @@ conTest_ceq.conRLM <- function(object, test = "F", boot = "no",
   
   if (boot == "parametric") {
     OUT$pvalue <- con_pvalue_boot_parametric(object, 
-                                             Ts.org   = OUT$Ts, 
+                                             Ts_org   = OUT$Ts, 
                                              type     = "A",
                                              test     = test, 
                                              R        = R, 
@@ -115,7 +115,7 @@ conTest_ceq.conRLM <- function(object, test = "F", boot = "no",
                                              verbose  = verbose)
   } else if (boot == "model.based") {
     OUT$pvalue <- con_pvalue_boot_model_based(object, 
-                                              Ts.org   = OUT$Ts, 
+                                              Ts_org   = OUT$Ts, 
                                               type     = "A", 
                                               test     = test, 
                                               R        = R, 
@@ -126,8 +126,8 @@ conTest_ceq.conRLM <- function(object, test = "F", boot = "no",
                                               verbose  = verbose)
   } 
   
-  OUT$R2.org      <- object$R2.org
-  OUT$R2.reduced  <- object$R2.reduced
+  OUT$R2_org      <- object$R2_org
+  OUT$R2_reduced  <- object$R2_reduced
   
   OUT <- list(OUT)
   names(OUT) <- "ceq"

@@ -1,4 +1,4 @@
-robustWaldScores <- function(x, y, b.eqrestr, b.restr, b.unrestr, 
+robustWaldScores <- function(x, y, b_eqrestr, b_restr, b_unrestr, 
                              scale, test = "wald", cc = 4.685061) { 
   
   test <- tolower(test)
@@ -7,7 +7,7 @@ robustWaldScores <- function(x, y, b.eqrestr, b.restr, b.unrestr,
   p <- dim(X)[2]
   
   #Calculate M, Q, V 
-  resA <- y - X %*% b.unrestr
+  resA <- y - X %*% b_unrestr
   rstarA <- resA / scale
   # rho function
   psiA <- tukeyChi(rstarA, cc, deriv = 1) 
@@ -34,14 +34,14 @@ robustWaldScores <- function(x, y, b.eqrestr, b.restr, b.unrestr,
 
   # Wald test-statistic
   if (test == "wald") {
-    Ts <- as.numeric(n * c(b.restr - b.eqrestr) %*% 
-                       solve(V, c(b.restr - b.eqrestr)))
+    Ts <- as.numeric(n * c(b_restr - b_eqrestr) %*% 
+                       solve(V, c(b_restr - b_eqrestr)))
     
     test <- "Wald"
   } else if (test == "score") {
     # Score test-statistic
-    res0 <- y - X %*% b.eqrestr
-    resA <- y - X %*% b.restr
+    res0 <- y - X %*% b_eqrestr
+    resA <- y - X %*% b_restr
     
     rstar0 <- res0 / scale
     rstarA <- resA / scale
@@ -56,8 +56,8 @@ robustWaldScores <- function(x, y, b.eqrestr, b.restr, b.unrestr,
     weightsZA <- psiA
     ZA <- (t(X) %*% weightsZA) / n  
       
-    result.C <- M %*% V %*% t(M)
-    Ts <- as.numeric(n * t(ZA - Z0) %*% solve(result.C, (ZA - Z0)))
+    result_C <- M %*% V %*% t(M)
+    Ts <- as.numeric(n * t(ZA - Z0) %*% solve(result_C, (ZA - Z0)))
     
     test <- "Score"
   } 
@@ -76,16 +76,16 @@ robustWaldScores <- function(x, y, b.eqrestr, b.restr, b.unrestr,
 # REF: Mervyn J. Silvapulle (1992). Robust Tests of Inequality 
 # Constraints and One-Sided Hypotheses in the Linear Model, 
 # Biometrika, 79, 3, 621-630.
-robustFm <- function(x, y, b.unrestr, b.eqrestr, b.restr, scale, 
+robustFm <- function(x, y, b_unrestr, b_eqrestr, b_restr, scale, 
                      cc = 4.685061) {
   X <- x
   n <- dim(X)[1]
   p <- dim(X)[2]
   
   #compute residuals under null, restrikted and unconstrained model
-  resid0 <- y - X %*% b.eqrestr
-  resid1 <- y - X %*% b.restr
-  resid2 <- y - X %*% b.unrestr
+  resid0 <- y - X %*% b_eqrestr
+  resid1 <- y - X %*% b_restr
+  resid2 <- y - X %*% b_unrestr
   
   #residuals / scale
   rstar0 <- as.numeric(resid0 / scale)                                               
@@ -96,13 +96,13 @@ robustFm <- function(x, y, b.unrestr, b.eqrestr, b.restr, scale,
   L1 <- sum(tukeyChi(rstar1, cc, deriv = 0))
   
   #first derivative rho function
-  psi.prime.h2 <- tukeyChi(rstar2, cc, deriv = 1) 
+  psi_prime_h2 <- tukeyChi(rstar2, cc, deriv = 1) 
   #second derivative rho function
-  psi.prime2.h2 <- tukeyChi(rstar2, cc, deriv = 2) 
+  psi_prime2_h2 <- tukeyChi(rstar2, cc, deriv = 2) 
   
   #asymptotic covariance matrix standardizing constant
-  lambda <- ( 0.5 * (1 / (n - p)) * sum(psi.prime.h2^2) ) / 
-                                  ( (1/n) * sum(psi.prime2.h2) )  
+  lambda <- ( 0.5 * (1 / (n - p)) * sum(psi_prime_h2^2) ) / 
+                                  ( (1/n) * sum(psi_prime2_h2) )  
   Ts <- 1 / lambda * (L0 - L1) 
   
   OUT <- list(test = "F",
@@ -113,10 +113,10 @@ robustFm <- function(x, y, b.unrestr, b.eqrestr, b.restr, scale,
 
 
 ## robust Wald statistic, Silvapulle (1992) ##
-robustWaldXX <- function(x, b.eqrestr, b.restr, b.unrestr, tau) {
+robustWaldXX <- function(x, b_eqrestr, b_restr, b_unrestr, tau) {
   #x <- scale(x, center = TRUE, scale = FALSE)
-  Ts <- as.numeric(( (t(b.unrestr-b.eqrestr)%*%(t(x)%*%x)%*%(b.unrestr-b.eqrestr)) -
-                     (t(b.unrestr-b.restr)%*%(t(x)%*%x)%*%(b.unrestr-b.restr)) ) / tau^2)
+  Ts <- as.numeric(( (t(b_unrestr-b_eqrestr)%*%(t(x)%*%x)%*%(b_unrestr-b_eqrestr)) -
+                     (t(b_unrestr-b_restr)%*%(t(x)%*%x)%*%(b_unrestr-b_restr)) ) / tau^2)
 
   OUT <- list(test = "Wald",
               Ts   = Ts)

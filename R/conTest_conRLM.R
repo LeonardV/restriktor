@@ -4,7 +4,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                             control = NULL, ...) {
   
   # rename for internal use
-  meq.alt <- neq.alt
+  meq_alt <- neq.alt
   
   # checks
   if (!("conRLM" %in% class(object))) {
@@ -24,28 +24,30 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   }
   
   # original model
-  model.org <- object$model.org
-  # tukey's bisquare tuning constant
-  cc <- model.org$call[["c"]]
+  model_org <- object$model_org
+  # orignal model call
+  call_org <- as.list(model_org$call)
   # model matrix
-  X <- model.matrix(model.org)[,,drop=FALSE]
+  X <- model.matrix(model_org)[,,drop=FALSE]
   # response variable
-  y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
+  y <- as.matrix(model_org$model[, attr(model_org$terms, "response")])
+  # weights
+  weights <- model_org$weights
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
   Sigma <- object$Sigma
   # unconstrained scale
-  scale <- model.org$s
+  scale <- model_org$s
   # parameter estimates
-  b.unrestr <- object$b.unrestr
-  b.restr <- object$b.restr
-  b.eqrestr <- NULL
-  b.restr.alt <- NULL
+  b_unrestr <- object$b_unrestr
+  b_restr <- object$b_restr
+  b_eqrestr <- NULL
+  b_restr.alt <- NULL
   # length parameter vector
-  p <- length(b.unrestr)
+  p <- length(b_unrestr)
   # variable names
-  vnames <- names(b.unrestr)
+  vnames <- names(b_unrestr)
   # constraints stuff
   Amat <- object$constraints
   bvec <- object$rhs
@@ -65,7 +67,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   }
   
   # check for intercept                                          
-  intercept <- any(attr(terms(model.org), "intercept"))
+  intercept <- any(attr(terms(model_org), "intercept"))
   if (type == "global") {
     if (intercept) { 
       AmatG <- cbind(rep(0, (p - 1)), diag(rep(1, p - 1))) 
@@ -95,79 +97,77 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   }
   
   if (type == "global") {
+    call_org$weights <- call_org$psi <- call_org$X <- call_org$y <- NULL
+    CALL <- c(call_org, list(x = X, y = y, weights = weights,
+                             psi = psi.bisquare, 
+                             Amat = AmatG, bvec = bvecG, 
+                             meq = nrow(AmatG), tol = tol))
     
-    #fit inequality constrained robust model
-    call.my <- list(Amat = AmatG, meq = nrow(AmatG), bvec = bvecG,
-                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
-                                  control$tol))
-    # collect all original model arguments and add constraints
-    CALL <- c(list(model.org), call.my)
-    CALL <- CALL[!duplicated(CALL)]
     rfit <- do.call("conRLM_fit", CALL)
-    b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
+    b_eqrestr <- rfit$coefficients
+    b_eqrestr[abs(b_eqrestr) < ifelse(is.null(control$tol), 
                                       sqrt(.Machine$double.eps), 
                                       control$tol)] <- 0L
-    names(b.eqrestr) <- vnames
+    names(b_eqrestr) <- vnames
     Ts <- robustFm(x         = X, 
                    y         = y, 
-                   b.unrestr = b.unrestr,
-                   b.eqrestr = b.eqrestr, 
-                   b.restr   = b.restr, 
+                   b_unrestr = b_unrestr,
+                   b_eqrestr = b_eqrestr, 
+                   b_restr   = b_restr, 
                    scale     = scale, 
-                   cc        = ifelse(is.null(cc), 4.685061, cc))$Ts
+                   cc        = ifelse(is.null(call_org$c), 4.685061, call_org$c))$Ts
   } else if (type == "A") {
-    call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec,
-                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
-                                  control$tol))
-    # collect all original model arguments and add constraints
-    CALL <- c(list(model.org), call.my)
-    CALL <- CALL[!duplicated(CALL)]
+    call_org$weights <- call_org$psi <- call_org$X <- call_org$y <- NULL
+    CALL <- c(call_org, list(x = X, y = y, weights = weights,
+                             psi = psi.bisquare, 
+                             Amat = Amat, bvec = bvec, 
+                             meq = nrow(Amat), tol = tol))
+    
     rfit <- do.call("conRLM_fit", CALL)
-    b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
+    b_eqrestr <- rfit$coefficients
+    b_eqrestr[abs(b_eqrestr) < ifelse(is.null(control$tol), 
                                       sqrt(.Machine$double.eps), 
                                       control$tol)] <- 0L
-    names(b.eqrestr) <- vnames
+    names(b_eqrestr) <- vnames
     Ts <- robustFm(x         = X, 
                    y         = y, 
-                   b.unrestr = b.unrestr,
-                   b.eqrestr = b.eqrestr, 
-                   b.restr   = b.restr, 
+                   b_unrestr = b_unrestr,
+                   b_eqrestr = b_eqrestr, 
+                   b_restr   = b_restr, 
                    scale     = scale, 
-                   cc        = ifelse(is.null(cc), 4.685061, cc))$Ts
+                   cc        = ifelse(is.null(call_org$c), 4.685061, call_org$c))$Ts
   } else if (type == "B") {
-    if (meq.alt == 0L) {
+    if (meq_alt == 0L) {
       Ts <- robustFm(x         = X, 
                      y         = y, 
-                     b.unrestr = b.unrestr,
-                     b.eqrestr = b.restr, 
-                     b.restr   = b.unrestr, 
+                     b_unrestr = b_unrestr,
+                     b_eqrestr = b_restr, 
+                     b_restr   = b_unrestr, 
                      scale     = scale, 
-                     cc        = ifelse(is.null(cc), 4.685061, cc))$Ts
+                     cc        = ifelse(is.null(call_org$c), 4.685061, call_org$c))$Ts
     } else {
       # some equality may be preserved in the alternative hypothesis.
-      if (meq.alt > 0L && meq.alt <= meq) {
-        call.my <- list(Amat = Amat[1:meq.alt, , drop = FALSE], 
-                        meq = meq.alt, bvec = bvec[1:meq.alt],
-                        tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
-                                      control$tol))
-        # collect all original model arguments and add constraints
-        CALL <- c(list(model.org), call.my)
-        CALL <- CALL[!duplicated(CALL)]
+      if (meq_alt > 0L && meq_alt <= meq) {
+        call_org$weights <- call_org$psi <- call_org$X <- call_org$y <- NULL
+        CALL <- c(call_org, list(x = X, y = y, weights = weights,
+                                 psi = psi.bisquare, 
+                                 Amat = Amat[1:meq_alt, , drop = FALSE], 
+                                 meq = meq_alt, bvec = bvec[1:meq_alt],
+                                 tol = tol))
+        
         rfit <- do.call("conRLM_fit", CALL)
-        b.restr.alt <- rfit$coefficients
-        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol), 
+        b_restr.alt <- rfit$coefficients
+        b_restr.alt[abs(b_restr.alt) < ifelse(is.null(control$tol), 
                                               sqrt(.Machine$double.eps), 
                                               control$tol)] <- 0L
-        names(b.restr.alt) <- vnames
+        names(b_restr.alt) <- vnames
         Ts <- robustFm(x         = X, 
                        y         = y, 
-                       b.unrestr = b.unrestr,
-                       b.eqrestr = b.restr, 
-                       b.restr   = b.restr.alt, 
+                       b_unrestr = b_unrestr,
+                       b_eqrestr = b_restr, 
+                       b_restr   = b_restr.alt, 
                        scale     = scale, 
-                       cc        = ifelse(is.null(cc), 4.685061, cc))$Ts
+                       cc        = ifelse(is.null(call_org$c), 4.685061, call_org$c))$Ts
       } else {
         stop("Restriktor ERROR: neq.alt must not be larger than neq.")
       }
@@ -188,19 +188,19 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     }
     
     pvalue <- con_pvalue_Fbar(wt          = wt, 
-                              Ts.org      = Ts, 
+                              Ts_org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
                               Amat        = Amat, 
                               bvec        = bvec, 
                               meq         = meq, 
-                              meq.alt     = meq.alt)
+                              meq_alt     = meq_alt)
   } else if (boot == "parametric") {
     pvalue <- con_pvalue_boot_parametric(object, 
-                                         Ts.org   = Ts, 
+                                         Ts_org   = Ts, 
                                          type     = type, 
                                          test     = "F",
-                                         meq.alt  = meq.alt,
+                                         meq_alt  = meq_alt,
                                          R        = R, 
                                          p.distr  = p.distr,
                                          df       = df, 
@@ -211,10 +211,10 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                                          verbose  = verbose)
   } else if (boot == "model.based") {
     pvalue <- con_pvalue_boot_model_based(object, 
-                                          Ts.org   = Ts, 
+                                          Ts_org   = Ts, 
                                           type     = type, 
                                           test     = "F",
-                                          meq.alt  = meq.alt,
+                                          meq_alt  = meq_alt,
                                           R        = R, 
                                           parallel = parallel,
                                           ncpus    = ncpus, 
@@ -234,22 +234,22 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
               Amat        = Amat,
               bvec        = bvec,
               meq         = meq,
-              meq.alt     = meq.alt,
+              meq_alt     = meq_alt,
               iact        = object$iact,
               type        = type,
               test        = "F",
               Ts          = Ts,
               df.residual = df.residual,
               pvalue      = pvalue,
-              b.eqrestr   = b.eqrestr,
-              b.unrestr   = b.unrestr,
-              b.restr     = b.restr,
-              b.restr.alt = b.restr.alt,
+              b_eqrestr   = b_eqrestr,
+              b_unrestr   = b_unrestr,
+              b_restr     = b_restr,
+              b_restr.alt = b_restr.alt,
               Sigma       = Sigma,
-              R2.org      = object$R2.org,
-              R2.reduced  = object$R2.reduced,
+              R2_org      = object$R2_org,
+              R2_reduced  = object$R2_reduced,
               boot        = boot,
-              model.org   = model.org)
+              model_org   = model_org)
   
   OUT <- list(OUT)
   names(OUT) <- type
@@ -267,7 +267,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                control = NULL, ...) {
   
   # rename for internal use
-  meq.alt <- neq.alt
+  meq_alt <- neq.alt
   
   # checks
   if (!("conRLM" %in% class(object))) {
@@ -287,30 +287,30 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   }  
   
   # original model
-  model.org <- object$model.org
-  # tukey's bisquare tuning constant
-  cc <- model.org$call[["c"]]
+  model_org <- object$model_org
+  # original model call
+  call_org <- as.list(model_org$call)
   # model matrix
-  X <- model.matrix(model.org)[,,drop=FALSE]
+  X <- model.matrix(model_org)[,,drop=FALSE]
   # response variable
-  y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
+  y <- as.matrix(model_org$model[, attr(model_org$terms, "response")])
   # weights
-  #w <- weights(model.org)
+  weights <- model_org$weights
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
   Sigma <- object$Sigma
   # unconstrained scale
-  scale <- model.org$s
+  scale <- model_org$s
   # parameter estimates
-  b.unrestr <- object$b.unrestr
-  b.restr <- object$b.restr
-  b.eqrestr <- NULL
-  b.restr.alt <- NULL
+  b_unrestr <- object$b_unrestr
+  b_restr <- object$b_restr
+  b_eqrestr <- NULL
+  b_restr.alt <- NULL
   # length parameter vector
-  p <- length(b.unrestr)
+  p <- length(b_unrestr)
   # variable names
-  vnames <- names(b.unrestr)
+  vnames <- names(b_unrestr)
   # constraints stuff
   Amat <- object$constraints
   bvec <- object$rhs
@@ -330,7 +330,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   }
   
   # check for intercept                                          
-  intercept <- any(attr(terms(model.org), "intercept"))
+  intercept <- any(attr(terms(model_org), "intercept"))
   if (type == "global") {
     if (intercept) { 
       AmatG <- cbind(rep(0, (p - 1)), diag(rep(1, p - 1))) 
@@ -360,90 +360,89 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   }
   
   if (type == "global") {
-    #fit inequality constrained robust model
-    call.my <- list(Amat = AmatG, meq = nrow(AmatG), bvec = bvecG,
-                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
-                                  control$tol))
-    # collect all original model arguments and add constraints
-    CALL <- c(list(model.org), call.my)
-    CALL <- CALL[!duplicated(CALL)]
+    call_org$weights <- call_org$psi <- call_org$X <- call_org$y <- NULL
+    CALL <- c(call_org, list(x = X, y = y, weights = weights,
+                             psi = psi.bisquare, 
+                             Amat = AmatG, bvec = bvecG, 
+                             meq = nrow(AmatG), tol = tol))
+    
     rfit <- do.call("conRLM_fit", CALL)
-    b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
+    b_eqrestr <- rfit$coefficients
+    b_eqrestr[abs(b_eqrestr) < ifelse(is.null(control$tol), 
                                        sqrt(.Machine$double.eps), 
                                        control$tol)] <- 0L
-    names(b.eqrestr) <- vnames
+    names(b_eqrestr) <- vnames
     out0 <- robustWaldScores(x         = X, 
                              y         = y,  
-                             b.eqrestr = b.eqrestr, 
-                             b.restr   = b.restr, 
-                             b.unrestr = b.unrestr,
+                             b_eqrestr = b_eqrestr, 
+                             b_restr   = b_restr, 
+                             b_unrestr = b_unrestr,
                              scale     = scale, 
                              test      = "Wald", 
-                             cc        = ifelse(is.null(cc), 4.685061, cc))
+                             cc        = ifelse(is.null(call_org$c), 4.685061, call_org$c))
     Ts <- out0$Ts
     Sigma <- out0$V
   } else if (type == "A") {
-    call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec,
-                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
-                                  control$tol))
-    # collect all original model arguments and add constraints
-    CALL <- c(list(model.org), call.my)
-    CALL <- CALL[!duplicated(CALL)]
+    call_org$weights <- call_org$psi <- call_org$X <- call_org$y <- NULL
+    CALL <- c(call_org, list(x = X, y = y, weights = weights,
+                             psi = psi.bisquare, 
+                             Amat = Amat, bvec = bvec, 
+                             meq = nrow(Amat), tol = tol))
+    
     rfit <- do.call("conRLM_fit", CALL)
-    b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
+    b_eqrestr <- rfit$coefficients
+    b_eqrestr[abs(b_eqrestr) < ifelse(is.null(control$tol), 
                                       sqrt(.Machine$double.eps), 
                                       control$tol)] <- 0L
-    names(b.eqrestr) <- vnames
+    names(b_eqrestr) <- vnames
     
     out1 <- robustWaldScores(x         = X, 
                              y         = y,  
-                             b.eqrestr = b.eqrestr, 
-                             b.restr   = b.restr, 
-                             b.unrestr = b.unrestr,
+                             b_eqrestr = b_eqrestr, 
+                             b_restr   = b_restr, 
+                             b_unrestr = b_unrestr,
                              scale     = scale, 
                              test      = "Wald", 
-                             cc        = ifelse(is.null(cc), 4.685061, cc))
+                             cc        = ifelse(is.null(call_org$c), 4.685061, call_org$c))
     Ts <- out1$Ts
     Sigma <- out1$V
   }
   else if (type == "B") {
-    if (meq.alt == 0L) {
+    if (meq_alt == 0L) {
       out2 <- robustWaldScores(x         = X, 
                                y         = y, 
-                               b.eqrestr = b.restr, 
-                               b.restr   = b.unrestr,
-                               b.unrestr = b.unrestr,
+                               b_eqrestr = b_restr, 
+                               b_restr   = b_unrestr,
+                               b_unrestr = b_unrestr,
                                scale     = scale, 
                                test      = "Wald", 
-                               cc        = ifelse(is.null(cc), 4.685061, cc))
+                               cc        = ifelse(is.null(call_org$c), 4.685061, call_org$c))
       Ts <- out2$Ts
       Sigma <- out2$V
     } else {
       # some equality may be preserved in the alternative hypothesis.
-      if (meq.alt > 0L && meq.alt <= meq) {
-        call.my <- list(Amat = Amat[1:meq.alt,,drop=FALSE], meq = meq.alt, 
-                        bvec = bvec[1:meq.alt],
-                        tol  = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
-                                      control$tol))
-        # collect all original model arguments and add constraints
-        CALL <- c(list(model.org), call.my)
-        CALL <- CALL[!duplicated(CALL)]
+      if (meq_alt > 0L && meq_alt <= meq) {
+        call_org$weights <- call_org$psi <- call_org$X <- call_org$y <- NULL
+        CALL <- c(call_org, list(x = X, y = y, weights = weights,
+                                 psi = psi.bisquare, 
+                                 Amat = Amat[1:meq_alt,,drop=FALSE], 
+                                 meq = meq_alt, 
+                                 bvec = bvec[1:meq_alt], tol = tol))
+        
         rfit <- do.call("conRLM_fit", CALL)
-        b.restr.alt <- rfit$coefficients
-        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol), 
+        b_restr.alt <- rfit$coefficients
+        b_restr.alt[abs(b_restr.alt) < ifelse(is.null(control$tol), 
                                               sqrt(.Machine$double.eps), 
                                               control$tol)] <- 0L
-        names(b.restr.alt) <- vnames
+        names(b_restr.alt) <- vnames
         out3 <- robustWaldScores(x         = X, 
                                  y         = y,  
-                                 b.eqrestr = b.restr, 
-                                 b.restr   = b.restr.alt,
-                                 b.unrestr = b.unrestr,
+                                 b_eqrestr = b_restr, 
+                                 b_restr   = b_restr.alt,
+                                 b_unrestr = b_unrestr,
                                  scale     = scale, 
                                  test      = "Wald", 
-                                 cc        = ifelse(is.null(cc), 4.685061, cc))
+                                 cc        = ifelse(is.null(call_org$c), 4.685061, call_org$c))
         Ts <- out3$Ts
         Sigma <- out3$V
       } else {
@@ -493,19 +492,19 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   
     # compute pvalue based on F-distribution
     pvalue <- con_pvalue_Fbar(wt          = wt, 
-                              Ts.org      = Ts, 
+                              Ts_org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
                               Amat        = Amat, 
                               bvec        = bvec, 
                               meq         = meq, 
-                              meq.alt     = meq.alt)
+                              meq_alt     = meq_alt)
   } else if (boot == "parametric") {
     pvalue <- con_pvalue_boot_parametric(object, 
-                                         Ts.org   = Ts, 
+                                         Ts_org   = Ts, 
                                          type     = type, 
                                          test     = "Wald",
-                                         meq.alt  = meq.alt,
+                                         meq_alt  = meq_alt,
                                          R        = R, 
                                          p.distr  = p.distr,
                                          df       = df, 
@@ -516,10 +515,10 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                          verbose  = verbose)
   } else if (boot == "model.based") {
     pvalue <- con_pvalue_boot_model_based(object, 
-                                          Ts.org   = Ts, 
+                                          Ts_org   = Ts, 
                                           type     = type, 
                                           test     = "Wald",
-                                          meq.alt  = meq.alt,
+                                          meq_alt  = meq_alt,
                                           R        = R, 
                                           parallel = parallel,
                                           ncpus    = ncpus, 
@@ -539,22 +538,22 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
               Amat        = Amat,
               bvec        = bvec,
               meq         = meq,
-              meq.alt     = meq.alt,
+              meq_alt     = meq_alt,
               iact        = object$iact,
               type        = type,
               test        = "Wald",
               Ts          = Ts,
               df.residual = df.residual,
               pvalue      = pvalue,
-              b.eqrestr   = b.eqrestr,
-              b.unrestr   = b.unrestr,
-              b.restr     = b.restr,
-              b.restr.alt = b.restr.alt,
+              b_eqrestr   = b_eqrestr,
+              b_unrestr   = b_unrestr,
+              b_restr     = b_restr,
+              b_restr.alt = b_restr.alt,
               Sigma       = Sigma,
-              R2.org      = object$R2.org,
-              R2.reduced  = object$R2.reduced,
+              R2_org      = object$R2_org,
+              R2_reduced  = object$R2_reduced,
               boot        = boot,
-              model.org   = model.org)
+              model_org   = model_org)
   
   OUT <- list(OUT)
   names(OUT) <- type
@@ -573,7 +572,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                                 control = NULL, ...) {
   
   # rename for internal use
-  meq.alt <- neq.alt
+  meq_alt <- neq.alt
   
   # checks
   if (!("conRLM" %in% class(object))) {
@@ -593,29 +592,30 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   }
   
   # original model
-  model.org <- object$model.org
-  # tukey's bisquare tuning constant
-#  cc <- model.org$call[["c"]]
+  model_org <- object$model_org
+  # origianl model call
+  call_org <- as.list(model_org$call)
   # model matrix
-  X <- model.matrix(model.org)[,,drop=FALSE]
+  X <- model.matrix(model_org)[,,drop=FALSE]
   # response variable
-#  y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
+  y <- as.matrix(model_org$model[, attr(model_org$terms, "response")])
+  # weights
+  weights <- model_org$weights
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
   Sigma <- object$Sigma
   # unconstrained scale
-#  scale <- model.org$s
-  tau <- object$s2.unc
+  tau <- object$s2_unrestr
   # parameter estimates
-  b.unrestr <- object$b.unrestr
-  b.restr <- object$b.restr
-  b.eqrestr <- NULL
-  b.restr.alt <- NULL
+  b_unrestr <- object$b_unrestr
+  b_restr <- object$b_restr
+  b_eqrestr <- NULL
+  b_restr.alt <- NULL
   # length parameter vector
-  p <- length(b.unrestr)
+  p <- length(b_unrestr)
   # variable names
-  vnames <- names(b.unrestr)
+  vnames <- names(b_unrestr)
   # constraints stuff
   Amat <- object$constraints
   bvec <- object$rhs
@@ -635,7 +635,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   }
   
   # check for intercept                                          
-  intercept <- any(attr(terms(model.org), "intercept"))
+  intercept <- any(attr(terms(model_org), "intercept"))
   if (type == "global") {
     if (intercept) { 
       AmatG <- cbind(rep(0, (p - 1)), diag(rep(1, p - 1))) 
@@ -665,69 +665,68 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   }
   
   if (type == "global") {
-    #fit inequality constrained robust model
-    call.my <- list(Amat = AmatG, meq = nrow(AmatG), bvec = bvecG,
-                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
-                                  control$tol))
-    # collect all original model arguments and add constraints
-    CALL <- c(list(model.org), call.my)
-    CALL <- CALL[!duplicated(CALL)]
+    call_org$weights <- call_org$psi <- call_org$X <- call_org$y <- NULL
+    CALL <- c(call_org, list(x = X, y = y, weights = weights,
+                             psi = psi.bisquare, 
+                             Amat = AmatG, bvec = bvecG, 
+                             meq = nrow(AmatG), tol = tol))
+    
     rfit <- do.call("conRLM_fit", CALL)
-    b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
+    b_eqrestr <- rfit$coefficients
+    b_eqrestr[abs(b_eqrestr) < ifelse(is.null(control$tol), 
                                       sqrt(.Machine$double.eps), 
                                       control$tol)] <- 0L
-    names(b.eqrestr) <- vnames
+    names(b_eqrestr) <- vnames
     Ts <- robustWaldXX(x         = X, 
-                       b.eqrestr = b.eqrestr, 
-                       b.restr   = b.restr, 
-                       b.unrestr = b.unrestr, 
+                       b_eqrestr = b_eqrestr, 
+                       b_restr   = b_restr, 
+                       b_unrestr = b_unrestr, 
                        tau       = tau)$Ts
   } else if (type == "A") {
-    call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec,
-                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
-                                  control$tol))
-    # collect all original model arguments and add constraints
-    CALL <- c(list(model.org), call.my)
-    CALL <- CALL[!duplicated(CALL)]
+    call_org$weights <- call_org$psi <- call_org$X <- call_org$y <- NULL
+    CALL <- c(call_org, list(x = X, y = y, weights = weights,
+                             psi = psi.bisquare, 
+                             Amat = Amat, bvec = bvec, 
+                             meq = nrow(Amat), tol = tol))
+    
     rfit <- do.call("conRLM_fit", CALL)
-    b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
+    b_eqrestr <- rfit$coefficients
+    b_eqrestr[abs(b_eqrestr) < ifelse(is.null(control$tol), 
                                       sqrt(.Machine$double.eps), 
                                       control$tol)] <- 0L
-    names(b.eqrestr) <- vnames
+    names(b_eqrestr) <- vnames
     Ts <- robustWaldXX(x         = X, 
-                       b.eqrestr = b.eqrestr, 
-                       b.restr   = b.restr, 
-                       b.unrestr = b.unrestr, 
+                       b_eqrestr = b_eqrestr, 
+                       b_restr   = b_restr, 
+                       b_unrestr = b_unrestr, 
                        tau       = tau)$Ts
   } else if (type == "B") {
-    if (meq.alt == 0L) {
+    if (meq_alt == 0L) {
       Ts <- robustWaldXX(x         = X, 
-                         b.eqrestr = b.restr, 
-                         b.restr   = b.unrestr, 
-                         b.unrestr = b.unrestr, 
+                         b_eqrestr = b_restr, 
+                         b_restr   = b_unrestr, 
+                         b_unrestr = b_unrestr, 
                          tau       = tau)$Ts
     } else {
       # some equality may be preserved in the alternative hypothesis.
-      if (meq.alt > 0L && meq.alt <= meq) {
-        call.my <- list(Amat = Amat[1:meq.alt, , drop = FALSE], 
-                        meq = meq.alt, bvec = bvec[1:meq.alt],
-                        tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
-                                      control$tol))
-        # collect all original model arguments and add constraints
-        CALL <- c(list(model.org), call.my)
-        CALL <- CALL[!duplicated(CALL)]
+      if (meq_alt > 0L && meq_alt <= meq) {
+        call_org$weights <- call_org$psi <- call_org$X <- call_org$y <- NULL
+        CALL <- c(call_org, list(x = X, y = y, weights = weights,
+                                 psi = psi.bisquare, 
+                                 Amat = Amat[1:meq_alt, , drop = FALSE], 
+                                 meq = meq_alt, bvec = bvec[1:meq_alt], 
+                                 tol = tol))
+        
         rfit <- do.call("conRLM_fit", CALL)
-        b.restr.alt <- rfit$coefficients
-        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol), 
+        b_restr.alt <- rfit$coefficients
+        b_restr.alt[abs(b_restr.alt) < ifelse(is.null(control$tol), 
                                               sqrt(.Machine$double.eps), 
                                               control$tol)] <- 0L
-        names(b.restr.alt) <- vnames
+        names(b_restr.alt) <- vnames
         Ts <- robustWaldXX(x         = X, 
-                           b.eqrestr = b.restr, 
-                           b.restr   = b.restr.alt, 
-                           b.unrestr = b.restr.alt, 
+                           b_eqrestr = b_restr, 
+                           b_restr   = b_restr.alt, 
+                           b_unrestr = b_restr.alt, 
                            tau       = tau)$Ts
       } else {
         stop("Restriktor ERROR: neq.alt must not be larger than neq.")
@@ -749,19 +748,19 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     }
     
     pvalue <- con_pvalue_Fbar(wt          = wt, 
-                              Ts.org      = Ts, 
+                              Ts_org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
                               Amat        = Amat, 
                               bvec        = bvec, 
                               meq         = meq, 
-                              meq.alt     = meq.alt)
+                              meq_alt     = meq_alt)
   } else if (boot == "parametric") {
     pvalue <- con_pvalue_boot_parametric(object, 
-                                         Ts.org   = Ts, 
+                                         Ts_org   = Ts, 
                                          type     = type, 
                                          test     = "Wald2",
-                                         meq.alt  = meq.alt,
+                                         meq_alt  = meq_alt,
                                          R        = R, 
                                          p.distr  = p.distr,
                                          df       = df, 
@@ -772,10 +771,10 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                                          verbose  = verbose)
   } else if (boot == "model.based") {
     pvalue <- con_pvalue_boot_model_based(object, 
-                                          Ts.org   = Ts, 
+                                          Ts_org   = Ts, 
                                           type     = type, 
                                           test     = "Wald2",
-                                          meq.alt  = meq.alt,
+                                          meq_alt  = meq_alt,
                                           R        = R, 
                                           parallel = parallel,
                                           ncpus    = ncpus, 
@@ -795,22 +794,22 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
               Amat        = Amat,
               bvec        = bvec,
               meq         = meq,
-              meq.alt     = meq.alt,
+              meq_alt     = meq_alt,
               iact        = object$iact,
               type        = type,
               test        = "Wald2",
               Ts          = Ts,
               df.residual = df.residual,
               pvalue      = pvalue,
-              b.eqrestr   = b.eqrestr,
-              b.unrestr   = b.unrestr,
-              b.restr     = b.restr,
-              b.restr.alt = b.restr.alt,
+              b_eqrestr   = b_eqrestr,
+              b_unrestr   = b_unrestr,
+              b_restr     = b_restr,
+              b_restr.alt = b_restr.alt,
               Sigma       = Sigma,
-              R2.org      = object$R2.org,
-              R2.reduced  = object$R2.reduced,
+              R2_org      = object$R2_org,
+              R2_reduced  = object$R2_reduced,
               boot        = boot,
-              model.org   = model.org)
+              model_org   = model_org)
   
   OUT <- list(OUT)
   names(OUT) <- type
@@ -828,7 +827,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                                 control = NULL, ...) {
   
   # rename for internal use
-  meq.alt <- neq.alt
+  meq_alt <- neq.alt
   
   # checks
   if (!("conRLM" %in% class(object))) {
@@ -848,29 +847,29 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   }
   
   # original model
-  model.org <- object$model.org
-  # tukey's bisquare tuning constant
-  cc <- model.org$call[["c"]]
+  model_org <- object$model_org
+  # original model call
+  call_org <- as.list(model_org$call)
   # model matrix
-  X <- model.matrix(model.org)[,,drop=FALSE]
+  X <- model.matrix(model_org)[,,drop=FALSE]
   # response variable
-  y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
+  y <- as.matrix(model_org$model[, attr(model_org$terms, "response")])
   # weights
-  #w <- weights(model.org)
+  weights <- model_org$weights
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
   Sigma <- object$Sigma
   # unconstrained scale
-  scale <- model.org$s
+  scale <- model_org$s
   # parameter estimates
-  b.unrestr <- object$b.unrestr
-  b.restr <- object$b.restr
-  b.eqrestr <- NULL
-  b.restr.alt <- NULL
-  p <- length(b.unrestr)
+  b_unrestr <- object$b_unrestr
+  b_restr <- object$b_restr
+  b_eqrestr <- NULL
+  b_restr.alt <- NULL
+  p <- length(b_unrestr)
   # variable names
-  vnames <- names(b.unrestr)
+  vnames <- names(b_unrestr)
   # constraints stuff
   Amat <- object$constraints
   bvec <- object$rhs
@@ -890,7 +889,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   }
   
   # check for intercept                                          
-  intercept <- any(attr(terms(model.org), "intercept"))
+  intercept <- any(attr(terms(model_org), "intercept"))
   if (type == "global") {
     if (intercept) { 
       AmatG <- cbind(rep(0, (p - 1)), diag(rep(1, p - 1))) 
@@ -920,89 +919,88 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   }
   
   if (type == "global") {
-    #fit inequality constrained robust model
-    call.my <- list(Amat = AmatG, meq = nrow(AmatG), bvec = bvecG,
-                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
-                                  control$tol))
-    # collect all original model arguments and add constraints
-    CALL <- c(list(model.org), call.my)
-    CALL <- CALL[!duplicated(CALL)]
+    call_org$weights <- call_org$psi <- call_org$X <- call_org$y <- NULL
+    CALL <- c(call_org, list(x = X, y = y, weights = weights,
+                             psi = psi.bisquare, 
+                             Amat = AmatG, bvec = bvecG, 
+                             meq = nrow(AmatG), tol = tol))
+    
     rfit <- do.call("conRLM_fit", CALL)
-    b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
+    b_eqrestr <- rfit$coefficients
+    b_eqrestr[abs(b_eqrestr) < ifelse(is.null(control$tol), 
                                       sqrt(.Machine$double.eps), 
                                       control$tol)] <- 0L
-    names(b.eqrestr) <- vnames
+    names(b_eqrestr) <- vnames
     out0 <- robustWaldScores(x         = X, 
                              y         = y,  
-                             b.eqrestr = b.eqrestr, 
-                             b.restr   = b.restr, 
-                             b.unrestr = b.unrestr,
+                             b_eqrestr = b_eqrestr, 
+                             b_restr   = b_restr, 
+                             b_unrestr = b_unrestr,
                              scale     = scale, 
                              test      = "score", 
-                             cc        = ifelse(is.null(cc), 4.685061, cc))
+                             cc        = ifelse(is.null(call_org$c), 4.685061, call_org$c))
     Ts <- out0$Ts
     Sigma <- out0$V
   } else if (type == "A") {
-    call.my <- list(Amat = Amat, meq = nrow(Amat), bvec = bvec,
-                    tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
-                                  control$tol))
-    # collect all original model arguments and add constraints
-    CALL <- c(list(model.org), call.my)
-    CALL <- CALL[!duplicated(CALL)]
+    call_org$weights <- call_org$psi <- call_org$X <- call_org$y <- NULL
+    CALL <- c(call_org, list(x = X, y = y, weights = weights,
+                             psi = psi.bisquare, 
+                             Amat = Amat, bvec = bvec, 
+                             meq = nrow(Amat), tol = tol))
+    
     rfit <- do.call("conRLM_fit", CALL)
-    b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
+    b_eqrestr <- rfit$coefficients
+    b_eqrestr[abs(b_eqrestr) < ifelse(is.null(control$tol), 
                                       sqrt(.Machine$double.eps), 
                                       control$tol)] <- 0L
-    names(b.eqrestr) <- vnames
+    names(b_eqrestr) <- vnames
     
     out1 <- robustWaldScores(x         = X, 
                              y         = y,  
-                             b.eqrestr = b.eqrestr, 
-                             b.restr   = b.restr, 
-                             b.unrestr = b.unrestr,
+                             b_eqrestr = b_eqrestr, 
+                             b_restr   = b_restr, 
+                             b_unrestr = b_unrestr,
                              scale     = scale, 
                              test      = "score", 
-                             cc        = ifelse(is.null(cc), 4.685061, cc))
+                             cc        = ifelse(is.null(call_org$c), 4.685061, call_org$c))
     Ts <- out1$Ts
     Sigma <- out1$V
   } else if (type == "B") {
-    if (meq.alt == 0L) {
+    if (meq_alt == 0L) {
       out2 <- robustWaldScores(x         = X, 
                                y         = y,  
-                               b.eqrestr = b.restr, 
-                               b.restr   = b.unrestr,
-                               b.unrestr = b.unrestr,
+                               b_eqrestr = b_restr, 
+                               b_restr   = b_unrestr,
+                               b_unrestr = b_unrestr,
                                scale     = scale, 
                                test      = "score", 
-                               cc        = ifelse(is.null(cc), 4.685061, cc))
+                               cc        = ifelse(is.null(call_org$c), 4.685061, call_org$c))
       Ts <- out2$Ts
       Sigma <- out2$V
     } else {
       # some equality may be preserved in the alternative hypothesis.
-      if (meq.alt > 0L && meq.alt <= meq) {
-        call.my <- list(Amat = Amat[1:meq.alt,,drop=FALSE], meq = meq.alt, 
-                        bvec = bvec[1:meq.alt],
-                        tol = ifelse (is.null(control$tol), sqrt(.Machine$double.eps), 
-                                      control$tol))
-        # collect all original model arguments and add constraints
-        CALL <- c(list(model.org), call.my)
-        CALL <- CALL[!duplicated(CALL)]
+      if (meq_alt > 0L && meq_alt <= meq) {
+        call_org$weights <- call_org$psi <- call_org$X <- call_org$y <- NULL
+        CALL <- c(call_org, list(x = X, y = y, weights = weights,
+                                 psi = psi.bisquare, 
+                                 Amat = Amat[1:meq_alt,,drop=FALSE], 
+                                 meq = meq_alt, 
+                                 bvec = bvec[1:meq_alt], tol = tol))
+        
         rfit <- do.call("conRLM_fit", CALL)
-        b.restr.alt <- rfit$coefficients
-        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol), 
+        b_restr.alt <- rfit$coefficients
+        b_restr.alt[abs(b_restr.alt) < ifelse(is.null(control$tol), 
                                               sqrt(.Machine$double.eps), 
                                               control$tol)] <- 0L
-        names(b.restr.alt) <- vnames
+        names(b_restr.alt) <- vnames
         out3 <- robustWaldScores(x         = X, 
                                  y         = y,  
-                                 b.eqrestr = b.restr, 
-                                 b.restr   = b.restr.alt,
-                                 b.unrestr = b.unrestr,
+                                 b_eqrestr = b_restr, 
+                                 b_restr   = b_restr.alt,
+                                 b_unrestr = b_unrestr,
                                  scale     = scale, 
                                  test      = "score", 
-                                 cc        = ifelse(is.null(cc), 4.685061, cc))
+                                 cc        = ifelse(is.null(call_org$c), 4.685061, call_org$c))
         Ts <- out3$Ts
         Sigma <- out3$V
       } else {
@@ -1049,19 +1047,19 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     
     # compute pvalue based on F-distribution
     pvalue <- con_pvalue_Fbar(wt          = wt, 
-                              Ts.org      = Ts, 
+                              Ts_org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
                               Amat        = Amat, 
                               bvec        = bvec, 
                               meq         = meq, 
-                              meq.alt     = meq.alt)
+                              meq_alt     = meq_alt)
   } else if (boot == "parametric") {
     pvalue <- con_pvalue_boot_parametric(object, 
-                                         Ts.org   = Ts, 
+                                         Ts_org   = Ts, 
                                          type     = type, 
                                          test     = "score",
-                                         meq.alt  = meq.alt,
+                                         meq_alt  = meq_alt,
                                          R        = R, 
                                          p.distr  = p.distr,
                                          df       = df, 
@@ -1072,10 +1070,10 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                                          verbose  = verbose)
   } else if (boot == "model.based") {
     pvalue <- con_pvalue_boot_model_based(object, 
-                                          Ts.org   = Ts, 
+                                          Ts_org   = Ts, 
                                           type     = type, 
                                           test     = "score",
-                                          meq.alt  = meq.alt,
+                                          meq_alt  = meq_alt,
                                           R        = R, 
                                           parallel = parallel,
                                           ncpus    = ncpus, 
@@ -1095,22 +1093,22 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
               Amat        = Amat,
               bvec        = bvec,
               meq         = meq,
-              meq.alt     = meq.alt,
+              meq_alt     = meq_alt,
               iact        = object$iact,
               type        = type,
               test        = "Score",
               Ts          = Ts,
               df.residual = df.residual,
               pvalue      = pvalue,
-              b.eqrestr   = b.eqrestr,
-              b.unrestr   = b.unrestr,
-              b.restr     = b.restr,
-              b.restr.alt = b.restr.alt,
+              b_eqrestr   = b_eqrestr,
+              b_unrestr   = b_unrestr,
+              b_restr     = b_restr,
+              b_restr.alt = b_restr.alt,
               Sigma       = Sigma,
-              R2.org      = object$R2.org,
-              R2.reduced  = object$R2.reduced,
+              R2_org      = object$R2_org,
+              R2_reduced  = object$R2_reduced,
               boot        = boot,
-              model.org   = model.org)
+              model_org   = model_org)
   
   OUT <- list(OUT)
   names(OUT) <- type

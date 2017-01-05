@@ -31,7 +31,7 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
     
       # check
       if (type %in% c("a","b","global")) {
-        if (!inherits(object, "conRLM")) {
+        if (class(object)[2] %in% "conLM") {
           if (!(test %in% c("f","lrt","score"))) {
             stop("restriktor ERROR: test ", sQuote(test), " unknown. Choose F, LRT or score.")  
           } 
@@ -42,7 +42,7 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
           } else if (test == "score") {
             UseMethod("conTestScore")
           } 
-        } else if (inherits(object, "conRLM")) { 
+        } else if (class(object)[2] %in% "conRLM") { 
           if (!(test %in% c("f","wald","wald2","score"))) {
             stop("restriktor ERROR: test ", sQuote(test), " unknown. Choose F, Wald, Wald2 or score.")  
           } 
@@ -55,10 +55,23 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
           } else if (test == "score") {
             UseMethod("conTestScore")
           } 
+        } else if (class(object)[2] %in% "conGLM") {
+          stop("Restriktor ERROR: tests not implemented yet.")
+          
+          if (!(test %in% c("f","lrt","score"))) {
+            stop("restriktor ERROR: test ", sQuote(test), " unknown. Choose F, LRT or score.")  
+          } 
+          if (test == "f") {
+            UseMethod("conTestF")
+          } else if (test == "lrt") {
+            UseMethod("conTestLRT")
+          } else if (test == "score") {
+            UseMethod("conTestScore")
+          } 
         }
-      } else if (type == "c") {
+      } else if (type == "c" && (class(object)[2] %in% c("conLM","conRLM","conGLM"))) {
         UseMethod("conTestC")
-      } else if (type == "summary") {
+      } else if (type == "summary" && (class(object)[2] %in% c("conLM","conRLM","conGLM"))) {
         UseMethod("conTest_summary")     
       } else {
         stop("type ", sQuote, " unknown.")
@@ -68,7 +81,7 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
     } else {
       stop("Restriktor ERROR: constraints and neq do not match.")
     }
-  } else if (inherits(object, c("lm","rlm")) && !is.null(constraints)) {
+  } else if (inherits(object, c("lm","rlm","glm")) && !is.null(constraints)) {
     ldots <- list(...)
     if (is.null(ldots$se)) { 
       ldots$se <- "none"

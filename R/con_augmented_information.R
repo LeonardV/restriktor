@@ -3,8 +3,8 @@
 con_augmented_information <- function(information  = NULL, 
                                       is.augmented = TRUE,
                                       X            = NULL, 
-                                      b.unrestr    = NULL, 
-                                      b.restr      = NULL,  
+                                      b_unrestr    = NULL, 
+                                      b_restr      = NULL,  
                                       Amat         = NULL, 
                                       bvec         = NULL, 
                                       meq          = NULL) {
@@ -19,7 +19,7 @@ con_augmented_information <- function(information  = NULL,
   if (!all(c(H) == 0L)) { 
     # lagrangean coefs
     lambda <- as.numeric(solve(H%*% solve(t(X)%*%X)%*%t(H)) %*% 
-                           (H%*%b.unrestr-bvec))
+                           (H%*%b_unrestr-bvec))
     
     #equality constraints
     if (meq > 0L) {
@@ -34,7 +34,7 @@ con_augmented_information <- function(information  = NULL,
     }
     
     #inactive inequality constraints
-    inactive.idx <- H %*% b.unrestr - bvec >= 0 * bvec
+    inactive.idx <- H %*% b_unrestr - bvec >= 0 * bvec
     #active inequality constraints
     H.active <- H[!inactive.idx,,drop=FALSE]
     #inactive inequality constraints
@@ -42,7 +42,7 @@ con_augmented_information <- function(information  = NULL,
     # diagonal matrix with Lagrangean coefficients
     Gamma <- diag(lambda, NROW(H), NROW(H))
     # slack parameters
-    slacks <- H %*% b.restr - bvec
+    slacks <- H %*% b_restr - bvec
     slacks[abs(slacks) < sqrt(.Machine$double.eps)] <- 0L
     # diagonal matrix with slack parameters for the inactive constraints
     Z <- matrix(0L, nrow = 0, ncol = 0)

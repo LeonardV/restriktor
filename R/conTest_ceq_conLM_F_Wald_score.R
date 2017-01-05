@@ -30,40 +30,40 @@ conTest_ceq.conLM <- function(object, test = "F", boot = "no",
     
     # here we perform the usual Wald/F test...
     if (test == "wald") {
-      #theta.r <- object$b.unrestr
+      #theta_r <- object$b_unrestr
       Wald_out <- con_test_Wald(Sigma   = object$Sigma,
                                 JAC     = Amat,         
-                                theta.r = Amat %*% object$b.unrestr - object$rhs) 
+                                theta_r = Amat %*% object$b_unrestr - object$rhs) 
       
       OUT <- append(CON, Wald_out)
-      OUT$b.restr <- object$b.restr
-      OUT$b.unrestr <- object$b.unrestr
+      OUT$b_restr <- object$b_restr
+      OUT$b_unrestr <- object$b_unrestr
     } else if (test == "f") {
       Wald_out <- con_test_Wald(Sigma   = object$Sigma,
                                 JAC     = Amat,
-                                theta.r = Amat%*%object$b.unrestr - object$rhs) 
+                                theta_r = Amat%*%object$b_unrestr - object$rhs) 
       # convert Wald to F
       OUT <- append(CON, Wald_out)
       OUT$test <- "F"
       OUT$Ts <- Wald_out$Ts / Wald_out$df
-      OUT$df.residual <- df.residual(object) 
+      OUT$df.residual <- object$df.residual
       OUT$pvalue <- 1 - pf(OUT$Ts, OUT$df, OUT$df.residual)
-      OUT$b.restr <- object$b.restr
-      OUT$b.unrestr <- object$b.unrestr
+      OUT$b_restr <- object$b_restr
+      OUT$b_unrestr <- object$b_unrestr
     } else if (test == "score") {
       OUT <- CON
       # response variable
-      y <- as.matrix(object$model.org$model[, attr(object$model.org$terms, "response")])
+      y <- as.matrix(object$model_org$model[, attr(object$model_org$terms, "response")])
       # model matrix
       X <- model.matrix(object)[,,drop = FALSE]
       n <- dim(X)[1]
       p <- dim(X)[2]
       # MSE 
-      s20 <- sum((y - X %*% object$b.restr)^2) / (n - (p - qr(Amat[0:meq,,drop = FALSE])$rank))
+      s20 <- sum((y - X %*% object$b_restr)^2) / (n - (p - qr(Amat[0:meq,,drop = FALSE])$rank))
       # information matrix
       info  <- 1/s20 * crossprod(X)
       # score vector
-      d0 <- as.vector(1 / s20 * t(X) %*% (y - X %*% object$b.restr))
+      d0 <- as.vector(1 / s20 * t(X) %*% (y - X %*% object$b_restr))
       OUT$test <- "Score"
       # score test statistic
       OUT$Ts <- as.numeric(d0 %*% solve(info) %*% d0)
@@ -71,8 +71,8 @@ conTest_ceq.conLM <- function(object, test = "F", boot = "no",
       OUT$df <- nrow(Amat)
       # p-value based on chisq
       OUT$pvalue <- 1 - pchisq(OUT$Ts, df = OUT$df)
-      OUT$b.restr <- object$b.restr
-      OUT$b.unrestr <- object$b.unrestr
+      OUT$b_restr <- object$b_restr
+      OUT$b_unrestr <- object$b_unrestr
     } else {
       stop("restriktor ERROR: test ", sQuote(test), " not (yet) implemented.")
     }
@@ -89,7 +89,7 @@ conTest_ceq.conLM <- function(object, test = "F", boot = "no",
   
   if (boot == "parametric") {
     OUT$pvalue <- con_pvalue_boot_parametric(object, 
-                                             Ts.org   = OUT$Ts, 
+                                             Ts_org   = OUT$Ts, 
                                              type     = "A",
                                              test     = test, 
                                              R        = R, 
@@ -102,7 +102,7 @@ conTest_ceq.conLM <- function(object, test = "F", boot = "no",
                                              verbose  = verbose)
   } else if (boot == "model.based") {
     OUT$pvalue <- con_pvalue_boot_model_based(object, 
-                                              Ts.org   = OUT$Ts, 
+                                              Ts_org   = OUT$Ts, 
                                               type     = "A", 
                                               test     = test,
                                               R        = R,
@@ -113,8 +113,8 @@ conTest_ceq.conLM <- function(object, test = "F", boot = "no",
                                               verbose  = verbose)
   } 
   
-  OUT$R2.org      <- object$R2.org
-  OUT$R2.reduced  <- object$R2.reduced
+  OUT$R2_org      <- object$R2_org
+  OUT$R2_reduced  <- object$R2_reduced
   
   OUT <- list(OUT)
     names(OUT) <- "ceq"
@@ -126,33 +126,33 @@ conTest_ceq.conLM <- function(object, test = "F", boot = "no",
 
 
 
-con_test_Wald <- function(Sigma, JAC, theta.r) {
+con_test_Wald <- function(Sigma, JAC, theta_r) {
   
-  # remove redundant rows from JAC *and* theta.r
+  # remove redundant rows from JAC *and* theta_r
   npar <- ncol(JAC)
   
-  JAC.aug <- cbind(JAC, theta.r)
+  JAC.aug <- cbind(JAC, theta_r)
   Q <- qr(t(JAC.aug))
-  JAC.full <- t(qr.X(Q, ncol = Q$rank))
-  JAC <- JAC.full[,seq_len(npar),drop = FALSE]
-  theta.r <- as.numeric(JAC.full[,(npar + 1L)])
+  JAC_full <- t(qr.X(Q, ncol = Q$rank))
+  JAC <- JAC_full[,seq_len(npar),drop = FALSE]
+  theta_r <- as.numeric(JAC_full[,(npar + 1L)])
   
   # restricted vcov
-  info.r  <- JAC %*% Sigma %*% t(JAC)
+  info_r  <- JAC %*% Sigma %*% t(JAC)
   
   # Wald test statistic
-  Wald <- as.numeric(t(theta.r) %*% solve(info.r) %*% theta.r)
+  Wald <- as.numeric(t(theta_r) %*% solve(info_r) %*% theta_r)
   
   # df
-  Wald.df <- nrow(JAC)
+  Wald_df <- nrow(JAC)
   
   # p-value based on chisq
-  Wald.pvalue <- 1 - pchisq(Wald, df = Wald.df)
+  Wald_pvalue <- 1 - pchisq(Wald, df = Wald_df)
   
   OUT <- list(test   = "Wald",
               Ts     = Wald,
-              df     = Wald.df,
-              pvalue = Wald.pvalue)
+              df     = Wald_df,
+              pvalue = Wald_pvalue)
   
   OUT
 }

@@ -282,10 +282,10 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   # based on the standard bootstrap or model.based bootstrap
   if (se != "none") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
-      p1 <- 1L:p
-      Qr <- qr(object)
-      covmat_unscaled <- chol2inv(Qr$qr[p1, p1, drop = FALSE])
-      OUT$information <- 1 / dispersion_restr * solve(covmat_unscaled)
+      #p1 <- 1L:p
+      #Qr <- qr(object)
+      #covmat_unscaled <- chol2inv(Qr$qr[p1, p1, drop = FALSE])
+      OUT$information <- 1 / dispersion_restr * (t(X) %*% X) #solve(covmat_unscaled)
       
       information.inv <- con_augmented_information(information  = OUT$information,
                                                    is.augmented = is.augmented,

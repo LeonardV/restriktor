@@ -231,7 +231,7 @@ conGLM_fit <- function(x, y, weights = rep(1, nobs), start = NULL,
   rank <- if (EMPTY) 0
   else qr(x)$rank
   resdf <- n.ok - rank
-  aic.model <- aic(y, n.ok, mu, weights, dev) #+ 2 * rank
+  aic.model <- aic(y, n.ok, mu, weights, dev) + 2 * rank
   list(coefficients = coef, residuals = residuals, fitted.values = mu, 
        # effects = if (!EMPTY) fit$effects, R = if (!EMPTY) Rmat, 
        rank = rank, 

@@ -2,6 +2,7 @@
 \alias{conTestScore}
 \alias{conTestScore.conLM}
 \alias{conTestScore.conRLM}
+\alias{conTestScore.conGLM}
 
 \title{Score-bar test for (robust) iht}
 \description{\code{conTestScore} tests linear equality and/or 
@@ -22,11 +23,17 @@ used directly and is called by the \code{conTest} function if \code{test = "scor
            boot = "no", R = 9999, p.distr = "N", df = 7, 
            parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
            verbose = FALSE, control = NULL, \dots)
+           
+
+\method{conTestScore}{conGLM}(object, type = "A", neq.alt = 0, 
+           boot = "no", R = 9999, p.distr = "N", df = 7, 
+           parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
+           verbose = FALSE, control = NULL, \dots)
 
 }
 
 \arguments{
-  \item{object}{an object of class \code{conLM} or \code{conRLM}.} 
+  \item{object}{an object of class \code{conLM}, \code{conRLM} or \code{conGLM}.} 
   
   \item{type}{hypothesis test type "A", "B", "C", "global", or 
    "summary" (default). See details for more information.}

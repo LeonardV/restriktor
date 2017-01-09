@@ -1,6 +1,7 @@
 \name{conTestLRT}
 \alias{conTestLRT}
 \alias{conTestLRT.conLM}
+\alias{conTestLRT.conGLM}
 
 \title{Likelihood-ratio-bar test for iht}
 \description{\code{conTestLRT} tests linear equality and/or 
@@ -14,10 +15,15 @@ used directly and is called by the \code{conTest} function if \code{test = "LRT"
            boot = "no", R = 9999, p.distr = "N", df = 7, 
            parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
            verbose = FALSE, control = NULL, \dots)
+           
+\method{conTestLRT}{conGLM}(object, type = "A", neq.alt = 0, 
+            boot = "no", R = 9999, p.distr = "N", df = 7, 
+            parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
+            verbose = FALSE, control = NULL, \dots)           
 }
 
 \arguments{
-  \item{object}{an object of class \code{conLM}.} 
+  \item{object}{an object of class \code{conLM} or \code{conGLM}.}  
   
   \item{type}{hypothesis test type "A", "B", "C", "global", or 
    "summary" (default). See details for more information.}

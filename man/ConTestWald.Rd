@@ -24,6 +24,11 @@ or \code{test = "Wald2"}.
            parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
            verbose = FALSE, control = NULL, \dots)
 
+\method{conTestWald2}{conRLM}(object, type = "A", neq.alt = 0, 
+           boot = "no", R = 9999, p.distr = "N", df = 7, 
+           parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
+           verbose = FALSE, control = NULL, \dots)
+
 }
 
 \arguments{

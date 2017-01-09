@@ -1,6 +1,6 @@
 Package: restriktor
 Title: Restrikted Statistical Estimation and Inference for Linear Models
-Version: 0.1-40
+Version: 0.1-50
 Authors@R: c(person(given = "Yves", family = "Rosseel",
                     role  = c("cre"),
                     email = "Yves.Rosseel@UGent.be"),
@@ -15,7 +15,7 @@ Depends: R(>= 3.0.0)
 Imports: boot, ic.infer, lavaan, MASS, mvtnorm, quadprog
 License: GPL (>= 2)
 LazyData: yes
-Packaged: 2016-12-06 20:03:39 UTC; leonard
+Packaged: 2017-01-09 15:43:19 UTC; leonard
 Author: Yves Rosseel [cre],
         Leonard Vanbrabant [aut]
 Maintainer: Yves Rosseel <Yves.Rosseel@UGent.be>

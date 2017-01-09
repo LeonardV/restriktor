@@ -56,10 +56,8 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
             UseMethod("conTestScore")
           } 
         } else if (class(object)[2] %in% "conGLM") {
-          stop("Restriktor ERROR: tests not implemented yet.")
-          
           if (!(test %in% c("f","lrt","score"))) {
-            stop("restriktor ERROR: test ", sQuote(test), " unknown. Choose F, LRT or score.")  
+            stop("restriktor ERROR: test ", sQuote(test), " unknown. Choose Wald, LRT or score.")  
           } 
           if (test == "f") {
             UseMethod("conTestF")
@@ -77,6 +75,9 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
         stop("type ", sQuote, " unknown.")
       }
     } else if (nrow(Amat) == meq) {
+      if (class(object)[2] %in% "conGLM") {
+        stop("Restriktor ERROR: tests with equality constraints only, are not implemented yet.")
+      }
         UseMethod("conTest_ceq") # classical Wald, F and score test with equality constraints only
     } else {
       stop("Restriktor ERROR: constraints and neq do not match.")

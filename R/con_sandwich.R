@@ -101,8 +101,6 @@ estfun.conGLM <- function(x, ...) {
     xmat <- xmat[, !alias, drop = FALSE]
   }
   wres <- as.vector(residuals(x, "working")) * weights(x, "working")
-  #dispersion <- x$dispersion                                    # or x$dispersion_restr
-  
   dispersion <- if (substr(x$model_org$family$family, 1, 17) %in% c("poisson", "binomial", "Negative Binomial")) {
     1
   } else {

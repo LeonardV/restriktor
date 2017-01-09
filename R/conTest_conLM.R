@@ -1,4 +1,4 @@
-######### computes the F, LRT and score test statistic ##########
+### computes the F-bar, LRT-bar and score-bar test statistic ####
 # REFs: 
 # Silvapulle and Sen (2005). Constrained statistical inference. Chapter 2.
 # Wolak, F. An exact test for multiple inequality and equality 
@@ -916,8 +916,8 @@ conTestC.restriktor <- function(object, ...) {
               b_unrestr   = b_unrestr,
               b_restr     = object$b_restr,
               Sigma       = Sigma,
-              R2_org      = object$R2_org,
-              R2_reduced  = object$R2_reduced,
+              R2_org      = ifelse(!is.null(object$R2_org), object$R2_org, as.numeric(NA)),
+              R2_reduced  = ifelse(!is.null(object$R2_reduced), object$R2_reduced, as.numeric(NA)),
               boot        = "no",
               model_org   = object$model_org)
   

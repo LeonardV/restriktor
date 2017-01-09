@@ -1,3 +1,4 @@
+### computes the F-bar, Wald(2)-bar and score-bar test statistic ####
 conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
                             p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
                             cl = NULL, seed = 1234, verbose = FALSE,

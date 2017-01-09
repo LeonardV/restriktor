@@ -8,21 +8,23 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
   meq  <- x[[1]]$meq
   bvec <- x[[1]]$bvec
   
-  if (!is.null(attr(x[[1]]$pvalue, "boot_type")) || length(x) > 1 || "ceq" %in% names(x)) {
-  cat("\nRestrictor: restricted hypothesis tests (", x[[1]]$df.residual, "residual degrees of freedom ):\n")
-  } else {
-    cat("\nRestrictor: restricted hypothesis tests:\n")
-  }
-  if (length(x) == 1 && !(names(x) %in% c("C"))) {
+  cat("\nRestriktor: restricted hypothesis tests (", x[[1]]$df.residual, "residual degrees of freedom ):\n")
+  
+  if (!("C" %in% names(x))) {
     if (x[[1]]$boot %in% c("parametric", "model.based")) {
       cat("( Number of successful bootstrap draws:", attr(x[[1]]$pvalue, "R"),")\n")
     }
-  }
-  if ((x[[1]]$R2_org - x[[1]]$R2_reduced) < 1e-08) {
-    cat("\nMultiple R-squared remains", sprintf("%5.3f", x[[1]]$R2_org),"\n\n")
   } else {
-    cat("\nMultiple R-squared reduced from", sprintf("%5.3f", x[[1]]$R2_org), "to", 
-        sprintf("%5.3f", x[[1]]$R2_reduced),"\n\n")  
+    cat("\n")
+  }
+  
+  if (!class(x[[1]]$model_org)[1] == "glm") {
+    if ((x[[1]]$R2_org - x[[1]]$R2_reduced) < 1e-08) {
+      cat("\nMultiple R-squared remains", sprintf("%5.3f", x[[1]]$R2_org),"\n")
+    } else {
+      cat("\nMultiple R-squared reduced from", sprintf("%5.3f", x[[1]]$R2_org), "to", 
+          sprintf("%5.3f", x[[1]]$R2_reduced),"\n")  
+    }
   }
   
   vnames <- names(x[[1]]$b_unrestr)
@@ -129,7 +131,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
     
     if (nrow(x$Amat) > x$meq) {
       if (x$type == "global") {
-        cat("\nGlobal test: H0: all parameters are restricted to be equal (==)", "\n", 
+        cat("\n\nGlobal test: H0: all parameters are restricted to be equal (==)", "\n", 
             "        vs. HA: at least one inequality restriction is strictly true (>)\n\n")
         print(out_test, quote = FALSE, scientific = FALSE)
         if (!is.null(df_bar)) {
@@ -145,7 +147,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
         print.default(format(x$b_restr, digits = digits),
                       print.gap = 2, quote = FALSE)
       } else if (x$type == "A") {
-        cat("Type A test: H0: all restrictions are equalities (==)", "\n", 
+        cat("\nType A test: H0: all restrictions are equalities (==)", "\n", 
             "        vs. HA: at least one inequality restriction is strictly true (>)\n\n")
         print(out_test, quote = FALSE, scientific = FALSE)        
         if (!is.null(df_bar)) {
@@ -161,7 +163,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
         print.default(format(x$b_restr, digits = digits),
                       print.gap = 2, quote = FALSE)
       } else if (x$type == "B" && x$meq_alt == 0L) {
-        cat("Type B test: H0: all restrictions hold in the population", "\n", 
+        cat("\nType B test: H0: all restrictions hold in the population", "\n", 
             "        vs. HA: at least one restriction is violated\n\n")
         print(out_test, quote = FALSE)
         if (!is.null(df_bar)) {
@@ -177,7 +179,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
         print.default(format(x$b_unrestr, digits = digits),
                       print.gap = 2, quote = FALSE)
       } else if (x$type == "B" && x$meq_alt > 0L) {
-        cat("Type B test: H0: all restrictions hold in the population", "\n", 
+        cat("\nType B test: H0: all restrictions hold in the population", "\n", 
             "        vs. HA: at least one restriction is violated (<),", 
             "\n                  some equality restrictions are maintained\n\n")
         print(out_test, quote = FALSE)

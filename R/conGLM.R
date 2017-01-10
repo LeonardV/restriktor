@@ -31,8 +31,10 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   family <- object$family
   # model summary
   so <- summary(object)
-  # weigths
-  weights <- weights(object)
+  # prior weigths
+  prior.weights <- object$prior.weights
+  # working weights
+  weights <- object$weights
   # unconstrained estimates
   b_unrestr <- coef(object)
   # number of parameters
@@ -179,7 +181,8 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                 b_restr           = b_unrestr,
                 residuals         = object$residuals, # unweighted residuals
                 fitted            = object$fitted.values,
-                weights           = object$weights,
+                prior.weights     = prior.weights, #prior weights
+                weights           = weights, #working weights, weights final iteration
                 df.residual       = object$df.residual,
                 df.residual_null  = object$df.null,
                 dispersion        = so$dispersion, 
@@ -220,6 +223,9 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                                   sqrt(.Machine$double.eps), 
                                   control$tol)] <- 0L
     
+    # weights
+    weights <- fit_glmc$weights
+    
     timing$optim <- (proc.time()[3] - start.time)
     start.time <- proc.time()[3]
     
@@ -255,7 +261,8 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                 b_restr           = b_restr,
                 residuals         = residuals, # unweighted residuals
                 fitted            = fitted,
-                weights           = weights,
+                prior.weights     = prior.weights, #prior weights
+                weights           = weights, #working weights, weights final iteration
                 df.residual       = object$df.residual,
                 df.residual_null  = fit_glmc$df.null,
                 dispersion        = so$dispersion, 
@@ -280,13 +287,11 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   OUT$se <- se
   # compute standard errors based on the augmented inverted information matrix or
   # based on the standard bootstrap or model.based bootstrap
+  W <- diag(weights)
+  OUT$information <- t(X) %*% W %*% X
+  
   if (se != "none") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
-      #p1 <- 1L:p
-      #Qr <- qr(object)
-      #covmat_unscaled <- chol2inv(Qr$qr[p1, p1, drop = FALSE])
-      OUT$information <- 1 / dispersion_restr * (t(X) %*% X) #solve(covmat_unscaled)
-      
       information.inv <- con_augmented_information(information  = OUT$information,
                                                    is.augmented = is.augmented,
                                                    X            = X, 

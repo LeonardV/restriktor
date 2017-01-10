@@ -13,7 +13,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   meq_alt <- neq.alt
   
   # checks
-  if (!("conLM" %in% class(object))) {
+  if (!inherits(object, "conLM")) {
     stop("Restriktor ERROR: object must be of class conLM.")
   }
   if (type != "global") {
@@ -274,7 +274,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
   meq_alt <- neq.alt
   
   # checks
-  if (!("conLM" %in% class(object))) {
+  if (!inherits(object, "conLM")) {
     stop("Restriktor ERROR: object must be of class conLM.")
   }
   if (type != "global") {
@@ -546,7 +546,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   meq_alt <- neq.alt
   
   # checks
-  if (!("conLM" %in% class(object))) {
+  if (!inherits(object, "conLM")) {
     stop("Restriktor ERROR: object must be of class conLM.")
   }
   if (type != "global") {
@@ -564,6 +564,8 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   
   # original model
   model_org <- object$model_org
+  # family
+  fam <- family(model_org)
   # model matrix
   X <- model.matrix(object)[,,drop=FALSE]
   # response variable
@@ -654,30 +656,47 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     b_eqrestr[abs(b_eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
                                       control$tol)] <- 0L
-      names(b_eqrestr) <- vnames
+    names(b_eqrestr) <- vnames
     
-    # df0 <- n-(p-nrow(AmatG)) 
-    # s20 <- sum(w*(y - X %*% b_eqrestr)^2) / df0
-    # d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b_eqrestr)))
-    # i <- 1/s20 * (t(X) %*% W %*% X) / n
-    # U <- 1/sqrt(n) * solve(i) %*% d0
-    # UI <- t(U) %*% i
-    # D <- i
-    # b <- solve.QP(Dmat = D, 
-    #               dvec = UI, 
-    #               Amat = t(Amat), 
-    #               bvec = bvec, 
-    #               meq  = meq)$solution
-    # Ts <- t(U) %*% i %*% U - ( t(U-b) %*% i %*% (U-b) ) 
+    res0 <- y - X %*% b_eqrestr
+    res1 <- residuals(object)
+    
+    if (inherits(object, "conGLM")) {
+      wres0 <- as.vector(res0) * weights(object, "working")
+      wres1 <- as.vector(res1) * weights(object, "working")
+      
+      dispersion <- if (fam$family %in% c("poisson", "binomial")) 1
+      else sum((wres0^2)[w > 0]) / (n - (p - nrow(Amat)))
+      
+      dispersion0 <- if (fam$family %in% c("poisson", "binomial")) 1
+      else sum((w * res0^2)[w > 0]) / sum(weights(object, "working"), na.rm = TRUE)
+      dispersion1 <- if (fam$family %in% c("poisson", "binomial")) 1
+      else sum((w * res1^2)[w > 0]) / sum(weights(object, "working"), na.rm = TRUE)
+      
+      G0 <- colSums(wres0 * X / dispersion0)
+      G1 <- colSums(wres1 * X / dispersion1)
+    } else {
+      wres0 <- as.vector(res0) * w
+      wres1 <- as.vector(res1) * w
+      
+      dispersion <- if (fam$family %in% c("poisson", "binomial")) 1
+      else sum((wres0^2)[w > 0]) / (n - (p - nrow(Amat)))
+      
+      G0 <- colSums(as.vector(wres0) * X) / dispersion
+      G1 <- colSums(as.vector(wres1) * X) / dispersion
+    }
+    
+    I0 <- 1 / dispersion0 * (t(X) %*% X)
+    Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))
     ###############################################
-    df0 <- n - (p - nrow(AmatG))   
-    df1 <- n - (p - qr(Amat[0:meq,])$rank)
-    s20 <- sum((y - X %*% b_eqrestr)^2) / df0
-    s21 <- sum((y - X %*% b_restr)^2) / df1
-    d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b_eqrestr)))
-    d1 <- 1/s21 * (t(X) %*% (w*(y - X %*% b_restr)))
-    I0 <- 1/s20 * (t(X) %*% X)
-    Ts <- t(c(d0 - d1)) %*% solve(I0) %*% c(d0 - d1)
+    # df0 <- n - (p - nrow(AmatG))
+    # df1 <- n - (p - qr(Amat[0:meq,])$rank)
+    # s20 <- sum((y - X %*% b_eqrestr)^2) / df0
+    # s21 <- sum((y - X %*% b_restr)^2) / df1
+    # d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b_eqrestr)))
+    # d1 <- 1/s21 * (t(X) %*% (w*(y - X %*% b_restr)))
+    # I0 <- 1/s20 * (t(X) %*% X)
+    # Ts2 <- t(c(d0 - d1)) %*% solve(I0) %*% c(d0 - d1)
     ###############################################
   } else if (type == "A") {
     b_eqrestr <- con_solver(X         = X, 
@@ -696,49 +715,90 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                       control$tol)] <- 0L
     names(b_eqrestr) <- vnames
     
-    ######################################################
-    # df0 <- n - (p - nrow(Amat))                                                  
-    # s20 <- sum(w*(y - X %*% b_eqrestr)^2) / df0
-    #d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b_eqrestr)))
-    # i <- 1/s20 * (t(X) %*% W %*% X) / n
-    # U <- 1/sqrt(n) * solve(i) %*% d0
-    # UI <- t(U) %*% i
-    # D <- i
-    # b <- solve.QP(Dmat = D,
-    #               dvec = UI,
-    #               Amat = t(Amat),
-    #               bvec = bvec,
-    #               meq  = meq)$solution
-    # Ts <- t(U) %*% i %*% U - ( t(U-b) %*% i %*% (U-b) )
-    ###############################################
-    df0 <- n - (p - nrow(Amat))   
-    df1 <- n - (p - qr(Amat[0:meq,])$rank)
-    s20 <- sum((y - X %*% b_eqrestr)^2) / df0
-    s21 <- sum((y - X %*% b_restr)^2) / df1
-    d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b_eqrestr)))
-    d1 <- 1/s21 * (t(X) %*% (w*(y - X %*% b_restr)))
-    I0 <- 1/s20 * (t(X) %*% X)
-    Ts <- t(c(d0 - d1)) %*% solve(I0) %*% c(d0 - d1)
+    res0 <- y - X %*% b_eqrestr
+    res1 <- residuals(object)
+    
+    if (inherits(object, "conGLM")) {
+      wres0 <- as.vector(res0) * weights(object, "working")
+      wres1 <- as.vector(res1) * weights(object, "working")
+      
+      dispersion <- if (fam$family %in% c("poisson", "binomial")) 1
+        else sum((wres0^2)[w > 0]) / (n - (p - nrow(Amat)))
+      
+      dispersion0 <- if (fam$family %in% c("poisson", "binomial")) 1
+        else sum((w * res0^2)[w > 0]) / sum(weights(object, "working"), na.rm = TRUE)
+      dispersion1 <- if (fam$family %in% c("poisson", "binomial")) 1
+        else sum((w * res1^2)[w > 0]) / sum(weights(object, "working"), na.rm = TRUE)
+      
+      G0 <- colSums(wres0 * X / dispersion0)
+      G1 <- colSums(wres1 * X / dispersion1)
+    } else {
+      wres0 <- as.vector(res0) * w
+      wres1 <- as.vector(res1) * w
+      
+      dispersion <- if (fam$family %in% c("poisson", "binomial")) 1
+        else sum((wres0^2)[w > 0]) / (n - (p - nrow(Amat)))
+      
+      G0 <- colSums(as.vector(wres0) * X) / dispersion
+      G1 <- colSums(as.vector(wres1) * X) / dispersion
+    }
+    
+    I0 <- 1 / dispersion * (t(X) %*% X)
+    Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))    
+    ######
+    # df0 <- n - (p - nrow(Amat))
+    # df1 <- n - (p - qr(Amat[0:meq,])$rank)
+    # s20 <- sum((y - X %*% b_eqrestr)^2) / df0
+    # s21 <- sum((y - X %*% b_restr)^2) / df1
+    # d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b_eqrestr)))
+    # d1 <- 1/s21 * (t(X) %*% (w*(y - X %*% b_restr)))
+    # I0 <- 1/s20 * (t(X) %*% X)
+    # Ts2 <- t(c(d0 - d1)) %*% solve(I0) %*% c(d0 - d1)
     ###############################################
   } else if (type == "B") {
-      if (meq_alt == 0L) {
-        # df0 <- n - (p - qr(Amat[0:meq,])$rank)
-        # s20 <- sum(w*(y - X %*% b_restr)^2) / df0
-        # d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b_restr)))
-        # i <- 1/s20 * (t(X) %*% W %*% X) / n
-        # U <- 1/sqrt(n) * solve(i) %*% d0
-        # UI <- t(U) %*% i
-        # Ts <- t(U) %*% i %*% U 
-        ###############################################
-        df0 <- n - (p - qr(Amat[0:meq,])$rank)
-        df1 <- n - p   
-        s20 <- sum((y - X %*% b_restr)^2) / df0
-        s21 <- sum((y - X %*% b_unrestr)^2) / df1
-        d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b_restr)))
-        d1 <- 1/s21 * (t(X) %*% (w*(y - X %*% b_unrestr)))
-        I0 <- 1/s20 * (t(X) %*% X)
-        Ts <- t(c(d0 - d1)) %*% solve(I0) %*% c(d0 - d1)
-        ###############################################
+    res0 <- residuals(object)
+    res1 <- residuals(model_org)
+    
+    if (meq_alt == 0L) {
+      
+      if (inherits(object, "conGLM")) {
+        wres0 <- as.vector(res0) * weights(object, "working")
+        wres1 <- as.vector(res1) * weights(object, "working")
+        
+        dispersion <- if (fam$family %in% c("poisson", "binomial")) 1
+        else sum((wres0^2)[w > 0]) / (n - (p - nrow(Amat)))
+        
+        dispersion0 <- if (fam$family %in% c("poisson", "binomial")) 1
+        else sum((w * res0^2)[w > 0]) / sum(weights(object, "working"), na.rm = TRUE)
+        dispersion1 <- if (fam$family %in% c("poisson", "binomial")) 1
+        else sum((w * res1^2)[w > 0]) / sum(weights(object, "working"), na.rm = TRUE)
+        
+        G0 <- colSums(wres0 * X / dispersion0)
+        G1 <- colSums(wres1 * X / dispersion1)
+      } else {
+        wres0 <- as.vector(res0) * w
+        wres1 <- as.vector(res1) * w
+        
+        dispersion <- if (fam$family %in% c("poisson", "binomial")) 1
+        else sum((wres0^2)[w > 0]) / (n - (p - nrow(Amat)))
+        
+        G0 <- colSums(as.vector(wres0) * X) / dispersion
+        G1 <- colSums(as.vector(wres1) * X) / dispersion
+      }
+      
+      I0 <- 1 / dispersion0 * (t(X) %*% X)
+      Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))    
+      
+      #########
+      # df0 <- n - (p - qr(Amat[0:meq,])$rank)
+      # df1 <- n - p
+      # s20 <- sum((y - X %*% b_restr)^2) / df0
+      # s21 <- sum((y - X %*% b_unrestr)^2) / df1
+      # d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b_restr)))
+      # d1 <- 1/s21 * (t(X) %*% (w*(y - X %*% b_unrestr)))
+      # I0 <- 1/s20 * (t(X) %*% X)
+      # Ts2 <- t(c(d0 - d1)) %*% solve(I0) %*% c(d0 - d1)
+      ###############################################
       }
       else {
       # some equality may be preserved in the alternative hypothesis.
@@ -759,27 +819,44 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                               control$tol)] <- 0L
         names(b_restr_alt) <- vnames
         
-        # df0 <- n - (p - qr(Amat[0:meq,])$rank)
-        # s20 <- sum(w*(y - X %*% b_restr)^2) / df0
+        res0 <- residuals(object)
+        res1 <- y - X %*% b_restr_alt
+        
+        if (inherits(object, "conGLM")) {
+          wres0 <- as.vector(res0) * weights(object, "working")
+          wres1 <- as.vector(res1) * weights(object, "working")
+          
+          dispersion <- if (fam$family %in% c("poisson", "binomial")) 1
+          else sum((wres0^2)[w > 0]) / (n - (p - nrow(Amat)))
+          
+          dispersion0 <- if (fam$family %in% c("poisson", "binomial")) 1
+          else sum((w * res0^2)[w > 0]) / sum(weights(object, "working"), na.rm = TRUE)
+          dispersion1 <- if (fam$family %in% c("poisson", "binomial")) 1
+          else sum((w * res1^2)[w > 0]) / sum(weights(object, "working"), na.rm = TRUE)
+          
+          G0 <- colSums(wres0 * X / dispersion0)
+          G1 <- colSums(wres1 * X / dispersion1)
+        } else {
+          wres0 <- as.vector(res0) * w
+          wres1 <- as.vector(res1) * w
+          
+          dispersion <- if (fam$family %in% c("poisson", "binomial")) 1
+          else sum((wres0^2)[w > 0]) / (n - (p - nrow(Amat)))
+          
+          G0 <- colSums(as.vector(wres0) * X) / dispersion
+          G1 <- colSums(as.vector(wres1) * X) / dispersion
+        }
+        
+        I0 <- 1 / dispersion0 * (t(X) %*% X)
+        Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))    
+        ########################
+        # df1 <- df0 <- n - (p - qr(Amat[0:meq,])$rank)
+        # s20 <- sum((y - X %*% b_restr)^2) / df0
+        # s21 <- sum((y - X %*% b_restr_alt)^2) / df1
         # d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b_restr)))
-        # i <- 1/s20 * (t(X) %*% W %*% X) / n
-        # U <- 1/sqrt(n) * solve(i) %*% d0
-        # UI <- t(U) %*% i
-        # D <- i
-        # b <- solve.QP(Dmat = D, 
-        #               dvec = UI, 
-        #               Amat = t(Amat[1:meq_alt, ,drop = FALSE]), 
-        #               bvec = bvec[1:meq_alt], 
-        #               meq  = meq_alt)$solution
-        # Ts <- t(U) %*% i %*% U - ( t(U-b) %*% i %*% (U-b) ) 
-        ###############################################
-        df1 <- df0 <- n - (p - qr(Amat[0:meq,])$rank)
-        s20 <- sum((y - X %*% b_restr)^2) / df0
-        s21 <- sum((y - X %*% b_restr_alt)^2) / df1
-        d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b_restr)))
-        d1 <- 1/s21 * (t(X) %*% (w*(y - X %*% b_restr_alt)))
-        I0 <- 1/s20 * (t(X) %*% X)
-        Ts <- t(c(d0 - d1)) %*% solve(I0) %*% c(d0 - d1)
+        # d1 <- 1/s21 * (t(X) %*% (w*(y - X %*% b_restr_alt)))
+        # I0 <- 1/s20 * (t(X) %*% X)
+        # Ts2 <- t(c(d0 - d1)) %*% solve(I0) %*% c(d0 - d1)
         ###############################################
       }
       else {

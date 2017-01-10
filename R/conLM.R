@@ -303,12 +303,11 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   OUT$model_org <- object
   # type standard error
   OUT$se <- se
+  OUT$information <- 1/s2_restr * crossprod(X)
   # compute standard errors based on the augmented inverted information matrix or
   # based on the standard bootstrap or model.based bootstrap
   if (se != "none") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
-      OUT$information <- 1/s2_restr * crossprod(X)
-      
       information.inv <- con_augmented_information(information  = OUT$information,
                                                    is.augmented = is.augmented,
                                                    X            = X, 

@@ -337,11 +337,10 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   
   OUT$model_org <- object
   OUT$se <- se 
-  
+  OUT$information <- 1/tau^2 * crossprod(X)
   if (se != "none") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
       #  V <- vcovMM(X = X, resid0 = resid0, residuals = residuals, scale = model$s)  
-      OUT$information <- 1/tau^2 * crossprod(X)
       information.inv <- con_augmented_information(information  = OUT$information,
                                                    is.augmented = is.augmented,
                                                    X            = X, 

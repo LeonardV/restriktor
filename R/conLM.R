@@ -202,7 +202,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                 control     = control)  
   } else {
     # compute constrained estimates for lm()
-    out.QP <- con_solver(X         = X, 
+    out.QP <- con_solver_lm(X         = X, 
                          y         = y, 
                          b_unrestr = b_unrestr, 
                          w         = weights, 

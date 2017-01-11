@@ -54,10 +54,12 @@ bread.conGLM <- function(x, ...) {
     sum(wres^2) / sum(weights(x, "working"))
   }
   
-  I_inv <- (attr(x$information, "inverted") * x$df.residual) / as.vector(sum(sx$df[1:2]))
-  cov.unscaled <- 1 / dispersion_restr * I_inv
+  VCOV <- attr(x$information, "inverted") #* x$df.residual / as.vector(sum(sx$df[1:2]))
+  VCOV.unscaled <- VCOV / x$dispersion_restr
   
-  return(cov.unscaled * as.vector(sum(sx$df[1:2])) * dispersion_restr)
+  #cov.unscaled <- 1 / dispersion_restr * I_inv
+  
+  return(VCOV.unscaled * as.vector(sum(sx$df[1:2])) * dispersion_restr)
 }
 
 

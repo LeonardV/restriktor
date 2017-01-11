@@ -100,9 +100,11 @@ conGLM_fit <- function(x, y, weights = rep(1, nobs), start = NULL,
       w <- sqrt((weights[good] * mu.eta.val[good]^2)/variance(mu)[good])
       #fit <- .Call(C_Cdqrls, x[good, , drop = FALSE] * 
       #               w, z * w, min(1e-07, control$epsilon/1000), check = FALSE)
-      fit <- con_solver(X = x[good, , drop = FALSE], y = z, 
-                        b_unrestr = lm.fit(x, y)$coefficients, w = w, Amat = Amat, bvec = bvec, 
-                        meq = meq, maxit = control$maxit, absval = control$epsilon)
+      fit <- con_solver_glm(X = x[good, , drop = FALSE] * w, y = z * w,
+                            Amat = Amat, bvec = bvec,
+                            meq = meq, maxit = control$maxit, 
+                            epsilon = control$epsilon)
+      
       if (any(!is.finite(fit$coefficients))) {
         conv <- FALSE
         warning(gettextf("non-finite coefficients at iteration %d", 

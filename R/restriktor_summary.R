@@ -160,9 +160,10 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "basic",
     if (inherits(z, "conLM")) {
       ans$goric <- -2*(z$loglik - PT)
     } else if (inherits(z, "conGLM")) {
-      #ans$goric <- -2*z$loglik / z$dispersion + 2*PT
-      #ans$goric <- -2*z$loglik / 1 + 2*PT
-      ans$goric <- -2*(z$loglik - PT)
+      if (!(z$model_org$family$family %in% c("gaussian", "Gamma", "inverse.gaussian"))) {
+        PT <- PT - 1
+      }
+      ans$goric <- -2*z$loglik / z$dispersion + 2*PT
     }
     attr(ans$goric, "penalty") <- PT
     attr(ans$goric, "loglik")  <- z$loglik 

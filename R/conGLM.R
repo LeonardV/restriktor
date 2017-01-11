@@ -28,7 +28,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   # variance-covariance matrix
   W <- vcov(object)
   # familiy and link function
-  family <- object$family
+  fam <- object$family
   # model summary
   so <- summary(object)
   # prior weigths
@@ -205,10 +205,10 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
     # collect all original model arguments and add constraints
     call_org <- as.list(object$call)
     
-    CALL <- c(list(x = X, y = y, weights = weights, 
+    CALL <- c(list(x = X, y = y, weights = prior.weights, 
                    start = coef(object), etastart = call_org[["etastart"]],
                    mustart = call_org[["mustart"]], offset = object$offset,
-                   family = family, control = call_org[["control"]],
+                   family = fam, control = call_org[["control"]],
                    intercept = attr(object$terms, "intercept"),
                    Amat = Amat, bvec = bvec, meq = meq))
     

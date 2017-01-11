@@ -127,7 +127,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   # }
   # 
   # if (type == "global") {
-  #   b_eqrestr <- con_solver(X         = X,
+  #   b_eqrestr <- con_solver_lm(X         = X,
   #                           y         = y,
   #                           b_unrestr = b_unrestr,
   #                           w         = w,
@@ -161,7 +161,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   #   Ts <- (G0 - G1) %*% solve(I0 , (G0 - G1))
   #   ###############################################
   # } else if (type == "A") {
-  #   b_eqrestr <- con_solver(X         = X,
+  #   b_eqrestr <- con_solver_lm(X         = X,
   #                           y         = y,
   #                           b_unrestr = b_unrestr,
   #                           w         = w,
@@ -217,7 +217,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   #   else {
   #     # some equality may be preserved in the alternative hypothesis.
   #     if (meq_alt > 0L && meq_alt <= meq) {
-  #       b_restr_alt <- con_solver(X         = X,
+  #       b_restr_alt <- con_solver_lm(X         = X,
   #                                 y         = y,
   #                                 b_unrestr = b_unrestr,
   #                                 w         = w,

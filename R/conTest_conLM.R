@@ -102,7 +102,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   
   if (type == "global") {
     # call quadprog
-    b_eqrestr <- con_solver(X         = X, 
+    b_eqrestr <- con_solver_lm(X         = X, 
                             y         = y, 
                             b_unrestr = b_unrestr,
                             w         = w, 
@@ -122,7 +122,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
     # compute global test statistic
     Ts <- c(t(b_restr - b_eqrestr) %*% solve(Sigma, b_restr - b_eqrestr))
   } else if (type == "A") {
-    b_eqrestr <- con_solver(X         = X, 
+    b_eqrestr <- con_solver_lm(X         = X, 
                             y         = y, 
                             b_unrestr = b_unrestr,
                             w         = w, 
@@ -146,7 +146,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
       Ts <- c(t(b_unrestr - b_restr) %*% solve(Sigma, b_unrestr - b_restr))
     } else {
       if (meq_alt > 0L && meq_alt <= meq) {
-        b_restr_alt <- con_solver(X         = X, 
+        b_restr_alt <- con_solver_lm(X         = X, 
                                   y         = y, 
                                   b_unrestr = b_unrestr,
                                   w         = w, 
@@ -360,7 +360,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
   }
   
   if (type == "global") {  
-    b_eqrestr <- con_solver(X         = X, 
+    b_eqrestr <- con_solver_lm(X         = X, 
                             y         = y, 
                             b_unrestr = b_unrestr, 
                             w         = w, 
@@ -384,7 +384,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
     ll1 <- object$loglik
     Ts <- -2*(ll0 - ll1)
   } else if (type == "A") {
-    b_eqrestr <- con_solver(X         = X, 
+    b_eqrestr <- con_solver_lm(X         = X, 
                             y         = y, 
                             b_unrestr = b_unrestr,
                             w         = w, 
@@ -420,7 +420,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
     else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq_alt > 0L && meq_alt <= meq) {
-        b_restr_alt <- con_solver(X         = X, 
+        b_restr_alt <- con_solver_lm(X         = X, 
                                   y         = y, 
                                   b_unrestr = b_unrestr,
                                   w         = w,
@@ -642,7 +642,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   }
 
   if (type == "global") {
-    b_eqrestr <- con_solver(X         = X, 
+    b_eqrestr <- con_solver_lm(X         = X, 
                             y         = y, 
                             b_unrestr = b_unrestr,
                             w         = w, 
@@ -699,7 +699,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     # Ts2 <- t(c(d0 - d1)) %*% solve(I0) %*% c(d0 - d1)
     ###############################################
   } else if (type == "A") {
-    b_eqrestr <- con_solver(X         = X, 
+    b_eqrestr <- con_solver_lm(X         = X, 
                             y         = y, 
                             b_unrestr = b_unrestr,
                             w         = w, 
@@ -803,7 +803,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
       else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq_alt > 0L && meq_alt <= meq) {
-        b_restr_alt <- con_solver(X         = X, 
+        b_restr_alt <- con_solver_lm(X         = X, 
                                   y         = y, 
                                   b_unrestr = b_unrestr,
                                   w         = w,

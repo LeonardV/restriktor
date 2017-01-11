@@ -123,15 +123,15 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
     Ts <- c(t(b_restr - b_eqrestr) %*% solve(Sigma, b_restr - b_eqrestr))
   } else if (type == "A") {
     b_eqrestr <- con_solver_lm(X         = X, 
-                            y         = y, 
-                            b_unrestr = b_unrestr,
-                            w         = w, 
-                            Amat      = Amat,
-                            bvec      = bvec, 
-                            meq       = nrow(Amat),
-                            absval    = ifelse(is.null(control$absval), 1e-09, 
+                               y         = y, 
+                               b_unrestr = b_unrestr,
+                               w         = w, 
+                               Amat      = Amat,
+                               bvec      = bvec, 
+                               meq       = nrow(Amat),
+                               absval    = ifelse(is.null(control$absval), 1e-09, 
                                                control$absval),
-                            maxit     = ifelse(is.null(control$maxit), 1e04, 
+                               maxit     = ifelse(is.null(control$maxit), 1e04, 
                                                control$maxit))$solution
     b_eqrestr[abs(b_eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        

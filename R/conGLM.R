@@ -31,6 +31,8 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   fam <- object$family
   # model summary
   so <- summary(object)
+  # dispersion
+  dispersion <- so$dispersion
   # prior weigths
   prior.weights <- object$prior.weights
   # working weights
@@ -233,13 +235,13 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
     df.residual <- n - (p - qr(Amat[0:meq,])$rank)
     
     if (fit_glmc$family$family %in% c("poisson", "binomial")) {
-      dispersion_restr <- 1
+      dispersion <- 1
     } else {
       if (any(fit_glmc$weights == 0)) {
         warning("observations with zero weight not used for calculating dispersion")
       }
-      dispersion_restr <- sum((fit_glmc$weights * 
-                                 fit_glmc$residuals^2)[fit_glmc$weights > 0]) / df.residual
+      dispersion <- sum((fit_glmc$weights * 
+                           fit_glmc$residuals^2)[fit_glmc$weights > 0]) / df.residual
     }
     
     # restricted log-likelihood
@@ -266,7 +268,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                 df.residual       = object$df.residual,
                 df.residual_null  = fit_glmc$df.null,
                 dispersion        = so$dispersion, 
-                dispersion_restr  = dispersion_restr, 
+                dispersion_restr  = dispersion, 
                 loglik            = LL_restr,
                 aic               = fit_glmc$aic,
                 deviance_null     = fit_glmc$null.deviance,
@@ -288,7 +290,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   # compute standard errors based on the augmented inverted information matrix or
   # based on the standard bootstrap or model.based bootstrap
   W <- diag(weights)
-  OUT$information <- t(X) %*% W %*% X
+  OUT$information <- t(X) %*% W %*% X / dispersion
   
   if (se != "none") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {

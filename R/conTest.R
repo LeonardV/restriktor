@@ -64,6 +64,7 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
           } else if (test == "lrt") {
             UseMethod("conTestLRT")
           } else if (test == "score") {
+            stop("score test not implemented yet.")
             UseMethod("conTestScore")
           } 
         }

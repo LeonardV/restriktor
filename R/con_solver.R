@@ -1,8 +1,8 @@
 #REF: Zheng, S., Guo, J. Shi, N.Z, Tian, G.L (2012). Likelihood-based approaches 
 # for multivariate linear models under inequality constraints for incomplete data.
 # Journal of Statistical Planning and Inference 142, 2926-2942.
-con_solver <- function(X, y, b_unrestr, w, Amat, bvec, meq,
-                       maxit = 10000, absval = sqrt(.Machine$double.eps)) {
+con_solver_lm <- function(X, y, b_unrestr, w, Amat, bvec, meq,
+                          maxit = 10000, absval = sqrt(.Machine$double.eps)) {
   val <- 0
   y <- as.matrix(y)
   n <- dim(X)[1]
@@ -38,9 +38,34 @@ con_solver <- function(X, y, b_unrestr, w, Amat, bvec, meq,
     }  
   }
 
-  OUT <- out
-
-  OUT
+  out
 }
 
 
+
+
+con_solver_glm <- function(X, y, Amat, bvec, meq, 
+                           maxit = 10000, epsilon){
+  b_unrestr <- lm.fit(x = X, y)
+  tBeta <- as.vector(coefficients(b_unrestr))
+  invW <- t(X) %*% X
+  
+  con_solver <- function(tBeta, invW, Amat, bvec, meq) {
+    Dmat <- 2 * invW
+    dvec <- 2 * tBeta %*% invW
+    Amat <- t(Amat)
+    solve.QP(Dmat, dvec, Amat = Amat, bvec = bvec, meq = meq)
+  }
+  
+  b_restr <- tBeta
+  val <- 0
+  for (i in 1:maxit) {
+    out <- con_solver(b_restr, invW, Amat, bvec, meq)
+    b_restr <- out$solution
+    if (abs(out$value - val) <= epsilon) 
+      break
+    else val <- out$value
+  }
+  
+  out
+}

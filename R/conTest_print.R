@@ -193,7 +193,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
         print.default(format(x$b_restr, digits = digits),
                       print.gap = 2, quote = FALSE)
         cat("\nrestricted estimate under HA:\n")
-        print.default(format(x$b_restr.alt, digits = digits),
+        print.default(format(x$b_restr_alt, digits = digits),
                       print.gap = 2, quote = FALSE)
         } else if (x$type == "C") {
           cat("\nType C test: H0: at least one restriction is false or active (==)", 

@@ -94,7 +94,7 @@ con_pvalue_boot_parametric <- function(model, Ts_org = NULL,
                                        verbose = FALSE, ...) {
 
   p.distr <- tolower(p.distr)
-  stopifnot(p.distr %in% c("n","t","chi"))
+  stopifnot(p.distr %in% c("n","t","chi","binom","pois","gamma"))
   old_options <- options(); options(warn = warn)
   
   model_org <- model$model_org
@@ -138,8 +138,15 @@ con_pvalue_boot_parametric <- function(model, Ts_org = NULL,
       ystar <- rt(n = n, df = df)
     } else if (p.distr == "chi") {
       ystar <- rchisq(n = n, df = df)
+    } else if (p.distr == "binom") {
+      ystar <- rbinom(n, 1, pr = 0.5) 
+    } else if (p.distr == "pois") {
+      ystar <- rpois(n, lambda = 1)
+    } else if (p.distr == "gamma") {
+      ystar <- rgamma(n, shape = 1, scale = 1)
     }
   
+      
     xcol <- which(rowSums(attr(model_org$terms, "factors")) > 0)
     terms <- attr(model_org$terms, "term.labels")[attr(model_org$terms, "order") == 1]
     DATA <- data.frame(ystar, model_org$model[ ,xcol])
@@ -150,8 +157,7 @@ con_pvalue_boot_parametric <- function(model, Ts_org = NULL,
     
     CALL <- list(object = boot_model, constraints = Amat, 
                  rhs = bvec, neq = meq, se = "none", 
-                 Wt = FALSE, 
-                 control = control)
+                 Wt = FALSE, control = control)
     
     boot_conLM <- do.call("restriktor", CALL)
     
@@ -273,18 +279,16 @@ con_pvalue_boot_model_based <- function(model, Ts_org = NULL,
   
   # estimate null model under different hypothesis tests
   if (type == "A") {
-    call_my <- list(constraints = Amat, rhs = bvec, neq = nrow(Amat), 
-                    control = control, se = "none", Wt = FALSE)
-                    #bootWt = bootWt, bootWt.R = bootWt.R)
-    call_lm <- list(object = model_org)
-    CALL <- c(call_lm, call_my)
+    CALL <- list(object = model_org, constraints = Amat, 
+                 rhs = bvec, neq = nrow(Amat), 
+                 control = control, se = "none", Wt = FALSE)
+    
     fit <- do.call("restriktor", CALL)
   } else if (type == "B") {
-    call_my <- list(constraints = Amat, rhs = bvec, neq = meq, 
-                    control = control, se = "none", Wt = FALSE)
-                    #bootWt = bootWt, bootWt.R = bootWt.R)
-    call_lm <- list(object = model_org)
-    CALL <- c(call_lm, call_my)
+    CALL <- list(object = model_org, constraints = Amat, 
+                 rhs = bvec, neq = meq, 
+                 control = control, se = "none", Wt = FALSE)
+                    
     fit <- do.call("restriktor", CALL)
   }
 

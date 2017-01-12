@@ -18,7 +18,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
     cat("\n")
   }
   
-  if (!class(x[[1]]$model_org)[1] == "glm") {
+  if (!inherits(x[[1]]$model_org, "conGLM")) { 
     if ((x[[1]]$R2_org - x[[1]]$R2_reduced) < 1e-08) {
       cat("\nMultiple R-squared remains", sprintf("%5.3f", x[[1]]$R2_org),"\n")
     } else {

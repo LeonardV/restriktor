@@ -672,7 +672,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     G1 <- colSums(as.vector(res1) * w * X) / s21
     
     # information matrix under the null-hypothesis
-    I0 <- 1 / s20 * (t(X) %*% X)
+    I0 <- 1 / s20 * crossprod(X)#(t(X) %*% X)
     
     # score test-statistic
     Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))
@@ -707,7 +707,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     res1 <- residuals(object)
     
     # score vector
-    
+    df0 <- n - (p - nrow(Amat))
     s20 <- sum(res0^2) / df0
     
     df1 <- n - (p - qr(Amat[0:meq,])$rank)
@@ -717,7 +717,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     G1 <- colSums(as.vector(res1) * w * X) / s21
     
     # information matrix under the null-hypothesis
-    I0 <- 1 / s20 * (t(X) %*% X)
+    I0 <- 1 / s20 * crossprod(X)#(t(X) %*% X)
     
     # score test-statistic
     Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))
@@ -747,7 +747,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
       G1 <- colSums(as.vector(res1) * w * X) / s21
       
       # information matrix under the null-hypothesis
-      I0 <- 1 / s20 * (t(X) %*% X)
+      I0 <- 1 / s20 * crossprod(X)#(t(X) %*% X)
       
       # score test-statistic
       Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))
@@ -795,7 +795,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
         G1 <- colSums(as.vector(res1) * w * X) / s21
         
         # information matrix
-        I0 <- 1 / s20 * (t(X) %*% X)
+        I0 <- 1 / s20 * crossprod(X)#(t(X) %*% X)
         
         # score test-statistic
         Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))

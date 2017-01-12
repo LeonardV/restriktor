@@ -30,7 +30,7 @@ importFrom("stats", "coef", "df.residual", "dnorm", "fitted",
            "quantile", "rchisq", "residuals", "rnorm", "rt", "runif",
            "sd", "start", "terms", "update", "var", "vcov",
            "weighted.residuals", "weights", "gaussian", "lm.fit",
-           "lm.wfit", "mad") 
+           "lm.wfit", "mad", "coefficients", "family", "logLik") 
 
 # export ordinary functions defined in this package
 export("restriktor", 
@@ -42,7 +42,7 @@ export("restriktor",
        "conTestWald.conRLM", 
        "conTestWald2.conRLM",
        "conTestC.restriktor", 
-       "conTest_ceq.conLM", "conTest_ceq.conRLM", 
+       "conTest_ceq.conLM", "conTest_ceq.conRLM", "conTest_ceq.conGLM", 
        "goric", 
        "print.restriktor", "print.summary.restriktor",
        "summary.restriktor", "conTest_summary.restriktor",

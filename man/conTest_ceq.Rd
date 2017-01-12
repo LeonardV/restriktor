@@ -2,6 +2,7 @@
 \alias{conTest_ceq}
 \alias{conTest_ceq.conLM}
 \alias{conTest_ceq.conRLM}
+\alias{conTest_ceq.conGLM}
 
 \title{Tests for iht with equality constraints only}
 \description{\code{conTest_ceq} tests linear equality restricted hypotheses for
@@ -18,30 +19,35 @@ and is called by the \code{conTest} function if all restrictions are equalities.
 \method{conTest_ceq}{conRLM}(object, test = "F", boot = "no", 
             R = 9999, p.distr = "N", df = 7, parallel = "no", 
             ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, \dots)
+            
+\method{conTest_ceq}{conGLM}(object, test = "F", boot = "no", 
+            R = 9999, p.distr = "N", df = 7, parallel = "no", 
+            ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, \dots)            
 }
 
 \arguments{
-  \item{object}{an object of class \code{conLM} or \code{conRLM}.} 
+  \item{object}{an object of class \code{conLM}, \code{conRLM} or \code{conGLM}.} 
   
   \item{test}{test statistic; for information about the 
    null-distribution see details.
     \itemize{
-      \item for object of class lm; if "F" (default), the classical F-statistic
-      is computed. If "Wald", the classical Wald-statistic is computed. If "score", 
-      the classical score test statistic is computed. 
+      \item for object of class lm and glm; if "F" (default), the 
+      classical F-statistic is computed. If "Wald", the classical 
+      Wald-statistic is computed. If "score", the classical score 
+      test statistic is computed. 
       
       \item for object of class rlm; if "F" (default), a robust 
       likelihood ratio type test statistic (Silvapulle, 1992a) is 
       computed. If "Wald", a robust Wald test statistic 
       (Silvapulle, 1996) is computed. If "Wald2", a robust Wald test 
       statistic (Silvapulle, 1992b) is computed. If "score", a 
-      score test statistic (Silvapulle, 1996) is computed. 
+      score test statistic (Silvapulle, 1996) is computed.
     }
   }
   
   \item{boot}{if \code{"parametric"}, the p-value is computed based on the 
   parametric bootstrap. If \code{"model.based"}, a model-based bootstrap method 
-  is used. 
+  is used. Bootstrapping is not supported for the \code{conGLM} object yet.
   }
   
   \item{R}{integer; number of bootstrap draws for \code{boot}. 

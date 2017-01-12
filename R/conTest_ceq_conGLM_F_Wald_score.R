@@ -1,0 +1,165 @@
+conTest_ceq.conGLM <- function(object, test = "F", boot = "no", 
+                              R = 9999, p.distr = "N", df = 7, 
+                              parallel = "no", ncpus = 1L, cl = NULL, 
+                              seed = 1234, verbose = FALSE, ...) {
+  
+  if (!inherits(object, "conGLM")) {
+    stop("object must be of class conGLM.")
+  }
+  
+  test <- tolower(test)
+  stopifnot(test %in% c("f","wald","score"))
+  
+  CON  <- object$CON
+  CON$Amat <- Amat <- object$constraints
+  CON$bvec <- object$rhs
+  CON$meq  <- meq <- object$neq
+  
+  if (#length(CON$ceq.linear.idx)     > 0  && # some linear eq. constraints
+    #length(CON$ceq.nonlinear.idx) == 0L && # no nonlinear eq. constraints
+    #length(CON$cin.linear.idx)    == 0L && # no inequality constraints
+    #length(CON$cin.nonlinear.idx) == 0L
+    nrow(Amat) == meq) {
+    
+    if (test == "default") {
+      test <- "f"
+    }
+    
+    # here we perform the usual Wald/F test...
+    if (test == "wald") {
+      #theta_r <- object$b_unrestr
+      Wald_out <- con_test_Wald(Sigma   = object$Sigma,
+                                JAC     = Amat,         
+                                theta_r = Amat %*% object$b_unrestr - object$rhs) 
+      
+      OUT <- append(CON, Wald_out)
+      OUT$b_restr <- object$b_restr
+      OUT$b_unrestr <- object$b_unrestr
+    } else if (test == "f") {
+      Wald_out <- con_test_Wald(Sigma   = object$Sigma,
+                                JAC     = Amat,
+                                theta_r = Amat%*%object$b_unrestr - object$rhs) 
+      # convert Wald to F
+      OUT <- append(CON, Wald_out)
+      OUT$test <- "F"
+      OUT$Ts <- Wald_out$Ts / Wald_out$df
+      OUT$df.residual <- object$df.residual
+      OUT$pvalue <- 1 - pf(OUT$Ts, OUT$df, OUT$df.residual)
+      OUT$b_restr <- object$b_restr
+      OUT$b_unrestr <- object$b_unrestr
+    } else if (test == "score") {
+      OUT <- CON
+      OUT$test <- "Score"
+      # model matrix
+      X <- model.matrix(object)[,,drop = FALSE]
+      #n <- dim(X)[1]
+      #p <- dim(X)[2]
+      
+      # residuals under the null-hypothesis
+      res0 <- residuals(object, "working")
+      wres0 <- as.vector(res0) * weights(object, "working")
+      # degrees-of-freedom under the null-hypothesis
+      #df0 <- (n - (p - qr(Amat[0:meq,,drop = FALSE])$rank))
+      # dispersion parameter under the null-hypothesis
+      dispersion0 <- object$dispersion
+      
+      # information matrix under the null-hypothesis
+      I0 <- object$information
+      # score vector
+      G0 <- colSums(as.vector(wres0) * X) / dispersion0
+      # score test-statistic
+      OUT$Ts <- G0 %*% solve(I0, G0)
+      # df
+      OUT$df <- nrow(Amat)
+      # p-value based on chisq
+      OUT$pvalue    <- 1 - pchisq(OUT$Ts, df = OUT$df)
+      OUT$b_restr   <- object$b_restr
+      OUT$b_unrestr <- object$b_unrestr
+    } else {
+      stop("restriktor ERROR: test ", sQuote(test), " not (yet) implemented.")
+    }
+  } else if (#length(CON$ceq.nonlinear.idx) == 0L &&
+    #length(CON$cin.linear.idx)     > 0L && # some inequalities restr.
+    #length(CON$cin.nonlinear.idx) == 0L
+    nrow(Amat != meq)) {
+    stop("test not applicable with inequality constraints.")
+  } else if (length(CON$ceq.nonlinear.idx) > 0L || length(CON$cin.nonlinear.idx) > 0L) {
+    stop("ERROR: can not handle (yet) nonlinear (in)equality constraints")
+  }
+  
+  OUT$boot <- boot
+  
+  if (boot == "parametric") {
+    stop("Restriktor ERROR: bootstrapping is not implemented yet.")
+    
+    # OUT$pvalue <- con_pvalue_boot_parametric(object, 
+    #                                          Ts_org   = OUT$Ts, 
+    #                                          type     = "A",
+    #                                          test     = test, 
+    #                                          R        = R, 
+    #                                          p.distr  = p.distr,
+    #                                          df       = df, 
+    #                                          parallel = parallel,
+    #                                          ncpus    = ncpus, 
+    #                                          cl       = cl,
+    #                                          seed     = seed, 
+    #                                          verbose  = verbose)
+  } else if (boot == "model.based") {
+    stop("Restriktor ERROR: bootstrapping is not implemented yet.")
+    
+    # OUT$pvalue <- con_pvalue_boot_model_based(object, 
+    #                                           Ts_org   = OUT$Ts, 
+    #                                           type     = "A", 
+    #                                           test     = test,
+    #                                           R        = R,
+    #                                           parallel = parallel, 
+    #                                           ncpus    = ncpus, 
+    #                                           cl       = cl, 
+    #                                           seed     = seed, 
+    #                                           verbose  = verbose)
+  } 
+  
+  OUT$model_org <- object
+  
+  OUT <- list(OUT)
+  names(OUT) <- "ceq"
+  
+  class(OUT) <- "conTest"
+  
+  OUT
+}
+
+
+
+con_test_Wald <- function(Sigma, JAC, theta_r) {
+  
+  # remove redundant rows from JAC *and* theta_r
+  npar <- ncol(JAC)
+  
+  JAC.aug <- cbind(JAC, theta_r)
+  Q <- qr(t(JAC.aug))
+  JAC_full <- t(qr.X(Q, ncol = Q$rank))
+  JAC <- JAC_full[,seq_len(npar),drop = FALSE]
+  theta_r <- as.numeric(JAC_full[,(npar + 1L)])
+  
+  # restricted vcov
+  info_r  <- JAC %*% Sigma %*% t(JAC)
+  
+  # Wald test statistic
+  Wald <- as.numeric(t(theta_r) %*% solve(info_r) %*% theta_r)
+  
+  # df
+  Wald_df <- nrow(JAC)
+  
+  # p-value based on chisq
+  Wald_pvalue <- 1 - pchisq(Wald, df = Wald_df)
+  
+  OUT <- list(test   = "Wald",
+              Ts     = Wald,
+              df     = Wald_df,
+              pvalue = Wald_pvalue)
+  
+  OUT
+}
+
+

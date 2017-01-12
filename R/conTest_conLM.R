@@ -643,16 +643,16 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
 
   if (type == "global") {
     b_eqrestr <- con_solver_lm(X         = X, 
-                            y         = y, 
-                            b_unrestr = b_unrestr,
-                            w         = w, 
-                            Amat      = AmatG, 
-                            bvec      = bvecG, 
-                            meq       = nrow(AmatG),
-                            absval    = ifelse(is.null(control$absval), 1e-09, 
-                                               control$absval),
-                            maxit     = ifelse(is.null(control$maxit), 1e04, 
-                                               control$maxit))$solution
+                               y         = y, 
+                               b_unrestr = b_unrestr,
+                               w         = w, 
+                               Amat      = AmatG, 
+                               bvec      = bvecG, 
+                               meq       = nrow(AmatG),
+                               absval    = ifelse(is.null(control$absval), 1e-09, 
+                                                  control$absval),
+                               maxit     = ifelse(is.null(control$maxit), 1e04, 
+                                                  control$maxit))$solution
     b_eqrestr[abs(b_eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
                                       control$tol)] <- 0L
@@ -661,32 +661,20 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     res0 <- y - X %*% b_eqrestr
     res1 <- residuals(object)
     
-    if (inherits(object, "conGLM")) {
-      wres0 <- as.vector(res0) * weights(object, "working")
-      wres1 <- as.vector(res1) * weights(object, "working")
-      
-      dispersion <- if (fam$family %in% c("poisson", "binomial")) 1
-      else sum((wres0^2)[w > 0]) / (n - (p - nrow(Amat)))
-      
-      dispersion0 <- if (fam$family %in% c("poisson", "binomial")) 1
-      else sum((w * res0^2)[w > 0]) / sum(weights(object, "working"), na.rm = TRUE)
-      dispersion1 <- if (fam$family %in% c("poisson", "binomial")) 1
-      else sum((w * res1^2)[w > 0]) / sum(weights(object, "working"), na.rm = TRUE)
-      
-      G0 <- colSums(wres0 * X / dispersion0)
-      G1 <- colSums(wres1 * X / dispersion1)
-    } else {
-      wres0 <- as.vector(res0) * w
-      wres1 <- as.vector(res1) * w
-      
-      dispersion <- if (fam$family %in% c("poisson", "binomial")) 1
-      else sum((wres0^2)[w > 0]) / (n - (p - nrow(Amat)))
-      
-      G0 <- colSums(as.vector(wres0) * X) / dispersion
-      G1 <- colSums(as.vector(wres1) * X) / dispersion
-    }
+    # score vector
+    df0 <- n - (p - nrow(AmatG))  
+    s20 <- sum(res0^2) / df0
     
-    I0 <- 1 / dispersion0 * (t(X) %*% X)
+    df1 <- n - (p - qr(Amat[0:meq,])$rank)
+    s21 <- sum(res1^2) / df1
+    
+    G0 <- colSums(as.vector(res0) * w * X) / s20
+    G1 <- colSums(as.vector(res1) * w * X) / s21
+    
+    # information matrix under the null-hypothesis
+    I0 <- 1 / s20 * (t(X) %*% X)
+    
+    # score test-statistic
     Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))
     ###############################################
     # df0 <- n - (p - nrow(AmatG))
@@ -700,16 +688,16 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     ###############################################
   } else if (type == "A") {
     b_eqrestr <- con_solver_lm(X         = X, 
-                            y         = y, 
-                            b_unrestr = b_unrestr,
-                            w         = w, 
-                            Amat      = Amat,
-                            bvec      = bvec, 
-                            meq       = nrow(Amat),
-                            absval    = ifelse(is.null(control$absval), 1e-09, 
-                                               control$absval),
-                            maxit     = ifelse(is.null(control$maxit), 1e04, 
-                                               control$maxit))$solution
+                               y         = y, 
+                               b_unrestr = b_unrestr,
+                               w         = w, 
+                               Amat      = Amat,
+                               bvec      = bvec, 
+                               meq       = nrow(Amat),
+                               absval    = ifelse(is.null(control$absval), 1e-09, 
+                                                  control$absval),
+                               maxit     = ifelse(is.null(control$maxit), 1e04, 
+                                                  control$maxit))$solution
     b_eqrestr[abs(b_eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
                                       control$tol)] <- 0L
@@ -718,34 +706,22 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     res0 <- y - X %*% b_eqrestr
     res1 <- residuals(object)
     
-    if (inherits(object, "conGLM")) {
-      wres0 <- as.vector(res0) * weights(object, "working")
-      wres1 <- as.vector(res1) * weights(object, "working")
-      
-      dispersion <- if (fam$family %in% c("poisson", "binomial")) 1
-        else sum((wres0^2)[w > 0]) / (n - (p - nrow(Amat)))
-      
-      dispersion0 <- if (fam$family %in% c("poisson", "binomial")) 1
-        else sum((w * res0^2)[w > 0]) / sum(weights(object, "working"), na.rm = TRUE)
-      dispersion1 <- if (fam$family %in% c("poisson", "binomial")) 1
-        else sum((w * res1^2)[w > 0]) / sum(weights(object, "working"), na.rm = TRUE)
-      
-      G0 <- colSums(wres0 * X / dispersion0)
-      G1 <- colSums(wres1 * X / dispersion1)
-    } else {
-      wres0 <- as.vector(res0) * w
-      wres1 <- as.vector(res1) * w
-      
-      dispersion <- if (fam$family %in% c("poisson", "binomial")) 1
-        else sum((wres0^2)[w > 0]) / (n - (p - nrow(Amat)))
-      
-      G0 <- colSums(as.vector(wres0) * X) / dispersion
-      G1 <- colSums(as.vector(wres1) * X) / dispersion
-    }
+    # score vector
     
-    I0 <- 1 / dispersion * (t(X) %*% X)
-    Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))    
-    ######
+    s20 <- sum(res0^2) / df0
+    
+    df1 <- n - (p - qr(Amat[0:meq,])$rank)
+    s21 <- sum(res1^2) / df1
+    
+    G0 <- colSums(as.vector(res0) * w * X) / s20
+    G1 <- colSums(as.vector(res1) * w * X) / s21
+    
+    # information matrix under the null-hypothesis
+    I0 <- 1 / s20 * (t(X) %*% X)
+    
+    # score test-statistic
+    Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))
+    #############################################
     # df0 <- n - (p - nrow(Amat))
     # df1 <- n - (p - qr(Amat[0:meq,])$rank)
     # s20 <- sum((y - X %*% b_eqrestr)^2) / df0
@@ -756,38 +732,25 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     # Ts2 <- t(c(d0 - d1)) %*% solve(I0) %*% c(d0 - d1)
     ###############################################
   } else if (type == "B") {
-    res0 <- residuals(object)
-    res1 <- residuals(model_org)
-    
     if (meq_alt == 0L) {
+      res0 <- residuals(object)
+      res1 <- residuals(model_org)
       
-      if (inherits(object, "conGLM")) {
-        wres0 <- as.vector(res0) * weights(object, "working")
-        wres1 <- as.vector(res1) * weights(object, "working")
-        
-        dispersion <- if (fam$family %in% c("poisson", "binomial")) 1
-        else sum((wres0^2)[w > 0]) / (n - (p - nrow(Amat)))
-        
-        dispersion0 <- if (fam$family %in% c("poisson", "binomial")) 1
-        else sum((w * res0^2)[w > 0]) / sum(weights(object, "working"), na.rm = TRUE)
-        dispersion1 <- if (fam$family %in% c("poisson", "binomial")) 1
-        else sum((w * res1^2)[w > 0]) / sum(weights(object, "working"), na.rm = TRUE)
-        
-        G0 <- colSums(wres0 * X / dispersion0)
-        G1 <- colSums(wres1 * X / dispersion1)
-      } else {
-        wres0 <- as.vector(res0) * w
-        wres1 <- as.vector(res1) * w
-        
-        dispersion <- if (fam$family %in% c("poisson", "binomial")) 1
-        else sum((wres0^2)[w > 0]) / (n - (p - nrow(Amat)))
-        
-        G0 <- colSums(as.vector(wres0) * X) / dispersion
-        G1 <- colSums(as.vector(wres1) * X) / dispersion
-      }
+      # score vector
+      df0 <- n - (p - qr(Amat[0:meq,])$rank)
+      s20 <- sum(res0^2) / df0
       
-      I0 <- 1 / dispersion0 * (t(X) %*% X)
-      Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))    
+      df1 <- n - p
+      s21 <- sum(res1^2) / df1
+      
+      G0 <- colSums(as.vector(res0) * w * X) / s20
+      G1 <- colSums(as.vector(res1) * w * X) / s21
+      
+      # information matrix under the null-hypothesis
+      I0 <- 1 / s20 * (t(X) %*% X)
+      
+      # score test-statistic
+      Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))
       
       #########
       # df0 <- n - (p - qr(Amat[0:meq,])$rank)
@@ -799,8 +762,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
       # I0 <- 1/s20 * (t(X) %*% X)
       # Ts2 <- t(c(d0 - d1)) %*% solve(I0) %*% c(d0 - d1)
       ###############################################
-      }
-      else {
+      } else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq_alt > 0L && meq_alt <= meq) {
         b_restr_alt <- con_solver_lm(X         = X, 
@@ -822,33 +784,21 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
         res0 <- residuals(object)
         res1 <- y - X %*% b_restr_alt
         
-        if (inherits(object, "conGLM")) {
-          wres0 <- as.vector(res0) * weights(object, "working")
-          wres1 <- as.vector(res1) * weights(object, "working")
-          
-          dispersion <- if (fam$family %in% c("poisson", "binomial")) 1
-          else sum((wres0^2)[w > 0]) / (n - (p - nrow(Amat)))
-          
-          dispersion0 <- if (fam$family %in% c("poisson", "binomial")) 1
-          else sum((w * res0^2)[w > 0]) / sum(weights(object, "working"), na.rm = TRUE)
-          dispersion1 <- if (fam$family %in% c("poisson", "binomial")) 1
-          else sum((w * res1^2)[w > 0]) / sum(weights(object, "working"), na.rm = TRUE)
-          
-          G0 <- colSums(wres0 * X / dispersion0)
-          G1 <- colSums(wres1 * X / dispersion1)
-        } else {
-          wres0 <- as.vector(res0) * w
-          wres1 <- as.vector(res1) * w
-          
-          dispersion <- if (fam$family %in% c("poisson", "binomial")) 1
-          else sum((wres0^2)[w > 0]) / (n - (p - nrow(Amat)))
-          
-          G0 <- colSums(as.vector(wres0) * X) / dispersion
-          G1 <- colSums(as.vector(wres1) * X) / dispersion
-        }
+        # score vector
+        df0 <- n - (p - qr(Amat[0:meq,])$rank)
+        s20 <- sum(res0^2) / df0
         
-        I0 <- 1 / dispersion0 * (t(X) %*% X)
-        Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))    
+        df1 <- n - (p - qr(Amat[0:meq,])$rank)
+        s21 <- sum(res1^2) / df1
+        
+        G0 <- colSums(as.vector(res0) * w * X) / s20
+        G1 <- colSums(as.vector(res1) * w * X) / s21
+        
+        # information matrix
+        I0 <- 1 / s20 * (t(X) %*% X)
+        
+        # score test-statistic
+        Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))
         ########################
         # df1 <- df0 <- n - (p - qr(Amat[0:meq,])$rank)
         # s20 <- sum((y - X %*% b_restr)^2) / df0

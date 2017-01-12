@@ -75,9 +75,9 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
         stop("type ", sQuote, " unknown.")
       }
     } else if (nrow(Amat) == meq) {
-      if (class(object)[2] %in% "conGLM") {
-        stop("Restriktor ERROR: tests with equality constraints only, are not implemented yet.")
-      }
+      #if (class(object)[2] %in% "conGLM") {
+      #  stop("Restriktor ERROR: tests with equality constraints only, are not implemented yet.")
+      #}
         UseMethod("conTest_ceq") # classical Wald, F and score test with equality constraints only
     } else {
       stop("Restriktor ERROR: constraints and neq do not match.")

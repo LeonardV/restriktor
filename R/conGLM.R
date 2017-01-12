@@ -171,7 +171,6 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   # check if the constraints are not in line with the data, else skip optimization
   if (all(Amat %*% c(b_unrestr) - bvec >= 0 * bvec) & meq == 0) {
     b_restr <- b_unrestr
-    dispersion_restr <- so$dispersion
     
     OUT <- list(CON               = CON,
                 call              = mc,
@@ -188,7 +187,6 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                 df.residual       = object$df.residual,
                 df.residual_null  = object$df.null,
                 dispersion        = so$dispersion, 
-                dispersion_restr  = so$dispersion, 
                 loglik            = LL_unc,
                 aic               = object$aic,
                 deviance_null     = object$null.deviance,
@@ -237,11 +235,10 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
     if (fit_glmc$family$family %in% c("poisson", "binomial")) {
       dispersion <- 1
     } else {
-      if (any(fit_glmc$weights == 0)) {
+      if (any(weights(fit_glmc) == 0)) {
         warning("observations with zero weight not used for calculating dispersion")
       }
-      dispersion <- sum((fit_glmc$weights * 
-                           fit_glmc$residuals^2)[fit_glmc$weights > 0]) / df.residual
+      dispersion <- sum((fit_glmc$weights * fit_glmc$residuals^2)[fit_glmc$weights > 0]) / df.residual
     }
     
     # restricted log-likelihood
@@ -267,8 +264,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                 weights           = weights, #working weights, weights final iteration
                 df.residual       = object$df.residual,
                 df.residual_null  = fit_glmc$df.null,
-                dispersion        = so$dispersion, 
-                dispersion_restr  = dispersion, 
+                dispersion        = dispersion,
                 loglik            = LL_restr,
                 aic               = fit_glmc$aic,
                 deviance_null     = fit_glmc$null.deviance,

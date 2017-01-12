@@ -6,9 +6,6 @@ conTest_ceq.conRLM <- function(object, test = "F", boot = "no",
   if (!inherits(object, "conRLM")) {
     stop("object must be of class conRLM.")
   }
-  if(!any(weights(object) == 1)) {
-    stop("weights not supported (yet).")
-  }
   
   test <- tolower(test)
   stopifnot(test %in% c("f","wald","wald2","score"))
@@ -128,6 +125,7 @@ conTest_ceq.conRLM <- function(object, test = "F", boot = "no",
   
   OUT$R2_org      <- object$R2_org
   OUT$R2_reduced  <- object$R2_reduced
+  OUT$model_org <- object
   
   OUT <- list(OUT)
   names(OUT) <- "ceq"

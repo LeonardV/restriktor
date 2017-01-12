@@ -52,26 +52,37 @@ conTest_ceq.conLM <- function(object, test = "F", boot = "no",
       OUT$b_unrestr <- object$b_unrestr
     } else if (test == "score") {
       OUT <- CON
-      # response variable
-      y <- as.matrix(object$model_org$model[, attr(object$model_org$terms, "response")])
+      OUT$test <- "Score"
       # model matrix
       X <- model.matrix(object)[,,drop = FALSE]
       n <- dim(X)[1]
       p <- dim(X)[2]
-      # MSE 
-      s20 <- sum((y - X %*% object$b_restr)^2) / (n - (p - qr(Amat[0:meq,,drop = FALSE])$rank))
-      # information matrix
-      info  <- 1/s20 * crossprod(X)
+      
+      # weights
+      if (is.null(weights(object))) {
+        w <- rep(1, n)
+      } else {
+        w <- weights(object)  
+      }
+      
+      # residuals under the null-hypothesis
+      res0 <- residuals(object, "working")
+      # degrees-of-freedom under the null-hypothesis
+      #df0 <- (n - (p - qr(Amat[0:meq,,drop = FALSE])$rank))
+      # sigma^2
+      s20 <- object$s2_restr#sum(res0^2) / df0
+      
+      # information matrix under the null-hypothesis
+      I0 <- object$information
       # score vector
-      d0 <- as.vector(1 / s20 * t(X) %*% (y - X %*% object$b_restr))
-      OUT$test <- "Score"
-      # score test statistic
-      OUT$Ts <- as.numeric(d0 %*% solve(info) %*% d0)
+      G0 <- colSums(as.vector(res0) * w * X) / s20
+      # score test-statistic
+      OUT$Ts <- G0 %*% solve(I0, G0)
       # df
       OUT$df <- nrow(Amat)
       # p-value based on chisq
-      OUT$pvalue <- 1 - pchisq(OUT$Ts, df = OUT$df)
-      OUT$b_restr <- object$b_restr
+      OUT$pvalue    <- 1 - pchisq(OUT$Ts, df = OUT$df)
+      OUT$b_restr   <- object$b_restr
       OUT$b_unrestr <- object$b_unrestr
     } else {
       stop("restriktor ERROR: test ", sQuote(test), " not (yet) implemented.")
@@ -115,6 +126,7 @@ conTest_ceq.conLM <- function(object, test = "F", boot = "no",
   
   OUT$R2_org      <- object$R2_org
   OUT$R2_reduced  <- object$R2_reduced
+  OUT$model_org <- object
   
   OUT <- list(OUT)
     names(OUT) <- "ceq"

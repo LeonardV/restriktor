@@ -164,6 +164,7 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                               meq         = meq, 
                               meq_alt     = meq_alt)
   } else if (boot == "parametric") {
+    stop("Restriktor ERROR: parametric bootstrap is not implemented yet.")
     pvalue <- con_pvalue_boot_parametric(object, 
                                          Ts_org   = Ts, 
                                          type     = type, 
@@ -178,6 +179,7 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                                          seed     = seed, 
                                          verbose  = verbose)
   } else if (boot == "model.based") {
+    stop("Restriktor ERROR: model.based bootstrap is not implemented yet.")
     pvalue <- con_pvalue_boot_model_based(object, 
                                           Ts_org   = Ts, 
                                           type     = type, 
@@ -393,6 +395,7 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
                               meq         = meq, 
                               meq_alt     = meq_alt)
   } else if (boot == "parametric") {
+    stop("Restriktor ERROR: parametric bootstrap is not implemented yet.")
     pvalue <- con_pvalue_boot_parametric(object, 
                                          Ts_org   = Ts, 
                                          type     = type, 
@@ -407,6 +410,7 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
                                          seed     = seed, 
                                          verbose  = verbose)
   } else if (boot == "model.based") {
+    stop("Restriktor ERROR: model.based bootstrap is not implemented yet.")
     pvalue <- con_pvalue_boot_model_based(object, 
                                           Ts_org   = Ts, 
                                           type     = type, 
@@ -711,6 +715,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                               meq         = meq,
                               meq_alt     = meq_alt)
   } else if (boot == "parametric") {
+    stop("Restriktor ERROR: parametric bootstrap is not implemented yet.")
     pvalue <- con_pvalue_boot_parametric(object,
                                          Ts_org   = Ts,
                                          type     = type,
@@ -725,6 +730,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                                          seed     = seed,
                                          verbose  = verbose)
   } else if (boot == "model.based") {
+    stop("Restriktor ERROR: model.based bootstrap is not implemented yet.")
     pvalue <- con_pvalue_boot_model_based(object,
                                           Ts_org   = Ts,
                                           type     = type,

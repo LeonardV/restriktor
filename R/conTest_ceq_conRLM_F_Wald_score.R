@@ -1,5 +1,5 @@
 conTest_ceq.conRLM <- function(object, test = "F", boot = "no", 
-                             R = 9999, p.distr = "N", df = 7, 
+                             R = 9999, p.distr = rnorm,  
                              parallel = "no", ncpus = 1L, cl = NULL, 
                              seed = 1234, verbose = FALSE, ...) {
   
@@ -98,13 +98,22 @@ conTest_ceq.conRLM <- function(object, test = "F", boot = "no",
   OUT$boot <- boot
   
   if (boot == "parametric") {
+    
+    if (!is.function(p.distr)) {
+      p.distr <- get(p.distr, mode = "function")
+    }
+    arguments <- list(...)
+    pnames <- names(formals(p.distr))
+    pm <- pmatch(names(arguments), pnames, nomatch = 0L)
+    pm <- names(arguments)[pm > 0L]
+    formals(p.distr)[pm] <- unlist(arguments[pm])
+    
     OUT$pvalue <- con_pvalue_boot_parametric(object, 
                                              Ts_org   = OUT$Ts, 
                                              type     = "A",
                                              test     = test, 
                                              R        = R, 
                                              p.distr  = p.distr,
-                                             df       = df, 
                                              parallel = parallel,
                                              ncpus    = ncpus, 
                                              cl       = cl,

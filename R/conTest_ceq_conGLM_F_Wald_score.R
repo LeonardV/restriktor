@@ -1,7 +1,7 @@
 conTest_ceq.conGLM <- function(object, test = "F", boot = "no", 
-                              R = 9999, p.distr = "N", df = 7, 
-                              parallel = "no", ncpus = 1L, cl = NULL, 
-                              seed = 1234, verbose = FALSE, ...) {
+                               R = 9999, p.distr = rnorm, 
+                               parallel = "no", ncpus = 1L, cl = NULL, 
+                               seed = 1234, verbose = FALSE, ...) {
   
   if (!inherits(object, "conGLM")) {
     stop("object must be of class conGLM.")
@@ -90,20 +90,27 @@ conTest_ceq.conGLM <- function(object, test = "F", boot = "no",
   OUT$boot <- boot
   
   if (boot == "parametric") {
-    stop("Restriktor ERROR: bootstrapping is not implemented yet.")
     
-    # OUT$pvalue <- con_pvalue_boot_parametric(object, 
-    #                                          Ts_org   = OUT$Ts, 
-    #                                          type     = "A",
-    #                                          test     = test, 
-    #                                          R        = R, 
-    #                                          p.distr  = p.distr,
-    #                                          df       = df, 
-    #                                          parallel = parallel,
-    #                                          ncpus    = ncpus, 
-    #                                          cl       = cl,
-    #                                          seed     = seed, 
-    #                                          verbose  = verbose)
+    if (!is.function(p.distr)) {
+      p.distr <- get(p.distr, mode = "function")
+    }
+    arguments <- list(...)
+    pnames <- names(formals(p.distr))
+    pm <- pmatch(names(arguments), pnames, nomatch = 0L)
+    pm <- names(arguments)[pm > 0L]
+    formals(p.distr)[pm] <- unlist(arguments[pm])
+    
+    OUT$pvalue <- con_pvalue_boot_parametric(object,
+                                             Ts_org   = OUT$Ts,
+                                             type     = "A",
+                                             test     = test,
+                                             R        = R,
+                                             p.distr  = p.distr,
+                                             parallel = parallel,
+                                             ncpus    = ncpus,
+                                             cl       = cl,
+                                             seed     = seed,
+                                             verbose  = verbose)
   } else if (boot == "model.based") {
     stop("Restriktor ERROR: bootstrapping is not implemented yet.")
     

@@ -108,12 +108,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                   "HC1","HC2","HC3","HC4","HC4m","HC5"))) {
     stop("Restriktor ERROR: standard error method ", sQuote(se), " unknown.")
   }
-  if (attr(object$terms, "intercept")) {
-    if (se == "boot.model.based" & any(Amat[,1] == 1)) { 
-      stop("Restriktor ERROR: no restrictions on intercept possible",
-           "\nfor 'se = boot.model.based' bootstrap method.")
-    }
-  }
+  
   if(ncol(Amat) != length(b_unrestr)) {
     stop("Restriktor ERROR: the columns of constraints does not", 
          "\nmatch with the number of parameters.")
@@ -351,7 +346,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                                                    meq          = meq)
           
       attr(OUT$information, "inverted")  <- information.inv$information
-      attr(OUT$information, "inverted.augmented") <- information.inv$information.augmented
+      attr(OUT$information, "augmented") <- information.inv$information.augmented
       
       timing$inv_aug_information <- (proc.time()[3] - start.time)
       start.time <- proc.time()[3]
@@ -368,6 +363,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                                  parallel    = parallel, 
                                  ncpus       = ncpus, 
                                  cl          = cl)
+      
       timing$boot_model_based <- (proc.time()[3] - start.time)
       start.time <- proc.time()[3]
     } else if (se == "boot.standard") {
@@ -383,6 +379,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                                  parallel    = parallel, 
                                  ncpus       = ncpus, 
                                  cl          = cl)
+      
       timing$boot_standard <- (proc.time()[3] - start.time)
       start.time <- proc.time()[3]
     }

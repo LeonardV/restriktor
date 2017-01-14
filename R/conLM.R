@@ -112,12 +112,6 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                   "HC","HC0","HC1","HC2","HC3","HC4","HC4m","HC5"))) {
     stop("Restriktor ERROR: standard error method ", sQuote(se), " unknown.")
   }
-  if (attr(object$terms, "intercept")) {
-    if (se == "boot.model.based" & any(Amat[,1] == 1)) { 
-      stop("Restriktor ERROR: no restriktions on intercept possible",
-           "\nfor 'se = boot.model.based' bootstrap method.")
-    }
-  }
   if(ncol(Amat) != length(b_unrestr)) {
     stop("Restriktor ERROR: length coefficients and the number of",
          "\ncolumns constraints-matrix must be identical")
@@ -307,6 +301,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   # compute standard errors based on the augmented inverted information matrix or
   # based on the standard bootstrap or model.based bootstrap
   if (se != "none") {
+
     if (!(se %in% c("boot.model.based","boot.standard"))) {
       information.inv <- con_augmented_information(information  = OUT$information,
                                                    is.augmented = is.augmented,
@@ -318,11 +313,17 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                                                    meq          = meq) 
           
       attr(OUT$information, "inverted")  <- information.inv$information
-      attr(OUT$information, "inverted.augmented") <- information.inv$information.augmented
+      attr(OUT$information, "augmented") <- information.inv$information.augmented
       
       timing$inv_aug_information <- (proc.time()[3] - start.time)
       start.time <- proc.time()[3]
     } else if (se == "boot.model.based") {
+      
+      if (attr(object$terms, "intercept") && any(Amat[,1] == 1)) {
+          stop("Restriktor ERROR: no restriktions on intercept possible",
+               "\n       for 'se = boot.model.based' bootstrap method.")
+      }
+      
       OUT$bootout <- con_boot_lm(object      = object, 
                                  B           = B, 
                                  fixed       = TRUE, 
@@ -335,6 +336,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                                  parallel    = parallel, 
                                  ncpus       = ncpus, 
                                  cl          = cl)
+      
       timing$boot_model_based <- (proc.time()[3] - start.time)
       start.time <- proc.time()[3]
     } else if (se == "boot.standard") {

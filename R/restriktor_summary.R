@@ -1,4 +1,4 @@
-summary.restriktor <- function(object, bootCIs = TRUE, bty = "basic", 
+summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc", 
                                level = 0.95, GORIC = TRUE, ...) {
   z <- object
   

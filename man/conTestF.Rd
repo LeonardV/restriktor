@@ -13,19 +13,19 @@ used directly and is called by the \code{conTest} function if \code{test = "F"}
 \usage{
 
 \method{conTestF}{conLM}(object, type = "A", neq.alt = 0, 
-         boot = "no", R = 9999, p.distr = "N", df = 7, 
+         boot = "no", R = 9999, p.distr = rnorm, 
          parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
          verbose = FALSE, control = NULL, \dots)
 
 
 \method{conTestF}{conRLM}(object, type = "A", neq.alt = 0, 
-         boot = "no", R = 9999, p.distr = "N", df = 7, 
+         boot = "no", R = 9999, p.distr = rnorm, 
          parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
          verbose = FALSE, control = NULL, \dots)
 
 
 \method{conTestF}{conGLM}(object, type = "A", neq.alt = 0, 
-         boot = "no", R = 9999, p.distr = "N", df = 7, 
+         boot = "no", R = 9999, p.distr = rnorm, 
          parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
          verbose = FALSE, control = NULL, \dots)
 
@@ -63,15 +63,12 @@ used directly and is called by the \code{conTest} function if \code{test = "F"}
     \item{R}{integer; number of bootstrap draws for \code{boot}. 
     The default value is set to 9999.}
     
-    \item{p.distr}{If \code{"N"}, samples for the parametric 
-    bootstrap are drawn from the normal distribution (default) with 
-    mean zero and variance one. If \code{"t"}, samples are drawn 
-    from a t-distribution with df = 7 (degrees of freedom) by 
-    default. If \code{"Chi"}, samples are drawn from a chi-square 
-    distribution with df = 7 by default. The df can be adjusted via 
-    the \code{df} argument.}
-    
-    \item{df}{degrees of freedom for \code{p.distr}.}
+    \item{p.distr}{the p.distr function is specified by this function. For 
+    all available distributions see \code{?distributions}. For example, 
+    if \code{rnorm}, samples are drawn from the normal distribution (default) 
+    with mean zero and variance one. If \code{rt}, samples are drawn from 
+    a t-distribution. If \code{rchisq}, samples are drawn from a chi-square 
+    distribution. The distributional parameters will be passed in via \ldots.}
     
     \item{parallel}{the type of parallel operation to be used 
     (if any). If missing, the default is set "no".}

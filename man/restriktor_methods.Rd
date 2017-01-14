@@ -15,7 +15,7 @@
 \method{print}{restriktor}(x, digits = max(3, getOption("digits") - 2), \dots)
 
 \method{summary}{restriktor}(object, bootCIs = TRUE, 
-        bty = "basic", level = 0.95, GORIC = TRUE, \dots)
+        bty = "perc", level = 0.95, GORIC = TRUE, \dots)
 
 \method{print}{summary.restriktor}(x, digits = max(3, getOption("digits") - 2),
               signif.stars = getOption("show.signif.stars"), \dots)     

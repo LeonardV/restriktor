@@ -13,15 +13,15 @@ and is called by the \code{conTest} function if all restrictions are equalities.
 \usage{
 
 \method{conTest_ceq}{conLM}(object, test = "F", boot = "no", 
-            R = 9999, p.distr = "N", df = 7, parallel = "no", 
+            R = 9999, p.distr = rnorm, parallel = "no", 
             ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, \dots)
 
 \method{conTest_ceq}{conRLM}(object, test = "F", boot = "no", 
-            R = 9999, p.distr = "N", df = 7, parallel = "no", 
+            R = 9999, p.distr = rnorm, parallel = "no", 
             ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, \dots)
             
 \method{conTest_ceq}{conGLM}(object, test = "F", boot = "no", 
-            R = 9999, p.distr = "N", df = 7, parallel = "no", 
+            R = 9999, p.distr = rnorm, parallel = "no", 
             ncpus = 1L, cl = NULL, seed = 1234, verbose = FALSE, \dots)            
 }
 
@@ -46,22 +46,20 @@ and is called by the \code{conTest} function if all restrictions are equalities.
   }
   
   \item{boot}{if \code{"parametric"}, the p-value is computed based on the 
-  parametric bootstrap. If \code{"model.based"}, a model-based bootstrap method 
-  is used. Bootstrapping is not supported for the \code{conGLM} object yet.
+  parametric bootstrap. See \code{p.distr} for available distributions.
+  If \code{"model.based"}, a model-based bootstrap method is used. 
+  Model-based bootstrapping is not supported for the \code{conGLM} object yet.
   }
   
   \item{R}{integer; number of bootstrap draws for \code{boot}. 
   The default value is set to 9999.}
   
-  \item{p.distr}{If \code{"N"}, samples for the parametric 
-  bootstrap are drawn from the normal distribution (default) with 
-  mean zero and variance one. If \code{"t"}, samples are drawn 
-  from a t-distribution with df = 7 (degrees of freedom) by 
-  default. If \code{"Chi"}, samples are drawn from a chi-square 
-  distribution with df = 7 by default. The df can be adjusted via 
-  the \code{df} argument.}
-  
-  \item{df}{degrees of freedom for \code{p.distr}.}
+  \item{p.distr}{the p.distr function is specified by this function. For 
+  all available distributions see \code{?distributions}. For example, 
+  if \code{rnorm}, samples are drawn from the normal distribution (default) 
+  with mean zero and variance one. If \code{rt}, samples are drawn from 
+  a t-distribution. If \code{rchisq}, samples are drawn from a chi-square 
+  distribution. The distributional parameters will be passed in via \ldots.}
   
   \item{parallel}{the type of parallel operation to be used 
   (if any). If missing, the default is set "no".}

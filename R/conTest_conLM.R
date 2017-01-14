@@ -5,7 +5,7 @@
 # constraints in the linear regression model Journal of the American 
 # statistical association, 1987, 82, 782-793
 conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
-                           p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
+                           p.distr = rnorm, parallel = "no", ncpus = 1L,
                            cl = NULL, seed = 1234, verbose = FALSE,
                            control = NULL, ...) {
   
@@ -28,7 +28,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   if (boot == "residual") {
     boot <- "model.based"
   }
-
+  
   # original model
   model_org <- object$model_org
   # model matrix
@@ -199,6 +199,16 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                               meq         = meq, 
                               meq_alt     = meq_alt)
    } else if (boot == "parametric") {
+     
+     if (!is.function(p.distr)) {
+       p.distr <- get(p.distr, mode = "function")
+     }
+     arguments <- list(...)
+     pnames <- names(formals(p.distr))
+     pm <- pmatch(names(arguments), pnames, nomatch = 0L)
+     pm <- names(arguments)[pm > 0L]
+     formals(p.distr)[pm] <- unlist(arguments[pm])
+     
      pvalue <- con_pvalue_boot_parametric(object, 
                                           Ts_org   = Ts, 
                                           type     = type, 
@@ -206,7 +216,6 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                                           meq_alt  = meq_alt, 
                                           R        = R, 
                                           p.distr  = p.distr,
-                                          df       = df, 
                                           parallel = parallel,
                                           ncpus    = ncpus, 
                                           cl       = cl,
@@ -266,7 +275,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
 # REF: Silvapulle and Sen (2005). Constrained statistical inference. Chapter 3.
 # Wolak, F. An exact test for multiple inequality and equality constraints in the linear regression model Journal of the American statistical association, 1987, 82, 782-793
 conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
-                             p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
+                             p.distr = rnorm, parallel = "no", ncpus = 1L,
                              cl = NULL, seed = 1234, verbose = FALSE,
                              control = NULL, ...) {
 
@@ -472,6 +481,16 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
                               meq         = meq, 
                               meq_alt     = meq_alt)
   } else if (boot == "parametric") {
+    
+    if (!is.function(p.distr)) {
+      p.distr <- get(p.distr, mode = "function")
+    }
+    arguments <- list(...)
+    pnames <- names(formals(p.distr))
+    pm <- pmatch(names(arguments), pnames, nomatch = 0L)
+    pm <- names(arguments)[pm > 0L]
+    formals(p.distr)[pm] <- unlist(arguments[pm])
+    
     pvalue <- con_pvalue_boot_parametric(object, 
                                          Ts_org   = Ts, 
                                          type     = type, 
@@ -479,7 +498,6 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
                                          meq_alt  = meq_alt,
                                          R        = R, 
                                          p.distr  = p.distr,
-                                         df       = df, 
                                          parallel = parallel,
                                          ncpus    = ncpus, 
                                          cl       = cl,
@@ -538,7 +556,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
 
 # REF: Robertson, Wright and Dykstra (1988, p. 321). Order constrained statistical inference.
 conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
-                               p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
+                               p.distr = rnorm, parallel = "no", ncpus = 1L,
                                cl = NULL, seed = 1234, verbose = FALSE,
                                control = NULL, ...) {
   
@@ -564,8 +582,6 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   
   # original model
   model_org <- object$model_org
-  # family
-  fam <- family(model_org)
   # model matrix
   X <- model.matrix(object)[,,drop=FALSE]
   # response variable
@@ -837,6 +853,16 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                               meq         = meq, 
                               meq_alt     = meq_alt)
   } else if (boot == "parametric") {
+    
+    if (!is.function(p.distr)) {
+      p.distr <- get(p.distr, mode = "function")
+    }
+    arguments <- list(...)
+    pnames <- names(formals(p.distr))
+    pm <- pmatch(names(arguments), pnames, nomatch = 0L)
+    pm <- names(arguments)[pm > 0L]
+    formals(p.distr)[pm] <- unlist(arguments[pm])
+    
     pvalue <- con_pvalue_boot_parametric(object, 
                                          Ts_org   = Ts, 
                                          type     = type, 
@@ -844,7 +870,6 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                          meq_alt  = meq_alt, 
                                          R        = R, 
                                          p.distr  = p.distr, 
-                                         df       = df,
                                          parallel = parallel,
                                          ncpus    = ncpus, 
                                          cl       = cl,

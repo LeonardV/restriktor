@@ -1,6 +1,6 @@
 ### computes the F-bar, Wald(2)-bar and score-bar test statistic ####
 conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
-                            p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
+                            p.distr = rnorm, parallel = "no", ncpus = 1L,
                             cl = NULL, seed = 1234, verbose = FALSE,
                             control = NULL, ...) {
   
@@ -197,6 +197,16 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                               meq         = meq, 
                               meq_alt     = meq_alt)
   } else if (boot == "parametric") {
+    
+    if (!is.function(p.distr)) {
+      p.distr <- get(p.distr, mode = "function")
+    }
+    arguments <- list(...)
+    pnames <- names(formals(p.distr))
+    pm <- pmatch(names(arguments), pnames, nomatch = 0L)
+    pm <- names(arguments)[pm > 0L]
+    formals(p.distr)[pm] <- unlist(arguments[pm])
+    
     pvalue <- con_pvalue_boot_parametric(object, 
                                          Ts_org   = Ts, 
                                          type     = type, 
@@ -204,7 +214,6 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                                          meq_alt  = meq_alt,
                                          R        = R, 
                                          p.distr  = p.distr,
-                                         df       = df, 
                                          parallel = parallel,
                                          ncpus    = ncpus, 
                                          cl       = cl,
@@ -263,7 +272,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
 
 
 conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
-                               p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
+                               p.distr = rnorm, parallel = "no", ncpus = 1L,
                                cl = NULL, seed = 1234, verbose = FALSE,
                                control = NULL, ...) {
   
@@ -501,6 +510,16 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                               meq         = meq, 
                               meq_alt     = meq_alt)
   } else if (boot == "parametric") {
+    
+    if (!is.function(p.distr)) {
+      p.distr <- get(p.distr, mode = "function")
+    }
+    arguments <- list(...)
+    pnames <- names(formals(p.distr))
+    pm <- pmatch(names(arguments), pnames, nomatch = 0L)
+    pm <- names(arguments)[pm > 0L]
+    formals(p.distr)[pm] <- unlist(arguments[pm])
+    
     pvalue <- con_pvalue_boot_parametric(object, 
                                          Ts_org   = Ts, 
                                          type     = type, 
@@ -508,7 +527,6 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                          meq_alt  = meq_alt,
                                          R        = R, 
                                          p.distr  = p.distr,
-                                         df       = df, 
                                          parallel = parallel,
                                          ncpus    = ncpus, 
                                          cl       = cl,
@@ -568,7 +586,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
 #REF: Silvapulle, M.J. (1992) Robust Wald-Type Test of One-Sided Hypotheses in the linear model.
 #American Statistical Association, 87, 417.
 conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
-                                p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
+                                p.distr = rnorm, parallel = "no", ncpus = 1L,
                                 cl = NULL, seed = 1234, verbose = FALSE,
                                 control = NULL, ...) {
   
@@ -757,6 +775,16 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                               meq         = meq, 
                               meq_alt     = meq_alt)
   } else if (boot == "parametric") {
+    
+    if (!is.function(p.distr)) {
+      p.distr <- get(p.distr, mode = "function")
+    }
+    arguments <- list(...)
+    pnames <- names(formals(p.distr))
+    pm <- pmatch(names(arguments), pnames, nomatch = 0L)
+    pm <- names(arguments)[pm > 0L]
+    formals(p.distr)[pm] <- unlist(arguments[pm])
+    
     pvalue <- con_pvalue_boot_parametric(object, 
                                          Ts_org   = Ts, 
                                          type     = type, 
@@ -764,7 +792,6 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                                          meq_alt  = meq_alt,
                                          R        = R, 
                                          p.distr  = p.distr,
-                                         df       = df, 
                                          parallel = parallel,
                                          ncpus    = ncpus, 
                                          cl       = cl,
@@ -823,7 +850,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
 
 
 conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
-                                p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
+                                p.distr = rnorm, parallel = "no", ncpus = 1L,
                                 cl = NULL, seed = 1234, verbose = FALSE,
                                 control = NULL, ...) {
   
@@ -1056,6 +1083,16 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                               meq         = meq, 
                               meq_alt     = meq_alt)
   } else if (boot == "parametric") {
+    
+    if (!is.function(p.distr)) {
+      p.distr <- get(p.distr, mode = "function")
+    }
+    arguments <- list(...)
+    pnames <- names(formals(p.distr))
+    pm <- pmatch(names(arguments), pnames, nomatch = 0L)
+    pm <- names(arguments)[pm > 0L]
+    formals(p.distr)[pm] <- unlist(arguments[pm])
+    
     pvalue <- con_pvalue_boot_parametric(object, 
                                          Ts_org   = Ts, 
                                          type     = type, 
@@ -1063,7 +1100,6 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                                          meq_alt  = meq_alt,
                                          R        = R, 
                                          p.distr  = p.distr,
-                                         df       = df, 
                                          parallel = parallel,
                                          ncpus    = ncpus, 
                                          cl       = cl,

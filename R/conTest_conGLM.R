@@ -1,7 +1,7 @@
 ### computes the F-bar, LRT-bar and score-bar test statistic ####
 # Silvapulle and Sen (2005). Constrained statistical inference. Chapter 4.
 conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
-                            p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
+                            p.distr = rnorm, parallel = "no", ncpus = 1L,
                             cl = NULL, seed = 1234, verbose = FALSE,
                             control = NULL, ...) {
 
@@ -164,7 +164,16 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                               meq         = meq, 
                               meq_alt     = meq_alt)
   } else if (boot == "parametric") {
-    stop("Restriktor ERROR: parametric bootstrap is not implemented yet.")
+    
+    if (!is.function(p.distr)) {
+      p.distr <- get(p.distr, mode = "function")
+    }
+    arguments <- list(...)
+    pnames <- names(formals(p.distr))
+    pm <- pmatch(names(arguments), pnames, nomatch = 0L)
+    pm <- names(arguments)[pm > 0L]
+    formals(p.distr)[pm] <- unlist(arguments[pm])
+    
     pvalue <- con_pvalue_boot_parametric(object, 
                                          Ts_org   = Ts, 
                                          type     = type, 
@@ -172,7 +181,6 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                                          meq_alt  = meq_alt, 
                                          R        = R, 
                                          p.distr  = p.distr,
-                                         df       = df, 
                                          parallel = parallel,
                                          ncpus    = ncpus, 
                                          cl       = cl,
@@ -230,7 +238,7 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
 
 # REF: Silvapulle and Sen (2005). Constrained statistical inference. Chapter 4.
 conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
-                              p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
+                              p.distr = rnorm, parallel = "no", ncpus = 1L,
                               cl = NULL, seed = 1234, verbose = FALSE,
                               control = NULL, ...) {
   
@@ -395,7 +403,16 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
                               meq         = meq, 
                               meq_alt     = meq_alt)
   } else if (boot == "parametric") {
-    stop("Restriktor ERROR: parametric bootstrap is not implemented yet.")
+    
+    if (!is.function(p.distr)) {
+      p.distr <- get(p.distr, mode = "function")
+    }
+    arguments <- list(...)
+    pnames <- names(formals(p.distr))
+    pm <- pmatch(names(arguments), pnames, nomatch = 0L)
+    pm <- names(arguments)[pm > 0L]
+    formals(p.distr)[pm] <- unlist(arguments[pm])
+    
     pvalue <- con_pvalue_boot_parametric(object, 
                                          Ts_org   = Ts, 
                                          type     = type, 
@@ -403,7 +420,6 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
                                          meq_alt  = meq_alt,
                                          R        = R, 
                                          p.distr  = p.distr,
-                                         df       = df, 
                                          parallel = parallel,
                                          ncpus    = ncpus, 
                                          cl       = cl,
@@ -462,7 +478,7 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
 
 # REF: Robertson, Silvapulle and Sen (2005, chapter 4)
 conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
-                               p.distr = "N", df = 7, parallel = "no", ncpus = 1L,
+                               p.distr = rnorm, parallel = "no", ncpus = 1L,
                                cl = NULL, seed = 1234, verbose = FALSE,
                                control = NULL, ...) {
   
@@ -715,7 +731,16 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                               meq         = meq,
                               meq_alt     = meq_alt)
   } else if (boot == "parametric") {
-    stop("Restriktor ERROR: parametric bootstrap is not implemented yet.")
+    
+    if (!is.function(p.distr)) {
+      p.distr <- get(p.distr, mode = "function")
+    }
+    arguments <- list(...)
+    pnames <- names(formals(p.distr))
+    pm <- pmatch(names(arguments), pnames, nomatch = 0L)
+    pm <- names(arguments)[pm > 0L]
+    formals(p.distr)[pm] <- unlist(arguments[pm])
+    
     pvalue <- con_pvalue_boot_parametric(object,
                                          Ts_org   = Ts,
                                          type     = type,
@@ -723,7 +748,6 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                                          meq_alt  = meq_alt,
                                          R        = R,
                                          p.distr  = p.distr,
-                                         df       = df,
                                          parallel = parallel,
                                          ncpus    = ncpus,
                                          cl       = cl,

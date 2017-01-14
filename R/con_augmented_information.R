@@ -8,6 +8,7 @@ con_augmented_information <- function(information  = NULL,
                                       Amat         = NULL, 
                                       bvec         = NULL, 
                                       meq          = NULL) {
+  
   H <- Amat
   npar <- NCOL(information)
   OUT <- list()
@@ -34,7 +35,7 @@ con_augmented_information <- function(information  = NULL,
     }
     
     #inactive inequality constraints
-    inactive.idx <- H %*% b_unrestr - bvec >= 0 * bvec
+    inactive.idx <- H %*% b_restr - bvec > 0 * bvec
     #active inequality constraints
     H.active <- H[!inactive.idx,,drop=FALSE]
     #inactive inequality constraints

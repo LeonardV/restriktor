@@ -79,22 +79,23 @@ con_pvalue_Chibar <- function(wt, Ts_org, type = "A",
 
 
 ############################ parametric bootstrap ##############################
-con_pvalue_boot_parametric <- function(model, Ts_org = NULL, 
-                                       type = "A",
-                                       test = "F", 
-                                       neq.alt = 0L, 
-                                       R = 9999, 
-                                       p.distr = "N", 
-                                       df = 7, 
+con_pvalue_boot_parametric <- function(model, 
+                                       Ts_org   = NULL, 
+                                       type     = "A",
+                                       test     = "F", 
+                                       neq.alt  = 0L, 
+                                       R        = 9999, 
+                                       p.distr  = NULL, 
                                        parallel = "no", 
-                                       ncpus = 1L, cl = NULL,
-                                       seed = NULL, 
-                                       warn = -1L,
-                                       control = NULL,
-                                       verbose = FALSE, ...) {
+                                       ncpus    = 1L, 
+                                       cl       = NULL,
+                                       seed     = NULL, 
+                                       warn     = -1L,
+                                       control  = NULL,
+                                       verbose  = FALSE, ...) {
 
-  p.distr <- tolower(p.distr)
-  stopifnot(p.distr %in% c("n","t","chi","binom","pois","gamma"))
+  #p.distr <- tolower(p.distr)
+  #stopifnot(p.distr %in% c("n","t","chi","binom","pois","gamma"))
   old_options <- options(); options(warn = warn)
   
   model_org <- model$model_org
@@ -132,21 +133,7 @@ con_pvalue_boot_parametric <- function(model, Ts_org = NULL,
       runif(1)
       RNGstate <- .Random.seed
 
-    if (p.distr == "n") {
-      ystar <- rnorm(n = n, 0, 1)
-    } else if (p.distr == "t") {
-      ystar <- rt(n = n, df = df)
-    } else if (p.distr == "chi") {
-      ystar <- rchisq(n = n, df = df)
-    } else if (p.distr == "binom") {
-      ystar <- rbinom(n, 1, pr = 0.5) 
-    } else if (p.distr == "pois") {
-      ystar <- rpois(n, lambda = 1)
-    } else if (p.distr == "gamma") {
-      ystar <- rgamma(n, shape = 1, scale = 1)
-    }
-  
-      
+    ystar <- p.distr(n)
     xcol <- which(rowSums(attr(model_org$terms, "factors")) > 0)
     terms <- attr(model_org$terms, "term.labels")[attr(model_org$terms, "order") == 1]
     DATA <- data.frame(ystar, model_org$model[ ,xcol])

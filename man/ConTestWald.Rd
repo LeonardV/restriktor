@@ -94,7 +94,7 @@ or \code{test = "Wald2"}.
       smaller than \code{tol} are set to 0.
     }
   }
-  \item{\dots}{no additional arguments for now.}
+  \item{\dots}{additional arguments to be passed to the p.distr function.}
 }
 
 \details{The following hypothesis tests are available:

@@ -77,7 +77,7 @@ and is called by the \code{conTest} function if all restrictions are equalities.
   \item{verbose}{logical; if TRUE, information is shown at each 
   bootstrap draw.}
   
-  \item{\dots}{no additional arguments for now.}
+  \item{\dots}{additional arguments to be passed to the p.distr function.}
 }
 
 

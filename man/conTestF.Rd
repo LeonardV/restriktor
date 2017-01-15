@@ -99,7 +99,7 @@ used directly and is called by the \code{conTest} function if \code{test = "F"}
       }
     }
 
-  \item{\dots}{no futher arguments for now.}
+  \item{\dots}{additional arguments to be passed to the p.distr function.}
 
 }
 

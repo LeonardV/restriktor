@@ -85,7 +85,7 @@ con_pvalue_boot_parametric <- function(model,
                                        test     = "F", 
                                        neq.alt  = 0L, 
                                        R        = 9999, 
-                                       p.distr  = NULL, 
+                                       p.distr  = rnorm, 
                                        parallel = "no", 
                                        ncpus    = 1L, 
                                        cl       = NULL,
@@ -106,7 +106,6 @@ con_pvalue_boot_parametric <- function(model,
   Amat <- model$constraints
   bvec <- model$rhs
   meq  <- model$neq
-  meq_alt <- neq.alt
   
   bootWt <- attr(model$wt, "bootWt")
   bootWt.R <- attr(model$wt, "bootWt.R")
@@ -152,7 +151,7 @@ con_pvalue_boot_parametric <- function(model,
                                 type    = type, 
                                 test    = test,
                                 boot    = "no",
-                                neq.alt = meq_alt, 
+                                neq.alt = neq.alt, 
                                 control = control))
     if (inherits(boot_conTest, "try-error")) {
       if (verbose) cat("FAILED: creating test statistic\n")
@@ -219,30 +218,31 @@ con_pvalue_boot_parametric <- function(model,
 
 
 ########################### model based bootstrap ##############################
-con_pvalue_boot_model_based <- function(model, Ts_org = NULL, 
-                                        type = "A",
-                                        test = "F", 
-                                        neq.alt = 0L,
-                                        R = 9999, 
+con_pvalue_boot_model_based <- function(model, 
+                                        Ts_org   = NULL, 
+                                        type     = "A",
+                                        test     = "F", 
+                                        neq.alt  = 0L,
+                                        R        = 9999, 
                                         parallel = "no", 
-                                        ncpus = 1L,
-                                        cl = NULL, 
-                                        seed = NULL, 
-                                        warn = -1L,
-                                        control = NULL,
-                                        verbose = FALSE, ...) {
+                                        ncpus    = 1L,
+                                        cl       = NULL, 
+                                        seed     = NULL, 
+                                        warn     = -1L,
+                                        control  = NULL,
+                                        verbose  = FALSE, ...) {
 
   old_options <- options(); options(warn = warn)
   
   model_org <- model$model_org
   y <- as.matrix(model_org$model[, attr(model_org$terms, "response")])
   X <- model.matrix(model_org)[,,drop=FALSE]
+  n <- dim(X)[1]
   
   # constraints 
   Amat <- model$constraints
   bvec <- model$rhs
   meq  <- model$neq
-  meq_alt <- neq.alt
   
   bootWt <- attr(model$wt, "bootWt")
   bootWt.R <- attr(model$wt, "bootWt.R")
@@ -277,14 +277,15 @@ con_pvalue_boot_model_based <- function(model, Ts_org = NULL,
                  control = control, se = "none", Wt = FALSE)
                     
     fit <- do.call("restriktor", CALL)
+  } else {
+    stop("Restriktor ERROR: type ", type, " not implemented.")
   }
 
-    # compute residuals under H0
+    # compute residuals under the null-hypothesis
     if (type != "global") {
       r    <- residuals(fit)
       yhat <- fitted(fit)
     } else { # if type == global, we can skip the restriktor() function
-      N <- dim(X)[1]
       w <- weights(model_org)
       W <- diag(w)
       if (!is.null(w)) { 
@@ -293,7 +294,7 @@ con_pvalue_boot_model_based <- function(model, Ts_org = NULL,
       else {
         yhat <- mean(y)
       }
-      yhat <- cbind(rep(yhat, N))
+      yhat <- cbind(rep(yhat, n))
       r    <- y - as.numeric(yhat)
     }
   
@@ -324,7 +325,7 @@ con_pvalue_boot_model_based <- function(model, Ts_org = NULL,
                                   type    = type, 
                                   test    = test, 
                                   boot    = "no",                # arbitrary, check is based on Wt
-                                  neq.alt = meq_alt, 
+                                  neq.alt = neq.alt, 
                                   control = control))
       if (inherits(boot_conTest, "try-error")) {
         if (verbose) cat("FAILED: creating test statistic\n")

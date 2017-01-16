@@ -7,7 +7,7 @@
 \title{F-bar test for informative hypothesis test}
 \description{\code{conTestF} tests linear equality and/or 
 inequality restricted hypotheses for linear models by F-tests. It can be 
-used directly and is called by the \code{conTest} function if \code{test = "F"}
+used directly and is called by the \code{conTest} function if \code{test = "F"}.
 }
 
 \usage{

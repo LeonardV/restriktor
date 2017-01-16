@@ -203,7 +203,8 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
      if (!is.function(p.distr)) {
        p.distr <- get(p.distr, mode = "function")
      }
-     arguments <- list(...)
+     
+     arguments <- list(...) 
      pnames <- names(formals(p.distr))
      pm <- pmatch(names(arguments), pnames, nomatch = 0L)
      pm <- names(arguments)[pm > 0L]

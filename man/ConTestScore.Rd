@@ -4,7 +4,7 @@
 \alias{conTestScore.conRLM}
 \alias{conTestScore.conGLM}
 
-\title{Score-bar test for (robust) iht}
+\title{Score-bar test for informative hypothesis test}
 \description{\code{conTestScore} tests linear equality and/or 
 inequality restricted hypotheses for (robust) linear models by score-tests. It can be 
 used directly and is called by the \code{conTest} function if \code{test = "score"}.
@@ -18,12 +18,10 @@ used directly and is called by the \code{conTest} function if \code{test = "scor
            parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
            verbose = FALSE, control = NULL, \dots)
 
-
 \method{conTestScore}{conRLM}(object, type = "A", neq.alt = 0, 
            boot = "no", R = 9999, p.distr = rnorm,  
            parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
            verbose = FALSE, control = NULL, \dots)
-           
 
 \method{conTestScore}{conGLM}(object, type = "A", neq.alt = 0, 
            boot = "no", R = 9999, p.distr = rnorm,  
@@ -40,7 +38,7 @@ used directly and is called by the \code{conTest} function if \code{test = "scor
   
   \item{neq.alt}{integer: number of equality constraints that 
   are maintained under the alternative hypothesis (for hypothesis 
-  test type "B"), see example 4.}
+  test type "B"), see example 3.}
   
   \item{boot}{the null-distribution of these test-statistics 
   (except under type "C", see details) takes the form of a mixture of 
@@ -64,13 +62,13 @@ used directly and is called by the \code{conTest} function if \code{test = "scor
   \item{R}{integer; number of bootstrap draws for \code{boot}. 
   The default value is set to 9999.}
   
-  \item{p.distr}{the p.distr function is specified by this function. For 
+  \item{p.distr}{random generation distribution for the parametric bootstrap. For 
   all available distributions see \code{?distributions}. For example, 
   if \code{rnorm}, samples are drawn from the normal distribution (default) 
   with mean zero and variance one. If \code{rt}, samples are drawn from 
   a t-distribution. If \code{rchisq}, samples are drawn from a chi-square 
-  distribution. The distributional parameters will be passed in via \ldots.}
-  
+  distribution. The random generation distributional parameters will 
+  be passed in via \ldots.}
   
   \item{parallel}{the type of parallel operation to be used 
   (if any). If missing, the default is set "no".}
@@ -160,10 +158,11 @@ F-distributions.
   \item{b_unrestr}{unrestricted regression coefficients.}
   \item{b_restr}{restricted regression coefficients.}
   \item{b_restr_alt}{restricted regression coefficients under HA 
-  if some equality constraints are maintained.}
+  if some equality constraints are maintained. Only available for 
+  \code{type = "B"} else \code{b_restr_alt = NULL}.}
   \item{Sigma}{variance-covariance matrix of unrestricted model.}
-  \item{R2_org}{unrestricted R-squared.}
-  \item{R2_reduced}{restricted R-squared.}
+  \item{R2_org}{unrestricted R-squared, not available for objects of class \code{conGLM}.}
+  \item{R2_reduced}{restricted R-squared, not available for objects of class \code{conGLM}.}
   \item{boot}{same as input.}
   \item{model_org}{original model.}
 }

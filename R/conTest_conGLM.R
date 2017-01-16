@@ -143,16 +143,12 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   # the mixing weights.
   
   if (!is.null(object$wt) && boot == "no") {
-    wt <- object$wt
-    # is this fool proof? 
-    # The number of bootstrap samples must be large enough to avoid spurious results.
-    wt <- rev(wt)
+    wt <- rev(object$wt)
+    
     if (attr(object$wt, "bootWt")) {
-      if (attr(object$wt, "bootWt.R") < 999) {
-        stop("Restriktor ERROR: increase the number of bootstrap draws. Preferably to a large number e.g., bootWt.R = 99999")
-      }
-      wt.idx <- which(wt == 0)
-      wt <- wt[-wt.idx]
+      idx_min <- (ncol(Amat) - nrow(Amat)) + 1 
+      idx_max <- (ncol(Amat) - meq) + 1 
+      wt <- rev(wt[idx_min:idx_max])
     }
     
     pvalue <- con_pvalue_Fbar(wt          = wt, 
@@ -187,7 +183,11 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                                          seed     = seed, 
                                          verbose  = verbose)
   } else if (boot == "model.based") {
-    stop("Restriktor ERROR: model.based bootstrap is not implemented yet.")
+    
+    if (!(family(model_org)$family %in% c("gaussian","gamma"))) {
+      stop("Restriktor ERROR: the model.based bootstrap is not available for the ", family(model_org)$family, " family.")
+    }
+    
     pvalue <- con_pvalue_boot_model_based(object, 
                                           Ts_org   = Ts, 
                                           type     = type, 
@@ -382,16 +382,12 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
   } 
   
   if (!is.null(object$wt) && boot == "no") { 
-    wt <- object$wt
-    # is this fool proof? 
-    # The number of bootstrap samples must be large enough to avoid spurious results.
-    wt <- rev(wt)
+    wt <- rev(object$wt)
+    
     if (attr(object$wt, "bootWt")) {
-      if (attr(object$wt, "bootWt.R") < 999) {
-        stop("Restriktor ERROR: increase the number of bootstrap draws. Preferably to a large number e.g., bootWt.R = 99999")
-      }
-      wt.idx <- which(wt == 0)
-      wt <- wt[-wt.idx]
+      idx_min <- (ncol(Amat) - nrow(Amat)) + 1 
+      idx_max <- (ncol(Amat) - meq) + 1 
+      wt <- rev(wt[idx_min:idx_max])
     }
     
     pvalue <- con_pvalue_Fbar(wt          = wt, 
@@ -426,7 +422,11 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
                                          seed     = seed, 
                                          verbose  = verbose)
   } else if (boot == "model.based") {
-    stop("Restriktor ERROR: model.based bootstrap is not implemented yet.")
+    
+    if (!(family(model_org)$family %in% c("gaussian","gamma"))) {
+      stop("Restriktor ERROR: the model.based bootstrap is not available for the ", family(model_org)$family, " family.")
+    }
+    
     pvalue <- con_pvalue_boot_model_based(object, 
                                           Ts_org   = Ts, 
                                           type     = type, 
@@ -710,16 +710,12 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   }
 
   if (!is.null(object$wt) && boot == "no") {
-    wt <- object$wt
-    wt <- rev(wt)
-    # is this fool proof?
-    # The number of bootstrap samples must be large enough to avoid spurious results.
+    wt <- rev(object$wt)
+    
     if (attr(object$wt, "bootWt")) {
-      if (attr(object$wt, "bootWt.R") < 999) {
-        stop("Restriktor ERROR: increase the number of bootstrap draws. Preferably to a large number e.g., bootWt.R = 99999")
-      }
-      wt.idx <- which(wt == 0)
-      wt <- wt[-wt.idx]
+      idx_min <- (ncol(Amat) - nrow(Amat)) + 1 
+      idx_max <- (ncol(Amat) - meq) + 1 
+      wt <- rev(wt[idx_min:idx_max])
     }
 
     pvalue <- con_pvalue_Fbar(wt          = wt,

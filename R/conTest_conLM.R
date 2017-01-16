@@ -178,16 +178,12 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   # the mixing weights.
   
   if (!is.null(object$wt) && boot == "no") {
-    wt <- object$wt
-    # is this fool proof? 
-    # The number of bootstrap samples must be large enough to avoid spurious results.
-    wt <- rev(wt)
+    wt <- rev(object$wt)
+    
     if (attr(object$wt, "bootWt")) {
-      if (attr(object$wt, "bootWt.R") < 999) {
-        stop("Restriktor ERROR: increase the number of bootstrap draws. Preferably to a large number e.g., bootWt.R = 99999")
-      }
-      wt.idx <- which(wt == 0)
-      wt <- wt[-wt.idx]
+      idx_min <- (ncol(Amat) - nrow(Amat)) + 1 
+      idx_max <- (ncol(Amat) - meq) + 1 
+      wt <- rev(wt[idx_min:idx_max])
     }
     
     pvalue <- con_pvalue_Fbar(wt          = wt, 
@@ -461,16 +457,13 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
   } 
   
   if (!is.null(object$wt) && boot == "no") { 
-    wt <- object$wt
-    # is this fool proof? 
-    # The number of bootstrap samples must be large enough to avoid spurious results.
-    wt <- rev(wt)
+    
+    wt <- rev(object$wt)
+    
     if (attr(object$wt, "bootWt")) {
-      if (attr(object$wt, "bootWt.R") < 999) {
-        stop("Restriktor ERROR: increase the number of bootstrap draws. Preferably to a large number e.g., bootWt.R = 99999")
-      }
-      wt.idx <- which(wt == 0)
-      wt <- wt[-wt.idx]
+      idx_min <- (ncol(Amat) - nrow(Amat)) + 1 
+      idx_max <- (ncol(Amat) - meq) + 1 
+      wt <- rev(wt[idx_min:idx_max])
     }
   
     pvalue <- con_pvalue_Fbar(wt          = wt, 
@@ -833,16 +826,13 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   } 
   
   if (!is.null(object$wt) && boot == "no") {
-    wt <- object$wt
-    wt <- rev(wt)
-    # is this fool proof? 
-    # The number of bootstrap samples must be large enough to avoid spurious results.
+    
+    wt <- rev(object$wt)
+    
     if (attr(object$wt, "bootWt")) {
-      if (attr(object$wt, "bootWt.R") < 999) {
-        stop("Restriktor ERROR: increase the number of bootstrap draws. Preferably to a large number e.g., bootWt.R = 99999")
-      }
-      wt.idx <- which(wt == 0)
-      wt <- wt[-wt.idx]
+      idx_min <- (ncol(Amat) - nrow(Amat)) + 1 
+      idx_max <- (ncol(Amat) - meq) + 1 
+      wt <- rev(wt[idx_min:idx_max])
     }
   
     pvalue <- con_pvalue_Fbar(wt          = wt, 

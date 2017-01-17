@@ -277,9 +277,7 @@ con_pvalue_boot_model_based <- function(model,
                  control = control, se = "none", Wt = FALSE)
                     
     fit <- do.call("restriktor", CALL)
-  } else {
-    stop("Restriktor ERROR: type ", type, " not implemented.")
-  }
+  } 
 
     # compute residuals under the null-hypothesis
     if (type != "global") {

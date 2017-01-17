@@ -3,7 +3,7 @@
 \alias{conTestWald.conRLM}
 \alias{conTestWald2.conRLM}
 
-\title{Wald-bar test for robust informative hypothesis test}
+\title{Wald-bar test for robust iht}
 \description{\code{conTestWald} and \code{conTestWald2} tests linear equality and/or 
 inequality restricted hypotheses for linear models by Wald-tests. It can be 
 used directly and is called by the \code{conTest} function if \code{test = "Wald"}

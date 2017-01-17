@@ -3,7 +3,7 @@
 \alias{conTestLRT.conLM}
 \alias{conTestLRT.conGLM}
 
-\title{Likelihood-ratio-bar test for informative hypothesis test}
+\title{Likelihood-ratio-bar test for iht}
 \description{\code{conTestLRT} tests linear equality and/or 
 inequality restricted hypotheses for linear models by LR-tests. It can be 
 used directly and is called by the \code{conTest} function if \code{test = "LRT"}.

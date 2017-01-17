@@ -2,8 +2,7 @@
 \alias{conTestC}
 \alias{conTestC.restriktor}
 
-\title{one-sided t-test for iht
-}
+\title{one-sided t-test for iht}
 \description{\code{conTestC} tests linear inequality restricted 
 hypotheses for (robust) linear models by a one-sided t-test. This 
 method is based on the union-intersection principle. It is called 

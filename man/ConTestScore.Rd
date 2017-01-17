@@ -4,7 +4,7 @@
 \alias{conTestScore.conRLM}
 \alias{conTestScore.conGLM}
 
-\title{Score-bar test for informative hypothesis test}
+\title{Score-bar test for iht}
 \description{\code{conTestScore} tests linear equality and/or 
 inequality restricted hypotheses for (robust) linear models by score-tests. It can be 
 used directly and is called by the \code{conTest} function if \code{test = "score"}.

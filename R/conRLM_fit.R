@@ -100,10 +100,10 @@ conRLM_fit <- function (x, y, weights, ..., w = rep(1, nrow(x)), init = "ls",
     if (meq > 0L) {
       Dmat <- crossprod(x)
       dvec <- t(x) %*% y
-      QP <- solve.QP(Dmat, dvec, t(Amat[1:meq,,drop = FALSE]), bvec[1:meq],
-                     meq = meq)$solution
-      QP[abs(QP) < tol] <- 0L
-      x.idx <- QP %in% 0L
+      fit_S <- solve.QP(Dmat, dvec, t(Amat[1:meq,,drop = FALSE]), 
+                        bvec[1:meq], meq = meq)$solution
+      fit_S[abs(fit_S) < tol] <- 0L
+      x.idx <- fit_S %in% 0L
       temp <- do.call("lqs",
                       c(list(x = x[,!x.idx, drop = FALSE], y, intercept = FALSE, 
                              method = "S", k0 = 1.54764), lqs.control)) 
@@ -162,14 +162,22 @@ conRLM_fit <- function (x, y, weights, ..., w = rep(1, nrow(x)), init = "ls",
       w <- w * weights
     
     #############################################################
-    W <- diag(c(w))
-    XX <- t(x) %*% W %*% x
-    Xy <- t(x) %*% W %*% y
-    QP <- solve.QP(Dmat = XX, dvec = Xy, Amat = t(Amat), 
-                   bvec = bvec, meq = meq)
-    coef <- QP$solution
+    # W <- diag(c(w))
+    # XX <- t(x) %*% W %*% x
+    # Xy <- t(x) %*% W %*% y
+    # fit1 <- solve.QP(Dmat = XX, dvec = Xy, Amat = t(Amat),
+    #                  bvec = bvec, meq = meq)
+    
+    W <- sqrt(w)
+    fit <- con_solver_rlm(X = x * W, y = y * W,
+                          Amat = Amat, bvec = bvec,
+                          meq = meq, maxit = maxit, 
+                          absval = tol)
+    
+    coef <- fit$solution
     resid <- drop(y - x %*% coef)
-    iact <- QP$iact
+    iact <- fit$iact
+    
     #############################################################
     
     #temp <- lm.wfit(x, y, w, method = "qr")

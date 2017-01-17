@@ -18,8 +18,8 @@ con_solver_lm <- function(X, y, b_unrestr, w, Amat, bvec, meq,
                 (y - X %*% matrix(b_unrestr, ncol = ncol(y)))) / n  
     
     yVx <- kronecker(solve(Sigma), t(X)) %*% W %*% as.vector(y)
-    dvec <- 2*yVx
-    Dmat <- 2*kronecker(solve(Sigma), t(X) %*% W %*% X)
+    dvec <- 2 * yVx
+    Dmat <- 2 * kronecker(solve(Sigma), t(X) %*% W %*% X)
     out <- solve.QP(Dmat = Dmat, 
                     dvec = dvec, 
                     Amat = t(Amat),
@@ -42,13 +42,45 @@ con_solver_lm <- function(X, y, b_unrestr, w, Amat, bvec, meq,
 }
 
 
+con_solver_rlm <- function(X, y, Amat, bvec, meq,
+                           maxit = 10000, absval = sqrt(.Machine$double.eps)) {
+  
+  b_unrestr <- lm.fit(x = X, y)
+  tBeta <- as.vector(coefficients(b_unrestr))
+  invW <- crossprod(X)
+  
+  val <- 0
+  for (i in 1:maxit) {
+    Dmat <- 2 * invW
+    dvec <- 2 * tBeta %*% invW
+    out <- solve.QP(Dmat = Dmat, 
+                    dvec = dvec, 
+                    Amat = t(Amat),
+                    bvec = bvec, 
+                    meq  = meq)
+    
+    if (abs(out$value - val) <= absval) {
+      break
+    } else {
+      val <- out$value
+    }
+    
+    if (i == maxit & abs(out$value - val) > absval) {
+      warning(gettextf("'quadprog' failed to converge in %d steps", maxit), 
+              domain = NA)
+    }  
+  }
+  
+  out
+}
 
 
-con_solver_glm <- function(X, y, Amat, bvec, meq, 
+
+con_solver_glm <- function(X, y, b_unrestr, Amat, bvec, meq, 
                            maxit = 10000, epsilon){
   b_unrestr <- lm.fit(x = X, y)
   tBeta <- as.vector(coefficients(b_unrestr))
-  invW <- t(X) %*% X
+  invW <- crossprod(X)#t(X) %*% X
   
   con_solver <- function(tBeta, invW, Amat, bvec, meq) {
     Dmat <- 2 * invW
@@ -62,9 +94,16 @@ con_solver_glm <- function(X, y, Amat, bvec, meq,
   for (i in 1:maxit) {
     out <- con_solver(b_restr, invW, Amat, bvec, meq)
     b_restr <- out$solution
-    if (abs(out$value - val) <= epsilon) 
+    if (abs(out$value - val) <= epsilon) {
       break
-    else val <- out$value
+    } else {
+      val <- out$value
+    }
+    
+    if (i == maxit & abs(out$value - val) > epsilon) {
+      warning(gettextf("'quadprog' failed to converge in %d steps", maxit), 
+              domain = NA)
+    }
   }
   
   out

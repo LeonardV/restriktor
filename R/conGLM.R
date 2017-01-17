@@ -26,7 +26,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   # model matrix
   X <- model.matrix(object)[,,drop = FALSE]
   # variance-covariance matrix
-  W <- vcov(object)
+  Sigma <- vcov(object)
   # familiy and link function
   fam <- object$family
   # model summary
@@ -34,7 +34,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   # dispersion
   dispersion <- so$dispersion
   # prior weigths
-  prior.weights <- object$prior.weights
+  prior.weights <- weights(object, "prior")
   # working weights
   weights <- weights(object, "working")
   # unconstrained estimates
@@ -136,7 +136,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
       is.augmented <- FALSE
     } else if (bootWt) { 
       # compute mixing weights based on simulation
-      wt <- con_weights_boot(VCOV     = W,
+      wt <- con_weights_boot(VCOV     = Sigma,
                              Amat     = Amat, 
                              meq      = meq, 
                              R        = bootWt.R,
@@ -147,11 +147,11 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                              verbose  = verbose)
     } else if (!bootWt & (meq < nrow(Amat))) {
       # compute mixing weights based on mvtnorm
-      wt <- rev(con_weights(Amat %*% W %*% t(Amat), meq = meq))
+      wt <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
     } else if (!bootWt & (meq == nrow(Amat))) {
       # only equality constraints
-      wt <- rep(0L, ncol(W) + 1)
-      wt.idx <- ncol(W) - meq + 1
+      wt <- rep(0L, ncol(Sigma) + 1)
+      wt.idx <- ncol(Sigma) - meq + 1
       wt[wt.idx] <- 1
     }
     attr(wt, "bootWt") <- bootWt
@@ -175,8 +175,8 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                 wt                = wt,
                 b_unrestr         = b_unrestr,
                 b_restr           = b_unrestr,
-                residuals         = object$residuals, # unweighted residuals
-                fitted            = object$fitted.values,
+                residuals         = residuals(object, "working"), # unweighted residuals
+                fitted            = fitted(object),
                 prior.weights     = prior.weights, #prior weights
                 weights           = weights, #working weights, weights final iteration
                 df.residual       = object$df.residual,
@@ -186,7 +186,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                 aic               = object$aic,
                 deviance_null     = object$null.deviance,
                 deviance          = object$deviance,
-                Sigma             = W,
+                Sigma             = Sigma,
                 constraints       = Amat, 
                 rhs               = bvec, 
                 neq               = meq, 
@@ -218,6 +218,11 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                                   sqrt(.Machine$double.eps), 
                                   control$tol)] <- 0L
     
+    b_restr <- as.vector(b_restr)
+      names(b_restr) <- names(b_unrestr)
+    fitted <- fitted(fit_glmc)
+    residuals <- residuals(fit_glmc, "working")
+    
     # weights
     weights <- weights(fit_glmc, "working")
     
@@ -233,18 +238,12 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
       if (any(weights(fit_glmc) == 0)) {
         warning("observations with zero weight not used for calculating dispersion")
       }
-      dispersion <- sum((fit_glmc$weights * fit_glmc$residuals^2)[fit_glmc$weights > 0]) / df.residual
+      dispersion <- sum((weights * residuals^2)[weights > 0]) / df.residual
     }
     
     # restricted log-likelihood
     LL_restr <- con_loglik_glm(fit_glmc)
 
-    b_restr <- as.vector(b_restr)
-      names(b_restr) <- names(b_unrestr)
-    fitted <- fit_glmc$fitted.values
-    residuals <- fit_glmc$residuals
-    
-    
     OUT <- list(CON               = CON,
                 call              = mc,
                 timing            = timing,
@@ -257,14 +256,14 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                 fitted            = fitted,
                 prior.weights     = prior.weights, #prior weights
                 weights           = weights, #working weights, weights final iteration
-                df.residual       = object$df.residual,
+                df.residual       = df.residual(object),
                 df.residual_null  = fit_glmc$df.null,
                 dispersion        = dispersion,
                 loglik            = LL_restr,
                 aic               = fit_glmc$aic,
                 deviance_null     = fit_glmc$null.deviance,
                 deviance          = fit_glmc$deviance,
-                Sigma             = W,
+                Sigma             = Sigma,
                 constraints       = Amat, 
                 rhs               = bvec, 
                 neq               = meq, 

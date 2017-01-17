@@ -21,7 +21,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   # rename for internal use
   Amat <- constraints
   bvec <- rhs
-  meq <- neq
+  meq  <- neq
   
   # response varialbe
   y <- as.matrix(object$model[, attr(object$terms, "response")])
@@ -30,18 +30,17 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   # model summary
   so <- summary(object)
   # weights
-  weights <- object$weights
+  weights <- weights(object)
   # unrestrikted coefficients
   b_unrestr <- coef(object)
   # vcov
-  Sigma <- vcov(object) #solve(invW)
+  Sigma <- vcov(object) 
   # unrestrikted scale estimate for the standard deviation: 
   # tau^2 * solve(t(X)%*%X) equals vcov(object)
   tau <- so$stddev
-  # residual degrees of freedom
-  #rdf <- so$df[2]
   # residuals
-  residuals <- object$residuals
+  residuals <- residuals(object) # NOT working residual
+  
   # sampel size
   n <- dim(X)[1]
   # number of parameters
@@ -145,10 +144,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   R2_org <- (yMy - rMr) / (yMy + rMr * (correc - 1))
   
   # compute the loglikelihood
-  ll_unc <- con_loglik_lm(X = X, 
-                          y = y, 
-                          b = b_unrestr, 
-                          w = weights)$loglik
+  ll_unc <- con_loglik_lm(object)
   
   # ML unconstrained MSE
   #tau2ml <- (tau^2 * so$df[2]) / n
@@ -198,13 +194,12 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 wt          = wt,
                 b_unrestr   = b_unrestr,
                 b_restr     = b_unrestr,
-                residuals   = object$residuals,
+                residuals   = residuals,
                 wresid      = object$wresid,
-                fitted      = object$fitted,
-                weights     = object$weights,
-                w           = object$w, 
+                fitted      = fitted(object),
+                weights     = weights,  # prior weights
+                w           = object$w, # weights used in the IWLS process
                 scale       = object$s, 
-                #scale.restr = object$s,
                 psi         = object$psi,
                 R2_org      = R2_org,
                 R2_reduced  = R2_org,
@@ -212,7 +207,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 s2_unrestr  = tau, 
                 s2_restr    = tau, 
                 loglik      = ll_unc, 
-                Sigma       = Sigma,                                            #probably not so robust!
+                Sigma       = Sigma, # probably not so robust!
                 constraints = Amat, 
                 rhs         = bvec, 
                 neq         = meq, 
@@ -239,23 +234,19 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     start.time <- proc.time()[3]
     
     # constrained coefs
-    b_restr <- rfit$coefficients
+    b_restr <- coefficients(rfit)
       names(b_restr) <- names(b_unrestr)
     b_restr[abs(b_restr) < ifelse(is.null(control$tol), 
                                   sqrt(.Machine$double.eps), 
                                   control$tol)] <- 0L
-    fitted <- X %*% b_restr
-    residuals <- rfit$residuals
-    # weights
-    weights <- rfit$weights
+    fitted <- fitted(rfit)
+    residuals <- residuals(rfit)
+    
     # psi(resid/scale) these are the weights used for downweighting the cases.
     w <- rfit$w
     
     # compute loglik
-    ll_restr <- con_loglik_lm(X = X, 
-                              y = y, 
-                              b = b_unrestr, 
-                              w = weights)$loglik
+    ll_restr <- con_loglik_lm(rfit)
     
     timing$LLik <- (proc.time()[3] - start.time)
     start.time <- proc.time()[3]
@@ -270,9 +261,9 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
       if (!is.null(Amat)) {
         rdf <- sum(weights) - (p - qr(Amat[0:meq,])$rank)
         S.new <- sum(weights * (rfit$wresid * w)^2) / rdf
-        tau.restr <- (summary(rfit)$stddev / sqrt(S)) * sqrt(S.new)
+        tau_restr <- (summary(rfit)$stddev / sqrt(S)) * sqrt(S.new)
       } else {
-        tau.restr <- std * sqrt(S)
+        tau_restr <- std * sqrt(S)
       }
     } else {
       rdf <- n - p
@@ -283,9 +274,9 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
       if (!is.null(Amat)) {
         rdf <- n - (p - qr(Amat[0:meq,])$rank)
         S.new <- sum((rfit$wresid * w)^2) / rdf
-        tau.restr <- (summary(rfit)$stddev / sqrt(S)) * sqrt(S.new)
+        tau_restr <- (summary(rfit)$stddev / sqrt(S)) * sqrt(S.new)
       } else {
-        tau.restr <- std * sqrt(S)
+        tau_restr <- std * sqrt(S)
       }
     }
     
@@ -311,13 +302,12 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 fitted      = fitted,
                 weights     = weights,
                 w           = w, 
-                #scale       = object$s,
-                scale       = rfit$scale,
+                scale       = rfit$s,
                 R2_org      = R2_org,
                 R2_reduced  = R2_reduced,
                 df.residual = so$df[2], 
                 s2_unrestr  = tau, 
-                s2_restr    = tau.restr, 
+                s2_restr    = tau_restr, 
                 loglik      = ll_restr, 
                 Sigma       = Sigma,                                             #probably not so robust???
                 constraints = Amat, 
@@ -325,14 +315,13 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 neq         = meq, 
                 iact        = rfit$iact,
                 converged   = rfit$converged, 
-               # iter        = rfit$iter,
                 bootout     = NULL, 
                 control     = control)
   }
   
   OUT$model_org <- object
   OUT$se <- se 
-  OUT$information <- 1/tau^2 * crossprod(X)
+  OUT$information <- 1 / tau^2 * crossprod(X)
   if (se != "none") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
       #  V <- vcovMM(X = X, resid0 = resid0, residuals = residuals, scale = model$s)  

@@ -118,10 +118,10 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   }
 
   # compute (weighted) log-likelihood
-  ll_unc <- con_loglik_lm(X = X, 
-                          y = y, 
-                          b = b_unrestr, 
-                          w = weights)$loglik
+  ll_unc <- con_loglik_lm(object)#X = X, 
+                          # y = y, 
+                          # b = b_unrestr, 
+                          # w = weights)$loglik
   
   timing$LLik <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
@@ -168,7 +168,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   
   # check if the constraints are not in line with the data, else skip optimization
   if (all(Amat %*% c(b_unrestr) - bvec >= 0 * bvec) & meq == 0) {
-    b_restr <- b_unrestr
+    b_restr  <- b_unrestr
     s2_restr <- s2_unrestr
     
     OUT <- list(CON         = CON,
@@ -196,18 +196,19 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                 control     = control)  
   } else {
     # compute constrained estimates for lm()
-    out.QP <- con_solver_lm(X         = X, 
-                         y         = y, 
-                         b_unrestr = b_unrestr, 
-                         w         = weights, 
-                         Amat      = Amat,
-                         bvec      = bvec, 
-                         meq       = meq, 
-                         absval    = ifelse(is.null(control$absval), 
-                                         sqrt(.Machine$double.eps), 
-                                         control$absval),
-                         maxit     = ifelse(is.null(control$maxit), 1e04, 
-                                         control$maxit))
+    out.QP <- con_solver_lm(X      = X, 
+                            y         = y, 
+                            b_unrestr = b_unrestr, 
+                            w         = weights, 
+                            Amat      = Amat,
+                            bvec      = bvec, 
+                            meq       = meq, 
+                            absval    = ifelse(is.null(control$absval), 
+                                            sqrt(.Machine$double.eps), 
+                                            control$absval),
+                            maxit     = ifelse(is.null(control$maxit), 1e04, 
+                                            control$maxit))
+    
     b_restr <- matrix(out.QP$solution, ncol = ncol(y))
     b_restr[abs(b_restr) < ifelse(is.null(control$tol), 
                                   sqrt(.Machine$double.eps), 
@@ -216,10 +217,6 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
     timing$optim <- (proc.time()[3] - start.time)
     start.time <- proc.time()[3]
     
-    ll_restr <- con_loglik_lm(X = X, 
-                              y = y, 
-                              b = b_restr, 
-                              w = weights)$loglik
     # lm
     if (ncol(y) == 1L) {
       b_restr <- as.vector(b_restr)
@@ -227,6 +224,12 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
       fitted <- X %*% b_restr
       residuals <- y - fitted
       
+      # compute log-likelihood
+      object_restr <- list()
+      object_restr$residuals <- residuals
+      object_restr$weights   <- object$weights
+      ll_restr <- con_loglik_lm(object_restr)
+        
       # compute R^2
       if (is.null(weights)) {
         mss <- if (attr(object$terms, "intercept")) {

@@ -367,87 +367,102 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
   
   if (type == "global") {  
     b_eqrestr <- con_solver_lm(X         = X, 
-                            y         = y, 
-                            b_unrestr = b_unrestr, 
-                            w         = w, 
-                            Amat      = AmatG,
-                            bvec      = bvecG, 
-                            meq       = nrow(AmatG),
-                            absval    = ifelse(is.null(control$absval), 1e-09, 
-                                               control$absval),
-                            maxit     = ifelse(is.null(control$maxit), 1e04, 
-                                               control$maxit))$solution
+                               y         = y, 
+                               b_unrestr = b_unrestr, 
+                               w         = w, 
+                               Amat      = AmatG,
+                               bvec      = bvecG, 
+                               meq       = nrow(AmatG),
+                               absval    = ifelse(is.null(control$absval), 1e-09, 
+                                                 control$absval),
+                               maxit     = ifelse(is.null(control$maxit), 1e04, 
+                                                 control$maxit))$solution
     b_eqrestr[abs(b_eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
                                       control$tol)] <- 0L
     names(b_eqrestr) <- vnames
-    ll0.out <- con_loglik_lm(X = X, 
-                             y = y, 
-                             b = b_eqrestr, 
-                             w = w)
-    ll0 <- ll0.out$loglik
     
+    b_eqrestr <- as.vector(b_eqrestr)
+    fitted <- X %*% b_eqrestr
+    residuals <- y - fitted
+    
+    object_eqrestr <- list()
+    object_eqrestr$residuals <- residuals
+    object_eqrestr$weights   <- object$weights
+    ll_eqrestr <- con_loglik_lm(object_eqrestr)
+    
+    ll0 <- ll_eqrestr
     ll1 <- object$loglik
+    
     Ts <- -2*(ll0 - ll1)
   } else if (type == "A") {
     b_eqrestr <- con_solver_lm(X         = X, 
-                            y         = y, 
-                            b_unrestr = b_unrestr,
-                            w         = w, 
-                            Amat      = Amat,
-                            bvec      = bvec, 
-                            meq       = nrow(Amat),
-                            absval    = ifelse(is.null(control$absval), 1e-09, 
-                                               control$absval),
-                            maxit     = ifelse(is.null(control$maxit), 1e04, 
-                                               control$maxit))$solution
+                               y         = y, 
+                               b_unrestr = b_unrestr,
+                               w         = w, 
+                               Amat      = Amat,
+                               bvec      = bvec, 
+                               meq       = nrow(Amat),
+                               absval    = ifelse(is.null(control$absval), 1e-09, 
+                                                  control$absval),
+                               maxit     = ifelse(is.null(control$maxit), 1e04, 
+                                                  control$maxit))$solution
     b_eqrestr[abs(b_eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
                                       control$tol)] <- 0L
     names(b_eqrestr) <- vnames
-    ll0.out <- con_loglik_lm(X = X, 
-                             y = y, 
-                             b = b_eqrestr, 
-                             w = w)
-    ll0 <- ll0.out$loglik
+    
+    b_eqrestr <- as.vector(b_eqrestr)
+    fitted <- X %*% b_eqrestr
+    residuals <- y - fitted
+    
+    object_eqrestr <- list()
+    object_eqrestr$residuals <- residuals
+    object_eqrestr$weights   <- object$weights
+    ll_eqrestr <- con_loglik_lm(object_eqrestr)
+    
+    ll0 <- ll_eqrestr
     ll1 <- object$loglik
     
     Ts <- -2*(ll0 - ll1)
   } else if (type == "B") {
       if (meq_alt == 0L) {
         ll0 <- object$loglik
-        ll1.out <- con_loglik_lm(X = X, 
-                                 y = y, 
-                                 b = b_unrestr, 
-                                 w = w)
-        ll1 <- ll1.out$loglik
+        ll1 <- logLik(model_org)
+        
         Ts <- -2*(ll0 - ll1)
       }
     else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq_alt > 0L && meq_alt <= meq) {
         b_restr_alt <- con_solver_lm(X         = X, 
-                                  y         = y, 
-                                  b_unrestr = b_unrestr,
-                                  w         = w,
-                                  Amat      = Amat[1:meq_alt,,drop=FALSE],
-                                  bvec      = bvec[1:meq_alt], 
-                                  meq       = meq_alt,
-                                  absval    = ifelse(is.null(control$absval), 1e-09, 
-                                                     control$absval),
-                                  maxit     = ifelse(is.null(control$maxit), 1e04, 
-                                                     control$maxit))$solution
+                                     y         = y, 
+                                     b_unrestr = b_unrestr,
+                                     w         = w,
+                                     Amat      = Amat[1:meq_alt,,drop=FALSE],
+                                     bvec      = bvec[1:meq_alt], 
+                                     meq       = meq_alt,
+                                     absval    = ifelse(is.null(control$absval), 1e-09, 
+                                                        control$absval),
+                                     maxit     = ifelse(is.null(control$maxit), 1e04, 
+                                                        control$maxit))$solution
         b_restr_alt[abs(b_restr_alt) < ifelse(is.null(control$tol),                                        
                                               sqrt(.Machine$double.eps),                                        
                                               control$tol)] <- 0L
         names(b_restr_alt) <- vnames
 
+        b_restr_alt <- as.vector(b_restr_alt)
+        fitted <- X %*% b_restr_alt
+        residuals <- y - fitted
+        
+        object_restr_alt <- list()
+        object_restr_alt$residuals <- residuals
+        object_restr_alt$weights   <- object$weights
+        ll_restr_alt <- con_loglik_lm(object_restr_alt)
+        
         ll0 <- object$loglik
-        ll1.out <- con_loglik_lm(X = X, 
-                                 y = y, 
-                                 b = b_restr_alt, 
-                                 w = w)
-        ll1 <- ll1.out$loglik
+        ll1 <- ll_restr_alt
+        
         Ts <- -2*(ll0 - ll1)
       }
       else {

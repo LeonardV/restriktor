@@ -1,17 +1,21 @@
 # compute the (weighted) loglikelihood based on the regression coefficients.
-con_loglik_lm <- function(X, y, b, w = NULL) {
-  n <- dim(X)[1]
-  if (is.null(w)) {
-    w <- rep(1, n)
+con_loglik_lm <- function(object, ...) {
+  res <- object$residuals
+  N <- length(res)
+  if (is.null(w <- object$weights)) {
+    w <- rep.int(1, N)
   }
-  W <- diag(w)
-  S  <- ( t(y - X %*% matrix(b, ncol = ncol(y)) ) %*% W %*% 
-            (y - X %*% matrix(b, ncol = ncol(y))) ) 
-  ll <- 0.5 * (sum(log(w)) - n * (log(2 * pi) + 1 - log(n) + log(det(S))))
-
-  OUT <- list(loglik = ll, Sigma = S)
-
-  OUT
+  else {
+    excl <- w == 0
+    if (any(excl)) {
+      res <- res[!excl]
+      N <- length(res)
+      w <- w[!excl]
+    }
+  }
+  out <- 0.5 * (sum(log(w)) - N * (log(2 * pi) + 1 - log(N) + log(sum(w * res^2))))
+  
+  out
 }
 
 

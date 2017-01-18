@@ -2,7 +2,7 @@
 \alias{conTest}
 \alias{iht}
 
-\title{function for informative hypothesis testing}
+\title{function for informative hypothesis testing (iht)}
 \description{\code{conTest} tests linear equality and/or inequality 
 restricted hypotheses for linear models. 
 }

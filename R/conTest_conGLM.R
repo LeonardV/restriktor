@@ -54,16 +54,12 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   meq  <- object$neq
   #control
   control <- object$control
+  # tolerance
+  tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only
   if (meq == nrow(Amat)) {
     stop("Restriktor ERROR: test not applicable for object with equality restrictions only.")
-  }
-  
-  if (is.null(control$tol)) {
-    tol <- sqrt(.Machine$double.eps)
-  } else {
-    tol <- control$tol
   }
   
   # check for intercept                                          
@@ -289,16 +285,12 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
   meq  <- object$neq
   #control
   control <- object$control
+  # tolerance
+  tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only
   if (meq == nrow(Amat)) {
     stop("Restriktor ERROR: test not applicable for object with equality restrictions only.")
-  }
-  
-  if (is.null(control$tol)) {
-    tol <- sqrt(.Machine$double.eps)
-  } else {
-    tol <- control$tol
   }
   
   # check for intercept                                          
@@ -539,16 +531,12 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   meq  <- object$neq
   #control
   control <- object$control
-
+  # tolerance
+  tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
+  
   # check for equalities only
   if (meq == nrow(Amat)) {
     stop("Restriktor ERROR: test not applicable for object with equality restrictions only.")
-  }
-
-  if (is.null(control$tol)) {
-    tol <- sqrt(.Machine$double.eps)
-  } else {
-    tol <- control$tol
   }
 
   # check for intercept

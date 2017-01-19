@@ -304,7 +304,6 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   # compute standard errors based on the augmented inverted information matrix or
   # based on the standard bootstrap or model.based bootstrap
   if (se != "none") {
-
     if (!(se %in% c("boot.model.based","boot.standard"))) {
       information.inv <- con_augmented_information(information  = OUT$information,
                                                    is.augmented = is.augmented,

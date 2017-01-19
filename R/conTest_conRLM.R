@@ -55,18 +55,19 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   meq  <- object$neq
   #control
   control <- object$control
+  # tolerance
+  tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only
   if (meq == nrow(Amat)) {
     stop("Restriktor ERROR: test not applicable for object with equality restriktions only.")
   }
   
-  if (is.null(control$tol)) {
-    tol <- sqrt(.Machine$double.eps)
-  } else {
-    tol <- control$tol
-  }
-  
+  call_org$formula <- call_org$data <- call_org$weights <- 
+    call_org$subset <- call_org$na.action <- call_org$model <- 
+    call_org$x.ret <- call_org$y.ret <- call_org$contrasts <- 
+    call_org$X <- call_org$y <- NULL
+    
   # check for intercept                                          
   intercept <- any(attr(terms(model_org), "intercept"))
   if (type == "global") {
@@ -98,9 +99,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   }
   
   if (type == "global") {
-    call_org$weights <- call_org$psi <- call_org$X <- call_org$y <- NULL
     CALL <- c(call_org, list(x = X, y = y, weights = weights,
-                             psi = psi.bisquare, 
                              Amat = AmatG, bvec = bvecG, 
                              meq = nrow(AmatG), tol = tol))
     
@@ -118,9 +117,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                    scale     = scale, 
                    cc        = ifelse(is.null(call_org$c), 4.685061, call_org$c))$Ts
   } else if (type == "A") {
-    call_org$weights <- call_org$psi <- call_org$X <- call_org$y <- NULL
     CALL <- c(call_org, list(x = X, y = y, weights = weights,
-                             psi = psi.bisquare, 
                              Amat = Amat, bvec = bvec, 
                              meq = nrow(Amat), tol = tol))
     
@@ -149,9 +146,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     } else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq_alt > 0L && meq_alt <= meq) {
-        call_org$weights <- call_org$psi <- call_org$X <- call_org$y <- NULL
         CALL <- c(call_org, list(x = X, y = y, weights = weights,
-                                 psi = psi.bisquare, 
                                  Amat = Amat[1:meq_alt, , drop = FALSE], 
                                  meq = meq_alt, bvec = bvec[1:meq_alt],
                                  tol = tol))
@@ -323,17 +318,18 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   meq  <- object$neq
   #control
   control <- object$control
+  # tolerance
+  tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only
   if (meq == nrow(Amat)) {
     stop("Restriktor ERROR: test not applicable for object with equality restriktions only.")
   }
   
-  if (is.null(control$tol)) {
-    tol <- sqrt(.Machine$double.eps)
-  } else {
-    tol <- control$tol
-  }
+  call_org$formula <- call_org$data <- call_org$weights <- 
+    call_org$subset <- call_org$na.action <- call_org$model <- 
+    call_org$x.ret <- call_org$y.ret <- call_org$contrasts <- 
+    call_org$X <- call_org$y <- NULL
   
   # check for intercept                                          
   intercept <- any(attr(terms(model_org), "intercept"))
@@ -366,9 +362,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   }
   
   if (type == "global") {
-    call_org$weights <- call_org$psi <- call_org$X <- call_org$y <- NULL
     CALL <- c(call_org, list(x = X, y = y, weights = weights,
-                             psi = psi.bisquare, 
                              Amat = AmatG, bvec = bvecG, 
                              meq = nrow(AmatG), tol = tol))
     
@@ -389,9 +383,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     Ts <- out0$Ts
     Sigma <- out0$V
   } else if (type == "A") {
-    call_org$weights <- call_org$psi <- call_org$X <- call_org$y <- NULL
     CALL <- c(call_org, list(x = X, y = y, weights = weights,
-                             psi = psi.bisquare, 
                              Amat = Amat, bvec = bvec, 
                              meq = nrow(Amat), tol = tol))
     
@@ -428,9 +420,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     } else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq_alt > 0L && meq_alt <= meq) {
-        call_org$weights <- call_org$psi <- call_org$X <- call_org$y <- NULL
         CALL <- c(call_org, list(x = X, y = y, weights = weights,
-                                 psi = psi.bisquare, 
                                  Amat = Amat[1:meq_alt,,drop=FALSE], 
                                  meq = meq_alt, 
                                  bvec = bvec[1:meq_alt], tol = tol))
@@ -637,17 +627,18 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   meq  <- object$neq
   #control
   control <- object$control
+  # tolerance
+  tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only
   if (meq == nrow(Amat)) {
     stop("Restriktor ERROR: test not applicable for object with equality restriktions only.")
   }
   
-  if (is.null(control$tol)) {
-    tol <- sqrt(.Machine$double.eps)
-  } else {
-    tol <- control$tol
-  }
+  call_org$formula <- call_org$data <- call_org$weights <- 
+    call_org$subset <- call_org$na.action <- call_org$model <- 
+    call_org$x.ret <- call_org$y.ret <- call_org$contrasts <- 
+    call_org$X <- call_org$y <- NULL
   
   # check for intercept                                          
   intercept <- any(attr(terms(model_org), "intercept"))
@@ -680,9 +671,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   }
   
   if (type == "global") {
-    call_org$weights <- call_org$psi <- call_org$X <- call_org$y <- NULL
     CALL <- c(call_org, list(x = X, y = y, weights = weights,
-                             psi = psi.bisquare, 
                              Amat = AmatG, bvec = bvecG, 
                              meq = nrow(AmatG), tol = tol))
     
@@ -698,9 +687,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                        b_unrestr = b_unrestr, 
                        tau       = tau)$Ts
   } else if (type == "A") {
-    call_org$weights <- call_org$psi <- call_org$X <- call_org$y <- NULL
     CALL <- c(call_org, list(x = X, y = y, weights = weights,
-                             psi = psi.bisquare, 
                              Amat = Amat, bvec = bvec, 
                              meq = nrow(Amat), tol = tol))
     
@@ -725,9 +712,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     } else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq_alt > 0L && meq_alt <= meq) {
-        call_org$weights <- call_org$psi <- call_org$X <- call_org$y <- NULL
         CALL <- c(call_org, list(x = X, y = y, weights = weights,
-                                 psi = psi.bisquare, 
                                  Amat = Amat[1:meq_alt, , drop = FALSE], 
                                  meq = meq_alt, bvec = bvec[1:meq_alt], 
                                  tol = tol))
@@ -897,17 +882,18 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   meq  <- object$neq
   #control
   control <- object$control
+  # tolerance
+  tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only
   if (meq == nrow(Amat)) {
     stop("Restriktor ERROR: test not applicable for object with equality restriktions only.")
   }
   
-  if (is.null(control$tol)) {
-    tol <- sqrt(.Machine$double.eps)
-  } else {
-    tol <- control$tol
-  }
+  call_org$formula <- call_org$data <- call_org$weights <- 
+    call_org$subset <- call_org$na.action <- call_org$model <- 
+    call_org$x.ret <- call_org$y.ret <- call_org$contrasts <- 
+    call_org$X <- call_org$y <- NULL
   
   # check for intercept                                          
   intercept <- any(attr(terms(model_org), "intercept"))
@@ -940,9 +926,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   }
   
   if (type == "global") {
-    call_org$weights <- call_org$psi <- call_org$X <- call_org$y <- NULL
     CALL <- c(call_org, list(x = X, y = y, weights = weights,
-                             psi = psi.bisquare, 
                              Amat = AmatG, bvec = bvecG, 
                              meq = nrow(AmatG), tol = tol))
     
@@ -963,9 +947,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     Ts <- out0$Ts
     Sigma <- out0$V
   } else if (type == "A") {
-    call_org$weights <- call_org$psi <- call_org$X <- call_org$y <- NULL
     CALL <- c(call_org, list(x = X, y = y, weights = weights,
-                             psi = psi.bisquare, 
                              Amat = Amat, bvec = bvec, 
                              meq = nrow(Amat), tol = tol))
     
@@ -1001,9 +983,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     } else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq_alt > 0L && meq_alt <= meq) {
-        call_org$weights <- call_org$psi <- call_org$X <- call_org$y <- NULL
         CALL <- c(call_org, list(x = X, y = y, weights = weights,
-                                 psi = psi.bisquare, 
                                  Amat = Amat[1:meq_alt,,drop=FALSE], 
                                  meq = meq_alt, 
                                  bvec = bvec[1:meq_alt], tol = tol))

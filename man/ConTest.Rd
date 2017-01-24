@@ -46,8 +46,8 @@ conTest(object, constraints = NULL, type = "summary", test = "F",
       \item for object of class lm; if "F" (default), the F-bar 
       statistic (Silvapulle, 1996) is computed. If "LRT", a 
       likelihood ratio test statistic (Silvapulle and Sen, 2005, 
-      chp 3.) is computed. If "score", a score test 
-      statistic (Silvapulle, M.J. and Silvapulle, P., 1995) is 
+      chp 3.) is computed. If "score", a global score test 
+      statistic (Silvapulle and Silvapulle, 1995) is 
       computed. Note that, in case of equality constraints only, 
       the usual unconstrained F-, Wald-, LR- and score-test 
       statistic is computed. 
@@ -57,9 +57,18 @@ conTest(object, constraints = NULL, type = "summary", test = "F",
       computed. If "Wald", a robust Wald test statistic 
       (Silvapulle, 1996) is computed. If "Wald2", a robust Wald test 
       statistic (Silvapulle, 1992b) is computed. If "score", a 
-      score test statistic (Silvapulle, 1996) is computed. 
-      Note that, in case of equality constraints only, unconstrained 
-      robust F-, Wald-, score-test statistics are computed.
+      global score test statistic (Silvapulle, and Silvapulle, 1995) 
+      is computed. Note that, in case of equality constraints only, 
+      unconstrained robust F-, Wald-, score-test statistics are computed.
+      
+      \item for object of class glm; if "F" (default), the F-bar 
+      statistic (Silvapulle, 1996) is computed. If "LRT", a 
+      likelihood ratio test statistic (Silvapulle and Sen, 2005, 
+      chp 4.) is computed. If "score", a global score test 
+      statistic (Silvapulle and Silvapulle, 1995) is 
+      computed. Note that, in case of equality constraints only, 
+      the usual unconstrained F-, Wald-, LR- and score-test 
+      statistic is computed. 
     }
   }
  
@@ -157,6 +166,9 @@ See for example \code{\link{conTestF}} for all available arguments.
 }
 
 \references{
+Robertson, T., Wright, F.T. and Dykstra, R.L. (1988). \emph{Order Restricted 
+Statistical Inference} New York: Wiley.
+
 Shapiro, A. (1988). Towards a unified theory of inequality-constrained 
 testing in multivariate analysis. \emph{International Statistical 
 Review} \bold{56}, 49--62.

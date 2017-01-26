@@ -1,5 +1,5 @@
 Package: restriktor
-Title: Restrikted Statistical Estimation and Inference for Linear Models
+Title: Restricted Statistical Estimation and Inference for Linear Models
 Version: 0.1-50
 Authors@R: c(person(given = "Yves", family = "Rosseel",
                     role  = c("cre"),
@@ -9,8 +9,8 @@ Authors@R: c(person(given = "Yves", family = "Rosseel",
                     email = "Leonard.Vanbrabant@Ugent.be")
             )
 Description: Allow for easy-to-use testing of linear equality and inequality 
-  restriktions about parameters and effects, in linear and robust linear 
-  statistical models.
+  restriktions about parameters and effects, in linear, robust linear and
+  generalized statistical models.
 Depends: R(>= 3.0.0)
 Imports: boot, ic.infer, lavaan, MASS, mvtnorm, quadprog
 License: GPL (>= 2)

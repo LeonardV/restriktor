@@ -16,19 +16,19 @@
 restriktor(object, constraints = NULL, \dots)
 
 \method{conLM}{lm}(object, constraints = NULL, se = "standard", 
-      B = 999, rhs = NULL, neq = 0L, Wt = TRUE, bootWt = FALSE, 
+      B = 999, rhs = NULL, neq = 0L, Wt = c("mvnorm", "boot", "none"), 
       bootWt.R = 99999, parallel = "no", ncpus = 1L, cl = NULL, 
       seed = NULL, control = list(), verbose = FALSE, debug = FALSE, 
       \dots)
       
 \method{conRLM}{rlm}(object, constraints = NULL, se = "standard", 
-       B = 999, rhs = NULL, neq = 0L, Wt = TRUE, bootWt = FALSE, 
+       B = 999, rhs = NULL, neq = 0L, Wt = c("mvnorm", "boot", "none"), 
        bootWt.R = 99999, parallel = "no", ncpus = 1L, cl = NULL, 
        seed = NULL, control = list(), verbose = FALSE, debug = FALSE, 
        \dots)
        
 \method{conGLM}{glm}(object, constraints = NULL, se = "standard", 
-       B = 999, rhs = NULL, neq = 0L, Wt = TRUE, bootWt = FALSE, 
+       B = 999, rhs = NULL, neq = 0L, Wt = c("mvnorm", "boot", "none"), 
        bootWt.R = 99999, parallel = "no", ncpus = 1L, cl = NULL, 
        seed = NULL, control = list(), verbose = FALSE, debug = FALSE, 
        \dots)
@@ -79,16 +79,15 @@ restriktor(object, constraints = NULL, \dots)
   first two rows of the constraints matrix \eqn{R} are treated as 
   equality constraints. Note: only used if constraints input is a 
   matrix or vector.}
-  \item{Wt}{if \code{FALSE}, no chi-bar-square weights are computed.}
-  \item{bootWt}{if \code{TRUE}, the chi-bar-square weights are 
-  computed based on a simulation approach. If \code{FALSE}, the 
-  weights are computed based on the multivariate normal distribution 
-  function with additional Monte Carlo steps. These weights are 
-  necessary in the \code{summary} function for computing the GORIC 
-  value. Moreover, they are re-used in the \code{\link{iht}} 
-  function for computing the p-value for the test-statistic, 
-  unless the p-value is computed directly via bootstrapping.}
-  \item{bootWt.R}{integer; number of bootstrap draws for \code{bootWt}. 
+  \item{Wt}{if \code{"mvnorm"}, the chi-bar-square weights are computed based 
+  on the multivariate normal distribution function with additional Monte Carlo 
+  steps. If \code{"boot"}, the chi-bar-square weights are computed using parametric
+  bootstrapping. If \code{"none"}, no chi-bar-square weights are computed. The 
+  weights are necessary in the \code{restriktor.summary} function for computing 
+  the GORIC. Moreover, the weights are re-used in the \code{\link{iht}} function 
+  for computing the p-value for the test-statistic, unless the p-value is computed 
+  directly via bootstrapping.}
+  \item{bootWt.R}{integer; number of bootstrap draws for \code{Wt == "boot"}. 
   The default value is set to 99999. Parallel support is available.}
   \item{parallel}{the type of parallel operation to be used (if any). 
   If missing, the default is set "no".}

@@ -94,7 +94,7 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   
   if (type == "global") {
     CALL <- list(object = model_org, constraints = AmatG, rhs = bvecG, 
-                 neq = nrow(AmatG), se = "none", Wt = FALSE)
+                 neq = nrow(AmatG), se = "none", Wt = "none")
     glm_fit <- do.call("restriktor", CALL)
     
     b_eqrestr <- coef(glm_fit)
@@ -102,7 +102,7 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     Ts <- c(t(b_restr - b_eqrestr) %*% solve(Sigma, b_restr - b_eqrestr))
   } else if (type == "A") {
     CALL <- list(object = model_org, constraints = Amat, rhs = bvec, 
-                 neq = nrow(Amat), se = "none", Wt = FALSE)
+                 neq = nrow(Amat), se = "none", Wt = "none")
     glm_fit <- do.call("restriktor", CALL)
     
     b_eqrestr <- coef(glm_fit)
@@ -119,7 +119,7 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
         # be preserved in the alternative hypothesis.
         CALL <- list(object = model_org, constraints = Amat[1:meq_alt,,drop = FALSE], 
                      rhs = bvec[1:meq_alt], neq = meq_alt, 
-                     se = "none", Wt = FALSE)
+                     se = "none", Wt = "none")
         glm_fit <- do.call("restriktor", CALL)
         
         b_restr_alt <- coef(glm_fit)
@@ -138,10 +138,10 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   # the parametric bootstrap or model based bootstrap, without fist computing 
   # the mixing weights.
   
-  if (!is.null(object$wt) && boot == "no") {
+  if (!(attr(object$wt, "method") == "none") && boot == "no") {
     wt <- rev(object$wt)
     
-    if (attr(object$wt, "bootWt")) {
+    if (attr(object$wt, "method") == "boot") {
       idx_min <- (ncol(Amat) - nrow(Amat)) + 1 
       idx_max <- (ncol(Amat) - meq) + 1 
       wt <- rev(wt[idx_min:idx_max])
@@ -325,7 +325,7 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
   
   if (type == "global") {  
     CALL <- list(object = model_org, constraints = AmatG, 
-                 rhs = bvecG, neq = nrow(AmatG), se = "none", Wt = FALSE)
+                 rhs = bvecG, neq = nrow(AmatG), se = "none", Wt = "none")
     glm_fit <- do.call("restriktor", CALL)
     
     b_eqrestr <- coef(glm_fit)
@@ -336,7 +336,7 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
     Ts <- -2*(ll0 - ll1)
   } else if (type == "A") {
     CALL <- list(object = model_org, constraints = Amat, 
-                 rhs = bvec, neq = nrow(Amat), se = "none", Wt = FALSE)
+                 rhs = bvec, neq = nrow(Amat), se = "none", Wt = "none")
     glm_fit <- do.call("restriktor", CALL)
     
     b_eqrestr <- coef(glm_fit)
@@ -357,7 +357,7 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
       # some equality may be preserved in the alternative hypothesis.
       if (meq_alt > 0L && meq_alt <= meq) {
         CALL <- list(object = model_org, constraints = Amat[1:meq_alt,,drop=FALSE], 
-                     rhs = bvec[1:meq_alt], neq = meq_alt, se = "none", Wt = FALSE)
+                     rhs = bvec[1:meq_alt], neq = meq_alt, se = "none", Wt = "none")
         glm_fit <- do.call("restriktor", CALL)
         
         b_restr_alt <- coef(glm_fit)
@@ -373,10 +373,10 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
     }
   } 
   
-  if (!is.null(object$wt) && boot == "no") { 
+  if (!(attr(object$wt, "method") == "none") && boot == "no") { 
     wt <- rev(object$wt)
     
-    if (attr(object$wt, "bootWt")) {
+    if (attr(object$wt, "method") == "boot") {
       idx_min <- (ncol(Amat) - nrow(Amat)) + 1 
       idx_max <- (ncol(Amat) - meq) + 1 
       wt <- rev(wt[idx_min:idx_max])
@@ -571,7 +571,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
 
   if (type == "global") {
     CALL <- list(object = model_org, constraints = AmatG, 
-                 rhs = bvecG, neq = nrow(AmatG), se = "none", Wt = FALSE)
+                 rhs = bvecG, neq = nrow(AmatG), se = "none", Wt = "none")
     glm_fit <- do.call("restriktor", CALL)
     
     b_eqrestr <- coef(glm_fit)
@@ -602,7 +602,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     ###############################################
   } else if (type == "A") {
     CALL <- list(object = model_org, constraints = Amat, 
-                 rhs = bvec, neq = nrow(Amat), se = "none", Wt = FALSE)
+                 rhs = bvec, neq = nrow(Amat), se = "none", Wt = "none")
     glm_fit <- do.call("restriktor", CALL)
     
     b_eqrestr <- coef(glm_fit)
@@ -662,7 +662,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
       # some equality may be preserved in the alternative hypothesis.
       if (meq_alt > 0L && meq_alt <= meq) {
         CALL <- list(object = model_org, constraints = Amat[1:meq_alt,,drop=FALSE], 
-                     rhs = bvec[1:meq_alt], neq = meq_alt, se = "none", Wt = FALSE)
+                     rhs = bvec[1:meq_alt], neq = meq_alt, se = "none", Wt = "none")
         glm_fit <- do.call("restriktor", CALL)
         
         b_restr_alt <- coef(glm_fit)
@@ -697,10 +697,10 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     }
   }
 
-  if (!is.null(object$wt) && boot == "no") {
+  if (!(attr(object$wt, "method") == "none") && boot == "no") {
     wt <- rev(object$wt)
     
-    if (attr(object$wt, "bootWt")) {
+    if (attr(object$wt, "method") == "boot") {
       idx_min <- (ncol(Amat) - nrow(Amat)) + 1 
       idx_max <- (ncol(Amat) - meq) + 1 
       wt <- rev(wt[idx_min:idx_max])

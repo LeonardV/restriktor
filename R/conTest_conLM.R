@@ -177,10 +177,10 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   # the parametric bootstrap or model based bootstrap, without fist computing 
   # the mixing weights.
   
-  if (!is.null(object$wt) && boot == "no") {
+  if (!(attr(object$wt, "method") == "none") && boot == "no") {
     wt <- rev(object$wt)
     
-    if (attr(object$wt, "bootWt")) {
+    if (attr(object$wt, "method") == "boot") {
       idx_min <- (ncol(Amat) - nrow(Amat)) + 1 
       idx_max <- (ncol(Amat) - meq) + 1 
       wt <- rev(wt[idx_min:idx_max])
@@ -471,11 +471,11 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
     }
   } 
   
-  if (!is.null(object$wt) && boot == "no") { 
+  if (!(attr(object$wt, "method") == "none") && boot == "no") { 
     
     wt <- rev(object$wt)
     
-    if (attr(object$wt, "bootWt")) {
+    if (attr(object$wt, "method") == "boot") {
       idx_min <- (ncol(Amat) - nrow(Amat)) + 1 
       idx_max <- (ncol(Amat) - meq) + 1 
       wt <- rev(wt[idx_min:idx_max])
@@ -840,11 +840,11 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     }
   } 
   
-  if (!is.null(object$wt) && boot == "no") {
+  if (!(attr(object$wt, "method") == "none") && boot == "no") {
     
     wt <- rev(object$wt)
     
-    if (attr(object$wt, "bootWt")) {
+    if (attr(object$wt, "method") == "boot") {
       idx_min <- (ncol(Amat) - nrow(Amat)) + 1 
       idx_max <- (ncol(Amat) - meq) + 1 
       wt <- rev(wt[idx_min:idx_max])

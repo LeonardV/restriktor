@@ -1,6 +1,6 @@
 conLM.lm <- function(object, constraints = NULL, se = "standard", 
-                     B = 999, rhs = NULL, neq = 0L, Wt = TRUE, 
-                     bootWt = FALSE, bootWt.R = 99999,
+                     B = 999, rhs = NULL, neq = 0L, 
+                     Wt = c("mvnorm", "boot", "none"), bootWt.R = 99999,
                      parallel = "no", ncpus = 1L, cl = NULL, 
                      seed = NULL, control = list(), verbose = FALSE, 
                      debug = FALSE, ...) {
@@ -70,10 +70,10 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   
   # compute the reduced row-echelon form of the constraints matrix
   rAmat <- GaussianElimination(t(Amat))
-  if (Wt && !bootWt) {
+  if (Wt == "mvnorm") {
     if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
       stop(paste("Restriktor ERROR: The constraint matrix must have full row-rank ( choose e.g. rows", 
-                 paste(rAmat$pivot, collapse = " "), ", or try to set bootWt = TRUE)"))
+                 paste(rAmat$pivot, collapse = " "), ", or try to set Wt = \"boot\")"))
     }
   } else {
     if (rAmat$rank < nrow(Amat) && 
@@ -132,12 +132,12 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   
   is.augmented <- TRUE
   # compute mixing weights
-  if (Wt) {
+  if (Wt != "none") {
     ## compute mixing weights
     if (all(c(Amat) == 0)) { # unrestrikted case
       wt <- c(rep(0L, p), 1)
       is.augmented <- FALSE
-    } else if (bootWt) { 
+    } else if (Wt == "boot") { 
       # compute mixing weights based on simulation
       wt <- con_weights_boot(VCOV     = W,
                              Amat     = Amat, 
@@ -148,20 +148,20 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                              cl       = cl,
                              seed     = seed,
                              verbose  = verbose)
-    } else if (!bootWt & (meq < nrow(Amat))) {
+      attr(wt, "bootWt.R") <- bootWt.R 
+    } else if (Wt == "mvnorm" && (meq < nrow(Amat))) {
       # compute mixing weights based on mvtnorm
       wt <- rev(con_weights(Amat %*% W %*% t(Amat), meq = meq))
-    } else if (!bootWt & (meq == nrow(Amat))) {
+    } else if (Wt == "mvnorm" && (meq == nrow(Amat))) {
       # only equality constraints
       wt <- rep(0L, ncol(W) + 1)
       wt.idx <- ncol(W) - meq + 1
       wt[wt.idx] <- 1
     }
-    attr(wt, "bootWt") <- bootWt
-    if (bootWt) { attr(wt, "bootWt.R") <- bootWt.R }
   } else {
-    wt <- NULL
+    wt <- NA
   }
+  attr(wt, "method") <- Wt
   
   timing$wt <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
@@ -196,7 +196,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                 control     = control)  
   } else {
     # compute constrained estimates for lm()
-    out.QP <- con_solver_lm(X      = X, 
+    out.QP <- con_solver_lm(X         = X, 
                             y         = y, 
                             b_unrestr = b_unrestr, 
                             w         = weights, 
@@ -333,8 +333,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                                  rhs         = bvec, 
                                  neq         = meq, 
                                  se          = "none",
-                                 bootWt      = bootWt,
-                                 bootWt.R    = bootWt.R,
+                                 Wt          = "none",
                                  parallel    = parallel, 
                                  ncpus       = ncpus, 
                                  cl          = cl)
@@ -349,8 +348,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                                  rhs         = bvec, 
                                  neq         = meq, 
                                  se          = "none",
-                                 bootWt      = bootWt,
-                                 bootWt.R    = bootWt.R,
+                                 Wt          = "none",
                                  parallel    = parallel, 
                                  ncpus       = ncpus, 
                                  cl          = cl)

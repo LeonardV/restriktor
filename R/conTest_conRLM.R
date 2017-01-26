@@ -170,10 +170,10 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     }
   } 
   
-  if (!is.null(object$wt) && boot == "no") {
+  if (!(attr(object$wt, "method") == "none") && boot == "no") {
     wt <- rev(object$wt)
     
-    if (attr(object$wt, "bootWt")) {
+    if (attr(object$wt, "method") == "boot") {
       idx_min <- (ncol(Amat) - nrow(Amat)) + 1 
       idx_max <- (ncol(Amat) - meq) + 1 
       wt <- rev(wt[idx_min:idx_max])
@@ -450,10 +450,12 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   # We need to recalculate the weights based on V_hat = Sigma instead on solve(t(X)%*%X)
   # Do we have to? The differences look very small.
   ## compute mixing weights
-  if (!is.null(object$wt)) {
-    if (all(c(Amat) == 0)) { # unrestrikted case
+  if (!(attr(object$wt, "method") == "none")) {
+    if (all(c(Amat) == 0)) { 
+      # unrestrikted case
       wt <- c(rep(0L, p), 1)
-    } else if (attr(object$wt, "bootWt")) { # compute mixing weights based on simulation
+    } else if (attr(object$wt, "method") == "boot") { 
+      # compute mixing weights based on simulation
       wt <- con_weights_boot(VCOV     = Sigma,
                              Amat     = Amat,
                              meq      = meq,
@@ -463,9 +465,11 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                              cl       = cl,
                              seed     = seed,
                              verbose  = verbose)
-    } else if (!attr(object$wt, "bootWt") && (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
+    } else if (attr(object$wt, "method") == "mvnorm" && (meq < nrow(Amat))) { 
+      # compute mixing weights based on mvnorm
       wt <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
-    } else if (!attr(object$wt, "bootWt") && (meq == nrow(Amat))) { # only equality constraints
+    } else if (attr(object$wt, "method") == "mvnorm" && (meq == nrow(Amat))) { 
+      # only equality constraints
       wt <- rep(0L, ncol(Sigma) + 1)
       wt.idx <- ncol(Sigma) - meq + 1
       wt[wt.idx] <- 1
@@ -473,14 +477,9 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   }
   
   
-  #wt <- object$wt
-  # is this fool proof? 
-  # The number of bootstrap samples must be large enough to avoid spurious results.
-  if (!is.null(object$wt) && boot == "no") {
-    
+  if (!(attr(object$wt, "method") == "none") && boot == "no") {
     wt <- rev(object$wt)
-    
-    if (attr(object$wt, "bootWt")) {
+    if (attr(object$wt, "method") == "boot") {
       idx_min <- (ncol(Amat) - nrow(Amat)) + 1 
       idx_max <- (ncol(Amat) - meq) + 1 
       wt <- rev(wt[idx_min:idx_max])
@@ -734,11 +733,11 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     }
   } 
   
-  if (!is.null(object$wt) && boot == "no") {
+  if (!(attr(object$wt, "method") == "none") && boot == "no") {
     
     wt <- rev(object$wt)
     
-    if (attr(object$wt, "bootWt")) {
+    if (attr(object$wt, "method") == "boot") {
       idx_min <- (ncol(Amat) - nrow(Amat)) + 1 
       idx_max <- (ncol(Amat) - meq) + 1 
       wt <- rev(wt[idx_min:idx_max])
@@ -1015,7 +1014,8 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   ## compute mixing weights
   if (all(c(Amat) == 0)) { # unrestrikted case
     wt <- c(rep(0L, p), 1)
-  } else if (attr(object$wt, "bootWt")) { # compute mixing weights based on simulation
+  } else if (attr(object$wt, "method") == "boot") { 
+    # compute mixing weights based on simulation
     wt <- con_weights_boot(VCOV     = Sigma,
                            Amat     = Amat,
                            meq      = meq,
@@ -1025,22 +1025,21 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                            cl       = cl,
                            seed     = seed,
                            verbose  = verbose)
-  } else if (!attr(object$wt, "bootWt") & (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
+  } else if (attr(object$wt, "method") == "mvnorm" && (meq < nrow(Amat))) { 
+    # compute mixing weights based on mvnorm
     wt <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
-  } else if (!attr(object$wt, "bootWt") & (meq == nrow(Amat))) { # only equality constraints
+  } else if (attr(object$wt, "method") == "mvnorm" && (meq == nrow(Amat))) { 
+    # only equality constraints
     wt <- rep(0L, ncol(Sigma) + 1)
     wt.idx <- ncol(Sigma) - meq + 1
     wt[wt.idx] <- 1
   }
   
-  #wt <- object$wt
-  # is this fool proof? 
-  # The number of bootstrap samples must be large enough to avoid spurious results.
-  if (!is.null(object$wt) && boot == "no") {
+  if (!attr(object$wt, "method") == "none" && boot == "no") {
     
     wt <- rev(object$wt)
     
-    if (attr(object$wt, "bootWt")) {
+    if (attr(object$wt, "method") == "boot") {
       idx_min <- (ncol(Amat) - nrow(Amat)) + 1 
       idx_max <- (ncol(Amat) - meq) + 1 
       wt <- rev(wt[idx_min:idx_max])

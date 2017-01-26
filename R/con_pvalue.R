@@ -107,9 +107,6 @@ con_pvalue_boot_parametric <- function(model,
   bvec <- model$rhs
   meq  <- model$neq
   
-  bootWt <- attr(model$wt, "bootWt")
-  bootWt.R <- attr(model$wt, "bootWt.R")
-  
   #parallel housekeeping
   have_mc <- have_snow <- FALSE
   if (parallel != "no" && ncpus > 1L) {
@@ -143,7 +140,7 @@ con_pvalue_boot_parametric <- function(model,
     
     CALL <- list(object = boot_model, constraints = Amat, 
                  rhs = bvec, neq = meq, se = "none", 
-                 Wt = FALSE, control = control)
+                 Wt = "none", control = control)
     
     boot_conLM <- do.call("restriktor", CALL)
     
@@ -244,9 +241,6 @@ con_pvalue_boot_model_based <- function(model,
   bvec <- model$rhs
   meq  <- model$neq
   
-  bootWt <- attr(model$wt, "bootWt")
-  bootWt.R <- attr(model$wt, "bootWt.R")
-  
   # parallel housekeeping
   have_mc <- have_snow <- FALSE
   if (parallel != "no" && ncpus > 1L) {
@@ -268,13 +262,13 @@ con_pvalue_boot_model_based <- function(model,
   if (type == "A") {
     CALL <- list(object = model_org, constraints = Amat, 
                  rhs = bvec, neq = nrow(Amat), 
-                 control = control, se = "none", Wt = FALSE)
+                 control = control, se = "none", Wt = "none")
     
     fit <- do.call("restriktor", CALL)
   } else if (type == "B") {
     CALL <- list(object = model_org, constraints = Amat, 
                  rhs = bvec, neq = meq, 
-                 control = control, se = "none", Wt = FALSE)
+                 control = control, se = "none", Wt = "none")
                     
     fit <- do.call("restriktor", CALL)
   } 
@@ -316,13 +310,13 @@ con_pvalue_boot_model_based <- function(model,
       boot_model <- update(model_org, formula = form, data = DATA)
       CALL <- list(object = boot_model, constraints = Amat, rhs = bvec, 
                    neq = meq, control = control, se = "none",
-                   Wt = FALSE)#bootWt = bootWt, bootWt.R = bootWt.R)
+                   Wt = "none")
       
       boot_conLM <- do.call("restriktor", CALL)  
       boot_conTest <- try(conTest(boot_conLM, 
                                   type    = type, 
                                   test    = test, 
-                                  boot    = "no",                # arbitrary, check is based on Wt
+                                  boot    = "no",
                                   neq.alt = neq.alt, 
                                   control = control))
       if (inherits(boot_conTest, "try-error")) {

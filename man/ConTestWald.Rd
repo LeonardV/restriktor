@@ -284,7 +284,7 @@ conTest(fit2_rlm, constraints = myConstraints3, type = "B", test = "Wald", neq.a
 # Note that, a warning message may be thrown because the number of 
 # bootstrap samples is too low.
 fit3_con <- restriktor(fit2_rlm, constr = myConstraints3, 
-                       se = "boot.model.based", R = 9)
+                       se = "boot.model.based", B = 9)
 conTest(fit3_con, type = "B", test = "Wald", neq.alt = 1)
 
 

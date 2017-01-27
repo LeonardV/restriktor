@@ -67,6 +67,11 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
     meq  <- 0L
   } 
   
+  
+  if (!(Wt %in% c("mvnorm", "boot", "none"))) {
+    stop("Restriktor ERROR: ", sQuote(Wt), " method unknown. Choose from \"mvnorm\", \"boot\", or \"none\"")
+  }
+  
   # compute the reduced row-echelon form of the constraints matrix
   rAmat <- GaussianElimination(t(Amat))
   if (Wt == "mvnorm") {

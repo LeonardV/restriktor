@@ -303,7 +303,7 @@ myConstraints3 <- ' group1 == group2
 conTest(fit2_lm, constraints = myConstraints3)
 
 # or
-fit3_con <- restriktor(fit2_lm, constr = myConstraints3)
+fit3_con <- restriktor(fit2_lm, constraints = myConstraints3)
 conTest(fit3_con)
 
 
@@ -319,7 +319,7 @@ conTest(fit2_lm, constraints = myConstraints4, type = "B", neq.alt = 1)
 # example; in practice you may wish to use a much higher number.
 # Note that, a warning message may be thrown because the number of 
 # bootstrap samples is too low.
-fit4_con <- restriktor(fit2_lm, constr = myConstraints4, 
+fit4_con <- restriktor(fit2_lm, constraints = myConstraints4, 
                        se = "boot.model.based", B = 9)
 conTest(fit4_con, type = "B", neq.alt = 1)
 

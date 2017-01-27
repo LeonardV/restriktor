@@ -272,7 +272,7 @@ conTest(fit2_lm, constraints = myConstraints3, type = "B",
 # example; in practice you may wish to use a much higher number.
 # Note that, a warning message may be thrown because the number of 
 # bootstrap samples is too low.
-fit3_con <- restriktor(fit2_lm, constr = myConstraints3, 
+fit3_con <- restriktor(fit2_lm, constraints = myConstraints3, 
                        se = "boot.model.based", B = 9)
 conTest(fit3_con, type = "B", test = "LRT", neq.alt = 1)
 

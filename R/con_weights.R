@@ -39,7 +39,7 @@ con_weights_boot <- function(VCOV, Amat, meq,
   iact <- vector("numeric", ncol(Amat))
   fn <- function(b) {
     if (verbose) {
-      cat("iteration =", b)
+      cat("bootstrap draw =", b)
     }
     if (!is.null(seed))
       set.seed(seed + b)

@@ -158,7 +158,7 @@ con_pvalue_boot_parametric <- function(model,
     OUT <- boot_conTest[[1]]$Ts
   
     if (verbose) {
-      cat("iteration =", b, "...Ts =", OUT, "\n")
+      cat("bootstrap draw =", b, "...Ts =", OUT, "\n")
     }
       OUT
    }

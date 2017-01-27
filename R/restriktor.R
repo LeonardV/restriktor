@@ -7,9 +7,8 @@ restriktor <- function(object, constraints = NULL, ...) {
   
   arguments <- list(...)
   if (length(arguments)) {
-    pnames <- c("object", "constraints", "se", "B", "rhs", "neq", "Wt", 
-                "bootWt.R", "parallel", "ncpus", "cl", "seed", "control", 
-                "verbose", "debug")
+    pnames <- c("se", "B", "rhs", "neq", "Wt", "bootWt.R", "parallel", 
+                "ncpus", "cl", "seed", "control", "verbose", "debug")
     pm <- pmatch(names(arguments), pnames, nomatch = 0L)
     if (any(pm == 0L)) { 
       pm_idx <- which(pm == 0L)

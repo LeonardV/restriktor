@@ -8,27 +8,26 @@
 \description{Function \code{restriktor} estimates the parameters 
   of a linear model (\code{lm}), a robust linear model (\code{rlm}) 
   or a generalized linear model (\code{glm}) subject to linear equality 
-  and/or linear inequality restrictions. The real work horses are 
-  the \code{conLM}, \code{conRLM} and the \code{conGLM} functions 
-  for linear, robust linear and generalized linear models respectively.}
+  and linear inequality restrictions. It is a convenience function. The real work 
+  horses are the \code{conLM}, \code{conRLM} and the \code{conGLM} functions.}
 
 \usage{
 restriktor(object, constraints = NULL, \dots)
 
 \method{conLM}{lm}(object, constraints = NULL, se = "standard", 
-      B = 999, rhs = NULL, neq = 0L, Wt = c("mvnorm", "boot", "none"), 
+      B = 999, rhs = NULL, neq = 0L, Wt = "mvnorm", 
       bootWt.R = 99999, parallel = "no", ncpus = 1L, cl = NULL, 
       seed = NULL, control = list(), verbose = FALSE, debug = FALSE, 
       \dots)
       
 \method{conRLM}{rlm}(object, constraints = NULL, se = "standard", 
-       B = 999, rhs = NULL, neq = 0L, Wt = c("mvnorm", "boot", "none"), 
+       B = 999, rhs = NULL, neq = 0L, Wt = "mvnorm", 
        bootWt.R = 99999, parallel = "no", ncpus = 1L, cl = NULL, 
        seed = NULL, control = list(), verbose = FALSE, debug = FALSE, 
        \dots)
        
 \method{conGLM}{glm}(object, constraints = NULL, se = "standard", 
-       B = 999, rhs = NULL, neq = 0L, Wt = c("mvnorm", "boot", "none"), 
+       B = 999, rhs = NULL, neq = 0L, Wt = "mvnorm", 
        bootWt.R = 99999, parallel = "no", ncpus = 1L, cl = NULL, 
        seed = NULL, control = list(), verbose = FALSE, debug = FALSE, 
        \dots)
@@ -79,7 +78,7 @@ restriktor(object, constraints = NULL, \dots)
   first two rows of the constraints matrix \eqn{R} are treated as 
   equality constraints. Note: only used if constraints input is a 
   matrix or vector.}
-  \item{Wt}{if \code{"mvnorm"}, the chi-bar-square weights are computed based 
+  \item{Wt}{if \code{"mvnorm"} (default), the chi-bar-square weights are computed based 
   on the multivariate normal distribution function with additional Monte Carlo 
   steps. If \code{"boot"}, the chi-bar-square weights are computed using parametric
   bootstrapping. If \code{"none"}, no chi-bar-square weights are computed. The 
@@ -87,7 +86,7 @@ restriktor(object, constraints = NULL, \dots)
   the GORIC. Moreover, the weights are re-used in the \code{\link{iht}} function 
   for computing the p-value for the test-statistic, unless the p-value is computed 
   directly via bootstrapping.}
-  \item{bootWt.R}{integer; number of bootstrap draws for \code{Wt == "boot"}. 
+  \item{bootWt.R}{integer; number of bootstrap draws for \code{Wt = "boot"}. 
   The default value is set to 99999. Parallel support is available.}
   \item{parallel}{the type of parallel operation to be used (if any). 
   If missing, the default is set "no".}

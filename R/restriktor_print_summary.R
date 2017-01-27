@@ -12,11 +12,11 @@ print.summary.restriktor <- function(x, digits = max(3, getOption("digits") - 2)
   
   if (inherits(x, "summary.conRLM")) {
     cat("Restriktor: restricted robust linear model:\n\n")
-  } else if (inherits(x, "summary.conLM")) {
-    cat("Restriktor: restricted linear model:\n\n")
   } else if (inherits(x, "summary.conGLM")) {
     cat("Restriktor: restricted generalized linear model:\n\n")
-  }
+  } else if (inherits(x, "summary.conLM")) {
+    cat("Restriktor: restricted linear model:\n\n")
+  } 
   
   cat(if (!is.null(x$weights) && diff(range(x$weights))) 
     "Weighted ", "Residuals:\n", sep = "")
@@ -76,11 +76,11 @@ print.summary.restriktor <- function(x, digits = max(3, getOption("digits") - 2)
   
   if (inherits(x, "summary.conGLM")) {
   cat("\n(Dispersion parameter for ", x$family$family, " family taken to be ", 
-      format(x$dispersion_restr), ")\n\n", apply(cbind(paste(format(c("Null", 
-                                                                "Residual"), justify = "right"), "deviance:"), format(unlist(x[c("deviance_null", 
-                                                                                                                                 "deviance")]), digits = max(5L, digits + 1L)), " on", 
-                                                 format(unlist(x[c("df.residual_null", "rdf")])), " degrees of freedom\n"), 
-                                           1L, paste, collapse = " "), sep = "")
+      format(x$dispersion), ")\n\n", apply(cbind(paste(format(c("Null", 
+                                                          "Residual"), justify = "right"), "deviance:"), format(unlist(x[c("deviance_null", 
+                                                                                                                           "deviance")]), digits = max(5L, digits + 1L)), " on", 
+                                           format(unlist(x[c("df.residual_null", "rdf")])), " degrees of freedom\n"), 
+                                     1L, paste, collapse = " "), sep = "")
   }
   
   goric <- x$goric

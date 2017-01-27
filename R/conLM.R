@@ -1,7 +1,6 @@
 conLM.lm <- function(object, constraints = NULL, se = "standard", 
-                     B = 999, rhs = NULL, neq = 0L, 
-                     Wt = c("mvnorm", "boot", "none"), bootWt.R = 99999,
-                     parallel = "no", ncpus = 1L, cl = NULL, 
+                     B = 999, rhs = NULL, neq = 0L, Wt = "mvnorm", 
+                     bootWt.R = 99999, parallel = "no", ncpus = 1L, cl = NULL, 
                      seed = NULL, control = list(), verbose = FALSE, 
                      debug = FALSE, ...) {
   
@@ -234,17 +233,13 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
       if (is.null(weights)) {
         mss <- if (attr(object$terms, "intercept")) {
           sum((fitted - mean(fitted))^2)
-        } else {
-          sum(fitted^2)
-        }
+        } else { sum(fitted^2) }
         rss <- sum(residuals^2)
       } else {
         mss <- if (attr(object$terms, "intercept")) {
           m <- sum(weights * fitted / sum(weights))
           sum(weights * (fitted - m)^2)
-        } else {
-          sum(weights * fitted^2)
-        }
+        } else { sum(weights * fitted^2) }
         rss <- sum(weights * residuals^2)
       }
       R2_reduced <- mss / (mss + rss)

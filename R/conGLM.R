@@ -1,6 +1,6 @@
 conGLM.glm <- function(object, constraints = NULL, se = "standard", 
                        B = 999, rhs = NULL, neq = 0L, 
-                       Wt = c("mvnorm", "boot", "none"), bootWt.R = 99999,
+                       Wt = "mvnorm", bootWt.R = 99999,
                        parallel = "no", ncpus = 1L, cl = NULL, 
                        seed = NULL, control = list(), verbose = FALSE, 
                        debug = FALSE, ...) {

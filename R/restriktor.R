@@ -5,6 +5,18 @@ restriktor <- function(object, constraints = NULL, ...) {
     stop("restriktor only works for lm(), rlm() and glm().")
   }
   
+  arguments <- list(...)
+  if (length(arguments)) {
+    pnames <- c("object", "constraints", "se", "B", "rhs", "neq", "Wt", 
+                "bootWt.R", "parallel", "ncpus", "cl", "seed", "control", 
+                "verbose", "debug")
+    pm <- pmatch(names(arguments), pnames, nomatch = 0L)
+    if (any(pm == 0L)) { 
+      pm_idx <- which(pm == 0L)
+      stop("Restriktor ERROR: ", names(arguments[pm_idx]), " invalid argument(s).")
+    }
+  }
+  
   if (class(object)[1] %in% c("lm","mlm")) {
     UseMethod("conLM")
   } 

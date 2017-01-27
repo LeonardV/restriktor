@@ -8,7 +8,7 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
   # bty = "stud" needs bootstrap variances
   if (bootCIs & !(bty %in% c("norm", "basic", "perc", "bca"))) {
     if (bty == "stud") {
-      stop("bootstrap variances needed for studentized intervals.")
+      stop("Restriktor ERROR: studentized intervals not implemented.")
     } else {
       stop("bty is invalid.")
     }
@@ -128,11 +128,11 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
   }
   
   if (inherits(z, "conGLM")) {
-  ans$family <- z$family
-  ans$dispersion_restr <- z$dispersion_restr  
-  ans$deviance_null <- z$deviance_null
-  ans$deviance <- z$deviance
-  ans$df.residual_null <- z$df.residual_null
+    ans$family <- z$family
+    ans$dispersion <- z$dispersion  
+    ans$deviance_null <- z$deviance_null
+    ans$deviance <- z$deviance
+    ans$df.residual_null <- z$df.residual_null
   }
     
   wt <- z$wt
@@ -169,10 +169,10 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
   
   if (inherits(z, "conRLM")) {
     class(ans) <- c("summary.restriktor", "summary.conRLM")
-  } else if (inherits(z, "conLM")) {
-    class(ans) <- c("summary.restriktor", "summary.conLM")
   } else if (inherits(z, "conGLM")) {
     class(ans) <- c("summary.restriktor", "summary.conGLM")
+  } else if (inherits(z, "conLM")) {
+    class(ans) <- c("summary.restriktor", "summary.conLM")
   } 
     
   ans

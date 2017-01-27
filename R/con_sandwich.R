@@ -55,7 +55,7 @@ bread.conGLM <- function(x, ...) {
   }
   
   VCOV <- attr(x$information, "inverted") #* x$df.residual / as.vector(sum(sx$df[1:2]))
-  VCOV.unscaled <- VCOV / x$dispersion_restr
+  VCOV.unscaled <- VCOV / x$dispersion
   
   #cov.unscaled <- 1 / dispersion_restr * I_inv
   

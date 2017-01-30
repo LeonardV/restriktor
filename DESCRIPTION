@@ -15,8 +15,10 @@ Depends: R(>= 3.0.0)
 Imports: boot, ic.infer, lavaan, MASS, mvtnorm, quadprog
 License: GPL (>= 2)
 LazyData: yes
-Packaged: 2017-01-09 15:43:19 UTC; leonard
+URL: http://restriktor.org
+NeedsCompilation: no
+Packaged: 2017-01-30 15:43:19 UTC; Leonard
 Author: Yves Rosseel [cre],
         Leonard Vanbrabant [aut]
 Maintainer: Yves Rosseel <Yves.Rosseel@UGent.be>
-Suggests: testthat
+Suggests: 

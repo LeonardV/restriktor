@@ -8,7 +8,10 @@ print.summary.restriktor <- function(x, digits = max(3, getOption("digits") - 2)
   bty <- attr(x$se_type, "bty")
   level <- attr(x$se_type, "level")
   
-  cat("Call:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), "\n\n", sep = "")
+  #cat("Call:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), "\n\n", sep = "")
+  
+  cat("\nCall:\n", gsub("\\n", "\n", paste(deparse(x$call), collapse="\n"), 
+                        fixed = TRUE), "\n\n", sep = "")
   
   if (inherits(x, "summary.conRLM")) {
     cat("Restriktor: restricted robust linear model:\n\n")

@@ -1,6 +1,6 @@
 conGLM.glm <- function(object, constraints = NULL, se = "standard", 
                        B = 999, rhs = NULL, neq = 0L, 
-                       Wt = "mvnorm", bootWt.R = 99999,
+                       Wt = "pmvnorm", bootWt.R = 99999,
                        parallel = "no", ncpus = 1L, cl = NULL, 
                        seed = NULL, control = list(), verbose = FALSE, 
                        debug = FALSE, ...) {
@@ -8,6 +8,21 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   # check class
   if (!(class(object)[1] %in% c("glm"))) {
     stop("Restriktor ERROR: object must be of class glm.")
+  }
+  
+  # standard error methods
+  if (se == "default") {
+    se <- "standard"
+  } else if (se == "boot.residual") {
+    se <- "boot.model.based"
+  }
+  if (!(se %in% c("none","standard","const","boot.model.based","boot.standard",
+                  "HC","HC0","HC1","HC2","HC3","HC4","HC4m","HC5"))) {
+    stop("Restriktor ERROR: standard error method ", sQuote(se), " unknown.")
+  }
+  
+  if (!(Wt %in% c("pmvnorm", "boot", "none"))) {
+    stop("Restriktor ERROR: ", sQuote(Wt), " method unknown. Choose from \"pmvnorm\", \"boot\", or \"none\"")
   }
   
   # timing
@@ -43,6 +58,9 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   p <- length(coef(object))
   # sample size
   n <- dim(X)[1]
+  # unrestricted (weighted) log-likelihood
+  ll_unc <- con_loglik_glm(object)
+  
   
   timing$preparation <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
@@ -74,13 +92,10 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
     meq  <- 0L
   } 
   
-  if (!(Wt %in% c("mvnorm", "boot", "none"))) {
-    stop("Restriktor ERROR: ", sQuote(Wt), " method unknown. Choose from \"mvnorm\", \"boot\", or \"none\"")
-  }
   
   # compute the reduced row-echelon form of the constraints matrix
   rAmat <- GaussianElimination(t(Amat))
-  if (Wt == "mvnorm") {
+  if (Wt == "pmvnorm") {
     if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
       stop(paste("Restriktor ERROR: The constraint matrix must have full row-rank ( choose e.g. rows", 
                  paste(rAmat$pivot, collapse = " "), ", or try to set Wt = \"boot\")"))
@@ -99,37 +114,13 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   
   timing$constraints <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
-  # parallel housekeeping
-  have_mc <- have_snow <- FALSE
-  if (parallel != "no" && ncpus > 1L) {
-    if (parallel == "multicore") {
-      have_mc <- .Platform$OS.type != "windows"
-    } else if (parallel == "snow") {
-      have_snow <- TRUE
-    }  
-    if (!have_mc && !have_snow) {
-      ncpus <- 1L
-    }  
-  }
   
-  # standard error methods
-  if (se == "default") {
-    se <- "standard"
-  } else if (se == "boot.residual") {
-    se <- "boot.model.based"
-  }
-  if (!(se %in% c("none","standard","const","boot.model.based","boot.standard",
-                  "HC","HC0","HC1","HC2","HC3","HC4","HC4m","HC5"))) {
-    stop("Restriktor ERROR: standard error method ", sQuote(se), " unknown.")
-  }
-  
+    
   if(ncol(Amat) != length(b_unrestr)) {
     stop("Restriktor ERROR: length coefficients and the number of",
          "\ncolumns constraints-matrix must be identical")
   }
   
-  # unrestricted (weighted) log-likelihood
-  LL_unc <- con_loglik_glm(object)
   
   is.augmented <- TRUE
   # compute mixing weights
@@ -150,10 +141,10 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                              seed     = seed,
                              verbose  = verbose)
       attr(wt, "bootWt.R") <- bootWt.R 
-    } else if (Wt == "mvnorm" && (meq < nrow(Amat))) {
+    } else if (Wt == "pmvnorm" && (meq < nrow(Amat))) {
       # compute mixing weights based on mvtnorm
       wt <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
-    } else if (Wt == "mvnorm" && (meq == nrow(Amat))) {
+    } else if (Wt == "pmvnorm" && (meq == nrow(Amat))) {
       # only equality constraints
       wt <- rep(0L, ncol(Sigma) + 1)
       wt.idx <- ncol(Sigma) - meq + 1
@@ -186,7 +177,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                 df.residual       = object$df.residual,
                 df.residual_null  = object$df.null,
                 dispersion        = so$dispersion, 
-                loglik            = LL_unc,
+                loglik            = ll_unc,
                 aic               = object$aic,
                 deviance_null     = object$null.deviance,
                 deviance          = object$deviance,
@@ -216,23 +207,21 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
     # fit restricted generalized liner model
     fit_glmc <- do.call("conGLM_fit", CALL)
     
+    
+    timing$optim <- (proc.time()[3] - start.time)
+    start.time <- proc.time()[3]
+    
     # restricted estimates
     b_restr <- fit_glmc$coefficients
     b_restr[abs(b_restr) < ifelse(is.null(control$tol), 
                                   sqrt(.Machine$double.eps), 
                                   control$tol)] <- 0L
-    
     b_restr <- as.vector(b_restr)
       names(b_restr) <- names(b_unrestr)
     fitted <- fitted(fit_glmc)
     residuals <- residuals(fit_glmc, "working")
-    
     # weights
     weights <- weights(fit_glmc, "working")
-    
-    timing$optim <- (proc.time()[3] - start.time)
-    start.time <- proc.time()[3]
-    
     # compute restricted dispersion
     df.residual <- n - (p - qr(Amat[0:meq,])$rank)
     
@@ -246,7 +235,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
     }
     
     # restricted log-likelihood
-    LL_restr <- con_loglik_glm(fit_glmc)
+    ll_restr <- con_loglik_glm(fit_glmc)
 
     OUT <- list(CON               = CON,
                 call              = mc,
@@ -263,7 +252,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                 df.residual       = df.residual(object),
                 df.residual_null  = fit_glmc$df.null,
                 dispersion        = dispersion,
-                loglik            = LL_restr,
+                loglik            = ll_restr,
                 aic               = fit_glmc$aic,
                 deviance_null     = fit_glmc$null.deviance,
                 deviance          = fit_glmc$deviance,

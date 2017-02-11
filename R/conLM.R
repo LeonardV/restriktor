@@ -1,5 +1,5 @@
 conLM.lm <- function(object, constraints = NULL, se = "standard", 
-                     B = 999, rhs = NULL, neq = 0L, Wt = "mvnorm", 
+                     B = 999, rhs = NULL, neq = 0L, Wt = "pmvnorm", 
                      bootWt.R = 99999, parallel = "no", ncpus = 1L, cl = NULL, 
                      seed = NULL, control = list(), verbose = FALSE, 
                      debug = FALSE, ...) {
@@ -7,6 +7,21 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   # check class
   if (!(class(object)[1] %in% c("lm"))) {
     stop("Restriktor ERROR: object must be of class lm.")
+  }
+  
+  # standard error methods
+  if (se == "default") {
+    se <- "standard"
+  } else if (se == "boot.residual") {
+    se <- "boot.model.based"
+  }
+  if (!(se %in% c("none","standard","const","boot.model.based","boot.standard",
+                  "HC","HC0","HC1","HC2","HC3","HC4","HC4m","HC5"))) {
+    stop("Restriktor ERROR: standard error method ", sQuote(se), " unknown.")
+  }
+  
+  if (!(Wt %in% c("pmvnorm", "boot", "none"))) {
+    stop("Restriktor ERROR: ", sQuote(Wt), " method unknown. Choose from \"pmvnorm\", \"boot\", or \"none\"")
   }
   
   # timing
@@ -32,10 +47,17 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   weights <- weights(object)
   # unconstrained estimates
   b_unrestr <- coef(object)
+  # ML unconstrained MSE
+  #s2ml.unc <- s2_unrestr * object$df.residual / n
+  #invW <- kronecker(solve(s2_unrestr), t(X) %*% X)
+  Sigma <- vcov(object)#solve(invW)
   # number of parameters
   p <- length(coef(object))
   # sample size
   n <- dim(X)[1]
+  # compute (weighted) log-likelihood
+  ll_unc <- con_loglik_lm(object)
+  
   
   timing$preparation <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
@@ -68,13 +90,9 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   } 
   
   
-  if (!(Wt %in% c("mvnorm", "boot", "none"))) {
-    stop("Restriktor ERROR: ", sQuote(Wt), " method unknown. Choose from \"mvnorm\", \"boot\", or \"none\"")
-  }
-  
   # compute the reduced row-echelon form of the constraints matrix
   rAmat <- GaussianElimination(t(Amat))
-  if (Wt == "mvnorm") {
+  if (Wt == "pmvnorm") {
     if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
       stop(paste("Restriktor ERROR: The constraint matrix must have full row-rank ( choose e.g. rows", 
                  paste(rAmat$pivot, collapse = " "), ", or try to set Wt = \"boot\")"))
@@ -93,47 +111,14 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   
   timing$constraints <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
-  # parallel housekeeping
-  have_mc <- have_snow <- FALSE
-  if (parallel != "no" && ncpus > 1L) {
-    if (parallel == "multicore") {
-      have_mc <- .Platform$OS.type != "windows"
-    } else if (parallel == "snow") {
-      have_snow <- TRUE
-    }  
-    if (!have_mc && !have_snow) {
-      ncpus <- 1L
-    }  
-  }
   
-  # standard error methods
-  if (se == "default") {
-    se <- "standard"
-  } else if (se == "boot.residual") {
-    se <- "boot.model.based"
-  }
-  if (!(se %in% c("none","standard","const","boot.model.based","boot.standard",
-                  "HC","HC0","HC1","HC2","HC3","HC4","HC4m","HC5"))) {
-    stop("Restriktor ERROR: standard error method ", sQuote(se), " unknown.")
-  }
+    
   if(ncol(Amat) != length(b_unrestr)) {
     stop("Restriktor ERROR: length coefficients and the number of",
          "\ncolumns constraints-matrix must be identical")
   }
 
-  # compute (weighted) log-likelihood
-  ll_unc <- con_loglik_lm(object)#X = X, 
-                          # y = y, 
-                          # b = b_unrestr, 
-                          # w = weights)$loglik
-  
-  timing$LLik <- (proc.time()[3] - start.time)
-  start.time <- proc.time()[3]
-  # ML unconstrained MSE
-  #s2ml.unc <- s2_unrestr * object$df.residual / n
-  #invW <- kronecker(solve(s2_unrestr), t(X) %*% X)
-  W <- vcov(object)#solve(invW)
-  
+
   is.augmented <- TRUE
   # compute mixing weights
   if (Wt != "none") {
@@ -143,7 +128,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
       is.augmented <- FALSE
     } else if (Wt == "boot") { 
       # compute mixing weights based on simulation
-      wt <- con_weights_boot(VCOV     = W,
+      wt <- con_weights_boot(VCOV     = Sigma,
                              Amat     = Amat, 
                              meq      = meq, 
                              R        = bootWt.R,
@@ -153,13 +138,13 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                              seed     = seed,
                              verbose  = verbose)
       attr(wt, "bootWt.R") <- bootWt.R 
-    } else if (Wt == "mvnorm" && (meq < nrow(Amat))) {
+    } else if (Wt == "pmvnorm" && (meq < nrow(Amat))) {
       # compute mixing weights based on mvtnorm
-      wt <- rev(con_weights(Amat %*% W %*% t(Amat), meq = meq))
-    } else if (Wt == "mvnorm" && (meq == nrow(Amat))) {
+      wt <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
+    } else if (Wt == "pmvnorm" && (meq == nrow(Amat))) {
       # only equality constraints
-      wt <- rep(0L, ncol(W) + 1)
-      wt.idx <- ncol(W) - meq + 1
+      wt <- rep(0L, ncol(Sigma) + 1)
+      wt.idx <- ncol(Sigma) - meq + 1
       wt[wt.idx] <- 1
     }
   } else {
@@ -191,7 +176,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                 s2_unrestr  = s2_unrestr, 
                 s2_restr    = s2_unrestr, 
                 loglik      = ll_unc, 
-                Sigma       = W,
+                Sigma       = Sigma,
                 constraints = Amat, 
                 rhs         = bvec, 
                 neq         = meq, 
@@ -200,7 +185,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                 control     = control)  
   } else {
     # compute constrained estimates for lm()
-    out.QP <- con_solver_lm(X         = X, 
+    out_QP <- con_solver_lm(X         = X, 
                             y         = y, 
                             b_unrestr = b_unrestr, 
                             w         = weights, 
@@ -213,7 +198,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                             maxit     = ifelse(is.null(control$maxit), 1e04, 
                                             control$maxit))
     
-    b_restr <- matrix(out.QP$solution, ncol = ncol(y))
+    b_restr <- matrix(out_QP$solution, ncol = ncol(y))
     b_restr[abs(b_restr) < ifelse(is.null(control$tol), 
                                   sqrt(.Machine$double.eps), 
                                   control$tol)] <- 0L
@@ -287,11 +272,11 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                 s2_unrestr  = s2_unrestr, 
                 s2_restr    = s2_restr, 
                 loglik      = ll_restr, 
-                Sigma       = W,
+                Sigma       = Sigma,
                 constraints = Amat, 
                 rhs         = bvec, 
                 neq         = meq, 
-                iact        = out.QP$iact, 
+                iact        = out_QP$iact, 
                 bootout     = NULL, 
                 control     = control)
   }

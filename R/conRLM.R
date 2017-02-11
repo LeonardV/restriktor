@@ -1,7 +1,7 @@
 #compute restrikted robust estimates
 conRLM.rlm <- function(object, constraints = NULL, se = "standard", 
                        B = 999, rhs = NULL, neq = 0L, 
-                       Wt = "mvnorm", bootWt.R = 99999,
+                       Wt = "pmvnorm", bootWt.R = 99999,
                        parallel = "no", ncpus = 1L, cl = NULL, 
                        seed = NULL, control = list(), verbose = FALSE, 
                        debug = FALSE, ...) { 
@@ -11,6 +11,37 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     stop("Restriktor ERROR: object must be of class rlm.")
   }
   
+  # standard error stuff
+  if (se == "default") {
+    se <- "standard"
+  } else if (se == "boot.residual") {
+    se <- "boot.model.based"
+  }
+  if (!(se %in% c("none","standard","const","boot.model.based","boot.standard","HC","HC0",
+                  "HC1","HC2","HC3","HC4","HC4m","HC5"))) {
+    stop("Restriktor ERROR: standard error method ", sQuote(se), " unknown.")
+  }
+  
+  if (!(Wt %in% c("pmvnorm", "boot", "none"))) {
+    stop("Restriktor ERROR: ", sQuote(Wt), " method unknown. Choose from \"pmvnorm\", \"boot\", or \"none\"")
+  }
+  
+  # original model function call
+  call_org <- as.list(object$call)
+  # which method M or MM estimation
+  method <- call_org[["method"]]
+  if (is.null(method)) object$call[["method"]] <- "M"
+  # check (only tukey's bisquare supported)
+  psi <- call_org[["psi"]]
+  if (is.null(psi)) {
+    if (object$call[["method"]] == "M") {
+      stop("Restriktor ERROR: only tukey's bisquare loss function is supported.")
+    }
+  } else {
+    if (psi != "psi.bisquare") {
+      stop("Restriktor ERROR: only tukey's bisquare loss function is supported.")
+    }
+  }
   
   # timing
   start.time0 <- start.time <- proc.time()[3]; timing <- list()
@@ -45,6 +76,9 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   n <- dim(X)[1]
   # number of parameters
   p <- dim(X)[2]
+  # compute the loglikelihood
+  ll_unc <- con_loglik_lm(object)
+  
   
   timing$preparation <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
@@ -76,13 +110,9 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   } 
   
   
-  if (!(Wt %in% c("mvnorm", "boot", "none"))) {
-    stop("Restriktor ERROR: ", sQuote(Wt), " method unknown. Choose from \"mvnorm\", \"boot\", or \"none\"")
-  }
-  
   # compute the reduced row-echelon form of the constraints matrix
   rAmat <- GaussianElimination(t(Amat))
-  if (Wt == "mvnorm") {
+  if (Wt == "pmvnorm") {
     if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
       stop(paste("Restriktor ERROR: The constraint matrix must have full row-rank ( choose e.g. rows", 
                  paste(rAmat$pivot, collapse = " "), ", or try to set Wt = \"boot\""))
@@ -99,42 +129,14 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     }
   }
   
-  timing$constraints <- (proc.time()[3] - start.time)
-  start.time <- proc.time()[3]
-  
-  # standard error stuff
-  if (se == "default") {
-    se <- "standard"
-  } else if (se == "boot.residual") {
-    se <- "boot.model.based"
-  }
-  if (!(se %in% c("none","standard","const","boot.model.based","boot.standard","HC","HC0",
-                  "HC1","HC2","HC3","HC4","HC4m","HC5"))) {
-    stop("Restriktor ERROR: standard error method ", sQuote(se), " unknown.")
-  }
-  
   if(ncol(Amat) != length(b_unrestr)) {
     stop("Restriktor ERROR: the columns of constraints does not", 
          "\nmatch with the number of parameters.")
   }
   
+  timing$constraints <- (proc.time()[3] - start.time)
+  start.time <- proc.time()[3]
   
-  # original model function call
-  call_org <- as.list(object$call)
-  # which method M or MM estimation
-  method <- call_org[["method"]]
-  if (is.null(method)) object$call[["method"]] <- "M"
-  # check (only tukey's bisquare supported)
-  psi <- call_org[["psi"]]
-  if (is.null(psi)) {
-    if (object$call[["method"]] == "M") {
-      stop("Restriktor ERROR: only tukey's bisquare loss function is supported.")
-    }
-  } else {
-    if (psi != "psi.bisquare") {
-      stop("Restriktor ERROR: only tukey's bisquare loss function is supported.")
-    }
-  }
   
   # compute R-squared 
   # acknowledment: code taken from the lmrob() function from the robustbase package
@@ -148,8 +150,6 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   correc <- 1.207617 
   R2_org <- (yMy - rMr) / (yMy + rMr * (correc - 1))
   
-  # compute the loglikelihood
-  ll_unc <- con_loglik_lm(object)
   
   # ML unconstrained MSE
   #tau2ml <- (tau^2 * so$df[2]) / n
@@ -173,9 +173,9 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                              seed     = seed,
                              verbose  = verbose)
       attr(wt, "bootWt.R") <- bootWt.R 
-    } else if (Wt == "mvnorm" && (meq < nrow(Amat))) { # compute mixing weights based on mvnorm
+    } else if (Wt == "pmvnorm" && (meq < nrow(Amat))) { # compute mixing weights based on pmvnorm
       wt <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
-    } else if (Wt == "mvnorm" && (meq == nrow(Amat))) { # only equality constraints
+    } else if (Wt == "pmvnorm" && (meq == nrow(Amat))) { # only equality constraints
       wt <- rep(0L, ncol(Sigma) + 1)
       wt.idx <- ncol(Sigma) - meq + 1
       wt[wt.idx] <- 1
@@ -191,6 +191,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   # # check if the constraints are in line with the data    
   if (all(Amat %*% c(b_unrestr) - bvec >= 0 * bvec) & meq == 0) {  
     b_restr <- b_unrestr
+    tau_restr <- tau
     
     OUT <- list(CON         = CON,
                 call        = mc,
@@ -246,10 +247,8 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                                   control$tol)] <- 0L
     fitted <- fitted(rfit)
     residuals <- residuals(rfit)
-    
     # psi(resid/scale) these are the weights used for downweighting the cases.
     w <- rfit$w
-    
     # compute loglik
     ll_restr <- con_loglik_lm(rfit)
     
@@ -326,7 +325,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   
   OUT$model_org <- object
   OUT$se <- se 
-  OUT$information <- 1 / tau^2 * crossprod(X)
+  OUT$information <- 1 / tau_restr^2 * crossprod(X)
   if (se != "none") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
       #  V <- vcovMM(X = X, resid0 = resid0, residuals = residuals, scale = model$s)  

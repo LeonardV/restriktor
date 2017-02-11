@@ -15,22 +15,22 @@
 restriktor(object, constraints = NULL, \dots)
 
 \method{conLM}{lm}(object, constraints = NULL, se = "standard", 
-      B = 999, rhs = NULL, neq = 0L, Wt = "mvnorm", 
-      bootWt.R = 99999, parallel = "no", ncpus = 1L, cl = NULL, 
-      seed = NULL, control = list(), verbose = FALSE, debug = FALSE, 
-      \dots)
+      B = 999, rhs = NULL, neq = 0L, Wt = "pmvnorm", 
+      bootWt.R = 99999, parallel = "no", ncpus = 1L, 
+      cl = NULL, seed = NULL, control = list(), 
+      verbose = FALSE, debug = FALSE, \dots)
       
 \method{conRLM}{rlm}(object, constraints = NULL, se = "standard", 
-       B = 999, rhs = NULL, neq = 0L, Wt = "mvnorm", 
-       bootWt.R = 99999, parallel = "no", ncpus = 1L, cl = NULL, 
-       seed = NULL, control = list(), verbose = FALSE, debug = FALSE, 
-       \dots)
+       B = 999, rhs = NULL, neq = 0L, Wt = "pmvnorm", 
+       bootWt.R = 99999, parallel = "no", ncpus = 1L, 
+       cl = NULL, seed = NULL, control = list(), 
+       verbose = FALSE, debug = FALSE, \dots)
        
 \method{conGLM}{glm}(object, constraints = NULL, se = "standard", 
-       B = 999, rhs = NULL, neq = 0L, Wt = "mvnorm", 
-       bootWt.R = 99999, parallel = "no", ncpus = 1L, cl = NULL, 
-       seed = NULL, control = list(), verbose = FALSE, debug = FALSE, 
-       \dots)
+       B = 999, rhs = NULL, neq = 0L, Wt = "pmvnorm", 
+       bootWt.R = 99999, parallel = "no", ncpus = 1L, 
+       cl = NULL, seed = NULL, control = list(), 
+       verbose = FALSE, debug = FALSE, \dots)
 }
 
 \arguments{
@@ -78,7 +78,7 @@ restriktor(object, constraints = NULL, \dots)
   first two rows of the constraints matrix \eqn{R} are treated as 
   equality constraints. Note: only used if constraints input is a 
   matrix or vector.}
-  \item{Wt}{if \code{"mvnorm"} (default), the chi-bar-square weights are computed based 
+  \item{Wt}{if \code{"pmvnorm"} (default), the chi-bar-square weights are computed based 
   on the multivariate normal distribution function with additional Monte Carlo 
   steps. If \code{"boot"}, the chi-bar-square weights are computed using parametric
   bootstrapping. If \code{"none"}, no chi-bar-square weights are computed. The 

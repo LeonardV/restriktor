@@ -44,6 +44,7 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
                     meat.  = meatHC(z, type = se_type))
       se <- sqrt(diag(V))
     }
+    ans$V <- V
     tval <- ifelse(se != 0, b_restr/se, 0L)
     ans$coefficients <- cbind(b_restr, se, tval, 2 * pt(abs(tval), 
                                                     rdf, lower.tail = FALSE))
@@ -146,9 +147,9 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
     if (attr(wt, "method") == "boot") { 
       PT <- 1 + sum(0 : ncol(Amat) * wt)
       # unconstrained case
-    } else if (attr(wt, "method") == "mvnorm" && all(c(Amat) == 0)) {
+    } else if (attr(wt, "method") == "pmvnorm" && all(c(Amat) == 0)) {
       PT <- p + 1
-    } else if (attr(wt, "method") == "mvnorm") {
+    } else if (attr(wt, "method") == "pmvnorm") {
       min_C <- ncol(Amat) - nrow(Amat)
       max_C <- ncol(Amat) - meq
       PT <- 1 + sum(min_C : max_C * wt) 

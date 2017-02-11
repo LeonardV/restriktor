@@ -178,15 +178,8 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   # the mixing weights.
   
   if (!(attr(object$wt, "method") == "none") && boot == "no") {
-    wt <- rev(object$wt)
-    
-    if (attr(object$wt, "method") == "boot") {
-      idx_min <- (ncol(Amat) - nrow(Amat)) + 1 
-      idx_max <- (ncol(Amat) - meq) + 1 
-      wt <- rev(wt[idx_min:idx_max])
-    }
-    
-    pvalue <- con_pvalue_Fbar(wt          = wt, 
+    wt <- object$wt
+    pvalue <- con_pvalue_Fbar(wt          = rev(wt), 
                               Ts_org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -194,6 +187,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                               bvec        = bvec, 
                               meq         = meq, 
                               meq_alt     = meq_alt)
+    attr(pvalue, "wt") <- wt
    } else if (boot == "parametric") {
      
      if (!is.function(p.distr)) {
@@ -270,7 +264,8 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
 
 
 # REF: Silvapulle and Sen (2005). Constrained statistical inference. Chapter 3.
-# Wolak, F. An exact test for multiple inequality and equality constraints in the linear regression model Journal of the American statistical association, 1987, 82, 782-793
+# Wolak, F. An exact test for multiple inequality and equality constraints in the 
+# linear regression model Journal of the American statistical association, 1987, 82, 782-793
 conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
                              p.distr = rnorm, parallel = "no", ncpus = 1L,
                              cl = NULL, seed = 1234, verbose = FALSE,
@@ -473,15 +468,8 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
   
   if (!(attr(object$wt, "method") == "none") && boot == "no") { 
     
-    wt <- rev(object$wt)
-    
-    if (attr(object$wt, "method") == "boot") {
-      idx_min <- (ncol(Amat) - nrow(Amat)) + 1 
-      idx_max <- (ncol(Amat) - meq) + 1 
-      wt <- rev(wt[idx_min:idx_max])
-    }
-  
-    pvalue <- con_pvalue_Fbar(wt          = wt, 
+    wt <- object$wt
+    pvalue <- con_pvalue_Fbar(wt          = rev(wt), 
                               Ts_org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -489,6 +477,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
                               bvec        = bvec, 
                               meq         = meq, 
                               meq_alt     = meq_alt)
+    attr(pvalue, "wt") <- wt
   } else if (boot == "parametric") {
     
     if (!is.function(p.distr)) {
@@ -685,20 +674,15 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     
     res0 <- y - X %*% b_eqrestr
     res1 <- residuals(object)
-    
     # score vector
     df0 <- n - (p - nrow(AmatG))  
     s20 <- sum(res0^2) / df0
-    
     df1 <- n - (p - qr(Amat[0:meq,])$rank)
     s21 <- sum(res1^2) / df1
-    
     G0 <- colSums(as.vector(res0) * w * X) / s20
     G1 <- colSums(as.vector(res1) * w * X) / s21
-    
     # information matrix under the null-hypothesis
     I0 <- 1 / s20 * crossprod(X)#(t(X) %*% X)
-    
     # score test-statistic
     Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))
     ###############################################
@@ -730,20 +714,15 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     
     res0 <- y - X %*% b_eqrestr
     res1 <- residuals(object)
-    
     # score vector
     df0 <- n - (p - nrow(Amat))
     s20 <- sum(res0^2) / df0
-    
     df1 <- n - (p - qr(Amat[0:meq,])$rank)
     s21 <- sum(res1^2) / df1
-    
     G0 <- colSums(as.vector(res0) * w * X) / s20
     G1 <- colSums(as.vector(res1) * w * X) / s21
-    
     # information matrix under the null-hypothesis
     I0 <- 1 / s20 * crossprod(X)#(t(X) %*% X)
-    
     # score test-statistic
     Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))
     #############################################
@@ -764,16 +743,12 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
       # score vector
       df0 <- n - (p - qr(Amat[0:meq,])$rank)
       s20 <- sum(res0^2) / df0
-      
       df1 <- n - p
       s21 <- sum(res1^2) / df1
-      
       G0 <- colSums(as.vector(res0) * w * X) / s20
       G1 <- colSums(as.vector(res1) * w * X) / s21
-      
       # information matrix under the null-hypothesis
       I0 <- 1 / s20 * crossprod(X)#(t(X) %*% X)
-      
       # score test-statistic
       Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))
       
@@ -808,20 +783,15 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
         
         res0 <- residuals(object)
         res1 <- y - X %*% b_restr_alt
-        
         # score vector
         df0 <- n - (p - qr(Amat[0:meq,])$rank)
         s20 <- sum(res0^2) / df0
-        
         df1 <- n - (p - qr(Amat[0:meq,])$rank)
         s21 <- sum(res1^2) / df1
-        
         G0 <- colSums(as.vector(res0) * w * X) / s20
         G1 <- colSums(as.vector(res1) * w * X) / s21
-        
         # information matrix
         I0 <- 1 / s20 * crossprod(X)#(t(X) %*% X)
-        
         # score test-statistic
         Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))
         ########################
@@ -842,15 +812,8 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   
   if (!(attr(object$wt, "method") == "none") && boot == "no") {
     
-    wt <- rev(object$wt)
-    
-    if (attr(object$wt, "method") == "boot") {
-      idx_min <- (ncol(Amat) - nrow(Amat)) + 1 
-      idx_max <- (ncol(Amat) - meq) + 1 
-      wt <- rev(wt[idx_min:idx_max])
-    }
-  
-    pvalue <- con_pvalue_Fbar(wt          = wt, 
+    wt <- object$wt
+    pvalue <- con_pvalue_Fbar(wt          = rev(wt), 
                               Ts_org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -858,6 +821,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                               bvec        = bvec, 
                               meq         = meq, 
                               meq_alt     = meq_alt)
+    attr(pvalue, "wt") <- wt
   } else if (boot == "parametric") {
     
     if (!is.function(p.distr)) {

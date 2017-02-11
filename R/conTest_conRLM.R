@@ -171,15 +171,8 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   } 
   
   if (!(attr(object$wt, "method") == "none") && boot == "no") {
-    wt <- rev(object$wt)
-    
-    if (attr(object$wt, "method") == "boot") {
-      idx_min <- (ncol(Amat) - nrow(Amat)) + 1 
-      idx_max <- (ncol(Amat) - meq) + 1 
-      wt <- rev(wt[idx_min:idx_max])
-    }
-    
-    pvalue <- con_pvalue_Fbar(wt          = wt, 
+    wt <- object$wt
+    pvalue <- con_pvalue_Fbar(wt          = rev(wt), 
                               Ts_org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -187,6 +180,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                               bvec        = bvec, 
                               meq         = meq, 
                               meq_alt     = meq_alt)
+    attr(pvalue, "wt") <- wt
   } else if (boot == "parametric") {
     
     if (!is.function(p.distr)) {
@@ -381,7 +375,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                              test      = "Wald", 
                              cc        = ifelse(is.null(call_org$c), 4.685061, call_org$c))
     Ts <- out0$Ts
-    Sigma <- out0$V
+    V <- out0$V
   } else if (type == "A") {
     CALL <- c(call_org, list(x = X, y = y, weights = weights,
                              Amat = Amat, bvec = bvec, 
@@ -403,7 +397,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                              test      = "Wald", 
                              cc        = ifelse(is.null(call_org$c), 4.685061, call_org$c))
     Ts <- out1$Ts
-    Sigma <- out1$V
+    V <- out1$V
   }
   else if (type == "B") {
     if (meq_alt == 0L) {
@@ -416,7 +410,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                test      = "Wald", 
                                cc        = ifelse(is.null(call_org$c), 4.685061, call_org$c))
       Ts <- out2$Ts
-      Sigma <- out2$V
+      V <- out2$V
     } else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq_alt > 0L && meq_alt <= meq) {
@@ -440,14 +434,15 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                  test      = "Wald", 
                                  cc        = ifelse(is.null(call_org$c), 4.685061, call_org$c))
         Ts <- out3$Ts
-        Sigma <- out3$V
+        V <- out3$V
       } else {
         stop("Restriktor ERROR: neq.alt must not be larger than neq.")
       }
     }
   } 
   
-  # We need to recalculate the weights based on V_hat = Sigma instead on solve(t(X)%*%X)
+  ##############################################################################
+  # We need to recalculate the weights based on V_hat = V instead on solve(t(X)%*%X)
   # Do we have to? The differences look very small.
   ## compute mixing weights
   if (!(attr(object$wt, "method") == "none")) {
@@ -456,7 +451,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
       wt <- c(rep(0L, p), 1)
     } else if (attr(object$wt, "method") == "boot") { 
       # compute mixing weights based on simulation
-      wt <- con_weights_boot(VCOV     = Sigma,
+      wt <- con_weights_boot(VCOV     = V,
                              Amat     = Amat,
                              meq      = meq,
                              R        = attr(object$wt, "bootWt.R"),
@@ -465,28 +460,21 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                              cl       = cl,
                              seed     = seed,
                              verbose  = verbose)
-    } else if (attr(object$wt, "method") == "mvnorm" && (meq < nrow(Amat))) { 
-      # compute mixing weights based on mvnorm
-      wt <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
-    } else if (attr(object$wt, "method") == "mvnorm" && (meq == nrow(Amat))) { 
+    } else if (attr(object$wt, "method") == "pmvnorm" && (meq < nrow(Amat))) { 
+      # compute mixing weights based on pmvnorm
+      wt <- rev(con_weights(Amat %*% V %*% t(Amat), meq = meq))
+    } else if (attr(object$wt, "method") == "pmvnorm" && (meq == nrow(Amat))) { 
       # only equality constraints
-      wt <- rep(0L, ncol(Sigma) + 1)
-      wt.idx <- ncol(Sigma) - meq + 1
+      wt <- rep(0L, ncol(V) + 1)
+      wt.idx <- ncol(V) - meq + 1
       wt[wt.idx] <- 1
     }
   }
-  
+  ##############################################################################
   
   if (!(attr(object$wt, "method") == "none") && boot == "no") {
-    wt <- rev(object$wt)
-    if (attr(object$wt, "method") == "boot") {
-      idx_min <- (ncol(Amat) - nrow(Amat)) + 1 
-      idx_max <- (ncol(Amat) - meq) + 1 
-      wt <- rev(wt[idx_min:idx_max])
-    }
-  
     # compute pvalue based on F-distribution
-    pvalue <- con_pvalue_Fbar(wt          = wt, 
+    pvalue <- con_pvalue_Fbar(wt          = rev(wt), 
                               Ts_org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -494,6 +482,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                               bvec        = bvec, 
                               meq         = meq, 
                               meq_alt     = meq_alt)
+    attr(pvalue, "wt") <- wt
   } else if (boot == "parametric") {
     
     if (!is.function(p.distr)) {
@@ -554,6 +543,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
               b_restr     = b_restr,
               b_restr.alt = b_restr.alt,
               Sigma       = Sigma,
+              V           = V,
               R2_org      = object$R2_org,
               R2_reduced  = object$R2_reduced,
               boot        = boot,
@@ -734,16 +724,8 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   } 
   
   if (!(attr(object$wt, "method") == "none") && boot == "no") {
-    
-    wt <- rev(object$wt)
-    
-    if (attr(object$wt, "method") == "boot") {
-      idx_min <- (ncol(Amat) - nrow(Amat)) + 1 
-      idx_max <- (ncol(Amat) - meq) + 1 
-      wt <- rev(wt[idx_min:idx_max])
-    }
-    
-    pvalue <- con_pvalue_Fbar(wt          = wt, 
+    wt <- object$wt
+    pvalue <- con_pvalue_Fbar(wt          = rev(wt), 
                               Ts_org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -751,6 +733,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                               bvec        = bvec, 
                               meq         = meq, 
                               meq_alt     = meq_alt)
+    attr(pvalue, "wt") <- wt
   } else if (boot == "parametric") {
     
     if (!is.function(p.distr)) {
@@ -944,7 +927,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                              test      = "score", 
                              cc        = ifelse(is.null(call_org$c), 4.685061, call_org$c))
     Ts <- out0$Ts
-    Sigma <- out0$V
+    V <- out0$V
   } else if (type == "A") {
     CALL <- c(call_org, list(x = X, y = y, weights = weights,
                              Amat = Amat, bvec = bvec, 
@@ -966,7 +949,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                              test      = "score", 
                              cc        = ifelse(is.null(call_org$c), 4.685061, call_org$c))
     Ts <- out1$Ts
-    Sigma <- out1$V
+    V <- out1$V
   } else if (type == "B") {
     if (meq_alt == 0L) {
       out2 <- robustWaldScores(x         = X, 
@@ -978,7 +961,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                                test      = "score", 
                                cc        = ifelse(is.null(call_org$c), 4.685061, call_org$c))
       Ts <- out2$Ts
-      Sigma <- out2$V
+      V <- out2$V
     } else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq_alt > 0L && meq_alt <= meq) {
@@ -1002,7 +985,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                                  test      = "score", 
                                  cc        = ifelse(is.null(call_org$c), 4.685061, call_org$c))
         Ts <- out3$Ts
-        Sigma <- out3$V
+        V <- out3$V
       } else {
         stop("Restriktor ERROR: neq.alt must not be larger than neq.")
       }
@@ -1016,7 +999,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     wt <- c(rep(0L, p), 1)
   } else if (attr(object$wt, "method") == "boot") { 
     # compute mixing weights based on simulation
-    wt <- con_weights_boot(VCOV     = Sigma,
+    wt <- con_weights_boot(VCOV     = V,
                            Amat     = Amat,
                            meq      = meq,
                            R        = attr(object$wt, "bootWt.R"),
@@ -1025,28 +1008,19 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                            cl       = cl,
                            seed     = seed,
                            verbose  = verbose)
-  } else if (attr(object$wt, "method") == "mvnorm" && (meq < nrow(Amat))) { 
-    # compute mixing weights based on mvnorm
-    wt <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
-  } else if (attr(object$wt, "method") == "mvnorm" && (meq == nrow(Amat))) { 
+  } else if (attr(object$wt, "method") == "pmvnorm" && (meq < nrow(Amat))) { 
+    # compute mixing weights based on pmvnorm
+    wt <- rev(con_weights(Amat %*% V %*% t(Amat), meq = meq))
+  } else if (attr(object$wt, "method") == "pmvnorm" && (meq == nrow(Amat))) { 
     # only equality constraints
-    wt <- rep(0L, ncol(Sigma) + 1)
-    wt.idx <- ncol(Sigma) - meq + 1
+    wt <- rep(0L, ncol(V) + 1)
+    wt.idx <- ncol(V) - meq + 1
     wt[wt.idx] <- 1
   }
   
   if (!attr(object$wt, "method") == "none" && boot == "no") {
-    
-    wt <- rev(object$wt)
-    
-    if (attr(object$wt, "method") == "boot") {
-      idx_min <- (ncol(Amat) - nrow(Amat)) + 1 
-      idx_max <- (ncol(Amat) - meq) + 1 
-      wt <- rev(wt[idx_min:idx_max])
-    }
-    
     # compute pvalue based on F-distribution
-    pvalue <- con_pvalue_Fbar(wt          = wt, 
+    pvalue <- con_pvalue_Fbar(wt          = rev(wt), 
                               Ts_org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -1054,6 +1028,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                               bvec        = bvec, 
                               meq         = meq, 
                               meq_alt     = meq_alt)
+    attr(pvalue, "wt") <- wt
   } else if (boot == "parametric") {
     
     if (!is.function(p.distr)) {
@@ -1114,6 +1089,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
               b_restr     = b_restr,
               b_restr.alt = b_restr.alt,
               Sigma       = Sigma,
+              V           = V,
               R2_org      = object$R2_org,
               R2_reduced  = object$R2_reduced,
               boot        = boot,

@@ -56,8 +56,11 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   # sample size
   n <- dim(X)[1]
   # compute (weighted) log-likelihood
-  ll_unc <- con_loglik_lm(object)
+  ll_unrestr <- con_loglik_lm(object)
   
+  if (debug) {
+    print(list(loglik_unc = ll_unrestr))
+  }
   
   timing$preparation <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
@@ -152,6 +155,10 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   }
   attr(wt, "method") <- Wt
   
+  if (debug) {
+    print(list(wt = wt))
+  }
+  
   timing$wt <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
   
@@ -175,7 +182,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                 R2_reduced  = so$r.squared,
                 s2_unrestr  = s2_unrestr, 
                 s2_restr    = s2_unrestr, 
-                loglik      = ll_unc, 
+                loglik      = ll_unrestr, 
                 Sigma       = Sigma,
                 constraints = Amat, 
                 rhs         = bvec, 
@@ -218,7 +225,10 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
       object_restr$residuals <- residuals
       object_restr$weights   <- object$weights
       ll_restr <- con_loglik_lm(object_restr)
-        
+      
+      if (debug) {
+        print(list(loglik_restr = ll_restr))
+      }  
       # compute R^2
       if (is.null(weights)) {
         mss <- if (attr(object$terms, "intercept")) {
@@ -302,6 +312,10 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
       attr(OUT$information, "inverted")  <- information.inv$information
       attr(OUT$information, "augmented") <- information.inv$information.augmented
       
+      if (debug) {
+        print(list(information = OUT$information))
+      }
+      
       timing$inv_aug_information <- (proc.time()[3] - start.time)
       start.time <- proc.time()[3]
     } else if (se == "boot.model.based") {
@@ -322,7 +336,9 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                                  parallel    = parallel, 
                                  ncpus       = ncpus, 
                                  cl          = cl)
-      
+      if (debug) {
+        print(list(bootout = OUT$bootout))
+      }
       timing$boot_model_based <- (proc.time()[3] - start.time)
       start.time <- proc.time()[3]
     } else if (se == "boot.standard") {
@@ -337,6 +353,9 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                                  parallel    = parallel, 
                                  ncpus       = ncpus, 
                                  cl          = cl)
+      if (debug) {
+        print(list(bootout = OUT$bootout))
+      }
       timing$boot_standard <- (proc.time()[3] - start.time)
       start.time <- proc.time()[3]
     }

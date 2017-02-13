@@ -59,8 +59,11 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   # sample size
   n <- dim(X)[1]
   # unrestricted (weighted) log-likelihood
-  ll_unc <- con_loglik_glm(object)
+  ll_unrestr <- con_loglik_glm(object)
   
+  if (debug) {
+    print(list(loglik_unrestr = ll_unrestr))
+  }  
   
   timing$preparation <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
@@ -155,6 +158,9 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   }
   attr(wt, "method") <- Wt
   
+  if (debug) {
+    print(list(wt = wt))
+  }
   timing$wt <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
   
@@ -177,7 +183,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                 df.residual       = object$df.residual,
                 df.residual_null  = object$df.null,
                 dispersion        = so$dispersion, 
-                loglik            = ll_unc,
+                loglik            = ll_unrestr,
                 aic               = object$aic,
                 deviance_null     = object$null.deviance,
                 deviance          = object$deviance,
@@ -187,6 +193,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                 neq               = meq, 
                 iact              = 0L, 
                 converged         = object$converged,
+                iter              = object$iter,
                 bootout           = NULL, 
                 control           = control)  
   } else {
@@ -206,7 +213,6 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
     
     # fit restricted generalized liner model
     fit_glmc <- do.call("conGLM_fit", CALL)
-    
     
     timing$optim <- (proc.time()[3] - start.time)
     start.time <- proc.time()[3]
@@ -237,6 +243,10 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
     # restricted log-likelihood
     ll_restr <- con_loglik_glm(fit_glmc)
 
+    if (debug) {
+      print(list(loglik_restr = ll_restr))
+    }
+    
     OUT <- list(CON               = CON,
                 call              = mc,
                 timing            = timing,
@@ -262,6 +272,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                 neq               = meq, 
                 iact              = fit_glmc$iact,
                 converged         = fit_glmc$converged,
+                iter              = fit_glmc$iter,
                 bootout           = NULL, 
                 control           = control)
   }
@@ -289,15 +300,16 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
       attr(OUT$information, "inverted")  <- information.inv$information
       attr(OUT$information, "augmented") <- information.inv$information.augmented
       
+      if (debug) {
+        print(list(information = OUT$information))
+      }
       timing$inv_aug_information <- (proc.time()[3] - start.time)
       start.time <- proc.time()[3]
     } else if (se == "boot.model.based") {
-      
       if (attr(object$terms, "intercept") && any(Amat[,1] == 1)) {
           stop("Restriktor ERROR: no restriktions on intercept possible",
                "\n       for 'se = boot.model.based' bootstrap method.")
       }
-      
       OUT$bootout <- con_boot_lm(object      = object, 
                                  B           = B, 
                                  fixed       = TRUE, 
@@ -309,7 +321,9 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                                  parallel    = parallel, 
                                  ncpus       = ncpus, 
                                  cl          = cl)
-      
+      if (debug) {
+        print(list(bootout = OUT$bootout))
+      }
       timing$boot_model_based <- (proc.time()[3] - start.time)
       start.time <- proc.time()[3]
     } else if (se == "boot.standard") {
@@ -324,7 +338,9 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                                  parallel    = parallel, 
                                  ncpus       = ncpus, 
                                  cl          = cl)
-      
+      if (debug) {
+        print(list(bootout = OUT$bootout))
+      }
       timing$boot_standard <- (proc.time()[3] - start.time)
       start.time <- proc.time()[3]
     }

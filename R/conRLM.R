@@ -77,8 +77,11 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   # number of parameters
   p <- dim(X)[2]
   # compute the loglikelihood
-  ll_unc <- con_loglik_lm(object)
+  ll_unrestr <- con_loglik_lm(object)
   
+  if (debug) {
+    print(list(loglik_unc = ll_unrestr))
+  }
   
   timing$preparation <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
@@ -185,6 +188,10 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   }
   attr(wt, "method") <- Wt
   
+  if (debug) {
+    print(list(wt = wt))
+  }
+  
   timing$wt <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
   
@@ -210,16 +217,16 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 R2_org      = R2_org,
                 R2_reduced  = R2_org,
                 df.residual = so$df[2],
-                s2_unrestr  = tau, 
-                s2_restr    = tau, 
-                loglik      = ll_unc, 
+                s2_unrestr  = tau^2, 
+                s2_restr    = tau^2, 
+                loglik      = ll_unrestr, 
                 Sigma       = Sigma, # probably not so robust!
                 constraints = Amat, 
                 rhs         = bvec, 
                 neq         = meq, 
                 iact        = 0L,
                 converged   = object$converged, 
-                #iter        = object$iter,
+                iter        = object$conv,
                 bootout     = NULL, 
                 control     = control)
   } else {
@@ -251,6 +258,10 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     w <- rfit$w
     # compute loglik
     ll_restr <- con_loglik_lm(rfit)
+    
+    if (debug) {
+      print(list(loglik_restr = ll_restr))
+    }
     
     timing$LLik <- (proc.time()[3] - start.time)
     start.time <- proc.time()[3]
@@ -310,8 +321,8 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 R2_org      = R2_org,
                 R2_reduced  = R2_reduced,
                 df.residual = so$df[2], 
-                s2_unrestr  = tau, 
-                s2_restr    = tau_restr, 
+                s2_unrestr  = tau^2, 
+                s2_restr    = tau_restr^2, 
                 loglik      = ll_restr, 
                 Sigma       = Sigma,                                             #probably not so robust???
                 constraints = Amat, 
@@ -319,6 +330,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 neq         = meq, 
                 iact        = rfit$iact,
                 converged   = rfit$converged, 
+                iter        = rfit$conv,
                 bootout     = NULL, 
                 control     = control)
   }
@@ -341,6 +353,9 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
       attr(OUT$information, "inverted")  <- information.inv$information
       attr(OUT$information, "augmented") <- information.inv$information.augmented
       
+      if (debug) {
+        print(list(information = OUT$information))
+      }
       timing$inv_aug_information <- (proc.time()[3] - start.time)
       start.time <- proc.time()[3]
     } else if (se == "boot.model.based") { 
@@ -355,7 +370,9 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                                  parallel    = parallel, 
                                  ncpus       = ncpus, 
                                  cl          = cl)
-      
+      if (debug) {
+        print(list(bootout = OUT$bootout))
+      }
       timing$boot_model_based <- (proc.time()[3] - start.time)
       start.time <- proc.time()[3]
     } else if (se == "boot.standard") {
@@ -370,7 +387,9 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                                  parallel    = parallel, 
                                  ncpus       = ncpus, 
                                  cl          = cl)
-      
+      if (debug) {
+        print(list(bootout = OUT$bootout))
+      }
       timing$boot_standard <- (proc.time()[3] - start.time)
       start.time <- proc.time()[3]
     }

@@ -63,8 +63,8 @@ robustWaldScores <- function(x, y, b_eqrestr, b_restr, b_unrestr,
   } 
 
   OUT <- list(test = test,
-              Ts = Ts,
-              V  = V)
+              Ts   = Ts,
+              V    = V)
   
   OUT
   
@@ -82,7 +82,7 @@ robustFm <- function(x, y, b_unrestr, b_eqrestr, b_restr, scale,
   n <- dim(X)[1]
   p <- dim(X)[2]
   
-  #compute residuals under null, restrikted and unconstrained model
+  #compute residuals under null, restricted and unconstrained model
   resid0 <- y - X %*% b_eqrestr
   resid1 <- y - X %*% b_restr
   resid2 <- y - X %*% b_unrestr
@@ -115,8 +115,8 @@ robustFm <- function(x, y, b_unrestr, b_eqrestr, b_restr, scale,
 ## robust Wald statistic, Silvapulle (1992) ##
 robustWaldXX <- function(x, b_eqrestr, b_restr, b_unrestr, tau) {
   #x <- scale(x, center = TRUE, scale = FALSE)
-  Ts <- as.numeric(( (t(b_unrestr-b_eqrestr)%*%(t(x)%*%x)%*%(b_unrestr-b_eqrestr)) -
-                     (t(b_unrestr-b_restr)%*%(t(x)%*%x)%*%(b_unrestr-b_restr)) ) / tau^2)
+  Ts <- as.numeric(( (t(b_unrestr - b_eqrestr) %*% (t(x)%*%x) %*% (b_unrestr - b_eqrestr)) -
+                     (t(b_unrestr - b_restr) %*% (t(x)%*%x) %*% (b_unrestr - b_restr)) ) / tau^2)
 
   OUT <- list(test = "Wald",
               Ts   = Ts)

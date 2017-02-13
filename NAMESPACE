@@ -24,6 +24,8 @@ importFrom("ic.infer",
            #nchoosek, NOT EXPORTED!
            ic.weights)
 
+importFrom("utils", "packageDescription")
+
 importFrom("stats", "coef", "df.residual", "dnorm", "fitted",
            "formula", "frequency", "median", "model.matrix",
            "naresid", "pchisq", "pf", "pnorm", "printCoefmat", "pt",

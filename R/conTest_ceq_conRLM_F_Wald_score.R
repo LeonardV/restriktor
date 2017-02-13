@@ -23,7 +23,7 @@ conTest_ceq.conRLM <- function(object, test = "F", boot = "no",
   # unrestrikted scale estimate
   scale <- model_org$s
   # scale estimate used for the standard errors
-  tau <- object$s2_unrestr
+  tau <- sqrt(object$s2_unrestr)
   # restriktion stuff
   CON  <- object$CON
   

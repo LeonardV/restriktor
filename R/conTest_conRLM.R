@@ -599,8 +599,8 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   df.residual <- object$df.residual
   # unconstrained covariance matrix
   Sigma <- object$Sigma
-  # unconstrained scale
-  tau <- object$s2_unrestr
+  # unrestrikted scale estimate for the standard deviation: 
+  tau <- sqrt(object$s2_unrestr)
   # parameter estimates
   b_unrestr <- object$b_unrestr
   b_restr <- object$b_restr

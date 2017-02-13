@@ -103,17 +103,16 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   if (type == "global") {
     # call quadprog
     b_eqrestr <- con_solver_lm(X         = X, 
-                            y         = y, 
-                            b_unrestr = b_unrestr,
-                            w         = w, 
-                            Amat      = AmatG,
-                            bvec      = bvecG, 
-                            meq       = nrow(AmatG),
-                            absval    = ifelse(is.null(control$absval), 1e-09, 
-                                               control$absval),
-                            maxit     = ifelse(is.null(control$maxit), 1e04, 
-                                               control$maxit))$solution
-  
+                               y         = y, 
+                               b_unrestr = b_unrestr,
+                               w         = w, 
+                               Amat      = AmatG,
+                               bvec      = bvecG, 
+                               meq       = nrow(AmatG),
+                               absval    = ifelse(is.null(control$absval), 1e-09, 
+                                                  control$absval),
+                               maxit     = ifelse(is.null(control$maxit), 1e04, 
+                                                  control$maxit))$solution
     # fix estimates < tol to zero 
     b_eqrestr[abs(b_eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
@@ -147,16 +146,16 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
     } else {
       if (meq_alt > 0L && meq_alt <= meq) {
         b_restr_alt <- con_solver_lm(X         = X, 
-                                  y         = y, 
-                                  b_unrestr = b_unrestr,
-                                  w         = w, 
-                                  Amat      = Amat[1:meq_alt,,drop = FALSE],
-                                  bvec      = bvec[1:meq_alt], 
-                                  meq       = meq_alt,
-                                  absval    = ifelse(is.null(control$absval), 1e-09, 
-                                                     control$absval),
-                                  maxit     = ifelse(is.null(control$maxit), 1e04, 
-                                                     control$maxit))$solution
+                                     y         = y, 
+                                     b_unrestr = b_unrestr,
+                                     w         = w, 
+                                     Amat      = Amat[1:meq_alt,,drop = FALSE],
+                                     bvec      = bvec[1:meq_alt], 
+                                     meq       = meq_alt,
+                                     absval    = ifelse(is.null(control$absval), 1e-09, 
+                                                        control$absval),
+                                     maxit     = ifelse(is.null(control$maxit), 1e04, 
+                                                        control$maxit))$solution
         b_restr_alt[abs(b_restr_alt) < ifelse(is.null(control$tol), 
                                               sqrt(.Machine$double.eps),                                        
                                               control$tol)] <- 0L
@@ -176,7 +175,6 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   # or via bootstrapping. The pvalue can also be computed directly via 
   # the parametric bootstrap or model based bootstrap, without fist computing 
   # the mixing weights.
-  
   if (!(attr(object$wt, "method") == "none") && boot == "no") {
     wt <- object$wt
     pvalue <- con_pvalue_Fbar(wt          = rev(wt), 
@@ -193,7 +191,6 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
      if (!is.function(p.distr)) {
        p.distr <- get(p.distr, mode = "function")
      }
-     
      arguments <- list(...) 
      pnames <- names(formals(p.distr))
      pm <- pmatch(names(arguments), pnames, nomatch = 0L)
@@ -467,7 +464,6 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
   } 
   
   if (!(attr(object$wt, "method") == "none") && boot == "no") { 
-    
     wt <- object$wt
     pvalue <- con_pvalue_Fbar(wt          = rev(wt), 
                               Ts_org      = Ts, 
@@ -479,7 +475,6 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
                               meq_alt     = meq_alt)
     attr(pvalue, "wt") <- wt
   } else if (boot == "parametric") {
-    
     if (!is.function(p.distr)) {
       p.distr <- get(p.distr, mode = "function")
     }
@@ -739,7 +734,6 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     if (meq_alt == 0L) {
       res0 <- residuals(object)
       res1 <- residuals(model_org)
-      
       # score vector
       df0 <- n - (p - qr(Amat[0:meq,])$rank)
       s20 <- sum(res0^2) / df0
@@ -751,7 +745,6 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
       I0 <- 1 / s20 * crossprod(X)#(t(X) %*% X)
       # score test-statistic
       Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))
-      
       #########
       # df0 <- n - (p - qr(Amat[0:meq,])$rank)
       # df1 <- n - p
@@ -766,16 +759,16 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
       # some equality may be preserved in the alternative hypothesis.
       if (meq_alt > 0L && meq_alt <= meq) {
         b_restr_alt <- con_solver_lm(X         = X, 
-                                  y         = y, 
-                                  b_unrestr = b_unrestr,
-                                  w         = w,
-                                  Amat      = Amat[1:meq_alt,,drop=FALSE],
-                                  bvec      = bvec[1:meq_alt], 
-                                  meq       = meq_alt,
-                                  absval    = ifelse(is.null(control$absval), 1e-09,
-                                                     control$absval),
-                                  maxit     = ifelse(is.null(control$maxit), 1e04,
-                                                     control$maxit))$solution
+                                     y         = y, 
+                                     b_unrestr = b_unrestr,
+                                     w         = w,
+                                     Amat      = Amat[1:meq_alt,,drop=FALSE],
+                                     bvec      = bvec[1:meq_alt], 
+                                     meq       = meq_alt,
+                                     absval    = ifelse(is.null(control$absval), 1e-09,
+                                                        control$absval),
+                                     maxit     = ifelse(is.null(control$maxit), 1e04,
+                                                        control$maxit))$solution
         b_restr_alt[abs(b_restr_alt) < ifelse(is.null(control$tol),                                        
                                               sqrt(.Machine$double.eps),                                        
                                               control$tol)] <- 0L
@@ -811,7 +804,6 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   } 
   
   if (!(attr(object$wt, "method") == "none") && boot == "no") {
-    
     wt <- object$wt
     pvalue <- con_pvalue_Fbar(wt          = rev(wt), 
                               Ts_org      = Ts, 
@@ -823,7 +815,6 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                               meq_alt     = meq_alt)
     attr(pvalue, "wt") <- wt
   } else if (boot == "parametric") {
-    
     if (!is.function(p.distr)) {
       p.distr <- get(p.distr, mode = "function")
     }

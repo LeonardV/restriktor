@@ -137,7 +137,6 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   # or via bootstrapping. The pvalue can also be computed directly via 
   # the parametric bootstrap or model based bootstrap, without fist computing 
   # the mixing weights.
-  
   if (!(attr(object$wt, "method") == "none") && boot == "no") {
     wt <- object$wt
     pvalue <- con_pvalue_Fbar(wt          = rev(wt), 
@@ -150,7 +149,6 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                               meq_alt     = meq_alt)
     attr(pvalue, "wt") <- wt
   } else if (boot == "parametric") {
-    
     if (!is.function(p.distr)) {
       p.distr <- get(p.distr, mode = "function")
     }
@@ -379,7 +377,6 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
                               meq_alt     = meq_alt)
     attr(pvalue, "wt") <- wt
   } else if (boot == "parametric") {
-    
     if (!is.function(p.distr)) {
       p.distr <- get(p.distr, mode = "function")
     }
@@ -697,7 +694,6 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                               meq_alt     = meq_alt)
     attr(pvalue, "wt") <- wt
   } else if (boot == "parametric") {
-    
     if (!is.function(p.distr)) {
       p.distr <- get(p.distr, mode = "function")
     }

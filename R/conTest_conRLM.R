@@ -446,30 +446,29 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   # Do we have to? The differences look very small.
   ## compute mixing weights
   if (!(attr(object$wt, "method") == "none")) {
-    if (all(c(Amat) == 0)) { 
-      # unrestrikted case
-      wt <- c(rep(0L, p), 1)
+    if (nrow(Amat) == meq) {
+    # equality constraints only
+      wt <- rep(0L, ncol(V) + 1)
+      wt.idx <- ncol(V) - meq + 1
+      wt[wt.idx] <- 1
     } else if (attr(object$wt, "method") == "boot") { 
-      # compute mixing weights based on simulation
+      # compute chi-square-bar weights based on Monte Carlo simulation
       wt <- con_weights_boot(VCOV     = V,
-                             Amat     = Amat,
-                             meq      = meq,
+                             Amat     = Amat, 
+                             meq      = meq, 
                              R        = attr(object$wt, "bootWt.R"),
                              parallel = parallel,
                              ncpus    = ncpus,
                              cl       = cl,
                              seed     = seed,
                              verbose  = verbose)
-    } else if (attr(object$wt, "method") == "pmvnorm" && (meq < nrow(Amat))) { 
-      # compute mixing weights based on pmvnorm
+      attr(wt, "bootWt.R") <- attr(object$wt, "bootWt.R") 
+    } else if (attr(object$wt, "method") == "pmvnorm" && (meq < nrow(Amat))) {
+      # compute chi-square-bar weights based on pmvnorm
       wt <- rev(con_weights(Amat %*% V %*% t(Amat), meq = meq))
-    } else if (attr(object$wt, "method") == "pmvnorm" && (meq == nrow(Amat))) { 
-      # only equality constraints
-      wt <- rep(0L, ncol(V) + 1)
-      wt.idx <- ncol(V) - meq + 1
-      wt[wt.idx] <- 1
-    }
-  }
+    } 
+  } 
+  attr(wt, "method") <- attr(object$wt, "method")
   ##############################################################################
   
   if (!(attr(object$wt, "method") == "none") && boot == "no") {
@@ -484,7 +483,6 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                               meq_alt     = meq_alt)
     attr(pvalue, "wt") <- wt
   } else if (boot == "parametric") {
-    
     if (!is.function(p.distr)) {
       p.distr <- get(p.distr, mode = "function")
     }
@@ -735,7 +733,6 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                               meq_alt     = meq_alt)
     attr(pvalue, "wt") <- wt
   } else if (boot == "parametric") {
-    
     if (!is.function(p.distr)) {
       p.distr <- get(p.distr, mode = "function")
     }
@@ -995,28 +992,30 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   # We need to recalculate the weights based on V_hat = Sigam instead on solve(t(X)%*%X)
   # Do we have to? The differences are very small.
   ## compute mixing weights
-  if (all(c(Amat) == 0)) { # unrestrikted case
-    wt <- c(rep(0L, p), 1)
-  } else if (attr(object$wt, "method") == "boot") { 
-    # compute mixing weights based on simulation
-    wt <- con_weights_boot(VCOV     = V,
-                           Amat     = Amat,
-                           meq      = meq,
-                           R        = attr(object$wt, "bootWt.R"),
-                           parallel = parallel,
-                           ncpus    = ncpus,
-                           cl       = cl,
-                           seed     = seed,
-                           verbose  = verbose)
-  } else if (attr(object$wt, "method") == "pmvnorm" && (meq < nrow(Amat))) { 
-    # compute mixing weights based on pmvnorm
-    wt <- rev(con_weights(Amat %*% V %*% t(Amat), meq = meq))
-  } else if (attr(object$wt, "method") == "pmvnorm" && (meq == nrow(Amat))) { 
-    # only equality constraints
-    wt <- rep(0L, ncol(V) + 1)
-    wt.idx <- ncol(V) - meq + 1
-    wt[wt.idx] <- 1
-  }
+  if (!(attr(object$wt, "method") == "none")) {
+    if (nrow(Amat) == meq) {
+      # equality constraints only
+      wt <- rep(0L, ncol(V) + 1)
+      wt.idx <- ncol(V) - meq + 1
+      wt[wt.idx] <- 1
+    } else if (attr(object$wt, "method") == "boot") { 
+      # compute chi-square-bar weights based on Monte Carlo simulation
+      wt <- con_weights_boot(VCOV     = V,
+                             Amat     = Amat, 
+                             meq      = meq, 
+                             R        = attr(object$wt, "bootWt.R"),
+                             parallel = parallel,
+                             ncpus    = ncpus,
+                             cl       = cl,
+                             seed     = seed,
+                             verbose  = verbose)
+      attr(wt, "bootWt.R") <- attr(object$wt, "bootWt.R")
+    } else if (attr(object$wt, "method") == "pmvnorm" && (meq < nrow(Amat))) {
+      # compute chi-square-bar weights based on pmvnorm
+      wt <- rev(con_weights(Amat %*% V %*% t(Amat), meq = meq))
+    } 
+  } 
+  attr(wt, "method") <- attr(object$wt, "method")
   
   if (!attr(object$wt, "method") == "none" && boot == "no") {
     # compute pvalue based on F-distribution
@@ -1030,7 +1029,6 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                               meq_alt     = meq_alt)
     attr(pvalue, "wt") <- wt
   } else if (boot == "parametric") {
-    
     if (!is.function(p.distr)) {
       p.distr <- get(p.distr, mode = "function")
     }

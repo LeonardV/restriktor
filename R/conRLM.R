@@ -10,8 +10,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   if (!(class(object)[1] == "rlm")) {
     stop("Restriktor ERROR: object must be of class rlm.")
   }
-  
-  # standard error stuff
+  # standard error methods
   if (se == "default") {
     se <- "standard"
   } else if (se == "boot.residual") {
@@ -21,18 +20,21 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                   "HC1","HC2","HC3","HC4","HC4m","HC5"))) {
     stop("Restriktor ERROR: standard error method ", sQuote(se), " unknown.")
   }
-  
+  # check method to compute chi-square-bar weights
   if (!(Wt %in% c("pmvnorm", "boot", "none"))) {
     stop("Restriktor ERROR: ", sQuote(Wt), " method unknown. Choose from \"pmvnorm\", \"boot\", or \"none\"")
   }
   
   # original model function call
   call_org <- as.list(object$call)
-  # which method M or MM estimation
+  # M or MM estimation?
   method <- call_org[["method"]]
-  if (is.null(method)) object$call[["method"]] <- "M"
-  # check (only tukey's bisquare supported)
+  # loss function
   psi <- call_org[["psi"]]
+  if (is.null(method)) { 
+    object$call[["method"]] <- "M"
+  }
+  # check (only tukey's bisquare supported)
   if (is.null(psi)) {
     if (object$call[["method"]] == "M") {
       stop("Restriktor ERROR: only tukey's bisquare loss function is supported.")
@@ -48,7 +50,6 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   
   # store call
   mc <- match.call()
-  
   # rename for internal use
   Amat <- constraints
   bvec <- rhs
@@ -71,8 +72,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   tau <- so$stddev
   # residuals
   residuals <- residuals(object) # NOT working residual
-  
-  # sampel size
+  # sample size
   n <- dim(X)[1]
   # number of parameters
   p <- dim(X)[2]
@@ -112,13 +112,12 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     meq  <- 0L
   } 
   
-  
   # compute the reduced row-echelon form of the constraints matrix
   rAmat <- GaussianElimination(t(Amat))
   if (Wt == "pmvnorm") {
     if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
-      stop(paste("Restriktor ERROR: The constraint matrix must have full row-rank ( choose e.g. rows", 
-                 paste(rAmat$pivot, collapse = " "), ", or try to set Wt = \"boot\""))
+      stop(paste("Restriktor ERROR: The constraint matrix must have full row-rank", 
+                 "\n  (choose e.g. rows", paste(rAmat$pivot, collapse = " "), ",or try to set Wt = \"boot\")"))
     }
   } else {
     if (rAmat$rank < nrow(Amat) && 
@@ -128,18 +127,17 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
       warning(paste("Restriktor Warning: No standard errors could be computed.", 
                     "\nThe constraint matrix must have full row-rank ( choose e.g. rows", 
                     paste(rAmat$pivot, collapse = " "), ").",
-                    "\nTry to set se = \"boot.model.based\" or \"boot.standard\"."))  
+                    "\nTry se = \"boot.model.based\" or \"boot.standard\"."))  
     }
   }
   
   if(ncol(Amat) != length(b_unrestr)) {
     stop("Restriktor ERROR: the columns of constraints does not", 
-         "\nmatch with the number of parameters.")
+         "\n       match with the number of parameters.")
   }
   
   timing$constraints <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
-  
   
   # compute R-squared 
   # acknowledment: code taken from the lmrob() function from the robustbase package
@@ -154,18 +152,20 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   R2_org <- (yMy - rMr) / (yMy + rMr * (correc - 1))
   
   
-  # ML unconstrained MSE
-  #tau2ml <- (tau^2 * so$df[2]) / n
-  #invW <- kronecker(solve(tau2ml), t(X) %*% X)
-  
-  ## compute mixing weights
   is.augmented <- TRUE
+  # compute chi-square-bar weights
   if (Wt != "none") {
-    ## compute mixing weights
-    if (all(c(Amat) == 0)) { # unrestrikted case
+    if (nrow(Amat) == meq) {
+      # equality constraints only
+      wt <- rep(0L, ncol(Sigma) + 1)
+      wt.idx <- ncol(Sigma) - meq + 1
+      wt[wt.idx] <- 1
+    } else if (all(c(Amat) == 0)) { 
+      # unrestricted case
       wt <- c(rep(0L, p), 1)
       is.augmented <- FALSE
-    } else if (Wt == "boot") { # compute mixing weights based on simulation
+    } else if (Wt == "boot") { 
+      # compute chi-square-bar weights based on Monte Carlo simulation
       wt <- con_weights_boot(VCOV     = Sigma,
                              Amat     = Amat, 
                              meq      = meq, 
@@ -176,13 +176,10 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                              seed     = seed,
                              verbose  = verbose)
       attr(wt, "bootWt.R") <- bootWt.R 
-    } else if (Wt == "pmvnorm" && (meq < nrow(Amat))) { # compute mixing weights based on pmvnorm
+    } else if (Wt == "pmvnorm" && (meq < nrow(Amat))) {
+      # compute chi-square-bar weights based on pmvnorm
       wt <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
-    } else if (Wt == "pmvnorm" && (meq == nrow(Amat))) { # only equality constraints
-      wt <- rep(0L, ncol(Sigma) + 1)
-      wt.idx <- ncol(Sigma) - meq + 1
-      wt[wt.idx] <- 1
-    }
+    } 
   } else {
     wt <- NA
   }
@@ -197,14 +194,13 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   
   # # check if the constraints are in line with the data    
   if (all(Amat %*% c(b_unrestr) - bvec >= 0 * bvec) & meq == 0) {  
-    b_restr <- b_unrestr
+    b_restr   <- b_unrestr
     tau_restr <- tau
     
     OUT <- list(CON         = CON,
                 call        = mc,
                 timing      = timing,
                 parTable    = parTable,
-                wt          = wt,
                 b_unrestr   = b_unrestr,
                 b_restr     = b_unrestr,
                 residuals   = residuals,
@@ -222,6 +218,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 loglik      = ll_unrestr, 
                 Sigma       = Sigma, # probably not so robust!
                 constraints = Amat, 
+                wt          = wt,
                 rhs         = bvec, 
                 neq         = meq, 
                 iact        = 0L,
@@ -240,7 +237,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                              psi = psi.bisquare, 
                              Amat = Amat, bvec = bvec, meq = meq))
     
-    # fit constraint robust liner model
+    # fit constrained robust liner model
     rfit <- do.call("conRLM_fit", CALL)
     
     timing$conRLM_fit <- (proc.time()[3] - start.time)
@@ -262,9 +259,6 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     if (debug) {
       print(list(loglik_restr = ll_restr))
     }
-    
-    timing$LLik <- (proc.time()[3] - start.time)
-    start.time <- proc.time()[3]
     
     # in case of equality constraints we need to correct the residual df 
     if (length(object$call[["wt.method"]]) && object$call[["wt.method"]] == "case") {
@@ -295,8 +289,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
       }
     }
     
-      
-    #R^2 under the restrikted object
+    #R^2 under the restricted object
     df_int <- if (attr(object$terms, "intercept")) { 1L } else { 0L }
     resp_mean <- if (df_int == 1L) { sum(weights * y) / sum(weights) } else { 0 }
     yMy <- sum(weights * (y - resp_mean)^2)
@@ -309,7 +302,6 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 call        = mc,
                 timing      = timing,
                 parTable    = parTable,
-                wt          = wt,
                 b_unrestr   = b_unrestr,
                 b_restr     = b_restr,
                 residuals   = residuals,
@@ -324,8 +316,9 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 s2_unrestr  = tau^2, 
                 s2_restr    = tau_restr^2, 
                 loglik      = ll_restr, 
-                Sigma       = Sigma,                                             #probably not so robust???
+                Sigma       = Sigma,                             #probably not so robust???
                 constraints = Amat, 
+                wt          = wt,
                 rhs         = bvec, 
                 neq         = meq, 
                 iact        = rfit$iact,
@@ -356,8 +349,6 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
       if (debug) {
         print(list(information = OUT$information))
       }
-      timing$inv_aug_information <- (proc.time()[3] - start.time)
-      start.time <- proc.time()[3]
     } else if (se == "boot.model.based") { 
       OUT$bootout <- con_boot_lm(object      = object, 
                                  B           = B, 
@@ -373,8 +364,6 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
       if (debug) {
         print(list(bootout = OUT$bootout))
       }
-      timing$boot_model_based <- (proc.time()[3] - start.time)
-      start.time <- proc.time()[3]
     } else if (se == "boot.standard") {
       OUT$bootout <- con_boot_lm(object      = object, 
                                  B           = B, 
@@ -390,9 +379,9 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
       if (debug) {
         print(list(bootout = OUT$bootout))
       }
-      timing$boot_standard <- (proc.time()[3] - start.time)
-      start.time <- proc.time()[3]
     }
+    timing$standard_error <- (proc.time()[3] - start.time)
+    start.time <- proc.time()[3]
   }
   
   OUT$timing$total <- (proc.time()[3] - start.time0)

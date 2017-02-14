@@ -1,4 +1,4 @@
-robustWaldScores <- function(x, y, Amat = NULL, b_eqrestr, b_restr, b_unrestr, 
+robustWaldScores <- function(x, y, b_eqrestr, b_restr, b_unrestr, 
                              scale, test = "wald", cc = 4.685061) { 
   
   test <- tolower(test)

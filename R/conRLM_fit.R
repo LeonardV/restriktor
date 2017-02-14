@@ -112,13 +112,13 @@ conRLM_fit <- function (x, y, weights, ..., w = rep(1, nrow(x)), init = "ls",
       scale <- temp$scale  
     } else {
       temp <- do.call("lqs", c(list(x, y, intercept = FALSE, 
-                                    method = "S", k0 = 1.548), lqs.control))
+                                    method = "S", k0 = 1.54764), lqs.control))
       coef <- temp$coefficients
       resid <- temp$residuals
       if (length(arguments <- list(...))) 
         if (match("c", names(arguments), nomatch = 0L)) {
           c0 <- arguments$c
-          if (c0 > 1.548) 
+          if (c0 > 1.54764) 
             formals(psi)$c <- c0
           else warning("'c' must be at least 1.548 and has been ignored")
         }
@@ -162,12 +162,6 @@ conRLM_fit <- function (x, y, weights, ..., w = rep(1, nrow(x)), init = "ls",
       w <- w * weights
     
     #############################################################
-    # W <- diag(c(w))
-    # XX <- t(x) %*% W %*% x
-    # Xy <- t(x) %*% W %*% y
-    # fit1 <- solve.QP(Dmat = XX, dvec = Xy, Amat = t(Amat),
-    #                  bvec = bvec, meq = meq)
-    
     W <- sqrt(w)
     fit <- con_solver_rlm(X = x * W, y = y * W,
                           Amat = Amat, bvec = bvec,
@@ -177,7 +171,6 @@ conRLM_fit <- function (x, y, weights, ..., w = rep(1, nrow(x)), init = "ls",
     coef <- fit$solution
     resid <- drop(y - x %*% coef)
     iact <- fit$iact
-    
     #############################################################
     
     #temp <- lm.wfit(x, y, w, method = "qr")

@@ -402,7 +402,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   else if (type == "B") {
     if (meq_alt == 0L) {
       out2 <- robustWaldScores(x         = X, 
-                               y         = y, 
+                               y         = y,
                                b_eqrestr = b_restr, 
                                b_restr   = b_unrestr,
                                b_unrestr = b_unrestr,
@@ -426,7 +426,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                               control$tol)] <- 0L
         names(b_restr.alt) <- vnames
         out3 <- robustWaldScores(x         = X, 
-                                 y         = y,  
+                                 y         = y,
                                  b_eqrestr = b_restr, 
                                  b_restr   = b_restr.alt,
                                  b_unrestr = b_unrestr,
@@ -684,7 +684,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                                       sqrt(.Machine$double.eps), 
                                       control$tol)] <- 0L
     names(b_eqrestr) <- vnames
-    Ts <- robustWaldXX(x         = X, 
+    Ts <- robustWaldXX(x         = X,
                        b_eqrestr = b_eqrestr, 
                        b_restr   = b_restr, 
                        b_unrestr = b_unrestr, 
@@ -938,7 +938,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     names(b_eqrestr) <- vnames
     
     out1 <- robustWaldScores(x         = X, 
-                             y         = y,  
+                             y         = y,
                              b_eqrestr = b_eqrestr, 
                              b_restr   = b_restr, 
                              b_unrestr = b_unrestr,

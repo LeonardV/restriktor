@@ -33,13 +33,36 @@ robustWaldScores <- function(x, y, b_eqrestr, b_restr, b_unrestr,
   V <- Minv %*% Q %*% t(Minv)
 
   # Wald test-statistic
+  # REF: Silvapulle and Sen (2005, p 154)
   if (test == "wald") {
-    Ts <- as.numeric(n * c(b_restr - b_eqrestr) %*% 
-                       solve(V, c(b_restr - b_eqrestr)))
+     # Ts <- as.numeric(n * t(Amat%*%(b_restr - b_eqrestr)) %*% 
+     #                  Amat%*%solve(V)%*%t(Amat) %*% Amat%*%(b_restr - b_eqrestr))
+     # 
+    Dn  <- sqrt(n) * b_unrestr
+    D0n <- sqrt(n) * b_eqrestr
+    D1n <- sqrt(n) * b_restr
+    Ts <- (t(Dn - D0n) %*% solve(V) %*% (Dn - D0n)) - (t(Dn - D0n) %*% solve(V) %*% (Dn - D0n))
+    
+    # idx1 <- which(colSums(abs(Amat)) > 0L)
+    # idx0 <- which(colSums(abs(Amat)) == 0L)
+    # 
+    # V22 <- V[idx1,idx1]
+    # V22.inv <- solve(V22)
+    # 
+    # Dn  <- sqrt(n) * b_unrestr[idx1]
+    # Dnb <- sqrt(n) * b_restr[idx1]
+    # # Dn <- Tn
+    # # Dmat <- solve(Amat[,idx1,drop=FALSE]%*%V22%*%t(Amat[,idx1,drop=FALSE]))
+    # # dvec <- t(Dn)%*%Dmat
+    # # out <- quadprog:::solve.QP(Dmat=Dmat, dvec=dvec, Amat=Amat[,idx1,drop=FALSE], bvec=rep(0, nrow(Amat)), meq=0) 
+    # # b <- out$solution
+    # # 
+    # Ts <- (t(Dn-)%*%V22.inv%*%Dn) - (t(Dn-Dnb)%*%V22.inv%*%(Dn-Dnb)) 
     
     test <- "Wald"
   } else if (test == "score") {
-    # Score test-statistic
+    # Global score test-statistic
+    # REF: Robertson et al. (1988)
     res0 <- y - X %*% b_eqrestr
     resA <- y - X %*% b_restr
     
@@ -57,7 +80,10 @@ robustWaldScores <- function(x, y, b_eqrestr, b_restr, b_unrestr,
     ZA <- (t(X) %*% weightsZA) / n  
       
     result_C <- M %*% V %*% t(M)
-    Ts <- as.numeric(n * t(ZA - Z0) %*% solve(result_C, (ZA - Z0)))
+    
+    #Ts <- as.numeric(n * t(R%*%(ZA - Z0)) %*% R%*%solve(result_C)%*%t(R) %*% R%*%(ZA - Z0))
+    #n * (t( R%*%solve(result_C)%*% c(Z0 - ZA)) %*% solve(R%*%solve(result_C)%*%t(R)) %*% R%*%solve(result_C)%*% c(Z0 - ZA))
+    Ts <- as.numeric(n * t(Z0 - ZA) %*% solve(result_C) %*% c(Z0 - ZA))
     
     test <- "Score"
   } 
@@ -70,10 +96,8 @@ robustWaldScores <- function(x, y, b_eqrestr, b_restr, b_unrestr,
   
 }
 
-
-
 ################# robust Fm test statistic ######################
-# REF: Mervyn J. Silvapulle (1992). Robust Tests of Inequality 
+# REF: Silvapulle, M.J. (1992). Robust Tests of Inequality 
 # Constraints and One-Sided Hypotheses in the Linear Model, 
 # Biometrika, 79, 3, 621-630.
 robustFm <- function(x, y, b_unrestr, b_eqrestr, b_restr, scale, 
@@ -113,10 +137,10 @@ robustFm <- function(x, y, b_unrestr, b_eqrestr, b_restr, scale,
 
 
 ## robust Wald statistic, Silvapulle (1992) ##
-robustWaldXX <- function(x, b_eqrestr, b_restr, b_unrestr, tau) {
-  #x <- scale(x, center = TRUE, scale = FALSE)
-  Ts <- as.numeric(( (t(b_unrestr - b_eqrestr) %*% (t(x)%*%x) %*% (b_unrestr - b_eqrestr)) -
-                     (t(b_unrestr - b_restr) %*% (t(x)%*%x) %*% (b_unrestr - b_restr)) ) / tau^2)
+robustWaldXX <- function(x, Amat, b_eqrestr, b_restr, b_unrestr, tau) {
+  X <- x
+  Ts <- as.numeric(( (t(b_unrestr - b_eqrestr) %*% (t(X)%*%X) %*% (b_unrestr - b_eqrestr)) -
+                     (t(b_unrestr - b_restr) %*% (t(X)%*%X) %*% (b_unrestr - b_restr)) ) / tau^2)
 
   OUT <- list(test = "Wald",
               Ts   = Ts)

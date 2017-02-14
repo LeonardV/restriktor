@@ -1,4 +1,4 @@
-robustWaldScores <- function(x, y, b_eqrestr, b_restr, b_unrestr, 
+robustWaldScores <- function(x, y, Amat = NULL, b_eqrestr, b_restr, b_unrestr, 
                              scale, test = "wald", cc = 4.685061) { 
   
   test <- tolower(test)
@@ -43,48 +43,45 @@ robustWaldScores <- function(x, y, b_eqrestr, b_restr, b_unrestr,
     D1n <- sqrt(n) * b_restr
     Ts <- (t(Dn - D0n) %*% solve(V) %*% (Dn - D0n)) - (t(Dn - D1n) %*% solve(V) %*% (Dn - D1n))
     
-    # idx1 <- which(colSums(abs(Amat)) > 0L)
-    # idx0 <- which(colSums(abs(Amat)) == 0L)
+    # Ts <- (t(Amat%*%(Dn - D0n)) %*% (Amat%*%solve(V)%*%t(Amat)) %*% Amat%*%(Dn - D0n)) - 
+    #   (t(Amat%*%(Dn - D1n)) %*% (Amat%*%solve(V)%*%t(Amat)) %*% Amat%*%(Dn - D1n))
     # 
-    # V22 <- V[idx1,idx1]
-    # V22.inv <- solve(V22)
-    # 
-    # Dn  <- sqrt(n) * b_unrestr[idx1]
-    # Dnb <- sqrt(n) * b_restr[idx1]
-    # # Dn <- Tn
-    # # Dmat <- solve(Amat[,idx1,drop=FALSE]%*%V22%*%t(Amat[,idx1,drop=FALSE]))
-    # # dvec <- t(Dn)%*%Dmat
-    # # out <- quadprog:::solve.QP(Dmat=Dmat, dvec=dvec, Amat=Amat[,idx1,drop=FALSE], bvec=rep(0, nrow(Amat)), meq=0) 
-    # # b <- out$solution
-    # # 
-    # Ts <- (t(Dn-)%*%V22.inv%*%Dn) - (t(Dn-Dnb)%*%V22.inv%*%(Dn-Dnb)) 
-    
     test <- "Wald"
   } else if (test == "score") {
     # Global score test-statistic
     # REF: Robertson et al. (1988)
     res0 <- y - X %*% b_eqrestr
     resA <- y - X %*% b_restr
+    res2 <- y - X %*% b_unrestr
     
     rstar0 <- res0 / scale
     rstarA <- resA / scale
+    rstar2 <- res2 / scale
     
     # rho functions
     psi0 <- tukeyChi(rstar0, cc, deriv = 1)  
     psiA <- tukeyChi(rstarA, cc, deriv = 1) 
+    psi2 <- tukeyChi(rstar2, cc, deriv = 1) 
     
     weightsZ0 <- psi0
     Z0 <- (t(X) %*% weightsZ0) / n  
-  
     weightsZA <- psiA
     ZA <- (t(X) %*% weightsZA) / n  
-      
+    weightsZ2 <- psi2
+    Z2 <- (t(X) %*% weightsZ2) / n  
+    
     result_C <- M %*% V %*% t(M)
     
-    #Ts <- as.numeric(n * t(R%*%(ZA - Z0)) %*% R%*%solve(result_C)%*%t(R) %*% R%*%(ZA - Z0))
-    #n * (t( R%*%solve(result_C)%*% c(Z0 - ZA)) %*% solve(R%*%solve(result_C)%*%t(R)) %*% R%*%solve(result_C)%*% c(Z0 - ZA))
-    Ts <- as.numeric(n * t(Z0 - ZA) %*% solve(result_C) %*% c(Z0 - ZA))
+    #Ts <- as.numeric(n * t(Z0 - ZA) %*% solve(result_C) %*% c(Z0 - ZA))
+    Z0 <- sqrt(n) * Z0
+    ZA <- sqrt(n) * ZA
+    Z2 <- sqrt(n) * Z2
+    Ts <- (t(Z2 - Z0) %*% solve(result_C) %*% (Z2 - Z0)) - 
+      (t(Z2 - ZA) %*% solve(result_C) %*% (Z2 - ZA))
     
+    # Ts <- (t(Amat%*%(Z2 - Z0)) %*% (Amat%*%solve(result_C)%*%t(Amat)) %*% Amat%*%(Z2 - Z0)) - 
+    #   (t(Amat%*%(Z2 - ZA)) %*% (Amat%*%solve(result_C)%*%t(Amat)) %*% Amat%*%(Z2 - ZA))
+    # 
     test <- "Score"
   } 
 

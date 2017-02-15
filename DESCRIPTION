@@ -1,11 +1,8 @@
 Package: restriktor
 Title: Restricted Statistical Estimation and Inference for Linear Models
-Version: 0.1-50
-Authors@R: c(person(given = "Yves", family = "Rosseel",
-                    role  = c("cre"),
-                    email = "Yves.Rosseel@UGent.be"),
-             person(given = "Leonard", family = "Vanbrabant",
-                    role =  c("aut"),
+Version: 0.1-55
+Authors@R: c(person(given = "Leonard", family = "Vanbrabant",
+                    role =  c("aut","cre"),
                     email = "Leonard.Vanbrabant@Ugent.be")
             )
 Description: Allow for easy-to-use testing of linear equality and inequality 
@@ -17,7 +14,6 @@ LazyData: yes
 URL: http://restriktor.org
 NeedsCompilation: no
 Packaged: 2017-01-30 15:43:19 UTC; Leonard
-Author: Yves Rosseel [cre],
-        Leonard Vanbrabant [aut]
-Maintainer: Yves Rosseel <Yves.Rosseel@UGent.be>
+Author: Leonard Vanbrabant [aut, cre]
+Maintainer: Leonard Vanbrabant <Leonard.Vanbrabant@Ugent.be>
 Suggests: 

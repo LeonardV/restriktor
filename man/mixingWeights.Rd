@@ -9,8 +9,8 @@ This function computes these mixing weights (a.k.a chi-bar-square weights).
 It can be used directly and is called by the \code{conTest} function.
 }
 \usage{con_weights_boot(VCOV, Amat, meq, 
-                R = 9999, parallel = c("no", "multicore", "snow"),
-                ncpus = 1L, cl = NULL, seed = NULL, verbose = FALSE, ...)
+                 R = 9999L, parallel = c("no", "multicore", "snow"),
+                 ncpus = 1L, cl = NULL, seed = NULL, verbose = FALSE, ...)
 }
 
 \arguments{
@@ -32,7 +32,7 @@ It can be used directly and is called by the \code{conTest} function.
   first two rows of the constraints matrix \eqn{R} are treated as 
   equality constraints. }
   
-  \item{R}{integer; number of bootstrap draws for \code{bootWt}. 
+  \item{R}{integer; number of bootstrap draws for \code{mix.bootstrap}. 
   The default value is set to 99999. Parallel support is available.}
   
   \item{parallel}{the type of parallel operation to be used 

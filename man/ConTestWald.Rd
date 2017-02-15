@@ -45,11 +45,12 @@ or \code{test = "Wald2"}.
   Instead of computing the p-value via simulation, the p-value
   can also be computed using the chi-bar-square weights. If 
   \code{"no"}, the p-value is computed based on the weights 
-  obtained via simulation (\code{bootWt = TRUE}) or using the 
-  multivariate normal distribution function (\code{bootWt = FALSE}).
-  Note that, these weights are already available in the conLM or
-  conRLM objected. However, there are two exception in case of a 
-  conRLM object. If \code{test} = \code{"Wald"} or \code{"score"} 
+  obtained via simulation (\code{mix.weights = "boot"}) or using the 
+  multivariate normal distribution function (\code{mix.weights = "pmvnorm"}).
+  Note that, these weights are already available in the restriktor objected and
+  do not need to be estimated again. However, there are two exception for objects 
+  of class \code{conRLM}, namely for computing the p-value for the robust 
+  \code{test} = \code{"Wald"} and the robust \code{"score"}. In these cases 
   the weights need to be recalculated.
   }
   

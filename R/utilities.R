@@ -1,19 +1,19 @@
 ## utility functions
 coef.restriktor <- function(object, ...)  {
   
-  b_def <- c()
-  b_restr <- object$b_restr
+  b.def <- c()
+  b.restr <- object$b.restr
   if (any(object$parTable$op == ":=")) {
-    b_def <- object$CON$def.function(object$b_restr)
+    b.def <- object$CON$def.function(object$b.restr)
   }
   
-  OUT <- c(b_restr, b_def)
+  OUT <- c(b.restr, b.def)
   
   OUT
 }
 
 model.matrix.restriktor <- function(object, ...) {
-  model.matrix(object$model_org)
+  model.matrix(object$model.org)
 }
 
 tukeyChi <- function(x, c = 4.685061, deriv = 0, ...) {

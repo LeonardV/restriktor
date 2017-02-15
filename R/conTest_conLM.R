@@ -10,7 +10,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                            control = NULL, ...) {
   
   # rename for internal use
-  meq_alt <- neq.alt
+  meq.alt <- neq.alt
   
   # checks
   if (!inherits(object, "conLM")) {
@@ -30,28 +30,28 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   }
   
   # original model
-  model_org <- object$model_org
+  model.org <- object$model.org
   # model matrix
   X <- model.matrix(object)[,,drop=FALSE]
   # response variable
-  y <- as.matrix(model_org$model[, attr(model_org$terms, "response")])
+  y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
   # sample size
   n <- dim(X)[1]
   # weights
-  w <- weights(model_org)
+  w <- weights(model.org)
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
-  Sigma <- vcov(model_org) 
+  Sigma <- vcov(model.org) 
   # parameter estimates
-  b_unrestr <- object$b_unrestr
-  b_restr <- object$b_restr
-  b_eqrestr <- NULL
-  b_restr_alt <- NULL
+  b.unrestr <- object$b.unrestr
+  b.restr <- object$b.restr
+  b.eqrestr <- NULL
+  b.restr.alt <- NULL
   # length parameter vector
-  p <- length(b_unrestr)
+  p <- length(b.unrestr)
   # variable names
-  vnames <- names(b_unrestr)
+  vnames <- names(b.unrestr)
   # constraints stuff
   Amat <- object$constraints
   bvec <- object$rhs
@@ -71,7 +71,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   }
   
   # check for intercept                                          
-  intercept <- any(attr(terms(model_org), "intercept"))
+  intercept <- any(attr(terms(model.org), "intercept"))
   if (type == "global") {
     if (intercept) { 
       AmatG <- cbind(rep(0, (p - 1)), diag(rep(1, p - 1))) 
@@ -87,7 +87,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
     
     if (all(abs(AmatX) < tol)) { 
       type <- "A"
-        attr(type, "type_org") <- "global"
+        attr(type, "type.org") <- "global"
     } else {
       # remove all rows with only zeros
       AmatX  <- AmatX[!rowSums(abs(AmatX) < tol) == p,, drop = FALSE]
@@ -96,15 +96,15 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
     }
     AmatG <- rbind(AmatX, Amat)
     bvecG <- c(rep(0, nrow(AmatX)), bvec)
-      attr(Amat, "Amat_global") <- AmatG
-      attr(bvec, "bvec_global") <- bvecG
+      attr(Amat, "Amat.global") <- AmatG
+      attr(bvec, "bvec.global") <- bvecG
   }
   
   if (type == "global") {
     # call quadprog
-    b_eqrestr <- con_solver_lm(X         = X, 
+    b.eqrestr <- con_solver_lm(X         = X, 
                                y         = y, 
-                               b_unrestr = b_unrestr,
+                               b.unrestr = b.unrestr,
                                w         = w, 
                                Amat      = AmatG,
                                bvec      = bvecG, 
@@ -114,16 +114,16 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                                maxit     = ifelse(is.null(control$maxit), 1e04, 
                                                   control$maxit))$solution
     # fix estimates < tol to zero 
-    b_eqrestr[abs(b_eqrestr) < ifelse(is.null(control$tol),                                        
+    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
                                       control$tol)] <- 0L
-    names(b_eqrestr) <- vnames
+    names(b.eqrestr) <- vnames
     # compute global test statistic
-    Ts <- c(t(b_restr - b_eqrestr) %*% solve(Sigma, b_restr - b_eqrestr))
+    Ts <- c(t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr))
   } else if (type == "A") {
-    b_eqrestr <- con_solver_lm(X         = X, 
+    b.eqrestr <- con_solver_lm(X         = X, 
                                y         = y, 
-                               b_unrestr = b_unrestr,
+                               b.unrestr = b.unrestr,
                                w         = w, 
                                Amat      = Amat,
                                bvec      = bvec, 
@@ -132,37 +132,37 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                                                control$absval),
                                maxit     = ifelse(is.null(control$maxit), 1e04, 
                                                control$maxit))$solution
-    b_eqrestr[abs(b_eqrestr) < ifelse(is.null(control$tol),                                        
+    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
                                       control$tol)] <- 0L
-    names(b_eqrestr) <- vnames
+    names(b.eqrestr) <- vnames
     # compute test statistic for hypothesis test type A
-    Ts <- c(t(b_restr - b_eqrestr) %*% solve(Sigma, b_restr - b_eqrestr))
+    Ts <- c(t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr))
   } else if (type == "B") {
-    if (meq_alt == 0L) {
+    if (meq.alt == 0L) {
       # compute test statistic for hypothesis test type B when no equalities are
       # preserved in the alternative hypothesis.
-      Ts <- c(t(b_unrestr - b_restr) %*% solve(Sigma, b_unrestr - b_restr))
+      Ts <- c(t(b.unrestr - b.restr) %*% solve(Sigma, b.unrestr - b.restr))
     } else {
-      if (meq_alt > 0L && meq_alt <= meq) {
-        b_restr_alt <- con_solver_lm(X         = X, 
+      if (meq.alt > 0L && meq.alt <= meq) {
+        b.restr.alt <- con_solver_lm(X         = X, 
                                      y         = y, 
-                                     b_unrestr = b_unrestr,
+                                     b.unrestr = b.unrestr,
                                      w         = w, 
-                                     Amat      = Amat[1:meq_alt,,drop = FALSE],
-                                     bvec      = bvec[1:meq_alt], 
-                                     meq       = meq_alt,
+                                     Amat      = Amat[1:meq.alt,,drop = FALSE],
+                                     bvec      = bvec[1:meq.alt], 
+                                     meq       = meq.alt,
                                      absval    = ifelse(is.null(control$absval), 1e-09, 
                                                         control$absval),
                                      maxit     = ifelse(is.null(control$maxit), 1e04, 
                                                         control$maxit))$solution
-        b_restr_alt[abs(b_restr_alt) < ifelse(is.null(control$tol), 
+        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol), 
                                               sqrt(.Machine$double.eps),                                        
                                               control$tol)] <- 0L
-        names(b_restr_alt) <- vnames
+        names(b.restr.alt) <- vnames
         # compute test statistic for hypothesis test type B when some equalities may 
         # be preserved in the alternative hypothesis.
-        Ts <- c(t(b_restr - b_restr_alt) %*% solve(Sigma, b_restr - b_restr_alt))
+        Ts <- c(t(b.restr - b.restr.alt) %*% solve(Sigma, b.restr - b.restr.alt))
       } else {
         stop("Restriktor ERROR: neq.alt must not be larger than neq.")
       }
@@ -178,13 +178,13 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   if (!(attr(object$wt, "method") == "none") && boot == "no") {
     wt <- object$wt
     pvalue <- con_pvalue_Fbar(wt          = rev(wt), 
-                              Ts_org      = Ts, 
+                              Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
                               Amat        = Amat, 
                               bvec        = bvec, 
                               meq         = meq, 
-                              meq_alt     = meq_alt)
+                              meq.alt     = meq.alt)
     attr(pvalue, "wt") <- wt
    } else if (boot == "parametric") {
      
@@ -198,10 +198,10 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
      formals(p.distr)[pm] <- unlist(arguments[pm])
      
      pvalue <- con_pvalue_boot_parametric(object, 
-                                          Ts_org   = Ts, 
+                                          Ts.org   = Ts, 
                                           type     = type, 
                                           test     = "F", 
-                                          meq_alt  = meq_alt, 
+                                          meq.alt  = meq.alt, 
                                           R        = R, 
                                           p.distr  = p.distr,
                                           parallel = parallel,
@@ -211,10 +211,10 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                                           verbose  = verbose)
    } else if (boot == "model.based") {
      pvalue <- con_pvalue_boot_model_based(object, 
-                                           Ts_org   = Ts, 
+                                           Ts.org   = Ts, 
                                            type     = type, 
                                            test     = "F", 
-                                           meq_alt  = meq_alt,
+                                           meq.alt  = meq.alt,
                                            R        = R,
                                            parallel = parallel, 
                                            ncpus    = ncpus,
@@ -226,7 +226,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
    } 
   
   # necessary for the print function
-  if (!is.null(attr(type, "type_org"))) {
+  if (!is.null(attr(type, "type.org"))) {
     type <- "global"
   }
   
@@ -234,22 +234,22 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
               Amat        = Amat,
               bvec        = bvec,
               meq         = meq,
-              meq_alt     = meq_alt,
+              meq.alt     = meq.alt,
               iact        = object$iact,
               type        = type,
               test        = "F",
               Ts          = Ts,
               df.residual = df.residual,
               pvalue      = pvalue,
-              b_eqrestr   = b_eqrestr,
-              b_unrestr   = b_unrestr,
-              b_restr     = b_restr,
-              b_restr_alt = b_restr_alt,
+              b.eqrestr   = b.eqrestr,
+              b.unrestr   = b.unrestr,
+              b.restr     = b.restr,
+              b.restr.alt = b.restr.alt,
               Sigma       = Sigma,
-              R2_org      = object$R2_org,
-              R2_reduced  = object$R2_reduced,
+              R2.org      = object$R2.org,
+              R2.reduced  = object$R2.reduced,
               boot        = boot,
-              model_org   = model_org)
+              model.org   = model.org)
 
   OUT <- list(OUT)
     names(OUT) <- type
@@ -269,7 +269,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
                              control = NULL, ...) {
 
   # rename for internal use
-  meq_alt <- neq.alt
+  meq.alt <- neq.alt
   
   # checks
   if (!inherits(object, "conLM")) {
@@ -289,26 +289,26 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
   }
   
   # original model
-  model_org <- object$model_org
+  model.org <- object$model.org
   # model matrix
   X <- model.matrix(object)[,,drop=FALSE]
   # response variable
-  y <- as.matrix(model_org$model[, attr(model_org$terms, "response")])
+  y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
   # weights
-  w <- weights(model_org)
+  w <- weights(model.org)
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
-  Sigma <- vcov(model_org) 
+  Sigma <- vcov(model.org) 
   # parameter estimates
-  b_unrestr <- object$b_unrestr
-  b_restr <- object$b_restr
-  b_eqrestr <- NULL
-  b_restr_alt <- NULL
+  b.unrestr <- object$b.unrestr
+  b.restr <- object$b.restr
+  b.eqrestr <- NULL
+  b.restr.alt <- NULL
   # length parameter vector
-  p <- length(b_unrestr)
+  p <- length(b.unrestr)
   # variable names
-  vnames <- names(b_unrestr)
+  vnames <- names(b.unrestr)
   # constraints stuff
   Amat <- object$constraints
   bvec <- object$rhs
@@ -328,7 +328,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
   }
   
   # check for intercept                                          
-  intercept <- any(attr(terms(model_org), "intercept"))
+  intercept <- any(attr(terms(model.org), "intercept"))
   if (type == "global") {
     if (intercept) { 
       AmatG <- cbind(rep(0, (p - 1)), diag(rep(1, p - 1))) 
@@ -344,7 +344,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
     
     if (all(abs(AmatX) < tol)) { 
       type <- "A"
-        attr(type, "type_org") <- "global"
+        attr(type, "type.org") <- "global"
     } else {
       # remove all rows with only zeros
       AmatX  <- AmatX[!rowSums(abs(AmatX) < tol) == p,, drop = FALSE]
@@ -353,14 +353,14 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
     }
     AmatG <- rbind(AmatX, Amat)
     bvecG <- c(rep(0, nrow(AmatX)), bvec)
-    attr(Amat, "Amat_global") <- AmatG
-    attr(bvec, "bvec_global") <- bvecG
+    attr(Amat, "Amat.global") <- AmatG
+    attr(bvec, "bvec.global") <- bvecG
   }
   
   if (type == "global") {  
-    b_eqrestr <- con_solver_lm(X         = X, 
+    b.eqrestr <- con_solver_lm(X         = X, 
                                y         = y, 
-                               b_unrestr = b_unrestr, 
+                               b.unrestr = b.unrestr, 
                                w         = w, 
                                Amat      = AmatG,
                                bvec      = bvecG, 
@@ -369,28 +369,28 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
                                                  control$absval),
                                maxit     = ifelse(is.null(control$maxit), 1e04, 
                                                  control$maxit))$solution
-    b_eqrestr[abs(b_eqrestr) < ifelse(is.null(control$tol),                                        
+    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
                                       control$tol)] <- 0L
-    names(b_eqrestr) <- vnames
+    names(b.eqrestr) <- vnames
     
-    b_eqrestr <- as.vector(b_eqrestr)
-    fitted <- X %*% b_eqrestr
+    b.eqrestr <- as.vector(b.eqrestr)
+    fitted <- X %*% b.eqrestr
     residuals <- y - fitted
     
-    object_eqrestr <- list()
-    object_eqrestr$residuals <- residuals
-    object_eqrestr$weights   <- object$weights
-    ll_eqrestr <- con_loglik_lm(object_eqrestr)
+    object.eqrestr <- list()
+    object.eqrestr$residuals <- residuals
+    object.eqrestr$weights   <- object$weights
+    ll.eqrestr <- con_loglik_lm(object.eqrestr)
     
-    ll0 <- ll_eqrestr
+    ll0 <- ll.eqrestr
     ll1 <- object$loglik
     
     Ts <- -2*(ll0 - ll1)
   } else if (type == "A") {
-    b_eqrestr <- con_solver_lm(X         = X, 
+    b.eqrestr <- con_solver_lm(X         = X, 
                                y         = y, 
-                               b_unrestr = b_unrestr,
+                               b.unrestr = b.unrestr,
                                w         = w, 
                                Amat      = Amat,
                                bvec      = bvec, 
@@ -399,61 +399,61 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
                                                   control$absval),
                                maxit     = ifelse(is.null(control$maxit), 1e04, 
                                                   control$maxit))$solution
-    b_eqrestr[abs(b_eqrestr) < ifelse(is.null(control$tol),                                        
+    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
                                       control$tol)] <- 0L
-    names(b_eqrestr) <- vnames
+    names(b.eqrestr) <- vnames
     
-    b_eqrestr <- as.vector(b_eqrestr)
-    fitted <- X %*% b_eqrestr
+    b.eqrestr <- as.vector(b.eqrestr)
+    fitted <- X %*% b.eqrestr
     residuals <- y - fitted
     
-    object_eqrestr <- list()
-    object_eqrestr$residuals <- residuals
-    object_eqrestr$weights   <- object$weights
-    ll_eqrestr <- con_loglik_lm(object_eqrestr)
+    object.eqrestr <- list()
+    object.eqrestr$residuals <- residuals
+    object.eqrestr$weights   <- object$weights
+    ll.eqrestr <- con_loglik_lm(object.eqrestr)
     
-    ll0 <- ll_eqrestr
+    ll0 <- ll.eqrestr
     ll1 <- object$loglik
     
     Ts <- -2*(ll0 - ll1)
   } else if (type == "B") {
-      if (meq_alt == 0L) {
+      if (meq.alt == 0L) {
         ll0 <- object$loglik
-        ll1 <- logLik(model_org)
+        ll1 <- logLik(model.org)
         
         Ts <- -2*(ll0 - ll1)
       }
     else {
       # some equality may be preserved in the alternative hypothesis.
-      if (meq_alt > 0L && meq_alt <= meq) {
-        b_restr_alt <- con_solver_lm(X         = X, 
+      if (meq.alt > 0L && meq.alt <= meq) {
+        b.restr.alt <- con_solver_lm(X         = X, 
                                      y         = y, 
-                                     b_unrestr = b_unrestr,
+                                     b.unrestr = b.unrestr,
                                      w         = w,
-                                     Amat      = Amat[1:meq_alt,,drop=FALSE],
-                                     bvec      = bvec[1:meq_alt], 
-                                     meq       = meq_alt,
+                                     Amat      = Amat[1:meq.alt,,drop=FALSE],
+                                     bvec      = bvec[1:meq.alt], 
+                                     meq       = meq.alt,
                                      absval    = ifelse(is.null(control$absval), 1e-09, 
                                                         control$absval),
                                      maxit     = ifelse(is.null(control$maxit), 1e04, 
                                                         control$maxit))$solution
-        b_restr_alt[abs(b_restr_alt) < ifelse(is.null(control$tol),                                        
+        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol),                                        
                                               sqrt(.Machine$double.eps),                                        
                                               control$tol)] <- 0L
-        names(b_restr_alt) <- vnames
+        names(b.restr.alt) <- vnames
 
-        b_restr_alt <- as.vector(b_restr_alt)
-        fitted <- X %*% b_restr_alt
+        b.restr.alt <- as.vector(b.restr.alt)
+        fitted <- X %*% b.restr.alt
         residuals <- y - fitted
         
-        object_restr_alt <- list()
-        object_restr_alt$residuals <- residuals
-        object_restr_alt$weights   <- object$weights
-        ll_restr_alt <- con_loglik_lm(object_restr_alt)
+        object.restr.alt <- list()
+        object.restr.alt$residuals <- residuals
+        object.restr.alt$weights   <- object$weights
+        ll.restr.alt <- con_loglik_lm(object.restr.alt)
         
         ll0 <- object$loglik
-        ll1 <- ll_restr_alt
+        ll1 <- ll.restr.alt
         
         Ts <- -2*(ll0 - ll1)
       }
@@ -466,13 +466,13 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
   if (!(attr(object$wt, "method") == "none") && boot == "no") { 
     wt <- object$wt
     pvalue <- con_pvalue_Fbar(wt          = rev(wt), 
-                              Ts_org      = Ts, 
+                              Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
                               Amat        = Amat, 
                               bvec        = bvec, 
                               meq         = meq, 
-                              meq_alt     = meq_alt)
+                              meq.alt     = meq.alt)
     attr(pvalue, "wt") <- wt
   } else if (boot == "parametric") {
     if (!is.function(p.distr)) {
@@ -485,10 +485,10 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
     formals(p.distr)[pm] <- unlist(arguments[pm])
     
     pvalue <- con_pvalue_boot_parametric(object, 
-                                         Ts_org   = Ts, 
+                                         Ts.org   = Ts, 
                                          type     = type, 
                                          test     = "LRT", 
-                                         meq_alt  = meq_alt,
+                                         meq.alt  = meq.alt,
                                          R        = R, 
                                          p.distr  = p.distr,
                                          parallel = parallel,
@@ -498,10 +498,10 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
                                          verbose  = verbose)
   } else if (boot == "model.based") {
     pvalue <- con_pvalue_boot_model_based(object, 
-                                          Ts_org   = Ts, 
+                                          Ts.org   = Ts, 
                                           type     = type, 
                                           test     = "LRT",
-                                          meq_alt  = meq_alt,
+                                          meq.alt  = meq.alt,
                                           R        = R, 
                                           parallel = parallel,
                                           ncpus    = ncpus, 
@@ -513,7 +513,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
   }  
   
   # necessary for the print function
-  if (!is.null(attr(type, "type_org"))) {
+  if (!is.null(attr(type, "type.org"))) {
     type <- "global"
   }
   
@@ -521,22 +521,22 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
               Amat        = Amat,
               bvec        = bvec,
               meq         = meq,
-              meq_alt     = meq_alt,
+              meq.alt     = meq.alt,
               iact        = object$iact,
               type        = type,
               test        = "LRT",
               Ts          = Ts,
               df.residual = df.residual,
               pvalue      = pvalue,
-              b_eqrestr   = b_eqrestr,
-              b_unrestr   = b_unrestr,
-              b_restr     = b_restr,
-              b_restr_alt = b_restr_alt,
+              b.eqrestr   = b.eqrestr,
+              b.unrestr   = b.unrestr,
+              b.restr     = b.restr,
+              b.restr.alt = b.restr.alt,
               Sigma       = Sigma,
-              R2_org      = object$R2_org,
-              R2_reduced  = object$R2_reduced,
+              R2.org      = object$R2.org,
+              R2.reduced  = object$R2.reduced,
               boot        = boot,
-              model_org   = model_org)
+              model.org   = model.org)
 
   OUT <- list(OUT)
   names(OUT) <- type
@@ -554,7 +554,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                control = NULL, ...) {
   
   # rename for internal use
-  meq_alt <- neq.alt
+  meq.alt <- neq.alt
   
   # checks
   if (!inherits(object, "conLM")) {
@@ -574,34 +574,34 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   }
   
   # original model
-  model_org <- object$model_org
+  model.org <- object$model.org
   # model matrix
   X <- model.matrix(object)[,,drop=FALSE]
   # response variable
-  y <- as.matrix(model_org$model[, attr(model_org$terms, "response")])
+  y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
-  Sigma <- vcov(model_org) 
+  Sigma <- vcov(model.org) 
   # sample size
   n <- dim(X)[1]
   # number of parameters
   p <- dim(X)[2]
   # weights
-  w <- weights(model_org)
+  w <- weights(model.org)
   if (is.null(w)) {
     w <- rep(1, n)
   }
   #W <- diag(w)
   # parameter estimates
-  b_unrestr <- object$b_unrestr
-  b_restr <- object$b_restr
-  b_eqrestr <- NULL
-  b_restr_alt <- NULL
+  b.unrestr <- object$b.unrestr
+  b.restr <- object$b.restr
+  b.eqrestr <- NULL
+  b.restr.alt <- NULL
   # length parameter vector
-  p <- length(b_unrestr)
+  p <- length(b.unrestr)
   # variable names
-  vnames <- names(b_unrestr)
+  vnames <- names(b.unrestr)
   # restraints stuff
   Amat <- object$constraints
   bvec <- object$rhs
@@ -621,7 +621,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   }
   
   # check for intercept                                          
-  intercept <- any(attr(terms(model_org), "intercept"))
+  intercept <- any(attr(terms(model.org), "intercept"))
   if (type == "global") {
     if (intercept) { 
       AmatG <- cbind(rep(0, (p - 1)), diag(rep(1, p - 1))) 
@@ -637,7 +637,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     
     if (all(abs(AmatX) < tol)) { 
       type <- "A"
-        attr(type, "type_org") <- "global"
+        attr(type, "type.org") <- "global"
     } else {
       # remove all rows with only zeros
       AmatX  <- AmatX[!rowSums(abs(AmatX) < tol) == p,, drop = FALSE]
@@ -646,14 +646,14 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     }
     AmatG <- rbind(AmatX, Amat)
     bvecG <- c(rep(0, nrow(AmatX)), bvec)
-    attr(Amat, "Amat_global") <- AmatG
-    attr(bvec, "bvec_global") <- bvecG
+    attr(Amat, "Amat.global") <- AmatG
+    attr(bvec, "bvec.global") <- bvecG
   }
 
   if (type == "global") {
-    b_eqrestr <- con_solver_lm(X         = X, 
+    b.eqrestr <- con_solver_lm(X         = X, 
                                y         = y, 
-                               b_unrestr = b_unrestr,
+                               b.unrestr = b.unrestr,
                                w         = w, 
                                Amat      = AmatG, 
                                bvec      = bvecG, 
@@ -662,12 +662,12 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                                   control$absval),
                                maxit     = ifelse(is.null(control$maxit), 1e04, 
                                                   control$maxit))$solution
-    b_eqrestr[abs(b_eqrestr) < ifelse(is.null(control$tol),                                        
+    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
                                       control$tol)] <- 0L
-    names(b_eqrestr) <- vnames
+    names(b.eqrestr) <- vnames
     
-    res0 <- y - X %*% b_eqrestr
+    res0 <- y - X %*% b.eqrestr
     res1 <- residuals(object)
     # score vector
     df0 <- n - (p - nrow(AmatG))  
@@ -683,17 +683,17 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     ###############################################
     # df0 <- n - (p - nrow(AmatG))
     # df1 <- n - (p - qr(Amat[0:meq,])$rank)
-    # s20 <- sum((y - X %*% b_eqrestr)^2) / df0
-    # s21 <- sum((y - X %*% b_restr)^2) / df1
-    # d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b_eqrestr)))
-    # d1 <- 1/s21 * (t(X) %*% (w*(y - X %*% b_restr)))
+    # s20 <- sum((y - X %*% b.eqrestr)^2) / df0
+    # s21 <- sum((y - X %*% b.restr)^2) / df1
+    # d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b.eqrestr)))
+    # d1 <- 1/s21 * (t(X) %*% (w*(y - X %*% b.restr)))
     # I0 <- 1/s20 * (t(X) %*% X)
     # Ts2 <- t(c(d0 - d1)) %*% solve(I0) %*% c(d0 - d1)
     ###############################################
   } else if (type == "A") {
-    b_eqrestr <- con_solver_lm(X         = X, 
+    b.eqrestr <- con_solver_lm(X         = X, 
                                y         = y, 
-                               b_unrestr = b_unrestr,
+                               b.unrestr = b.unrestr,
                                w         = w, 
                                Amat      = Amat,
                                bvec      = bvec, 
@@ -702,12 +702,12 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                                   control$absval),
                                maxit     = ifelse(is.null(control$maxit), 1e04, 
                                                   control$maxit))$solution
-    b_eqrestr[abs(b_eqrestr) < ifelse(is.null(control$tol),                                        
+    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
                                       sqrt(.Machine$double.eps),                                        
                                       control$tol)] <- 0L
-    names(b_eqrestr) <- vnames
+    names(b.eqrestr) <- vnames
     
-    res0 <- y - X %*% b_eqrestr
+    res0 <- y - X %*% b.eqrestr
     res1 <- residuals(object)
     # score vector
     df0 <- n - (p - nrow(Amat))
@@ -723,17 +723,17 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     #############################################
     # df0 <- n - (p - nrow(Amat))
     # df1 <- n - (p - qr(Amat[0:meq,])$rank)
-    # s20 <- sum((y - X %*% b_eqrestr)^2) / df0
-    # s21 <- sum((y - X %*% b_restr)^2) / df1
-    # d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b_eqrestr)))
-    # d1 <- 1/s21 * (t(X) %*% (w*(y - X %*% b_restr)))
+    # s20 <- sum((y - X %*% b.eqrestr)^2) / df0
+    # s21 <- sum((y - X %*% b.restr)^2) / df1
+    # d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b.eqrestr)))
+    # d1 <- 1/s21 * (t(X) %*% (w*(y - X %*% b.restr)))
     # I0 <- 1/s20 * (t(X) %*% X)
     # Ts2 <- t(c(d0 - d1)) %*% solve(I0) %*% c(d0 - d1)
     ###############################################
   } else if (type == "B") {
-    if (meq_alt == 0L) {
+    if (meq.alt == 0L) {
       res0 <- residuals(object)
-      res1 <- residuals(model_org)
+      res1 <- residuals(model.org)
       # score vector
       df0 <- n - (p - qr(Amat[0:meq,])$rank)
       s20 <- sum(res0^2) / df0
@@ -748,34 +748,34 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
       #########
       # df0 <- n - (p - qr(Amat[0:meq,])$rank)
       # df1 <- n - p
-      # s20 <- sum((y - X %*% b_restr)^2) / df0
-      # s21 <- sum((y - X %*% b_unrestr)^2) / df1
-      # d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b_restr)))
-      # d1 <- 1/s21 * (t(X) %*% (w*(y - X %*% b_unrestr)))
+      # s20 <- sum((y - X %*% b.restr)^2) / df0
+      # s21 <- sum((y - X %*% b.unrestr)^2) / df1
+      # d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b.restr)))
+      # d1 <- 1/s21 * (t(X) %*% (w*(y - X %*% b.unrestr)))
       # I0 <- 1/s20 * (t(X) %*% X)
       # Ts2 <- t(c(d0 - d1)) %*% solve(I0) %*% c(d0 - d1)
       ###############################################
       } else {
       # some equality may be preserved in the alternative hypothesis.
-      if (meq_alt > 0L && meq_alt <= meq) {
-        b_restr_alt <- con_solver_lm(X         = X, 
+      if (meq.alt > 0L && meq.alt <= meq) {
+        b.restr.alt <- con_solver_lm(X         = X, 
                                      y         = y, 
-                                     b_unrestr = b_unrestr,
+                                     b.unrestr = b.unrestr,
                                      w         = w,
-                                     Amat      = Amat[1:meq_alt,,drop=FALSE],
-                                     bvec      = bvec[1:meq_alt], 
-                                     meq       = meq_alt,
+                                     Amat      = Amat[1:meq.alt,,drop=FALSE],
+                                     bvec      = bvec[1:meq.alt], 
+                                     meq       = meq.alt,
                                      absval    = ifelse(is.null(control$absval), 1e-09,
                                                         control$absval),
                                      maxit     = ifelse(is.null(control$maxit), 1e04,
                                                         control$maxit))$solution
-        b_restr_alt[abs(b_restr_alt) < ifelse(is.null(control$tol),                                        
+        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol),                                        
                                               sqrt(.Machine$double.eps),                                        
                                               control$tol)] <- 0L
-        names(b_restr_alt) <- vnames
+        names(b.restr.alt) <- vnames
         
         res0 <- residuals(object)
-        res1 <- y - X %*% b_restr_alt
+        res1 <- y - X %*% b.restr.alt
         # score vector
         df0 <- n - (p - qr(Amat[0:meq,])$rank)
         s20 <- sum(res0^2) / df0
@@ -789,10 +789,10 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
         Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))
         ########################
         # df1 <- df0 <- n - (p - qr(Amat[0:meq,])$rank)
-        # s20 <- sum((y - X %*% b_restr)^2) / df0
-        # s21 <- sum((y - X %*% b_restr_alt)^2) / df1
-        # d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b_restr)))
-        # d1 <- 1/s21 * (t(X) %*% (w*(y - X %*% b_restr_alt)))
+        # s20 <- sum((y - X %*% b.restr)^2) / df0
+        # s21 <- sum((y - X %*% b.restr.alt)^2) / df1
+        # d0 <- 1/s20 * (t(X) %*% (w*(y - X %*% b.restr)))
+        # d1 <- 1/s21 * (t(X) %*% (w*(y - X %*% b.restr.alt)))
         # I0 <- 1/s20 * (t(X) %*% X)
         # Ts2 <- t(c(d0 - d1)) %*% solve(I0) %*% c(d0 - d1)
         ###############################################
@@ -806,13 +806,13 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   if (!(attr(object$wt, "method") == "none") && boot == "no") {
     wt <- object$wt
     pvalue <- con_pvalue_Fbar(wt          = rev(wt), 
-                              Ts_org      = Ts, 
+                              Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
                               Amat        = Amat, 
                               bvec        = bvec, 
                               meq         = meq, 
-                              meq_alt     = meq_alt)
+                              meq.alt     = meq.alt)
     attr(pvalue, "wt") <- wt
   } else if (boot == "parametric") {
     if (!is.function(p.distr)) {
@@ -825,10 +825,10 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     formals(p.distr)[pm] <- unlist(arguments[pm])
     
     pvalue <- con_pvalue_boot_parametric(object, 
-                                         Ts_org   = Ts, 
+                                         Ts.org   = Ts, 
                                          type     = type, 
                                          test     = "score",
-                                         meq_alt  = meq_alt, 
+                                         meq.alt  = meq.alt, 
                                          R        = R, 
                                          p.distr  = p.distr, 
                                          parallel = parallel,
@@ -838,10 +838,10 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                          verbose  = verbose)
   } else if (boot == "model.based") {
     pvalue <- con_pvalue_boot_model_based(object, 
-                                          Ts_org   = Ts, 
+                                          Ts.org   = Ts, 
                                           type     = type, 
                                           test     = "score",
-                                          meq_alt  = meq_alt,
+                                          meq.alt  = meq.alt,
                                           R        = R, 
                                           parallel = parallel,
                                           ncpus    = ncpus, 
@@ -853,7 +853,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   }  
   
   # necessary for the print function
-  if (!is.null(attr(type, "type_org"))) {
+  if (!is.null(attr(type, "type.org"))) {
     type <- "global"
   }
   
@@ -861,22 +861,22 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
               Amat        = Amat,
               bvec        = bvec,
               meq         = meq,
-              meq_alt     = meq_alt,
+              meq.alt     = meq.alt,
               iact        = object$iact,
               type        = type,
               test        = "Score",
               Ts          = Ts,
               df.residual = df.residual,
               pvalue      = pvalue,
-              b_eqrestr   = b_eqrestr,
-              b_unrestr   = b_unrestr,
-              b_restr     = b_restr,
-              b_restr_alt = b_restr_alt,
+              b.eqrestr   = b.eqrestr,
+              b.unrestr   = b.unrestr,
+              b.restr     = b.restr,
+              b.restr.alt = b.restr.alt,
               Sigma       = Sigma,
-              R2_org      = object$R2_org,
-              R2_reduced  = object$R2_reduced,
+              R2.org      = object$R2.org,
+              R2.reduced  = object$R2.reduced,
               boot        = boot,
-              model_org   = model_org)
+              model.org   = model.org)
   
   OUT <- list(OUT)
   names(OUT) <- type
@@ -906,11 +906,11 @@ conTestC.restriktor <- function(object, ...) {
     stop("Restriktor ERROR: test not applicable with equality restrictions.")
   }
   
-  b_unrestr   <- object$b_unrestr
+  b.unrestr   <- object$b.unrestr
   Sigma       <- object$Sigma
   df.residual <- object$df.residual
     
-  Ts <- as.vector(min((Amat %*% b_unrestr - bvec) / 
+  Ts <- as.vector(min((Amat %*% b.unrestr - bvec) / 
                         sqrt(diag(Amat %*% Sigma %*% t(Amat))))) 
   
   pvalue <- 1 - pt(Ts, df.residual)
@@ -919,20 +919,20 @@ conTestC.restriktor <- function(object, ...) {
               Amat        = Amat,
               bvec        = bvec,
               meq         = meq,
-              meq_alt     = 0L,
+              meq.alt     = 0L,
               iact        = object$iact,
               type        = "C",
               test        = "t",
               Ts          = Ts,
               df.residual = df.residual,
               pvalue      = pvalue,
-              b_unrestr   = b_unrestr,
-              b_restr     = object$b_restr,
+              b.unrestr   = b.unrestr,
+              b.restr     = object$b.restr,
               Sigma       = Sigma,
-              R2_org      = ifelse(!is.null(object$R2_org), object$R2_org, as.numeric(NA)),
-              R2_reduced  = ifelse(!is.null(object$R2_reduced), object$R2_reduced, as.numeric(NA)),
+              R2.org      = ifelse(!is.null(object$R2.org), object$R2.org, as.numeric(NA)),
+              R2.reduced  = ifelse(!is.null(object$R2.reduced), object$R2.reduced, as.numeric(NA)),
               boot        = "no",
-              model_org   = object$model_org)
+              model.org   = object$model.org)
   
   OUT <- list(OUT)
     names(OUT) <- "C"

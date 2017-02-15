@@ -88,20 +88,20 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
       ldots$se <- "none"
     }
     
-    m_restr <- match(names(ldots), c("se", "B", "Wt", "bootWt", "bootWt.R", 
+    m.restr <- match(names(ldots), c("se", "B", "mix.weights", "bootmix.weights", "mix.bootstrap", 
                                      "parallel", "ncpus", "cl", "seed", "control", 
                                      "verbose", "debug"), 0L)
     
-    CALL_restr <- c(list(object = object, constraints = constraints, rhs = rhs, 
-                         neq = neq), ldots[m_restr > 0L])
-    fit_restr <- do.call("restriktor", CALL_restr) 
+    CALL.restr <- c(list(object = object, constraints = constraints, rhs = rhs, 
+                         neq = neq), ldots[m.restr > 0L])
+    fit.restr <- do.call("restriktor", CALL.restr) 
     
-    m_test <- match(names(ldots), c("neq.alt", "boot", "R", "p.distr", "df", 
+    m.test <- match(names(ldots), c("neq.alt", "boot", "R", "p.distr", "df", 
                                     "parallel", "ncpus", "cl", "seed", "control", 
                                     "verbose"), 0L)
-    CALL_test <- c(list(object = fit_restr, test = test, type = type), 
-                   ldots[m_test > 0L])
-    do.call("conTest", CALL_test)
+    CALL.test <- c(list(object = fit.restr, test = test, type = type), 
+                   ldots[m.test > 0L])
+    do.call("conTest", CALL.test)
   } else if (is.null(constraints)) {
     stop("Restriktor ERROR: no constraints specified!")
   }

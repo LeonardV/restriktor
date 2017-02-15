@@ -30,26 +30,26 @@ conTest_ceq.conLM <- function(object, test = "F", boot = "no",
     
     # here we perform the usual Wald/F test...
     if (test == "wald") {
-      #theta_r <- object$b_unrestr
-      Wald_out <- con_test_Wald(Sigma   = object$Sigma,
+      #theta.r <- object$b.unrestr
+      Wald.out <- con_test_Wald(Sigma   = object$Sigma,
                                 JAC     = Amat,         
-                                theta_r = Amat %*% object$b_unrestr - object$rhs) 
+                                theta.r = Amat %*% object$b.unrestr - object$rhs) 
       
-      OUT <- append(CON, Wald_out)
-      OUT$b_restr <- object$b_restr
-      OUT$b_unrestr <- object$b_unrestr
+      OUT <- append(CON, Wald.out)
+      OUT$b.restr <- object$b.restr
+      OUT$b.unrestr <- object$b.unrestr
     } else if (test == "f") {
-      Wald_out <- con_test_Wald(Sigma   = object$Sigma,
+      Wald.out <- con_test_Wald(Sigma   = object$Sigma,
                                 JAC     = Amat,
-                                theta_r = Amat%*%object$b_unrestr - object$rhs) 
+                                theta.r = Amat%*%object$b.unrestr - object$rhs) 
       # convert Wald to F
-      OUT <- append(CON, Wald_out)
+      OUT <- append(CON, Wald.out)
       OUT$test <- "F"
-      OUT$Ts <- Wald_out$Ts / Wald_out$df
+      OUT$Ts <- Wald.out$Ts / Wald.out$df
       OUT$df.residual <- object$df.residual
       OUT$pvalue <- 1 - pf(OUT$Ts, OUT$df, OUT$df.residual)
-      OUT$b_restr <- object$b_restr
-      OUT$b_unrestr <- object$b_unrestr
+      OUT$b.restr <- object$b.restr
+      OUT$b.unrestr <- object$b.unrestr
     } else if (test == "score") {
       OUT <- CON
       OUT$test <- "Score"
@@ -70,7 +70,7 @@ conTest_ceq.conLM <- function(object, test = "F", boot = "no",
       # degrees-of-freedom under the null-hypothesis
       #df0 <- (n - (p - qr(Amat[0:meq,,drop = FALSE])$rank))
       # sigma^2
-      s20 <- object$s2_restr#sum(res0^2) / df0
+      s20 <- object$s2.restr#sum(res0^2) / df0
       
       # information matrix under the null-hypothesis
       I0 <- object$information
@@ -82,8 +82,8 @@ conTest_ceq.conLM <- function(object, test = "F", boot = "no",
       OUT$df <- nrow(Amat)
       # p-value based on chisq
       OUT$pvalue    <- 1 - pchisq(OUT$Ts, df = OUT$df)
-      OUT$b_restr   <- object$b_restr
-      OUT$b_unrestr <- object$b_unrestr
+      OUT$b.restr   <- object$b.restr
+      OUT$b.unrestr <- object$b.unrestr
     } else {
       stop("restriktor ERROR: test ", sQuote(test), " not (yet) implemented.")
     }
@@ -110,7 +110,7 @@ conTest_ceq.conLM <- function(object, test = "F", boot = "no",
     formals(p.distr)[pm] <- unlist(arguments[pm])
     
     OUT$pvalue <- con_pvalue_boot_parametric(object, 
-                                             Ts_org   = OUT$Ts, 
+                                             Ts.org   = OUT$Ts, 
                                              type     = "A",
                                              test     = test, 
                                              R        = R, 
@@ -122,7 +122,7 @@ conTest_ceq.conLM <- function(object, test = "F", boot = "no",
                                              verbose  = verbose)
   } else if (boot == "model.based") {
     OUT$pvalue <- con_pvalue_boot_model_based(object, 
-                                              Ts_org   = OUT$Ts, 
+                                              Ts.org   = OUT$Ts, 
                                               type     = "A", 
                                               test     = test,
                                               R        = R,
@@ -133,9 +133,9 @@ conTest_ceq.conLM <- function(object, test = "F", boot = "no",
                                               verbose  = verbose)
   } 
   
-  OUT$R2_org      <- object$R2_org
-  OUT$R2_reduced  <- object$R2_reduced
-  OUT$model_org <- object
+  OUT$R2.org      <- object$R2.org
+  OUT$R2.reduced  <- object$R2.reduced
+  OUT$model.org <- object
   
   OUT <- list(OUT)
     names(OUT) <- "ceq"
@@ -147,33 +147,33 @@ conTest_ceq.conLM <- function(object, test = "F", boot = "no",
 
 
 
-con_test_Wald <- function(Sigma, JAC, theta_r) {
+con_test_Wald <- function(Sigma, JAC, theta.r) {
   
   # remove redundant rows from JAC *and* theta_r
   npar <- ncol(JAC)
   
-  JAC.aug <- cbind(JAC, theta_r)
+  JAC.aug <- cbind(JAC, theta.r)
   Q <- qr(t(JAC.aug))
-  JAC_full <- t(qr.X(Q, ncol = Q$rank))
-  JAC <- JAC_full[,seq_len(npar),drop = FALSE]
-  theta_r <- as.numeric(JAC_full[,(npar + 1L)])
+  JAC.full <- t(qr.X(Q, ncol = Q$rank))
+  JAC <- JAC.full[,seq_len(npar),drop = FALSE]
+  theta.r <- as.numeric(JAC.full[,(npar + 1L)])
   
   # restricted vcov
-  info_r  <- JAC %*% Sigma %*% t(JAC)
+  info.r  <- JAC %*% Sigma %*% t(JAC)
   
   # Wald test statistic
-  Wald <- as.numeric(t(theta_r) %*% solve(info_r) %*% theta_r)
+  Wald <- as.numeric(t(theta.r) %*% solve(info.r) %*% theta.r)
   
   # df
-  Wald_df <- nrow(JAC)
+  Wald.df <- nrow(JAC)
   
   # p-value based on chisq
-  Wald_pvalue <- 1 - pchisq(Wald, df = Wald_df)
+  Wald.pvalue <- 1 - pchisq(Wald, df = Wald.df)
   
   OUT <- list(test   = "Wald",
               Ts     = Wald,
-              df     = Wald_df,
-              pvalue = Wald_pvalue)
+              df     = Wald.df,
+              pvalue = Wald.pvalue)
   
   OUT
 }

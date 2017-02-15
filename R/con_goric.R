@@ -25,8 +25,8 @@ goric <- function(object, ..., digits = max(3, getOption("digits") - 2)) {
   df    <- data.frame(model = objectnames, loglik = ll, penalty = PT, goric)
   
   delta <- df$goric - min(df$goric)
-  goric_weights <- exp(-delta / 2) / sum(exp(-delta / 2))
-  df$goric_weights <- goric_weights
+  goric.weights <- exp(-delta / 2) / sum(exp(-delta / 2))
+  df$goric.weights <- goric.weights
   
   print(format(df, digits = digits, scientific = FALSE), 
         print.gap = 2, quote = FALSE)

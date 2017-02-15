@@ -1,7 +1,7 @@
 #REF: Zheng, S., Guo, J. Shi, N.Z, Tian, G.L (2012). Likelihood-based approaches 
 # for multivariate linear models under inequality constraints for incomplete data.
 # Journal of Statistical Planning and Inference 142, 2926-2942.
-con_solver_lm <- function(X, y, b_unrestr, w, Amat, bvec, meq,
+con_solver_lm <- function(X, y, b.unrestr, w, Amat, bvec, meq,
                           maxit = 10000, absval = sqrt(.Machine$double.eps)) {
   val <- 0
   y <- as.matrix(y)
@@ -14,8 +14,8 @@ con_solver_lm <- function(X, y, b_unrestr, w, Amat, bvec, meq,
   
   for (i in 1:maxit) {
     # dividing by n or (n-p-rank(meq)). Probably only needed for mlm.
-    Sigma <- (t(y - X %*% matrix(b_unrestr, ncol = ncol(y))) %*% W %*%
-                (y - X %*% matrix(b_unrestr, ncol = ncol(y)))) / n  
+    Sigma <- (t(y - X %*% matrix(b.unrestr, ncol = ncol(y))) %*% W %*%
+                (y - X %*% matrix(b.unrestr, ncol = ncol(y)))) / n  
     
     yVx <- kronecker(solve(Sigma), t(X)) %*% W %*% as.vector(y)
     dvec <- 2 * yVx
@@ -45,8 +45,8 @@ con_solver_lm <- function(X, y, b_unrestr, w, Amat, bvec, meq,
 con_solver_rlm <- function(X, y, Amat, bvec, meq,
                            maxit = 10000, absval = sqrt(.Machine$double.eps)) {
   
-  b_unrestr <- lm.fit(x = X, y)
-  tBeta <- as.vector(coefficients(b_unrestr))
+  b.unrestr <- lm.fit(x = X, y)
+  tBeta <- as.vector(coefficients(b.unrestr))
   invW <- crossprod(X)
   
   val <- 0
@@ -76,10 +76,10 @@ con_solver_rlm <- function(X, y, Amat, bvec, meq,
 
 
 
-con_solver_glm <- function(X, y, b_unrestr, Amat, bvec, meq, 
+con_solver_glm <- function(X, y, b.unrestr, Amat, bvec, meq, 
                            maxit = 10000, epsilon){
-  b_unrestr <- lm.fit(x = X, y)
-  tBeta <- as.vector(coefficients(b_unrestr))
+  b.unrestr <- lm.fit(x = X, y)
+  tBeta <- as.vector(coefficients(b.unrestr))
   invW <- crossprod(X)#t(X) %*% X
   
   con_solver <- function(tBeta, invW, Amat, bvec, meq) {
@@ -89,11 +89,11 @@ con_solver_glm <- function(X, y, b_unrestr, Amat, bvec, meq,
     solve.QP(Dmat, dvec, Amat = Amat, bvec = bvec, meq = meq)
   }
   
-  b_restr <- tBeta
+  b.restr <- tBeta
   val <- 0
   for (i in 1:maxit) {
-    out <- con_solver(b_restr, invW, Amat, bvec, meq)
-    b_restr <- out$solution
+    out <- con_solver(b.restr, invW, Amat, bvec, meq)
+    b.restr <- out$solution
     if (abs(out$value - val) <= epsilon) {
       break
     } else {

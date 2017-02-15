@@ -10,7 +10,7 @@ con_boot_data <- function(data, indices, ...) {
   # update lm object with boot data
   ldots$object <- update(z, formula = form, data = DATA)
   # calll restriktor
-  OUT <- do.call("restriktor", ldots)$b_restr
+  OUT <- do.call("restriktor", ldots)$b.restr
   
   OUT
 }

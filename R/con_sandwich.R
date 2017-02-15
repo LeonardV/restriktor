@@ -14,9 +14,9 @@ bread <- function(x, ...) {
 }
 
 bread.conLM <- function(x, ...) {
-  I_inv <- attr(x$information, "inverted")
-  cov.unscaled <- 1/x$s2_restr * I_inv
-  return(cov.unscaled * as.vector(sum(summary(x$model_org)$df[1:2])))
+  cov <- attr(x$information, "inverted")
+  cov.unscaled <- 1/x$s2.restr * cov
+  return(cov.unscaled * as.vector(sum(summary(x$model.org)$df[1:2])))
 }
 
 
@@ -25,10 +25,10 @@ bread.conRLM <- function(x, ...) {
     wts <- weights(x)
     if (is.null(wts)) { wts <- 1 }
     res <- residuals(x)
-    psi_deriv <- function(z) x$model_org$psi(z, deriv = 1)
-    rval <- sqrt(abs(as.vector(psi_deriv(res / x$model_org$s) / x$model_org$s))) * wts * xmat    
+    psi_deriv <- function(z) x$model.org$psi(z, deriv = 1)
+    rval <- sqrt(abs(as.vector(psi_deriv(res / x$model.org$s) / x$model.org$s))) * wts * xmat    
     rval <- chol2inv(qr.R(qr(rval))) * nrow(xmat)
-    rval <- solve(rval) #/ x$model_org$s * nrow(xmat)                           #solve(rval)
+    rval <- solve(rval) 
     
     is.augmented <- TRUE
     if (all(c(x$constraints) == 0)) { is.augmented <- FALSE }
@@ -36,8 +36,8 @@ bread.conRLM <- function(x, ...) {
     rval <- con_augmented_information(information  = rval, 
                                       is.augmented = is.augmented,
                                       X            = xmat, 
-                                      b_unrestr    = x$b_unrestr, 
-                                      b_restr      = x$b_restr, 
+                                      b.unrestr    = x$b.unrestr, 
+                                      b.restr      = x$b.restr, 
                                       Amat         = x$constraints, 
                                       bvec         = x$rhs, 
                                       meq          = x$neq)
@@ -46,20 +46,20 @@ bread.conRLM <- function(x, ...) {
 
 
 bread.conGLM <- function(x, ...) {
-  sx <- summary(x$model_org)
+  sx <- summary(x$model.org)
   wres <- as.vector(residuals(x, "working")) * weights(x, "working")
-  dispersion_restr <- if (substr(x$model_org$family$family, 1, 17) %in% c("poisson", "binomial", "Negative Binomial")) {
+  dispersion.restr <- if (substr(x$model.org$family$family, 1, 17) %in% c("poisson", "binomial", "Negative Binomial")) {
     1
   } else {
     sum(wres^2) / sum(weights(x, "working"))
   }
   
-  VCOV <- attr(x$information, "inverted") #* x$df.residual / as.vector(sum(sx$df[1:2]))
-  VCOV.unscaled <- VCOV / x$dispersion
+  cov <- attr(x$information, "inverted") #* x$df.residual / as.vector(sum(sx$df[1:2]))
+  cov.unscaled <- cov / x$dispersion
   
-  #cov.unscaled <- 1 / dispersion_restr * I_inv
+  #cov.unscaled <- 1 / dispersion.restr * I.inv
   
-  return(VCOV.unscaled * as.vector(sum(sx$df[1:2])) * dispersion_restr)
+  return(cov.unscaled * as.vector(sum(sx$df[1:2])) * dispersion.restr)
 }
 
 
@@ -88,8 +88,8 @@ estfun.conRLM <- function(x, ...) {
   wts <- weights(x)
   if (is.null(wts)) { wts <- 1 }
   res <- residuals(x)
-  psi <- function(z) x$model_org$psi(z) * z
-  rval <- as.vector(psi(res/x$model_org$s)) * wts * xmat
+  psi <- function(z) x$model.org$psi(z) * z
+  rval <- as.vector(psi(res/x$model.org$s)) * wts * xmat
   attr(rval, "assign") <- NULL
   attr(rval, "contrasts") <- NULL
 
@@ -103,7 +103,7 @@ estfun.conGLM <- function(x, ...) {
     xmat <- xmat[, !alias, drop = FALSE]
   }
   wres <- as.vector(residuals(x, "working")) * weights(x, "working")
-  dispersion <- if (substr(x$model_org$family$family, 1, 17) %in% c("poisson", "binomial", "Negative Binomial")) {
+  dispersion <- if (substr(x$model.org$family$family, 1, 17) %in% c("poisson", "binomial", "Negative Binomial")) {
     1
   } else {
     sum(wres^2, na.rm = TRUE) / sum(weights(x, "working"), na.rm = TRUE)
@@ -123,7 +123,7 @@ meatHC <- function(x,
                    type = c("HC3", "const", "HC", "HC0", "HC1", "HC2", "HC4", "HC4m", "HC5"),
                    omega = NULL) {
   
-  X <- model.matrix(x$model_org)
+  X <- model.matrix(x$model.org)
   if (any(alias <- is.na(coef(x)))) X <- X[, !alias, drop = FALSE]
   attr(X, "assign") <- NULL
   n <- NROW(X)

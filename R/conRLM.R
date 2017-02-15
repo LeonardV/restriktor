@@ -1,8 +1,7 @@
 #compute restrikted robust estimates
 conRLM.rlm <- function(object, constraints = NULL, se = "standard", 
-                       B = 999, rhs = NULL, neq = 0L, 
-                       Wt = "pmvnorm", bootWt.R = 99999,
-                       parallel = "no", ncpus = 1L, cl = NULL, 
+                       B = 999, rhs = NULL, neq = 0L, mix.weights = "pmvnorm", 
+                       mix.bootstrap = 99999L, parallel = "no", ncpus = 1L, cl = NULL, 
                        seed = NULL, control = list(), verbose = FALSE, 
                        debug = FALSE, ...) { 
   
@@ -21,16 +20,16 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     stop("Restriktor ERROR: standard error method ", sQuote(se), " unknown.")
   }
   # check method to compute chi-square-bar weights
-  if (!(Wt %in% c("pmvnorm", "boot", "none"))) {
-    stop("Restriktor ERROR: ", sQuote(Wt), " method unknown. Choose from \"pmvnorm\", \"boot\", or \"none\"")
+  if (!(mix.weights %in% c("pmvnorm", "boot", "none"))) {
+    stop("Restriktor ERROR: ", sQuote(mix.weights), " method unknown. Choose from \"pmvnorm\", \"boot\", or \"none\"")
   }
   
   # original model function call
-  call_org <- as.list(object$call)
+  call.org <- as.list(object$call)
   # M or MM estimation?
-  method <- call_org[["method"]]
+  method <- call.org[["method"]]
   # loss function
-  psi <- call_org[["psi"]]
+  psi <- call.org[["psi"]]
   if (is.null(method)) { 
     object$call[["method"]] <- "M"
   }
@@ -64,7 +63,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   # weights
   weights <- weights(object)
   # unrestrikted coefficients
-  b_unrestr <- coef(object)
+  b.unrestr <- coef(object)
   # vcov
   Sigma <- vcov(object) 
   # unrestrikted scale estimate for the standard deviation: 
@@ -77,10 +76,10 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   # number of parameters
   p <- dim(X)[2]
   # compute the loglikelihood
-  ll_unrestr <- con_loglik_lm(object)
+  ll.unrestr <- con_loglik_lm(object)
   
   if (debug) {
-    print(list(loglik_unc = ll_unrestr))
+    print(list(loglik.unc = ll.unrestr))
   }
   
   timing$preparation <- (proc.time()[3] - start.time)
@@ -88,22 +87,22 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   
   # deal with constraints
   if (!is.null(constraints)) {
-    restr_OUT <- con_constraints(object, 
+    restr.OUT <- con_constraints(object, 
                                  constraints = Amat, 
                                  bvec        = bvec, 
                                  meq         = meq, 
                                  debug       = debug)  
     # a list with useful information about the restrictions.}
-    CON <- restr_OUT$CON
+    CON <- restr.OUT$CON
     # a parameter table with information about the observed variables in the object 
     # and the imposed restrictions.}
-    parTable <- restr_OUT$parTable
+    parTable <- restr.OUT$parTable
     # constraints matrix
-    Amat <- restr_OUT$Amat
+    Amat <- restr.OUT$Amat
     # rhs 
-    bvec <- restr_OUT$bvec
+    bvec <- restr.OUT$bvec
     # neq
-    meq <- restr_OUT$meq
+    meq <- restr.OUT$meq
   } else if (is.null(constraints)) { # no constraints specified - needed for GORIC to include unconstrained model
     CON <- NULL
     parTable <- NULL
@@ -114,10 +113,10 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   
   # compute the reduced row-echelon form of the constraints matrix
   rAmat <- GaussianElimination(t(Amat))
-  if (Wt == "pmvnorm") {
+  if (mix.weights == "pmvnorm") {
     if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
       stop(paste("Restriktor ERROR: The constraint matrix must have full row-rank", 
-                 "\n  (choose e.g. rows", paste(rAmat$pivot, collapse = " "), ",or try to set Wt = \"boot\")"))
+                 "\n  (choose e.g. rows", paste(rAmat$pivot, collapse = " "), ",or try to set mix.weights = \"boot\")"))
     }
   } else {
     if (rAmat$rank < nrow(Amat) && 
@@ -131,7 +130,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     }
   }
   
-  if(ncol(Amat) != length(b_unrestr)) {
+  if(ncol(Amat) != length(b.unrestr)) {
     stop("Restriktor ERROR: the columns of constraints does not", 
          "\n       match with the number of parameters.")
   }
@@ -141,20 +140,20 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   
   # compute R-squared 
   # acknowledment: code taken from the lmrob() function from the robustbase package
-  df_int <- ifelse(attr(object$terms, "intercept"), 1L, 0L)
-  y_mean <- if (df_int == 1L) { 
+  df.int <- ifelse(attr(object$terms, "intercept"), 1L, 0L)
+  y.mean <- if (df.int == 1L) { 
     sum(weights * y) / sum(weights) 
     } else { 0L }
-  yMy <- sum(weights * (y - y_mean)^2)
+  yMy <- sum(weights * (y - y.mean)^2)
   rMr <- sum(weights * residuals^2)
   # tukey's bi-square correction
   correc <- 1.207617 
-  R2_org <- (yMy - rMr) / (yMy + rMr * (correc - 1))
+  R2.org <- (yMy - rMr) / (yMy + rMr * (correc - 1))
   
   
   is.augmented <- TRUE
   # compute chi-square-bar weights
-  if (Wt != "none") {
+  if (mix.weights != "none") {
     if (nrow(Amat) == meq) {
       # equality constraints only
       wt <- rep(0L, ncol(Sigma) + 1)
@@ -164,26 +163,26 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
       # unrestricted case
       wt <- c(rep(0L, p), 1)
       is.augmented <- FALSE
-    } else if (Wt == "boot") { 
+    } else if (mix.weights == "boot") { 
       # compute chi-square-bar weights based on Monte Carlo simulation
       wt <- con_weights_boot(VCOV     = Sigma,
                              Amat     = Amat, 
                              meq      = meq, 
-                             R        = bootWt.R,
+                             R        = mix.bootstrap,
                              parallel = parallel,
                              ncpus    = ncpus,
                              cl       = cl,
                              seed     = seed,
                              verbose  = verbose)
-      attr(wt, "bootWt.R") <- bootWt.R 
-    } else if (Wt == "pmvnorm" && (meq < nrow(Amat))) {
+      attr(wt, "mix.bootstrap") <- mix.bootstrap 
+    } else if (mix.weights == "pmvnorm" && (meq < nrow(Amat))) {
       # compute chi-square-bar weights based on pmvnorm
       wt <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
     } 
   } else {
     wt <- NA
   }
-  attr(wt, "method") <- Wt
+  attr(wt, "method") <- mix.weights
   
   if (debug) {
     print(list(wt = wt))
@@ -193,16 +192,16 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   start.time <- proc.time()[3]
   
   # # check if the constraints are in line with the data    
-  if (all(Amat %*% c(b_unrestr) - bvec >= 0 * bvec) & meq == 0) {  
-    b_restr   <- b_unrestr
-    tau_restr <- tau
+  if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) & meq == 0) {  
+    b.restr   <- b.unrestr
+    tau.restr <- tau
     
     OUT <- list(CON         = CON,
                 call        = mc,
                 timing      = timing,
                 parTable    = parTable,
-                b_unrestr   = b_unrestr,
-                b_restr     = b_unrestr,
+                b.unrestr   = b.unrestr,
+                b.restr     = b.unrestr,
                 residuals   = residuals,
                 wresid      = object$wresid,
                 fitted      = fitted(object),
@@ -210,12 +209,12 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 w           = object$w, # weights used in the IWLS process
                 scale       = object$s, 
                 psi         = object$psi,
-                R2_org      = R2_org,
-                R2_reduced  = R2_org,
+                R2.org      = R2.org,
+                R2.reduced  = R2.org,
                 df.residual = so$df[2],
-                s2_unrestr  = tau^2, 
-                s2_restr    = tau^2, 
-                loglik      = ll_unrestr, 
+                s2.unrestr  = tau^2, 
+                s2.restr    = tau^2, 
+                loglik      = ll.unrestr, 
                 Sigma       = Sigma, # probably not so robust!
                 constraints = Amat, 
                 wt          = wt,
@@ -228,25 +227,25 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 control     = control)
   } else {
     # collect all original model arguments and add constraints
-    call_org$formula <- call_org$subset <- call_org$na.action <- 
-      call_org$model <- call_org$x.ret <- call_org$y.ret <- 
-      call_org$contrasts <- call_org$data <- call_org$weights <- 
-      call_org$psi <- call_org$X <- call_org$y <- NULL
+    call.org$formula <- call.org$subset <- call.org$na.action <- 
+      call.org$model <- call.org$x.ret <- call.org$y.ret <- 
+      call.org$contrasts <- call.org$data <- call.org$weights <- 
+      call.org$psi <- call.org$X <- call.org$y <- NULL
     
-    CALL <- c(call_org, list(x = X, y = y, weights = weights,
+    CALL <- c(call.org, list(x = X, y = y, weights = weights,
                              psi = psi.bisquare, 
                              Amat = Amat, bvec = bvec, meq = meq))
     
     # fit constrained robust liner model
     rfit <- do.call("conRLM_fit", CALL)
     
-    timing$conRLM_fit <- (proc.time()[3] - start.time)
+    timing$conRLM.fit <- (proc.time()[3] - start.time)
     start.time <- proc.time()[3]
     
     # constrained coefs
-    b_restr <- coefficients(rfit)
-      names(b_restr) <- names(b_unrestr)
-    b_restr[abs(b_restr) < ifelse(is.null(control$tol), 
+    b.restr <- coefficients(rfit)
+      names(b.restr) <- names(b.unrestr)
+    b.restr[abs(b.restr) < ifelse(is.null(control$tol), 
                                   sqrt(.Machine$double.eps), 
                                   control$tol)] <- 0L
     fitted <- fitted(rfit)
@@ -254,10 +253,10 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     # psi(resid/scale) these are the weights used for downweighting the cases.
     w <- rfit$w
     # compute loglik
-    ll_restr <- con_loglik_lm(rfit)
+    ll.restr <- con_loglik_lm(rfit)
     
     if (debug) {
-      print(list(loglik_restr = ll_restr))
+      print(list(loglik.restr = ll.restr))
     }
     
     # in case of equality constraints we need to correct the residual df 
@@ -270,9 +269,9 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
       if (!is.null(Amat)) {
         rdf <- sum(weights) - (p - qr(Amat[0:meq,])$rank)
         S.new <- sum(weights * (rfit$wresid * w)^2) / rdf
-        tau_restr <- (summary(rfit)$stddev / sqrt(S)) * sqrt(S.new)
+        tau.restr <- (summary(rfit)$stddev / sqrt(S)) * sqrt(S.new)
       } else {
-        tau_restr <- std * sqrt(S)
+        tau.restr <- std * sqrt(S)
       }
     } else {
       rdf <- n - p
@@ -283,39 +282,39 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
       if (!is.null(Amat)) {
         rdf <- n - (p - qr(Amat[0:meq,])$rank)
         S.new <- sum((rfit$wresid * w)^2) / rdf
-        tau_restr <- (summary(rfit)$stddev / sqrt(S)) * sqrt(S.new)
+        tau.restr <- (summary(rfit)$stddev / sqrt(S)) * sqrt(S.new)
       } else {
-        tau_restr <- std * sqrt(S)
+        tau.restr <- std * sqrt(S)
       }
     }
     
     #R^2 under the restricted object
-    df_int <- if (attr(object$terms, "intercept")) { 1L } else { 0L }
-    resp_mean <- if (df_int == 1L) { sum(weights * y) / sum(weights) } else { 0 }
-    yMy <- sum(weights * (y - resp_mean)^2)
+    df.int <- if (attr(object$terms, "intercept")) { 1L } else { 0L }
+    resp.mean <- if (df.int == 1L) { sum(weights * y) / sum(weights) } else { 0 }
+    yMy <- sum(weights * (y - resp.mean)^2)
     rMr <- sum(weights * residuals^2)
     # tukey's bi-square correction
     correc <- 1.207617 
-    R2_reduced <- (yMy - rMr) / (yMy + rMr * (correc - 1))
+    R2.reduced <- (yMy - rMr) / (yMy + rMr * (correc - 1))
     
     OUT <- list(CON         = CON,
                 call        = mc,
                 timing      = timing,
                 parTable    = parTable,
-                b_unrestr   = b_unrestr,
-                b_restr     = b_restr,
+                b.unrestr   = b.unrestr,
+                b.restr     = b.restr,
                 residuals   = residuals,
                 wresid      = rfit$wresid,
                 fitted      = fitted,
                 weights     = weights,
                 w           = w, 
                 scale       = rfit$s,
-                R2_org      = R2_org,
-                R2_reduced  = R2_reduced,
+                R2.org      = R2.org,
+                R2.reduced  = R2.reduced,
                 df.residual = so$df[2], 
-                s2_unrestr  = tau^2, 
-                s2_restr    = tau_restr^2, 
-                loglik      = ll_restr, 
+                s2.unrestr  = tau^2, 
+                s2.restr    = tau.restr^2, 
+                loglik      = ll.restr, 
                 Sigma       = Sigma,                             #probably not so robust???
                 constraints = Amat, 
                 wt          = wt,
@@ -328,17 +327,17 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 control     = control)
   }
   
-  OUT$model_org <- object
+  OUT$model.org <- object
   OUT$se <- se 
-  OUT$information <- 1 / tau_restr^2 * crossprod(X)
+  OUT$information <- 1 / tau.restr^2 * crossprod(X)
   if (se != "none") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
       #  V <- vcovMM(X = X, resid0 = resid0, residuals = residuals, scale = model$s)  
       information.inv <- con_augmented_information(information  = OUT$information,
                                                    is.augmented = is.augmented,
                                                    X            = X, 
-                                                   b_unrestr    = b_unrestr, 
-                                                   b_restr      = b_restr,
+                                                   b.unrestr    = b.unrestr, 
+                                                   b.restr      = b.restr,
                                                    Amat         = Amat, 
                                                    bvec         = bvec, 
                                                    meq          = meq)
@@ -357,7 +356,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                                  rhs         = bvec, 
                                  neq         = meq, 
                                  se          = "none",
-                                 Wt          = "none",
+                                 mix.weights          = "none",
                                  parallel    = parallel, 
                                  ncpus       = ncpus, 
                                  cl          = cl)
@@ -372,7 +371,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                                  rhs         = bvec, 
                                  neq         = meq, 
                                  se          = "none",
-                                 Wt          = "none",
+                                 mix.weights          = "none",
                                  parallel    = parallel, 
                                  ncpus       = ncpus, 
                                  cl          = cl)
@@ -380,7 +379,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
         print(list(bootout = OUT$bootout))
       }
     }
-    timing$standard_error <- (proc.time()[3] - start.time)
+    timing$standard.error <- (proc.time()[3] - start.time)
     start.time <- proc.time()[3]
   }
   

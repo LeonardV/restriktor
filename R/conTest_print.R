@@ -4,30 +4,44 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
     stop("x must be of class \"conTest\"")
   }
   
+  if (length(x) > 5) {
+    type <- x$type  
+    x <- list(x)
+    names(x) <- type
+  }
+  
   Amat <- x[[1]]$Amat
   meq  <- x[[1]]$meq
   bvec <- x[[1]]$bvec
+  rdf  <- x[[1]]$df.residual
+  boot <- x[[1]]$boot
+  model.org  <- x[[1]]$model.org
+  R2.reduced <- x[[1]]$R2.reduced
+  R2.org     <- x[[1]]$R2.org
+  b.unrestr  <- x[[1]]$b.unrestr
+  iact <- x[[1]]$iact
+  R    <- attr(x[[1]]$pvalue, "R")
   
-  cat("\nRestriktor: restricted hypothesis tests (", x[[1]]$df.residual, "residual degrees of freedom ):\n")
+  cat("\nRestriktor: restricted hypothesis tests (", rdf, "residual degrees of freedom ):\n")
   
   if (!("C" %in% names(x))) {
-    if (x[[1]]$boot %in% c("parametric", "model.based")) {
-      cat("( Number of successful bootstrap draws:", attr(x[[1]]$pvalue, "R"),")\n")
+    if (boot %in% c("parametric", "model.based")) {
+      cat("( Number of successful bootstrap draws:", R,")\n")
     }
   } else {
     cat("\n")
   }
   
-  if (!inherits(x[[1]]$model.org, "glm")) { 
-    if ((x[[1]]$R2.org - x[[1]]$R2.reduced) < 1e-08) {
-      cat("\nMultiple R-squared remains", sprintf("%5.3f", x[[1]]$R2.org),"\n")
+  if (!inherits(model.org, "glm")) { 
+    if ((R2.org - R2.reduced) < 1e-08) {
+      cat("\nMultiple R-squared remains", sprintf("%5.3f", R2.org),"\n")
     } else {
-      cat("\nMultiple R-squared reduced from", sprintf("%5.3f", x[[1]]$R2.org), "to", 
-          sprintf("%5.3f", x[[1]]$R2.reduced),"\n")  
+      cat("\nMultiple R-squared reduced from", sprintf("%5.3f", R2.org), "to", 
+          sprintf("%5.3f", R2.reduced),"\n")  
     }
   }
   
-  vnames <- names(x[[1]]$b.unrestr)
+  vnames <- names(b.unrestr)
   colnames(Amat) <- vnames
   
   out.rest <- cbind(round(Amat, 4), c(rep("   ==", meq), rep("   >=", nrow(Amat) - 
@@ -38,7 +52,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
   colnames(out.rest)[(ncol(Amat) + 1):ncol(out.rest)] <- c("op", "rhs", "active")
   idx <- ncol(out.rest)
   out.rest[, idx] <- "no"
-  out.rest[x[[1]]$iact, idx] <- "yes"
+  out.rest[iact, idx] <- "yes"
   # in case of equality constraints only all constraints are active (==)
   if (nrow(Amat) == meq) {
     out.rest[1:nrow(Amat), idx] <- "yes"

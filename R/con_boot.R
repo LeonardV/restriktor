@@ -5,9 +5,7 @@ con_boot_lm <- function(B = 999, fixed = FALSE, ...) {
   DATA <- as.data.frame(z$model)
   if (!fixed) { 
     # standard bootstrap
-    bootout <- boot(DATA,  
-                    con_boot_data, 
-                    R = B, ...)
+    bootout <- boot(DATA, con_boot_data, R = B, ...)
   } else { 
     # model based bootstrap
     res <- z$residuals
@@ -17,5 +15,4 @@ con_boot_lm <- function(B = 999, fixed = FALSE, ...) {
   }
   
   bootout
-  
 }

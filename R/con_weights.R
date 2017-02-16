@@ -101,12 +101,12 @@ con_weights_boot <- function(VCOV, Amat, meq,
   # ncol(VCOV) = maximum number of constraints
   # iact    = number of active inequality constraints
   dimL <- ncol(VCOV) - iact
-  wt <- sapply(1:(ncol(VCOV) + 1), function(x) sum(x == (dimL + 1))) / R
+  wt.bar <- sapply(1:(ncol(VCOV) + 1), function(x) sum(x == (dimL + 1))) / R
   
   idx.min <- (ncol(Amat) - nrow(Amat)) + 1 
   idx.max <- (ncol(Amat) - meq) + 1 
-  wt <- wt[idx.min:idx.max]
+  wt.bar <- wt.bar[idx.min:idx.max]
   
-  wt
+  wt.bar
 }
 

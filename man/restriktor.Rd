@@ -207,7 +207,7 @@ with the following items:
 \item{timing}{how much time several tasks take.}
 \item{parTable}{a parameter table with information about the 
  observed variables in the model and the imposed restrictions.}
-\item{wt}{chi-bar-square weights.}
+\item{wt.bar}{chi-bar-square mixing weights or a.k.a. level probabilities.}
 \item{b_unrestr}{unrestricted regression coefficients.}
 \item{b_restr}{restricted regression coefficients.}
 \item{residuals}{restricted residuals.}

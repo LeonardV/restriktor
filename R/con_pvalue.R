@@ -1,5 +1,5 @@
 # mixture of F distributions.
-con_pvalue_Fbar <- function(wt, Ts.org, df.residual, type = "A",
+con_pvalue_Fbar <- function(wt.bar, Ts.org, df.residual, type = "A",
                             Amat, bvec, meq = 0L, meq.alt = 0L) {
   if (type == "global") {
     # compute df
@@ -10,29 +10,29 @@ con_pvalue_Fbar <- function(wt, Ts.org, df.residual, type = "A",
     # r <- qr(attr(Amat, "Amat_global"))$rank
     # q <- qr(Amat)$rank
     # i <- 0:q
-    # 1 - pfbar(Ts.org, df1 = r-q+i, df2 = df.residual, wt = rev(wt))
+    # 1 - pfbar(Ts.org, df1 = r-q+i, df2 = df.residual, wt.bar = rev(wt.bar))
     
     # p value based on the chi-square distribution
     pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual, 
-                        wt = rev(wt))
+                        wt.bar = rev(wt.bar))
   } else if(type == "A") {
     # compute df
     df.bar <- 0:(nrow(Amat) - meq)
     # p value based on F-distribution or chi-square distribution
     pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
-                        wt = rev(wt))
+                        wt.bar = rev(wt.bar))
   } else if (type == "B") {
     # compute df
     df.bar <- (meq - meq.alt):(nrow(Amat) - meq.alt)#meq:nrow(Amat)
     # p value based on F-distribution or chi-square distribution
     pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
-                        wt = wt)
+                        wt.bar = wt.bar)
   } else  {
     stop("hypothesis test type ", sQuote(type), " unknown.")
   }
 
   out <- pvalue
-    attr(out, "wt") <- wt
+    attr(out, "wt.bar") <- wt.bar
     attr(out, "df.bar") <- df.bar
     attr(out, "df.residual") <- df.residual
   
@@ -41,7 +41,7 @@ con_pvalue_Fbar <- function(wt, Ts.org, df.residual, type = "A",
 
 
 # mixture of chi-square distributions
-con_pvalue_Chibar <- function(wt, Ts.org, type = "A",
+con_pvalue_Chibar <- function(wt.bar, Ts.org, type = "A",
                               Amat, bvec, meq = 0L, meq.alt = 0L) {
   #check
   #if ((qr(Amat)$rank < nrow(Amat))) {
@@ -54,23 +54,23 @@ con_pvalue_Chibar <- function(wt, Ts.org, type = "A",
     #    df.bar <- ((ncol(Amat) - 1) - nrow(Amat)):((ncol(Amat) - 1) - meq)    
     df.bar <- (length(bvecG) - nrow(Amat)):(length(bvecG) - meq)
     # p value based on the chi-square distribution
-    pvalue <- 1 - pchibar(Ts.org, df1 = df.bar, wt = rev(wt))
+    pvalue <- 1 - pchibar(Ts.org, df1 = df.bar, wt.bar = rev(wt.bar))
   }  else if (type == "A") {
     # compute df
     df.bar <- 0:(nrow(Amat) - meq)
     # p value based on th chi-square distribution
-    pvalue <- 1 - pchibar(Ts.org, df1 = df.bar, wt = rev(wt))
+    pvalue <- 1 - pchibar(Ts.org, df1 = df.bar, wt.bar = rev(wt.bar))
   } else if (type == "B") {
     # compute df
     df.bar <- (meq - meq.alt):(nrow(Amat) - meq.alt)#meq:nrow(Amat)
     # p value based on th chi-square distribution
-    pvalue <- 1 - pchibar(Ts.org, df1 = df.bar, wt = wt)
+    pvalue <- 1 - pchibar(Ts.org, df1 = df.bar, wt.bar = wt.bar)
   } else  {
     stop("hypothesis test type ", sQuote(type), " unknown.")
   }
   
   out <- pvalue
-    attr(out, "wt") <- wt
+    attr(out, "wt.bar") <- wt.bar
     attr(out, "df.bar") <- df.bar
     attr(out, "df.residual") <- df.residual
   

@@ -5,8 +5,9 @@
 Monte Carlo simulation.}
 \description{The null-distribution of the test statistics under 
 inequality constraints takes the form of mixtures of F-distributions. 
-This function computes these mixing weights (a.k.a chi-bar-square weights). 
-It can be used directly and is called by the \code{conTest} function.
+This function computes these mixing weights (a.k.a chi-bar-square weights
+and level probabilities). It can be used directly and is called by 
+the \code{conTest} function.
 }
 \usage{con_weights_boot(VCOV, Amat, meq, 
                  R = 9999L, parallel = c("no", "multicore", "snow"),
@@ -70,6 +71,6 @@ Amat <- rbind(c(0,1))
 meq <- 0L
 # we only generate 999 bootstrap samples in this 
 # example; in practice you may wish to use a much higher number.
-wt <- con_weights_boot(W, Amat, meq, R = 999)
-wt
+wt.bar <- con_weights_boot(W, Amat, meq, R = 999)
+wt.bar
 }

@@ -136,28 +136,28 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
     ans$df.residual.null <- z$df.residual.null
   }
     
-  wt <- z$wt
+  wt.bar <- z$wt.bar
   ## compute goric
-  if (GORIC && !(attr(wt, "method") == "none")) {
+  if (GORIC && !(attr(wt.bar, "method") == "none")) {
     ## REF: Kuiper, R.M.; Hoijtink, H.J.A.; Silvapulle, M. J. (2012) 
     ## Journal of statistical planning and inference, volume 142, pp. 2454 - 2463
     
-    # compute penalty term based on simulated level probabilities (wt)
+    # compute penalty term based on simulated level probabilities (wt.bar)
     # The value 1 is the penalty for estimating the variance/dispersion parameter.
-    if (attr(wt, "method") == "boot") {
-      if (!(ncol(Amat) + 1 == length(wt))) {
-        PT <- 1 + sum(0 : ncol(Amat) * wt)
+    if (attr(wt.bar, "method") == "boot") {
+      if (!(ncol(Amat) + 1 == length(wt.bar))) {
+        PT <- 1 + sum(0 : ncol(Amat) * wt.bar)
       } else {
         warning("restriktor WARNING: unable to compute penalty for GORIC.")
         PT <- as.numeric(NA)
       }
       # unconstrained case
-    } else if (attr(wt, "method") == "pmvnorm" && all(c(Amat) == 0)) {
+    } else if (attr(wt.bar, "method") == "pmvnorm" && all(c(Amat) == 0)) {
       PT <- p + 1
-    } else if (attr(wt, "method") == "pmvnorm") {
+    } else if (attr(wt.bar, "method") == "pmvnorm") {
       min.C <- ncol(Amat) - nrow(Amat)
       max.C <- ncol(Amat) - meq
-      PT <- 1 + sum(min.C : max.C * wt) 
+      PT <- 1 + sum(min.C : max.C * wt.bar) 
     } else {
       stop("restriktor ERROR: unable to compute penalty for GORIC.")  
     }

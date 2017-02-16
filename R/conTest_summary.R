@@ -16,18 +16,18 @@ conTest_summary.restriktor <- function(object, test = "F", ...) {
   OUT <- list()
   # fit all available hypothesis tests
   CALL$type <- "global"
-  OUT1 <- do.call("conTest", CALL)
+  OUT$global <- do.call("conTest", CALL)
   CALL$type <- "A"
-  OUT2 <- do.call("conTest", CALL)
+  OUT$A <- do.call("conTest", CALL)
   CALL$type <- "B"
-  OUT3 <- do.call("conTest", CALL)
+  OUT$B <- do.call("conTest", CALL)
   
-  OUT <- c(OUT1, OUT2, OUT3)
+  #OUT <- list(global = OUT1, A = OUT2, B = OUT3)
   
   if (meq == 0) {
     CALL$type <- "C"
-    OUT4 <- do.call("conTest", CALL)
-    OUT <- c(OUT, OUT4)
+    OUT$C <- do.call("conTest", CALL)
+    #OUT <- c(OUT, OUT4)
   }
   
   class(OUT) <- c("conTest")

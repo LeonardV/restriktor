@@ -119,39 +119,39 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   if (mix.weights != "none") {
     if (nrow(Amat) == meq) {
       # equality constraints only
-      wt <- rep(0L, ncol(Sigma) + 1)
-      wt.idx <- ncol(Sigma) - meq + 1
-      wt[wt.idx] <- 1
+      wt.bar <- rep(0L, ncol(Sigma) + 1)
+      wt.bar.idx <- ncol(Sigma) - meq + 1
+      wt.bar[wt.bar.idx] <- 1
     } else if (all(c(Amat) == 0)) { 
       # unrestricted case
-      wt <- c(rep(0L, p), 1)
+      wt.bar <- c(rep(0L, p), 1)
       is.augmented <- FALSE
     } else if (mix.weights == "boot") { 
       # compute chi-square-bar weights based on Monte Carlo simulation
-      wt <- con_weights_boot(VCOV     = Sigma,
-                             Amat     = Amat, 
-                             meq      = meq, 
-                             R        = mix.bootstrap,
-                             parallel = parallel,
-                             ncpus    = ncpus,
-                             cl       = cl,
-                             seed     = seed,
-                             verbose  = verbose)
-      attr(wt, "mix.bootstrap") <- mix.bootstrap 
+      wt.bar <- con_weights_boot(VCOV     = Sigma,
+                                 Amat     = Amat, 
+                                 meq      = meq, 
+                                 R        = mix.bootstrap,
+                                 parallel = parallel,
+                                 ncpus    = ncpus,
+                                 cl       = cl,
+                                 seed     = seed,
+                                 verbose  = verbose)
+      attr(wt.bar, "mix.bootstrap") <- mix.bootstrap 
     } else if (mix.weights == "pmvnorm" && (meq < nrow(Amat))) {
       # compute chi-square-bar weights based on pmvnorm
-      wt <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
+      wt.bar <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
     } 
   } else {
-    wt <- NA
+    wt.bar <- NA
   }
-  attr(wt, "method") <- mix.weights
+  attr(wt.bar, "method") <- mix.weights
   
   if (debug) {
-    print(list(wt = wt))
+    print(list(mix.weights = wt.bar))
   }
   
-  timing$wt <- (proc.time()[3] - start.time)
+  timing$mix.weights <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
   
   # check if the constraints are not in line with the data, else skip optimization
@@ -176,7 +176,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                 loglik      = ll.unrestr, 
                 Sigma       = Sigma,
                 constraints = Amat, 
-                wt          = wt,
+                wt.bar      = wt.bar,
                 rhs         = bvec, 
                 neq         = meq, 
                 iact        = 0L, 
@@ -264,7 +264,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                 loglik      = ll.restr, 
                 Sigma       = Sigma,
                 constraints = Amat, 
-                wt          = wt,
+                wt.bar      = wt.bar,
                 rhs         = bvec, 
                 neq         = meq, 
                 iact        = out.QP$iact, 
@@ -309,7 +309,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                                  rhs         = bvec, 
                                  neq         = meq, 
                                  se          = "none",
-                                 mix.weights          = "none",
+                                 mix.weights = "none",
                                  parallel    = parallel, 
                                  ncpus       = ncpus, 
                                  cl          = cl)
@@ -324,7 +324,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                                  rhs         = bvec, 
                                  neq         = meq, 
                                  se          = "none",
-                                 mix.weights          = "none",
+                                 mix.weights = "none",
                                  parallel    = parallel, 
                                  ncpus       = ncpus, 
                                  cl          = cl)

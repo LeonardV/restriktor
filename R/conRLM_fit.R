@@ -93,24 +93,25 @@ conRLM_fit <- function (x, y, weights, ..., w = rep(1, nrow(x)), init = "ls",
   else if (method == "MM") {
     scale.est <- "MM"
     psi <- psi.bisquare
+    
     # Which columns of X are constraint to zero by equality constraints on the paramters.
-    # These columns must be removed before computing the robust scale.
-    # Can we check this without QP?
-    # Is this fool proof?
-    if (meq > 0L) {
-      Dmat <- crossprod(x)
-      dvec <- t(x) %*% y
-      fit_S <- solve.QP(Dmat, dvec, t(Amat[1:meq,,drop = FALSE]), 
-                        bvec[1:meq], meq = meq)$solution
-      fit_S[abs(fit_S) < tol] <- 0L
-      x.idx <- fit_S %in% 0L
-      temp <- do.call("lqs",
-                      c(list(x = x[,!x.idx, drop = FALSE], y, intercept = FALSE, 
-                             method = "S", k0 = 1.54764), lqs.control)) 
-      coef  <- temp$coefficients
-      resid <- temp$residuals
-      scale <- temp$scale  
-    } else {
+    # These columns should be removed before computing the robust scale.
+    # Can we check this without QP? Is this fool proof? I think we need the S-estimator
+    # instead of OLS.
+    # if (meq > 0L) {
+    #   Dmat <- crossprod(x)
+    #   dvec <- t(x) %*% y
+    #   out.QP <- solve.QP(Dmat, dvec, t(Amat[1:meq,,drop = FALSE]), 
+    #                     bvec[1:meq], meq = meq)$solution
+    #   out.QP[abs(out.QP) < tol] <- 0L
+    #   x.idx <- out.QP %in% 0L
+    #   temp <- do.call("lqs",
+    #                   c(list(x = x[,!x.idx, drop = FALSE], y, intercept = FALSE, 
+    #                          method = "S", k0 = 1.54764), lqs.control)) 
+    #   coef  <- temp$coefficients
+    #   resid <- temp$residuals
+    #   scale <- temp$scale  
+    # } else {
       temp <- do.call("lqs", c(list(x, y, intercept = FALSE, 
                                     method = "S", k0 = 1.54764), lqs.control))
       coef <- temp$coefficients
@@ -123,7 +124,7 @@ conRLM_fit <- function (x, y, weights, ..., w = rep(1, nrow(x)), init = "ls",
           else warning("'c' must be at least 1.548 and has been ignored")
         }
       scale <- temp$scale
-    } 
+#    } 
   } else {
     stop("'method' is unknown")
   }

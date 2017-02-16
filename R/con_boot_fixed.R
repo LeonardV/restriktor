@@ -3,13 +3,10 @@ con_boot_fixed <- function(data, indices, ...) {
     ldots <- list(...)
     z <- ldots$object
     res <- data$res[indices]
-    DATA <- cbind(data$fit + res, data[ ,2:(ncol(data)-2), drop = FALSE])
-    DATA <- as.data.frame(DATA)
-      colnames(DATA) <- colnames(data[ ,1:(ncol(data)-2)])
-    form <- formula(z)
-    #p <- length(attr(z$terms, "term.labels")) + 1
-    DATA <- data[indices,1:ncol(data)]
-    ldots$object <- update(z, formula = form, data = DATA)
+    DATA <- as.data.frame(cbind(data$fit + res, data[,-1]))
+      colnames(DATA) <- colnames(data)
+    DATA <- DATA[ ,1:(ncol(data)-2), drop = FALSE]  
+    ldots$object <- update(z, formula = formula(z), data = DATA)
     
     OUT <- do.call("restriktor", ldots)$b.restr  
     

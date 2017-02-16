@@ -137,9 +137,9 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   # or via bootstrapping. The pvalue can also be computed directly via 
   # the parametric bootstrap or model based bootstrap, without fist computing 
   # the mixing weights.
-  if (!(attr(object$wt, "method") == "none") && boot == "no") {
-    wt <- object$wt
-    pvalue <- con_pvalue_Fbar(wt          = rev(wt), 
+  if (!(attr(object$wt.bar, "method") == "none") && boot == "no") {
+    wt.bar <- object$wt.bar
+    pvalue <- con_pvalue_Fbar(wt.bar      = rev(wt.bar), 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -147,7 +147,7 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                               bvec        = bvec, 
                               meq         = meq, 
                               meq.alt     = meq.alt)
-    attr(pvalue, "wt") <- wt
+    attr(pvalue, "wt.bar") <- wt.bar
   } else if (boot == "parametric") {
     if (!is.function(p.distr)) {
       p.distr <- get(p.distr, mode = "function")
@@ -215,8 +215,8 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
               boot        = boot,
               model.org   = model.org)
   
-  OUT <- list(OUT)
-  names(OUT) <- type
+#  OUT <- list(OUT)
+#  names(OUT) <- type
   
   class(OUT) <- "conTest"
   
@@ -365,9 +365,9 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
     }
   } 
   
-  if (!(attr(object$wt, "method") == "none") && boot == "no") { 
-    wt <- object$wt
-    pvalue <- con_pvalue_Fbar(wt          = rev(wt), 
+  if (!(attr(object$wt.bar, "method") == "none") && boot == "no") { 
+    wt.bar <- object$wt.bar
+    pvalue <- con_pvalue_Fbar(wt.bar          = rev(wt.bar), 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -375,7 +375,7 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
                               bvec        = bvec, 
                               meq         = meq, 
                               meq.alt     = meq.alt)
-    attr(pvalue, "wt") <- wt
+    attr(pvalue, "wt.bar") <- wt.bar
   } else if (boot == "parametric") {
     if (!is.function(p.distr)) {
       p.distr <- get(p.distr, mode = "function")
@@ -443,8 +443,8 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
               boot        = boot,
               model.org   = model.org)
   
-  OUT <- list(OUT)
-  names(OUT) <- type
+#  OUT <- list(OUT)
+#  names(OUT) <- type
   
   class(OUT) <- "conTest"
   
@@ -682,9 +682,9 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     }
   }
 
-  if (!(attr(object$wt, "method") == "none") && boot == "no") {
-    wt <- object$wt
-    pvalue <- con_pvalue_Fbar(wt          = rev(wt),
+  if (!(attr(object$wt.bar, "method") == "none") && boot == "no") {
+    wt.bar <- object$wt.bar
+    pvalue <- con_pvalue_Fbar(wt.bar          = rev(wt.bar),
                               Ts.org      = Ts,
                               df.residual = df.residual,
                               type        = type,
@@ -692,7 +692,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                               bvec        = bvec,
                               meq         = meq,
                               meq.alt     = meq.alt)
-    attr(pvalue, "wt") <- wt
+    attr(pvalue, "wt.bar") <- wt.bar
   } else if (boot == "parametric") {
     if (!is.function(p.distr)) {
       p.distr <- get(p.distr, mode = "function")
@@ -756,8 +756,8 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
               boot        = boot,
               model.org   = model.org)
 
-  OUT <- list(OUT)
-  names(OUT) <- type
+#  OUT <- list(OUT)
+#  names(OUT) <- type
 
   class(OUT) <- "conTest"
 

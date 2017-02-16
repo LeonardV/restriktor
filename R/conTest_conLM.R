@@ -175,9 +175,9 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   # or via bootstrapping. The pvalue can also be computed directly via 
   # the parametric bootstrap or model based bootstrap, without fist computing 
   # the mixing weights.
-  if (!(attr(object$wt, "method") == "none") && boot == "no") {
-    wt <- object$wt
-    pvalue <- con_pvalue_Fbar(wt          = rev(wt), 
+  if (!(attr(object$wt.bar, "method") == "none") && boot == "no") {
+    wt.bar <- object$wt.bar
+    pvalue <- con_pvalue_Fbar(wt.bar      = rev(wt.bar), 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -185,7 +185,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                               bvec        = bvec, 
                               meq         = meq, 
                               meq.alt     = meq.alt)
-    attr(pvalue, "wt") <- wt
+    attr(pvalue, "wt.bar") <- wt.bar
    } else if (boot == "parametric") {
      
      if (!is.function(p.distr)) {
@@ -251,8 +251,8 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
               boot        = boot,
               model.org   = model.org)
 
-  OUT <- list(OUT)
-    names(OUT) <- type
+#  OUT <- list(OUT)
+#    names(OUT) <- type
   
   class(OUT) <- "conTest"
 
@@ -463,9 +463,9 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
     }
   } 
   
-  if (!(attr(object$wt, "method") == "none") && boot == "no") { 
-    wt <- object$wt
-    pvalue <- con_pvalue_Fbar(wt          = rev(wt), 
+  if (!(attr(object$wt.bar, "method") == "none") && boot == "no") { 
+    wt.bar <- object$wt.bar
+    pvalue <- con_pvalue_Fbar(wt.bar      = rev(wt.bar), 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -473,7 +473,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
                               bvec        = bvec, 
                               meq         = meq, 
                               meq.alt     = meq.alt)
-    attr(pvalue, "wt") <- wt
+    attr(pvalue, "wt.bar") <- wt.bar
   } else if (boot == "parametric") {
     if (!is.function(p.distr)) {
       p.distr <- get(p.distr, mode = "function")
@@ -538,8 +538,8 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
               boot        = boot,
               model.org   = model.org)
 
-  OUT <- list(OUT)
-  names(OUT) <- type
+#  OUT <- list(OUT)
+#  names(OUT) <- type
   
   class(OUT) <- "conTest"
 
@@ -803,9 +803,9 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     }
   } 
   
-  if (!(attr(object$wt, "method") == "none") && boot == "no") {
-    wt <- object$wt
-    pvalue <- con_pvalue_Fbar(wt          = rev(wt), 
+  if (!(attr(object$wt.bar, "method") == "none") && boot == "no") {
+    wt.bar <- object$wt.bar
+    pvalue <- con_pvalue_Fbar(wt.bar      = rev(wt.bar), 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -813,7 +813,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                               bvec        = bvec, 
                               meq         = meq, 
                               meq.alt     = meq.alt)
-    attr(pvalue, "wt") <- wt
+    attr(pvalue, "wt.bar") <- wt.bar
   } else if (boot == "parametric") {
     if (!is.function(p.distr)) {
       p.distr <- get(p.distr, mode = "function")
@@ -878,8 +878,8 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
               boot        = boot,
               model.org   = model.org)
   
-  OUT <- list(OUT)
-  names(OUT) <- type
+#  OUT <- list(OUT)
+#  names(OUT) <- type
   
   class(OUT) <- "conTest"
   
@@ -934,8 +934,8 @@ conTestC.restriktor <- function(object, ...) {
               boot        = "no",
               model.org   = object$model.org)
   
-  OUT <- list(OUT)
-    names(OUT) <- "C"
+#  OUT <- list(OUT)
+#    names(OUT) <- "C"
   
   class(OUT) <- "conTest"
   

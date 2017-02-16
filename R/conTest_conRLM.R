@@ -170,9 +170,9 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     }
   } 
   
-  if (!(attr(object$wt, "method") == "none") && boot == "no") {
-    wt <- object$wt
-    pvalue <- con_pvalue_Fbar(wt          = rev(wt), 
+  if (!(attr(object$wt.bar, "method") == "none") && boot == "no") {
+    wt.bar <- object$wt.bar
+    pvalue <- con_pvalue_Fbar(wt.bar      = rev(wt.bar), 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -180,7 +180,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                               bvec        = bvec, 
                               meq         = meq, 
                               meq.alt     = meq.alt)
-    attr(pvalue, "wt") <- wt
+    attr(pvalue, "wt.bar") <- wt.bar
   } else if (boot == "parametric") {
     
     if (!is.function(p.distr)) {
@@ -246,8 +246,8 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
               boot        = boot,
               model.org   = model.org)
   
-  OUT <- list(OUT)
-  names(OUT) <- type
+#  OUT <- list(OUT)
+#  names(OUT) <- type
   
   class(OUT) <- "conTest"
   
@@ -445,35 +445,35 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   # We need to recalculate the weights based on V.hat = V instead on solve(t(X)%*%X)
   # Do we have to? The differences look very small.
   ## compute mixing weights
-  if (!(attr(object$wt, "method") == "none")) {
+  if (!(attr(object$wt.bar, "method") == "none")) {
     if (nrow(Amat) == meq) {
     # equality constraints only
-      wt <- rep(0L, ncol(V) + 1)
-      wt.idx <- ncol(V) - meq + 1
-      wt[wt.idx] <- 1
-    } else if (attr(object$wt, "method") == "boot") { 
+      wt.bar <- rep(0L, ncol(V) + 1)
+      wt.bar.idx <- ncol(V) - meq + 1
+      wt.bar[wt.bar.idx] <- 1
+    } else if (attr(object$wt.bar, "method") == "boot") { 
       # compute chi-square-bar weights based on Monte Carlo simulation
-      wt <- con_weights_boot(VCOV     = V,
-                             Amat     = Amat, 
-                             meq      = meq, 
-                             R        = attr(object$wt, "mix.bootstrap"),
-                             parallel = parallel,
-                             ncpus    = ncpus,
-                             cl       = cl,
-                             seed     = seed,
-                             verbose  = verbose)
-      attr(wt, "mix.bootstrap") <- attr(object$wt, "mix.bootstrap") 
-    } else if (attr(object$wt, "method") == "pmvnorm" && (meq < nrow(Amat))) {
+      wt.bar <- con_weights_boot(VCOV     = V,
+                                 Amat     = Amat, 
+                                 meq      = meq, 
+                                 R        = attr(object$wt.bar, "mix.bootstrap"),
+                                 parallel = parallel,
+                                 ncpus    = ncpus,
+                                 cl       = cl,
+                                 seed     = seed,
+                                 verbose  = verbose)
+      attr(wt.bar, "mix.bootstrap") <- attr(object$wt.bar, "mix.bootstrap") 
+    } else if (attr(object$wt.bar, "method") == "pmvnorm" && (meq < nrow(Amat))) {
       # compute chi-square-bar weights based on pmvnorm
-      wt <- rev(con_weights(Amat %*% V %*% t(Amat), meq = meq))
+      wt.bar <- rev(con_weights(Amat %*% V %*% t(Amat), meq = meq))
     } 
   } 
-  attr(wt, "method") <- attr(object$wt, "method")
+  attr(wt.bar, "method") <- attr(object$wt.bar, "method")
   ##############################################################################
   
-  if (!(attr(object$wt, "method") == "none") && boot == "no") {
+  if (!(attr(object$wt.bar, "method") == "none") && boot == "no") {
     # compute pvalue based on F-distribution
-    pvalue <- con_pvalue_Fbar(wt          = rev(wt), 
+    pvalue <- con_pvalue_Fbar(wt.bar      = rev(wt.bar), 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -481,7 +481,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                               bvec        = bvec, 
                               meq         = meq, 
                               meq.alt     = meq.alt)
-    attr(pvalue, "wt") <- wt
+    attr(pvalue, "wt.bar") <- wt.bar
   } else if (boot == "parametric") {
     if (!is.function(p.distr)) {
       p.distr <- get(p.distr, mode = "function")
@@ -547,8 +547,8 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
               boot        = boot,
               model.org   = model.org)
   
-  OUT <- list(OUT)
-  names(OUT) <- type
+#  OUT <- list(OUT)
+#  names(OUT) <- type
   
   class(OUT) <- "conTest"
   
@@ -721,9 +721,9 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     }
   } 
   
-  if (!(attr(object$wt, "method") == "none") && boot == "no") {
-    wt <- object$wt
-    pvalue <- con_pvalue_Fbar(wt          = rev(wt), 
+  if (!(attr(object$wt.bar, "method") == "none") && boot == "no") {
+    wt.bar <- object$wt.bar
+    pvalue <- con_pvalue_Fbar(wt.bar      = rev(wt.bar), 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -731,7 +731,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                               bvec        = bvec, 
                               meq         = meq, 
                               meq.alt     = meq.alt)
-    attr(pvalue, "wt") <- wt
+    attr(pvalue, "wt.bar") <- wt.bar
   } else if (boot == "parametric") {
     if (!is.function(p.distr)) {
       p.distr <- get(p.distr, mode = "function")
@@ -796,8 +796,8 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
               boot        = boot,
               model.org   = model.org)
   
-  OUT <- list(OUT)
-  names(OUT) <- type
+#  OUT <- list(OUT)
+#  names(OUT) <- type
   
   class(OUT) <- "conTest"
   
@@ -992,34 +992,34 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   # We need to recalculate the weights based on V.hat = Sigam instead on solve(t(X)%*%X)
   # Do we have to? The differences are very small.
   ## compute mixing weights
-  if (!(attr(object$wt, "method") == "none")) {
+  if (!(attr(object$wt.bar, "method") == "none")) {
     if (nrow(Amat) == meq) {
       # equality constraints only
-      wt <- rep(0L, ncol(V) + 1)
-      wt.idx <- ncol(V) - meq + 1
-      wt[wt.idx] <- 1
-    } else if (attr(object$wt, "method") == "boot") { 
+      wt.bar <- rep(0L, ncol(V) + 1)
+      wt.bar.idx <- ncol(V) - meq + 1
+      wt.bar[wt.bar.idx] <- 1
+    } else if (attr(object$wt.bar, "method") == "boot") { 
       # compute chi-square-bar weights based on Monte Carlo simulation
-      wt <- con_weights_boot(VCOV     = V,
+      wt.bar <- con_weights_boot(VCOV     = V,
                              Amat     = Amat, 
                              meq      = meq, 
-                             R        = attr(object$wt, "mix.bootstrap"),
+                             R        = attr(object$wt.bar, "mix.bootstrap"),
                              parallel = parallel,
                              ncpus    = ncpus,
                              cl       = cl,
                              seed     = seed,
                              verbose  = verbose)
-      attr(wt, "mix.bootstrap") <- attr(object$wt, "mix.bootstrap")
-    } else if (attr(object$wt, "method") == "pmvnorm" && (meq < nrow(Amat))) {
+      attr(wt.bar, "mix.bootstrap") <- attr(object$wt.bar, "mix.bootstrap")
+    } else if (attr(object$wt.bar, "method") == "pmvnorm" && (meq < nrow(Amat))) {
       # compute chi-square-bar weights based on pmvnorm
-      wt <- rev(con_weights(Amat %*% V %*% t(Amat), meq = meq))
+      wt.bar <- rev(con_weights(Amat %*% V %*% t(Amat), meq = meq))
     } 
   } 
-  attr(wt, "method") <- attr(object$wt, "method")
+  attr(wt.bar, "method") <- attr(object$wt.bar, "method")
   
-  if (!attr(object$wt, "method") == "none" && boot == "no") {
+  if (!attr(object$wt.bar, "method") == "none" && boot == "no") {
     # compute pvalue based on F-distribution
-    pvalue <- con_pvalue_Fbar(wt          = rev(wt), 
+    pvalue <- con_pvalue_Fbar(wt.bar      = rev(wt.bar), 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -1027,7 +1027,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                               bvec        = bvec, 
                               meq         = meq, 
                               meq.alt     = meq.alt)
-    attr(pvalue, "wt") <- wt
+    attr(pvalue, "wt.bar") <- wt.bar
   } else if (boot == "parametric") {
     if (!is.function(p.distr)) {
       p.distr <- get(p.distr, mode = "function")
@@ -1093,8 +1093,8 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
               boot        = boot,
               model.org   = model.org)
   
-  OUT <- list(OUT)
-  names(OUT) <- type
+#  OUT <- list(OUT)
+#  names(OUT) <- type
   
   class(OUT) <- "conTest"
   

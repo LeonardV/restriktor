@@ -204,7 +204,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 b.restr     = b.unrestr,
                 residuals   = residuals,
                 wresid      = object$wresid,
-                fitted      = fitted(object),
+                fitted      = object$fitted,
                 weights     = weights,  # prior weights
                 w           = object$w, # weights used in the IWLS process
                 scale       = object$s, 
@@ -217,9 +217,9 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 loglik      = ll.unrestr, 
                 Sigma       = Sigma, # probably not so robust!
                 constraints = Amat, 
-                wt.bar      = wt.bar,
                 rhs         = bvec, 
                 neq         = meq, 
+                wt.bar      = wt.bar,
                 iact        = 0L,
                 converged   = object$converged, 
                 iter        = object$conv,
@@ -248,8 +248,8 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     b.restr[abs(b.restr) < ifelse(is.null(control$tol), 
                                   sqrt(.Machine$double.eps), 
                                   control$tol)] <- 0L
-    fitted <- fitted(rfit)
-    residuals <- residuals(rfit)
+    fitted <- rfit$fitted
+    residuals <- rfit$residuals
     # psi(resid/scale) these are the weights used for downweighting the cases.
     w <- rfit$w
     # compute loglik
@@ -317,9 +317,9 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 loglik      = ll.restr, 
                 Sigma       = Sigma,                             #probably not so robust???
                 constraints = Amat, 
-                wt.bar      = wt.bar,
                 rhs         = bvec, 
                 neq         = meq, 
+                wt.bar      = wt.bar,
                 iact        = rfit$iact,
                 converged   = rfit$converged, 
                 iter        = rfit$conv,
@@ -351,12 +351,12 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     } else if (se == "boot.model.based") { 
       OUT$bootout <- con_boot_lm(object      = object, 
                                  B           = B, 
-                                 fixed       = TRUE,
-                                 constraints = Amat,
-                                 rhs         = bvec, 
-                                 neq         = meq, 
+                                 fixed       = TRUE, 
+                                 Amat        = Amat,
+                                 bvec        = bvec, 
+                                 meq         = meq, 
                                  se          = "none",
-                                 mix.weights          = "none",
+                                 mix.weights = "none",
                                  parallel    = parallel, 
                                  ncpus       = ncpus, 
                                  cl          = cl)
@@ -366,12 +366,12 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     } else if (se == "boot.standard") {
       OUT$bootout <- con_boot_lm(object      = object, 
                                  B           = B, 
-                                 fixed       = FALSE,
-                                 constraints = Amat,
-                                 rhs         = bvec, 
-                                 neq         = meq, 
+                                 fixed       = FALSE, 
+                                 Amat        = Amat,
+                                 bvec        = bvec, 
+                                 meq         = meq, 
                                  se          = "none",
-                                 mix.weights          = "none",
+                                 mix.weights = "none",
                                  parallel    = parallel, 
                                  ncpus       = ncpus, 
                                  cl          = cl)

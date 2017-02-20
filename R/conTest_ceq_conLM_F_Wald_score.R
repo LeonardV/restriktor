@@ -99,7 +99,6 @@ conTest_ceq.conLM <- function(object, test = "F", boot = "no",
   OUT$boot <- boot
   
   if (boot == "parametric") {
-    
     if (!is.function(p.distr)) {
       p.distr <- get(p.distr, mode = "function")
     }
@@ -136,9 +135,6 @@ conTest_ceq.conLM <- function(object, test = "F", boot = "no",
   OUT$R2.org      <- object$R2.org
   OUT$R2.reduced  <- object$R2.reduced
   OUT$model.org <- object
-  
-  OUT <- list(OUT)
-    names(OUT) <- "ceq"
   
   class(OUT) <- "conTest"
 

@@ -79,8 +79,7 @@ con_pvalue_Chibar <- function(wt.bar, Ts.org, type = "A",
 
 
 ############################ parametric bootstrap ##############################
-con_pvalue_boot_parametric <- function(model, 
-                                       Ts.org   = NULL, 
+con_pvalue_boot_parametric <- function(model, Ts.org, 
                                        type     = "A",
                                        test     = "F", 
                                        neq.alt  = 0L, 
@@ -142,9 +141,9 @@ con_pvalue_boot_parametric <- function(model,
                  rhs = bvec, neq = meq, se = "none", 
                  mix.weights = "none", control = control)
     
-    fit.boot <- do.call("restriktor", CALL)
+    restr.boot <- do.call("restriktor", CALL)
     
-    boot.conTest <- try(conTest(fit.boot, 
+    boot.conTest <- try(conTest(restr.boot, 
                                 type    = type, 
                                 test    = test,
                                 boot    = "no",
@@ -155,7 +154,7 @@ con_pvalue_boot_parametric <- function(model,
       options(old.options)
       return(NULL)
     }
-    OUT <- boot.conTest[[1]]$Ts
+    OUT <- boot.conTest$Ts
   
     if (verbose) {
       cat("bootstrap draw =", b, "...Ts =", OUT, "\n")
@@ -215,8 +214,7 @@ con_pvalue_boot_parametric <- function(model,
 
 
 ########################### model based bootstrap ##############################
-con_pvalue_boot_model_based <- function(model, 
-                                        Ts.org   = NULL, 
+con_pvalue_boot_model_based <- function(model, Ts.org, 
                                         type     = "A",
                                         test     = "F", 
                                         neq.alt  = 0L,
@@ -287,7 +285,7 @@ con_pvalue_boot_model_based <- function(model,
         yhat <- mean(y)
       }
       yhat <- cbind(rep(yhat, n))
-      r    <- y - as.numeric(yhat)
+      r <- y - as.numeric(yhat)
     }
   
     Ts.boot <- vector("numeric", R)
@@ -301,7 +299,7 @@ con_pvalue_boot_model_based <- function(model,
       idx   <- sample(dim(X)[1], replace = TRUE)
       ystar <- as.matrix(c(yhat + r[idx]))
       xcol  <- which(rowSums(attr(model.org$terms, "factors")) > 0)
-      terms <- attr(model.org$terms , "term.labels")[attr(model.org$terms, "order") == 1]
+      terms <- attr(model.org$terms, "term.labels")[attr(model.org$terms, "order") == 1]
       DATA  <- data.frame(ystar, model.org$model[,xcol])
         colnames(DATA) <- c(as.character("ystar"), terms)
       form <- formula(model.org)
@@ -312,8 +310,8 @@ con_pvalue_boot_model_based <- function(model,
                    neq = meq, control = control, se = "none",
                    mix.weights = "none")
       
-      fit.boot <- do.call("restriktor", CALL)  
-      boot.conTest <- try(conTest(fit.boot, 
+      restr.boot <- do.call("restriktor", CALL)  
+      boot.conTest <- try(conTest(restr.boot, 
                                   type    = type, 
                                   test    = test, 
                                   boot    = "no",
@@ -324,7 +322,7 @@ con_pvalue_boot_model_based <- function(model,
         options(old.options)
         return(NULL)
       }
-      OUT <- boot.conTest[[1]]$Ts
+      OUT <- boot.conTest$Ts
     
       if (verbose) {
         cat("iteration =", b, "...Ts =", OUT, "\n")

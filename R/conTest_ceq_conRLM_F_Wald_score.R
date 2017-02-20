@@ -136,9 +136,6 @@ conTest_ceq.conRLM <- function(object, test = "F", boot = "no",
   OUT$R2.reduced  <- object$R2.reduced
   OUT$model.org <- object
   
-  OUT <- list(OUT)
-  names(OUT) <- "ceq"
-  
   class(OUT) <- "conTest"
   
   OUT

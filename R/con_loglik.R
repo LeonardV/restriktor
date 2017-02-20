@@ -13,9 +13,9 @@ con_loglik_lm <- function(object, ...) {
       w <- w[!excl]
     }
   }
-  out <- 0.5 * (sum(log(w)) - N * (log(2 * pi) + 1 - log(N) + log(sum(w * res^2))))
+  OUT <- 0.5 * (sum(log(w)) - N * (log(2 * pi) + 1 - log(N) + log(sum(w * res^2))))
   
-  out
+  OUT
 }
 
 

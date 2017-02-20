@@ -112,24 +112,10 @@ conTest_ceq.conGLM <- function(object, test = "F", boot = "no",
                                              seed     = seed,
                                              verbose  = verbose)
   } else if (boot == "model.based") {
-    stop("Restriktor ERROR: bootstrapping is not implemented yet.")
-    
-    # OUT$pvalue <- con_pvalue_boot_model_based(object, 
-    #                                           Ts_org   = OUT$Ts, 
-    #                                           type     = "A", 
-    #                                           test     = test,
-    #                                           R        = R,
-    #                                           parallel = parallel, 
-    #                                           ncpus    = ncpus, 
-    #                                           cl       = cl, 
-    #                                           seed     = seed, 
-    #                                           verbose  = verbose)
+    stop("Restriktor ERROR: the model-based bootstrap is not implemented.")
   } 
   
   OUT$model.org <- object
-  
-  OUT <- list(OUT)
-  names(OUT) <- "ceq"
   
   class(OUT) <- "conTest"
   

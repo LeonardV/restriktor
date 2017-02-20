@@ -1,5 +1,5 @@
 # adjusted functions from the sandwich package.
-# adapted by LV
+# adapted by LV.
 
 sandwich <- function(x, bread. = bread, meat. = meatHC, ...) {
   if (is.function(bread.)) { bread. <- bread.(x) }
@@ -142,10 +142,7 @@ meatHC <- function(x,
       rW <- sqrt(x$weights)
       }
     
-    
-    ### compute hat matrix ###
-    ### code added by LV ###
-    # it may happen that the weight equals 0.
+    # it may happen that a weight equals 0.
     # to avoid computational issues, we replace the zero with 1e-08
     idx.rW <- which(rW == 0)
     rW[idx.rW] <- 1e-08

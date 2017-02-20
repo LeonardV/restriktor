@@ -1,5 +1,5 @@
 ### computes the F-bar, LRT-bar and score-bar test statistic ####
-# Silvapulle and Sen (2005). Constrained statistical inference. Chapter 4.
+## REF: Silvapulle and Sen (2005). Constrained statistical inference. Chapter 4.
 conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
                             p.distr = rnorm, parallel = "no", ncpus = 1L,
                             cl = NULL, seed = 1234, verbose = FALSE,
@@ -211,12 +211,8 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
               b.unrestr   = b.unrestr,
               b.restr     = b.restr,
               b.restr.alt = b.restr.alt,
-              Sigma       = Sigma,
               boot        = boot,
               model.org   = model.org)
-  
-#  OUT <- list(OUT)
-#  names(OUT) <- type
   
   class(OUT) <- "conTest"
   
@@ -439,12 +435,8 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
               b.unrestr   = b.unrestr,
               b.restr     = b.restr,
               b.restr.alt = b.restr.alt,
-              Sigma       = Sigma,
               boot        = boot,
               model.org   = model.org)
-  
-#  OUT <- list(OUT)
-#  names(OUT) <- type
   
   class(OUT) <- "conTest"
   
@@ -752,12 +744,8 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
               b.unrestr   = b.unrestr,
               b.restr     = b.restr,
               b.restr.alt = b.restr.alt,
-              Sigma       = Sigma,
               boot        = boot,
               model.org   = model.org)
-
-#  OUT <- list(OUT)
-#  names(OUT) <- type
 
   class(OUT) <- "conTest"
 

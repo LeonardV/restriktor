@@ -245,15 +245,11 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
               b.unrestr   = b.unrestr,
               b.restr     = b.restr,
               b.restr.alt = b.restr.alt,
-              Sigma       = Sigma,
               R2.org      = object$R2.org,
               R2.reduced  = object$R2.reduced,
               boot        = boot,
               model.org   = model.org)
 
-#  OUT <- list(OUT)
-#    names(OUT) <- type
-  
   class(OUT) <- "conTest"
 
   OUT
@@ -532,15 +528,11 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
               b.unrestr   = b.unrestr,
               b.restr     = b.restr,
               b.restr.alt = b.restr.alt,
-              Sigma       = Sigma,
               R2.org      = object$R2.org,
               R2.reduced  = object$R2.reduced,
               boot        = boot,
               model.org   = model.org)
 
-#  OUT <- list(OUT)
-#  names(OUT) <- type
-  
   class(OUT) <- "conTest"
 
   OUT
@@ -872,14 +864,10 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
               b.unrestr   = b.unrestr,
               b.restr     = b.restr,
               b.restr.alt = b.restr.alt,
-              Sigma       = Sigma,
               R2.org      = object$R2.org,
               R2.reduced  = object$R2.reduced,
               boot        = boot,
               model.org   = model.org)
-  
-#  OUT <- list(OUT)
-#  names(OUT) <- type
   
   class(OUT) <- "conTest"
   

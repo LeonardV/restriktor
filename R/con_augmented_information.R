@@ -1,5 +1,5 @@
-# Ref: Ronald Schoenberg (1997). Constrained Maximum Likelihood. Computational 
-# Economics, 10, 251-266
+# Ref: Ronald Schoenberg (1997). Constrained Maximum Likelihood. 
+# Computational Economics, 10, 251-266
 con_augmented_information <- function(information  = NULL, 
                                       is.augmented = TRUE,
                                       X            = NULL, 

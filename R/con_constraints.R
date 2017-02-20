@@ -39,9 +39,6 @@ con_constraints <- function(model, constraints, bvec = NULL, meq = 0L,
     Amat <- constraints
     bvec <- if (is.null(bvec)) { rep(0L, nrow(Amat)) } else { bvec }
     meq  <- if (is.null(meq)) { 0L } else { meq }
-    if (nrow(Amat) != length(bvec)) {
-      stop("Restriktor ERROR: the number of rows of the constraint matrix does not match the length of the rhs.")
-    }
   } else { 
     stop("no restriktions were specified.") 
   }

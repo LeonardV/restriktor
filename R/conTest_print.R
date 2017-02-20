@@ -16,8 +16,6 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
   rdf  <- x[[1]]$df.residual
   boot <- x[[1]]$boot
   model.org  <- x[[1]]$model.org
-  R2.reduced <- x[[1]]$R2.reduced
-  R2.org     <- x[[1]]$R2.org
   b.unrestr  <- x[[1]]$b.unrestr
   iact <- x[[1]]$iact
   R    <- attr(x[[1]]$pvalue, "R")
@@ -32,7 +30,9 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
     cat("\n")
   }
   
-  if (!inherits(model.org, "glm")) { 
+  if (!inherits(model.org, "glm")) {
+    R2.reduced <- x[[1]]$R2.reduced
+    R2.org     <- x[[1]]$R2.org
     if ((R2.org - R2.reduced) < 1e-08) {
       cat("\nMultiple R-squared remains", sprintf("%5.3f", R2.org),"\n")
     } else {

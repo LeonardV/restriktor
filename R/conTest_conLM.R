@@ -185,7 +185,10 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                               bvec        = bvec, 
                               meq         = meq, 
                               meq.alt     = meq.alt)
-    attr(pvalue, "wt.bar") <- wt.bar
+    wt.mix <- wt.bar
+    attributes(wt.mix) <- NULL
+    attr(pvalue, "wt.bar") <- wt.mix
+    attr(pvalue, "wt.bar.method") <- attr(wt.bar, "method")
    } else if (boot == "parametric") {
      
      if (!is.function(p.distr)) {

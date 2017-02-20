@@ -132,9 +132,9 @@ conTest_ceq.conRLM <- function(object, test = "F", boot = "no",
                                               verbose  = verbose)
   } 
   
-  OUT$R2.org      <- object$R2.org
+  OUT$R2.org <- object$R2.org
   OUT$R2.reduced  <- object$R2.reduced
-  OUT$model.org <- object
+  OUT$model.org <- object$model.org
   
   class(OUT) <- "conTest"
   

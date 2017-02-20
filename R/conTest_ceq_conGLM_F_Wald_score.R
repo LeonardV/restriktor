@@ -115,7 +115,7 @@ conTest_ceq.conGLM <- function(object, test = "F", boot = "no",
     stop("Restriktor ERROR: the model-based bootstrap is not implemented.")
   } 
   
-  OUT$model.org <- object
+  OUT$model.org <- object$model.org
   
   class(OUT) <- "conTest"
   

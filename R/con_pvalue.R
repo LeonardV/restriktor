@@ -106,6 +106,18 @@ con_pvalue_boot_parametric <- function(model, Ts.org,
   bvec <- model$rhs
   meq  <- model$neq
   
+  ## shift y by q to relocate the vertex to its origin.
+  if (!all(bvec == 0)) {
+    shifted <- TRUE
+    #q <- t(R) %*% solve(R%*%t(R)) %*% bvec
+    shift.q <- MASS::ginv(Amat) %*% bvec
+    attr(shifted, "q") <- as.vector(shift.q)
+    ystar.shift <- (X %*% -shift.q)
+  } else {
+    shifted <- FALSE
+    ystar.shift <- 0L
+  }
+  
   #parallel housekeeping
   have_mc <- have_snow <- FALSE
   if (parallel != "no" && ncpus > 1L) {
@@ -129,9 +141,10 @@ con_pvalue_boot_parametric <- function(model, Ts.org,
       RNGstate <- .Random.seed
 
     ystar <- p.distr(n)
+    ystar.shifted <- ystar - ystar.shift
     xcol <- which(rowSums(attr(model.org$terms, "factors")) > 0)
     terms <- attr(model.org$terms, "term.labels")[attr(model.org$terms, "order") == 1]
-    DATA <- data.frame(ystar, model.org$model[ ,xcol])
+    DATA <- data.frame(ystar.shifted, model.org$model[ ,xcol])
       colnames(DATA) <- c(as.character("ystar"), terms)  
     form <- formula(model.org)
     form[[2]] <- as.name("ystar")
@@ -142,6 +155,7 @@ con_pvalue_boot_parametric <- function(model, Ts.org,
                  mix.weights = "none", control = control)
     
     restr.boot <- do.call("restriktor", CALL)
+    restr.boot$shifted <- shifted
     
     boot.conTest <- try(conTest(restr.boot, 
                                 type    = type, 
@@ -271,112 +285,113 @@ con_pvalue_boot_model_based <- function(model, Ts.org,
     fit <- do.call("restriktor", CALL)
   } 
 
-    # compute residuals under the null-hypothesis
-    if (type != "global") {
-      r    <- residuals(fit)
-      yhat <- fitted(fit)
-    } else { # if type == global, we can skip the restriktor() function
-      w <- weights(model.org)
-      W <- diag(w)
-      if (!is.null(w)) { 
-        yhat <- 1/sum(w) * sum(W %*% y) 
-      } 
-      else {
-        yhat <- mean(y)
-      }
-      yhat <- cbind(rep(yhat, n))
-      r <- y - as.numeric(yhat)
+  # compute residuals under the null-hypothesis
+  if (type != "global") {
+    r    <- residuals(fit)
+    yhat <- fitted(fit)
+  } else { 
+    # if type == global, we can skip the restriktor() function
+    w <- weights(model.org)
+    W <- diag(w)
+    if (!is.null(w)) { 
+      yhat <- 1/sum(w) * sum(W %*% y) 
+    } else {
+      yhat <- mean(y)
     }
-  
-    Ts.boot <- vector("numeric", R)
-    fn <- function(b) {
-      if (!is.null(seed))
-        set.seed(seed + b)
-      if (!exists(".Random.seed", envir = .GlobalEnv))
-        runif(1) 
-      RNGstate <- .Random.seed
-
-      idx   <- sample(dim(X)[1], replace = TRUE)
-      ystar <- as.matrix(c(yhat + r[idx]))
-      xcol  <- which(rowSums(attr(model.org$terms, "factors")) > 0)
-      terms <- attr(model.org$terms, "term.labels")[attr(model.org$terms, "order") == 1]
-      DATA  <- data.frame(ystar, model.org$model[,xcol])
-        colnames(DATA) <- c(as.character("ystar"), terms)
-      form <- formula(model.org)
-      form[[2]] <- as.name("ystar")
-      
-      boot.model <- update(model.org, formula = form, data = DATA)
-      CALL <- list(object = boot.model, constraints = Amat, rhs = bvec, 
-                   neq = meq, control = control, se = "none",
-                   mix.weights = "none")
-      
-      restr.boot <- do.call("restriktor", CALL)  
-      boot.conTest <- try(conTest(restr.boot, 
-                                  type    = type, 
-                                  test    = test, 
-                                  boot    = "no",
-                                  neq.alt = neq.alt, 
-                                  control = control))
-      if (inherits(boot.conTest, "try-error")) {
-        if (verbose) cat("FAILED: creating test statistic\n")
-        options(old.options)
-        return(NULL)
-      }
-      OUT <- boot.conTest$Ts
-    
-      if (verbose) {
-        cat("iteration =", b, "...Ts =", OUT, "\n")
-      }
-        OUT
-    }
-    
-    options(old.options)
-    RR <- sum(R)
-    res <- if (ncpus > 1L && (have_mc || have_snow)) {
-      if (have_mc) {
-        parallel::mclapply(seq_len(RR), fn, mc.cores = ncpus)
-      } else if (have_snow) {
-        if (is.null(cl)) {
-          cl <- parallel::makePSOCKcluster(rep("localhost",
-                                               ncpus))
-          if (RNGkind()[1L] == "L'Ecuyer-CMRG")
-            parallel::clusterSetRNGStream(cl)
-          res <- parallel::parLapply(cl, seq_len(RR),
-                                     fn)
-          parallel::stopCluster(cl)
-          res
-        } else parallel::parLapply(cl, seq_len(RR), fn)
-      }
-    } else { lapply(seq_len(RR), fn) }
-    error.idx <- integer(0)
-    for (b in seq_len(RR)) {
-      if (!is.null(res[[b]])) {
-        Ts.boot[b] <- res[[b]]
-      }
-      else {
-        error.idx <- c(error.idx, b)
-      }
-    }
-    na.boot.idx <- which(is.na(Ts.boot), arr.ind = TRUE)
-    inf.boot.idx <- which(Ts.boot == Inf, arr.ind = TRUE)
-    idx <- c(na.boot.idx, inf.boot.idx, error.idx)
-    idx.unique <- unique(idx)
-    Rboot.tot <- (R - length(idx.unique))
-    if (length(idx.unique) > 0) {
-      Ts.boot <- Ts.boot[-idx.unique]
-    }
-    if (length(idx.unique) > 0L) {
-      warning("restriktor WARNING: only ", (R - length(idx.unique)), 
-              " bootstrap draws were successful")
-    }
-    # > or >= ???
-    pvalue <- sum(Ts.boot >= as.numeric(Ts.org)) / Rboot.tot
-      attr(pvalue, "boot.type") <- "model.based"
-      attr(pvalue, "R")         <- Rboot.tot
-      attr(pvalue, "Ts.boot")   <- Ts.boot
-      
-    
-    OUT <- pvalue
-    
-    OUT
+    yhat <- cbind(rep(yhat, n))
+    r <- y - as.numeric(yhat)
   }
+  
+  Ts.boot <- vector("numeric", R)
+  fn <- function(b) {
+    if (!is.null(seed))
+      set.seed(seed + b)
+    if (!exists(".Random.seed", envir = .GlobalEnv))
+      runif(1) 
+    RNGstate <- .Random.seed
+
+    idx   <- sample(dim(X)[1], replace = TRUE)
+    ystar <- as.matrix(c(yhat + r[idx]))
+    xcol  <- which(rowSums(attr(model.org$terms, "factors")) > 0)
+    terms <- attr(model.org$terms, "term.labels")[attr(model.org$terms, "order") == 1]
+    DATA  <- data.frame(ystar, model.org$model[,xcol])
+      colnames(DATA) <- c(as.character("ystar"), terms)
+    form <- formula(model.org)
+    form[[2]] <- as.name("ystar")
+    
+    boot.model <- update(model.org, formula = form, data = DATA)
+    CALL <- list(object = boot.model, constraints = Amat, rhs = bvec, 
+                 neq = meq, control = control, se = "none",
+                 mix.weights = "none")
+    
+    restr.boot <- do.call("restriktor", CALL)  
+    
+    boot.conTest <- try(conTest(restr.boot, 
+                                type    = type, 
+                                test    = test, 
+                                boot    = "no",
+                                neq.alt = neq.alt, 
+                                control = control))
+    if (inherits(boot.conTest, "try-error")) {
+      if (verbose) cat("FAILED: creating test statistic\n")
+      options(old.options)
+      return(NULL)
+    }
+    OUT <- boot.conTest$Ts
+  
+    if (verbose) {
+      cat("iteration =", b, "...Ts =", OUT, "\n")
+    }
+      OUT
+  }
+    
+  options(old.options)
+  RR <- sum(R)
+  res <- if (ncpus > 1L && (have_mc || have_snow)) {
+    if (have_mc) {
+      parallel::mclapply(seq_len(RR), fn, mc.cores = ncpus)
+    } else if (have_snow) {
+      if (is.null(cl)) {
+        cl <- parallel::makePSOCKcluster(rep("localhost",
+                                             ncpus))
+        if (RNGkind()[1L] == "L'Ecuyer-CMRG")
+          parallel::clusterSetRNGStream(cl)
+        res <- parallel::parLapply(cl, seq_len(RR),
+                                   fn)
+        parallel::stopCluster(cl)
+        res
+      } else parallel::parLapply(cl, seq_len(RR), fn)
+    }
+  } else { lapply(seq_len(RR), fn) }
+  error.idx <- integer(0)
+  for (b in seq_len(RR)) {
+    if (!is.null(res[[b]])) {
+      Ts.boot[b] <- res[[b]]
+    }
+    else {
+      error.idx <- c(error.idx, b)
+    }
+  }
+  na.boot.idx <- which(is.na(Ts.boot), arr.ind = TRUE)
+  inf.boot.idx <- which(Ts.boot == Inf, arr.ind = TRUE)
+  idx <- c(na.boot.idx, inf.boot.idx, error.idx)
+  idx.unique <- unique(idx)
+  Rboot.tot <- (R - length(idx.unique))
+  if (length(idx.unique) > 0) {
+    Ts.boot <- Ts.boot[-idx.unique]
+  }
+  if (length(idx.unique) > 0L) {
+    warning("restriktor WARNING: only ", (R - length(idx.unique)), 
+            " bootstrap draws were successful")
+  }
+  # > or >= ???
+  pvalue <- sum(Ts.boot >= as.numeric(Ts.org)) / Rboot.tot
+    attr(pvalue, "boot.type") <- "model.based"
+    attr(pvalue, "R")         <- Rboot.tot
+    attr(pvalue, "Ts.boot")   <- Ts.boot
+    
+  
+  OUT <- pvalue
+  
+  OUT
+}

@@ -56,18 +56,22 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
-  #control
+  # control
   control <- object$control
+  # tolerance
+  tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
+  
+  # # check if we are dealing with a shifted cone
+  # shifted <- object$shifted
+  # if (!is.null(shifted) && shifted) {
+  #   shift.q <- attr(shifted, "q")   
+  # } else {
+  #   shift.q <- 0
+  # }
   
   # check for equalities only
   if (meq == nrow(Amat)) {
     stop("Restriktor ERROR: test not applicable for object with equality restrictions only.")
-  }
-  
-  if (is.null(control$tol)) {
-    tol <- sqrt(.Machine$double.eps)
-  } else {
-    tol <- control$tol
   }
   
   # check for intercept                                          
@@ -119,7 +123,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                                       control$tol)] <- 0L
     names(b.eqrestr) <- vnames
     # compute global test statistic
-    Ts <- c(t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr))
+    Ts <- c( t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr) ) 
   } else if (type == "A") {
     b.eqrestr <- con_solver_lm(X         = X, 
                                y         = y, 
@@ -137,12 +141,12 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                                       control$tol)] <- 0L
     names(b.eqrestr) <- vnames
     # compute test statistic for hypothesis test type A
-    Ts <- c(t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr))
+    Ts <- c( t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr) ) 
   } else if (type == "B") {
     if (meq.alt == 0L) {
       # compute test statistic for hypothesis test type B when no equalities are
       # preserved in the alternative hypothesis.
-      Ts <- c(t(b.unrestr - b.restr) %*% solve(Sigma, b.unrestr - b.restr))
+      Ts <- c( t(b.unrestr - b.restr) %*% solve(Sigma, b.unrestr - b.restr) ) 
     } else {
       if (meq.alt > 0L && meq.alt <= meq) {
         b.restr.alt <- con_solver_lm(X         = X, 
@@ -162,7 +166,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
         names(b.restr.alt) <- vnames
         # compute test statistic for hypothesis test type B when some equalities may 
         # be preserved in the alternative hypothesis.
-        Ts <- c(t(b.restr - b.restr.alt) %*% solve(Sigma, b.restr - b.restr.alt))
+        Ts <- c( t(b.restr - b.restr.alt) %*% solve(Sigma, b.restr - b.restr.alt) ) 
       } else {
         stop("Restriktor ERROR: neq.alt must not be larger than neq.")
       }
@@ -314,16 +318,12 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
   meq  <- object$neq
   #control
   control <- object$control
+  # tolerance
+  tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only
   if (meq == nrow(Amat)) {
     stop("Restriktor ERROR: test not applicable for object with equality restrictions only.")
-  }
-  
-  if (is.null(control$tol)) {
-    tol <- sqrt(.Machine$double.eps)
-  } else {
-    tol <- control$tol
   }
   
   # check for intercept                                          
@@ -372,17 +372,14 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
                                       sqrt(.Machine$double.eps),                                        
                                       control$tol)] <- 0L
     names(b.eqrestr) <- vnames
-    
     b.eqrestr <- as.vector(b.eqrestr)
-    fitted <- X %*% b.eqrestr
-    residuals <- y - fitted
     
-    object.eqrestr <- list()
-    object.eqrestr$residuals <- residuals
+    fitted0 <- X %*% b.eqrestr
+    residuals0 <- y - fitted0
+    object.eqrestr <- list(residuals = residuals0)
     object.eqrestr$weights   <- object$weights
-    ll.eqrestr <- con_loglik_lm(object.eqrestr)
     
-    ll0 <- ll.eqrestr
+    ll0 <- con_loglik_lm(object.eqrestr)
     ll1 <- object$loglik
     
     Ts <- -2*(ll0 - ll1)
@@ -402,24 +399,27 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
                                       sqrt(.Machine$double.eps),                                        
                                       control$tol)] <- 0L
     names(b.eqrestr) <- vnames
-    
     b.eqrestr <- as.vector(b.eqrestr)
-    fitted <- X %*% b.eqrestr
-    residuals <- y - fitted
     
-    object.eqrestr <- list()
-    object.eqrestr$residuals <- residuals
-    object.eqrestr$weights   <- object$weights
-    ll.eqrestr <- con_loglik_lm(object.eqrestr)
+    fitted0 <- X %*% b.eqrestr
+    residuals0 <- y - fitted0
+    object.eqrestr <- list(residuals = residuals0)
+    object.eqrestr$weights <- object$weights
     
-    ll0 <- ll.eqrestr
+    ll0 <- con_loglik_lm(object.eqrestr)
     ll1 <- object$loglik
     
     Ts <- -2*(ll0 - ll1)
   } else if (type == "B") {
       if (meq.alt == 0L) {
+        
         ll0 <- object$loglik
-        ll1 <- logLik(model.org)
+        
+        fitted1 <- X %*% object$b.unrestr
+        residuals1 <- y - fitted1
+        object.unrestr <- list(residuals = residuals1)
+        object.unrestr$weights   <- object$weights
+        ll1 <- con_loglik_lm(object.unrestr)
         
         Ts <- -2*(ll0 - ll1)
       }
@@ -442,17 +442,13 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
                                               control$tol)] <- 0L
         names(b.restr.alt) <- vnames
 
-        b.restr.alt <- as.vector(b.restr.alt)
-        fitted <- X %*% b.restr.alt
-        residuals <- y - fitted
-        
-        object.restr.alt <- list()
-        object.restr.alt$residuals <- residuals
-        object.restr.alt$weights   <- object$weights
-        ll.restr.alt <- con_loglik_lm(object.restr.alt)
-        
         ll0 <- object$loglik
-        ll1 <- ll.restr.alt
+        
+        fitted1 <- X %*% b.restr.alt
+        residuals1 <- y - fitted1
+        object.restr.alt <- list(residuals = residuals1)
+        object.restr.alt$weights <- object$weights
+        ll1 <- con_loglik_lm(object.restr.alt)
         
         Ts <- -2*(ll0 - ll1)
       }
@@ -603,16 +599,11 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   meq  <- object$neq
   #control
   control <- object$control
+  tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only
   if (meq == nrow(Amat)) {
     stop("Restriktor ERROR: test not applicable for object with equality restrictions only.")
-  }
-  
-  if (is.null(control$tol)) {
-    tol <- sqrt(.Machine$double.eps)
-  } else {
-    tol <- control$tol
   }
   
   # check for intercept                                          
@@ -663,7 +654,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     names(b.eqrestr) <- vnames
     
     res0 <- y - X %*% b.eqrestr
-    res1 <- residuals(object)
+    res1 <- y - X %*% object$b.restr
     # score vector
     df0 <- n - (p - nrow(AmatG))  
     s20 <- sum(res0^2) / df0
@@ -703,7 +694,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     names(b.eqrestr) <- vnames
     
     res0 <- y - X %*% b.eqrestr
-    res1 <- residuals(object)
+    res1 <- y - X %*% object$b.restr
     # score vector
     df0 <- n - (p - nrow(Amat))
     s20 <- sum(res0^2) / df0
@@ -727,8 +718,11 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     ###############################################
   } else if (type == "B") {
     if (meq.alt == 0L) {
-      res0 <- residuals(object)
-      res1 <- residuals(model.org)
+      res0 <- y - X %*% object$b.restr
+      res1 <- y - X %*% object$b.unrestr
+      
+      #res0 <- residuals(object)
+      #res1 <- residuals(model.org)
       # score vector
       df0 <- n - (p - qr(Amat[0:meq,])$rank)
       s20 <- sum(res0^2) / df0
@@ -769,8 +763,11 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                               control$tol)] <- 0L
         names(b.restr.alt) <- vnames
         
-        res0 <- residuals(object)
+        res0 <- y - X %*% object$b.restr
         res1 <- y - X %*% b.restr.alt
+        
+        # res0 <- residuals(object)
+        # res1 <- y - X %*% b.restr.alt
         # score vector
         df0 <- n - (p - qr(Amat[0:meq,])$rank)
         s20 <- sum(res0^2) / df0

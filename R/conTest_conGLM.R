@@ -99,7 +99,9 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     
     b.eqrestr <- coef(glm.fit)
     # compute global test statistic
-    Ts <- c(t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr))
+    b.eqrestr.shift <- b.eqrestr #- shift.q
+    b.restr.shift <- b.restr #- shift.q
+    Ts <- c( t(b.restr.shift - b.eqrestr.shift) %*% solve(Sigma, b.restr.shift - b.eqrestr.shift) ) 
   } else if (type == "A") {
     CALL <- list(object = model.org, constraints = Amat, rhs = bvec, 
                  neq = nrow(Amat), se = "none", mix.weights = "none")
@@ -107,12 +109,16 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     
     b.eqrestr <- coef(glm.fit)
     # compute test statistic for hypothesis test type A
-    Ts <- c(t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr))
+    b.eqrestr.shift <- b.eqrestr #- shift.q
+    b.restr.shift <- b.restr #- shift.q
+    Ts <- c( t(b.restr.shift - b.eqrestr.shift) %*% solve(Sigma, b.restr.shift - b.eqrestr.shift) ) 
   } else if (type == "B") {
     if (meq.alt == 0L) {
       # compute test statistic for hypothesis test type B when no equalities are
       # preserved in the alternative hypothesis.
-      Ts <- c(t(b.unrestr - b.restr) %*% solve(Sigma, b.unrestr - b.restr))
+      b.unrestr.shift <- b.unrestr #- shift.q
+      b.restr.shift <- b.restr #- shift.q
+      Ts <- c( t(b.unrestr.shift - b.restr.shift) %*% solve(Sigma, b.unrestr.shift - b.restr.shift) ) 
     } else {
       if (meq.alt > 0L && meq.alt <= meq) {
         # compute test statistic for hypothesis test type B when some equalities may 
@@ -124,7 +130,9 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
         
         b.restr.alt <- coef(glm.fit)
         
-        Ts <- c(t(b.restr - b.restr.alt) %*% solve(Sigma, b.restr - b.restr.alt))
+        b.restr.shift <- b.restr #- shift.q
+        b.restr.alt.shift <- b.restr.alt #- shift.q
+        Ts <- c( t(b.restr.shift - b.restr.alt.shift) %*% solve(Sigma, b.restr.shift - b.restr.alt.shift) ) 
       } else {
         stop("Restriktor ERROR: neq.alt must not be larger than neq.")
       }
@@ -252,9 +260,9 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
   # original model
   model.org <- object$model.org
   # model matrix
-  #X <- model.matrix(object)[,,drop=FALSE]
+  X <- model.matrix(object)[,,drop=FALSE]
   # response variable
-  #y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
+  y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
   # weights
   #w <- weights(model.org)
   # unconstrained df
@@ -319,8 +327,6 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
                  rhs = bvecG, neq = nrow(AmatG), se = "none", mix.weights = "none")
     glm.fit <- do.call("restriktor", CALL)
     
-    b.eqrestr <- coef(glm.fit)
-    
     ll0 <- glm.fit$loglik
     ll1 <- object$loglik
     
@@ -330,16 +336,13 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
                  rhs = bvec, neq = nrow(Amat), se = "none", mix.weights = "none")
     glm.fit <- do.call("restriktor", CALL)
     
-    b.eqrestr <- coef(glm.fit)
-    
     ll0 <- glm.fit$loglik
     ll1 <- object$loglik
     
     Ts <- -2*(ll0 - ll1)
   } else if (type == "B") {
     if (meq.alt == 0L) {
-      
-      ll0 <- object$loglik
+      ll0 <- object$loglik 
       ll1 <- logLik(model.org)
       
       Ts <- -2*(ll0 - ll1)
@@ -350,8 +353,6 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
         CALL <- list(object = model.org, constraints = Amat[1:meq.alt,,drop=FALSE], 
                      rhs = bvec[1:meq.alt], neq = meq.alt, se = "none", mix.weights = "none")
         glm.fit <- do.call("restriktor", CALL)
-        
-        b.restr.alt <- coef(glm.fit)
         
         ll0 <- glm.fit$loglik
         ll1 <- object$loglik
@@ -366,7 +367,7 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
   
   if (!(attr(object$wt.bar, "method") == "none") && boot == "no") { 
     wt.bar <- object$wt.bar
-    pvalue <- con_pvalue_Fbar(wt.bar          = rev(wt.bar), 
+    pvalue <- con_pvalue_Fbar(wt.bar      = rev(wt.bar), 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,

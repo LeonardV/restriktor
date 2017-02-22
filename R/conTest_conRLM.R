@@ -466,8 +466,10 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
       # compute chi-square-bar weights based on pmvnorm
       wt.bar <- rev(con_weights(Amat %*% V %*% t(Amat), meq = meq))
     } 
-  } 
-  attr(wt.bar, "method") <- attr(object$wt.bar, "method")
+  } else {
+    wt.bar <- as.numeric(NA)
+  }
+  attr(wt.bar, "wt.bar.method") <- attr(object$wt.bar, "method")
   ##############################################################################
   
   if (!(attr(object$wt.bar, "method") == "none") && boot == "no") {
@@ -1005,8 +1007,10 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
       # compute chi-square-bar weights based on pmvnorm
       wt.bar <- rev(con_weights(Amat %*% V %*% t(Amat), meq = meq))
     } 
+  } else {
+    wt.bar <- as.numeric(NA)
   } 
-  attr(wt.bar, "method") <- attr(object$wt.bar, "method")
+  attr(wt.bar, "wt.bar.method") <- attr(object$wt.bar, "method")
   
   if (!attr(object$wt.bar, "method") == "none" && boot == "no") {
     # compute pvalue based on F-distribution

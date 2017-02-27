@@ -93,8 +93,6 @@ con_pvalue_boot_parametric <- function(model, Ts.org,
                                        control  = NULL,
                                        verbose  = FALSE, ...) {
 
-  #p.distr <- tolower(p.distr)
-  #stopifnot(p.distr %in% c("n","t","chi","binom","pois","gamma"))
   old.options <- options(); options(warn = warn)
   
   model.org <- model$model.org
@@ -108,13 +106,12 @@ con_pvalue_boot_parametric <- function(model, Ts.org,
   
   ## shift y by q to relocate the vertex to its origin.
   if (!all(bvec == 0)) {
-    shifted <- TRUE
     #q <- t(R) %*% solve(R%*%t(R)) %*% bvec
     shift.q <- MASS::ginv(Amat) %*% bvec
-    attr(shifted, "q") <- as.vector(shift.q)
+    shift.q[abs(shift.q) < ifelse(is.null(control$tol), 
+                                  sqrt(.Machine$double.eps), control$tol)] <- 0L
     ystar.shift <- (X %*% -shift.q)
   } else {
-    shifted <- FALSE
     ystar.shift <- 0L
   }
   
@@ -141,6 +138,7 @@ con_pvalue_boot_parametric <- function(model, Ts.org,
       RNGstate <- .Random.seed
 
     ystar <- p.distr(n)
+    # shift ystar
     ystar.shifted <- ystar - ystar.shift
     xcol <- which(rowSums(attr(model.org$terms, "factors")) > 0)
     terms <- attr(model.org$terms, "term.labels")[attr(model.org$terms, "order") == 1]
@@ -155,7 +153,6 @@ con_pvalue_boot_parametric <- function(model, Ts.org,
                  mix.weights = "none", control = control)
     
     restr.boot <- do.call("restriktor", CALL)
-    restr.boot$shifted <- shifted
     
     boot.conTest <- try(conTest(restr.boot, 
                                 type    = type, 

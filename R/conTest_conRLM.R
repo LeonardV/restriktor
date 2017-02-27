@@ -53,9 +53,10 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
-  #control
-  control <- object$control
-  # tolerance
+  control <- c(object$control, control)
+  # remove duplicated elements from control list
+  control <- control[!duplicated(control)]
+  # get tolerance for control if exists
   tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only
@@ -105,9 +106,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     
     rfit <- do.call("conRLM_fit", CALL)
     b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
-                                      sqrt(.Machine$double.eps), 
-                                      control$tol)] <- 0L
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     Ts <- robustFm(x         = X, 
                    y         = y, 
@@ -123,9 +122,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     
     rfit <- do.call("conRLM_fit", CALL)
     b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
-                                      sqrt(.Machine$double.eps), 
-                                      control$tol)] <- 0L
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     Ts <- robustFm(x         = X, 
                    y         = y, 
@@ -153,9 +150,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
         
         rfit <- do.call("conRLM_fit", CALL)
         b.restr.alt <- rfit$coefficients
-        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol), 
-                                              sqrt(.Machine$double.eps), 
-                                              control$tol)] <- 0L
+        b.restr.alt[abs(b.restr.alt) < tol] <- 0L
         names(b.restr.alt) <- vnames
         Ts <- robustFm(x         = X, 
                        y         = y, 
@@ -309,9 +304,10 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
-  #control
-  control <- object$control
-  # tolerance
+  control <- c(object$control, control)
+  # remove duplicated elements from control list
+  control <- control[!duplicated(control)]
+  # get tolerance for control if exists
   tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only
@@ -361,9 +357,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     
     rfit <- do.call("conRLM_fit", CALL)
     b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
-                                       sqrt(.Machine$double.eps), 
-                                       control$tol)] <- 0L
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     out0 <- robustWaldScores(x         = X, 
                              y         = y,  
@@ -382,9 +376,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     
     rfit <- do.call("conRLM_fit", CALL)
     b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
-                                      sqrt(.Machine$double.eps), 
-                                      control$tol)] <- 0L
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     
     out1 <- robustWaldScores(x         = X, 
@@ -420,9 +412,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
         
         rfit <- do.call("conRLM_fit", CALL)
         b.restr.alt <- rfit$coefficients
-        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol), 
-                                              sqrt(.Machine$double.eps), 
-                                              control$tol)] <- 0L
+        b.restr.alt[abs(b.restr.alt) < tol] <- 0L
         names(b.restr.alt) <- vnames
         out3 <- robustWaldScores(x         = X, 
                                  y         = y,
@@ -609,9 +599,10 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
-  #control
-  control <- object$control
-  # tolerance
+  control <- c(object$control, control)
+  # remove duplicated elements from control list
+  control <- control[!duplicated(control)]
+  # get tolerance for control if exists
   tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only
@@ -661,9 +652,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     
     rfit <- do.call("conRLM_fit", CALL)
     b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
-                                      sqrt(.Machine$double.eps), 
-                                      control$tol)] <- 0L
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     Ts <- robustWaldXX(x         = X, 
                        b.eqrestr = b.eqrestr, 
@@ -677,9 +666,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     
     rfit <- do.call("conRLM_fit", CALL)
     b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
-                                      sqrt(.Machine$double.eps), 
-                                      control$tol)] <- 0L
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     Ts <- robustWaldXX(x         = X,
                        b.eqrestr = b.eqrestr, 
@@ -703,9 +690,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
         
         rfit <- do.call("conRLM_fit", CALL)
         b.restr.alt <- rfit$coefficients
-        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol), 
-                                              sqrt(.Machine$double.eps), 
-                                              control$tol)] <- 0L
+        b.restr.alt[abs(b.restr.alt) < tol] <- 0L
         names(b.restr.alt) <- vnames
         Ts <- robustWaldXX(x         = X, 
                            b.eqrestr = b.restr, 
@@ -852,9 +837,10 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
-  #control
-  control <- object$control
-  # tolerance
+  control <- c(object$control, control)
+  # remove duplicated elements from control list
+  control <- control[!duplicated(control)]
+  # get tolerance for control if exists
   tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only
@@ -904,9 +890,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     
     rfit <- do.call("conRLM_fit", CALL)
     b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
-                                      sqrt(.Machine$double.eps), 
-                                      control$tol)] <- 0L
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     out0 <- robustWaldScores(x         = X, 
                              y         = y,  
@@ -925,9 +909,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     
     rfit <- do.call("conRLM_fit", CALL)
     b.eqrestr <- rfit$coefficients
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol), 
-                                      sqrt(.Machine$double.eps), 
-                                      control$tol)] <- 0L
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     
     out1 <- robustWaldScores(x         = X, 
@@ -962,9 +944,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
         
         rfit <- do.call("conRLM_fit", CALL)
         b.restr.alt <- rfit$coefficients
-        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol), 
-                                              sqrt(.Machine$double.eps), 
-                                              control$tol)] <- 0L
+        b.restr.alt[abs(b.restr.alt) < tol] <- 0L
         names(b.restr.alt) <- vnames
         out3 <- robustWaldScores(x         = X, 
                                  y         = y,  

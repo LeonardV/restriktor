@@ -56,18 +56,11 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
-  # control
-  control <- object$control
-  # tolerance
+  control <- c(object$control, control)
+  # remove duplicated elements from control list
+  control <- control[!duplicated(control)]
+  # get tolerance for control if exists
   tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
-  
-  # # check if we are dealing with a shifted cone
-  # shifted <- object$shifted
-  # if (!is.null(shifted) && shifted) {
-  #   shift.q <- attr(shifted, "q")   
-  # } else {
-  #   shift.q <- 0
-  # }
   
   # check for equalities only
   if (meq == nrow(Amat)) {
@@ -118,9 +111,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                                maxit     = ifelse(is.null(control$maxit), 1e04, 
                                                   control$maxit))$solution
     # fix estimates < tol to zero 
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
-                                      sqrt(.Machine$double.eps),                                        
-                                      control$tol)] <- 0L
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     # compute global test statistic
     Ts <- c( t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr) ) 
@@ -136,9 +127,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                                                control$absval),
                                maxit     = ifelse(is.null(control$maxit), 1e04, 
                                                control$maxit))$solution
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
-                                      sqrt(.Machine$double.eps),                                        
-                                      control$tol)] <- 0L
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     # compute test statistic for hypothesis test type A
     Ts <- c( t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr) ) 
@@ -160,9 +149,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                                                         control$absval),
                                      maxit     = ifelse(is.null(control$maxit), 1e04, 
                                                         control$maxit))$solution
-        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol), 
-                                              sqrt(.Machine$double.eps),                                        
-                                              control$tol)] <- 0L
+        b.restr.alt[abs(b.restr.alt) < tol] <- 0L
         names(b.restr.alt) <- vnames
         # compute test statistic for hypothesis test type B when some equalities may 
         # be preserved in the alternative hypothesis.
@@ -214,7 +201,8 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                                           parallel = parallel,
                                           ncpus    = ncpus, 
                                           cl       = cl,
-                                          seed     = seed, 
+                                          seed     = seed,
+                                          control  = control,
                                           verbose  = verbose)
    } else if (boot == "model.based") {
      pvalue <- con_pvalue_boot_model_based(object, 
@@ -227,6 +215,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                                            ncpus    = ncpus,
                                            cl       = cl, 
                                            seed     = seed, 
+                                           control  = control,
                                            verbose  = verbose)
    } else {
      pvalue <- as.numeric(NA)
@@ -316,9 +305,10 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
-  #control
-  control <- object$control
-  # tolerance
+  control <- c(object$control, control)
+  # remove duplicated elements from control list
+  control <- control[!duplicated(control)]
+  # get tolerance for control if exists
   tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only
@@ -368,9 +358,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
                                                  control$absval),
                                maxit     = ifelse(is.null(control$maxit), 1e04, 
                                                  control$maxit))$solution
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
-                                      sqrt(.Machine$double.eps),                                        
-                                      control$tol)] <- 0L
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     b.eqrestr <- as.vector(b.eqrestr)
     
@@ -395,9 +383,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
                                                   control$absval),
                                maxit     = ifelse(is.null(control$maxit), 1e04, 
                                                   control$maxit))$solution
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
-                                      sqrt(.Machine$double.eps),                                        
-                                      control$tol)] <- 0L
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     b.eqrestr <- as.vector(b.eqrestr)
     
@@ -437,9 +423,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
                                                         control$absval),
                                      maxit     = ifelse(is.null(control$maxit), 1e04, 
                                                         control$maxit))$solution
-        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol),                                        
-                                              sqrt(.Machine$double.eps),                                        
-                                              control$tol)] <- 0L
+        b.restr.alt[abs(b.restr.alt) < tol] <- 0L
         names(b.restr.alt) <- vnames
 
         ll0 <- object$loglik
@@ -597,8 +581,10 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
-  #control
-  control <- object$control
+  control <- c(object$control, control)
+  # remove duplicated elements from control list
+  control <- control[!duplicated(control)]
+  # get tolerance for control if exists
   tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only
@@ -648,9 +634,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                                   control$absval),
                                maxit     = ifelse(is.null(control$maxit), 1e04, 
                                                   control$maxit))$solution
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
-                                      sqrt(.Machine$double.eps),                                        
-                                      control$tol)] <- 0L
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     
     res0 <- y - X %*% b.eqrestr
@@ -688,9 +672,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                                   control$absval),
                                maxit     = ifelse(is.null(control$maxit), 1e04, 
                                                   control$maxit))$solution
-    b.eqrestr[abs(b.eqrestr) < ifelse(is.null(control$tol),                                        
-                                      sqrt(.Machine$double.eps),                                        
-                                      control$tol)] <- 0L
+    b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     
     res0 <- y - X %*% b.eqrestr
@@ -758,9 +740,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                                         control$absval),
                                      maxit     = ifelse(is.null(control$maxit), 1e04,
                                                         control$maxit))$solution
-        b.restr.alt[abs(b.restr.alt) < ifelse(is.null(control$tol),                                        
-                                              sqrt(.Machine$double.eps),                                        
-                                              control$tol)] <- 0L
+        b.restr.alt[abs(b.restr.alt) < tol] <- 0L
         names(b.restr.alt) <- vnames
         
         res0 <- y - X %*% object$b.restr

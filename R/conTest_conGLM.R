@@ -52,9 +52,10 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
-  #control
-  control <- object$control
-  # tolerance
+  control <- c(object$control, control)
+  # remove duplicated elements from control list
+  control <- control[!duplicated(control)]
+  # get tolerance for control if exists
   tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only
@@ -99,9 +100,7 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     
     b.eqrestr <- coef(glm.fit)
     # compute global test statistic
-    b.eqrestr.shift <- b.eqrestr #- shift.q
-    b.restr.shift <- b.restr #- shift.q
-    Ts <- c( t(b.restr.shift - b.eqrestr.shift) %*% solve(Sigma, b.restr.shift - b.eqrestr.shift) ) 
+    Ts <- c( t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr) ) 
   } else if (type == "A") {
     CALL <- list(object = model.org, constraints = Amat, rhs = bvec, 
                  neq = nrow(Amat), se = "none", mix.weights = "none")
@@ -109,16 +108,12 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     
     b.eqrestr <- coef(glm.fit)
     # compute test statistic for hypothesis test type A
-    b.eqrestr.shift <- b.eqrestr #- shift.q
-    b.restr.shift <- b.restr #- shift.q
-    Ts <- c( t(b.restr.shift - b.eqrestr.shift) %*% solve(Sigma, b.restr.shift - b.eqrestr.shift) ) 
+    Ts <- c( t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr) ) 
   } else if (type == "B") {
     if (meq.alt == 0L) {
       # compute test statistic for hypothesis test type B when no equalities are
       # preserved in the alternative hypothesis.
-      b.unrestr.shift <- b.unrestr #- shift.q
-      b.restr.shift <- b.restr #- shift.q
-      Ts <- c( t(b.unrestr.shift - b.restr.shift) %*% solve(Sigma, b.unrestr.shift - b.restr.shift) ) 
+      Ts <- c( t(b.unrestr - b.restr) %*% solve(Sigma, b.unrestr - b.restr) ) 
     } else {
       if (meq.alt > 0L && meq.alt <= meq) {
         # compute test statistic for hypothesis test type B when some equalities may 
@@ -130,9 +125,7 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
         
         b.restr.alt <- coef(glm.fit)
         
-        b.restr.shift <- b.restr #- shift.q
-        b.restr.alt.shift <- b.restr.alt #- shift.q
-        Ts <- c( t(b.restr.shift - b.restr.alt.shift) %*% solve(Sigma, b.restr.shift - b.restr.alt.shift) ) 
+        Ts <- c( t(b.restr - b.restr.alt) %*% solve(Sigma, b.restr - b.restr.alt) ) 
       } else {
         stop("Restriktor ERROR: neq.alt must not be larger than neq.")
       }
@@ -282,9 +275,10 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
-  #control
-  control <- object$control
-  # tolerance
+  control <- c(object$control, control)
+  # remove duplicated elements from control list
+  control <- control[!duplicated(control)]
+  # get tolerance for control if exists
   tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only
@@ -510,9 +504,10 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   Amat <- object$constraints
   bvec <- object$rhs
   meq  <- object$neq
-  #control
-  control <- object$control
-  # tolerance
+  control <- c(object$control, control)
+  # remove duplicated elements from control list
+  control <- control[!duplicated(control)]
+  # get tolerance for control if exists
   tol <- ifelse(is.null(control$tol), sqrt(.Machine$double.eps), control$tol)
   
   # check for equalities only

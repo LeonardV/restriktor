@@ -9,6 +9,10 @@ con_augmented_information <- function(information  = NULL,
                                       bvec         = NULL, 
                                       meq          = NULL) {
   
+  if (all(c(Amat) == 0)) {
+    is.augmented <- FALSE
+  }
+  
   H <- Amat
   npar <- NCOL(information)
   OUT <- list()

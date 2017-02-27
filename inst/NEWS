@@ -3,8 +3,10 @@ Changes in Version 0.1-55
  o Check the restriktor.org website for more information and examples.
  
 Changes in Version 0.1-60
- o Fix bug; bootstrapping the p-value for Wald and score tests of class
- rlm resulted in an error. 
+ o Fixed bug; the parametric and model-based bootstrap resulted in 
+ an error for the Wald and score test-statistic (class rlm only).
+ o Fixed bug; an error was given if mix.weights = "none" and no 
+ constraints were specified.
  
- o Add support; parametric bootstrapping the p-value for shifted/relocated 
+ o Added support; the parametric bootstrap for shifted/relocated 
  cones is now supported.

@@ -388,6 +388,25 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                              test      = "Wald", 
                              cc        = ifelse(is.null(call.org$c), 4.685061, call.org$c))
     Ts <- out1$Ts
+    
+    ## small sample correctoions
+    #
+    #N <- dim(X)[1]
+    #n2 <- N - 1
+    # Ts <- Ts / (1 + N*Ts / n2^2)
+    
+    # Swain-corrected
+    # t <- p
+    # d <- p*(p+1)/2 - t
+    # q <- (sqrt(1 + 4*p*(p+1) - 8*d) -1) / 2
+    # N <- n
+    # n2 <- N - 1
+    # s <- 1 - ( p*(2*p^2 + 3*p -1) - q*(2*q^2 + 3*q -1)  ) / (12*d*n2)
+    # Ts <- s*Ts
+    
+    # Bartlett-corrected
+    #b <- 1 - (2*p + 5) / (6*n2)
+    #Ts <- b*Ts
     V <- out1$V
   }
   else if (type == "B") {
@@ -921,6 +940,18 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                              test      = "score", 
                              cc        = ifelse(is.null(call.org$c), 4.685061, call.org$c))
     Ts <- out1$Ts
+#    N <- dim(X)[1]
+#    n2 <- N - 1
+#    Ts <- Ts / (1 + N*Ts / n2^2)
+    
+    # t <- p
+    # d <- p*(p+1)/2 - t
+    # q <- (sqrt(1 + 4*p*(p+1) - 8*d) -1) / 2
+    # N <- n
+    # n2 <- N - 1
+    # s <- 1 - ( p*(2*p^2 + 3*p -1) - q*(2*q^2 + 3*q -1)  ) / (12*d*n2)
+    # Ts <- s*Ts
+    
     V <- out1$V
   } else if (type == "B") {
     if (meq.alt == 0L) {

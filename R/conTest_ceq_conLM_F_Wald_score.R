@@ -70,7 +70,7 @@ conTest_ceq.conLM <- function(object, test = "F", boot = "no",
       # degrees-of-freedom under the null-hypothesis
       #df0 <- (n - (p - qr(Amat[0:meq,,drop = FALSE])$rank))
       # sigma^2
-      s20 <- object$s2.restr#sum(res0^2) / df0
+      s20 <- object$s2#sum(res0^2) / df0
       
       # information matrix under the null-hypothesis
       I0 <- object$information

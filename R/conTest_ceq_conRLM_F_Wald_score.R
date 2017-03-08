@@ -1,7 +1,7 @@
 conTest_ceq.conRLM <- function(object, test = "F", boot = "no", 
-                             R = 9999, p.distr = rnorm,  
-                             parallel = "no", ncpus = 1L, cl = NULL, 
-                             seed = 1234, verbose = FALSE, ...) {
+                               R = 9999, p.distr = rnorm,  
+                               parallel = "no", ncpus = 1L, cl = NULL, 
+                               seed = 1234, verbose = FALSE, ...) {
   
   if (!inherits(object, "conRLM")) {
     stop("object must be of class conRLM.")
@@ -23,7 +23,7 @@ conTest_ceq.conRLM <- function(object, test = "F", boot = "no",
   # unrestrikted scale estimate
   scale <- model.org$s
   # scale estimate used for the standard errors
-  tau <- sqrt(object$s2.unrestr)
+  stddev <- summary(model.org)$stddev
   # restriktion stuff
   CON  <- object$CON
   
@@ -63,6 +63,7 @@ conTest_ceq.conRLM <- function(object, test = "F", boot = "no",
                                         b.eqrestr = b.eqrestr, 
                                         b.restr   = b.unrestr, 
                                         b.unrestr = b.unrestr,
+                                        Amat      = Amat,
                                         scale     = scale, 
                                         test      = test, 
                                         cc        = ifelse(is.null(cc), 4.685061, cc))
@@ -77,8 +78,9 @@ conTest_ceq.conRLM <- function(object, test = "F", boot = "no",
       Wald2.out <- robustWaldXX(x         = X, 
                                 b.eqrestr = b.eqrestr, 
                                 b.restr   = b.unrestr, 
-                                b.unrestr = b.unrestr, 
-                                tau       = tau)
+                                b.unrestr = b.unrestr,
+                                Amat      = Amat,
+                                tau       = stddev)
       OUT <- append(CON, Wald2.out)
       
       OUT$df <- nrow(Amat)

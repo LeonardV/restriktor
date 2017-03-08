@@ -1,4 +1,6 @@
-robustWaldScores <- function(x, y, b.eqrestr, b.restr, b.unrestr, 
+## REF: Silvapull, M.J. (1996). Robust bounded influence tests against one-sided
+## hypotheses in general parametric models. Statistics and Probability Letters, 31, 45 - 50.
+robustWaldScores <- function(x, y, b.eqrestr, b.restr, b.unrestr, Amat,
                              scale, test = "wald", cc = 4.685061) { 
   
   test <- tolower(test)
@@ -6,24 +8,23 @@ robustWaldScores <- function(x, y, b.eqrestr, b.restr, b.unrestr,
   n <- dim(X)[1]
   p <- dim(X)[2]
   
-  #Calculate M, Q, V 
-  resA <- y - X %*% b.unrestr
-  rstarA <- resA / scale
+  ## Calculate M, Q, V 
+  res2   <- y - X %*% b.unrestr
+  rstar2 <- res2 / scale
+  
   # rho function
-  psiA <- tukeyChi(rstarA, cc, deriv = 1) 
-  psiderivA <- tukeyChi(rstarA, cc, deriv = 2) 
+  psi2      <- tukeyChi(rstar2, cc, deriv = 1) 
+  psideriv2 <- tukeyChi(rstar2, cc, deriv = 2) 
   
   #compute M 
-  weightsM <- psiderivA / scale
-#  weightsM <- psideriv0 / scale             
-  WM <- weightsM %*% rep(1, p)
+  weightsM <- psideriv2 / scale
+  WM  <- weightsM %*% rep(1, p)
   xwM <- X * WM
   M <- t(X) %*% xwM / n
   
   #compute Q 
-  weightsQ <- psiA^2
-#  weightsQ <- psi0^2
-  WQ <- weightsQ %*% rep(1, p)
+  weightsQ <- psi2^2
+  WQ  <- weightsQ %*% rep(1, p)
   xwQ <- X * WQ
   Q <- t(X) %*% xwQ / n
 
@@ -32,56 +33,65 @@ robustWaldScores <- function(x, y, b.eqrestr, b.restr, b.unrestr,
   #information matrix 
   V <- Minv %*% Q %*% t(Minv)
 
+  idx1 <- which(colSums(abs(Amat)) > 0L)
+  idx0 <- which(colSums(abs(Amat)) == 0L)
+  
+  V22 <- V[idx1, idx1]
+  V22.inv <- solve(V22)
+  
+  if (length(idx0) == 0) {
+    M221 <- M
+  } else {
+    M221 <- M[idx1,idx1] - M[idx1,idx0] %*% solve(M[idx0,idx0,drop=FALSE], 
+                                                  M[idx0,idx1,drop=FALSE])
+  }
+  
+  result.C <- M221 %*% V22 %*% t(M221)
+  
   # Wald test-statistic
   # REF: Silvapulle and Sen (2005, p 154)
   if (test == "wald") {
-     # Ts <- as.numeric(n * t(Amat%*%(b.restr - b.eqrestr)) %*% 
-     #                  Amat%*%solve(V)%*%t(Amat) %*% Amat%*%(b.restr - b.eqrestr))
-     # 
-    Dn  <- sqrt(n) * b.unrestr
-    D0n <- sqrt(n) * b.eqrestr
-    D1n <- sqrt(n) * b.restr
-    Ts <- (t(Dn - D0n) %*% solve(V) %*% (Dn - D0n)) - (t(Dn - D1n) %*% solve(V) %*% (Dn - D1n))
-    
-    # Ts <- (t(Amat%*%(Dn - D0n)) %*% (Amat%*%solve(V)%*%t(Amat)) %*% Amat%*%(Dn - D0n)) - 
-    #   (t(Amat%*%(Dn - D1n)) %*% (Amat%*%solve(V)%*%t(Amat)) %*% Amat%*%(Dn - D1n))
-    # 
-    test <- "Wald"
+   Dn0 <- sqrt(n) * b.eqrestr
+   Dn1 <- sqrt(n) * b.restr
+   Dn2 <- sqrt(n) * b.unrestr
+   
+   #Ts <- (t(Dn2 - Dn0) %*% solve(V) %*% (Dn2 - Dn0)) - (t(Dn2 - Dn1) %*% solve(V) %*% (Dn2 - Dn1))
+   Ts <- (t(Dn2 - Dn0)[idx1] %*% V22.inv %*% (Dn2 - Dn0)[idx1]) - 
+     (t(Dn2 - Dn1)[idx1] %*% V22.inv %*% (Dn2 - Dn1)[idx1]) 
+   
+   test <- "Wald" 
   } else if (test == "score") {
-    # Global score test-statistic
-    # REF: Robertson et al. (1988)
     res0 <- y - X %*% b.eqrestr
-    resA <- y - X %*% b.restr
+    res1 <- y - X %*% b.restr
     res2 <- y - X %*% b.unrestr
     
     rstar0 <- res0 / scale
-    rstarA <- resA / scale
+    rstar1 <- res1 / scale
     rstar2 <- res2 / scale
     
     # rho functions
     psi0 <- tukeyChi(rstar0, cc, deriv = 1)  
-    psiA <- tukeyChi(rstarA, cc, deriv = 1) 
-    psi2 <- tukeyChi(rstar2, cc, deriv = 1) 
+    psi1 <- tukeyChi(rstar1, cc, deriv = 1) 
     
     weightsZ0 <- psi0
     Z0 <- (t(X) %*% weightsZ0) / n  
-    weightsZA <- psiA
-    ZA <- (t(X) %*% weightsZA) / n  
+    weightsZ1 <- psi1
+    Z1 <- (t(X) %*% weightsZ1) / n  
     weightsZ2 <- psi2
     Z2 <- (t(X) %*% weightsZ2) / n  
     
-    result.C <- M %*% V %*% t(M)
+    Z0 <- sqrt(n) * Z0
+    Z1 <- sqrt(n) * Z1
+    Z2 <- sqrt(n) * Z2
+    
+    Ts <- (t(Z2 - Z0)[idx1] %*% solve(result.C) %*% (Z2 - Z0)[idx1]) - 
+        (t(Z2 - Z1)[idx1] %*% solve(result.C) %*% (Z2 - Z1)[idx1])
     
     #Ts <- as.numeric(n * t(Z0 - ZA) %*% solve(result.C) %*% c(Z0 - ZA))
-    Z0 <- sqrt(n) * Z0
-    ZA <- sqrt(n) * ZA
-    Z2 <- sqrt(n) * Z2
-    Ts <- (t(Z2 - Z0) %*% solve(result.C) %*% (Z2 - Z0)) - 
-      (t(Z2 - ZA) %*% solve(result.C) %*% (Z2 - ZA))
     
-    # Ts <- (t(Amat%*%(Z2 - Z0)) %*% (Amat%*%solve(result.C)%*%t(Amat)) %*% Amat%*%(Z2 - Z0)) - 
-    #   (t(Amat%*%(Z2 - ZA)) %*% (Amat%*%solve(result.C)%*%t(Amat)) %*% Amat%*%(Z2 - ZA))
-    # 
+    # Ts <- (t(Z2 - Z0) %*% solve(result.C) %*% (Z2 - Z0)) - 
+    #   (t(Z2 - ZA) %*% solve(result.C) %*% (Z2 - ZA))
+    
     test <- "Score"
   } 
 
@@ -134,11 +144,14 @@ robustFm <- function(x, y, b.unrestr, b.eqrestr, b.restr, scale,
 
 
 ## robust Wald statistic, Silvapulle (1992) ##
-robustWaldXX <- function(x, Amat, b.eqrestr, b.restr, b.unrestr, tau) {
+robustWaldXX <- function(x, b.eqrestr, b.restr, b.unrestr, Amat, tau) {
   X <- x
-  n <- dim(X)[1]
-  Ts <- as.numeric( 1/tau^2 * ( (t(b.unrestr - b.eqrestr) %*% (t(X)%*%X) %*% (b.unrestr - b.eqrestr)) -
-                     (t(b.unrestr - b.restr) %*% (t(X)%*%X) %*% (b.unrestr - b.restr)) ) )
+  
+  idx1 <- which(colSums(abs(Amat)) > 0L)
+  VCOV <- (t(X)%*%X)[idx1, idx1]
+  
+  Ts <- as.numeric( 1/tau^2 * ( (t(b.unrestr - b.eqrestr)[idx1] %*% VCOV %*% (b.unrestr - b.eqrestr)[idx1]) -
+                     (t(b.unrestr - b.restr)[idx1] %*% VCOV %*% (b.unrestr - b.restr)[idx1]) ) )
 
   OUT <- list(test = "Wald",
               Ts   = Ts)

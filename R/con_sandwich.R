@@ -15,7 +15,7 @@ bread <- function(x, ...) {
 
 bread.conLM <- function(x, ...) {
   cov <- attr(x$information, "inverted")
-  cov.unscaled <- 1/x$s2.restr * cov
+  cov.unscaled <- 1/x$s2 * cov
   return(cov.unscaled * as.vector(sum(summary(x$model.org)$df[1:2])))
 }
 

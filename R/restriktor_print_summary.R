@@ -48,11 +48,15 @@ print.summary.restriktor <- function(x, digits = max(3, getOption("digits") - 2)
                na.print = "NA")
   
   if (inherits(x, c("summary.conLM", "summary.conRLM"))) {
-    cat("\nResidual standard error:", format(signif(sqrt(x$s2.restr), 
+    if (inherits(x, "summary.conLM")) {
+      stddev <- sqrt(x$s2)
+    } else {
+      stddev <- x$stddev
+    }
+    cat("\nResidual standard error:", format(signif(stddev, 
                                                     digits)), "on", rdf, "degrees of freedom")
-  } 
+  }
   
-  #cat("\n")
   if (se.type == "standard") {
     cat("\nStandard errors:", se.type ,"\n")
   } else if (se.type == "const") {

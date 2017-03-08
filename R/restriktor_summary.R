@@ -115,8 +115,13 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
       stop("restriktor ERROR")
     }
   
-  ans$s2.unrestr <- z$s2.unrestr
-  ans$s2.restr   <- z$s2.restr
+  if (inherits(z, "conRLM")) {
+    ans$scale <- z$scale
+    ans$stddev <- z$stddev
+  } else {
+  #ans$s2.unrestr <- z$s2.unrestr
+  ans$s2 <- z$s2
+  }
   ans$rdf <- rdf
   
   if (inherits(z, c("conLM", "conRLM"))) {

@@ -364,6 +364,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                              b.eqrestr = b.eqrestr, 
                              b.restr   = b.restr, 
                              b.unrestr = b.unrestr,
+                             Amat      = AmatG,
                              scale     = scale, 
                              test      = "Wald", 
                              cc        = ifelse(is.null(call.org$c), 4.685061, call.org$c))
@@ -384,6 +385,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                              b.eqrestr = b.eqrestr, 
                              b.restr   = b.restr, 
                              b.unrestr = b.unrestr,
+                             Amat      = Amat,
                              scale     = scale, 
                              test      = "Wald", 
                              cc        = ifelse(is.null(call.org$c), 4.685061, call.org$c))
@@ -416,6 +418,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                b.eqrestr = b.restr, 
                                b.restr   = b.unrestr,
                                b.unrestr = b.unrestr,
+                               Amat      = Amat,
                                scale     = scale, 
                                test      = "Wald", 
                                cc        = ifelse(is.null(call.org$c), 4.685061, call.org$c))
@@ -437,7 +440,8 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                  y         = y,
                                  b.eqrestr = b.restr, 
                                  b.restr   = b.restr.alt,
-                                 b.unrestr = b.unrestr,
+                                 b.unrestr = b.restr.alt,
+                                 Amat      = Amat,
                                  scale     = scale, 
                                  test      = "Wald", 
                                  cc        = ifelse(is.null(call.org$c), 4.685061, call.org$c))
@@ -604,7 +608,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   # unconstrained covariance matrix
   Sigma <- object$Sigma
   # unrestrikted scale estimate for the standard deviation: 
-  tau <- sqrt(object$s2.unrestr)
+  stddev <- summary(model.org)$sigma
   # parameter estimates
   b.unrestr <- object$b.unrestr
   b.restr <- object$b.restr
@@ -676,8 +680,9 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     Ts <- robustWaldXX(x         = X, 
                        b.eqrestr = b.eqrestr, 
                        b.restr   = b.restr, 
-                       b.unrestr = b.unrestr, 
-                       tau       = tau)$Ts
+                       b.unrestr = b.unrestr,
+                       Amat      = AmatG,
+                       tau       = stddev)$Ts
   } else if (type == "A") {
     CALL <- c(call.org, list(x = X, y = y, weights = weights,
                              Amat = Amat, bvec = bvec, 
@@ -691,14 +696,16 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                        b.eqrestr = b.eqrestr, 
                        b.restr   = b.restr, 
                        b.unrestr = b.unrestr, 
-                       tau       = tau)$Ts
+                       Amat      = Amat,
+                       tau       = stddev)$Ts
   } else if (type == "B") {
     if (meq.alt == 0L) {
       Ts <- robustWaldXX(x         = X, 
                          b.eqrestr = b.restr, 
                          b.restr   = b.unrestr, 
                          b.unrestr = b.unrestr, 
-                         tau       = tau)$Ts
+                         Amat      = Amat,
+                         tau       = stddev)$Ts
     } else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt > 0L && meq.alt <= meq) {
@@ -714,8 +721,9 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
         Ts <- robustWaldXX(x         = X, 
                            b.eqrestr = b.restr, 
                            b.restr   = b.restr.alt, 
-                           b.unrestr = b.restr.alt, 
-                           tau       = tau)$Ts
+                           b.unrestr = b.restr.alt,
+                           Amat      = Amat,
+                           tau       = stddev)$Ts
       } else {
         stop("Restriktor ERROR: neq.alt must not be larger than neq.")
       }
@@ -916,6 +924,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                              b.eqrestr = b.eqrestr, 
                              b.restr   = b.restr, 
                              b.unrestr = b.unrestr,
+                             Amat      = AmatG,
                              scale     = scale, 
                              test      = "score", 
                              cc        = ifelse(is.null(call.org$c), 4.685061, call.org$c))
@@ -936,6 +945,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                              b.eqrestr = b.eqrestr, 
                              b.restr   = b.restr, 
                              b.unrestr = b.unrestr,
+                             Amat      = Amat,
                              scale     = scale, 
                              test      = "score", 
                              cc        = ifelse(is.null(call.org$c), 4.685061, call.org$c))
@@ -960,7 +970,8 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                                b.eqrestr = b.restr, 
                                b.restr   = b.unrestr,
                                b.unrestr = b.unrestr,
-                               scale     = scale, 
+                               scale     = scale,
+                               Amat      = Amat,
                                test      = "score", 
                                cc        = ifelse(is.null(call.org$c), 4.685061, call.org$c))
       Ts <- out2$Ts
@@ -981,8 +992,9 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                                  y         = y,  
                                  b.eqrestr = b.restr, 
                                  b.restr   = b.restr.alt,
-                                 b.unrestr = b.unrestr,
+                                 b.unrestr = b.restr.alt,
                                  scale     = scale, 
+                                 Amat      = Amat,
                                  test      = "score", 
                                  cc        = ifelse(is.null(call.org$c), 4.685061, call.org$c))
         Ts <- out3$Ts

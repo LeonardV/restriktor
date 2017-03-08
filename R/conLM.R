@@ -39,7 +39,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   # model summary
   so <- summary(object)
   # unconstrained residual variance (weighted)
-  s2.unrestr <- so$sigma^2
+  s2 <- so$sigma^2
   # weigths
   weights <- weights(object)
   # unconstrained estimates
@@ -157,7 +157,6 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   # check if the constraints are not in line with the data, else skip optimization
   if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) & meq == 0) {
     b.restr  <- b.unrestr
-    s2.restr <- s2.unrestr
     
     OUT <- list(CON         = CON,
                 call        = mc,
@@ -171,8 +170,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                 df.residual = object$df.residual,
                 R2.org      = so$r.squared, 
                 R2.reduced  = so$r.squared,
-                s2.unrestr  = s2.unrestr, 
-                s2.restr    = s2.unrestr, 
+                s2          = s2, 
                 loglik      = ll.unrestr, 
                 Sigma       = Sigma,
                 constraints = Amat, 
@@ -239,9 +237,9 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
       df.residual <- n - (p - qr(Amat[0:meq,])$rank)
       # compute weighted residuals
       if (is.null(weights)) {
-        s2.restr <- sum(residuals^2) / df.residual  
+        s2 <- sum(residuals^2) / df.residual  
       } else {
-        s2.restr <- sum(weights * residuals^2) / df.residual
+        s2 <- sum(weights * residuals^2) / df.residual
       }
     } else { #mlm <FIXME>
       stop("mlm not implemented (yet)")
@@ -259,8 +257,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                 df.residual = object$df.residual,
                 R2.org      = so$r.squared, 
                 R2.reduced  = R2.reduced,
-                s2.unrestr  = s2.unrestr, 
-                s2.restr    = s2.restr, 
+                s2          = s2,
                 loglik      = ll.restr, 
                 Sigma       = Sigma,
                 constraints = Amat, 
@@ -276,7 +273,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   OUT$model.org <- object
   # type standard error
   OUT$se <- se
-  OUT$information <- 1/s2.restr * crossprod(X)
+  OUT$information <- 1/s2 * crossprod(X)
   # compute standard errors based on the augmented inverted information matrix or
   # based on the standard bootstrap or model.based bootstrap
   if (se != "none") {

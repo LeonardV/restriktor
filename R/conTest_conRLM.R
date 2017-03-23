@@ -37,7 +37,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
-  Sigma <- object$Sigma
+  #Sigma <- object$Sigma
   # unconstrained scale
   scale <- model.org$s
   # parameter estimates
@@ -288,7 +288,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
-  Sigma <- object$Sigma
+  #Sigma <- object$Sigma
   # unconstrained scale
   scale <- model.org$s
   # parameter estimates
@@ -606,9 +606,9 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
-  Sigma <- object$Sigma
+  #Sigma <- object$Sigma
   # unrestrikted scale estimate for the standard deviation: 
-  stddev <- summary(model.org)$sigma
+  stddev <- summary(model.org)$stddev
   # parameter estimates
   b.unrestr <- object$b.unrestr
   b.restr <- object$b.restr
@@ -683,6 +683,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                        b.unrestr = b.unrestr,
                        Amat      = AmatG,
                        tau       = stddev)$Ts
+    
   } else if (type == "A") {
     CALL <- c(call.org, list(x = X, y = y, weights = weights,
                              Amat = Amat, bvec = bvec, 
@@ -849,7 +850,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
-  Sigma <- object$Sigma
+  #Sigma <- object$Sigma
   # unconstrained scale
   scale <- model.org$s
   # parameter estimates

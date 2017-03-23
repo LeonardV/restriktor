@@ -11,7 +11,7 @@ conTest_ceq.conLM <- function(object, test = "F", boot = "no",
   }
   
   test <- tolower(test)
-  stopifnot(test %in% c("f","wald","score"))
+  stopifnot(test %in% c("f","wald","lrt","score"))
   
   CON  <- object$CON
   CON$Amat <- Amat <- object$constraints
@@ -84,7 +84,17 @@ conTest_ceq.conLM <- function(object, test = "F", boot = "no",
       OUT$pvalue    <- 1 - pchisq(OUT$Ts, df = OUT$df)
       OUT$b.restr   <- object$b.restr
       OUT$b.unrestr <- object$b.unrestr
-    } else {
+    } else if (test == "lrt") {
+      OUT <- CON
+      OUT$test <- "LRT"
+      ll0 <- object$loglik
+      ll1 <- logLik(object$model.org)
+      OUT$Ts <- -2*(ll0 - ll1)
+      OUT$df <- nrow(Amat)
+      OUT$pvalue    <- 1 - pchisq(OUT$Ts, df = OUT$df)
+      OUT$b.restr   <- object$b.restr
+      OUT$b.unrestr <- object$b.unrestr
+      } else {
       stop("restriktor ERROR: test ", sQuote(test), " not (yet) implemented.")
     }
   } else if (#length(CON$ceq.nonlinear.idx) == 0L &&

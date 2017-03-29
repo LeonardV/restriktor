@@ -17,7 +17,7 @@ conTest_ceq.conRLM <- function(object, test = "F", boot = "no",
   # tukey's bisquare tuning constant
   cc <- model.org$call[["c"]]
   # coefficients under equality restriktions
-  b.eqrestr <- coef(object)
+  b.eqrestr <- object$b.restr
   # unrestrikted coefficients
   b.unrestr <- coef(model.org)
   # unrestrikted scale estimate

@@ -6,10 +6,16 @@ goric <- function(object, ..., digits = max(3, getOption("digits") - 2)) {
   } else {
     objectlist <- object
   }
+  
   isrestr <- sapply(objectlist, function(x) inherits(x, "restriktor"))
   conlist <- objectlist[isrestr]  
   isSummary <- lapply(conlist, function(x) summary(x))
   
+  wt.check <- unlist(lapply(conlist, function(x) attr(x$wt.bar, "method") == "none"))
+  wt.check.idx <- which(wt.check)
+  if(length(wt.check.idx) > 0L) {
+    stop("Restriktor ERROR: for model ", wt.check.idx, " no mixing weights are available.")
+  }
   CALL <- as.list(mc)
   CALL[[1]] <- NULL
   
@@ -26,7 +32,7 @@ goric <- function(object, ..., digits = max(3, getOption("digits") - 2)) {
   
   delta <- df$goric - min(df$goric)
   goric.weights <- exp(-delta / 2) / sum(exp(-delta / 2))
-  df$goric.weights <- goric.weights
+  df$goric.weights <- sprintf("%.5f",goric.weights)
   
   print(format(df, digits = digits, scientific = FALSE), 
         print.gap = 2, quote = FALSE)

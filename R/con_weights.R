@@ -103,10 +103,11 @@ con_weights_boot <- function(VCOV, Amat, meq,
   dimL <- ncol(VCOV) - iact
   wt.bar <- sapply(1:(ncol(VCOV) + 1), function(x) sum(x == (dimL + 1))) / R
   
-  idx.min <- (ncol(Amat) - nrow(Amat)) + 1 
-  idx.max <- (ncol(Amat) - meq) + 1 
-  wt.bar <- wt.bar[idx.min:idx.max]
-  
+  # if ((ncol(Amat) + 1) == length(wt.bar)) { 
+  #   idx.min <- (ncol(Amat) - nrow(Amat)) + 1 
+  #   idx.max <- (ncol(Amat) - meq) + 1 
+  #   wt.bar <- wt.bar[idx.min:idx.max]
+  # }
   wt.bar
 }
 

@@ -1,6 +1,9 @@
 # mixture of F distributions.
 con_pvalue_Fbar <- function(wt.bar, Ts.org, df.residual, type = "A",
                             Amat, bvec, meq = 0L, meq.alt = 0L) {
+  
+  wt.bar.idx <- which(wt.bar != 0)
+  wt.bar <- wt.bar[wt.bar.idx] 
   if (type == "global") {
     # compute df
     bvecG <- attr(bvec, "bvec.global")

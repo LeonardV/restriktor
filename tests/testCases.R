@@ -35,40 +35,40 @@ linmod1fac <- lm(model3, data = DATA)
 linmod2fac <- lm(model4, data = DATA)
 
 # check normal functionality mixing weights and compare with bootstrapped mixing weights
-restr1a <- restriktor(linmod1, constraints = "x2 > 0; x3 > 0; x4 == 0", se = "none")
-restr1b <- restriktor(linmod1, constraints = "x2 > 0; x3 > 0; x4 == 0", se = "none", 
-                      mix.weights = "boot", mix.bootstrap = 19999, seed = 123)
-if (!all(abs(restr1a$wt.bar - restr1b$wt.bar) < .01)) {
-  stop("mixing weights are not approx. equal")
-}
-
-restr1a <- restriktor(linmod2, constraints = "x2 > 0; x3 > 0; x4 == 0", se = "none")
-restr1b <- restriktor(linmod2, constraints = "x2 > 0; x3 > 0; x4 == 0", se = "none", 
-                      mix.weights = "boot", mix.bootstrap = 19999, seed = 123)
-if (!all(abs(restr1a$wt.bar - restr1b$wt.bar) < .01)) {
-  stop("mixing weights are not approx. equal")
-}
-
-restr1a <- restriktor(linmod3, constraints = "x2 > 0; x3 > 0; x4 == 0", se = "none")
-restr1b <- restriktor(linmod3, constraints = "x2 > 0; x3 > 0; x4 == 0", se = "none", 
-                      mix.weights = "boot", mix.bootstrap = 19999, seed = 123)
-if (!all(abs(restr1a$wt.bar - restr1b$wt.bar) < .01)) {
-  stop("mixing weights are not approx. equal")
-}
-
-restr1a <- restriktor(linmod1wt, constraints = "x2 > 0; x3 > 0; x4 == 0", se = "none")
-restr1b <- restriktor(linmod1wt, constraints = "x2 > 0; x3 > 0; x4 == 0", se = "none", 
-                      mix.weights = "boot", mix.bootstrap = 19999, seed = 123)
-if (!all(abs(restr1a$wt.bar - restr1b$wt.bar) < .01)) {
-  stop("mixing weights are not approx. equal")
-}
-
-restr1a <- restriktor(linmod2wt, constraints = "x2 > 0; x3 > 0; x4 == 0", se = "none")
-restr1b <- restriktor(linmod2wt, constraints = "x2 > 0; x3 > 0; x4 == 0", se = "none", 
-                      mix.weights = "boot", mix.bootstrap = 19999, seed = 123)
-if (!all(abs(restr1a$wt.bar - restr1b$wt.bar) < .01)) {
-  stop("mixing weights are not approx. equal")
-}
+# restr1a <- restriktor(linmod1, constraints = "x2 > 0; x3 > 0; x4 == 0", se = "none")
+# restr1b <- restriktor(linmod1, constraints = "x2 > 0; x3 > 0; x4 == 0", se = "none", 
+#                       mix.weights = "boot", mix.bootstrap = 19999, seed = 123)
+# if (!all(abs(restr1a$wt.bar - restr1b$wt.bar) < .01)) {
+#   stop("mixing weights are not approx. equal")
+# }
+# 
+# restr1a <- restriktor(linmod2, constraints = "x2 > 0; x3 > 0; x4 == 0", se = "none")
+# restr1b <- restriktor(linmod2, constraints = "x2 > 0; x3 > 0; x4 == 0", se = "none", 
+#                       mix.weights = "boot", mix.bootstrap = 19999, seed = 123)
+# if (!all(abs(restr1a$wt.bar - restr1b$wt.bar) < .01)) {
+#   stop("mixing weights are not approx. equal")
+# }
+# 
+# restr1a <- restriktor(linmod3, constraints = "x2 > 0; x3 > 0; x4 == 0", se = "none")
+# restr1b <- restriktor(linmod3, constraints = "x2 > 0; x3 > 0; x4 == 0", se = "none", 
+#                       mix.weights = "boot", mix.bootstrap = 19999, seed = 123)
+# if (!all(abs(restr1a$wt.bar - restr1b$wt.bar) < .01)) {
+#   stop("mixing weights are not approx. equal")
+# }
+# 
+# restr1a <- restriktor(linmod1wt, constraints = "x2 > 0; x3 > 0; x4 == 0", se = "none")
+# restr1b <- restriktor(linmod1wt, constraints = "x2 > 0; x3 > 0; x4 == 0", se = "none", 
+#                       mix.weights = "boot", mix.bootstrap = 19999, seed = 123)
+# if (!all(abs(restr1a$wt.bar - restr1b$wt.bar) < .01)) {
+#   stop("mixing weights are not approx. equal")
+# }
+# 
+# restr1a <- restriktor(linmod2wt, constraints = "x2 > 0; x3 > 0; x4 == 0", se = "none")
+# restr1b <- restriktor(linmod2wt, constraints = "x2 > 0; x3 > 0; x4 == 0", se = "none", 
+#                       mix.weights = "boot", mix.bootstrap = 19999, seed = 123)
+# if (!all(abs(restr1a$wt.bar - restr1b$wt.bar) < .01)) {
+#   stop("mixing weights are not approx. equal")
+# }
 
 
 # check normal functionality robust standard errors

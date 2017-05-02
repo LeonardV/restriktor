@@ -149,13 +149,14 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
     
     # compute penalty term based on simulated level probabilities (wt.bar)
     # The value 1 is the penalty for estimating the variance/dispersion parameter.
-    if (attr(wt.bar, "method") == "boot") {
-      if (!(ncol(Amat) + 1 == length(wt.bar))) {
-        PT <- 1 + sum(0 : ncol(Amat) * wt.bar)
-      } else {
-        warning("restriktor WARNING: unable to compute penalty for GORIC.")
-        PT <- as.numeric(NA)
-      }
+    if (attr(wt.bar, "method") == "boot") { 
+      #if ((ncol(Amat) + 1 == length(wt.bar))) { 
+        PT <- 1 + sum(0 : ncol(Amat) * wt.bar)  
+      #} else {
+        #PT <- 1 + sum((1 : ncol(Amat)) * wt.bar[-1]) 
+       # warning("restriktor WARNING: unable to compute penalty for GORIC.")
+        #PT <- as.numeric(NA)
+      #}
       # unconstrained case
     } else if (attr(wt.bar, "method") == "pmvnorm" && all(c(Amat) == 0)) {
       PT <- p + 1

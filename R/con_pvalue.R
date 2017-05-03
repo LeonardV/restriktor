@@ -99,6 +99,8 @@ con_pvalue_boot_parametric <- function(model, Ts.org,
   old.options <- options(); options(warn = warn)
   
   model.org <- model$model.org
+  fam <- family(model.org)
+  
   X <- model.matrix(model)[,,drop=FALSE]
   n <- dim(X)[1]
 
@@ -109,11 +111,23 @@ con_pvalue_boot_parametric <- function(model, Ts.org,
   
   ## shift y by q to relocate the vertex to its origin.
   if (!all(bvec == 0)) {
+    if (!(fam$family %in% c("gaussian"))) {
+      stop("Restriktor ERROR: for the ", sQuote(fam$family), " family the vertex cannot be relocated to its origin (yet).")
+    }
     #q <- t(R) %*% solve(R%*%t(R)) %*% bvec
     shift.q <- MASS::ginv(Amat) %*% bvec
     shift.q[abs(shift.q) < ifelse(is.null(control$tol), 
                                   sqrt(.Machine$double.eps), control$tol)] <- 0L
-    ystar.shift <- (X %*% -shift.q)
+    
+    # <FIXME>
+    if (fam$family == "gaussian") {
+      ystar.shift <- (X %*% -shift.q)
+    } else if (fam$family == "binomial") {
+       
+    } else if (fam$family == "poission") {
+       
+    }
+    # </FIXME>
   } else {
     ystar.shift <- 0L
   }

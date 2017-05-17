@@ -2,8 +2,6 @@
 con_pvalue_Fbar <- function(wt.bar, Ts.org, df.residual, type = "A",
                             Amat, bvec, meq = 0L, meq.alt = 0L) {
   
-  wt.bar.idx <- which(wt.bar != 0)
-  wt.bar <- wt.bar[wt.bar.idx] 
   if (type == "global") {
     # compute df
     bvecG <- attr(bvec, "bvec.global")
@@ -16,20 +14,36 @@ con_pvalue_Fbar <- function(wt.bar, Ts.org, df.residual, type = "A",
     # 1 - pfbar(Ts.org, df1 = r-q+i, df2 = df.residual, wt.bar = rev(wt.bar))
     
     # p value based on the chi-square distribution
-    pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual, 
-                        wt.bar = rev(wt.bar))
+    if (length(df.bar) != length(wt.bar)) {
+      pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual, 
+                          wt.bar = rev(wt.bar[(meq+1):(meq+length(df.bar))]))
+    } else {
+      pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual, 
+                          wt.bar = rev(wt.bar))
+    }
   } else if(type == "A") {
     # compute df
     df.bar <- 0:(nrow(Amat) - meq)
     # p value based on F-distribution or chi-square distribution
-    pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
-                        wt.bar = rev(wt.bar))
+    if (length(df.bar) != length(wt.bar)) {
+      pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
+                          wt.bar = rev(wt.bar[(meq+1):(meq+length(df.bar))]))
+    } else {
+      pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
+                          wt.bar = rev(wt.bar))
+    }
   } else if (type == "B") {
     # compute df
     df.bar <- (meq - meq.alt):(nrow(Amat) - meq.alt)#meq:nrow(Amat)
     # p value based on F-distribution or chi-square distribution
-    pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
-                        wt.bar = wt.bar)
+    
+    if (length(df.bar) != length(wt.bar)) {
+      pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
+                          wt.bar = wt.bar[(meq+1):(meq+length(df.bar))]) 
+    } else {
+      pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
+                          wt.bar = wt.bar) 
+    }
   } else  {
     stop("hypothesis test type ", sQuote(type), " unknown.")
   }

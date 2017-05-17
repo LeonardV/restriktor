@@ -92,6 +92,11 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
     meq  <- 0L
   } 
   
+  if (length(Amat) == 0L) {
+    Amat <- rbind(rep(0L, p))
+    bvec <- rep(0L, nrow(Amat))
+    meq  <- 0L
+  }
   
   # compute the reduced row-echelon form of the constraints matrix
   rAmat <- GaussianElimination(t(Amat))

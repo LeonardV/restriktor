@@ -88,6 +88,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
     meq  <- 0L
   } 
   
+  # if only new parameters are defined and no constraints
   if (length(Amat) == 0L) {
     Amat <- rbind(rep(0L, p))
     bvec <- rep(0L, nrow(Amat))
@@ -99,17 +100,17 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   if (mix.weights == "pmvnorm") {
     if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
       stop(paste("Restriktor ERROR: The constraint matrix must have full row-rank", 
-                 "\n  (choose e.g. rows", paste(rAmat$pivot, collapse = " "), ",or try to set mix.weights = \"boot\")"))
+                 "\n  (choose e.g. rows", paste(rAmat$pivot, collapse = " "),")."))
     }
   } 
   else if (rAmat$rank < nrow(Amat) && 
              !(se %in% c("none", "boot.model.based", "boot.standard")) && 
              rAmat$rank != 0L) {
-      se <- "none"
-      warning(paste("Restriktor Warning: No standard errors could be computed. 
-                      The constraint matrix must have full row-rank ( choose e.g. rows", 
-                    paste(rAmat$pivot, collapse = " "), "), 
-                      Try se = \"boot.model.based\" or \"boot.standard\"."))  
+    se <- "none"
+    warning(paste("Restriktor Warning: No standard errors could be computed. 
+                    The constraint matrix must have full row-rank ( choose e.g. rows", 
+                  paste(rAmat$pivot, collapse = " "), "), 
+                    Try se = \"boot.model.based\" or \"boot.standard\"."))  
   }
   
   timing$constraints <- (proc.time()[3] - start.time)

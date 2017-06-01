@@ -103,7 +103,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   if (mix.weights == "pmvnorm") {
     if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
       stop(paste("Restriktor ERROR: The constraint matrix must have full row-rank", 
-                 "\n  (choose e.g. rows", paste(rAmat$pivot, collapse = " "), ",or try to set mix.weights = \"boot\")"))
+                 "\n  (choose e.g. rows", paste(rAmat$pivot, collapse = " "),")."))
     }
   } else {
     if (rAmat$rank < nrow(Amat) && 

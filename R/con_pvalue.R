@@ -126,7 +126,7 @@ con_pvalue_boot_parametric <- function(model, Ts.org,
   ## shift y by q to relocate the vertex to its origin.
   if (!all(bvec == 0)) {
     if (!(fam$family %in% c("gaussian"))) {
-      stop("Restriktor ERROR: for the ", sQuote(fam$family), " family the vertex cannot be relocated to its origin (yet).")
+      stop("Restriktor ERROR: for the ", sQuote(fam$family), " family, relocated cones are not supported (yet).")
     }
     #q <- t(R) %*% solve(R%*%t(R)) %*% bvec
     shift.q <- MASS::ginv(Amat) %*% bvec

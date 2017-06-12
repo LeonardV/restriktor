@@ -10,8 +10,8 @@ normal models and generalized linear models.}
   \tabular{ll}{
   Package: \tab restriktor\cr
   Type: \tab Package\cr
-  Version: \tab 0.1-60\cr
-  Date: \tab 2017-02-15\cr
+  Version: \tab 0.1-70\cr
+  Date: \tab 2017-06-12\cr
   License: \tab GPL (>=2)\cr
   LazyLoad: \tab yes\cr
   }
@@ -81,8 +81,8 @@ idx <- which(DATA$Group == "Control")
 DATA <- DATA[-idx, ]
 
 ## unrestricted linear model 
-fit_lm <- lm(Age ~ -1 + Group, data = DATA)
-summary(fit_lm)
+fit.lm <- lm(Age ~ -1 + Group, data = DATA)
+summary(fit.lm)
 
 ## restricted linear model with restriktions that the walking 
 ## exercises would not have a negative effect of increasing the 
@@ -91,8 +91,8 @@ summary(fit_lm)
 myConstraints <- ' GroupActive  < GroupPassive; 
                    GroupPassive < GroupNo '
                    
-fit_con <- restriktor(fit_lm, constraints = myConstraints)
-summary(fit_con)
+fit.con <- restriktor(fit.lm, constraints = myConstraints)
+summary(fit.con)
 
 }
 

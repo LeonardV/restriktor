@@ -144,25 +144,25 @@ See for example \code{\link{conTestF}} for all available arguments.
   \item{Amat}{constraints matrix.}
   \item{bvec}{vector of right-hand side elements.}
   \item{meq}{number of equality constraints.}
-  \item{meq_alt}{same as input neq.alt.}
+  \item{meq.alt}{same as input neq.alt.}
   \item{iact}{number of active constraints.}
   \item{type}{same as input.}
   \item{test}{same as input.}
   \item{Ts}{test-statistic value.}
   \item{df.residual}{the residual degrees of freedom.}
   \item{pvalue}{tail probability for \code{Ts}.}
-  \item{b_eqrestr}{equality restricted regression coefficients. 
+  \item{b.eqrestr}{equality restricted regression coefficients. 
   Only available for \code{type = "A"} and \code{type = "global"}, 
   else \code{b.eqrestr = NULL}.}
-  \item{b_unrestr}{unrestricted regression coefficients.}
-  \item{b_restr}{restricted regression coefficients.}
-  \item{b_restr_alt}{restricted regression coefficients under HA 
+  \item{b.unrestr}{unrestricted regression coefficients.}
+  \item{b.restr}{restricted regression coefficients.}
+  \item{b.restr.alt}{restricted regression coefficients under HA 
   if some equality constraints are maintained.}
   \item{Sigma}{variance-covariance matrix of unrestricted model.}
-  \item{R2_org}{unrestricted R-squared.}
-  \item{R2_reduced}{restricted R-squared.}
+  \item{R2.org}{unrestricted R-squared.}
+  \item{R2.reduced}{restricted R-squared.}
   \item{boot}{same as input.}
-  \item{model_org}{original model.}
+  \item{model.org}{original model.}
 }
 
 \references{
@@ -219,11 +219,11 @@ equality constraints in the linear regression model.
 DATA1 <- subset(ZelazoKolb1972, Group != "Control")
 
 # fit unrestricted linear model
-fit1_lm <- lm(Age ~ -1 + Group, data = DATA1)
+fit1.lm <- lm(Age ~ -1 + Group, data = DATA1)
 
 # the variable names can be used to impose constraints on
 # the corresponding regression parameters.
-coef(fit1_lm)
+coef(fit1.lm)
 
 # constraint syntax: assuming that the walking 
 # exercises would not have a negative effect of increasing the 
@@ -231,13 +231,13 @@ coef(fit1_lm)
 myConstraints1 <- ' GroupActive  < GroupPassive; 
                     GroupPassive < GroupNo '
 
-conTest(fit1_lm, myConstraints1)
+conTest(fit1.lm, myConstraints1)
 
 
 # another way is to first fit the restricted model
-fit_restr1 <- restriktor(fit1_lm, constraints = myConstraints1)
+fit.restr1 <- restriktor(fit1.lm, constraints = myConstraints1)
 
-conTest(fit_restr1)
+conTest(fit.restr1)
 
 \dontrun{ 
   # Or in matrix notation.
@@ -246,7 +246,7 @@ conTest(fit_restr1)
   myRhs1 <- rep(0L, nrow(Amat1)) 
   myNeq1 <- 0
   
-  conTest(fit1_lm, constraints = Amat1,
+  conTest(fit1.lm, constraints = Amat1,
           rhs = myRhs1, neq = myNeq1)
 }            
 
@@ -262,8 +262,8 @@ y <- rnorm(n * nm, rep(means, each = n))
 DATA2 <- data.frame(y, group)
 
 # fit unrestricted linear model
-fit2_lm <- lm(y ~ -1 + group, data = DATA2)
-coef(fit2_lm)
+fit2.lm <- lm(y ~ -1 + group, data = DATA2)
+coef(fit2.lm)
 
 ## example 2: increasing means
 myConstraints2 <- ' group1 < group2
@@ -274,14 +274,14 @@ myConstraints2 <- ' group1 < group2
 # probability based on the parametric bootstrap. We only generate 9 
 # bootstrap samples in this example; in practice you may wish to 
 # use a much higher number.
-conTest(fit2_lm, constraints = myConstraints2, type = "A", 
+conTest(fit2.lm, constraints = myConstraints2, type = "A", 
         boot = "parametric", R = 9)
 
 
 # or fit restricted linear model
-fit2_con <- restriktor(fit2_lm, constraints = myConstraints2)
+fit2.con <- restriktor(fit2.lm, constraints = myConstraints2)
 
-conTest(fit2_con)
+conTest(fit2.con)
 
 \dontrun{ 
   # increasing means in matrix notation.
@@ -291,7 +291,7 @@ conTest(fit2_con)
   myRhs2 <- rep(0L, nrow(Amat2)) 
   myNeq2 <- 0
 
-  conTest(fit2_con, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
+  conTest(fit2.con, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
           type = "A", boot = "parametric", R = 9)
 }            
 
@@ -300,11 +300,11 @@ myConstraints3 <- ' group1 == group2
                     group2 == group3
                     group3 == group4 '
 
-conTest(fit2_lm, constraints = myConstraints3)
+conTest(fit2.lm, constraints = myConstraints3)
 
 # or
-fit3_con <- restriktor(fit2_lm, constraints = myConstraints3)
-conTest(fit3_con)
+fit3.con <- restriktor(fit2.lm, constraints = myConstraints3)
+conTest(fit3.con)
 
 
 ## example 4:
@@ -312,16 +312,16 @@ conTest(fit3_con)
 myConstraints4 <- ' group1 == group2
                     group3  < group4 '
 
-conTest(fit2_lm, constraints = myConstraints4, type = "B", neq.alt = 1)
+conTest(fit2.lm, constraints = myConstraints4, type = "B", neq.alt = 1)
 
 # fit resticted model and compute model-based bootstrapped 
 # standard errors. We only generate 9 bootstrap samples in this 
 # example; in practice you may wish to use a much higher number.
 # Note that, a warning message may be thrown because the number of 
 # bootstrap samples is too low.
-fit4_con <- restriktor(fit2_lm, constraints = myConstraints4, 
+fit4.con <- restriktor(fit2.lm, constraints = myConstraints4, 
                        se = "boot.model.based", B = 9)
-conTest(fit4_con, type = "B", neq.alt = 1)
+conTest(fit4.con, type = "B", neq.alt = 1)
 
 
 ## example 5:
@@ -338,16 +338,16 @@ y <- b0 + b1*X + b2*Z + b3*X*Z + rnorm(n, 0, sd = 10)
 DATA3 = data.frame(cbind(y, X, Z))
 
 # fit linear model with interaction
-fit5_lm <- lm(y ~ X*Z, data = DATA3)
+fit5.lm <- lm(y ~ X*Z, data = DATA3)
 
 # constraint syntax
 myConstraints5 <- ' AVE := X + 16.86137*X.Z; 
                     AVE > 0 '
 
-conTest(fit5_lm, constraints = myConstraints5)
+conTest(fit5.lm, constraints = myConstraints5)
 
 # or
-fit5_con <- restriktor(fit5_lm, constraints = ' AVE := X + 16.86137*X.Z; 
+fit5.con <- restriktor(fit5.lm, constraints = ' AVE := X + 16.86137*X.Z; 
                                                 AVE > 0 ')
-conTest(fit5_con)
+conTest(fit5.con)
 }

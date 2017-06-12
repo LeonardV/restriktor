@@ -208,8 +208,8 @@ with the following items:
 \item{parTable}{a parameter table with information about the 
  observed variables in the model and the imposed restrictions.}
 \item{wt.bar}{chi-bar-square mixing weights or a.k.a. level probabilities.}
-\item{b_unrestr}{unrestricted regression coefficients.}
-\item{b_restr}{restricted regression coefficients.}
+\item{b.unrestr}{unrestricted regression coefficients.}
+\item{b.restr}{restricted regression coefficients.}
 \item{residuals}{restricted residuals.}
 \item{fitted}{restricted fitted mean values.}
 \item{wresid}{a working residual, weighted for "inv.var" weights 
@@ -220,10 +220,10 @@ only (rlm only)}
 \item{psi}{the psi function with parameters substituted (rlm only). 
  Only bisquare for now.}
 \item{df.residual}{the residual degrees of freedom}
-\item{R2_org}{unrestricted R-squared.}
-\item{R2_reduced}{restricted R-squared.}
-\item{s2_unrestr}{mean squared error of unrestricted model.}
-\item{s2_restr}{mean squared error of restricted model.}
+\item{R2.org}{unrestricted R-squared.}
+\item{R2.reduced}{restricted R-squared.}
+\item{s2.unrestr}{mean squared error of unrestricted model.}
+\item{s2.restr}{mean squared error of restricted model.}
 \item{loglik}{restricted log-likelihood.}
 \item{Sigma}{variance-covariance matrix of unrestricted model.}
 \item{constraints}{matrix with restrictions.}
@@ -234,7 +234,7 @@ only (rlm only)}
 \item{iter}{number of iteration needed for convergence (rlm only).}
 \item{bootout}{object of class boot. Only available if bootstrapped
 standard errors are requested, else bootout = NULL.} 
-\item{model_org}{original model.}
+\item{model.org}{original model.}
 \item{se}{as input. This information is needed in the summary 
 function.}
 \item{information}{observed information matrix with the inverted 
@@ -269,18 +269,18 @@ Wiley, New York
 DATA1 <- subset(ZelazoKolb1972, Group != "Control")
 
 # fit unrestricted linear model
-fit1_lm <- lm(Age ~ -1 + Group, data = DATA1)
+fit1.lm <- lm(Age ~ -1 + Group, data = DATA1)
 
 # the variable names can be used to impose restrictions on
 # the corresponding regression parameters.
-coef(fit1_lm)
+coef(fit1.lm)
 
 # restricted linear model with restrictions that the walking 
 # exercises would not have a negative effect of increasing the 
 # mean age at which a child starts to walk. 
-fit1_con <- restriktor(fit1_lm, constraints = ' GroupActive  < GroupPassive; 
+fit1.con <- restriktor(fit1.lm, constraints = ' GroupActive  < GroupPassive; 
                                                 GroupPassive < GroupNo ')
-summary(fit1_con)
+summary(fit1.con)
 
 \dontrun{ 
 # Or in matrix notation.
@@ -289,9 +289,9 @@ Amat1 <- rbind(c(-1, 1, 0),
 myRhs1 <- rep(0L, nrow(Amat1)) 
 myNeq1 <- 0
 
-fit1_con <- restriktor(fit1_lm, constraints = Amat1,
+fit1.con <- restriktor(fit1.lm, constraints = Amat1,
                        rhs = myRhs1, neq = myNeq1)
-summary(fit1_con)
+summary(fit1.con)
 }            
 
 #########################
@@ -317,9 +317,9 @@ myConstraints2 <- ' group1 < group2
 
 # fit restricted robust linear model and compute 
 # Huber-White (robust) standard errors.
-fit2_con <- restriktor(fit2.rlm, constraints = myConstraints2, 
+fit2.con <- restriktor(fit2.rlm, constraints = myConstraints2, 
                        se = "HC0")
-summary(fit2_con)
+summary(fit2.con)
 
 \dontrun{ 
 ## increasing means in matrix notation.
@@ -329,9 +329,9 @@ Amat2 <- rbind(c(-1, 1, 0, 0),
 myRhs2 <- rep(0L, nrow(Amat2)) 
 myNeq2 <- 0
 
-fit2_con <- restriktor(fit2.rlm, constraints = Amat2,
+fit2.con <- restriktor(fit2.rlm, constraints = Amat2,
                        rhs = myRhs2, neq = myNeq2, se = "HC0")
-summary(fit2_con)
+summary(fit2.con)
 }            
 
 ## equality restrictions only.
@@ -339,8 +339,8 @@ myConstraints3 <- ' group1 == group2
                     group2 == group3
                     group3 == group4 '
                     
-fit3_con <- restriktor(fit2.rlm, constraints = myConstraints3)
-summary(fit3_con)
+fit3.con <- restriktor(fit2.rlm, constraints = myConstraints3)
+summary(fit3.con)
 
 
 ## combination of equality and inequality restrictions.
@@ -350,10 +350,10 @@ myConstraints4 <- ' group1 == group2
 # fit restricted model and compute model-based bootstrapped 
 # standard errors. We only generate 9 bootstrap samples in this 
 # example; in practice you may wish to use a much higher number.
-fit4_con <- restriktor(fit2.rlm, constraints = myConstraints4, 
+fit4.con <- restriktor(fit2.rlm, constraints = myConstraints4, 
                        se = "boot.model.based", B = 9)
 # an error is probably thrown, due to a too low number of bootstrap draws.
-summary(fit4_con)
+summary(fit4.con)
 
 # restriktor can also be used to define effects using the := operator 
 # and impose restrictions on them. For example, compute the average 
@@ -368,9 +368,9 @@ y <- b0 + b1*X + b2*Z + b3*X*Z + rnorm(n, 0, sd = 10)
 DATA3 = data.frame(cbind(y, X, Z))
 
 # fit linear model with interaction
-fit5_lm <- lm(y ~ X*Z, data = DATA3)
+fit5.lm <- lm(y ~ X*Z, data = DATA3)
 
-fit5_con <- restriktor(fit5_lm, constraints = ' AVE := X + 16.86137*X.Z; 
+fit5.con <- restriktor(fit5.lm, constraints = ' AVE := X + 16.86137*X.Z; 
                                                 AVE > 0 ')
-summary(fit5_con)
+summary(fit5.con)
 }

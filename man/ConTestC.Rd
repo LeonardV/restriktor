@@ -49,13 +49,13 @@ conclusions from significant results from hypothesis test Type A.
   \item{Ts}{test-statistic value.}
   \item{df.residual}{the residual degrees of freedom.}
   \item{pvalue}{tail probability for \code{Ts}.}
-  \item{b_unrestr}{unrestricted regression coefficients.}
-  \item{b_restr}{restricted regression coefficients.}
+  \item{b.unrestr}{unrestricted regression coefficients.}
+  \item{b.restr}{restricted regression coefficients.}
   \item{Sigma}{variance-covariance matrix of unrestricted model.}
-  \item{R2_org}{unrestricted R-squared.}
-  \item{R2_reduced}{restricted R-squared.}
+  \item{R2.org}{unrestricted R-squared.}
+  \item{R2.reduced}{restricted R-squared.}
   \item{boot}{"no", not used (yet).}
-  \item{model_org}{original model.}
+  \item{model.org}{original model.}
   
 }
 
@@ -82,11 +82,11 @@ Statistical Inference}. Wiley, New York
 DATA1 <- subset(ZelazoKolb1972, Group != "Control")
 
 # fit unrestricted linear model
-fit1_lm <- lm(Age ~ -1 + Group, data = DATA1)
+fit1.lm <- lm(Age ~ -1 + Group, data = DATA1)
 
 # the variable names can be used to impose constraints on
 # the corresponding regression parameters.
-coef(fit1_lm)
+coef(fit1.lm)
 
 # constraint syntax: assuming that the walking 
 # exercises would not have a negative effect of increasing the 
@@ -94,13 +94,13 @@ coef(fit1_lm)
 myConstraints1 <- ' GroupActive  < GroupPassive; 
                     GroupPassive < GroupNo '
 
-conTest(fit1_lm, myConstraints1, type = "C")
+conTest(fit1.lm, myConstraints1, type = "C")
 
 
 # another way is to first fit the restricted model
-fit_restr1 <- restriktor(fit1_lm, constraints = myConstraints1)
+fit.restr1 <- restriktor(fit1.lm, constraints = myConstraints1)
 
-conTest(fit_restr1, type = "C")
+conTest(fit.restr1, type = "C")
 
 \dontrun{ 
   # Or in matrix notation.
@@ -109,9 +109,9 @@ conTest(fit_restr1, type = "C")
   myRhs1 <- rep(0L, nrow(Amat1)) 
   myNeq1 <- 0
   
-  fit1_con <- restriktor(fit1_lm, constraints = Amat1,
+  fit1.con <- restriktor(fit1.lm, constraints = Amat1,
                          rhs = myRhs1, neq = myNeq1)
-  conTest(fit1_con, type = "C")
+  conTest(fit1.con, type = "C")
 }            
 
 }

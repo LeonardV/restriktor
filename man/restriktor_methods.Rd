@@ -65,7 +65,7 @@
   summary statistics of the fitted unrestricted and restricted 
   (robust) linear model given in \code{object}, plus
   
-  \item{se_type}{type of standard error computed, equal to input 
+  \item{se.type}{type of standard error computed, equal to input 
   \code{se} in the \code{restriktor} function.}
   
   \item{residuals}{the weighted residuals.}
@@ -78,9 +78,9 @@
   
   \item{rdf}{residual degrees of freedom.}
   
-  \item{R2_org}{unrestricted R-squared.}
+  \item{R2.org}{unrestricted R-squared.}
   
-  \item{R2_reduced}{restricted R-squared.}
+  \item{R2.reduced}{restricted R-squared.}
   
   \item{goric}{goric value and attributed its penalty term and
   log-likelihood.}
@@ -94,13 +94,13 @@
   DATA <- subset(ZelazoKolb1972, Group != "Control")
   
   # fit unrestricted linear model
-  fit_lm <- lm(Age ~ -1 + Group, data = DATA)
+  fit.lm <- lm(Age ~ -1 + Group, data = DATA)
   
   # restricted linear model with restrictions that the walking 
   # exercises would not have a negative effect of increasing the 
   # mean age at which a child starts to walk. 
-  fit_con <- restriktor(fit_lm, constraints = ' GroupActive  < GroupPassive; 
+  fit.con <- restriktor(fit.lm, constraints = ' GroupActive  < GroupPassive; 
                                                 GroupPassive < GroupNo ')
   
-  summary(fit_con)
+  summary(fit.con)
 }

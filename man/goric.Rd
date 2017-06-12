@@ -5,7 +5,7 @@
 \description{The \code{goric} function computes GORIC 
 weights, which are comparable to the Akaike weights. 
 }
-\usage{goric(object, \dots, digits = max(3, getOption("digits") - 2))
+\usage{goric(object, \dots, complement = FALSE, digits = max(3, getOption("digits") - 2))
 }
 
 \arguments{
@@ -13,15 +13,21 @@ weights, which are comparable to the Akaike weights.
   
   \item{\ldots}{further fitted restriktor objects of class conLM or conRLM.}
   
+  \item{complement}{logical; if TRUE the complement is computed. The complement can only
+  be computed for one restriktor object at a time.}
+  
   \item{digits}{the number of significant digits to use when printing.}
 }
 
 \details{The GORIC values themselves are not interpretable and 
 the interest lie in their differences. The GORIC weights reflect 
 the support of each hypothesis in the set. To compare two hypotheses 
-(and not one to the whole set), one should examine the ratio of the 
-two corresponding GORIC weights. To avoid draweing wrong conclusions
-it is recommended to include the unrestrikted model, see examples.
+(and not one to the whole set), one can examine the ratio of the 
+two corresponding GORIC weights. To avoid drawing wrong conclusions
+it is recommended to include the unconstrained hypothesis, see examples.
+
+In case of one hypothesis, say H1, the complement Hc can be computed 
+as competing hypothesis. The complement is defined as Hc = not H1.
 }
 
 \value{The function returns a dataframe with the log-likelihood,
@@ -45,13 +51,18 @@ information criterion for model selection under inequality constraints.
 DATA <- subset(ZelazoKolb1972, Group != "Control")
   
 # fit unrestrikted linear model
-fit1_lm <- lm(Age ~ Group, data = DATA)
+fit1.lm <- lm(Age ~ Group, data = DATA)
 
-# some artificial restriktions
-restr1 <- restriktor(fit1_lm, constraints = "GroupPassive > 0;  GroupPassive < GroupNo")
-restr2 <- restriktor(fit1_lm, constraints = "GroupPassive > 0;  GroupPassive > GroupNo")
-restr3 <- restriktor(fit1_lm, constraints = "GroupPassive == 0; GroupPassive < GroupNo")
-restr4 <- restriktor(fit1_lm) # unrestrikted model
+# some artificial restrictions
+restr1 <- restriktor(fit1.lm, constraints = "GroupPassive > 0;  GroupPassive < GroupNo")
+restr2 <- restriktor(fit1.lm, constraints = "GroupPassive > 0;  GroupPassive > GroupNo")
+restr3 <- restriktor(fit1.lm, constraints = "GroupPassive == 0; GroupPassive < GroupNo")
+restr4 <- restriktor(fit1.lm) # unrestricted model
 
 goric(restr1, restr2, restr3, restr4)
+
+## use the complement as competing hypothesis for the first hypothesis
+
+goric(restr1, complement = TRUE)
+
 }

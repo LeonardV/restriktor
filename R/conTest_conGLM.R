@@ -140,7 +140,7 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   # the mixing weights.
   if (!(attr(object$wt.bar, "method") == "none") && boot == "no") {
     wt.bar <- object$wt.bar
-    pvalue <- con_pvalue_Fbar(wt.bar      = rev(wt.bar), 
+    pvalue <- con_pvalue_Fbar(wt.bar      = wt.bar, 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -148,9 +148,9 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                               bvec        = bvec, 
                               meq         = meq, 
                               meq.alt     = meq.alt)
-    wt.mix <- wt.bar
-    attributes(wt.mix) <- NULL
-    attr(pvalue, "wt.bar") <- wt.mix
+    #wt.mix <- wt.bar
+    #attributes(wt.mix) <- NULL
+    attr(pvalue, "wt.bar") <- wt.bar
     attr(pvalue, "wt.bar.method") <- attr(wt.bar, "method")
   } else if (boot == "parametric") {
     if (!is.function(p.distr)) {
@@ -361,7 +361,7 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
   
   if (!(attr(object$wt.bar, "method") == "none") && boot == "no") { 
     wt.bar <- object$wt.bar
-    pvalue <- con_pvalue_Fbar(wt.bar      = rev(wt.bar), 
+    pvalue <- con_pvalue_Fbar(wt.bar      = wt.bar, 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -574,7 +574,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     I0 <- t(X) %*% W %*% X / dispersion0
     
     # score test-statistic
-    Ts <- (G0 - G1) %*% solve(I0 , (G0 - G1))
+    Ts <- c((G0 - G1) %*% solve(I0 , (G0 - G1)))
     ###############################################
   } else if (type == "A") {
     CALL <- list(object = model.org, constraints = Amat, 
@@ -605,7 +605,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     I0 <- t(X) %*% W %*% X / dispersion0
     
     # score test-statistic
-    Ts <- (G0 - G1) %*% solve(I0 , (G0 - G1))
+    Ts <- c((G0 - G1) %*% solve(I0 , (G0 - G1)))
     ###############################################
   } else if (type == "B") {
     if (meq.alt == 0L) {
@@ -631,7 +631,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
       I0 <- t(X) %*% W %*% X / dispersion0
       
       # score test-statistic
-      Ts <- (G0 - G1) %*% solve(I0 , (G0 - G1))
+      Ts <- c((G0 - G1) %*% solve(I0 , (G0 - G1)))
       ###############################################
     }
     else {
@@ -665,7 +665,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
         I0 <- t(X) %*% W %*% X / dispersion0
         
         # score test-statistic
-        Ts <- (G0 - G1) %*% solve(I0 , (G0 - G1))
+        Ts <- c((G0 - G1) %*% solve(I0 , (G0 - G1)))
       }
       else {
         stop("Restriktor ERROR: neq.alt must not be larger than neq.")
@@ -675,7 +675,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
 
   if (!(attr(object$wt.bar, "method") == "none") && boot == "no") {
     wt.bar <- object$wt.bar
-    pvalue <- con_pvalue_Fbar(wt.bar          = rev(wt.bar),
+    pvalue <- con_pvalue_Fbar(wt.bar      = wt.bar,
                               Ts.org      = Ts,
                               df.residual = df.residual,
                               type        = type,

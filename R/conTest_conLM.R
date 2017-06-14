@@ -168,7 +168,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   # the mixing weights.
   if (!(attr(object$wt.bar, "method") == "none") && boot == "no") {
     wt.bar <- object$wt.bar
-    pvalue <- con_pvalue_Fbar(wt.bar      = rev(wt.bar), 
+    pvalue <- con_pvalue_Fbar(wt.bar      = wt.bar, 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -176,9 +176,9 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                               bvec        = bvec, 
                               meq         = meq, 
                               meq.alt     = meq.alt)
-    wt.mix <- wt.bar
-    attributes(wt.mix) <- NULL
-    attr(pvalue, "wt.bar") <- wt.mix
+    #wt.mix <- wt.bar
+    #attributes(wt.mix) <- NULL
+    attr(pvalue, "wt.bar") <- wt.bar
     attr(pvalue, "wt.bar.method") <- attr(wt.bar, "method")
    } else if (boot == "parametric") {
      
@@ -444,7 +444,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
   
   if (!(attr(object$wt.bar, "method") == "none") && boot == "no") { 
     wt.bar <- object$wt.bar
-    pvalue <- con_pvalue_Fbar(wt.bar      = rev(wt.bar), 
+    pvalue <- con_pvalue_Fbar(wt.bar      = wt.bar, 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -649,7 +649,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     # information matrix under the null-hypothesis
     I0 <- 1 / s20 * crossprod(X)#(t(X) %*% X)
     # score test-statistic
-    Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))
+    Ts <- c((G0 - G1) %*% solve(I0, (G0 - G1)))
     ###############################################
     # df0 <- n - (p - nrow(AmatG))
     # df1 <- n - (p - qr(Amat[0:meq,])$rank)
@@ -687,7 +687,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     # information matrix under the null-hypothesis
     I0 <- 1 / s20 * crossprod(X)#(t(X) %*% X)
     # score test-statistic
-    Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))
+    Ts <- c((G0 - G1) %*% solve(I0, (G0 - G1)))
     #############################################
     # df0 <- n - (p - nrow(Amat))
     # df1 <- n - (p - qr(Amat[0:meq,])$rank)
@@ -715,7 +715,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
       # information matrix under the null-hypothesis
       I0 <- 1 / s20 * crossprod(X)#(t(X) %*% X)
       # score test-statistic
-      Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))
+      Ts <- c((G0 - G1) %*% solve(I0, (G0 - G1)))
       #########
       # df0 <- n - (p - qr(Amat[0:meq,])$rank)
       # df1 <- n - p
@@ -758,7 +758,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
         # information matrix
         I0 <- 1 / s20 * crossprod(X)#(t(X) %*% X)
         # score test-statistic
-        Ts <- (G0 - G1) %*% solve(I0, (G0 - G1))
+        Ts <- c((G0 - G1) %*% solve(I0, (G0 - G1)))
         ########################
         # df1 <- df0 <- n - (p - qr(Amat[0:meq,])$rank)
         # s20 <- sum((y - X %*% b.restr)^2) / df0
@@ -777,7 +777,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   
   if (!(attr(object$wt.bar, "method") == "none") && boot == "no") {
     wt.bar <- object$wt.bar
-    pvalue <- con_pvalue_Fbar(wt.bar      = rev(wt.bar), 
+    pvalue <- con_pvalue_Fbar(wt.bar      = wt.bar, 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,

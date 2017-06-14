@@ -167,7 +167,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   
   if (!(attr(object$wt.bar, "method") == "none") && boot == "no") {
     wt.bar <- object$wt.bar
-    pvalue <- con_pvalue_Fbar(wt.bar      = rev(wt.bar), 
+    pvalue <- con_pvalue_Fbar(wt.bar      = wt.bar, 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -175,9 +175,9 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                               bvec        = bvec, 
                               meq         = meq, 
                               meq.alt     = meq.alt)
-    wt.mix <- wt.bar
-    attributes(wt.mix) <- NULL
-    attr(pvalue, "wt.bar") <- wt.mix
+    #wt.mix <- wt.bar
+    #attributes(wt.mix) <- NULL
+    attr(pvalue, "wt.bar") <- wt.bar
     attr(pvalue, "wt.bar.method") <- attr(wt.bar, "method")
   } else if (boot == "parametric") {
     
@@ -391,7 +391,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                              cc        = ifelse(is.null(call.org$c), 4.685061, call.org$c))
     Ts <- out1$Ts
     
-    ## small sample correctoions
+    ## small sample corrections
     #
     #N <- dim(X)[1]
     #n2 <- N - 1
@@ -482,12 +482,12 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   } else {
     wt.bar <- as.numeric(NA)
   }
-  attr(wt.bar, "wt.bar.method") <- attr(object$wt.bar, "method")
+  attr(wt.bar, "method") <- attr(object$wt.bar, "method")
   ##############################################################################
   
   if (!(attr(object$wt.bar, "method") == "none") && boot == "no") {
     # compute pvalue based on F-distribution
-    pvalue <- con_pvalue_Fbar(wt.bar      = rev(wt.bar), 
+    pvalue <- con_pvalue_Fbar(wt.bar      = wt.bar, 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -733,7 +733,7 @@ conTestWald2.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   
   if (!(attr(object$wt.bar, "method") == "none") && boot == "no") {
     wt.bar <- object$wt.bar
-    pvalue <- con_pvalue_Fbar(wt.bar      = rev(wt.bar), 
+    pvalue <- con_pvalue_Fbar(wt.bar      = wt.bar, 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,
@@ -1034,11 +1034,11 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   } else {
     wt.bar <- as.numeric(NA)
   } 
-  attr(wt.bar, "wt.bar.method") <- attr(object$wt.bar, "method")
+  attr(wt.bar, "method") <- attr(object$wt.bar, "method")
   
   if (!attr(object$wt.bar, "method") == "none" && boot == "no") {
     # compute pvalue based on F-distribution
-    pvalue <- con_pvalue_Fbar(wt.bar      = rev(wt.bar), 
+    pvalue <- con_pvalue_Fbar(wt.bar      = wt.bar, 
                               Ts.org      = Ts, 
                               df.residual = df.residual, 
                               type        = type,

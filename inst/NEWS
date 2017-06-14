@@ -8,8 +8,8 @@ Changes in Version 0.1-70
  o Fixed bug; an error was given if mix.weights = "none" and no 
  constraints were specified.
  
- o The test-statistics for the robust estimators have been updated.
- For most bounded-influence estimators the error distribution 
+ o The test-statistics for robust M- and MM-estimators have been 
+ updated. For most bounded-influence estimators the error distribution 
  should be symmetric, otherwise the intercept and center of the 
  error distribution are confounded. Therefore, to compute the 
  test-statistics we now use the block that corresponds to the 
@@ -19,6 +19,6 @@ Changes in Version 0.1-70
  o Added support; the parametric bootstrap for shifted/relocated 
  cones is now supported for the gaussian family.
  
- o Added support; the goric() can now be computed for the complement.
+ o Added support; the goric() function can now compute the complement.
  
  o 

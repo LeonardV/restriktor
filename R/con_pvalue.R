@@ -2,6 +2,12 @@
 con_pvalue_Fbar <- function(wt.bar, Ts.org, df.residual, type = "A",
                             Amat, bvec, meq = 0L, meq.alt = 0L) {
   
+  wt.method <- attr(wt.bar, "method")
+  if (wt.method == "boot") {
+    idx.start <- 1 + (ncol(Amat) - nrow(Amat))
+    idx.end   <- 1 + (ncol(Amat) - meq) 
+  }
+  
   if (type == "global") {
     # compute df
     bvecG <- attr(bvec, "bvec.global")
@@ -11,38 +17,45 @@ con_pvalue_Fbar <- function(wt.bar, Ts.org, df.residual, type = "A",
     # r <- qr(attr(Amat, "Amat_global"))$rank
     # q <- qr(Amat)$rank
     # i <- 0:q
-    # 1 - pfbar(Ts.org, df1 = r-q+i, df2 = df.residual, wt.bar = rev(wt.bar))
+    # 1 - pfbar(Ts.org, df1 = r-q+i, df2 = df.residual, wt.bar = wt.bar)
     
-    # p value based on the chi-square distribution
-    if (length(df.bar) != length(wt.bar)) {
+    # p value based on the f-distribution
+    # 
+    if (wt.method == "boot") {
       pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual, 
-                          wt.bar = rev(wt.bar[(meq+1):(meq+length(df.bar))]))
+                          wt.bar = wt.bar[idx.start:idx.end])
+    } else if (wt.method == "pmvnorm") {
+      pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual, 
+                          wt.bar = wt.bar)
     } else {
-      pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual, 
-                          wt.bar = rev(wt.bar))
+      stop("Restriktor ERROR: mix.weights method ", sQuote(wt.method), " unknown.")
     }
   } else if(type == "A") {
     # compute df
     df.bar <- 0:(nrow(Amat) - meq)
     # p value based on F-distribution or chi-square distribution
-    if (length(df.bar) != length(wt.bar)) {
+    if (wt.method == "boot") {
       pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
-                          wt.bar = rev(wt.bar[(meq+1):(meq+length(df.bar))]))
+                          wt.bar = wt.bar[idx.start:idx.end]) 
+    } else if (wt.method == "pmvnorm") {
+      pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
+                          wt.bar = wt.bar)
     } else {
-      pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
-                          wt.bar = rev(wt.bar))
+      stop("Restriktor ERROR: mix.weights method ", sQuote(wt.method), " unknown.")
     }
   } else if (type == "B") {
     # compute df
     df.bar <- (meq - meq.alt):(nrow(Amat) - meq.alt)#meq:nrow(Amat)
     # p value based on F-distribution or chi-square distribution
     
-    if (length(df.bar) != length(wt.bar)) {
+    if (wt.method == "boot") {
       pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
-                          wt.bar = wt.bar[(meq+1):(meq+length(df.bar))]) 
+                          wt.bar = rev(wt.bar[idx.start:idx.end])) 
+    } else if (wt.method == "pmvnorm") {
+      pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
+                          wt.bar = rev(wt.bar))
     } else {
-      pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
-                          wt.bar = wt.bar) 
+      stop("Restriktor ERROR: mix.weights method ", sQuote(wt.method), " unknown.")
     }
   } else  {
     stop("hypothesis test type ", sQuote(type), " unknown.")
@@ -58,41 +71,41 @@ con_pvalue_Fbar <- function(wt.bar, Ts.org, df.residual, type = "A",
 
 
 # mixture of chi-square distributions
-con_pvalue_Chibar <- function(wt.bar, Ts.org, type = "A",
-                              Amat, bvec, meq = 0L, meq.alt = 0L) {
-  #check
-  #if ((qr(Amat)$rank < nrow(Amat))) {
-  #  stop("Restriktor ERROR: restriktions matrix must have full row-rank")
-  #}
-  
-  if (type == "global") {
-    # compute df
-    bvecG <- attr(bvec, "bvec.global")
-    #    df.bar <- ((ncol(Amat) - 1) - nrow(Amat)):((ncol(Amat) - 1) - meq)    
-    df.bar <- (length(bvecG) - nrow(Amat)):(length(bvecG) - meq)
-    # p value based on the chi-square distribution
-    pvalue <- 1 - pchibar(Ts.org, df1 = df.bar, wt.bar = rev(wt.bar))
-  }  else if (type == "A") {
-    # compute df
-    df.bar <- 0:(nrow(Amat) - meq)
-    # p value based on th chi-square distribution
-    pvalue <- 1 - pchibar(Ts.org, df1 = df.bar, wt.bar = rev(wt.bar))
-  } else if (type == "B") {
-    # compute df
-    df.bar <- (meq - meq.alt):(nrow(Amat) - meq.alt)#meq:nrow(Amat)
-    # p value based on th chi-square distribution
-    pvalue <- 1 - pchibar(Ts.org, df1 = df.bar, wt.bar = wt.bar)
-  } else  {
-    stop("hypothesis test type ", sQuote(type), " unknown.")
-  }
-  
-  out <- pvalue
-    attr(out, "wt.bar") <- wt.bar
-    attr(out, "df.bar") <- df.bar
-    attr(out, "df.residual") <- df.residual
-  
-  out
-}
+# con_pvalue_Chibar <- function(wt.bar, Ts.org, type = "A",
+#                               Amat, bvec, meq = 0L, meq.alt = 0L) {
+#   #check
+#   #if ((qr(Amat)$rank < nrow(Amat))) {
+#   #  stop("Restriktor ERROR: restriktions matrix must have full row-rank")
+#   #}
+#   
+#   if (type == "global") {
+#     # compute df
+#     bvecG <- attr(bvec, "bvec.global")
+#     #    df.bar <- ((ncol(Amat) - 1) - nrow(Amat)):((ncol(Amat) - 1) - meq)    
+#     df.bar <- (length(bvecG) - nrow(Amat)):(length(bvecG) - meq)
+#     # p value based on the chi-square distribution
+#     pvalue <- 1 - pchibar(Ts.org, df1 = df.bar, wt.bar = rev(wt.bar))
+#   }  else if (type == "A") {
+#     # compute df
+#     df.bar <- 0:(nrow(Amat) - meq)
+#     # p value based on th chi-square distribution
+#     pvalue <- 1 - pchibar(Ts.org, df1 = df.bar, wt.bar = rev(wt.bar))
+#   } else if (type == "B") {
+#     # compute df
+#     df.bar <- (meq - meq.alt):(nrow(Amat) - meq.alt)#meq:nrow(Amat)
+#     # p value based on th chi-square distribution
+#     pvalue <- 1 - pchibar(Ts.org, df1 = df.bar, wt.bar = wt.bar)
+#   } else  {
+#     stop("hypothesis test type ", sQuote(type), " unknown.")
+#   }
+#   
+#   out <- pvalue
+#     attr(out, "wt.bar") <- wt.bar
+#     attr(out, "df.bar") <- df.bar
+#     attr(out, "df.residual") <- df.residual
+#   
+#   out
+# }
 
 
 ############################ parametric bootstrap ##############################

@@ -96,7 +96,7 @@ robustWaldScores <- function(x, y, b.eqrestr, b.restr, b.unrestr, Amat,
   } 
 
   OUT <- list(test = test,
-              Ts   = Ts,
+              Ts   = as.numeric(Ts),
               V    = V)
   
   OUT
@@ -137,7 +137,7 @@ robustFm <- function(x, y, b.unrestr, b.eqrestr, b.restr, scale,
   Ts <- 1 / lambda * (L0 - L1) 
   
   OUT <- list(test = "F",
-              Ts   = Ts)
+              Ts   = as.numeric(Ts))
   
   OUT
 }
@@ -146,20 +146,12 @@ robustFm <- function(x, y, b.unrestr, b.eqrestr, b.restr, scale,
 ## robust Wald statistic, Silvapulle (1992) ##
 robustWaldXX <- function(x, b.eqrestr, b.restr, b.unrestr, Amat, tau) {
   X <- x
-  idx1 <- which(colSums(abs(Amat)) > 0L)
-  #W <- tau^2 * crossprod(X)
   W <- crossprod(X)
-  W <- W[idx1, idx1]
-  Ts <- as.numeric( 1/tau^2 * ( (t(b.unrestr - b.eqrestr)[idx1] %*% W %*% (b.unrestr - b.eqrestr)[idx1]) -
-                                (t(b.unrestr - b.restr)[idx1] %*% W %*% (b.unrestr - b.restr)[idx1]) ) )
-
-  # as.numeric( ( (t(b.unrestr - b.eqrestr)[idx1] %*% (W) %*% (b.unrestr - b.eqrestr)[idx1]) -
-  #               (t(b.unrestr - b.restr)[idx1] %*% (W) %*% (b.unrestr - b.restr)[idx1]) ) )
-  # 
-  #Ts <- (t(Amat%*%c(b.restr)) %*% solve(Amat%*%solve(W)%*%t(Amat)) %*% (Amat%*%b.restr))
-  # Ts <- as.numeric( (t(b.unrestr - b.eqrestr) %*% (W) %*% (b.unrestr - b.eqrestr)) -
-  #                   (t(b.unrestr - b.restr) %*% (W) %*% (b.unrestr - b.restr)) ) 
+  idx1 <- which(colSums(abs(Amat)) > 0L)
   
+  Ts <- as.numeric( 1/tau^2 * ( (t(b.unrestr - b.eqrestr)[idx1] %*% W[idx1, idx1] %*% (b.unrestr - b.eqrestr)[idx1]) -
+                                (t(b.unrestr - b.restr)[idx1] %*% W[idx1, idx1] %*% (b.unrestr - b.restr)[idx1]) ) )
+
   OUT <- list(test = "Wald",
               Ts   = Ts)
   

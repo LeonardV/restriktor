@@ -29,8 +29,8 @@ goric <- function(object, ..., complement = FALSE,
   
   if (complement && length(conlist) > 1L) {
     complement <- FALSE
-    warning("Restriktor warning: if complement = TRUE, only one constrained hypothesis is allowed. \n",
-            "                    Therefore, we have set the complement to FALSE.")
+    warning("Restriktor WARNING: if complement = TRUE, only one inequality-constrained hypothesis\n",
+            "                      is allowed. Therefore, the complement is set to FALSE.")
   } 
   
   df.c <- NULL
@@ -63,14 +63,16 @@ goric <- function(object, ..., complement = FALSE,
                                mix.weights = "none", se = "none")
         ll[[l]] <- Hc.restr$loglik
       }
-      # take the highest log-likelihood value as a substitute for the complement.
+      # take the highest log-likelihood value as a substitute for 
+      # the complement.
       ll.Hc <- max(unlist(ll))
     } else if (nrow(Amat) == meq){
-      # in case of equality constraints only, the complement is equal to the unconstrained log-likelihood.
+      # in case of equality constraints only, the complement is 
+      # equal to the unconstrained log-likelihood.
       ll.Hc <- logLik(Hm$model.org)
     } else if (all(c(Amat) == 0L)) {
       # unconstrained setting
-      stop("Restriktor ERROR: complement cannot be computed for the unconstrained hypothesis.")
+      stop("Restriktor ERROR: the complement cannot be computed for the unconstrained hypothesis.")
     }
     
     # compute 'true' free parameters t
@@ -111,7 +113,10 @@ goric <- function(object, ..., complement = FALSE,
         print.gap = 2, quote = FALSE)
   
   if (complement) {
-    cat("The order-restricted hypothesis", objectnames[1], "is", round(goric.weights[1]/goric.weights[2],3), "times more likely than its complement.")
+    Gw.m <- goric.weights[1]
+    Gw.c <- goric.weights[2]
+    cat("The order-restricted hypothesis", objectnames[1], "is", 
+        sprintf("%1.3f", Gw.m/Gw.c), "times more likely than its complement.")
   }
   
   invisible(df)

@@ -45,7 +45,7 @@ goric <- function(object, ..., complement = FALSE,
     
     # compute log-likelihood for complement
     if (!(all(Amat %*% b.unrestr - bvec >= 0 * bvec)) & meq == 0) {
-      ll.Hc <- Hm$loglik
+      ll.Hc <- logLik(Hm$model.org)
     } else if (nrow(Amat) > meq && !(all(c(Amat) == 0L))) {
       ll <- list()
       # number of rows

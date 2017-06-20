@@ -101,23 +101,36 @@ goric <- function(object, ..., complement = FALSE,
   df    <- data.frame(model = objectnames, loglik = ll, penalty = PT, goric)
   df <- rbind(df, df.c)
   
+  
   delta <- df$goric - min(df$goric)
   goric.weights <- exp(-delta / 2) / sum(exp(-delta / 2))
   df$goric.weights <- goric.weights
   
+  attr(df, "complement") <- complement
+  
+  class(df) <- "goric"
+  
+  df
+}
+
+
+print.goric <- function(x, digits = max(3, getOption("digits") - 2), ...) {
+  
   dig <- paste0("%6.", digits, "f")
-  df2 <- sapply(df[,-1], sprintf, fmt = dig)
-  mnames <- as.character(df[,1])
-  df2 <- as.data.frame(cbind(model = mnames, df2))
-  print(format(df2, digits = digits, scientific = FALSE), 
+  mnames <- levels(x$model)
+  df <- as.data.frame(lapply(x, sprintf, fmt = dig))
+  df$model <- mnames
+  print(format(df, digits = digits, scientific = FALSE), 
         print.gap = 2, quote = FALSE)
   
+  complement <- attr(x, "complement")
   if (complement) {
-    Gw.m <- goric.weights[1]
-    Gw.c <- goric.weights[2]
+    objectnames <- levels(x$model)[1]
+    goric.weights <- x$goric.weights
+    G.m <- goric.weights[1]
+    G.c <- goric.weights[2]
     cat("The order-restricted hypothesis", objectnames[1], "is", 
-        sprintf("%1.3f", Gw.m/Gw.c), "times more likely than its complement.")
+        sprintf("%1.3f", G.m/G.c), "times more likely than its complement.")
   }
   
-  invisible(df)
 }

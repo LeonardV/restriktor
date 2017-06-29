@@ -1,16 +1,22 @@
 \name{goric}
 \alias{goric}
+\alias{print.goric}
 
 \title{Generalized Order-Restrikted Information Criterion Weights}
 \description{The \code{goric} function computes GORIC 
 weights, which are comparable to the Akaike weights. 
 }
 \usage{goric(object, \dots, complement = FALSE, digits = max(3, getOption("digits") - 2))
+
+\method{print}{goric}(x, digits = max(3, getOption("digits") - 2), \dots)
+
 }
 
 \arguments{
   \item{object}{a fitted restriktor object of class conLM or conRLM.}
   
+  \item{x}{an object of class \code{goric}.}
+
   \item{\ldots}{further fitted restriktor objects of class conLM or conRLM.}
   
   \item{complement}{logical; if TRUE the complement is computed. The complement can only
@@ -23,11 +29,13 @@ weights, which are comparable to the Akaike weights.
 the interest lie in their differences. The GORIC weights reflect 
 the support of each hypothesis in the set. To compare two hypotheses 
 (and not one to the whole set), one can examine the ratio of the 
-two corresponding GORIC weights. To avoid drawing wrong conclusions
-it is recommended to include the unconstrained hypothesis, see examples.
+two corresponding GORIC weights. To avoid selecting a weakly supported 
+hypothesis as the best one, the unconstrained hypothesis is usually 
+included as safeguard..
 
-In case of one hypothesis, say H1, the complement Hc can be computed 
-as competing hypothesis. The complement is defined as Hc = not H1.
+In case of one order-constrained hypothesis, say H1, the complement 
+Hc can be computed as competing hypothesis. The complement is defined 
+as Hc = not H1.
 }
 
 \value{The function returns a dataframe with the log-likelihood,
@@ -61,8 +69,7 @@ restr4 <- restriktor(fit1.lm) # unrestricted model
 
 goric(restr1, restr2, restr3, restr4)
 
-## use the complement as competing hypothesis for the first hypothesis
-
+## use the complement as competing hypothesis
 goric(restr1, complement = TRUE)
 
 }

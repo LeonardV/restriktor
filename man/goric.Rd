@@ -31,7 +31,7 @@ the support of each hypothesis in the set. To compare two hypotheses
 (and not one to the whole set), one can examine the ratio of the 
 two corresponding GORIC weights. To avoid selecting a weakly supported 
 hypothesis as the best one, the unconstrained hypothesis is usually 
-included as safeguard..
+included as safeguard.
 
 In case of one order-constrained hypothesis, say H1, the complement 
 Hc can be computed as competing hypothesis. The complement is defined 

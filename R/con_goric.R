@@ -79,12 +79,13 @@ goric <- function(object, ..., complement = FALSE,
     p <- length(b.restr)
     # free parameters. Note that Amat includes q1 and q2 constraints.
     f <- p - nrow(Amat)
+    t <- p - f 
     idx <- length(wt.bar)
     # compute penalty term value PTc
     if (attr(wt.bar, "method") == "boot") {
-      PTc <- as.numeric(1 + (1 - wt.bar[idx-meq]) * (p - f) + f)
+      PTc <- as.numeric(1 + (1 - wt.bar[idx-meq]) * t + f)
     } else if (attr(wt.bar, "method") == "pmvnorm") {
-      PTc <- as.numeric(1 + (1 - wt.bar[idx]) * (p - f) + f)
+      PTc <- as.numeric(1 + (1 - wt.bar[idx]) * t + f)
     } else {
       stop("Restriktor ERROR: no chi-bar-square weights found.")
     }

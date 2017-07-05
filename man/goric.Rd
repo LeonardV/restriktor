@@ -6,7 +6,7 @@
 \description{The \code{goric} function computes GORIC 
 weights, which are comparable to the Akaike weights. 
 }
-\usage{goric(object, \dots, complement = FALSE, digits = max(3, getOption("digits") - 2))
+\usage{goric(object, \dots, complement = FALSE, digits = max(3, getOption("digits") - 2), debug = FALSE)
 
 \method{print}{goric}(x, digits = max(3, getOption("digits") - 2), \dots)
 
@@ -23,6 +23,8 @@ weights, which are comparable to the Akaike weights.
   be computed for one restriktor object at a time.}
   
   \item{digits}{the number of significant digits to use when printing.}
+  
+  \item{debug}{if TRUE, debugging information is printed out.}
 }
 
 \details{The GORIC values themselves are not interpretable and 

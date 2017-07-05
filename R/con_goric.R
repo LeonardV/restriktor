@@ -1,5 +1,5 @@
 goric <- function(object, ..., complement = FALSE, 
-                  digits = max(3, getOption("digits") - 2)) {
+                  digits = max(3, getOption("digits") - 2), debug = FALSE) {
   
   mc <- match.call()
   if (inherits(object, "restriktor")) {
@@ -79,6 +79,7 @@ goric <- function(object, ..., complement = FALSE,
     p <- length(b.restr)
     # free parameters. Note that Amat includes q1 and q2 constraints.
     f <- p - nrow(Amat)
+    if (debug) { print(f) }
     t <- p - f 
     idx <- length(wt.bar)
     # compute penalty term value PTc

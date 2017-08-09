@@ -3,7 +3,7 @@
 \title{Package for equality and inequality restricted estimation and hypothesis testing}
 \description{
 Package \code{restriktor} implements estimation and testing linear equality and 
-inequality restriktions about parameters and effects for multivariate (robust) 
+inequality restriktions about parameters and effects for univariate and multivariate 
 normal models and generalized linear models.}
 
 \details{
@@ -11,21 +11,20 @@ normal models and generalized linear models.}
   Package: \tab restriktor\cr
   Type: \tab Package\cr
   Version: \tab 0.1-70\cr
-  Date: \tab 2017-06-12\cr
+  Date: \tab 2017-08-07\cr
   License: \tab GPL (>=2)\cr
   LazyLoad: \tab yes\cr
   }
   
-  Function \code{restriktor} estimates the parameters of a linear 
-  model (\code{lm}), a robust linear model (\code{rlm}) or a
-  generalized linear model (\code{glm}) subject to linear equality 
-  and/or inequality restriktions. The real work horses are the 
-  \code{conLM}, the \code{conRLM}, and the \code{conGLM} functions for 
-  linear and robust linear models respectively. A major advantage
-  of \pkg{restriktor} is that the constraints can be specified by
-  a text-based description. This means that users do not have to 
-  specify the complex constraint matrix (comparable with a contrast 
-  matrix) themselves. 
+  Function \code{restriktor} estimates the parameters of an univariate
+  and multivariate linear model (\code{lm}), robust estimation of the 
+  linear model (\code{rlm}) or a generalized linear model (\code{glm}) 
+  subject to linear equality and/or inequality restriktions. The real 
+  work horses are the \code{conLM}, \code{conMLM}, the \code{conRLM}, 
+  and the \code{conGLM} functions. A major advantage of \pkg{restriktor} 
+  is that the constraints can be specified by a text-based description. 
+  This means that users do not have to specify the complex constraint matrix 
+  (comparable with a contrast matrix) themselves. 
   
   The function \code{restriktor} offers the possibility to compute 
   (model robust) standard errors under the restriktions. The 
@@ -33,7 +32,7 @@ normal models and generalized linear models.}
   standard errors and confidence intervals are available via the 
   summary function. Moreover, the function computes the Generalized 
   Order-restricted Information Criterion (GORIC), which is a 
-  modification of the AIC and the ORIC.
+  modification of the AIC and a generalization of the ORIC.
   
   Function \code{iht} (alias \code{conTest}) conducts restricted 
   hypothesis tests. F, Wald/LRT and score test-statistics are available. 
@@ -55,7 +54,7 @@ normal models and generalized linear models.}
 
 \value{
   The output of function \code{restriktor} belongs to S3 class 
-  \code{conLM}, \code{conRLM} or \code{conGLM}.  
+  \code{conLM}, \code{conMLM}, \code{conRLM} or \code{conGLM}.  
   
   The output of function \code{conTest} belongs to S3 class \code{conTest}. 
   

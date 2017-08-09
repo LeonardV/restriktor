@@ -6,18 +6,19 @@
 \description{The \code{goric} function computes GORIC 
 weights, which are comparable to the Akaike weights. 
 }
-\usage{goric(object, \dots, complement = FALSE, digits = max(3, getOption("digits") - 2), debug = FALSE)
+\usage{goric(object, \dots, complement = FALSE, digits = max(3, getOption("digits") - 2), 
+      debug = FALSE)
 
 \method{print}{goric}(x, digits = max(3, getOption("digits") - 2), \dots)
 
 }
 
 \arguments{
-  \item{object}{a fitted restriktor object of class conLM or conRLM.}
+  \item{object}{a fitted restriktor object of class conLM, conMLM, conRLM and conGLM.}
   
   \item{x}{an object of class \code{goric}.}
 
-  \item{\ldots}{further fitted restriktor objects of class conLM or conRLM.}
+  \item{\ldots}{further fitted restriktor objects of class conLM, conMLM, conRLM and conGLM.}
   
   \item{complement}{logical; if TRUE the complement is computed. The complement can only
   be computed for one restriktor object at a time.}
@@ -50,10 +51,12 @@ information criterion for model selection under inequality constraints.
 \emph{Biometrika}, \bold{98}, 2, 495--501.
 }
 
-\author{Leonard Vanbrabant and Yves Rosseel}
+\author{Leonard Vanbrabant and Rebecca Kuiper}
 
 
 \examples{
+library(MASS)
+## lm
 ## unrestricted linear model for ages (in months) at which an 
 ## infant starts to walk alone.
 
@@ -64,14 +67,36 @@ DATA <- subset(ZelazoKolb1972, Group != "Control")
 fit1.lm <- lm(Age ~ Group, data = DATA)
 
 # some artificial restrictions
-restr1 <- restriktor(fit1.lm, constraints = "GroupPassive > 0;  GroupPassive < GroupNo")
-restr2 <- restriktor(fit1.lm, constraints = "GroupPassive > 0;  GroupPassive > GroupNo")
-restr3 <- restriktor(fit1.lm, constraints = "GroupPassive == 0; GroupPassive < GroupNo")
-restr4 <- restriktor(fit1.lm) # unrestricted model
+fit1.con <- restriktor(fit1.lm, constraints = "GroupPassive > 0;  GroupPassive < GroupNo")
+fit2.con <- restriktor(fit1.lm, constraints = "GroupPassive > 0;  GroupPassive > GroupNo")
+fit3.con <- restriktor(fit1.lm, constraints = "GroupPassive == 0; GroupPassive < GroupNo")
+fit4.con <- restriktor(fit1.lm) # unrestricted model
 
-goric(restr1, restr2, restr3, restr4)
+goric(fit1.con, fit2.con, fit3.con, fit4.con)
 
-## use the complement as competing hypothesis
-goric(restr1, complement = TRUE)
+# fit1.con verus the complement
+goric(fit1.con, complement = TRUE)
+
+
+## mlm
+# generate data
+n <- 30
+mu <- c(1,2,3,4)
+Sigma <- matrix(5,4,4)
+  diag(Sigma) <- c(10,10,10,10)
+# 4 Y's.
+Y <- mvrnorm(n, mu, Sigma)
+
+# fit unrestricted multivariate linear model
+fit2.mlm <- lm(Y ~ 1)
+
+# constraints
+myConstraints2 <- rbind(c(-1,1,0,0), c(0,-1,1,0), c(0,0,-1,1))
+
+# fit restricted multivariate linear model
+fit5.con <- restriktor(fit2.mlm, constraints = myConstraints2)
+
+# fit5.con verus the complement
+goric(fit5.con, complement = TRUE)
 
 }

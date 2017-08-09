@@ -29,23 +29,22 @@ goric <- function(object, ..., complement = FALSE,
   
   if (complement && length(conlist) > 1L) {
     complement <- FALSE
-    warning("Restriktor WARNING: if complement = TRUE, only one inequality-constrained hypothesis\n",
+    warning("Restriktor WARNING: if complement = TRUE, only one order-constrained hypothesis\n",
             "                      is allowed. Therefore, the complement is set to FALSE.")
   } 
   
   df.c <- NULL
   if (complement) {
-    Hm <- conlist[[1]]
-    Amat <- Hm$constraints
-    bvec <- Hm$rhs
-    meq  <- Hm$neq
-    wt.bar <- Hm$wt.bar
-    b.restr <- Hm$b.restr
-    b.unrestr <- Hm$b.unrestr
+    Amat <- object$constraints
+    bvec <- object$rhs
+    meq  <- object$neq
+    wt.bar <- object$wt.bar
+    b.restr <- object$b.restr
+    b.unrestr <- object$b.unrestr
     
     # compute log-likelihood for complement
-    if (!(all(Amat %*% b.unrestr - bvec >= 0 * bvec)) & meq == 0) {
-      ll.Hc <- logLik(Hm$model.org)
+    if (!(all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec)) & meq == 0) { 
+      ll.Hc <- con_loglik_lm(object$model.org)
     } else if (nrow(Amat) > meq && !(all(c(Amat) == 0L))) {
       ll <- list()
       # number of rows
@@ -58,7 +57,7 @@ goric <- function(object, ..., complement = FALSE,
       for (l in 1:length(nr)) {
         idx <- c(nr[l], nr[-l])
         Amatx <- Amat[idx,,drop = FALSE]
-        Hc.restr <- restriktor(Hm$model.org, constraints = Amatx, 
+        Hc.restr <- restriktor(object$model.org, constraints = Amatx, 
                                neq = 1, rhs = bvec[idx], 
                                mix.weights = "none", se = "none")
         ll[[l]] <- Hc.restr$loglik
@@ -69,17 +68,18 @@ goric <- function(object, ..., complement = FALSE,
     } else if (nrow(Amat) == meq){
       # in case of equality constraints only, the complement is 
       # equal to the unconstrained log-likelihood.
-      ll.Hc <- logLik(Hm$model.org)
+      #ll.Hc <- logLik(object$model.org)
+      ll.Hc <- con_loglik_lm(object$model.org)
     } else if (all(c(Amat) == 0L)) {
       # unconstrained setting
-      stop("Restriktor ERROR: the complement cannot be computed for the unconstrained hypothesis.")
+      stop("Restriktor ERROR: the complement does not exist for the unconstrained hypothesis.")
     }
     
     # compute free parameters f
     p <- length(b.restr)
     # free parameters. Note that Amat includes q1 and q2 constraints.
     f <- p - nrow(Amat)
-    if (debug) { print(f) }
+    if (debug) { cat("number of free parameters =", f, "\n") }
     t <- p - f 
     idx <- length(wt.bar)
     # compute penalty term value PTc
@@ -88,7 +88,7 @@ goric <- function(object, ..., complement = FALSE,
     } else if (attr(wt.bar, "method") == "pmvnorm") {
       PTc <- as.numeric(1 + (1 - wt.bar[idx]) * t + f)
     } else {
-      stop("Restriktor ERROR: no chi-bar-square weights found.")
+      stop("Restriktor ERROR: no level probabilities (chi-bar-square weights) found.")
     }
     # compute goric.c
     goric.Hc <- -2*(ll.Hc - PTc)
@@ -128,10 +128,10 @@ print.goric <- function(x, digits = max(3, getOption("digits") - 2), ...) {
   if (complement) {
     objectnames <- levels(x$model)[1]
     goric.weights <- x$goric.weights
-    G.m <- goric.weights[1]
-    G.c <- goric.weights[2]
+    Gm <- goric.weights[1]
+    Gc <- goric.weights[2]
     cat("The order-restricted hypothesis", objectnames[1], "is", 
-        sprintf("%1.3f", G.m/G.c), "times more likely than its complement.")
+        sprintf("%1.3f", Gm/Gc), "times more likely than its complement.")
   }
   
 }

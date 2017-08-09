@@ -66,13 +66,15 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
           } else if (test == "score") {
             UseMethod("conTestScore")
           } 
+        } else if (class(object)[2] %in% "conMLM") {
+           stop("restriktor ERROR: test ", sQuote(test), " not implemented (yet).")  
         }
-      } else if (type == "c" && (class(object)[2] %in% c("conLM","conRLM","conGLM"))) {
+      } else if (type == "c" && (inherits(object, c("conLM","conRLM","conGLM","conMLM")))) {
         UseMethod("conTestC")
-      } else if (type == "summary" && (class(object)[2] %in% c("conLM","conRLM","conGLM"))) {
+      } else if (type == "summary" && (inherits(object, c("conLM","conRLM","conGLM","conMLM")))) {
         UseMethod("conTest_summary")     
       } else {
-        stop("type ", sQuote, " unknown.")
+        stop("type ", sQuote(type), " unknown.") 
       }
     } else if (nrow(Amat) == meq) {
       #if (class(object)[2] %in% "conGLM") {

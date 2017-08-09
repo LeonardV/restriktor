@@ -1,8 +1,8 @@
 restriktor <- function(object, constraints = NULL, ...) {
   
   # check the class of object
-  if (!inherits(object, c("lm","rlm","glm"))) {
-    stop("restriktor only works for lm(), rlm() and glm().")
+  if (!inherits(object, c("lm","rlm","glm","mlm"))) {
+    stop("restriktor only works for lm(), mlm(), rlm() and glm().")
   }
   
   arguments <- list(...)
@@ -16,14 +16,17 @@ restriktor <- function(object, constraints = NULL, ...) {
     }
   }
   
-  if (class(object)[1] %in% c("lm","mlm")) {
+  if (class(object)[1] == "lm") {
     UseMethod("conLM")
   } 
-  else if (class(object)[1] %in% "rlm") {
+  else if (class(object)[1] == "rlm") {
     UseMethod("conRLM")
   }
-  else if (class(object)[1] %in% "glm") {
+  else if (class(object)[1] == "glm") {
     UseMethod("conGLM")
+  }
+  else if (class(object)[1] == "mlm") {
+    UseMethod("conMLM")
   }
   
 }

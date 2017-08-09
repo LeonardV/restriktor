@@ -5,7 +5,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                        debug = FALSE, ...) {
     
   # check class
-  if (!(class(object)[1] %in% c("glm"))) {
+  if (!(class(object)[1] == "glm")) {
     stop("Restriktor ERROR: object must be of class glm.")
   }
   # standard error methods
@@ -123,6 +123,10 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   if(ncol(Amat) != length(b.unrestr)) {
     stop("Restriktor ERROR: length coefficients and the number of",
          "\n       columns constraints-matrix must be identical")
+  }
+  
+  if (!(nrow(Amat) == length(bvec))) {
+    stop("nrow(Amat) != length(bvec)")
   }
   
   is.augmented <- TRUE

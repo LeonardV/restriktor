@@ -1,110 +1,139 @@
 #REF: Zheng, S., Guo, J. Shi, N.Z, Tian, G.L (2012). Likelihood-based approaches 
 # for multivariate linear models under inequality constraints for incomplete data.
 # Journal of Statistical Planning and Inference 142, 2926-2942.
-con_solver_lm <- function(X, y, b.unrestr, w, Amat, bvec, meq,
+con_solver_lm <- function(X, y, w, Amat, bvec, meq,
                           maxit = 10000, absval = sqrt(.Machine$double.eps)) {
   val <- 0
+  X <- as.matrix(X)
   y <- as.matrix(y)
   n <- dim(X)[1]
-  
-  if (is.null(w)) {
-    w <- rep(1, n)
-  }
-  W <- diag(w)
+  b.restr <- c(coef(lm.fit(x = X, y)))
   
   for (i in 1:maxit) {
-    # dividing by n or (n-p-rank(meq)). Probably only needed for mlm.
-    Sigma <- (t(y - X %*% matrix(b.unrestr, ncol = ncol(y))) %*% W %*%
-                (y - X %*% matrix(b.unrestr, ncol = ncol(y)))) / n  
-    
-    yVx <- kronecker(solve(Sigma), t(X)) %*% W %*% as.vector(y)
-    dvec <- 2 * yVx
-    Dmat <- 2 * kronecker(solve(Sigma), t(X) %*% W %*% X)
-    out <- solve.QP(Dmat = Dmat, 
-                    dvec = dvec, 
-                    Amat = t(Amat),
-                    bvec = bvec, 
-                    meq  = meq)
-
-    if (abs(out$value - val) <= absval) {
-      break
+    if (!is.null(w)) {
+      # weights  
+      W <- diag(w)
+      # dividing by n or (n-p-rank(meq)). Probably only needed for mlm.
+      s2 <- (t(y - X %*% matrix(b.restr, ncol = ncol(y))) %*% W %*%
+                  (y - X %*% matrix(b.restr, ncol = ncol(y)))) / n  
+      yVx <- kronecker(solve(s2), t(X)) %*% W %*% as.vector(y)  
+      Dmat <- 2 * kronecker(solve(s2), t(X) %*% W %*% X)
     } else {
-      val <- out$value
+      # no weights
+      s2 <- (t(y - X %*% matrix(b.restr, ncol = ncol(y))) %*%
+                  (y - X %*% matrix(b.restr, ncol = ncol(y)))) / n  
+      yVx <- kronecker(solve(s2), t(X)) %*% as.vector(y)  
+      Dmat <- 2 * kronecker(solve(s2), t(X) %*% X)
     }
     
-    if (i == maxit & abs(out$value - val) > absval) {
+    dvec <- 2 * yVx
+    
+    out.qp <- solve.QP(Dmat = Dmat, 
+                       dvec = dvec, 
+                       Amat = t(Amat),
+                       bvec = bvec, 
+                       meq  = meq)
+    
+    b.restr <- out.qp$solution
+
+    if (abs(out.qp$value - val) <= absval) {
+      break
+    } else {
+      val <- out.qp$value
+    }
+    
+    if (i == maxit & abs(out.qp$value - val) > absval) {
       warning(gettextf("'quadprog' failed to converge in %d steps", maxit), 
               domain = NA)
     }  
   }
 
+  out <- list(qp = out.qp, s2 = s2, Niter = i)
+  
   out
 }
+
 
 
 con_solver_rlm <- function(X, y, Amat, bvec, meq,
                            maxit = 10000, absval = sqrt(.Machine$double.eps)) {
   
   b.unrestr <- lm.fit(x = X, y)
-  tBeta <- as.vector(coefficients(b.unrestr))
+  b.restr <- as.vector(coef(b.unrestr))
   invW <- crossprod(X)
   
   val <- 0
   for (i in 1:maxit) {
     Dmat <- 2 * invW
-    dvec <- 2 * tBeta %*% invW
-    out <- solve.QP(Dmat = Dmat, 
-                    dvec = dvec, 
-                    Amat = t(Amat),
-                    bvec = bvec, 
-                    meq  = meq)
-    
-    if (abs(out$value - val) <= absval) {
+    dvec <- 2 * b.restr %*% invW
+    out.qp <- solve.QP(Dmat = Dmat, 
+                       dvec = dvec, 
+                       Amat = t(Amat),
+                       bvec = bvec, 
+                       meq  = meq)
+      
+    if (abs(out.qp$value - val) <= absval) {
       break
     } else {
-      val <- out$value
+      val <- out.qp$value
     }
     
-    if (i == maxit & abs(out$value - val) > absval) {
+    b.restr <- out.qp$solution
+    
+    if (i == maxit & abs(out.qp$value - val) > absval) {
       warning(gettextf("'quadprog' failed to converge in %d steps", maxit), 
               domain = NA)
     }  
   }
+  
+  out <- out.qp
   
   out
 }
 
 
 
-con_solver_glm <- function(X, y, b.unrestr, Amat, bvec, meq, 
+con_solver_glm <- function(X, y, Amat, bvec, meq, 
                            maxit = 10000, epsilon){
-  b.unrestr <- lm.fit(x = X, y)
-  tBeta <- as.vector(coefficients(b.unrestr))
-  invW <- crossprod(X)#t(X) %*% X
   
-  con_solver <- function(tBeta, invW, Amat, bvec, meq) {
-    Dmat <- 2 * invW
-    dvec <- 2 * tBeta %*% invW
-    Amat <- t(Amat)
-    solve.QP(Dmat, dvec, Amat = Amat, bvec = bvec, meq = meq)
-  }
+  b.restr <- lm.fit(x = X, y)
+  b.restr <- as.vector(coef(b.restr))
+  invW <- crossprod(X)
   
-  b.restr <- tBeta
+  # con_solver <- function(b.restr, invW, Amat, bvec, meq) {
+  #   Dmat <- 2 * invW
+  #   dvec <- 2 * b.restr %*% invW
+  #   Amat <- t(Amat)
+  #   solve.QP(Dmat, dvec, Amat = Amat, bvec = bvec, meq = meq)
+  # }
+  
   val <- 0
   for (i in 1:maxit) {
-    out <- con_solver(b.restr, invW, Amat, bvec, meq)
-    b.restr <- out$solution
-    if (abs(out$value - val) <= epsilon) {
+    #out <- con_solver(b.restr, invW, Amat, bvec, meq)
+    Dmat <- 2 * invW
+    dvec <- 2 * b.restr %*% invW
+    
+    out.qp <- solve.QP(Dmat = Dmat, 
+                       dvec = dvec, 
+                       Amat = t(Amat),
+                       bvec = bvec, 
+                       meq  = meq)
+    
+    b.restr <- out.qp$solution
+    
+    if (abs(out.qp$value - val) <= epsilon) {
       break
     } else {
-      val <- out$value
+      val <- out.qp$value
     }
     
-    if (i == maxit & abs(out$value - val) > epsilon) {
+    if (i == maxit & abs(out.qp$value - val) > epsilon) {
       warning(gettextf("'quadprog' failed to converge in %d steps", maxit), 
               domain = NA)
     }
   }
+  
+  out <- out.qp
   
   out
 }

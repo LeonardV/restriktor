@@ -3,8 +3,8 @@ con_partable <- function(object, est = FALSE, label = FALSE,
                          as.data.frame. = FALSE) {
 
     #  we first check the class of object
-    if (!(class(object)[1] %in% c("lm", "rlm", "glm"))) {
-       stop("It only works for lm, rlm and glm")
+    if (!(class(object)[1] %in% c("lm", "rlm", "glm", "mlm"))) {
+       stop("It only works for lm, mlm, rlm and glm")
      }
 
     objectTerms <- terms(object)

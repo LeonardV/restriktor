@@ -1,9 +1,12 @@
-# compute the (weighted) loglikelihood based on the regression coefficients.
+# compute the (weighted) loglikelihood
 con_loglik_lm <- function(object, ...) {
-  res <- object$residuals
-  N <- length(res)
-  if (is.null(w <- object$weights)) {
-    w <- rep.int(1, N)
+  res <- as.matrix(object$residuals)
+  s2 <- crossprod(res) / nrow(res)
+  n <- length(res)
+  
+  w <- object$weights
+  if (is.null(w)) {
+    w <- rep.int(1, n)
   }
   else {
     excl <- w == 0
@@ -13,8 +16,15 @@ con_loglik_lm <- function(object, ...) {
       w <- w[!excl]
     }
   }
-  OUT <- 0.5 * (sum(log(w)) - N * (log(2 * pi) + 1 - log(N) + log(sum(w * res^2))))
   
+  # weights are not supported for mlm
+  if (ncol(res) == 1L) {
+    OUT <- 0.5 * (sum(log(w)) - n * (log(2 * pi) + 1 - log(n) + log(sum(w * res^2))))
+  } else if (ncol(res) > 1L) {
+    # mlm
+    OUT <- (-n/2)*log(2*pi) + (-1/2)*(nrow(res)*log(det(s2)) + ncol(res)*log(1)) - (1/2)*n
+  }
+    
   OUT
 }
 

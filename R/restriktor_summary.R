@@ -22,7 +22,7 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
   p <- z$model.org$rank
   rdf <- z$df.residual
   b.restr <- z$b.restr
-  r <- c(weighted.residuals(z))
+  r <- weighted.residuals(z)
   
   ans <- z[c("call", if (!is.null(z$weights)) "weights")]
   ans$model.org <- z$model.org
@@ -106,7 +106,9 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
       }
   } else if (is.null(z$bootout) && se.type == "none" && !any(z$parTable$op == ":=")) {
     ans$coefficients <- cbind(b.restr)
-    colnames(ans$coefficients) <- "Estimate"
+    if (!(inherits(z,"conMLM"))) {
+      colnames(ans$coefficients) <- "Estimate"
+    }
   } else if (is.null(z$bootout) && se.type == "none" && any(z$parTable$op == ":=")) {
       b.def <- z$CON$def.function(b.restr)
       ans$coefficients <- cbind(c(b.restr, b.def))
@@ -114,6 +116,24 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
   } else {
       stop("restriktor ERROR")
     }
+  
+  ny <- ncol(coef(object$model.org))
+  if (!is.null(ny) && ny > 1L) {
+    ynames <- colnames(ans$coefficients)
+    if (is.null(ynames)) {
+      lhs <- object$model.org$terms[[2L]]
+      if (mode(lhs) == "call" && lhs[[1L]] == "cbind") {
+        ynames <- as.character(lhs)[-1L]
+      } else {
+        ynames <- paste0("Y", seq_len(ny))
+      }
+    }
+    ind <- ynames == ""
+    if (any(ind)) 
+      ynames[ind] <- paste0("Y", seq_len(ny))[ind]
+      colnames(ans$coefficients) <- ynames
+  }
+  
   
   if (inherits(z, "conRLM")) {
     ans$scale <- z$scale
@@ -129,7 +149,7 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
     if (attr(z$model.org$terms, "intercept") != p) {
       ans$R2.reduced <- z$R2.reduced
     } else {
-      ans$R2.reduced <- 0
+      ans$R2.reduced <- as.numeric(NA)
     }
   }
   
@@ -149,26 +169,20 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
     
     # compute penalty term based on simulated level probabilities (wt.bar)
     # The value 1 is the penalty for estimating the variance/dispersion parameter.
-    if (attr(wt.bar, "method") == "boot") { 
-      #if ((ncol(Amat) + 1 == length(wt.bar))) { 
-        PT <- 1 + sum(0 : ncol(Amat) * wt.bar)  
-      #} else {
-        #PT <- 1 + sum((1 : ncol(Amat)) * wt.bar[-1]) 
-       # warning("restriktor WARNING: unable to compute penalty for GORIC.")
-        #PT <- as.numeric(NA)
-      #}
+    if (all(c(Amat) == 0)) {
       # unconstrained case
-    } else if (attr(wt.bar, "method") == "pmvnorm" && all(c(Amat) == 0)) {
-      PT <- p + 1
+      PT <- 1 + length(b.restr)
+    } else if (attr(wt.bar, "method") == "boot") { 
+        PT <- 1 + sum(0 : ncol(Amat) * wt.bar)  
     } else if (attr(wt.bar, "method") == "pmvnorm") {
-      min.C <- ncol(Amat) - nrow(Amat)
-      max.C <- ncol(Amat) - meq
-      PT <- 1 + sum(min.C : max.C * wt.bar) 
+        min.C <- ncol(Amat) - nrow(Amat)
+        max.C <- ncol(Amat) - meq
+        PT <- 1 + sum(min.C : max.C * wt.bar) 
     } else {
-      stop("restriktor ERROR: unable to compute penalty for GORIC.")  
+        stop("restriktor ERROR: unable to compute penalty for GORIC.")  
     }
     
-    if (inherits(z, "conLM")) {
+    if (inherits(z, c("conLM", "conMLM"))) {
       ans$goric <- -2*(z$loglik - PT)
     } else if (inherits(z, "conGLM")) {
       if (!(z$model.org$family$family %in% c("gaussian", "Gamma", "inverse.gaussian"))) {
@@ -186,7 +200,9 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
     class(ans) <- c("summary.restriktor", "summary.conGLM")
   } else if (inherits(z, "conLM")) {
     class(ans) <- c("summary.restriktor", "summary.conLM")
-  } 
+  } else if (inherits(z, "conMLM")) {
+    class(ans) <- c("summary.restriktor", "summary.conMLM")
+  }
     
   ans
 }

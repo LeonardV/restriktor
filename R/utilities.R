@@ -3,11 +3,16 @@ coef.restriktor <- function(object, ...)  {
   
   b.def <- c()
   b.restr <- object$b.restr
+  
   if (any(object$parTable$op == ":=")) {
     b.def <- object$CON$def.function(object$b.restr)
   }
   
-  OUT <- c(b.restr, b.def)
+  if (inherits(object, "conMLM")) {
+    OUT <- rbind(b.restr, b.def)
+  } else {
+    OUT <- c(b.restr, b.def)
+  }
   
   OUT
 }

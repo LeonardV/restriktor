@@ -5,7 +5,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                      debug = FALSE, ...) {
   
   # check class
-  if (!(class(object)[1] %in% c("lm"))) {
+  if (!(class(object)[1] == "lm")) {
     stop("Restriktor ERROR: object must be of class lm.")
   }
   # standard error methods
@@ -45,14 +45,16 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   # unconstrained estimates
   b.unrestr <- coef(object)
   # ML unconstrained MSE
-  #invW <- kronecker(solve(s2.unrestr), t(X) %*% X)
-  Sigma <- vcov(object)#solve(invW)
+  Sigma <- vcov(object)
   # number of parameters
   p <- length(coef(object))
   # sample size
   n <- dim(X)[1]
-  # compute (weighted) log-likelihood
-  ll.unrestr <- con_loglik_lm(object)
+  # compute log-likelihood
+  residuals <- object$residuals
+  object.restr <- list(residuals = residuals, weights = weights)
+  ll.unrestr <- con_loglik_lm(object.restr)
+  
   
   if (debug) {
     print(list(loglik.unc = ll.unrestr))
@@ -121,6 +123,10 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
          "\n       columns constraints-matrix must be identical")
   }
 
+  if (!(nrow(Amat) == length(bvec))) {
+    stop("nrow(Amat) != length(bvec)")
+  }
+  
   is.augmented <- TRUE
   # compute chi-square-bar weights
   if (mix.weights != "none") {
@@ -171,7 +177,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                 parTable    = parTable,
                 b.unrestr   = b.unrestr,
                 b.restr     = b.unrestr,
-                residuals   = object$residuals, # unweighted residuals
+                residuals   = residuals, # unweighted residuals
                 fitted      = object$fitted,
                 weights     = weights,
                 df.residual = object$df.residual,
@@ -189,20 +195,21 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                 control     = control)  
   } else {
     # compute constrained estimates using quadprog
-    out.QP <- con_solver_lm(X         = X, 
-                            y         = y, 
-                            b.unrestr = b.unrestr, 
-                            w         = weights, 
-                            Amat      = Amat,
-                            bvec      = bvec, 
-                            meq       = meq, 
-                            absval    = ifelse(is.null(control$absval), 
-                                            sqrt(.Machine$double.eps), 
-                                            control$absval),
-                            maxit     = ifelse(is.null(control$maxit), 1e04, 
-                                            control$maxit))
-    
-    b.restr <- matrix(out.QP$solution, ncol = ncol(y))
+    out.solver <- con_solver_lm(X         = X, 
+                                y         = y, 
+                                #b.unrestr = b.unrestr, 
+                                w         = weights, 
+                                Amat      = Amat,
+                                bvec      = bvec, 
+                                meq       = meq, 
+                                absval    = ifelse(is.null(control$absval), 
+                                                sqrt(.Machine$double.eps), 
+                                                control$absval),
+                                maxit     = ifelse(is.null(control$maxit), 1e04, 
+                                                control$maxit))
+    out.QP <- out.solver$qp
+    b.restr <- out.QP$solution
+      names(b.restr) <- names(b.unrestr)
     b.restr[abs(b.restr) < ifelse(is.null(control$tol), 
                                   sqrt(.Machine$double.eps), 
                                   control$tol)] <- 0L
@@ -212,8 +219,6 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
     
     # lm
     if (ncol(y) == 1L) {
-      b.restr <- as.vector(b.restr)
-        names(b.restr) <- names(b.unrestr)
       fitted <- X %*% b.restr
       residuals <- y - fitted
       
@@ -248,8 +253,8 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
       } else {
         s2 <- sum(weights * residuals^2) / df.residual
       }
-    } else { #mlm <FIXME>
-      stop("mlm not implemented (yet)")
+    } else { 
+      stop("mlm not supported. Switch to conMLM.")
     }
 
     OUT <- list(CON         = CON,
@@ -342,11 +347,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   
   OUT$timing$total <- (proc.time()[3] - start.time0)
   
-  if (ncol(y) == 1L) {
-    class(OUT) <- c("restriktor", "conLM")
-  } else if (ncol(y) > 1L) {
-    class(OUT) <- c("restriktor", "conMLM")
-  }
+  class(OUT) <- c("restriktor", "conLM")
     
   OUT
 }

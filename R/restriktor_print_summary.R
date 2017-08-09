@@ -8,8 +8,6 @@ print.summary.restriktor <- function(x, digits = max(3, getOption("digits") - 2)
   bty <- attr(x$se.type, "bty")
   level <- attr(x$se.type, "level")
   
-  #cat("Call:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), "\n\n", sep = "")
-  
   cat("\nCall:\n", gsub("\\n", "\n", paste(deparse(x$call), collapse="\n"), 
                         fixed = TRUE), "\n\n", sep = "")
   
@@ -19,13 +17,15 @@ print.summary.restriktor <- function(x, digits = max(3, getOption("digits") - 2)
     cat("Restriktor: restricted generalized linear model:\n\n")
   } else if (inherits(x, "summary.conLM")) {
     cat("Restriktor: restricted linear model:\n\n")
-  } 
+  } else if (inherits(x, "summary.conMLM")) {
+    cat("Restriktor: restricted multivariate linear model:\n\n")
+  }  
   
   cat(if (!is.null(x$weights) && diff(range(x$weights))) 
     "Weighted ", "Residuals:\n", sep = "")
   if (rdf > 5L) {
     nam <- c("Min", "1Q", "Median", "3Q", "Max")
-    rq <- if (length(dim(resid)) == 2L) {
+    rq <- if (length(dim(c(resid))) == 2L) {
       structure(apply(t(resid), 1L, quantile), dimnames = list(nam, 
                                                                dimnames(resid)[[2L]]))
     } else {
@@ -72,7 +72,7 @@ print.summary.restriktor <- function(x, digits = max(3, getOption("digits") - 2)
     cat("\nHeteroskedastic robust standard errors:", se.type ,"\n")
   }
   
-  if (!(inherits(x, "summary.conGLM"))) { 
+  if (!(inherits(x, c("summary.conGLM", "summary.conMLM"))) && !is.na(x$R2.reduced)) {
     if ((x$R2.org - x$R2.reduced) < 1e-08) {
      cat("Multiple R-squared remains", sprintf("%5.3f", x$R2.org),"\n")
     } else {

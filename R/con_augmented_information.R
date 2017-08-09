@@ -34,16 +34,16 @@ con_augmented_information <- function(information  = NULL,
     }
     
     if (meq > 0L) {
-      H <- H[-c(1:meq),,drop=FALSE]
+      H <- H[-c(1:meq),,drop = FALSE]
       bvec <- bvec[-c(1:meq)]
     }
     
     #inactive inequality constraints
     inactive.idx <- H %*% b.restr - bvec > 0 * bvec
     #active inequality constraints
-    H.active <- H[!inactive.idx,,drop=FALSE]
+    H.active <- H[!inactive.idx, ,drop = FALSE]
     #inactive inequality constraints
-    H.inactive <- H[inactive.idx,,drop=FALSE]
+    H.inactive <- H[inactive.idx,,drop = FALSE]
     # diagonal matrix with Lagrangean coefficients
     Gamma <- diag(lambda, NROW(H), NROW(H))
     # slack parameters
@@ -52,10 +52,10 @@ con_augmented_information <- function(information  = NULL,
     # diagonal matrix with slack parameters for the inactive constraints
     Z <- matrix(0L, nrow = 0, ncol = 0)
     if (sum(inactive.idx) == 1L) {
-      Z <- diag(slacks[inactive.idx,,drop=FALSE])  
+      Z <- diag(slacks[inactive.idx, ,drop = FALSE])  
     }
     if (sum(inactive.idx) > 1L) {
-      Z <- diag(slacks[inactive.idx,,drop=TRUE])  
+      Z <- diag(slacks[inactive.idx, ,drop = TRUE])  
     }  
     
     H12 <- matrix(0L, NROW(information), NCOL(Gamma))

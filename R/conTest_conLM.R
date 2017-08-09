@@ -101,7 +101,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
     # call quadprog
     b.eqrestr <- con_solver_lm(X         = X, 
                                y         = y, 
-                               b.unrestr = b.unrestr,
+                               #b.unrestr = b.unrestr,
                                w         = w, 
                                Amat      = AmatG,
                                bvec      = bvecG, 
@@ -109,7 +109,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                                absval    = ifelse(is.null(control$absval), 1e-09, 
                                                   control$absval),
                                maxit     = ifelse(is.null(control$maxit), 1e04, 
-                                                  control$maxit))$solution
+                                                  control$maxit))$qp$solution
     # fix estimates < tol to zero 
     b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
@@ -118,7 +118,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   } else if (type == "A") {
     b.eqrestr <- con_solver_lm(X         = X, 
                                y         = y, 
-                               b.unrestr = b.unrestr,
+                               #b.unrestr = b.unrestr,
                                w         = w, 
                                Amat      = Amat,
                                bvec      = bvec, 
@@ -126,7 +126,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                                absval    = ifelse(is.null(control$absval), 1e-09, 
                                                control$absval),
                                maxit     = ifelse(is.null(control$maxit), 1e04, 
-                                               control$maxit))$solution
+                                               control$maxit))$qp$solution
     b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     # compute test statistic for hypothesis test type A
@@ -140,7 +140,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
       if (meq.alt > 0L && meq.alt <= meq) {
         b.restr.alt <- con_solver_lm(X         = X, 
                                      y         = y, 
-                                     b.unrestr = b.unrestr,
+                                     #b.unrestr = b.unrestr,
                                      w         = w, 
                                      Amat      = Amat[1:meq.alt,,drop = FALSE],
                                      bvec      = bvec[1:meq.alt], 
@@ -148,7 +148,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
                                      absval    = ifelse(is.null(control$absval), 1e-09, 
                                                         control$absval),
                                      maxit     = ifelse(is.null(control$maxit), 1e04, 
-                                                        control$maxit))$solution
+                                                        control$maxit))$qp$solution
         b.restr.alt[abs(b.restr.alt) < tol] <- 0L
         names(b.restr.alt) <- vnames
         # compute test statistic for hypothesis test type B when some equalities may 
@@ -349,7 +349,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
   if (type == "global") {  
     b.eqrestr <- con_solver_lm(X         = X, 
                                y         = y, 
-                               b.unrestr = b.unrestr, 
+                               #b.unrestr = b.unrestr, 
                                w         = w, 
                                Amat      = AmatG,
                                bvec      = bvecG, 
@@ -357,7 +357,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
                                absval    = ifelse(is.null(control$absval), 1e-09, 
                                                  control$absval),
                                maxit     = ifelse(is.null(control$maxit), 1e04, 
-                                                 control$maxit))$solution
+                                                 control$maxit))$qp$solution
     b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     b.eqrestr <- as.vector(b.eqrestr)
@@ -374,7 +374,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
   } else if (type == "A") {
     b.eqrestr <- con_solver_lm(X         = X, 
                                y         = y, 
-                               b.unrestr = b.unrestr,
+                               #b.unrestr = b.unrestr,
                                w         = w, 
                                Amat      = Amat,
                                bvec      = bvec, 
@@ -382,7 +382,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
                                absval    = ifelse(is.null(control$absval), 1e-09, 
                                                   control$absval),
                                maxit     = ifelse(is.null(control$maxit), 1e04, 
-                                                  control$maxit))$solution
+                                                  control$maxit))$qp$solution
     b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     b.eqrestr <- as.vector(b.eqrestr)
@@ -414,7 +414,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
       if (meq.alt > 0L && meq.alt <= meq) {
         b.restr.alt <- con_solver_lm(X         = X, 
                                      y         = y, 
-                                     b.unrestr = b.unrestr,
+                                     #b.unrestr = b.unrestr,
                                      w         = w,
                                      Amat      = Amat[1:meq.alt,,drop=FALSE],
                                      bvec      = bvec[1:meq.alt], 
@@ -422,7 +422,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
                                      absval    = ifelse(is.null(control$absval), 1e-09, 
                                                         control$absval),
                                      maxit     = ifelse(is.null(control$maxit), 1e04, 
-                                                        control$maxit))$solution
+                                                        control$maxit))$qp$solution
         b.restr.alt[abs(b.restr.alt) < tol] <- 0L
         names(b.restr.alt) <- vnames
 
@@ -625,7 +625,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   if (type == "global") {
     b.eqrestr <- con_solver_lm(X         = X, 
                                y         = y, 
-                               b.unrestr = b.unrestr,
+                               #b.unrestr = b.unrestr,
                                w         = w, 
                                Amat      = AmatG, 
                                bvec      = bvecG, 
@@ -633,7 +633,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                absval    = ifelse(is.null(control$absval), 1e-09, 
                                                   control$absval),
                                maxit     = ifelse(is.null(control$maxit), 1e04, 
-                                                  control$maxit))$solution
+                                                  control$maxit))$qp$solution
     b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     
@@ -663,7 +663,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   } else if (type == "A") {
     b.eqrestr <- con_solver_lm(X         = X, 
                                y         = y, 
-                               b.unrestr = b.unrestr,
+                               #b.unrestr = b.unrestr,
                                w         = w, 
                                Amat      = Amat,
                                bvec      = bvec, 
@@ -671,7 +671,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                absval    = ifelse(is.null(control$absval), 1e-09, 
                                                   control$absval),
                                maxit     = ifelse(is.null(control$maxit), 1e04, 
-                                                  control$maxit))$solution
+                                                  control$maxit))$qp$solution
     b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
     
@@ -731,7 +731,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
       if (meq.alt > 0L && meq.alt <= meq) {
         b.restr.alt <- con_solver_lm(X         = X, 
                                      y         = y, 
-                                     b.unrestr = b.unrestr,
+                                     #b.unrestr = b.unrestr,
                                      w         = w,
                                      Amat      = Amat[1:meq.alt,,drop=FALSE],
                                      bvec      = bvec[1:meq.alt], 
@@ -739,7 +739,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                                      absval    = ifelse(is.null(control$absval), 1e-09,
                                                         control$absval),
                                      maxit     = ifelse(is.null(control$maxit), 1e04,
-                                                        control$maxit))$solution
+                                                        control$maxit))$qp$solution
         b.restr.alt[abs(b.restr.alt) < tol] <- 0L
         names(b.restr.alt) <- vnames
         

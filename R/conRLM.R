@@ -142,6 +142,10 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
          "\n       match with the number of parameters.")
   }
   
+  if (!(nrow(Amat) == length(bvec))) {
+    stop("nrow(Amat) != length(bvec)")
+  }
+  
   timing$constraints <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
   

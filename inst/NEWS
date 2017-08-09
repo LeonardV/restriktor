@@ -19,6 +19,9 @@ Changes in Version 0.1-70
  o Added support; the parametric bootstrap for shifted/relocated 
  cones is now supported for the gaussian family.
  
- o Added support; the goric() function can now compute the complement.
+ o Added support; an order-constrained hypothesis can now be evaluated
+ against its complement using the goric() function.
  
- o 
+ o Added support; order-constrained estimates for the multivariate normal
+ linear model. Currently, no standard errors or test-statistics are
+ available. 

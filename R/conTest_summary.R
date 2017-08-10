@@ -24,7 +24,7 @@ conTest_summary.restriktor <- function(object, test = "F", ...) {
   
   #OUT <- list(global = OUT1, A = OUT2, B = OUT3)
   
-  if (meq == 0) {
+  if (meq == 0 && !inherits(object, "conMLM")) {
     CALL$type <- "C"
     OUT$C <- do.call("conTest", CALL)
     #OUT <- c(OUT, OUT4)

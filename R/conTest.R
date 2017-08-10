@@ -67,9 +67,17 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
             UseMethod("conTestScore")
           } 
         } else if (class(object)[2] %in% "conMLM") {
-           stop("restriktor ERROR: test ", sQuote(test), " not implemented (yet).")  
+          if (!(test %in% c("lrt"))) {
+            stop("restriktor ERROR: test ", sQuote(test), " unknown. Only LRT available for now.")  
+          }
+          if (test == "lrt") {
+            UseMethod("conTestLRT")
+          } 
         }
       } else if (type == "c" && (inherits(object, c("conLM","conRLM","conGLM","conMLM")))) {
+        if (inherits(object, "conMLM")) {
+          stop("Restriktor ERROR: hypothesis test type c not available (yet).")
+        }
         UseMethod("conTestC")
       } else if (type == "summary" && (inherits(object, c("conLM","conRLM","conGLM","conMLM")))) {
         UseMethod("conTest_summary")     
@@ -84,7 +92,7 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
     } else {
       stop("Restriktor ERROR: constraints and neq do not match.")
     }
-  } else if (inherits(object, c("lm","rlm","glm")) && !is.null(constraints)) {
+  } else if (inherits(object, c("lm","mlm","rlm","glm")) && !is.null(constraints)) {
     ldots <- list(...)
     if (is.null(ldots$se)) { 
       ldots$se <- "none"

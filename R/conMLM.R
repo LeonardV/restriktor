@@ -6,18 +6,22 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
   
   # check class
   if (!(class(object)[1] == "mlm")) {
-    stop("Restriktor ERROR: object must be of class lm.")
+    stop("Restriktor ERROR: object must be of class mlm.")
   }
+  
+  # not available yet.
+  se <- "none"
+  
   # standard error methods
-  if (se == "default") {
-    se <- "standard"
-  } else if (se == "boot.residual") {
-    se <- "boot.model.based"
-  }
-  if (!(se %in% c("none","standard","const","boot.model.based","boot.standard",
-                  "HC","HC0","HC1","HC2","HC3","HC4","HC4m","HC5"))) {
-    stop("Restriktor ERROR: standard error method ", sQuote(se), " unknown.")
-  }
+  # if (se == "default") {
+  #   se <- "standard"
+  # } else if (se == "boot.residual") {
+  #   se <- "boot.model.based"
+  # }
+  # if (!(se %in% c("none","standard","const","boot.model.based","boot.standard",
+  #                 "HC","HC0","HC1","HC2","HC3","HC4","HC4m","HC5"))) {
+  #   stop("Restriktor ERROR: standard error method ", sQuote(se), " unknown.")
+  # }
   # check method to compute chi-square-bar weights
   if (!(mix.weights %in% c("pmvnorm", "boot", "none"))) {
     stop("Restriktor ERROR: ", sQuote(mix.weights), " method unknown. Choose from \"pmvnorm\", \"boot\", or \"none\"")
@@ -40,15 +44,13 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
   n <- dim(X)[1]
   # number of parameters
   p <- length(coef(object))
-  # weigths not supported
-  #weights <- weights(object)
   # unconstrained estimates
   b.unrestr <- coef(object)
   # unconstrained residual variance (weighted)
   residuals <- object$residuals
   # residual degree of freedom
   df.residual <- object$df.residual
-  s2 <- (t(residuals) %*% residuals) / df.residual
+  s2 <- (t(residuals) %*% residuals) / df.residual #sigma(object)
   # vcov
   Sigma <- vcov(object)
   # model summary
@@ -171,7 +173,7 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
   start.time <- proc.time()[3]
   
   # check if the constraints are not in line with the data, else skip optimization
-  if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) & meq == 0) {
+  if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) && meq == 0) {
     b.restr  <- b.unrestr
     
     OUT <- list(CON         = CON,
@@ -180,9 +182,8 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
                 parTable    = parTable,
                 b.unrestr   = b.unrestr,
                 b.restr     = b.unrestr,
-                residuals   = residuals, # unweighted residuals
+                residuals   = residuals, 
                 fitted      = object$fitted,
-                weights     = NULL,
                 df.residual = df.residual,
                 R2.org      = R2.org, 
                 R2.reduced  = R2.org,
@@ -201,7 +202,6 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
     # compute constrained estimates using quadprog
     out.solver <- con_solver_lm(X         = X, 
                                 y         = y, 
-                                #b.unrestr = b.unrestr, 
                                 w         = NULL, 
                                 Amat      = Amat,
                                 bvec      = bvec, 
@@ -224,31 +224,27 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
     timing$optim <- (proc.time()[3] - start.time)
     start.time <- proc.time()[3]
      
-    # mlm
-    if (ncol(y) > 1L) {
-      fitted <- X %*% b.restr
-      residuals <- y - fitted
-      s2 <- out.solver$s2
-      
-      # compute log-likelihood
-      object.restr <- list(residuals = residuals)
-      ll.restr <- con_loglik_lm(object.restr)
-      
-      if (debug) {
-        print(list(loglik.restr = ll.restr))
-      }  
-      
-      # compute R^2
-      mss <- if (attr(object$terms, "intercept")) {
-        colSums((fitted - colMeans(fitted))^2)
-      } else { colSums(fitted^2) }
-      rss <- colSums(residuals^2)
-      R2.reduced <- mss / (mss + rss)
-      
-      # compute residual degreees of freedom, corrected for equality constraints.
-      df.residual <- df.residual + qr(Amat[0:meq,])$rank
-    } 
+    # compute log-likelihood
+    fitted <- X %*% b.restr
+    residuals <- y - fitted
+    s2 <- out.solver$s2
+    object.restr <- list(residuals = residuals)
+    ll.restr <- con_loglik_lm(object.restr)
     
+    if (debug) {
+      print(list(loglik.restr = ll.restr))
+    }  
+    
+    # compute R^2
+    mss <- if (attr(object$terms, "intercept")) {
+      colSums((fitted - colMeans(fitted))^2)
+    } else { colSums(fitted^2) }
+    rss <- colSums(residuals^2)
+    R2.reduced <- mss / (mss + rss)
+    
+    # compute residual degreees of freedom, corrected for equality constraints.
+    df.residual <- df.residual + qr(Amat[0:meq,])$rank
+   
     OUT <- list(CON         = CON,
                 call        = mc,
                 timing      = timing,
@@ -257,7 +253,6 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
                 b.restr     = b.restr,
                 residuals   = residuals, # unweighted residuals
                 fitted      = fitted,
-                weights     = NULL,
                 df.residual = object$df.residual,
                 R2.org      = R2.org, 
                 R2.reduced  = R2.reduced,
@@ -274,12 +269,10 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
                 control     = control)
   }
   
-  # not available yet.
-  se <- "none"
   # original object
   OUT$model.org <- object
   # # type standard error
-  OUT$se <- "none"
+  OUT$se <- se
   # OUT$information <- 1/s2 * crossprod(X)
   OUT$information <- NULL
   # # compute standard errors based on the augmented inverted information matrix or

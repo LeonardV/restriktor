@@ -33,7 +33,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
   if (!inherits(model.org, "glm")) {
     R2.reduced <- x[[1]]$R2.reduced
     R2.org     <- x[[1]]$R2.org
-    if ((R2.org - R2.reduced) < 1e-08) {
+    if (all((R2.org - R2.reduced) < 1e-08)) {
       cat("\nMultiple R-squared remains", sprintf("%5.3f", R2.org),"\n")
     } else {
       cat("\nMultiple R-squared reduced from", sprintf("%5.3f", R2.org), "to", 
@@ -125,8 +125,13 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
       cat("Note: Type C test is based on a t-distribution (one-sided),", 
           "\n      all other tests are based on a mixture of F-distributions.\n\n")
     } else {
-      cat("Note: All tests are based on a mixture of F-distributions", 
-          "\n      (Type C test is not applicable because of equality restrictions)\n\n")
+      if (inherits(x[[1]]$model.org, "mlm")) {
+        cat("Note: All tests are based on a mixture of F-distributions", 
+            "\n      (Type C test is not (yet) available for object of class mlm.)\n\n")  
+      } else {
+        cat("Note: All tests are based on a mixture of F-distributions", 
+            "\n      (Type C test is not applicable because of equality restrictions.)\n\n")
+      }
     }
 
   } else {

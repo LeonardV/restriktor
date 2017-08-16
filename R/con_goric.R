@@ -35,16 +35,36 @@ goric <- function(object, ..., complement = FALSE,
   
   df.c <- NULL
   if (complement) {
-    Amat <- object$constraints
-    bvec <- object$rhs
-    meq  <- object$neq
-    wt.bar <- object$wt.bar
-    b.restr <- object$b.restr
+    #b.restr <- object$b.restr
+    # restricted parameters
     b.unrestr <- object$b.unrestr
+    # level probabilities
+    wt.bar <- object$wt.bar
     
-    # compute log-likelihood for complement
-    if (!(all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec)) & meq == 0) { 
+    # constraints matrix
+    Amat <- object$constraints
+    # number of equalities
+    meq  <- object$neq
+    # rhs
+    bvec <- object$rhs
+    # extract equalities
+    Amat.ceq <- Amat[0:meq, ,drop = FALSE]
+    bvec.ceq <- bvec[0:meq]
+    # extract inequalities
+    
+    if (nrow(Amat) > meq) {
+      Amat.cin <- Amat[(meq + 1):nrow(Amat), ,drop = FALSE]
+      bvec.cin <- bvec[(meq + 1)]
+    } else {
+      Amat.cin <- matrix(NA, 0, 0)
+      bvec.cin <- as.vector(0)
+    }
+    
+    ## compute log-likelihood for complement
+    if ( !(all(Amat.ceq %*% c(b.unrestr) - bvec.ceq == 0)) ||
+         !(all(Amat.cin %*% c(b.unrestr) - bvec.cin >= 0)) ) { 
       ll.Hc <- con_loglik_lm(object$model.org)
+      # if any constraints is violated LL_c = LL_u
     } else if (nrow(Amat) > meq && !(all(c(Amat) == 0L))) {
       ll <- list()
       # number of rows
@@ -65,18 +85,17 @@ goric <- function(object, ..., complement = FALSE,
       # take the highest log-likelihood value as a substitute for 
       # the complement.
       ll.Hc <- max(unlist(ll))
-    } else if (nrow(Amat) == meq){
+    }  else if (nrow(Amat) == meq) { # redundant
       # in case of equality constraints only, the complement is 
       # equal to the unconstrained log-likelihood.
-      #ll.Hc <- logLik(object$model.org)
       ll.Hc <- con_loglik_lm(object$model.org)
     } else if (all(c(Amat) == 0L)) {
       # unconstrained setting
-      stop("Restriktor ERROR: the complement does not exist for the unconstrained hypothesis.")
+      stop("Restriktor ERROR: no complement exists for the unconstrained hypothesis.")
     }
     
     # compute free parameters f
-    p <- length(b.restr)
+    p <- length(b.unrestr)
     # free parameters. Note that Amat includes q1 and q2 constraints.
     f <- p - nrow(Amat)
     if (debug) { cat("number of free parameters =", f, "\n") }

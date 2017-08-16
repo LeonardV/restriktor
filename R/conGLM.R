@@ -51,6 +51,9 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   weights <- weights(object, "working")
   # unconstrained estimates
   b.unrestr <- coef(object)
+  b.unrestr[abs(b.unrestr) < ifelse(is.null(control$tol), 
+                                    sqrt(.Machine$double.eps), 
+                                    control$tol)] <- 0L
   # number of parameters
   p <- length(coef(object))
   # sample size

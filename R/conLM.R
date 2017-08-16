@@ -44,6 +44,9 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   weights <- weights(object)
   # unconstrained estimates
   b.unrestr <- coef(object)
+  b.unrestr[abs(b.unrestr) < ifelse(is.null(control$tol), 
+                                sqrt(.Machine$double.eps), 
+                                control$tol)] <- 0L
   # ML unconstrained MSE
   Sigma <- vcov(object)
   # number of parameters

@@ -46,6 +46,9 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
   p <- length(coef(object))
   # unconstrained estimates
   b.unrestr <- coef(object)
+  b.unrestr[abs(b.unrestr) < ifelse(is.null(control$tol), 
+                                    sqrt(.Machine$double.eps), 
+                                    control$tol)] <- 0L
   # unconstrained residual variance (weighted)
   residuals <- object$residuals
   # residual degree of freedom

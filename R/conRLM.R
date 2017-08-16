@@ -64,6 +64,9 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   weights <- weights(object)
   # unrestrikted coefficients
   b.unrestr <- coef(object)
+  b.unrestr[abs(b.unrestr) < ifelse(is.null(control$tol), 
+                                    sqrt(.Machine$double.eps), 
+                                    control$tol)] <- 0L
   # vcov
   Sigma <- vcov(object) 
   # unrestrikted estimate of scale 

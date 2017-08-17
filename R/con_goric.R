@@ -65,7 +65,7 @@ goric <- function(object, ..., complement = FALSE,
     }
     
     ## compute log-likelihood for complement
-    # check if any (in)equality constraint is violated
+    # check if any equality or inequality constraint is violated
     if (check.ceq || check.cin) { 
       ll.Hc <- con_loglik_lm(object$model.org)
 

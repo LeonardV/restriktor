@@ -50,20 +50,28 @@ goric <- function(object, ..., complement = FALSE,
     # extract equalities
     Amat.ceq <- Amat[0:meq, ,drop = FALSE]
     bvec.ceq <- bvec[0:meq]
+    # check if any equality constraint is violated
+    check.ceq <- !(all(Amat.ceq %*% c(b.unrestr) - bvec.ceq == 0))
     # extract inequalities
     
     if (nrow(Amat) > meq) {
+      # extract inequalities
       Amat.cin <- Amat[(meq + 1):nrow(Amat), ,drop = FALSE]
       bvec.cin <- bvec[(meq + 1)]
+      # check if any inequality constraint is violated
+      check.cin <- !(all(Amat.cin %*% c(b.unrestr) - bvec.cin >= 0))
     } else {
-      Amat.cin <- matrix(NA, 0, 0)
-      bvec.cin <- as.vector(0)
+      check.cin <- FALSE
     }
     
     ## compute log-likelihood for complement
-    if ( !(all(Amat.ceq %*% c(b.unrestr) - bvec.ceq == 0)) ||
-         !(all(Amat.cin %*% c(b.unrestr) - bvec.cin >= 0)) ) { 
+    # check if any (in)equality constraint is violated
+    if (check.ceq || check.cin) { 
       ll.Hc <- con_loglik_lm(object$model.org)
+
+      if (debug) {
+        cat("log-likelihood value =", ll.Hc, "\n")
+      }
       # if any constraints is violated LL_c = LL_u
     } else if (nrow(Amat) > meq && !(all(c(Amat) == 0L))) {
       ll <- list()
@@ -73,7 +81,7 @@ goric <- function(object, ..., complement = FALSE,
       if (meq > 0L) {
         nr <- nr[-c(0:meq)]
       }
-      # treat each row of Amat as an equality constraint.
+      # treat each row of Amat as an equality constraint
       for (l in 1:length(nr)) {
         idx <- c(nr[l], nr[-l])
         Amatx <- Amat[idx,,drop = FALSE]
@@ -82,13 +90,22 @@ goric <- function(object, ..., complement = FALSE,
                                mix.weights = "none", se = "none")
         ll[[l]] <- Hc.restr$loglik
       }
+      
+      if (debug) {
+        cat("log-likelihood value =", ll, "\n")
+      }
+      
       # take the highest log-likelihood value as a substitute for 
-      # the complement.
+      # the complement
       ll.Hc <- max(unlist(ll))
-    }  else if (nrow(Amat) == meq) { # redundant
+    } else if (nrow(Amat) == meq) { 
       # in case of equality constraints only, the complement is 
-      # equal to the unconstrained log-likelihood.
+      # equal to the unconstrained log-likelihood
       ll.Hc <- con_loglik_lm(object$model.org)
+      
+      if (debug) {
+        cat("log-likelihood value =", ll.Hc, "\n")
+      }
     } else if (all(c(Amat) == 0L)) {
       # unconstrained setting
       stop("Restriktor ERROR: no complement exists for the unconstrained hypothesis.")
@@ -96,7 +113,7 @@ goric <- function(object, ..., complement = FALSE,
     
     # compute free parameters f
     p <- length(b.unrestr)
-    # free parameters. Note that Amat includes q1 and q2 constraints.
+    # free parameters. Note that Amat includes q1 and q2 constraints
     f <- p - nrow(Amat)
     if (debug) { cat("number of free parameters =", f, "\n") }
     t <- p - f 
@@ -108,6 +125,10 @@ goric <- function(object, ..., complement = FALSE,
       PTc <- as.numeric(1 + (1 - wt.bar[idx]) * t + f)
     } else {
       stop("Restriktor ERROR: no level probabilities (chi-bar-square weights) found.")
+    }
+    
+    if (debug) {
+      cat("penalty term value =", PTc, "\n")
     }
     # compute goric.c
     goric.Hc <- -2*(ll.Hc - PTc)

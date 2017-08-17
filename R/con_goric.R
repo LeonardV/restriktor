@@ -170,7 +170,7 @@ print.goric <- function(x, digits = max(3, getOption("digits") - 2), ...) {
     goric.weights <- x$goric.weights
     Gm <- goric.weights[1]
     Gc <- goric.weights[2]
-    cat("The order-restricted hypothesis", objectnames[1], "is", 
+    cat("The order-restricted hypothesis", sQuote(objectnames[1]), "is", 
         sprintf("%1.3f", Gm/Gc), "times more likely than its complement.")
   }
   

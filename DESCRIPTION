@@ -9,7 +9,7 @@ Authors@R: c(person(given = "Leonard", family = "Vanbrabant",
                     email = "Yves.Rosseel@UGent.be")       
             )
 Description: Allow for easy-to-use testing of linear equality and inequality 
-  restrictions about parameters and effects in linear, and generalized linear statistical models.
+  restrictions about parameters and effects in (generalized) linear statistical models.
 Depends: R(>= 3.0.0)
 Imports: boot, ic.infer, lavaan, MASS, mvtnorm, quadprog
 License: GPL (>= 2)

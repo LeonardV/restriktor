@@ -1,10 +1,14 @@
 Changes in Version 0.1-55
  o Released on CRAN (February 21, 2017)
+ 
  o Check the restriktor.org website for more information and examples.
  
 Changes in Version 0.1-70
+ o Released on CRAN (August 23, 2017)
+ 
  o Fixed bug; the parametric and model-based bootstrap resulted in 
  an error for the Wald and score test-statistic (class rlm only).
+ 
  o Fixed bug; an error was given if mix.weights = "none" and no 
  constraints were specified.
  
@@ -20,8 +24,9 @@ Changes in Version 0.1-70
  cones is now supported for the gaussian family.
  
  o Added support; an order-constrained hypothesis can now be evaluated
- against its complement using the goric() function.
+ against its complement using the goric(..., complement = TRUE) function.
  
  o Added support; order-constrained estimates for the multivariate normal
- linear model. Currently, no standard errors or test-statistics are
- available. 
+ linear model. Currently, no standard errors (yet).
+ 
+ o Added support; likelihood-ratio test-statistic for objects of class mlm.

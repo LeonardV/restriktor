@@ -49,9 +49,9 @@ goric <- function(object, ..., complement = FALSE,
     bvec <- object$rhs
     # extract equalities
     Amat.ceq <- Amat[0:meq, ,drop = FALSE]
-    bvec.ceq <- bvec[0:meq]
+    #bvec.ceq <- bvec[0:meq]
     # check if any equality constraint is violated
-    check.ceq <- !(all(Amat.ceq %*% c(b.unrestr) - bvec.ceq == 0))
+    #check.ceq <- !(all(Amat.ceq %*% c(b.unrestr) - bvec.ceq == 0))
     # extract inequalities
     
     if (nrow(Amat) > meq) {
@@ -65,8 +65,8 @@ goric <- function(object, ..., complement = FALSE,
     }
     
     ## compute log-likelihood for complement
-    # check if any equality or inequality constraint is violated
-    if (check.ceq || check.cin) { 
+    # check if any inequality constraint is violated, equalities are freed
+    if (check.cin) { 
       ll.Hc <- con_loglik_lm(object$model.org)
 
       if (debug) {
@@ -92,7 +92,7 @@ goric <- function(object, ..., complement = FALSE,
       }
       
       if (debug) {
-        cat("log-likelihood value =", ll, "\n")
+        cat("log-likelihood value =", ll[[l]], "\n")
       }
       
       # take the highest log-likelihood value as a substitute for 
@@ -109,20 +109,26 @@ goric <- function(object, ..., complement = FALSE,
     } else if (all(c(Amat) == 0L)) {
       # unconstrained setting
       stop("Restriktor ERROR: no complement exists for the unconstrained hypothesis.")
+    } else {
+      stop("Restriktor ERROR: you might have found a bug, please contact me!")
     }
     
-    # compute free parameters f
+    # compute free parameters f in the complement
     p <- length(b.unrestr)
+    # nrow q1
+    lq1 <- nrow(Amat.cin)
+    # nrow q2
+    lq2 <- nrow(Amat.ceq)
     # free parameters. Note that Amat includes q1 and q2 constraints
-    f <- p - nrow(Amat)
-    if (debug) { cat("number of free parameters =", f, "\n") }
-    t <- p - f 
+    f <- p - nrow(Amat) # p - q1 - q2
+    if (debug) { cat("number of free parameters =", (f + lq2), "\n") }
     idx <- length(wt.bar)
     # compute penalty term value PTc
     if (attr(wt.bar, "method") == "boot") {
-      PTc <- as.numeric(1 + (1 - wt.bar[idx-meq]) * t + f)
+      PTc <- as.numeric(1 + (1 - wt.bar[idx-meq]) * lq1 + f + lq2)
     } else if (attr(wt.bar, "method") == "pmvnorm") {
-      PTc <- as.numeric(1 + (1 - wt.bar[idx]) * t + f)
+      # the q2 equalities are not included in wt.bar. Hence, do not have to be subtracted.
+      PTc <- as.numeric(1 + (1 - wt.bar[idx]) * lq1 + f + lq2)
     } else {
       stop("Restriktor ERROR: no level probabilities (chi-bar-square weights) found.")
     }
@@ -140,9 +146,10 @@ goric <- function(object, ..., complement = FALSE,
   PT    <- unlist(lapply(isSummary, function(x) attr(x$goric, "penalty")))
   goric <- unlist(lapply(isSummary, function(x) x$goric[1]))
   df    <- data.frame(model = objectnames, loglik = ll, penalty = PT, goric)
+  df$model <- as.character(df$model)
   df <- rbind(df, df.c)
   
-  
+  # compute evidence ratios
   delta <- df$goric - min(df$goric)
   goric.weights <- exp(-delta / 2) / sum(exp(-delta / 2))
   df$goric.weights <- goric.weights
@@ -158,20 +165,19 @@ goric <- function(object, ..., complement = FALSE,
 print.goric <- function(x, digits = max(3, getOption("digits") - 2), ...) {
   
   dig <- paste0("%6.", digits, "f")
-  mnames <- levels(x$model)
-  df <- as.data.frame(lapply(x, sprintf, fmt = dig))
-  df$model <- mnames
+  x2 <- x[-1]
+  df <- as.data.frame(lapply(x2, sprintf, fmt = dig))
+  df <- cbind(model = x$model, df)
   print(format(df, digits = digits, scientific = FALSE), 
         print.gap = 2, quote = FALSE)
   
   complement <- attr(x, "complement")
   if (complement) {
-    objectnames <- levels(x$model)[1]
-    goric.weights <- x$goric.weights
-    Gm <- goric.weights[1]
+    objectnames <- df$model[1]
+    goric.weights <- as.numeric(levels(df$goric.weights))
+    Gm <- c(goric.weights[1])
     Gc <- goric.weights[2]
     cat("The order-restricted hypothesis", sQuote(objectnames[1]), "is", 
         sprintf("%1.3f", Gm/Gc), "times more likely than its complement.")
   }
-  
 }

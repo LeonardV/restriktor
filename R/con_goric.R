@@ -49,9 +49,9 @@ goric <- function(object, ..., complement = FALSE,
     bvec <- object$rhs
     # extract equalities
     Amat.ceq <- Amat[0:meq, ,drop = FALSE]
-    #bvec.ceq <- bvec[0:meq]
+    bvec.ceq <- bvec[0:meq]
     # check if any equality constraint is violated
-    #check.ceq <- !(all(Amat.ceq %*% c(b.unrestr) - bvec.ceq == 0))
+    check.ceq <- !(all(Amat.ceq %*% c(b.unrestr) - bvec.ceq == 0))
     # extract inequalities
     
     if (nrow(Amat) > meq) {
@@ -65,8 +65,8 @@ goric <- function(object, ..., complement = FALSE,
     }
     
     ## compute log-likelihood for complement
-    # check if any inequality constraint is violated, equalities are freed
-    if (check.cin) { 
+    # check if any constraint is violated
+    if (check.cin || check.ceq) { 
       ll.Hc <- con_loglik_lm(object$model.org)
 
       if (debug) {
@@ -99,6 +99,7 @@ goric <- function(object, ..., complement = FALSE,
       # the complement
       ll.Hc <- max(unlist(ll))
     } else if (nrow(Amat) == meq) { 
+      # redundant, this will be catched by the first statement.
       # in case of equality constraints only, the complement is 
       # equal to the unconstrained log-likelihood
       ll.Hc <- con_loglik_lm(object$model.org)

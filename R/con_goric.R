@@ -126,10 +126,10 @@ goric <- function(object, ..., complement = FALSE,
     idx <- length(wt.bar)
     # compute penalty term value PTc
     if (attr(wt.bar, "method") == "boot") {
-      PTc <- as.numeric(1 + (1 - wt.bar[idx-meq]) * lq1 + f + lq2)
+      PTc <- as.numeric(1 + p - wt.bar[idx-meq] * lq1)
     } else if (attr(wt.bar, "method") == "pmvnorm") {
       # the q2 equalities are not included in wt.bar. Hence, do not have to be subtracted.
-      PTc <- as.numeric(1 + (1 - wt.bar[idx]) * lq1 + f + lq2)
+      PTc <- as.numeric(1 + p - wt.bar[idx] * lq1)
     } else {
       stop("Restriktor ERROR: no level probabilities (chi-bar-square weights) found.")
     }

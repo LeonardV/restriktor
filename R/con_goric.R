@@ -68,7 +68,6 @@ goric <- function(object, ..., complement = FALSE,
     # check if any constraint is violated
     if (check.cin || check.ceq) { 
       ll.Hc <- con_loglik_lm(object$model.org)
-
       if (debug) {
         cat("log-likelihood value =", ll.Hc, "\n")
       }
@@ -90,11 +89,9 @@ goric <- function(object, ..., complement = FALSE,
                                mix.weights = "none", se = "none")
         ll[[l]] <- Hc.restr$loglik
       }
-      
       if (debug) {
         cat("log-likelihood value =", ll[[l]], "\n")
       }
-      
       # take the highest log-likelihood value as a substitute for 
       # the complement
       ll.Hc <- max(unlist(ll))
@@ -103,7 +100,6 @@ goric <- function(object, ..., complement = FALSE,
       # in case of equality constraints only, the complement is 
       # equal to the unconstrained log-likelihood
       ll.Hc <- con_loglik_lm(object$model.org)
-      
       if (debug) {
         cat("log-likelihood value =", ll.Hc, "\n")
       }

@@ -171,7 +171,7 @@ print.goric <- function(x, digits = max(3, getOption("digits") - 2), ...) {
   complement <- attr(x, "complement")
   if (complement) {
     objectnames <- df$model[1]
-    goric.weights <- as.numeric(levels(df$goric.weights))
+    goric.weights <- as.numeric(as.character(df$goric.weights[1:2]))
     Gm <- c(goric.weights[1])
     Gc <- goric.weights[2]
     cat("The order-restricted hypothesis", sQuote(objectnames[1]), "is", 

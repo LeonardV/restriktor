@@ -17,9 +17,16 @@ coef.restriktor <- function(object, ...)  {
   OUT
 }
 
+
+logLik.restriktor <- function(object, ...) {
+  object$loglik
+}
+
+
 model.matrix.restriktor <- function(object, ...) {
   model.matrix(object$model.org)
 }
+
 
 tukeyChi <- function(x, c = 4.685061, deriv = 0, ...) {
   u <- x / c

@@ -47,12 +47,13 @@ export("restriktor",
        "goric", "print.goric",
        "print.restriktor", "print.summary.restriktor",
        "summary.restriktor", "conTest_summary.restriktor",
-       "print.conTest", 
+       "print.conTest", "logLik.restriktor",
        "coef.restriktor", "model.matrix.restriktor",
        "con_weights_boot")
 
 S3method(coef, restriktor)
 S3method(model.matrix, restriktor)
+S3method(logLik, restriktor)
 S3method(print, restriktor)
 S3method(print, conTest)
 S3method(print, summary.restriktor)

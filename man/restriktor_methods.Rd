@@ -5,6 +5,7 @@
 \alias{print.summary.restriktor}
 \alias{coef.restriktor}
 \alias{model.matrix.restriktor}
+\alias{logLik.restriktor}
 
 \title{Methods for restriktor}
 \description{restricted estimation and confidence intervals for  
@@ -23,6 +24,8 @@
 \method{coef}{restriktor}(object, \dots)
 
 \method{model.matrix}{restriktor}(object, \dots)
+
+\method{logLik}{restriktor}(object, \dots)
   
 }
 \arguments{

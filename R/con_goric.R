@@ -76,17 +76,14 @@ goric <- function(object, ..., complement = FALSE, lower = NULL, upper = NULL,
           ub <- rep(ub, meq)
         } else if (meq != length(ub)) {
           stop("restriktor ERROR: the number of upper-bounds is not equal to neq.")
-        } else {
-          stop("restriktor ERROR: you probably found a bug, please contact me!")
-        }
+        } 
+        
         # lower-bound
         if (length(lb) == 1L && meq >= 1L)  {
           lb <- rep(lb, meq)
         } else if (meq != length(lb)) {
           stop("restriktor ERROR: the number of lower-bounds is not equal to neq.")
-        } else {
-          stop("restriktor ERROR: you might have found a bug, please contact me!")
-        }
+        } 
         
         Amat.ciq <- Amat[-c(0:meq), , drop = FALSE]
         Amat.ceq <- Amat[0:meq, , drop = FALSE]

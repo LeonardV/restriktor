@@ -1,4 +1,4 @@
-goric <- function(object, ..., complement = FALSE, bound = NULL, 
+goric <- function(object, ..., complement = FALSE, bound = NULL, # lower and upper?
                   digits = max(3, getOption("digits") - 2), debug = FALSE) {
   
   mc <- match.call()
@@ -61,84 +61,89 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
     } 
     
     if (!is.null(bound)) {
+      # extract ciq matrix
       Amat.ciq <- Amat[-c(0:meq), , drop = FALSE]
+      # extract ceq matrix
       Amat.ceq <- Amat[0:meq, , drop = FALSE]
+      # extract ciq rhs
       bvec.ciq <- bvec[-c(0:meq)]
+      # extract ceq rhs
       bvec.ceq <- bvec[0:meq]
       
+      # upper-bound = rhs + bound
       ub <- bvec.ceq + bound
+      # lower-bound = rhs - bound
       lb <- bvec.ceq - bound 
       
       ## check if any equality constraints
       if (meq > 0L) {
-        ## checks
-        # upper-bound
-        if (length(ub) == 1L && meq >= 1L)  {
+        # correct user error
+        if ( ((length(ub) == 1L) || (length(lb) == 1L)) && meq >= 1L )  {
           ub <- rep(ub, meq)
-        } else if (meq != length(ub)) {
-          stop("restriktor ERROR: the number of bounds is not equal to neq.")
-        } 
-        
-        # lower-bound
-        if (length(lb) == 1L && meq >= 1L)  {
           lb <- rep(lb, meq)
-        } else if (meq != length(lb)) {
+        } 
+        # check 
+        if ( (length(ub) != meq) || (length(lb) != meq) ) {
           stop("restriktor ERROR: the number of bounds is not equal to neq.")
         } 
         
         # check if unconstrained mle are violated
         check.ciq <- all(Amat.ciq %*% c(b.unrestr) - bvec.ciq >= 0) 
-        ## check if unconstrained mle lay between the boundaries
-        check.ub <- all(Amat.ceq %*% c(b.unrestr) <= ub)         
-        check.lb <- all(Amat.ceq %*% c(b.unrestr) >= lb)         
-        
+        ## check if unconstrained mle lay between the bounds
+        check.ub <- all(Amat.ceq %*% c(b.unrestr) <= (ub + sqrt(.Machine$double.eps)))         
+        check.lb <- all(Amat.ceq %*% c(b.unrestr) >= (lb - sqrt(.Machine$double.eps)))         
+  
         ## check if unrestricted mle lay in boundary area
         if (check.ciq && check.ub && check.lb) {
           # log-likelihood model
-          ll.Hm <- logLik(model.org)
-          ## determine log-likelihood_c
-          ## 2q2 + 1 combinations
+          llm <- logLik(model.org)
           
+          ## determine log-likelihood_c
+          nr.meq <- 1:meq
           # upper-bound
-          ll.ub <- list()
-          nr <- 1:meq
-          for (l in nr) {
+          llc.ub <- list()
+          for (l in nr.meq) {
             Amat.ub <- rbind(Amat.ceq[l, , drop = FALSE], Amat.ciq)
             bvec.ub <- c(ub[l], bvec.ciq)
             Hc.ub <- restriktor(model.org, constraints = Amat.ub, 
                                 neq = 1, rhs = bvec.ub, 
                                 mix.weights = "none", se = "none")
-            ll.ub[[l]] <- logLik(Hc.ub)
+            llc.ub[[l]] <- logLik(Hc.ub)
           }
-          
           # lower-bound
-          ll.lb <- list()
-          for (l in nr) {
+          llc.lb <- list()
+          for (l in nr.meq) {
             Amat.lb <- rbind(Amat.ceq[l, , drop = FALSE], Amat.ciq)
             bvec.lb <- c(lb[l], bvec.ciq)
             Hc.lb <- restriktor(model.org, constraints = Amat.lb, 
                                 neq = 1, rhs = bvec.lb, 
                                 mix.weights = "none", se = "none")
-            ll.lb[[l]] <- logLik(Hc.lb)
+            llc.lb[[l]] <- logLik(Hc.lb)
           }
           
-          ## only if ciq involved                                               # add check!
-          if (length(Amat.ciq) > 0L) {
-            # ciq --> ceq; ceq --> free                            
-            ll.free <- list()
-            nr.free <- 1:nrow(Amat.ciq)
-            for (l in nr.free) {
-             Hc.free <- restriktor(model.org, constraints = Amat.ciq[l, , drop = FALSE],
-                                   neq = 1, rhs = bvec.ciq[l],
-                                   mix.weights = "none", se = "none")
-             ll.free[[l]] <- logLik(Hc.free)
+          ## only if any ciq                                     
+          if (length(Amat.ciq) > 0L) { 
+            Amatx <- rbind(Amat.ciq, Amat.ceq, -Amat.ceq)        # correct?
+            bvecx <- c(bvec.ciq, lb, lb)                         # correct?   
+            
+            llc.s <- list()
+            nr.ciq <- 1:nrow(Amat.ciq)
+            for (l in nr.ciq) {
+             Hc.s <- restriktor(model.org, constraints = Amat.ciq[l, , drop = FALSE],
+                                neq = 1, rhs = bvec.ciq[l],
+                                mix.weights = "none", se = "none")
+             b.s <- coef(Hc.s)
+             b.s[abs(b.s) < sqrt(.Machine$double.eps)] <- 0L
+             if (all(Amatx %*% c(b.s) >= bvecx)) {               # correct check?
+               llc.s[[l]] <- logLik(Hc.s)
+             }
             }
           } else {
-            ll.free <- NULL
+            llc.s <- NULL
           }
           
-          llc <- unlist(c(ll.ub, ll.lb, ll.free))
-          ll.Hc <- max(llc)
+          llc <- unlist(c(llc.ub, llc.lb, llc.s))
+          llc <- max(llc)
           
           if (debug) {
             print(llc)
@@ -147,89 +152,43 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
           # determine the log-likelihood_m in case the unconstrained mle 
           # lay outside the range restriktions. 
           # 2^q2 combinations.
-          ll.Hc <- logLik(model.org)
+          llc <- logLik(model.org) 
           
-          ## ll.Hm
-          # upper-bound
-          ll.ub <- list()
-          nr <- 1:meq
-          for (l in nr) {
-            Amat.ub <- rbind(Amat.ceq[l, , drop = FALSE], Amat.ciq)
-            bvec.ub <- c(ub[l], bvec.ciq)
-            Hc.ub <- restriktor(model.org, constraints = Amat.ub, 
-                                neq = 1, rhs = bvec.ub, 
-                                mix.weights = "none", se = "none")
-            ll.ub[[l]] <- logLik(Hc.ub)
-          }
-          
-          # lower-bound
-          ll.lb <- list()
-          for (l in nr) {
-            Amat.lb <- rbind(Amat.ceq[l, , drop = FALSE], Amat.ciq)
-            bvec.lb <- c(lb[l], bvec.ciq)
-            Hc.lb <- restriktor(model.org, constraints = Amat.lb, 
-                                neq = 1, rhs = bvec.lb, 
-                                mix.weights = "none", se = "none")
-            ll.lb[[l]] <- logLik(Hc.lb)
-          }
-          
-          
-          # only needed if ciq > 0
           # add extra rows to contraint matrix for checks
+          Amatx <- rbind(Amat.ciq, Amat.ceq, -Amat.ceq)
+          bvecx <- c(bvec.ciq, lb, lb)
+          lb.new <- ifelse(lb > 0, -1*lb, lb)  
           
-          if (length(Amat.ciq) > 0L) {
-            Amatx <- rbind(Amat.ciq, Amat.ceq, Amat.ceq)
-            bvecx <- c(bvec.ciq, ub, lb)
-            nr.ciq <- 1:nrow(Amat.ciq)
-            
-            
-            rbind( c(-.05, -.10, -.15), # lb lb lb 
-                   c( .05,  .10,  .15), # ub ub ub
-                   c(-.05, -.10,  .15), # lb lb ub
-                   c(-.05,  .10,  .15), # lb ub ub
-                   c( .05, -.10, -.15), # ub lb lb
-                   c( .05,  .10, -.15)) # ub ub lb
-           
-            test <- rbind(lb, ub) 
-            
-            
-            
-            nr.perm <- 1:nrow(perm)
-            ll.outer <- ll.inner <- list() 
-            for (l in nr.ciq) {
-              nr.idx <- c(nr.ciq[l], nr.ciq[-l])
-              Amat.ciq.idx <- Amat.ciq[nr.idx, , drop = FALSE]
-              Amat.nr <- rbind(Amat.ciq.idx, Amat.ceq)
-              perm.idx <- ifelse(perm > 0, -1, 1)
-              perm2 <- perm * perm.idx
-              idx.ceq <- which(colSums(abs(Amat.ceq)) > 0L)
-              for (m in nr.perm) {
-                Amat.nr[idx.ceq, idx.ceq] <- Amat.ceq[ , idx.ceq] * perm.idx[m, ]
-                bvec.nr <- c(bvec.ciq[nr.idx], perm2[m, ])
-                Hm <- restriktor(model.org, constraints = Amat.nr,
-                                 neq = 1, rhs = bvec.nr,
-                                 mix.weights = "none", se = "none")
-                Hm.b <- coef(Hm)
-                Hm.b[abs(Hm.b) < sqrt(.Machine$double.eps)] <- 0L
-                if (all(Amatx %*% c(Hm.b) - bvecx >= 0L)) {
-                  ll.inner[[m]] <- logLik(Hm)
-                }
-              }
-              ll.outer[[l]] <- ll.inner
-            }
-          } else {
-            ll.outer <- NULL
+          len.bvec.ceq <- length(bvec.ceq)
+          perm <- rep(list(rep(c(-1,1), (2^meq)/2)), len.bvec.ceq)
+          perm.idx <- unique(as.matrix(expand.grid(perm)))
+                          
+          nr.perm <- 1:(2^meq)
+          llm <- list()
+          for (m in nr.perm) {
+            perm.vec <- perm.idx[m,]
+            Amat.ceq.perm <- sweep(Amat.ceq, 2, perm.vec, `*`)
+            Amat.nr <- rbind(Amat.ciq, Amat.ceq.perm)
+            bvec.nr <- c(bvec.ciq, lb.new)
+            Hm <- restriktor(model.org, constraints = Amat.nr,
+                             neq = 0, rhs = bvec.nr,
+                             mix.weights = "none", se = "none")
+            Hm.b <- coef(Hm)
+            Hm.b[abs(Hm.b) < sqrt(.Machine$double.eps)] <- 0L
+            if (all( Amatx %*% c(Hm.b) >= (bvecx - sqrt(.Machine$double.eps)))) {
+              llm[[m]] <- logLik(Hm)
+            } 
           }
-          llm <- unlist(c(ll.ub, ll.lb, ll.outer))
-          ll.Hm <- max(llm)
+          llm <- unlist(llm)
+          if (is.null(llm)) {
+            llm <- logLik(object)
+          }
+          llm <- max(llm)
           
           if (debug) {
             print(llm)
-          }  
+          }
         }
-      } else {
-        # if meq = 0. This should be catched earlier
-        stop("restriktor ERROR: you might have found a bug, please contact me!")
       }
     } else if (is.null(bound)) {
       # check if any equality constraint is violated
@@ -243,9 +202,9 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
       ## compute log-likelihood for complement
       # check if any constraint is violated
       if (check.ciq || check.ceq) { 
-        ll.Hc <- con_loglik_lm(model.org)
+        llc <- con_loglik_lm(model.org)
         if (debug) {
-          cat("log-likelihood_c value =", ll.Hc, "\n")
+          cat("log-likelihood_c value =", llc, "\n")
         }
         # if any constraints is violated LL_c = LL_u
       } else if (nrow(Amat) > meq && !(all(c(Amat) == 0L))) {
@@ -270,14 +229,14 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
         }
         # take the highest log-likelihood value as a substitute for 
         # the complement
-        ll.Hc <- max(unlist(ll))
+        llc <- max(unlist(ll))
       } else if (nrow(Amat) == meq) { 
         # redundant, this will be catched by the first statement.
         # in case of equality constraints only, the complement is 
         # equal to the unconstrained log-likelihood
-        ll.Hc <- con_loglik_lm(model.org)
+        llc <- con_loglik_lm(model.org)
         if (debug) {
-          cat("log-likelihood_c value =", ll.Hc, "\n")
+          cat("log-likelihood_c value =", llc, "\n")
         }
       } else if (all(c(Amat) == 0L)) {
         # unconstrained setting
@@ -285,7 +244,7 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
       } else {
         stop("Restriktor ERROR: you might have found a bug, please contact me!")
       }
-      ll.Hm <- unlist(lapply(isSummary, function(x) attr(x$goric, "loglik"))) 
+      llm <- unlist(lapply(isSummary, function(x) attr(x$goric, "loglik"))) 
     } 
     
     # compute free parameters f in the complement
@@ -322,13 +281,13 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
   } else {
     # model
     PTm <- unlist(lapply(isSummary, function(x) attr(x$goric, "penalty")))
-    goric.Hm <- -2*(ll.Hm - PTm)
-    df.Hm  <- data.frame(model = objectnames, loglik = ll.Hm, penalty = PTm, 
+    goric.Hm <- -2*(llm - PTm)
+    df.Hm  <- data.frame(model = objectnames, loglik = llm, penalty = PTm, 
                          goric = goric.Hm)
     df.Hm$model <- as.character(df.Hm$model)
     # complement
-    goric.Hc <- -2*(ll.Hc - PTc)
-    df.c  <- data.frame(model = "complement", loglik = ll.Hc, penalty = PTc, 
+    goric.Hc <- -2*(llc - PTc)
+    df.c  <- data.frame(model = "complement", loglik = llc, penalty = PTc, 
                         goric = goric.Hc)
     df <- rbind(df.Hm, df.c)
   } 

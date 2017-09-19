@@ -1,4 +1,4 @@
-goric <- function(object, ..., complement = FALSE, bound = NULL, # lower and upper?
+goric <- function(object, ..., complement = FALSE, bound = NULL, 
                   digits = max(3, getOption("digits") - 2), debug = FALSE) {
   
   mc <- match.call()
@@ -176,7 +176,7 @@ goric <- function(object, ..., complement = FALSE, bound = NULL, # lower and upp
               Amatx <- rbind(Amat.ciq, Amat.ceq, -Amat.ceq)
               bvecx <- c(bvec.ciq, bounds.new, bounds.new)
               
-              Amat.ceq.perm <- sweep(Amat.ceq, 2, perm.vec, `*`)
+              Amat.ceq.perm <- t( t(Amat.ceq) * perm.vec ) #sweep(Amat.ceq, 2, perm.vec, `*`)
               Amat.nr <- rbind(Amat.ceq.perm, Amat.ciq)
               bvec.nr <- c(bounds.new, bvec.ciq)
             
@@ -185,7 +185,7 @@ goric <- function(object, ..., complement = FALSE, bound = NULL, # lower and upp
                                mix.weights = "none", se = "none")
               beta.Hm <- coef(Hm)
               beta.Hm[abs(beta.Hm) < sqrt(.Machine$double.eps)] <- 0L
-              if (all( Amatx %*% c(beta.Hm) >= (bvecx - .Machine$double.eps) )) {
+              if (all( Amatx %*% c(beta.Hm) - bvecx + .Machine$double.eps >= 0 )) {
                 llm[[m]] <- logLik(Hm)
               } 
             }

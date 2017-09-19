@@ -157,18 +157,18 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
           # if all bounds are zero, then llm = logLik(object)
           if (!all(bound == 0L)) {
             # get all combinations for ub and lb
-            # which bound == zero, rhs might be > 0
-            #bounds.zero.idx <- which(bound == 0)
+            
             len.bvec.ceq <- length(ub)
             perm <- rep(list(rep(c(-1,1), (2^len.bvec.ceq)/2)), len.bvec.ceq)
-            perm.idx <- unique(as.matrix(expand.grid(perm)))
+            perm.grid <- unique(as.matrix(expand.grid(perm)))
             nr.perm <- 1:(2^len.bvec.ceq)
             
             llm <- list()
             for (m in nr.perm) {
-              perm.vec <- perm.idx[m, ]
-              ub.idx <- which(perm.idx[m, ] == -1)
-              lb.idx <- which(perm.idx[m, ] ==  1)
+              #perm.vec <- perm.grid[m, ]
+              perm.vec <- apply(Amat.ceq, 2, function(x) perm.grid[m, ] * x)
+              ub.idx <- which(perm.grid[m, ] == -1)
+              lb.idx <- which(perm.grid[m, ] ==  1)
               order.idx <- c(ub.idx, lb.idx)
               bounds.new <- c(-ub[ub.idx], lb[lb.idx])
               bounds.new <- bounds.new[order(order.idx, decreasing = FALSE)]
@@ -176,7 +176,8 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
               Amatx <- rbind(Amat.ciq, Amat.ceq, -Amat.ceq)
               bvecx <- c(bvec.ciq, bounds.new, bounds.new)
               
-              Amat.ceq.perm <- t( t(Amat.ceq) * perm.vec ) #sweep(Amat.ceq, 2, perm.vec, `*`)
+              #Amat.ceq.perm <- t( t(Amat.ceq) * perm.vec ) 
+              Amat.ceq.perm <- perm.vec
               Amat.nr <- rbind(Amat.ceq.perm, Amat.ciq)
               bvec.nr <- c(bounds.new, bvec.ciq)
             

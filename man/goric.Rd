@@ -6,8 +6,8 @@
 \description{The \code{goric} function computes GORIC 
 weights, which are comparable to the Akaike weights. 
 }
-\usage{goric(object, \dots, complement = FALSE, digits = max(3, getOption("digits") - 2), 
-      debug = FALSE)
+\usage{goric(object, \dots, complement = FALSE, bound = NULL, 
+             digits = max(3, getOption("digits") - 2), debug = FALSE)
 
 \method{print}{goric}(x, digits = max(3, getOption("digits") - 2), \dots)
 
@@ -22,6 +22,10 @@ weights, which are comparable to the Akaike weights.
   
   \item{complement}{logical; if TRUE the complement is computed. The complement can only
   be computed for one restriktor object at a time.}
+  
+  \item{bound}{vector of about equality bound(s), replicated to be as 
+  long as the number of equality constraints (neq). See details for more
+  information.}
   
   \item{digits}{the number of significant digits to use when printing.}
   
@@ -39,6 +43,10 @@ included as safeguard.
 In case of one order-constrained hypothesis, say H1, the complement 
 Hc can be computed as competing hypothesis. The complement is defined 
 as Hc = not H1.
+
+# about equality
+< details >
+
 }
 
 \value{The function returns a dataframe with the log-likelihood,
@@ -98,5 +106,8 @@ fit5.con <- restriktor(fit2.mlm, constraints = myConstraints2)
 
 # fit5.con verus the complement
 goric(fit5.con, complement = TRUE)
+
+## about equality
+# give example
 
 }

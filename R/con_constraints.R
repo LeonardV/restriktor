@@ -31,6 +31,8 @@ con_constraints <- function(model, constraints, bvec = NULL, meq = 0L,
     bvec <- con_constraints_rhs_bvec(model, constraints = constraints)
     # inequality constraints
     Amat <- con_constraints_con_amat(model, constraints = constraints)
+    
+    CON$constraints <- constraints
   } else if (!is.character(constraints) && !is.null(constraints)) {
     if (is.vector(constraints)) {
       constraints <- rbind(constraints)

@@ -90,8 +90,8 @@ goric <- function(object, ..., complement = FALSE, bound = NULL, # lower and upp
         # check if unconstrained mle are violated
         check.ciq <- all(Amat.ciq %*% c(b.unrestr) - bvec.ciq >= 0) 
         ## check if unconstrained mle lay between the bounds
-        check.ub <- all(Amat.ceq %*% c(b.unrestr) <= (ub + sqrt(.Machine$double.eps)))         
-        check.lb <- all(Amat.ceq %*% c(b.unrestr) >= (lb - sqrt(.Machine$double.eps)))         
+        check.ub <- all(Amat.ceq %*% c(b.unrestr) <= (ub + .Machine$double.eps))
+        check.lb <- all(Amat.ceq %*% c(b.unrestr) >= (lb - .Machine$double.eps))
   
         ## check if unrestricted mle lay in boundary area
         if (check.ciq && check.ub && check.lb) {
@@ -154,40 +154,51 @@ goric <- function(object, ..., complement = FALSE, bound = NULL, # lower and upp
           # 2^q2 combinations.
           llc <- logLik(model.org) 
           
-          # add extra rows to contraint matrix for checks
-          Amatx <- rbind(Amat.ciq, Amat.ceq, -Amat.ceq)
-          bvecx <- c(bvec.ciq, lb, lb)
-          lb.new <- ifelse(lb > 0, -1*lb, lb)  
-          
-          len.bvec.ceq <- length(bvec.ceq)
-          perm <- rep(list(rep(c(-1,1), (2^meq)/2)), len.bvec.ceq)
-          perm.idx <- unique(as.matrix(expand.grid(perm)))
-                          
-          nr.perm <- 1:(2^meq)
-          llm <- list()
-          for (m in nr.perm) {
-            perm.vec <- perm.idx[m,]
-            Amat.ceq.perm <- sweep(Amat.ceq, 2, perm.vec, `*`)
-            Amat.nr <- rbind(Amat.ciq, Amat.ceq.perm)
-            bvec.nr <- c(bvec.ciq, lb.new)
-            Hm <- restriktor(model.org, constraints = Amat.nr,
-                             neq = 0, rhs = bvec.nr,
-                             mix.weights = "none", se = "none")
-            Hm.b <- coef(Hm)
-            Hm.b[abs(Hm.b) < sqrt(.Machine$double.eps)] <- 0L
-            if (all( Amatx %*% c(Hm.b) >= (bvecx - sqrt(.Machine$double.eps)))) {
-              llm[[m]] <- logLik(Hm)
-            } 
-          }
-          llm <- unlist(llm)
-          if (is.null(llm)) {
+          # if all bounds are zero, then llm = logLik(object)
+          if (!all(bound == 0L)) {
+            # get all combinations for ub and lb
+            # which bound == zero, rhs might be > 0
+            #bounds.zero.idx <- which(bound == 0)
+            len.bvec.ceq <- length(ub)
+            perm <- rep(list(rep(c(-1,1), (2^len.bvec.ceq)/2)), len.bvec.ceq)
+            perm.idx <- unique(as.matrix(expand.grid(perm)))
+            nr.perm <- 1:(2^len.bvec.ceq)
+            
+            llm <- list()
+            for (m in nr.perm) {
+              perm.vec <- perm.idx[m, ]
+              ub.idx <- which(perm.idx[m, ] == -1)
+              lb.idx <- which(perm.idx[m, ] ==  1)
+              order.idx <- c(ub.idx, lb.idx)
+              bounds.new <- c(-ub[ub.idx], lb[lb.idx])
+              bounds.new <- bounds.new[order(order.idx, decreasing = FALSE)]
+              
+              Amatx <- rbind(Amat.ciq, Amat.ceq, -Amat.ceq)
+              bvecx <- c(bvec.ciq, bounds.new, bounds.new)
+              
+              Amat.ceq.perm <- sweep(Amat.ceq, 2, perm.vec, `*`)
+              Amat.nr <- rbind(Amat.ceq.perm, Amat.ciq)
+              bvec.nr <- c(bounds.new, bvec.ciq)
+            
+              Hm <- restriktor(model.org, constraints = Amat.nr,
+                               neq = 0, rhs = bvec.nr,
+                               mix.weights = "none", se = "none")
+              beta.Hm <- coef(Hm)
+              beta.Hm[abs(beta.Hm) < sqrt(.Machine$double.eps)] <- 0L
+              if (all( Amatx %*% c(beta.Hm) >= (bvecx - .Machine$double.eps) )) {
+                llm[[m]] <- logLik(Hm)
+              } 
+            }
+            llm <- unlist(llm)
+            if (debug) {
+              cat("log-likelihood_m =", llm, "\n")
+            }
+  
+            llm <- max(llm)
+          } else {
             llm <- logLik(object)
           }
-          llm <- max(llm)
-          
-          if (debug) {
-            print(llm)
-          }
+          llm
         }
       }
     } else if (is.null(bound)) {

@@ -162,6 +162,10 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
             perm <- rep(list(rep(c(-1,1), (2^len.bvec.ceq)/2)), len.bvec.ceq)
             perm.grid <- unique(as.matrix(expand.grid(perm)))
             nr.perm <- 1:(2^len.bvec.ceq)
+            bound.zero.idx <- which(bound == 0)
+            
+            ## FIXME ##
+            # rhs > 0 and bound == 0
             
             llm <- list()
             for (m in nr.perm) {
@@ -178,11 +182,22 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
               
               #Amat.ceq.perm <- t( t(Amat.ceq) * perm.vec ) 
               Amat.ceq.perm <- perm.vec
-              Amat.nr <- rbind(Amat.ceq.perm, Amat.ciq)
-              bvec.nr <- c(bounds.new, bvec.ciq)
+              Amat.new <- rbind(Amat.ceq.perm, Amat.ciq)
+              bvec.new <- c(bounds.new, bvec.ciq)
             
-              Hm <- restriktor(model.org, constraints = Amat.nr,
-                               neq = 0, rhs = bvec.nr,
+              if (length(bound.zero.idx) == 0L) {
+                Amat.new.sort <- Amat.new
+                bvec.new.sort <- bvec.new
+              } else {
+                # constraint rows for which bound == 0 are placed on top
+                Amat.new.sort <- rbind(Amat.new[bound.zero.idx, , drop = FALSE],
+                                       Amat.new[-bound.zero.idx, , drop = FALSE])
+                bvec.new.sort <- c(bvec.new[bound.zero.idx],
+                                   bvec.new[-bound.zero.idx])    
+              }
+              
+              Hm <- restriktor(model.org, constraints = Amat.new.sort,
+                               neq = length(bound.zero.idx), rhs = bvec.new.sort,
                                mix.weights = "none", se = "none")
               beta.Hm <- coef(Hm)
               beta.Hm[abs(beta.Hm) < sqrt(.Machine$double.eps)] <- 0L

@@ -164,9 +164,6 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
             nr.perm <- 1:(2^len.bvec.ceq)
             bound.zero.idx <- which(bound == 0)
             
-            ## FIXME ##
-            # rhs > 0 and bound == 0
-            
             llm <- list()
             for (m in nr.perm) {
               #perm.vec <- perm.grid[m, ]

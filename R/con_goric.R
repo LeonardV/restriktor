@@ -162,7 +162,9 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
             perm <- rep(list(rep(c(-1,1), (2^len.bvec.ceq)/2)), len.bvec.ceq)
             perm.grid <- unique(as.matrix(expand.grid(perm)))
             nr.perm <- 1:(2^len.bvec.ceq)
-            bound.zero.idx <- which(bound == 0)
+            # if ub = lb, then the bounds must be zero.
+            # Otherwise, +ub, -lb
+            bound.zero.idx <- which(ub == lb)
             
             llm <- list()
             for (m in nr.perm) {

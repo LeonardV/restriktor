@@ -43,15 +43,13 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
             UseMethod("conTestScore")
           } 
         } else if (class(object)[2] %in% "conRLM") { 
-          if (!(test %in% c("f","wald","wald2","score"))) {
-            stop("restriktor ERROR: test ", sQuote(test), " unknown. Choose F, Wald, Wald2 or score.")  
+          if (!(test %in% c("f","wald","score"))) {
+            stop("restriktor ERROR: test ", sQuote(test), " unknown. Choose F, Wald or score.")  
           } 
           if (test == "f") {
             UseMethod("conTestF")
           } else if (test == "wald") {
             UseMethod("conTestWald")
-          } else if (test == "wald2") {
-            UseMethod("conTestWald2")
           } else if (test == "score") {
             UseMethod("conTestScore")
           } 

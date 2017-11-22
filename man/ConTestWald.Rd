@@ -1,24 +1,18 @@
 \name{conTestWald}
 \alias{conTestWald}
 \alias{conTestWald.conRLM}
-\alias{conTestWald2.conRLM}
+%\alias{conTestWald2.conRLM}
 
 \title{Wald-bar test for robust iht}
-\description{\code{conTestWald} and \code{conTestWald2} tests linear equality and/or 
-inequality restricted hypotheses for linear models by Wald-tests. It can be 
-used directly and is called by the \code{conTest} function if \code{test = "Wald"}
-or \code{test = "Wald2"}.
-
+\description{\code{conTestWald} tests linear equality and/or 
+inequality restricted hypotheses for linear models by Wald-tests. 
+It can be used directly and is called by the \code{conTest} function 
+if \code{test = "Wald"}.
 }
 
 \usage{
 
 \method{conTestWald}{conRLM}(object, type = "A", neq.alt = 0, 
-           boot = "no", R = 9999, p.distr = rnorm,  
-           parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
-           verbose = FALSE, control = NULL, \dots)
-
-\method{conTestWald2}{conRLM}(object, type = "A", neq.alt = 0, 
            boot = "no", R = 9999, p.distr = rnorm,  
            parallel = "no", ncpus = 1L, cl = NULL, seed = 1234, 
            verbose = FALSE, control = NULL, \dots)

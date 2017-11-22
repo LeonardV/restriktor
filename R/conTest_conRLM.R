@@ -411,7 +411,8 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
         b.restr.alt <- rfit$coefficients
         b.restr.alt[abs(b.restr.alt) < tol] <- 0L
         names(b.restr.alt) <- vnames
-        Ts <- robustWald(x         = X, 
+        Ts <- robustWald(x         = X,
+                         y         = y,
                          b.eqrestr = b.restr, 
                          b.restr   = b.restr.alt, 
                          b.unrestr = b.restr.alt,
@@ -448,7 +449,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     pvalue <- con_pvalue_boot_parametric(object, 
                                          Ts.org   = Ts, 
                                          type     = type, 
-                                         test     = "Wald2",
+                                         test     = "Wald",
                                          meq.alt  = meq.alt,
                                          R        = R, 
                                          p.distr  = p.distr,
@@ -461,7 +462,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     pvalue <- con_pvalue_boot_model_based(object, 
                                           Ts.org   = Ts, 
                                           type     = type, 
-                                          test     = "Wald2",
+                                          test     = "Wald",
                                           meq.alt  = meq.alt,
                                           R        = R, 
                                           parallel = parallel,
@@ -485,7 +486,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
               meq.alt     = meq.alt,
               iact        = object$iact,
               type        = type,
-              test        = "Wald2",
+              test        = "Wald",
               Ts          = Ts,
               df.residual = df.residual,
               pvalue      = pvalue,

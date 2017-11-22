@@ -88,6 +88,7 @@ robustScores <- function(x, y, b.eqrestr, b.restr, b.unrestr, Amat,
 # Biometrika, 79, 3, 621-630.
 robustFm <- function(x, y, b.unrestr, b.eqrestr, b.restr, scale, 
                      cc = 4.685061) {
+  X <- x
   n <- dim(X)[1]
   p <- dim(X)[2]
   

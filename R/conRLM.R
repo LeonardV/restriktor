@@ -154,12 +154,13 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   
   # compute R-squared 
   # acknowledment: code taken from the lmrob() function from the robustbase package
+  wgt <- object$w
   df.int <- ifelse(attr(object$terms, "intercept"), 1L, 0L)
   y.mean <- if (df.int == 1L) { 
-    sum(weights * y) / sum(weights) 
+    sum(wgt * y) / sum(wgt) 
     } else { 0L }
-  yMy <- sum(weights * (y - y.mean)^2)
-  rMr <- sum(weights * residuals^2)
+  yMy <- sum(wgt * (y - y.mean)^2)
+  rMr <- sum(wgt * residuals^2)
   # tukey's bi-square correction
   correc <- 1.207617 
   R2.org <- (yMy - rMr) / (yMy + rMr * (correc - 1))
@@ -264,7 +265,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     fitted <- rfit$fitted
     residuals <- rfit$residuals
     # psi(resid/scale) these are the weights used for downweighting the cases.
-    w <- rfit$w
+    wgt <- rfit$w
     # compute loglik
     ll.restr <- con_loglik_lm(rfit)
     
@@ -275,25 +276,25 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     # in case of equality constraints we need to correct the residual df 
     if (length(object$call[["wt.method"]]) && object$call[["wt.method"]] == "case") {
       rdf <- sum(weights) - p
-      S   <- sum(weights * (rfit$wresid * w)^2) / rdf
+      S   <- sum(weights * (rfit$wresid * wgt)^2) / rdf
       std <- summary(rfit)$stddev / sqrt(S)
 
       if (!is.null(Amat)) {
         # df correction
         rdf <- sum(weights) - (p - qr(Amat[0:meq,])$rank)
-        S.new <- sum(weights * (rfit$wresid * w)^2) / rdf
+        S.new <- sum(weights * (rfit$wresid * wgt)^2) / rdf
         stddev <- (summary(rfit)$stddev / sqrt(S)) * sqrt(S.new)
       } else {
         stddev <- std * sqrt(S)
       }
     } else {
       rdf <- n - p
-      S   <- sum((rfit$wresid * w)^2) / rdf
+      S   <- sum((rfit$wresid * wgt)^2) / rdf
       std <- summary(rfit)$stddev / sqrt(S)
 
       if (!is.null(Amat)) {
-        rdf <- n - (p - qr(Amat[0:meq,])$rank)
-        S.new <- sum((rfit$wresid * w)^2) / rdf
+        rdf <- n - (p - qr(Amat[0:meq, ])$rank)
+        S.new <- sum((rfit$wresid * wgt)^2) / rdf
         stddev <- (summary(rfit)$stddev / sqrt(S)) * sqrt(S.new)
       } else {
         stddev <- std * sqrt(S)
@@ -302,9 +303,9 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     
     #R^2 under the restricted object
     df.int <- if (attr(object$terms, "intercept")) { 1L } else { 0L }
-    resp.mean <- if (df.int == 1L) { sum(weights * y) / sum(weights) } else { 0 }
-    yMy <- sum(weights * (y - resp.mean)^2)
-    rMr <- sum(weights * residuals^2)
+    resp.mean <- if (df.int == 1L) { sum(wgt * y) / sum(wgt) } else { 0 }
+    yMy <- sum(wgt * (y - resp.mean)^2)
+    rMr <- sum(wgt * residuals^2)
     # tukey's bi-square correction
     correc <- 1.207617 
     R2.reduced <- (yMy - rMr) / (yMy + rMr * (correc - 1))
@@ -319,7 +320,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 wresid      = rfit$wresid,
                 fitted      = fitted,
                 weights     = weights,
-                w           = w, 
+                w           = wgt, 
                 scale       = rfit$s,
                 stddev      = stddev,
                 R2.org      = R2.org,

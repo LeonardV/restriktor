@@ -29,10 +29,9 @@ function if \code{type = "summary"}.
       
       \item for object of class rlm; if "F" (default), a robust 
       likelihood ratio type test statistic (Silvapulle, 1992a) is 
-      computed. If "Wald", a robust Wald test statistic 
-      (Silvapulle, 1996) is computed. If "Wald2", a robust Wald test 
-      statistic (Silvapulle, 1992b) is computed. If "score", a 
-      score test statistic (Silvapulle, 1996) is computed. 
+      computed. If "Wald", a robust Wald test statistic (Silvapulle, 1992b) 
+      is computed. If "score", a score test statistic (Silvapulle, 1996) is 
+      computed. 
     }
   }
   

@@ -54,12 +54,11 @@ conTest(object, constraints = NULL, type = "summary", test = "F",
       
       \item for object of class rlm; if "F" (default), a robust 
       likelihood ratio type test statistic (Silvapulle, 1992a) is 
-      computed. If "Wald", a robust Wald test statistic 
-      (Silvapulle, 1996) is computed. If "Wald2", a robust Wald test 
-      statistic (Silvapulle, 1992b) is computed. If "score", a 
-      global score test statistic (Silvapulle, and Silvapulle, 1995) 
-      is computed. Note that, in case of equality constraints only, 
-      unconstrained robust F-, Wald-, score-test statistics are computed.
+      computed. If "Wald", a robust Wald test statistic (Silvapulle, 1992b) 
+      is computed. If "score", a global score test statistic (Silvapulle, 
+      and Silvapulle, 1995) is computed. Note that, in case of equality 
+      constraints only, unconstrained robust F-, Wald-, score-test 
+      statistics are computed.
       
       \item for object of class glm; if "F" (default), the F-bar 
       statistic (Silvapulle, 1996) is computed. If "LRT", a 

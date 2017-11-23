@@ -1,7 +1,6 @@
 \name{conTestWald}
 \alias{conTestWald}
 \alias{conTestWald.conRLM}
-%\alias{conTestWald2.conRLM}
 
 \title{Wald-bar test for robust iht}
 \description{\code{conTestWald} tests linear equality and/or 

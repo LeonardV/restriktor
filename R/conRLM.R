@@ -1,3 +1,12 @@
+## <FIXME> ##
+# Yohai (1987, p. 648). Eq. 4.2, 4.3 and 4.4.
+# (for homoscedastic regression)
+#A <- mean(tukeyChi(rstar, cc, deriv = 1)^2)
+#B <- mean(tukeyChi(rstar, cc, deriv = 2))
+#tau2 <- scale^2 * A/B^2
+#U <- tau2 * solve(W)
+## </FIXME> ##
+
 #compute restrikted robust estimates
 conRLM.rlm <- function(object, constraints = NULL, se = "standard", 
                        B = 999, rhs = NULL, neq = 0L, mix.weights = "pmvnorm", 
@@ -327,7 +336,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 R2.reduced  = R2.reduced,
                 df.residual = so$df[2], 
                 loglik      = ll.restr, 
-                Sigma       = Sigma,                             #probably not so robust???
+                Sigma       = Sigma,                             #probably not so robust. It uses sum(rho)^2 
                 constraints = Amat, 
                 rhs         = bvec, 
                 neq         = meq, 

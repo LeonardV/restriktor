@@ -289,10 +289,6 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   weights <- model.org$weights
   # unconstrained df
   df.residual <- object$df.residual
-  # unconstrained covariance matrix
-  #Sigma <- object$Sigma
-  # unrestrikted scale estimate for the standard deviation: 
-  #scale <- summary(model.org)$stddev # !It uses a robust sum(psi)^2 version.
   # unconstrained scale
   scale <- model.org$s
   # parameter estimates
@@ -368,7 +364,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                      b.eqrestr = b.eqrestr, 
                      b.restr   = b.restr, 
                      b.unrestr = b.unrestr,
-                     #Amat      = AmatG,
+                     Amat      = AmatG,
                      scale     = scale,
                      cc        = ifelse(is.null(call.org$c), 4.685061, call.org$c))$Ts
     
@@ -386,10 +382,9 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                      b.eqrestr = b.eqrestr, 
                      b.restr   = b.restr, 
                      b.unrestr = b.unrestr, 
-                     #Amat      = Amat,
+                     Amat      = Amat,
                      scale     = scale,
-                     #stddev    = stddev,
-                     ifelse(is.null(call.org$c), 4.685061, call.org$c))$Ts
+                     cc        = ifelse(is.null(call.org$c), 4.685061, call.org$c))$Ts
   } else if (type == "B") {
     if (meq.alt == 0L) {
       Ts <- robustWald(x         = X,
@@ -397,9 +392,9 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                        b.eqrestr = b.restr, 
                        b.restr   = b.unrestr, 
                        b.unrestr = b.unrestr, 
-                       #Amat      = Amat,
+                       Amat      = Amat,
                        scale     = scale,
-                       ifelse(is.null(call.org$c), 4.685061, call.org$c))$Ts
+                       cc        = ifelse(is.null(call.org$c), 4.685061, call.org$c))$Ts
     } else {
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt > 0L && meq.alt <= meq) {
@@ -417,7 +412,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                          b.eqrestr = b.restr, 
                          b.restr   = b.restr.alt, 
                          b.unrestr = b.restr.alt,
-                         #Amat      = Amat,
+                         Amat      = Amat,
                          scale     = scale,
                          cc        = ifelse(is.null(call.org$c), 4.685061, call.org$c))$Ts
       } else {

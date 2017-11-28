@@ -93,7 +93,9 @@ conRLM_fit <- function (x, y, weights, ..., w = rep(1, nrow(x)), init = "ls",
   else if (method == "MM") {
     scale.est <- "MM"
     psi <- psi.bisquare
-    temp <- do.call("lqs", c(list(x, y, intercept = FALSE, 
+    # needed to compute S-estimator under ceq.
+    idx <- which(abs(colSums(Amat[0:meq, , drop = FALSE])) == 0)
+    temp <- do.call("lqs", c(list(x[, idx, drop = FALSE], y, intercept = FALSE, 
                                     method = "S", k0 = 1.54764), lqs.control))
       coef <- temp$coefficients
       resid <- temp$residuals

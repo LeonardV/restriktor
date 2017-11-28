@@ -67,12 +67,12 @@ robustScores <- function(x, y, b.eqrestr, b.restr, b.unrestr, Amat,
   weightsZ2 <- psi2
   Z2 <- (t(X) %*% weightsZ2) / n  
   
-  d0 <- sqrt(n) * Z0
-  d1 <- sqrt(n) * Z1
-  d2 <- sqrt(n) * Z2
+  d0 <- sqrt(n) * Z0[idx1]
+  d1 <- sqrt(n) * Z1[idx1]
+  d2 <- sqrt(n) * Z2[idx1]
   
-  Ts <- (t(d2 - d0)[idx1] %*% solve(result.C, c(d2 - d0)[idx1])) - 
-      (t(d2 - d1)[idx1] %*% solve(result.C, c(d2 - d1)[idx1]))
+  Ts <- (t(d2 - d0) %*% solve(result.C, c(d2 - d0))) - 
+      (t(d2 - d1) %*% solve(result.C, c(d2 - d1)))
     
   OUT <- list(test = "Score",
               Ts   = as.numeric(Ts),
@@ -116,7 +116,6 @@ robustFm <- function(x, y, b.unrestr, b.eqrestr, b.restr, scale,
   Ts <- 1 / lambda * (L0 - L1) 
   
   
-  
   OUT <- list(test = "F",
               Ts   = as.numeric(Ts))
   
@@ -139,12 +138,8 @@ robustWald <- function(x, y, b.eqrestr, b.restr, b.unrestr,
   B <- mean(tukeyChi(rstar, cc, deriv = 2))
   tau2 <- scale^2 * A/B^2
   
-  A.idx <- which(colSums(abs(Amat)) > 0L)
-  Ts <- as.numeric(1/tau2 * ((t(b.unrestr - b.eqrestr)[A.idx] %*% XX[A.idx, A.idx] %*% (b.unrestr - b.eqrestr)[A.idx]) - 
-                             (t(b.unrestr - b.restr)[A.idx] %*% XX[A.idx, A.idx] %*% (b.unrestr - b.restr)[A.idx])))
-  
-  # Ts <- as.numeric(1/tau2 * ((t(b.unrestr - b.eqrestr) %*% XX %*% c(b.unrestr - b.eqrestr)) - 
-  #   (t(b.unrestr - b.restr) %*% XX %*% c(b.unrestr - b.restr))))
+  Ts <- as.numeric(1/tau2 * ((t(b.unrestr - b.eqrestr) %*% XX %*% c(b.unrestr - b.eqrestr)) - 
+                               (t(b.unrestr - b.restr) %*% XX %*% c(b.unrestr - b.restr))))
   
   OUT <- list(test   = "Wald",
               Ts     = Ts,

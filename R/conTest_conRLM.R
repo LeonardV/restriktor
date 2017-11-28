@@ -292,7 +292,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   # unconstrained covariance matrix
   #Sigma <- object$Sigma
   # unrestrikted scale estimate for the standard deviation: 
-  #tau <- summary(model.org)$stddev
+  #scale <- summary(model.org)$stddev # !It uses a robust sum(psi)^2 version.
   # unconstrained scale
   scale <- model.org$s
   # parameter estimates
@@ -388,6 +388,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                      b.unrestr = b.unrestr, 
                      #Amat      = Amat,
                      scale     = scale,
+                     #stddev    = stddev,
                      ifelse(is.null(call.org$c), 4.685061, call.org$c))$Ts
   } else if (type == "B") {
     if (meq.alt == 0L) {

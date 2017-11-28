@@ -126,7 +126,7 @@ robustFm <- function(x, y, b.unrestr, b.eqrestr, b.restr, scale,
 
 ## robust Wald statistic, Silvapulle (1992) ##
 robustWald <- function(x, y, b.eqrestr, b.restr, b.unrestr, 
-                       scale, cc = 4.685061) {
+                       Amat, scale, cc = 4.685061) {
   X <- x
   XX <- crossprod(X)
   
@@ -139,9 +139,12 @@ robustWald <- function(x, y, b.eqrestr, b.restr, b.unrestr,
   B <- mean(tukeyChi(rstar, cc, deriv = 2))
   tau2 <- scale^2 * A/B^2
   
-  Ts <- as.numeric(1/tau2 * ((t(b.unrestr - b.eqrestr) %*% XX %*% c(b.unrestr - b.eqrestr)) - 
-    (t(b.unrestr - b.restr) %*% XX %*% c(b.unrestr - b.restr))))
+  A.idx <- which(colSums(abs(Amat)) > 0L)
+  Ts <- as.numeric(1/tau2 * ((t(b.unrestr - b.eqrestr)[A.idx] %*% XX[A.idx, A.idx] %*% (b.unrestr - b.eqrestr)[A.idx]) - 
+                             (t(b.unrestr - b.restr)[A.idx] %*% XX[A.idx, A.idx] %*% (b.unrestr - b.restr)[A.idx])))
   
+  # Ts <- as.numeric(1/tau2 * ((t(b.unrestr - b.eqrestr) %*% XX %*% c(b.unrestr - b.eqrestr)) - 
+  #   (t(b.unrestr - b.restr) %*% XX %*% c(b.unrestr - b.restr))))
   
   OUT <- list(test   = "Wald",
               Ts     = Ts,

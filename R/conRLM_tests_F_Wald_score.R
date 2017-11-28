@@ -112,8 +112,10 @@ robustFm <- function(x, y, b.unrestr, b.eqrestr, b.restr, scale,
   
   #asymptotic covariance matrix standardizing constant
   lambda <- ( 0.5 * (1 / (n - p)) * sum(psi.prime.h2^2) ) / 
-                                  ( (1/n) * sum(psi.prime2.h2) )  
+                                  ( (1/n) * sum(psi.prime2.h2) )
   Ts <- 1 / lambda * (L0 - L1) 
+  
+  
   
   OUT <- list(test = "F",
               Ts   = as.numeric(Ts))
@@ -126,23 +128,24 @@ robustFm <- function(x, y, b.unrestr, b.eqrestr, b.restr, scale,
 robustWald <- function(x, y, b.eqrestr, b.restr, b.unrestr, 
                        scale, cc = 4.685061) {
   X <- x
-  W <- crossprod(X)
+  XX <- crossprod(X)
   
   res   <- y - X %*% b.unrestr
   rstar <- res / scale
   
   # Yohai (1987, p. 648). Eq. 4.2, 4.3 and 4.4.
+  # (for homoscedastic regression)
   A <- mean(tukeyChi(rstar, cc, deriv = 1)^2)
   B <- mean(tukeyChi(rstar, cc, deriv = 2))
   tau2 <- scale^2 * A/B^2
   
-  U <- tau2 * solve(W)
+  Ts <- as.numeric(1/tau2 * ((t(b.unrestr - b.eqrestr) %*% XX %*% c(b.unrestr - b.eqrestr)) - 
+    (t(b.unrestr - b.restr) %*% XX %*% c(b.unrestr - b.restr))))
   
-  Ts <- (t(b.unrestr - b.eqrestr) %*% solve(U, c(b.unrestr - b.eqrestr))) - 
-    (t(b.unrestr - b.restr) %*% solve(U, c(b.unrestr - b.restr)))  
   
-  OUT <- list(test = "Wald",
-              Ts   = Ts)
+  OUT <- list(test   = "Wald",
+              Ts     = Ts,
+              stddev = tau2)
   
   OUT
 }

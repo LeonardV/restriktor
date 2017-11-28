@@ -75,23 +75,14 @@ conTest_ceq.conRLM <- function(object, test = "F", boot = "no",
       OUT$b.restr <- object$b.restr
       OUT$b.unrestr <- object$b.unrestr
     } else if (test == "wald") {  
-      if (attr(model.org$terms, "intercept")) {
-        idx <- apply(X, 2, function(x) all(x != 1))
-        b.eqrestr <- b.eqrestr[idx]
-        b.restr   <- b.unrestr[idx]
-        b.unrestr <- b.unrestr[idx]
-        Z <- X[ ,idx]
-        Z <- scale(Z, center = TRUE, scale = FALSE)
-      } else {
-        Z <- X
-        Z <- scale(Z, center = TRUE, scale = FALSE)
-      }
-      Wald.out <- robustWald(x         = Z, 
+      Wald.out <- robustWald(x         = X, 
                              y         = y,
                              b.eqrestr = b.eqrestr, 
                              b.restr   = b.unrestr, 
                              b.unrestr = b.unrestr,
-                             scale     = scale)
+                             scale     = scale,
+                             Amat      = Amat,
+                             cc        = ifelse(is.null(cc), 4.685061, cc))
       OUT <- append(CON, Wald.out)
       
       OUT$df <- nrow(Amat)

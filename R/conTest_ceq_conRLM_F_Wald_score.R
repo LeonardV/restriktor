@@ -23,7 +23,7 @@ conTest_ceq.conRLM <- function(object, test = "F", boot = "no",
   # unrestrikted scale estimate
   scale <- model.org$s
   # scale estimate used for the standard errors
-  #stddev <- summary(model.org)$stddev
+  #scale <- summary(model.org)$stddev
   # restriktion stuff
   CON  <- object$CON
   
@@ -75,12 +75,22 @@ conTest_ceq.conRLM <- function(object, test = "F", boot = "no",
       OUT$b.restr <- object$b.restr
       OUT$b.unrestr <- object$b.unrestr
     } else if (test == "wald") {  
-      Wald.out <- robustWald(x         = X, 
+      if (attr(model.org$terms, "intercept")) {
+        idx <- apply(X, 2, function(x) all(x != 1))
+        b.eqrestr <- b.eqrestr[idx]
+        b.restr   <- b.unrestr[idx]
+        b.unrestr <- b.unrestr[idx]
+        Z <- X[ ,idx]
+        Z <- scale(Z, center = TRUE, scale = FALSE)
+      } else {
+        Z <- X
+        Z <- scale(Z, center = TRUE, scale = FALSE)
+      }
+      Wald.out <- robustWald(x         = Z, 
                              y         = y,
                              b.eqrestr = b.eqrestr, 
                              b.restr   = b.unrestr, 
                              b.unrestr = b.unrestr,
-                             #Amat      = Amat,
                              scale     = scale)
       OUT <- append(CON, Wald.out)
       

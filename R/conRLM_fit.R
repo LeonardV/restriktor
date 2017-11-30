@@ -93,13 +93,27 @@ conRLM_fit <- function (x, y, weights, ..., w = rep(1, nrow(x)), init = "ls",
   else if (method == "MM") {
     scale.est <- "MM"
     psi <- psi.bisquare
-    # needed to compute S-estimator under ceq.
-    idx <- which(abs(colSums(Amat[0:meq, , drop = FALSE])) == 0)
-    temp <- do.call("lqs", c(list(x[, idx, drop = FALSE], y, intercept = FALSE, 
-                                    method = "S", k0 = 1.54764), lqs.control))
+    
+    if (meq > 0L) {
+      Dmat <- crossprod(x)
+      dvec <- t(x) %*% y
+      out.qp <- solve.QP(Dmat, dvec, t(Amat[1:meq, , drop = FALSE]), 
+                         bvec[1:meq], meq = meq)$solution
+      out.qp[abs(out.qp) < tol] <- 0L
+      idx.qp <- !out.qp %in% 0L
+      temp <- do.call("lqs",
+                      c(list(x = x[ , idx.qp, drop = FALSE], y, intercept = FALSE, 
+                             method = "S", k0 = 1.54764), lqs.control)) 
+      coef  <- temp$coefficients
+      resid <- temp$residuals
+      scale <- temp$scale  
+    } else {
+      temp <- do.call("lqs", c(list(x, y, intercept = FALSE, 
+                                    method = "S", k0 = 1.548), lqs.control))
       coef <- temp$coefficients
       resid <- temp$residuals
-      if (length(arguments <- list(...))) 
+    }
+    if (length(arguments <- list(...))) 
         if (match("c", names(arguments), nomatch = 0L)) {
           c0 <- arguments$c
           if (c0 > 1.54764) 

@@ -90,7 +90,7 @@ robustFm <- function(x, y, b.unrestr, b.eqrestr, b.restr, scale,
                      cc = 4.685061) {
   X <- x
   n <- dim(X)[1]
-  p <- dim(X)[2]
+  p <- length(b.unrestr)
   
   #compute residuals under null, restricted and unconstrained model
   resid0 <- y - X %*% b.eqrestr
@@ -138,8 +138,10 @@ robustWald <- function(x, y, b.eqrestr, b.restr, b.unrestr,
   B <- mean(tukeyChi(rstar, cc, deriv = 2))
   tau2 <- scale^2 * A/B^2
   
-  Ts <- as.numeric(1/tau2 * ((t(b.unrestr - b.eqrestr) %*% XX %*% c(b.unrestr - b.eqrestr)) - 
-                               (t(b.unrestr - b.restr) %*% XX %*% c(b.unrestr - b.restr))))
+  U <- 1/tau2 * XX
+  Ts <- as.numeric((t(b.unrestr - b.eqrestr) %*% U %*% c(b.unrestr - b.eqrestr)) - 
+           (t(b.unrestr - b.restr) %*% U %*% c(b.unrestr - b.restr)))
+  
   
   OUT <- list(test   = "Wald",
               Ts     = Ts,

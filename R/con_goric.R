@@ -47,12 +47,18 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
     meq <- object$neq
     # rhs
     bvec <- object$rhs
-    # extract equalities
-    Amat.ceq <- Amat[0:meq, ,drop = FALSE]
-    bvec.ceq <- bvec[0:meq]
-    # extract inequalities
-    Amat.ciq <- Amat[-c(0:meq), , drop = FALSE]
-    bvec.ciq <- bvec[-c(0:meq)]
+    # extract equalities and inequalities
+    if (meq > 0) {
+      Amat.ceq <- Amat[1:meq, ,drop = FALSE]
+      bvec.ceq <- bvec[1:meq]
+      Amat.ciq <- Amat[-c(1:meq), , drop = FALSE]
+      bvec.ciq <- bvec[-c(1:meq)]
+    } else {
+      Amat.ceq <- matrix( , nrow = 0, ncol = ncol(Amat))
+      bvec.ceq <- rep(0, 0)
+      Amat.ciq <- Amat[ , , drop = FALSE]
+      bvec.ciq <- bvec
+    }
     
     if (!is.null(bound) && meq == 0L) {
       warning("restriktor WARNING: bounds are only available for equality constraints \n",
@@ -61,14 +67,17 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
     } 
     
     if (!is.null(bound)) {
-      # extract ciq matrix
-      Amat.ciq <- Amat[-c(0:meq), , drop = FALSE]
-      # extract ceq matrix
-      Amat.ceq <- Amat[0:meq, , drop = FALSE]
-      # extract ciq rhs
-      bvec.ciq <- bvec[-c(0:meq)]
-      # extract ceq rhs
-      bvec.ceq <- bvec[0:meq]
+      if (meq > 0) {
+        Amat.ceq <- Amat[1:meq, ,drop = FALSE]
+        bvec.ceq <- bvec[1:meq]
+        Amat.ciq <- Amat[-c(1:meq), , drop = FALSE]
+        bvec.ciq <- bvec[-c(1:meq)]
+      } else {
+        Amat.ceq <- matrix( , nrow = 0, ncol = ncol(Amat))
+        bvec.ceq <- rep(0, 0)
+        Amat.ciq <- Amat[ , , drop = FALSE]
+        bvec.ciq <- bvec
+      }
       
       # upper-bound = rhs + bound
       ub <- bvec.ceq + bound

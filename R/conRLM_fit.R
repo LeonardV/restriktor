@@ -94,6 +94,10 @@ conRLM_fit <- function (x, y, weights, ..., w = rep(1, nrow(x)), init = "ls",
     scale.est <- "MM"
     psi <- psi.bisquare
     
+    if (any(bvec != 0)) {
+      stop("Restriktor ERROR: the rhs may only contain zeros (for now).")
+    }
+    
     if (meq > 0L) {
       Dmat <- crossprod(x)
       dvec <- t(x) %*% y

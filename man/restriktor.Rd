@@ -229,8 +229,7 @@ only (rlm only)}
 \item{weights}{(only for weighted fits) the specified weights.}
 \item{w}{the weights used in the IWLS process (rlm only).}
 \item{scale}{the robust scale estimate used (rlm only).}
-\item{psi}{the psi function with parameters substituted (rlm only). 
- Only bisquare for now.}
+\item{stddev}{a scale estimate used for the standard errors.}
 \item{df.residual}{the residual degrees of freedom}
 \item{R2.org}{unrestricted R-squared.}
 \item{R2.reduced}{restricted R-squared.}

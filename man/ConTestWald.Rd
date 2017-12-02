@@ -224,7 +224,7 @@ conTest(fit.restr1, test = "Wald")
 ## Artificial examples ##
 #########################
 # generate data
-n <- 20
+n <- 30
 means <- c(1,2,1,3)
 nm <- length(means)
 group <- as.factor(rep(1:nm, each = n))

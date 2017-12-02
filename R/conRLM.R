@@ -1,12 +1,3 @@
-## <FIXME> ##
-# Yohai (1987, p. 648). Eq. 4.2, 4.3 and 4.4.
-# (for homoscedastic regression)
-#A <- mean(tukeyChi(rstar, cc, deriv = 1)^2)
-#B <- mean(tukeyChi(rstar, cc, deriv = 2))
-#tau2 <- scale^2 * A/B^2
-#U <- tau2 * solve(W)
-## </FIXME> ##
-
 #compute restrikted robust estimates
 conRLM.rlm <- function(object, constraints = NULL, se = "standard", 
                        B = 999, rhs = NULL, neq = 0L, mix.weights = "pmvnorm", 
@@ -76,12 +67,20 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   b.unrestr[abs(b.unrestr) < ifelse(is.null(control$tol), 
                                     sqrt(.Machine$double.eps), 
                                     control$tol)] <- 0L
-  # vcov
-  Sigma <- vcov(object) 
-  # unrestrikted estimate of scale 
+  # unrestrikted estimate of scale
   scale <- object$s
+  # vcov(object) incorrect! The rlm() function uses a robust sum of squares. 
+  ## Yohai (1987, p. 648). Eq. 4.2, 4.3 and 4.4.
+  # (for homoscedastic regression)
+  cc <- ifelse(is.null(call.org$c), 4.685061, call.org$c)
+  res <- y - X %*% b.unrestr
+  rstar <- res / scale
+  a <- mean(tukeyChi(rstar, cc, deriv = 1)^2)
+  b <- mean(tukeyChi(rstar, cc, deriv = 2))
+  tau2 <- scale^2 * a/b^2
+  Sigma <- tau2 * solve(crossprod(X))
   # a scale estimate used for the standard errors
-  stddev <- so$stddev
+  stddev <- sqrt(tau2) #so$stddev
   # residuals
   residuals <- residuals(object) # NOT working residual
   # sample size
@@ -238,7 +237,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 R2.reduced  = R2.org,
                 df.residual = so$df[2],
                 loglik      = ll.unrestr, 
-                Sigma       = Sigma, # probably not so robust!
+                Sigma       = Sigma, 
                 constraints = Amat, 
                 rhs         = bvec, 
                 neq         = meq, 
@@ -282,33 +281,15 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
       print(list(loglik.restr = ll.restr))
     }
     
-    # in case of equality constraints we need to correct the residual df 
-    if (length(object$call[["wt.method"]]) && object$call[["wt.method"]] == "case") {
-      rdf <- sum(weights) - p
-      S   <- sum(weights * (rfit$wresid * wgt)^2) / rdf
-      std <- summary(rfit)$stddev / sqrt(S)
-
-      if (!is.null(Amat)) {
-        # df correction
-        rdf <- sum(weights) - (p - qr(Amat[0:meq,])$rank)
-        S.new <- sum(weights * (rfit$wresid * wgt)^2) / rdf
-        stddev <- (summary(rfit)$stddev / sqrt(S)) * sqrt(S.new)
-      } else {
-        stddev <- std * sqrt(S)
-      }
-    } else {
-      rdf <- n - p
-      S   <- sum((rfit$wresid * wgt)^2) / rdf
-      std <- summary(rfit)$stddev / sqrt(S)
-
-      if (!is.null(Amat)) {
-        rdf <- n - (p - qr(Amat[0:meq, ])$rank)
-        S.new <- sum((rfit$wresid * wgt)^2) / rdf
-        stddev <- (summary(rfit)$stddev / sqrt(S)) * sqrt(S.new)
-      } else {
-        stddev <- std * sqrt(S)
-      }
-    }
+    # compute correct stddev
+    scale <- rfit$s
+    res <- y - X %*% b.restr
+    rstar <- res / scale
+    a <- mean(tukeyChi(rstar, cc, deriv = 1)^2)
+    b <- mean(tukeyChi(rstar, cc, deriv = 2))
+    tau2 <- scale^2 * a/b^2
+    stddev <- sqrt(tau2)
+    
     
     #R^2 under the restricted object
     df.int <- if (attr(object$terms, "intercept")) { 1L } else { 0L }
@@ -330,13 +311,13 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 fitted      = fitted,
                 weights     = weights,
                 w           = wgt, 
-                scale       = rfit$s,
+                scale       = scale,
                 stddev      = stddev,
                 R2.org      = R2.org,
                 R2.reduced  = R2.reduced,
                 df.residual = so$df[2], 
                 loglik      = ll.restr, 
-                Sigma       = Sigma,                             #probably not so robust. It uses sum(rho)^2 
+                Sigma       = Sigma,                             
                 constraints = Amat, 
                 rhs         = bvec, 
                 neq         = meq, 
@@ -353,7 +334,6 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   OUT$information <- 1 / stddev^2 * crossprod(X)
   if (se != "none") {
     if (!(se %in% c("boot.model.based","boot.standard"))) {
-      #  V <- vcovMM(X = X, resid0 = resid0, residuals = residuals, scale = model$s)  
       information.inv <- con_augmented_information(information  = OUT$information,
                                                    is.augmented = is.augmented,
                                                    X            = X, 

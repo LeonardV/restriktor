@@ -36,8 +36,6 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   weights <- model.org$weights
   # unconstrained df
   df.residual <- object$df.residual
-  # unconstrained covariance matrix
-  #Sigma <- object$Sigma
   # unconstrained scale
   scale <- model.org$s
   # parameter estimates
@@ -539,8 +537,6 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   weights <- model.org$weights
   # unconstrained df
   df.residual <- object$df.residual
-  # unconstrained covariance matrix
-  #Sigma <- object$Sigma
   # unconstrained scale
   scale <- model.org$s
   # parameter estimates
@@ -641,18 +637,6 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                          test      = "score", 
                          cc        = ifelse(is.null(call.org$c), 4.685061, call.org$c))
     Ts <- out1$Ts
-#    N <- dim(X)[1]
-#    n2 <- N - 1
-#    Ts <- Ts / (1 + N*Ts / n2^2)
-    
-    # t <- p
-    # d <- p*(p+1)/2 - t
-    # q <- (sqrt(1 + 4*p*(p+1) - 8*d) -1) / 2
-    # N <- n
-    # n2 <- N - 1
-    # s <- 1 - ( p*(2*p^2 + 3*p -1) - q*(2*q^2 + 3*q -1)  ) / (12*d*n2)
-    # Ts <- s*Ts
-    
     V <- out1$V
   } else if (type == "B") {
     if (meq.alt == 0L) {
@@ -696,8 +680,8 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     }
   } 
   
-  # We need to recalculate the weights based on V.hat = Sigam instead on solve(t(X)%*%X)
-  # Do we have to? The differences are very small.
+  # We need to recalculate the weights based on V.hat = Sigma instead on solve(t(X)%*%X)
+  # Is this really needed? The differences look very small.
   ## compute mixing weights
   if (!(attr(object$wt.bar, "method") == "none")) {
     if (nrow(Amat) == meq) {
@@ -708,14 +692,14 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     } else if (attr(object$wt.bar, "method") == "boot") { 
       # compute chi-square-bar weights based on Monte Carlo simulation
       wt.bar <- con_weights_boot(VCOV     = V,
-                             Amat     = Amat, 
-                             meq      = meq, 
-                             R        = attr(object$wt.bar, "mix.bootstrap"),
-                             parallel = parallel,
-                             ncpus    = ncpus,
-                             cl       = cl,
-                             seed     = seed,
-                             verbose  = verbose)
+                                 Amat     = Amat, 
+                                 meq      = meq, 
+                                 R        = attr(object$wt.bar, "mix.bootstrap"),
+                                 parallel = parallel,
+                                 ncpus    = ncpus,
+                                 cl       = cl,
+                                 seed     = seed,
+                                 verbose  = verbose)
       attr(wt.bar, "mix.bootstrap") <- attr(object$wt.bar, "mix.bootstrap")
     } else if (attr(object$wt.bar, "method") == "pmvnorm" && (meq < nrow(Amat))) {
       # compute chi-square-bar weights based on pmvnorm

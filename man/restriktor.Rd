@@ -219,20 +219,19 @@ with the following items:
 \item{timing}{how much time several tasks take.}
 \item{parTable}{a parameter table with information about the 
  observed variables in the model and the imposed restrictions.}
-\item{wt.bar}{chi-bar-square mixing weights or a.k.a. level probabilities.}
 \item{b.unrestr}{unrestricted regression coefficients.}
 \item{b.restr}{restricted regression coefficients.}
 \item{residuals}{restricted residuals.}
-\item{fitted}{restricted fitted mean values.}
 \item{wresid}{a working residual, weighted for "inv.var" weights 
 only (rlm only)}
+\item{fitted}{restricted fitted mean values.}
 \item{weights}{(only for weighted fits) the specified weights.}
-\item{w}{the weights used in the IWLS process (rlm only).}
+\item{wgt}{the weights used in the IWLS process (rlm only).}
 \item{scale}{the robust scale estimate used (rlm only).}
 \item{stddev}{a scale estimate used for the standard errors.}
-\item{df.residual}{the residual degrees of freedom}
 \item{R2.org}{unrestricted R-squared.}
 \item{R2.reduced}{restricted R-squared.}
+\item{df.residual}{the residual degrees of freedom}
 \item{s2.unrestr}{mean squared error of unrestricted model.}
 \item{s2.restr}{mean squared error of restricted model.}
 \item{loglik}{restricted log-likelihood.}
@@ -240,11 +239,13 @@ only (rlm only)}
 \item{constraints}{matrix with restrictions.}
 \item{rhs}{vector of right-hand side elements.}
 \item{neq}{number of equality restrictions.}
+\item{wt.bar}{chi-bar-square mixing weights or a.k.a. level probabilities.}
 \item{iact}{active restrictions.}
 \item{converged}{did the IWLS converge (rlm only)?}
 \item{iter}{number of iteration needed for convergence (rlm only).}
 \item{bootout}{object of class boot. Only available if bootstrapped
 standard errors are requested, else bootout = NULL.} 
+\item{control}{list with control options.}
 \item{model.org}{original model.}
 \item{se}{as input. This information is needed in the summary 
 function.}

@@ -134,15 +134,15 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
       colnames(ans$coefficients) <- ynames
   }
   
-  
+  ans$rdf <- rdf
   if (inherits(z, "conRLM")) {
+    ans$wgt <- z$wgt
     ans$scale <- z$scale
     ans$stddev <- z$stddev
+    ans$iter <- z$iter
   } else {
-  #ans$s2.unrestr <- z$s2.unrestr
-  ans$s2 <- z$s2
+    ans$s2 <- z$s2
   }
-  ans$rdf <- rdf
   
   if (inherits(z, c("conLM", "conRLM"))) {
     ans$R2.org <- z$R2.org

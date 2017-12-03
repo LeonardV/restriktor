@@ -58,8 +58,6 @@ if \code{test = "Wald"}.
   distribution. The random generation distributional parameters will 
   be passed in via \ldots.}
 
-  
-  
   \item{parallel}{the type of parallel operation to be used 
   (if any). If missing, the default is set "no".}
   

@@ -90,6 +90,13 @@ print.summary.restriktor <- function(x, digits = max(3, getOption("digits") - 2)
                                      1L, paste, collapse = " "), sep = "")
   }
   
+  
+  if (inherits(x, "summary.conRLM")) {
+    cat("\n")
+    robWeights(x$wgt)
+    cat("\n")
+  }
+  
   goric <- x$goric
   if (!is.null(goric)) {
     ll <- attr(goric, "loglik") 

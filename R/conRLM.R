@@ -229,7 +229,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 wresid      = object$wresid,
                 fitted      = object$fitted,
                 weights     = weights,  # prior weights
-                w           = object$w, # weights used in the IWLS process
+                wgt         = object$w, # weights used in the IWLS process
                 scale       = object$s, 
                 stddev      = stddev,
                 psi         = object$psi,
@@ -310,7 +310,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 wresid      = rfit$wresid,
                 fitted      = fitted,
                 weights     = weights,
-                w           = wgt, 
+                wgt         = wgt, 
                 scale       = scale,
                 stddev      = stddev,
                 R2.org      = R2.org,

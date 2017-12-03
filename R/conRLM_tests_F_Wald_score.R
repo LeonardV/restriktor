@@ -30,7 +30,7 @@ robustScores <- function(x, y, b.eqrestr, b.restr, b.unrestr, Amat,
 
   #Calculate V 
   Minv <- solve(M)
-  #information matrix 
+  #covariance matrix 
   V <- Minv %*% Q %*% t(Minv)
 
   idx1 <- which(colSums(abs(Amat)) > 0L)

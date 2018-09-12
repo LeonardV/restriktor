@@ -1,6 +1,15 @@
+conTestF        <- function(object, ...) UseMethod("conTestF")
+conTestLRT      <- function(object, ...) UseMethod("conTestLRT")
+conTestScore    <- function(object, ...) UseMethod("conTestScore")
+conTestWald     <- function(object, ...) UseMethod("conTestWald")
+conTest_summary <- function(object, ...) UseMethod("conTest_summary")
+conTest_ceq     <- function(object, ...) UseMethod("conTest_ceq")
+conTestC        <- function(object, ...) UseMethod("conTestC")
+
+
 conTest <- function(object, constraints = NULL, type = "summary", test = "F", 
                     rhs = NULL, neq = 0L, ...) {
-
+  
   
   if (inherits(object, "restriktor")) {
     test <- tolower(test)
@@ -20,15 +29,15 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
         # acknowledgement: taken from the ic.infer package (Gromping, 2010)
         if (nrow(Amat) - meq - 2 > 2) {
           if (!is.numeric(try(matrix(0, floor((nrow(Amat) - meq -
-                                                 2)/2), choose(nrow(Amat) - meq, floor((nrow(Amat) - meq -
-                                                                                          2)/2))), silent = TRUE)))
+                                               2)/2), choose(nrow(Amat) - meq, floor((nrow(Amat) - meq -
+                                                                                      2)/2))), silent = TRUE)))
             stop(paste("test does not work, too many inequality restriktions, \n",
                        "interim matrix with ", floor((nrow(Amat) - meq)/2) *
                          choose(nrow(Amat) - meq, floor((nrow(Amat) - meq)/2)),
                        " elements cannot be created", sep = ""))
         }
       } 
-    
+      
       # check
       if (type %in% c("a","b","global")) {
         if (class(object)[2] %in% "conLM") {
@@ -36,57 +45,54 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
             stop("restriktor ERROR: test ", sQuote(test), " unknown. Choose F, LRT or score.")  
           } 
           if (test == "f") {
-            UseMethod("conTestF")
+            conTestF(object, ...)
           } else if (test == "lrt") {
-            UseMethod("conTestLRT")
+            conTestLRT(object, ...)
           } else if (test == "score") {
-            UseMethod("conTestScore")
+            conTestScore(object, ...)
           } 
         } else if (class(object)[2] %in% "conRLM") { 
           if (!(test %in% c("f","wald","score"))) {
             stop("restriktor ERROR: test ", sQuote(test), " unknown. Choose F, Wald or score.")  
           } 
           if (test == "f") {
-            UseMethod("conTestF")
+            conTestF(object, ...)
           } else if (test == "wald") {
-            UseMethod("conTestWald")
+            conTestWald(object, ...)
           } else if (test == "score") {
-            UseMethod("conTestScore")
+            conTestScore(object, ...)
           } 
         } else if (class(object)[2] %in% "conGLM") {
           if (!(test %in% c("f","lrt","score"))) {
             stop("restriktor ERROR: test ", sQuote(test), " unknown. Choose Wald, LRT or score.")  
           } 
           if (test == "f") {
-            UseMethod("conTestF")
+            conTestF(object, ...)
           } else if (test == "lrt") {
-            UseMethod("conTestLRT")
+            conTestLRT(object, ...)
           } else if (test == "score") {
-            UseMethod("conTestScore")
+            conTestScore(object, ...)
           } 
         } else if (class(object)[2] %in% "conMLM") {
           if (!(test %in% c("lrt"))) {
             stop("restriktor ERROR: test ", sQuote(test), " unknown. Only LRT available for now.")  
           }
           if (test == "lrt") {
-            UseMethod("conTestLRT")
+            conTestLRT(object, ...)
           } 
         }
       } else if (type == "c" && (inherits(object, c("conLM","conRLM","conGLM","conMLM")))) {
         if (inherits(object, "conMLM")) {
           stop("Restriktor ERROR: hypothesis test type c not available (yet).")
         }
-        UseMethod("conTestC")
+        conTestC(object, ...)
       } else if (type == "summary" && (inherits(object, c("conLM","conRLM","conGLM","conMLM")))) {
-        UseMethod("conTest_summary")     
+        conTest_summary(object, ...)
       } else {
         stop("type ", sQuote(type), " unknown.") 
       }
     } else if (nrow(Amat) == meq) {
-      #if (class(object)[2] %in% "conGLM") {
-      #  stop("Restriktor ERROR: tests with equality constraints only, are not implemented yet.")
-      #}
-        UseMethod("conTest_ceq") # classical Wald, F and score test with equality constraints only
+      conTest_ceq(object, ...) 
     } else {
       stop("Restriktor ERROR: constraints and neq do not match.")
     }

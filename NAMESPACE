@@ -37,11 +37,12 @@ importFrom("stats", "coef", "df.residual", "dnorm", "fitted",
 # export ordinary functions defined in this package
 export("restriktor", 
        "conLM.lm", "conRLM.rlm", "conGLM.glm", "conMLM.mlm",
-       "conTest", "iht",
+       "conTest", "iht", 
+       "conTest_summary", "conTest_ceq", "conTestC",
        "conTestF.conLM", "conTestF.conRLM", "conTestF.conGLM", 
        "conTestLRT.conLM", "conTestLRT.conGLM", "conTestLRT.conMLM", 
        "conTestScore.conLM", "conTestScore.conRLM", "conTestScore.conGLM", 
-       "conTestWald.conRLM", #"conTestWald2.conRLM",
+       "conTestWald.conRLM", 
        "conTestC.restriktor", 
        "conTest_ceq.conLM", "conTest_ceq.conRLM", "conTest_ceq.conGLM", 
        "goric", "print.goric",
@@ -59,3 +60,19 @@ S3method(print, conTest)
 S3method(print, summary.restriktor)
 S3method(summary, restriktor)
 S3method(print, goric)
+
+S3method(conTestC, restriktor)
+S3method(conTestLRT, conLM)
+S3method(conTestLRT, conGLM)
+S3method(conTestLRT, conMLM)
+S3method(conTestScore, conLM)
+S3method(conTestScore, conRLM)
+S3method(conTestScore, conGLM)
+S3method(conTestWald, conRLM)
+S3method(conTestF, conLM)
+S3method(conTestF, conRLM)
+S3method(conTestF, conGLM)
+S3method(conTest_ceq, conLM)
+S3method(conTest_ceq, conRLM)
+S3method(conTest_ceq, conGLM)
+S3method(conTest_summary, restriktor)

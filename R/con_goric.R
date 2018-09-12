@@ -30,7 +30,7 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
   if (complement && length(conlist) > 1L) {
     complement <- FALSE
     warning("Restriktor WARNING: if complement = TRUE, only one order-constrained hypothesis\n",
-            "                      is allowed. Therefore, the complement is set to FALSE.")
+            "                      is allowed (for now). Therefore, the complement is set to FALSE.")
   } 
   
   df.c <- NULL
@@ -63,7 +63,7 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
     if (!is.null(bound) && meq == 0L) {
       warning("restriktor WARNING: bounds are only available for equality constraints \n",
               "                      and are therefore ignored.")
-       bound <- NULL
+      bound <- NULL
     } 
     
     if (!is.null(bound)) {
@@ -101,7 +101,7 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
         ## check if unconstrained mle lay between the bounds
         check.ub <- all(Amat.ceq %*% c(b.unrestr) <= (ub + .Machine$double.eps))
         check.lb <- all(Amat.ceq %*% c(b.unrestr) >= (lb - .Machine$double.eps))
-  
+        
         ## check if unrestricted mle lay in boundary area
         if (check.ciq && check.ub && check.lb) {
           # log-likelihood model
@@ -138,14 +138,14 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
             llc.s <- list()
             nr.ciq <- 1:nrow(Amat.ciq)
             for (l in nr.ciq) {
-             Hc.s <- restriktor(model.org, constraints = Amat.ciq[l, , drop = FALSE],
-                                neq = 1, rhs = bvec.ciq[l],
-                                mix.weights = "none", se = "none")
-             b.s <- coef(Hc.s)
-             b.s[abs(b.s) < sqrt(.Machine$double.eps)] <- 0L
-             if (all(Amatx %*% c(b.s) >= bvecx)) {               # correct check?
-               llc.s[[l]] <- logLik(Hc.s)
-             }
+              Hc.s <- restriktor(model.org, constraints = Amat.ciq[l, , drop = FALSE],
+                                 neq = 1, rhs = bvec.ciq[l],
+                                 mix.weights = "none", se = "none")
+              b.s <- coef(Hc.s)
+              b.s[abs(b.s) < sqrt(.Machine$double.eps)] <- 0L
+              if (all(Amatx %*% c(b.s) >= bvecx)) {               # correct check?
+                llc.s[[l]] <- logLik(Hc.s)
+              }
             }
           } else {
             llc.s <- NULL
@@ -192,7 +192,7 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
               Amat.ceq.perm <- perm.vec
               Amat.new <- rbind(Amat.ceq.perm, Amat.ciq)
               bvec.new <- c(bounds.new, bvec.ciq)
-            
+              
               if (length(bound.zero.idx) == 0L) {
                 Amat.new.sort <- Amat.new
                 bvec.new.sort <- bvec.new
@@ -217,7 +217,7 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
             if (debug) {
               cat("log-likelihood_m =", llm, "\n")
             }
-  
+            
             llm <- max(llm)
           } else {
             llm <- logLik(object)
@@ -238,12 +238,14 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
       # check if any constraint is violated
       if (check.ciq || check.ceq) { 
         llc <- con_loglik_lm(model.org)
+        betasc <- coef(model.org)
         if (debug) {
           cat("log-likelihood_c value =", llc, "\n")
         }
         # if any constraints is violated LL_c = LL_u
       } else if (nrow(Amat) > meq && !(all(c(Amat) == 0L))) {
         ll <- list()
+        betas <- list()
         # number of rows
         nr <- 1:nrow(Amat)
         # remove rows corresponding to equality constraints
@@ -258,18 +260,23 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
                                  neq = 1, rhs = bvec[idx], 
                                  mix.weights = "none", se = "none")
           ll[[l]] <- Hc.restr$loglik
+          betas[[l]] <- coef(Hc.restr)
         }
         if (debug) {
           cat("log-likelihood value =", ll[[l]], "\n")
         }
         # take the highest log-likelihood value as a substitute for 
         # the complement
-        llc <- max(unlist(ll))
+        ll.unlist <- unlist(ll)
+        ll.idx <- which(ll.unlist == max(ll.unlist))
+        llc <- max(ll.unlist)
+        betasc <- betas[[ll.idx]]#data.frame(matrix(unlist(betas), nrow=length(betas), byrow=TRUE))
       } else if (nrow(Amat) == meq) { 
         # redundant, this will be catched by the first statement.
         # in case of equality constraints only, the complement is 
         # equal to the unconstrained log-likelihood
         llc <- con_loglik_lm(model.org)
+        betasc <- coef(model.org)
         if (debug) {
           cat("log-likelihood_c value =", llc, "\n")
         }
@@ -332,6 +339,9 @@ goric <- function(object, ..., complement = FALSE, bound = NULL,
   goric.weights <- exp(-delta / 2) / sum(exp(-delta / 2))
   df$goric.weights <- goric.weights
   
+  if (complement && is.null(bound)) {
+    attr(df, "betasc") <- betasc
+  }
   attr(df, "complement") <- complement
   
   class(df) <- "goric"
@@ -356,6 +366,6 @@ print.goric <- function(x, digits = max(3, getOption("digits") - 2), ...) {
     Gm <- c(goric.weights[1])
     Gc <- goric.weights[2]
     cat("The order-restricted hypothesis", sQuote(objectnames[1]), "is", 
-        sprintf("%1.3f", Gm/Gc), "times more likely than its complement.")
+        sprintf("%1.3f", Gm/Gc), "times more likely \nto be the best model than its complement.")
   }
 }

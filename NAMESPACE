@@ -76,3 +76,8 @@ S3method(conTest_ceq, conLM)
 S3method(conTest_ceq, conRLM)
 S3method(conTest_ceq, conGLM)
 S3method(conTest_summary, restriktor)
+
+S3method(conLM, lm)
+S3method(conRLM, rlm)
+S3method(conGLM, glm)
+S3method(conMLM, mlm)

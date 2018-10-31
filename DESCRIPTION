@@ -1,6 +1,6 @@
 Package: restriktor
 Title: Restricted Statistical Estimation and Inference for Linear Models
-Version: 0.1-80.811
+Version: 0.1-80.911
 Authors@R: c(person(given = "Leonard", family = "Vanbrabant",
                     role =  c("aut","cre"),
                     email = "Leonard.Vanbrabant@Ugent.be"),

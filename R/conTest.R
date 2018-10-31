@@ -1,7 +1,7 @@
-conTestF        <- function(object, ...) UseMethod("conTestF")
-conTestLRT      <- function(object, ...) UseMethod("conTestLRT")
-conTestScore    <- function(object, ...) UseMethod("conTestScore")
-conTestWald     <- function(object, ...) UseMethod("conTestWald")
+conTestF        <- function(object, type = type, ...) UseMethod("conTestF")
+conTestLRT      <- function(object, type = type, ...) UseMethod("conTestLRT")
+conTestScore    <- function(object, type = type, ...) UseMethod("conTestScore")
+conTestWald     <- function(object, type = type, ...) UseMethod("conTestWald")
 conTest_summary <- function(object, ...) UseMethod("conTest_summary")
 conTest_ceq     <- function(object, ...) UseMethod("conTest_ceq")
 conTestC        <- function(object, ...) UseMethod("conTestC")
@@ -45,40 +45,40 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
             stop("restriktor ERROR: test ", sQuote(test), " unknown. Choose F, LRT or score.")  
           } 
           if (test == "f") {
-            conTestF(object, ...)
+            conTestF(object, type = type, ...)
           } else if (test == "lrt") {
-            conTestLRT(object, ...)
+            conTestLRT(object, type = type, ...)
           } else if (test == "score") {
-            conTestScore(object, ...)
+            conTestScore(object, type = type, ...)
           } 
         } else if (class(object)[2] %in% "conRLM") { 
           if (!(test %in% c("f","wald","score"))) {
             stop("restriktor ERROR: test ", sQuote(test), " unknown. Choose F, Wald or score.")  
           } 
           if (test == "f") {
-            conTestF(object, ...)
+            conTestF(object, type = type, ...)
           } else if (test == "wald") {
-            conTestWald(object, ...)
+            conTestWald(object, type = type, ...)
           } else if (test == "score") {
-            conTestScore(object, ...)
+            conTestScore(object, type = type, ...)
           } 
         } else if (class(object)[2] %in% "conGLM") {
           if (!(test %in% c("f","lrt","score"))) {
             stop("restriktor ERROR: test ", sQuote(test), " unknown. Choose Wald, LRT or score.")  
           } 
           if (test == "f") {
-            conTestF(object, ...)
+            conTestF(object, type = type, ...)
           } else if (test == "lrt") {
-            conTestLRT(object, ...)
+            conTestLRT(object, type = type, ...)
           } else if (test == "score") {
-            conTestScore(object, ...)
+            conTestScore(object, type = type, ...)
           } 
         } else if (class(object)[2] %in% "conMLM") {
           if (!(test %in% c("lrt"))) {
             stop("restriktor ERROR: test ", sQuote(test), " unknown. Only LRT available for now.")  
           }
           if (test == "lrt") {
-            conTestLRT(object, ...)
+            conTestLRT(object, type = type, ...)
           } 
         }
       } else if (type == "c" && (inherits(object, c("conLM","conRLM","conGLM","conMLM")))) {
@@ -117,6 +117,11 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
                    ldots[m.test > 0L])
     do.call("conTest", CALL.test)
   } else if (is.null(constraints)) {
-    stop("Restriktor ERROR: no constraints specified!")
+      if (class(object)[1] == "conTest") {
+        stop("Restriktor ERROR: object is already of class conTest.")
+      } 
+      else {
+        stop("Restriktor ERROR: ")
+      }
   }
 }  

@@ -8,15 +8,15 @@ Authors@R: c(person(given = "Leonard", family = "Vanbrabant",
                     role  = c("ctb"),
                     email = "Yves.Rosseel@UGent.be")       
             )
-Description: Allow for easy-to-use testing of linear equality and inequality 
-  restrictions about parameters and effects in (generalized) linear statistical models.
+Description: Allow for easy-to-use testing or evaluating of linear equality and inequality 
+ restrictions about parameters and effects in (generalized) linear statistical models.
 Depends: R(>= 3.0.0)
 Imports: boot, ic.infer, lavaan, MASS, mvtnorm, quadprog
 License: GPL (>= 2)
 LazyData: yes
 URL: http://restriktor.org
 NeedsCompilation: no
-Packaged: 2018-09-12 20:52:16 UTC; Leonard
+Packaged: 2018-010-31 08:40:30 UTC; Leonard
 Author: Leonard Vanbrabant [aut, cre], Yves Rosseel [ctb]
 Maintainer: Leonard Vanbrabant <Leonard.Vanbrabant@Ugent.be>
 Suggests: 

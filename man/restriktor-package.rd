@@ -2,7 +2,7 @@
 \alias{restriktor-package}
 \title{Package for equality and inequality restricted estimation and hypothesis testing}
 \description{
-Package \code{restriktor} implements estimation and testing linear equality and 
+Package \code{restriktor} implements estimation, testing and evaluating of linear equality and 
 inequality restriktions about parameters and effects for univariate and multivariate 
 normal models and generalized linear models.}
 
@@ -10,8 +10,8 @@ normal models and generalized linear models.}
   \tabular{ll}{
   Package: \tab restriktor\cr
   Type: \tab Package\cr
-  Version: \tab 0.1-80.811\cr
-  Date: \tab 2018-09-12\cr
+  Version: \tab 0.1-80.911\cr
+  Date: \tab 2018-10-31\cr
   License: \tab GPL (>=2)\cr
   LazyLoad: \tab yes\cr
   }
@@ -34,16 +34,24 @@ normal models and generalized linear models.}
   Order-restricted Information Criterion (GORIC), which is a 
   modification of the AIC and a generalization of the ORIC.
   
-  Function \code{iht} (alias \code{conTest}) conducts restricted 
+  The function \code{iht} (alias \code{conTest}) conducts restricted 
   hypothesis tests. F, Wald/LRT and score test-statistics are available. 
   The null-distribution of these test-statistics takes the form of a 
   mixture of F-distributions. The mixing weights (a.k.a. chi-bar-square 
-  weights) can be computed using the multivariate normal distribution 
-  function with additional Monte Carlo steps or via a simulation approach. 
-  Bootstrap methods are available to calculate the mixing weights 
-  and to compute the p-value directly. Parameters estimates under 
-  the null- and alternative-hypothesis are available from the 
+  weights or level probabilities) can be computed using the multivariate 
+  normal distribution function with additional Monte Carlo steps or via 
+  a simulation approach. Bootstrap methods are available to calculate the 
+  mixing weights and to compute the p-value directly. Parameters estimates 
+  under the null- and alternative-hypothesis are available from the 
   summary function. 
+  
+  The function \code{goric} (generalized order-restricted information
+  criterion) computes GORIC values and weights, which are comparable
+  to the AIC values weights. The function offers the possibility to 
+  evaluate an order-restricted hypothesis against its complement. For now, 
+  only one order-restricted hypothesis can be evaluated against its 
+  complement but work is in progress to evaluate a set of order-restricted 
+  hypothesis against its complement. 
   
   The package makes use of various other R packages: \pkg{quadprog} 
   is used for restricted estimation, \pkg{boot} for bootstrapping, 
@@ -131,7 +139,11 @@ summary(fit.con)
     letters}, \bold{31}, 45--50.
     
     Silvapulle, M.J. and Sen, P.K. (2005). \emph{Constrained Statistical Inference}. 
-    Wiley, New York}
+    Wiley, New York
+    
+    Vanbrabant, L. and Kuiper, R. (n.d.). Giving the complement a compliment: Evaluating 
+    a theory-based hypothesis against its complement using the GORIC. 
+}
 
 \author{ Leonard Vanbrabant and Yves Rosseel - Ghent University}
 \seealso{ 

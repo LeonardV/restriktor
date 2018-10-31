@@ -1,3 +1,9 @@
+conLM  <- function(object, constraints, ...) UseMethod("conLM")
+conRLM <- function(object, constraints, ...) UseMethod("conRLM")
+conGLM <- function(object, constraints, ...) UseMethod("conGLM")
+conMLM <- function(object, constraints, ...) UseMethod("conMLM")
+
+
 restriktor <- function(object, constraints = NULL, ...) {
   
   # check the class of object
@@ -17,16 +23,16 @@ restriktor <- function(object, constraints = NULL, ...) {
   }
   
   if (class(object)[1] == "lm") {
-    UseMethod("conLM")
+    conLM(object, constraints, ...)
   } 
   else if (class(object)[1] == "rlm") {
-    UseMethod("conRLM")
+    conRLM(object, constraints, ...)
   }
   else if (class(object)[1] == "glm") {
-    UseMethod("conGLM")
+    conGLM(object, constraints, ...)
   }
   else if (class(object)[1] == "mlm") {
-    UseMethod("conMLM")
+    conMLM(object, constraints, ...)
   }
   
 }

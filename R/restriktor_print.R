@@ -4,7 +4,6 @@ print.restriktor <- function(x, digits = max(3, getOption("digits") - 2), ...) {
   cat("\nCall:\n", gsub("\\n", "\n", paste(deparse(x$call), sep = "\n", collapse="\n"), 
                         fixed = TRUE), "\n\n", sep = "")
   
-  
   cat(sprintf("restriktor (%s): ", packageDescription("restriktor", fields = "Version")))
   
   if (inherits(x, "conRLM")) {

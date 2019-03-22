@@ -561,8 +561,7 @@ weights only reflect the difference in penalty term values.\n")
   cat("\n\nRestricted coefficients:\n")
   coefs <- lapply(x$objectList, FUN = function(x) { coef(x) } )
   max.length <- max(sapply(coefs, length))
-  coefs <- lapply(coefs, function(v) { c(v, rep("", max.length-length(v)))})
-  
+  coefs <- lapply(coefs, function(v) { c(v, rep(NA, max.length-length(v)))})
   coefs <- as.data.frame(do.call("rbind", coefs))
   rownames(coefs) <- x$objectNames
   print(coefs, digits = digits, scientific = FALSE, print.gap = 2L,

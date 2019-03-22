@@ -138,3 +138,25 @@ con_solver_glm <- function(X, y, Amat, bvec, meq,
   
   out
 }
+
+
+# compute restricted estimates based on unrestricted estimates and vcov
+con_solver_gorica <- function(est, VCOV, Amat, bvec, meq) {
+    
+    VCOV <- as.matrix(VCOV)
+    invVCOV <- ginv(VCOV)
+    
+    Dmat <- 2 * invVCOV
+    dvec <- 2 * (est %*% invVCOV)
+    
+    out.qp <- solve.QP(Dmat = Dmat, 
+                       dvec = dvec, 
+                       Amat = t(Amat),
+                       bvec = bvec, 
+                       meq  = meq)
+    out <- out.qp
+    
+    out
+}
+
+

@@ -4,11 +4,12 @@ con_constraints <- function(model, constraints, bvec = NULL, meq = 0L,
   # build a bare-bones parameter table for this model
   parTable <- con_partable(model, est = FALSE, label = TRUE)
   
+  
   if (is.character(constraints)) {
     # parse the constraints
     CON <- lav_constraints_parse(constraints = constraints,
-                                 partable = parTable,
-                                 debug = debug)
+                                 partable    = parTable,
+                                 debug       = debug)
     
     FLAT <- lavParseModelString(constraints)
     CON_FLAT <- attr(FLAT, "constraints")
@@ -31,6 +32,11 @@ con_constraints <- function(model, constraints, bvec = NULL, meq = 0L,
     bvec <- con_constraints_rhs_bvec(model, constraints = constraints)
     # inequality constraints
     Amat <- con_constraints_con_amat(model, constraints = constraints)
+    
+    if (all(Amat == 0)) {
+      stop("Restriktor ERROR: constraints are not correctly specified. 
+                    See ?restriktor for details.")
+    }
     
     CON$constraints <- constraints
   } else if (!is.character(constraints) && !is.null(constraints)) {

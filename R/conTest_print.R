@@ -41,9 +41,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
     }
   }
   
-  vnames <- names(b.unrestr)
-  colnames(Amat) <- vnames
-  
+  colnames(Amat) <- names(b.unrestr)
   out.rest <- cbind(round(Amat, 4), c(rep("   ==", meq), rep("   >=", nrow(Amat) - 
                                                      meq)), bvec, " ")
   

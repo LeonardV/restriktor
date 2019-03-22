@@ -6,10 +6,11 @@
 \description{The \code{goric} function computes GORIC 
 weights, which are comparable to the Akaike weights. 
 }
-\usage{goric(object, \dots, complement = FALSE, bound = NULL, 
-             digits = max(3, getOption("digits") - 2), debug = FALSE)
+\usage{goric(object, ..., comparison = c("unrestricted", "complement", "none"), 
+                  type = "standard", bound = NULL, 
+                  digits = max(3, getOption("digits") - 2), debug = FALSE)
 
-\method{print}{goric}(x, digits = max(3, getOption("digits") - 2), \dots)
+\method{print}{goric}(x, digits = max(3, getOption("digits") - 4), brief = TRUE, \dots)
 
 }
 
@@ -20,21 +21,29 @@ weights, which are comparable to the Akaike weights.
 
   \item{\ldots}{further fitted restriktor objects of class conLM, conMLM, conRLM and conGLM.}
   
-  \item{complement}{logical; if TRUE the complement is computed. The complement can only
-  be computed for one restriktor object at a time.}
+  \item{comparison}{if "unrestricted" the unrestricted model is unrestricted model is
+  included in the set op models. If "complement" the the restricted object is compared
+  against its complement. Note that the complement can only be computed for one 
+  restriktor object at a time (for now). If "none" no the model is only compared
+  against the models provided by the user.}
+  
+  \item{type}{if "gorica", the log-likihood is computed using the multivariate normal
+  distribution function.}
   
   \item{bound}{not used yet.}
   
   \item{digits}{the number of significant digits to use when printing.}
   
   \item{debug}{if TRUE, debugging information is printed out.}
+  
+  \item{brief}{if FALSE, an extended overview is printed.}
 }
 
-\details{The GORIC values themselves are not interpretable and 
-the interest lie in their differences. The GORIC weights reflect 
+\details{The GORIC(a) values themselves are not interpretable and 
+the interest lie in their differences. The GORIC(a) weights reflect 
 the support of each hypothesis in the set. To compare two hypotheses 
 (and not one to the whole set), one can examine the ratio of the 
-two corresponding GORIC weights. To avoid selecting a weakly supported 
+two corresponding GORIC(a) weights. To avoid selecting a weakly supported 
 hypothesis as the best one, the unconstrained hypothesis is usually 
 included as safeguard.
 
@@ -44,13 +53,16 @@ as Hc = not H1.
 }
 
 \value{The function returns a dataframe with the log-likelihood,
-penalty term, goric, and the GORIC weights values.
+penalty term, goric, and the GORIC weights values. 
 }
 
 \references{
 Kuiper, R.M., Hoijtink, H., and Silvapulle, M.J. (2011). An Akaike-type
 information criterion for model selection under inequality constraints.
 \emph{Biometrika}, \bold{98}, 2, 495--501.
+
+Vanbrabant, L. and Kuiper, R. (n.d.). Giving the complement a compliment: 
+Evaluating a theory-based hypothesis against its complement using the GORIC. 
 }
 
 \author{Leonard Vanbrabant and Rebecca Kuiper}
@@ -77,7 +89,7 @@ fit4.con <- restriktor(fit1.lm) # unrestricted model
 goric(fit1.con, fit2.con, fit3.con, fit4.con)
 
 # fit1.con verus the complement
-goric(fit1.con, complement = TRUE)
+goric(fit1.con, comparison = "complement")
 
 
 ## mlm
@@ -99,5 +111,5 @@ myConstraints2 <- rbind(c(-1,1,0,0), c(0,-1,1,0), c(0,0,-1,1))
 fit5.con <- restriktor(fit2.mlm, constraints = myConstraints2)
 
 # fit5.con verus the complement
-goric(fit5.con, complement = TRUE)
+goric(fit5.con, comparison = "complement")
 }

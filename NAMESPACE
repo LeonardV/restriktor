@@ -18,13 +18,17 @@ importFrom("boot",
 
 importFrom("MASS",
            psi.bisquare,
-           psi.huber)
+           psi.huber,
+           ginv)
+
+importFrom("mvtnorm",
+           dmvnorm)
 
 importFrom("ic.infer",
            #nchoosek, NOT EXPORTED!
            ic.weights)
 
-importFrom("utils", "packageDescription")
+importFrom("utils", "combn", "packageDescription")
 
 importFrom("stats", "coef", "df.residual", "dnorm", "fitted",
            "formula", "frequency", "median", "model.matrix",

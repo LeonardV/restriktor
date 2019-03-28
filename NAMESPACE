@@ -40,7 +40,7 @@ importFrom("stats", "coef", "df.residual", "dnorm", "fitted",
 
 # export ordinary functions defined in this package
 export("restriktor", 
-       "conLM.lm", "conRLM.rlm", "conGLM.glm", "conMLM.mlm",
+       "conLM.lm", "conRLM.rlm", "conGLM.glm", "conMLM.mlm", 
        "conTest", "iht", 
        "conTest_summary", "conTest_ceq", "conTestC",
        "conTestF.conLM", "conTestF.conRLM", "conTestF.conGLM", 
@@ -54,7 +54,7 @@ export("restriktor",
        "summary.restriktor", "conTest_summary.restriktor",
        "print.conTest", "logLik.restriktor",
        "coef.restriktor", "model.matrix.restriktor",
-       "con_weights_boot")
+       "con_weights_boot", "coef.goric")
 
 S3method(coef, restriktor)
 S3method(model.matrix, restriktor)
@@ -64,6 +64,8 @@ S3method(print, conTest)
 S3method(print, summary.restriktor)
 S3method(summary, restriktor)
 S3method(print, goric)
+S3method(coef, goric)
+
 
 S3method(conTestC, restriktor)
 S3method(conTestLRT, conLM)

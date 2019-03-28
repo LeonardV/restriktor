@@ -10,8 +10,8 @@ normal models and generalized linear models.}
   \tabular{ll}{
   Package: \tab restriktor\cr
   Type: \tab Package\cr
-  Version: \tab 0.1-90.500\cr
-  Date: \tab 2019-03-22\cr
+  Version: \tab 0.2-10.000\cr
+  Date: \tab 2019-03-28\cr
   License: \tab GPL (>=2)\cr
   LazyLoad: \tab yes\cr
   }
@@ -46,12 +46,14 @@ normal models and generalized linear models.}
   summary function. 
   
   The function \code{goric} (generalized order-restricted information
-  criterion) computes GORIC values and weights, which are comparable
-  to the AIC values weights. The function offers the possibility to 
-  evaluate an order-restricted hypothesis against its complement. For now, 
-  only one order-restricted hypothesis can be evaluated against its 
-  complement but work is in progress to evaluate a set of order-restricted 
-  hypothesis against its complement. 
+  criterion) computes GORIC values, weights and relative-weights or GORICA
+  (generalized order-restricted information crittion approximation) values,
+  weights and relative weights. The GORIC(A) values are comparable to the AIC 
+  values. The function offers the possibility to evaluate an order-restricted 
+  hypothesis against its complement, the unconstrained hypothesis or against
+  a set of hypotheses. For now, only one order-restricted hypothesis can be 
+  evaluated against its complement but work is in progress to evaluate a set 
+  of order-restricted hypothesis against its complement. 
   
   The package makes use of various other R packages: \pkg{quadprog} 
   is used for restricted estimation, \pkg{boot} for bootstrapping, 

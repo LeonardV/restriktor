@@ -4,7 +4,7 @@ con_partable <- function(object, est = FALSE, label = FALSE,
 
     #  we first check the class of object
     if (!(class(object)[1] %in% c("lm", "rlm", "glm", "mlm"))) {
-       stop("It only works for lm, mlm, rlm and glm")
+       stop("Restriktor ERROR: It only works for lm, mlm, rlm and glm")
      }
 
     objectTerms <- terms(object)
@@ -62,3 +62,54 @@ con_partable <- function(object, est = FALSE, label = FALSE,
     
     partable
 }
+
+
+######
+# build a bare-bones parameter table from a numeric vector
+con_partable_est <- function(object, label = FALSE, est = FALSE,
+                             as.data.frame. = FALSE) {
+  
+  #  we first check the class of object
+  if (!(class(object)[1] == "numeric")) {
+    stop("Restriktor ERROR: It only works objects of class numeric")
+  }
+  
+  responseName <- "y"
+  
+  predCoef <- object
+  if (!is.null(names(object))) {
+    predNames <- names(predCoef)
+  } else {
+    predNames <- paste0("V", 1:length(est))
+  }
+  
+  lhs <- rep(responseName, length(predNames))
+  op <- rep("~", length(predNames))
+  rhs <- predNames
+  
+  # construct minimal partable
+  partable <- list(lhs = lhs, op = op, rhs = rhs)
+  
+  # include 'est' column?
+  if (est) {
+    #partable$est <- c(as.numeric(predCoef), 
+    #                  sum(resid(object)^2) / object$df.residual) # variance
+    partable$est <- as.numeric(predCoef)
+  }
+  
+  
+  # include 'label' column?
+  if (label) {
+    partable$label <- c(predNames, responseName)
+    # convert all ':' to '.'
+    partable$label <- gsub("[:()]", ".", partable$label)
+  }
+  
+  # convert to data.frame?
+  if (as.data.frame.) {
+    partable <- as.data.frame(partable, stringsAsFactors = FALSE)
+  }
+  
+  partable
+}
+

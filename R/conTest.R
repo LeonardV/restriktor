@@ -102,7 +102,7 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
       ldots$se <- "none"
     }
     
-    m.restr <- match(names(ldots), c("se", "B", "mix.weights", "bootmix.weights", "mix.bootstrap", 
+    m.restr <- match(names(ldots), c("se", "B", "mix.weights", "mix.bootstrap", #"bootmix.weights",
                                      "parallel", "ncpus", "cl", "seed", "control", 
                                      "verbose", "debug"), 0L)
     

@@ -1,9 +1,14 @@
 con_constraints <- function(model, constraints, bvec = NULL, meq = 0L, 
                             debug = FALSE, ...) {
   
-  # build a bare-bones parameter table for this model
-  parTable <- con_partable(model, est = FALSE, label = TRUE)
-  
+  ## build a bare-bones parameter table for this model
+  # if model is a numeric vecter
+  if (class(model) == "numeric") {
+    parTable <- con_partable_est(model, est = FALSE, label = TRUE)
+  } else {
+    # if model is a fitted unrestricted object
+    parTable <- con_partable(model, est = FALSE, label = TRUE)  
+  }
   
   if (is.character(constraints)) {
     # parse the constraints
@@ -72,27 +77,42 @@ con_constraints <- function(model, constraints, bvec = NULL, meq = 0L,
 
 con_constraints_ceq_amat <- function(object, constraints = NULL) {
 
-    # build a bare-bones parameter table for this object
-    lavpartable <- con_partable(object, est = TRUE, label = TRUE)
+  # build a bare-bones parameter table for this object
+  if (class(object) == "numeric") {
+    lavpartable <- con_partable_est(object, est = TRUE, label = TRUE)
+  } else {
+  # if object is a fitted unrestricted object
+    lavpartable <- con_partable(object, est = TRUE, label = TRUE)  
+  }
 
-    # parse the constraints
-    CON <- lav_constraints_parse(constraints = constraints,
-                                 partable    = lavpartable)
+  #lavpartable <- con_partable(object, est = TRUE, label = TRUE)
+  
 
-    CON$ceq.JAC
+  # parse the constraints
+  CON <- lav_constraints_parse(constraints = constraints,
+                               partable    = lavpartable)
+
+  CON$ceq.JAC
 }
 
 
 con_constraints_con_amat <- function(object, constraints = NULL) {
+  
+  # build a bare-bones parameter table for this object
+  if (class(object) == "numeric") {
+    lavpartable <- con_partable_est(object, est = TRUE, label = TRUE)
+  } else {
+    # if object is a fitted unrestricted object
+    lavpartable <- con_partable(object, est = TRUE, label = TRUE)  
+  }
+  
+  #lavpartable <- con_partable(object, est = TRUE, label = TRUE)
 
-    # build a bare-bones parameter table for this object
-    lavpartable <- con_partable(object, est = TRUE, label = TRUE)
+  # parse the constraints
+  CON <- lav_constraints_parse(constraints = constraints,
+                               partable = lavpartable)
 
-    # parse the constraints
-    CON <- lav_constraints_parse(constraints = constraints,
-                                 partable = lavpartable)
-
-    rbind(CON$ceq.JAC, CON$cin.JAC)
+  rbind(CON$ceq.JAC, CON$cin.JAC)
 }
 
 
@@ -100,8 +120,17 @@ con_constraints_con_amat <- function(object, constraints = NULL) {
 con_constraints_rhs_bvec <- function(object, constraints = NULL) {
 
   # build a bare-bones parameter table for this object
-  lavpartable <- con_partable(object, est = TRUE, label = TRUE)
+  #lavpartable <- con_partable(object, est = TRUE, label = TRUE)
 
+  # build a bare-bones parameter table for this object
+  if (class(object) == "numeric") {
+    lavpartable <- con_partable_est(object, est = TRUE, label = TRUE)
+  } else {
+    # if object is a fitted unrestricted object
+    lavpartable <- con_partable(object, est = TRUE, label = TRUE)  
+  }
+  
+  
   # parse the constraints
   CON <- lav_constraints_parse(constraints = constraints,
                                partable    = lavpartable)

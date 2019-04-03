@@ -1,6 +1,5 @@
 goric <- function(object, ..., comparison = c("unconstrained", "complement", "none"), 
-                  VCOV = NULL, type = "goric", bound = NULL, 
-                  digits = max(3, getOption("digits") - 2), debug = FALSE) {
+                  VCOV = NULL, type = "goric", bound = NULL, debug = FALSE) {
   
   mc <- match.call()
   CALL <- as.list(mc)
@@ -24,6 +23,9 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
     ldots2 <- ldots[m.restr == 0L]
   }  
   
+  # object type, restriktor, unconstrained, vector
+  
+  
   # what is the constraint input type
   objectList  <- c(list(object), ldots2)
   isRestr     <- sapply(objectList, function(x) inherits(x, "restriktor"))
@@ -46,7 +48,10 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
     
     idx <- length(conList) 
     objectnames <- vector("character", idx)
-    for (i in 1:idx) { 
+    for (i in 1:idx) {
+      if (length(as.character(CALL[[i]])) > 1) {
+        CALL[[i]] <- paste0("H", i)
+      }
       objectnames[i] <- as.character(CALL[[i]])
     }
   # if the constraints syntax is of class character, e.g., x1 < x2; x2 < x3
@@ -75,7 +80,10 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
     idx <- length(conList) 
     objectnames <- vector("character", idx)
     CALL$object <- NULL
-    for (i in 1:idx) { 
+    for (i in 1:idx) {
+      if (length(as.character(CALL[[i]])) > 1) {
+        CALL[[i]] <- paste0("H", i)
+      }
       objectnames[i] <- as.character(CALL[[i]])
     }
   # if the constraints are a list with constraints, rhs and neq for each hypothesis   
@@ -116,7 +124,10 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
       idx <- length(conList) 
       objectnames <- vector("character", idx)
       CALL$object <- NULL
-      for (i in 1:idx) { 
+      for (i in 1:idx) {
+        if (length(as.character(CALL[[i]])) > 1) {
+          CALL[[i]] <- paste0("H", i)
+        }
         objectnames[i] <- as.character(CALL[[i]])
       }
     } else if (inherits(object, "numeric")) {
@@ -157,7 +168,7 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
         isSummary <- lapply(conList, function(x) summary(x))
       } else if (all(isCharacter)) {
         # if constraints is character
-        constraints <- ldots3[isCharacter]
+        constraints <- ldots2[isCharacter]
         # fit restriktor object for each hypothesis
         conList <- list()
         for (c in 1:length(constraints)) {
@@ -170,7 +181,7 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
         isSummary <- lapply(conList, function(x) summary(x))
       }
       CALL$object <- NULL; CALL$comparison <- NULL; CALL$type <- NULL
-      CALL$VCOV <- NULL; CALL$bound <- NULL; CALL$digits <- NULL; 
+      CALL$VCOV <- NULL; CALL$bound <- NULL; 
       CALL$debug <- NULL; CALL$B <- NULL; CALL$mig.weights <- NULL; 
       CALL$mix.bootstrap <- NULL; CALL$parallel <- NULL; CALL$ncpus <- NULL; 
       CALL$cl <- NULL; CALL$seed <- NULL; CALL$control <- NULL; 
@@ -179,6 +190,9 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
       idx <- length(conList) 
       objectnames <- vector("character", idx)
       for (i in 1:idx) { 
+        if (length(as.character(CALL[[i]])) > 1) {
+          CALL[[i]] <- paste0("H", i)
+        }
         objectnames[i] <- as.character(CALL[[i]])
       }
     } else {
@@ -654,14 +668,10 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
   # compute relative weights
   modelnames <- as.character(df$model)
   if (length(modelnames) > 1) {
-    rel.gw <- combn(goric.weights, 2, FUN = function(x) x[1]/x[2], simplify = TRUE)  
-    rw <- as.data.frame(diag(length(modelnames)))
+    rw <- goric.weights %*% t(1/goric.weights)
     rownames(rw) <- modelnames
     colnames(rw) <- paste0("vs ", modelnames)
-    rw[upper.tri(rw, diag = FALSE)] <- rel.gw
-    rw[lower.tri(rw, diag = FALSE)] <- 1/rel.gw
     ans$relative.gw <- rw
-    #goric.weights %*% t(1/goric.weights)
   }
   
   if (comparison == "complement" && is.null(bound)) {
@@ -680,6 +690,14 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
     rownames(coefs) <- objectnames    
   }
   
+  # list of constraints
+  ans$constraints <- lapply(conList, FUN = function(x) { x$constraints } )
+    names(ans$constraints) <- ans$objectNames
+  ans$rhs <- lapply(conList, FUN = function(x) { x$rhs } )
+    names(ans$rhs) <- ans$objectNames
+  ans$neq  <- lapply(conList, FUN = function(x) { x$neq } )
+    names(ans$neq) <- ans$objectNames
+  
   ans$ormle$b.restr <- coefs  
   ans$comparison <- comparison
   ans$type <- type
@@ -695,9 +713,46 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
 
 
 
-print.goric <- function(x, digits = max(3, getOption("digits") - 3),
-                        brief = TRUE, ...) {
+print.goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
+
+  type <- x$type
+  comparison <- x$comparison
+  dig <- paste0("%6.", digits, "f")
+  x2 <- lapply(x$result[-1], sprintf, fmt = dig)
+  x2$model <- x$result$model
+  df <- as.data.frame(x2)
+  df <- df[, c(5,1,2,3,4)]
   
+  cat(sprintf("restriktor (%s): ", packageDescription("restriktor", fields = "Version")))
+
+  if (type == "goric") {
+    cat("generalized order-restriced information criterion (GORIC):\n")
+  } else if (type == "gorica") {
+    cat("generalized order-restriced information criterion approximation (GORICA):\n")
+  }
+  cat("\nResults:\n")
+  
+  print(format(df, digits = digits, scientific = FALSE), 
+        print.gap = 2, quote = FALSE)
+  cat("---\n")
+  if (comparison == "complement") {
+    objectnames <- as.character(df$model)
+    relative.gw <- apply(x$relative.gw, 2, sprintf, fmt = dig)
+    
+    cat("The order-restricted hypothesis", sQuote(objectnames[1]), "has", 
+        sprintf("%s", relative.gw[1,2]), "times more support than its complement.\n")
+  } 
+  invisible(x)
+}
+
+
+
+summary.goric <- function(object, brief = TRUE, 
+                          digits = max(3, getOption("digits") - 4), ...) {
+  
+  x <- object
+  type <- x$type
+  comparison <- x$comparison
   dig <- paste0("%6.", digits, "f")
   x2 <- lapply(x$result[-1], sprintf, fmt = dig)
   x2$model <- x$result$model
@@ -706,25 +761,18 @@ print.goric <- function(x, digits = max(3, getOption("digits") - 3),
   
   objectnames <- as.character(df$model)
   goric.weights <- as.numeric(as.character(df$goric.weights))
-  comparison <- x$comparison
-  type <- x$type
-  
-  Amat <- lapply(x$objectList, FUN = function(x) { x$constraints } )
-  meq  <- lapply(x$objectList, FUN = function(x) { x$neq } )
-  bvec <- lapply(x$objectList, FUN = function(x) { x$rhs } )
+
+  Amat <- x$constraints
+  meq  <- x$neq
+  bvec <- x$rhs
   iact <- lapply(x$objectList, FUN = function(x) { x$iact } )
-  
+
   if (type == "goric") {
-    cat("\nRestriktor: generalized order-restriced information criterion (GORIC):\n")
+    cat("\nRestriktor: generalized order-restriced information criterion (GORIC): \n")
   } else if (type == "gorica") {
     cat("\nRestriktor: generalized order-restriced information criterion approximation (GORICA):\n")
   }
-  
-  if (type == "goric") {
-    cat("\n\nGORIC results:\n")  
-  } else if (type == "gorica") {
-    cat("\n\nGORICA results:\n")
-  }
+  cat("\nResults:\n")  
   
   print(format(df, digits = digits, scientific = FALSE), 
         print.gap = 2, quote = FALSE)
@@ -737,7 +785,7 @@ print.goric <- function(x, digits = max(3, getOption("digits") - 3),
       cat("\n\nRelative GORICA-weights:\n")
     }
     relative.gw <- apply(x$relative.gw, 2, sprintf, fmt = dig)
-      rownames(relative.gw) <- rownames(x$relative.gw)
+    rownames(relative.gw) <- rownames(x$relative.gw)
     if (max(as.numeric(relative.gw)) >= 1e4) {
       print(format(x$relative.gw, digits = digits, scientific = TRUE), 
             print.gap = 2, quote = FALSE)
@@ -748,22 +796,23 @@ print.goric <- function(x, digits = max(3, getOption("digits") - 3),
     cat("---\n")
     if (length(unique(df$loglik)) != length(df$loglik)) {
       cat("Note: In case of equal log-likelihood (loglik) values, the 
-relative weights are solely based on the difference in penalty values.\n")
+      relative weights are solely based on the difference in penalty values.\n")
     }
-  }
+    }
   
   if (comparison == "complement") {
-    cat("The order-restricted hypothesis", sQuote(objectnames[1]), "is", 
-        sprintf("%s", relative.gw[1,2]), "times more likely \nto be the best model than its complement.\n")
+    cat("The order-restricted hypothesis", sQuote(objectnames[1]), "has", 
+        sprintf("%s", relative.gw[1,2]), "times more support than its complement.\n")
   } 
   
   if (!brief) {
     cat("\n\nOrder/Inequality restricted coefficients:\n")
-    coefs <- x$ormle$b.restr 
-    print(coefs, digits = digits, scientific = FALSE, print.gap = 2L,
+    coefs <- apply(x$ormle$b.restr, 2, sprintf, fmt = dig)
+    rownames(coefs) <- rownames(x$ormle$b.restr)
+    print(format(coefs, digits = digits, scientific = FALSE), print.gap = 2L,
           quote = FALSE)
     cat("---\n")
-  
+    
     vnames <- names(coef(x$model.org))
     fn <- function(Amat, bvec, meq, iact, vnames) {
       colnames(Amat) <- vnames
@@ -788,13 +837,17 @@ relative weights are solely based on the difference in penalty values.\n")
                         iact = iact[[i]], vnames = vnames)  
     }
     names(conMat) <- x$objectNames
+    
+    if (comparison == "complement") {
+     conMat$complement <- paste("not", x$objectNames) 
+    }
+    
     cat("\nConstraint matrices:\n")
     print(conMat, quote = FALSE, scientific = FALSE)
+    
+    invisible(x)
   }
-  
 }
-
-
 
 
 
@@ -802,6 +855,6 @@ coef.goric <- function(object, ...)  {
   return(object$ormle$b.restr)
 }
 
-coef.goric_est <- function(object, ...)  {
+coef.gorica_est <- function(object, ...)  {
   return(object$b.restr)
 }

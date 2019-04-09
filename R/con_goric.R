@@ -558,7 +558,8 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
         stop("Restriktor ERROR: no level probabilities (chi-bar-square weights) found.")
       }
     } else if (type == "gorica") {
-      wt.bar <- con_weights(cov = Amat %*% VCOV %*% t(Amat), meq = meq)
+      #wt.bar <- con_weights(cov = Amat %*% VCOV %*% t(Amat), meq = meq)
+      wt.bar <- conList[[1]]$wt.bar
       idx <- length(wt.bar)
       PTc <- as.numeric(1 + p - wt.bar[idx] * lq1)
     }
@@ -686,6 +687,9 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
   if (comparison == "complement") {
     coefs <- rbind(coefs, betasc)
     rownames(coefs) <- c(objectnames, "complement")
+  } else if (comparison == "unconstrained") {
+    coefs <- rbind(coefs, conList[[1]]$b.unrestr)
+    rownames(coefs) <- c(objectnames, "unconstrained")
   } else {
     rownames(coefs) <- objectnames    
   }

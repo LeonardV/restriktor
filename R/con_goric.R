@@ -23,7 +23,13 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
     ldots2 <- ldots[m.restr == 0L]
   }  
   
-  # object type, restriktor, unconstrained, vector
+
+  if (inherits(object, "matrix")) {
+    if (dim(object)[2] > 1L) {
+      stop("Restriktor ERROR: object must be a vector.")
+    }
+    object <- as.vector(object)
+  }
   
   
   # what is the constraint input type
@@ -31,8 +37,6 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
   isRestr     <- sapply(objectList, function(x) inherits(x, "restriktor"))
   isCharacter <- sapply(ldots2, function(x) inherits(x, "character"))
   isList      <- sapply(ldots2, function(x) inherits(x, "list"))
-  isMatrix    <- sapply(ldots2, function(x) inherits(x, "matrix"))
-  isNumeric   <- sapply(ldots2, function(x) inherits(x, "numeric"))
   
   # output list
   ans <- list()
@@ -157,7 +161,7 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
         # fit restriktor object for each hypothesis
         conList <- list()
         for (c in 1:length(constraints)) {
-          CALL.restr <- c(list(object      = object,
+          CALL.restr <- c(list(object      = as.numeric(object),
                                constraints = constraints[[c]],
                                rhs         = rhs[[c]],
                                neq         = neq[[c]],
@@ -172,7 +176,7 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
         # fit restriktor object for each hypothesis
         conList <- list()
         for (c in 1:length(constraints)) {
-          CALL.restr <- c(list(object      = object,
+          CALL.restr <- c(list(object      = as.numeric(object),
                                constraints = constraints[[c]],
                                VCOV        = VCOV),
                           ldots3)

@@ -161,7 +161,7 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
         # fit restriktor object for each hypothesis
         conList <- list()
         for (c in 1:length(constraints)) {
-          CALL.restr <- c(list(object      = as.numeric(object),
+          CALL.restr <- c(list(object      = c(object),
                                constraints = constraints[[c]],
                                rhs         = rhs[[c]],
                                neq         = neq[[c]],
@@ -176,7 +176,7 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
         # fit restriktor object for each hypothesis
         conList <- list()
         for (c in 1:length(constraints)) {
-          CALL.restr <- c(list(object      = as.numeric(object),
+          CALL.restr <- c(list(object      = c(object),
                                constraints = constraints[[c]],
                                VCOV        = VCOV),
                           ldots3)

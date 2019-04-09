@@ -4,9 +4,9 @@
 \alias{summary.goric}
 \alias{coef.goric}
 
-\title{Generalized Order-Restrikted Information Criterion Weights}
-\description{The \code{goric} function computes GORIC 
-weights, which are comparable to the Akaike weights. 
+\title{Generalized Order-Restrikted Information Criterion (Approximation) Weights}
+\description{The \code{goric} function computes GORIC(A) weights, which are 
+comparable to the Akaike weights. 
 }
 \usage{goric(object, ..., comparison = c("unconstrained", "complement", "none"), 
              VCOV = NULL, type = "goric", bound = NULL, debug = FALSE)
@@ -42,7 +42,8 @@ weights, which are comparable to the Akaike weights.
   for one model/hypothesis at a time (for now). If "\code{none}" the model is only compared
   against the models provided by the user.}
   
-  \item{VCOV}{variance-coviance matrix. Only needed if object is of class numeric.}
+  \item{VCOV}{variance-coviance matrix. Only needed if object is of class numeric and
+  \code{type = "gorica"}.}
   
   \item{type}{if "\code{gorica}", the log-likihood is computed using the multivariate normal
   distribution function.}
@@ -75,7 +76,9 @@ constraints can be specified in two ways, see \code{\link{restriktor}}. Note
 that if the constraints are written in matrix notation, then the constraints
 for each model/hypothesis is put in a named list. For example, 
 h1 <- list(constraints = "x1 > 0", rhs = 0, neq = 0). The \code{rhs} and \code{neq}
-are not required if they are equal to 0. Some exmaples are given below.
+are not required if they are equal to 0. If \code{type = "gorica"},
+then the object might be a (named) numeric vector. The constraints can again be 
+specified in two ways, see \code{\link{restriktor}}. For examples, see below.
 }
 
 \value{The function returns a dataframe with the log-likelihood,

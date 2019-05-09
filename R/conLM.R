@@ -107,8 +107,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
       stop(paste("Restriktor ERROR: The constraint matrix must have full row-rank", 
                  "\n  (choose e.g. rows", paste(rAmat$pivot, collapse = " "),")."))
     }
-  } 
-  else if (rAmat$rank < nrow(Amat) && 
+  } else if (rAmat$rank < nrow(Amat) && 
              !(se %in% c("none", "boot.model.based", "boot.standard")) && 
              rAmat$rank != 0L) {
     se <- "none"

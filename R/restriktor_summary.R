@@ -175,8 +175,8 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
     } else if (attr(wt.bar, "method") == "boot") { 
         PT <- 1 + sum(0 : ncol(Amat) * wt.bar)  
     } else if (attr(wt.bar, "method") == "pmvnorm") {
-        min.C <- ncol(Amat) - nrow(Amat)
-        max.C <- ncol(Amat) - meq
+        min.C <- ncol(Amat) - nrow(Amat) #p - q1 - q2
+        max.C <- ncol(Amat) - meq # p - q2
         PT <- 1 + sum(min.C : max.C * wt.bar) 
     } else {
         stop("restriktor ERROR: unable to compute penalty for GORIC.")  

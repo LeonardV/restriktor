@@ -18,16 +18,15 @@ summary.gorica_est <- function(object, ...) {
     ## Journal of statistical planning and inference, volume 142, pp. 2454 - 2463
     
     # compute penalty term based on simulated level probabilities (wt.bar)
-    # The value 1 is the penalty for estimating the variance/dispersion parameter.
     if (all(c(Amat) == 0)) {
       # unconstrained case
-      PT <- 1 + length(b.restr)
+      PT <- length(b.restr)
     } else if (attr(wt.bar, "method") == "boot") { 
-      PT <- 1 + sum(0 : ncol(Amat) * wt.bar)  
+      PT <- sum(0 : ncol(Amat) * wt.bar)  
     } else if (attr(wt.bar, "method") == "pmvnorm") {
       min.C <- ncol(Amat) - nrow(Amat)
       max.C <- ncol(Amat) - meq
-      PT <- 1 + sum(min.C : max.C * wt.bar) 
+      PT <- sum(min.C : max.C * wt.bar) 
     } else {
       stop("restriktor ERROR: unable to compute penalty for GORIC.")  
     }

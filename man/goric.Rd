@@ -9,7 +9,7 @@
 comparable to the Akaike weights. 
 }
 \usage{goric(object, ..., comparison = c("unconstrained", "complement", "none"), 
-             VCOV = NULL, type = "goric", bound = NULL, debug = FALSE)
+      VCOV = NULL, type = "goric", bound = NULL, debug = FALSE)
 
 \method{print}{goric}(x, digits = max(3, getOption("digits") - 4), \dots)
 

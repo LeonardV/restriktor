@@ -3,7 +3,7 @@ con_constraints <- function(model, constraints, bvec = NULL, meq = 0L,
   
   ## build a bare-bones parameter table for this model
   # if model is a numeric vecter
-  if (class(model) == "numeric") {
+  if ("numeric" %in% class(model)) {
     parTable <- con_partable_est(model, est = FALSE, label = TRUE)
   } else {
     # if model is a fitted unrestricted object
@@ -78,7 +78,7 @@ con_constraints <- function(model, constraints, bvec = NULL, meq = 0L,
 con_constraints_ceq_amat <- function(object, constraints = NULL) {
 
   # build a bare-bones parameter table for this object
-  if (class(object) == "numeric") {
+  if ("numeric" %in% class(model)) {
     lavpartable <- con_partable_est(object, est = TRUE, label = TRUE)
   } else {
   # if object is a fitted unrestricted object
@@ -99,7 +99,7 @@ con_constraints_ceq_amat <- function(object, constraints = NULL) {
 con_constraints_con_amat <- function(object, constraints = NULL) {
   
   # build a bare-bones parameter table for this object
-  if (class(object) == "numeric") {
+  if ("numeric" %in% class(model)) {
     lavpartable <- con_partable_est(object, est = TRUE, label = TRUE)
   } else {
     # if object is a fitted unrestricted object
@@ -123,7 +123,7 @@ con_constraints_rhs_bvec <- function(object, constraints = NULL) {
   #lavpartable <- con_partable(object, est = TRUE, label = TRUE)
 
   # build a bare-bones parameter table for this object
-  if (class(object) == "numeric") {
+  if ("numeric" %in% class(model)) {
     lavpartable <- con_partable_est(object, est = TRUE, label = TRUE)
   } else {
     # if object is a fitted unrestricted object

@@ -1,6 +1,12 @@
+Changes in Version 0.2-15
+ o Released on CRAN (May 23, 2019)
+ o Added support; Generalized Order-Restrikted Information Criterion Approximation (GORICA).
+ This method can be applied to a wide variaty of statistical models. 
+ 
+
 Changes in Version 0.1-80.911
  o Released on CRAN (October 31, 2018)
- o Fixed bug; the argument type was not passed through
+ o Fixed bug; the argument 'type' was not passed through
  
 
 Changes in Version 0.1-80.811
@@ -29,7 +35,7 @@ Changes in Version 0.1-70
  cones is now supported for the gaussian family.
  
  o Added support; an order-constrained hypothesis can now be evaluated
- against its complement using the goric(..., complement = TRUE) function.
+ against its complement using the goric(...) function.
  
  o Added support; order-constrained estimates for the multivariate normal
  linear model. Currently, no standard errors (yet).

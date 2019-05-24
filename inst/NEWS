@@ -1,5 +1,5 @@
 Changes in Version 0.2-15
- o Released on CRAN (May 23, 2019)
+ o Released on CRAN (May 24, 2019)
  o Added support; Generalized Order-Restrikted Information Criterion Approximation (GORICA).
  This method can be applied to a wide variaty of statistical models. 
  

@@ -123,19 +123,20 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   
   ## remove any linear dependent rows from the constraint matrix
   # determine the rank of the constraint matrix
-  rank <- qr(Amat)$rank
-  s <- svd(Amat)
-  while (rank != length(s$d)) {
-    # check which determinant values are zero
-    zero.idx <- which(zapsmall(s$d) <= 1e-16)
-    # remove linear dependent rows and reconstruct the constraint matrix
-    Amat <- s$u[-zero.idx, ] %*% diag(s$d) %*% t(s$v)
-    Amat <- zapsmall(Amat)
-    bvec <- bvec[-zero.idx]
+  if (!all(Amat != 0)) {
+    rank <- qr(Amat)$rank
     s <- svd(Amat)
-    #cat("rank = ", rank, " ... non-zero det = ", length(s$d), "\n")
-  }
-    
+    while (rank != length(s$d)) {
+      # check which determinant values are zero
+      zero.idx <- which(zapsmall(s$d) <= 1e-16)
+      # remove linear dependent rows and reconstruct the constraint matrix
+      Amat <- s$u[-zero.idx, ] %*% diag(s$d) %*% t(s$v)
+      Amat <- zapsmall(Amat)
+      bvec <- bvec[-zero.idx]
+      s <- svd(Amat)
+      #cat("rank = ", rank, " ... non-zero det = ", length(s$d), "\n")
+    }
+  }    
   timing$constraints <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
   

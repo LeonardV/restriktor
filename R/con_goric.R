@@ -200,7 +200,7 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
         objectnames[i] <- as.character(CALL[[i]])
       }
     } else {
-      stop("Restriktor ERROR: I don't know how to handle the constraints.")
+      stop("Restriktor ERROR: I don't know how to handle an object of class ", paste0(class(object)[1]))
     }
 
 
@@ -674,6 +674,8 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
   modelnames <- as.character(df$model)
   if (length(modelnames) > 1) {
     rw <- goric.weights %*% t(1/goric.weights)
+    # it might happen that a diagonal value results in NaN.
+    diag(rw) <- 1
     rownames(rw) <- modelnames
     colnames(rw) <- paste0("vs ", modelnames)
     ans$relative.gw <- rw
@@ -767,7 +769,7 @@ summary.goric <- function(object, brief = TRUE,
   df <- as.data.frame(x2)
   df <- df[, c(5,1,2,3,4)]
   
-  objectnames <- as.character(df$model)
+  objectnames   <- as.character(df$model)
   goric.weights <- as.numeric(as.character(df$goric.weights))
 
   Amat <- x$constraints
@@ -793,12 +795,13 @@ summary.goric <- function(object, brief = TRUE,
       cat("\n\nRelative GORICA-weights:\n")
     }
     relative.gw <- apply(x$relative.gw, 2, sprintf, fmt = dig)
+    
     rownames(relative.gw) <- rownames(x$relative.gw)
     if (max(as.numeric(relative.gw)) >= 1e4) {
       print(format(x$relative.gw, digits = digits, scientific = TRUE), 
             print.gap = 2, quote = FALSE)
     } else {
-      print(format(relative.gw, digits = digits, scientific = FALSE), 
+      print(format(trimws(relative.gw), digits = digits, scientific = FALSE), 
             print.gap = 2, quote = FALSE)
     }
     cat("---\n")
@@ -806,7 +809,7 @@ summary.goric <- function(object, brief = TRUE,
       cat("Note: In case of equal log-likelihood (loglik) values, the 
       relative weights are solely based on the difference in penalty values.\n")
     }
-    }
+  }
   
   if (comparison == "complement") {
     cat("The order-restricted hypothesis", sQuote(objectnames[1]), "has", 
@@ -815,13 +818,13 @@ summary.goric <- function(object, brief = TRUE,
   
   if (!brief) {
     cat("\n\nOrder/Inequality restricted coefficients:\n")
-    coefs <- apply(x$ormle$b.restr, 2, sprintf, fmt = dig)
+    coefs <- trimws(apply(x$ormle$b.restr, 2, sprintf, fmt = dig))
     rownames(coefs) <- rownames(x$ormle$b.restr)
     print(format(coefs, digits = digits, scientific = FALSE), print.gap = 2L,
           quote = FALSE)
     cat("---\n")
     
-    vnames <- names(coef(x$model.org))
+    vnames <- names(x$ormle$b.restr)
     fn <- function(Amat, bvec, meq, iact, vnames) {
       colnames(Amat) <- vnames
       out.rest <- cbind(round(Amat, 4), c(rep("   ==", meq), rep("   >=", nrow(Amat) - 

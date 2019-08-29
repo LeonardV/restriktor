@@ -127,7 +127,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
     rank <- qr(Amat)$rank
     s <- svd(Amat)
     while (rank != length(s$d)) {
-      # check which determinant values are zero
+      # check which singular values are zero
       zero.idx <- which(zapsmall(s$d) <= 1e-16)
       # remove linear dependent rows and reconstruct the constraint matrix
       Amat <- s$u[-zero.idx, ] %*% diag(s$d) %*% t(s$v)

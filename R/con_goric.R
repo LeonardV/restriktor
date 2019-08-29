@@ -151,9 +151,9 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
         #constraints <- list(); rhs <- list(); neq <- list()
         # extract constraints, rhs and neq
         constraints <- lapply(ldots2, FUN = function(x) { x$constraints } )
-        constraints.check <- sapply(constraints, FUN = function(x) { is.null(x) } )
-        if (any(constraints.check)) {
-          stop("Restriktor ERROR: the constraints must be specified as a list. E.g., h1 <- list(constraints = 'x1 > 0')")
+        constraints.check <- sapply(constraints, FUN = function(x) { is.null(x)} )
+        if (any(constraints.check) || length(constraints) == 0) {
+          stop("Restriktor ERROR: no constraints found! The constraints must be specified as a list. E.g., h1 <- list(constraints = 'x1 > 0')")
         }
         rhs <- lapply(ldots2, FUN = function(x) {x$rhs} )
         neq <- lapply(ldots2, FUN = function(x) {x$neq} )

@@ -36,7 +36,8 @@ importFrom("stats", "coef", "df.residual", "dnorm", "fitted",
            "quantile", "rchisq", "residuals", "rnorm", "rt", "runif",
            "sd", "start", "terms", "update", "var", "vcov",
            "weighted.residuals", "weights", "gaussian", "lm.fit",
-           "lm.wfit", "mad", "coefficients", "family", "logLik") 
+           "lm.wfit", "mad", "coefficients", "family", "logLik",
+           "model.frame") 
 
 # export ordinary functions defined in this package
 export("restriktor", 

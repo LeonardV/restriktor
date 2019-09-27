@@ -1,5 +1,7 @@
-goric <- function(object, ..., comparison = c("unconstrained", "complement", "none"), 
-                  VCOV = NULL, type = "goric", bound = NULL, debug = FALSE) {
+goric <- function(object, ..., 
+                  comparison = c("unconstrained", "complement", "none"), 
+                  VCOV = NULL, sample.nobs = NULL,
+                  type = "goric", bound = NULL, debug = FALSE) {
   
   mc <- match.call()
   CALL <- as.list(mc)
@@ -22,7 +24,6 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
   } else {
     ldots2 <- ldots[m.restr == 0L]
   }  
-  
 
   if (inherits(object, "matrix")) {
     if (dim(object)[2] > 1L) {
@@ -31,26 +32,27 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
     object <- as.vector(object)
   }
   
-  
   # what is the constraint input type
   objectList  <- c(list(object), ldots2)
   isRestr     <- sapply(objectList, function(x) inherits(x, "restriktor"))
-  isCharacter <- sapply(ldots2, function(x) inherits(x, "character"))
-  isList      <- sapply(ldots2, function(x) inherits(x, "list"))
+  isCharacter <- sapply(ldots2,     function(x) inherits(x, "character"))
+  isList      <- sapply(ldots2,     function(x) inherits(x, "list"))
   
-  # output list
+  # create output list
   ans <- list()
   
   ## how to deal with constraints
   # if all objects are of class restriktor
   if (all(isRestr)) {  
-    conList <- objectList
-    isSummary <- lapply(conList, function(x) summary(x))
+    conList   <- objectList
+    isSummary <- lapply(conList, function(x) summary(x, 
+                                                     goric       = type,
+                                                     sample.nobs = sample.nobs))
     ans$model.org <- object$model.org
+    sample.nobs   <-  nrow(model.frame(object$model.org))
     # unrestricted VCOV
     VCOV <- vcov(ans$model.org)
-    
-    idx <- length(conList) 
+    idx  <- length(conList) 
     objectnames <- vector("character", idx)
     for (i in 1:idx) {
       if (length(as.character(CALL[[i]])) > 1) {
@@ -75,12 +77,14 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
     }
     # compute symmary for each restriktor object. Here is the goric value 
     # computed. Note, not the gorica value
-    isSummary <- lapply(conList, function(x) summary(x))
+    isSummary <- lapply(conList, function(x) summary(x, 
+                                                     goric       = type,
+                                                     sample.nobs = sample.nobs))
     # add unrestricted object to output
     ans$model.org <- object
     # unrestricted VCOV
     VCOV <- vcov(ans$model.org)
-    
+    sample.nobs <- nrow(model.frame(object))
     idx <- length(conList) 
     objectnames <- vector("character", idx)
     CALL$object <- NULL
@@ -119,12 +123,14 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
       }
       # compute symmary for each restriktor object. Here is the goric value 
       # computed. Note, not the gorica value
-      isSummary <- lapply(conList, function(x) summary(x))
+      isSummary <- lapply(conList, function(x) summary(x, 
+                                                       goric       = type,
+                                                       sample.nobs = sample.nobs))
       # add unrestricted object to output
       ans$model.org <- object
       # unrestricted VCOV
       VCOV <- vcov(ans$model.org)
-      
+      sample.nobs <- nrow(model.frame(object))
       idx <- length(conList) 
       objectnames <- vector("character", idx)
       CALL$object <- NULL
@@ -141,6 +147,9 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
       if (is.null(VCOV)) {
         stop("Restriktor ERROR: the argument VCOV is not found.")
       }
+      if (is.null(sample.nobs) && type %in% c("goricc", "goricca")) {
+        stop("Restriktor ERROR: the argument sample.nobs is not found.")
+      }
       
       isCharacter <- sapply(ldots2, function(x) inherits(x, "character"))    
       isList      <- sapply(ldots2, function(x) inherits(x, "list"))
@@ -150,7 +159,7 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
         # create lists
         #constraints <- list(); rhs <- list(); neq <- list()
         # extract constraints, rhs and neq
-        constraints <- lapply(ldots2, FUN = function(x) { x$constraints } )
+        constraints       <- lapply(ldots2,      FUN = function(x) { x$constraints } )
         constraints.check <- sapply(constraints, FUN = function(x) { is.null(x)} )
         if (any(constraints.check) || length(constraints) == 0) {
           stop("Restriktor ERROR: no constraints found! The constraints must be specified as a list. E.g., h1 <- list(constraints = 'x1 > 0')")
@@ -169,9 +178,11 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
                           ldots3)
           conList[[c]] <- do.call("con_gorica_est", CALL.restr) 
         }
-        isSummary <- lapply(conList, function(x) summary(x))
+        isSummary <- lapply(conList, function(x) summary(x, 
+                                                         goric       = type,
+                                                         sample.nobs = sample.nobs)) 
       } else if (all(isCharacter)) {
-        # if constraints is character
+        # if constraints is character 
         constraints <- ldots2[isCharacter]
         # fit restriktor object for each hypothesis
         conList <- list()
@@ -182,7 +193,9 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
                           ldots3)
           conList[[c]] <- do.call("con_gorica_est", CALL.restr)  
         }
-        isSummary <- lapply(conList, function(x) summary(x))
+        isSummary <- lapply(conList, function(x) summary(x, 
+                                                         goric       = type,
+                                                         sample.nobs = sample.nobs))
       }
       CALL$object <- NULL; CALL$comparison <- NULL; CALL$type <- NULL
       CALL$VCOV <- NULL; CALL$bound <- NULL; 
@@ -457,8 +470,7 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
       }
       ## compute log-likelihood for complement
       # check if any constraint is violated
-      if (check.ciq || check.ceq) {   
-        #llc <- con_loglik_lm(ans$model.org)
+      if (check.ciq || check.ceq) {    
         if (type %in% c("goric", "goricc")) {
           llc <- logLik(ans$model.org)
           betasc <- b.unrestr
@@ -563,21 +575,27 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
         stop("Restriktor ERROR: no level probabilities (chi-bar-square weights) found.")
       }
     } else if (type %in% c("goricc", "goricca")) {
-      # idx <- length(wt.bar)
-      # # small sample correction
-      # if (attr(wt.bar, "method") == "boot") { 
-      #   N   <- length(r)  
-      #   lPT <- 0 : ncol(Amat)
-      #   PT  <- 1 + sum( ( (N * (lPT + 1) / (N - lPT - 2) ) ) * wt.bar[idx-meq])
-      # } else if (attr(wt.bar, "method") == "pmvnorm") {
-      #   min.C <- ncol(Amat) - nrow(Amat) #p - q1 - q2
-      #   max.C <- ncol(Amat) - meq # p - q2
-      #   N     <- length(r)  
-      #   lPT   <- min.C : max.C
-      #   PT    <- 1 + sum( ( (N * (lPT + 1) / (N - lPT - 2) ) ) * wt.bar[idx])
+      #stop("Restriktor ERROR: small sample correction for the complement is not implemented (yet).")
+      idx <- length(wt.bar) 
+      if (is.null(sample.nobs)) {
+        stop("Restriktor ERROR: the argument sample.nobs is not found.")
+      }
+      N <- sample.nobs
+      # small sample correction
+      if (attr(wt.bar, "method") == "boot") {
+        lPT <- 0 : ncol(Amat)
+        PTc  <- sum( ( (N * (lPT + 1) / (N - lPT - 2) ) ) * wt.bar[idx-meq])
+      } else if (attr(wt.bar, "method") == "pmvnorm") {
+        # min.col <- ncol(Amat) - nrow(Amat) # p - q1 - q2
+        # max.col <- ncol(Amat) - meq        # p - q2
+        # lPT <- min.col : max.col
+        # PTc <- 1 + p - sum( ((N * (lPT + 1) / (N - lPT - 2))) * wt.bar[idx])   
+        
+        PTu <- sum( ( (N * (ncol(VCOV) + 1) / (N - ncol(VCOV) - 2) ) ) * 1L) 
+        PTm <- unlist(lapply(isSummary, function(x) attr(x$goric, "penalty")))
+        PTc <- 1 + p + log(1 - exp(PTm - PTu))
+      }
     }
-      
-    
     if (debug) {
       cat("penalty term value =", PTc, "\n")
     }
@@ -586,17 +604,16 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
   # compute loglik-value, goric(a)-values, and PT-values
   if (comparison == "unconstrained") { 
     PTm <- unlist(lapply(isSummary, function(x) attr(x$goric, "penalty")))
-    PTu <- 1 + ncol(VCOV)
-    if (type == "goric") {
+    if (type %in% c("goric", "goricc")) {
       # model
       llm <- unlist(lapply(isSummary, function(x) attr(x$goric, "loglik"))) 
       # unrestricted
       llu <- logLik(ans$model.org)
-    } else if (type == "gorica") {
+    } else if (type %in% c("gorica", "goricca")) {
       # model 
       if (inherits(object, "numeric")) {
         llm <- unlist(lapply(conList, function(x) dmvnorm(c(x$b.unrestr - x$b.restr), 
-                                                             sigma = VCOV, log = TRUE) )) 
+                                                            sigma = VCOV, log = TRUE) )) 
         # unrestricted
         llu <- dmvnorm(rep(0, ncol(VCOV)), sigma = VCOV, log = TRUE) 
       } else { 
@@ -606,6 +623,18 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
         llu <- dmvnorm(rep(0, ncol(VCOV)), sigma = VCOV, log = TRUE) 
       }
     }
+    
+    if (type %in% c("goric", "gorica")) {
+      PTu <- 1 + ncol(VCOV)
+    } else if (type %in% c("goricc", "goricca")) {
+      lPT <- ncol(VCOV)
+      if (is.null(sample.nobs)) {
+        stop("Restriktor ERROR: the argument sample.nobs is not found.")
+      }
+      N   <- sample.nobs
+      PTu <- sum( ( (N * (lPT + 1) / (N - lPT - 2) ) ) * 1L)
+    }
+    
     goric.Hm <- -2*(llm - PTm)
     goric.Hu <- -2*(llu - PTu)
     df.Hm <- data.frame(model = objectnames, loglik = llm, penalty = PTm, 
@@ -614,18 +643,16 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
     df.u <- data.frame(model = "unconstrained", loglik = llu, penalty = PTu, 
                        goric = goric.Hu)
     df <- rbind(df.Hm, df.u)
-    if (type == "gorica") {
-      names(df)[4] <- "gorica"
-    }
+    names(df)[4] <- type
   } else if (comparison == "none") {
     PT <- unlist(lapply(isSummary, function(x) attr(x$goric, "penalty")))
-    if (type == "goric") {
-      ll    <- unlist(lapply(isSummary, function(x) attr(x$goric, "loglik"))) 
+    if (type %in% c("goric", "goricc")) {
+      ll <- unlist(lapply(isSummary, function(x) attr(x$goric, "loglik"))) 
       goric.Hm <- unlist(lapply(isSummary, function(x) x$goric[1]))
       df <- data.frame(model = objectnames, loglik = ll, penalty = PT, 
                        goric = goric.Hm)
       df$model <- as.character(df$model)
-    } else if (type == "gorica") {
+    } else if (type %in% c("gorica", "goricca")) {
 #      if (inherits(object, "numeric")) {
         ll <- unlist(lapply(conList, function(x) dmvnorm(c(x$b.unrestr - x$b.restr), 
                                                            sigma = VCOV, log = TRUE) )) 
@@ -640,7 +667,7 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
     }
   } else if (comparison == "complement") {
     PTm <- unlist(lapply(isSummary, function(x) attr(x$goric, "penalty")))
-    if (type == "goric") {
+    if (type %in% c("goric", "goricc")) {
       # model
       goric.Hm <- -2*(llm - PTm)
       df.Hm  <- data.frame(model = objectnames, loglik = llm, penalty = PTm, 
@@ -651,7 +678,7 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
       df.c  <- data.frame(model = "complement", loglik = llc, penalty = PTc, 
                           goric = goric.Hc)
       df <- rbind(df.Hm, df.c)
-    } else if (type == "gorica") {
+    } else if (type %in% c("gorica", "goricca")) {
       # model
       gorica.Hm <- -2*(llm - PTm)
       df.Hm  <- data.frame(model = objectnames, loglik = llm, penalty = PTm, 
@@ -664,7 +691,7 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
       df <- rbind(df.Hm, df.c)
     }
   } else {
-    stop("Restriktor ERROR: I cannot compute GORIC(A)-values.")
+    stop("Restriktor ERROR: I cannot compute goric-values.")
   }
 
   ans$objectList  <- conList
@@ -673,9 +700,8 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
   delta <- df$goric - min(df$goric)
   goric.weights <- exp(-delta / 2) / sum(exp(-delta / 2))
   df$goric.weights <- goric.weights
-  if (type == "gorica") {
-   names(df)[5] <- "gorica.weights" 
-  }
+    names(df)[5] <- paste0(type, ".weights")
+  
   ans$result <- df
   
 
@@ -721,9 +747,9 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
   ans$comparison <- comparison
   ans$type <- type
   
-  if (type == "goric") {
+  if (type %in% c("goric", "goricc")) {
     class(ans) <- "goric"
-  } else if (type == "gorica") {
+  } else if (type %in% c("gorica", "goricca")) {
     class(ans) <- c("gorica", "goric")
   }
   
@@ -745,10 +771,15 @@ print.goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   cat(sprintf("restriktor (%s): ", packageDescription("restriktor", fields = "Version")))
 
   if (type == "goric") {
-    cat("generalized order-restriced information criterion (GORIC):\n")
+    cat("\nRestriktor: generalized order-restriced information criterion: \n")
   } else if (type == "gorica") {
-    cat("generalized order-restriced information criterion approximation (GORICA):\n")
+    cat("\nRestriktor: generalized order-restriced information criterion approximation:\n")
+  } else if (type == "goricc") {
+    cat("\nRestriktor: small sample generalized order-restriced information criterion:\n")
+  } else if (type == "goricca") {
+    cat("\nRestriktor: small sample generalized order-restriced information criterion approximation:\n")
   }
+  
   cat("\nResults:\n")
   
   print(format(df, digits = digits, scientific = FALSE), 
@@ -779,7 +810,7 @@ summary.goric <- function(object, brief = TRUE,
   df <- df[, c(5,1,2,3,4)]
   
   objectnames   <- as.character(df$model)
-  goric.weights <- as.numeric(as.character(df$goric.weights))
+  #goric.weights <- as.numeric(as.character(df$goric.weights))
 
   Amat <- x$constraints
   meq  <- x$neq
@@ -787,10 +818,15 @@ summary.goric <- function(object, brief = TRUE,
   iact <- lapply(x$objectList, FUN = function(x) { x$iact } )
 
   if (type == "goric") {
-    cat("\nRestriktor: generalized order-restriced information criterion (GORIC): \n")
+    cat("\nRestriktor: generalized order-restriced information criterion: \n")
   } else if (type == "gorica") {
-    cat("\nRestriktor: generalized order-restriced information criterion approximation (GORICA):\n")
+    cat("\nRestriktor: generalized order-restriced information criterion approximation:\n")
+  } else if (type == "goricc") {
+    cat("\nRestriktor: small sample generalized order-restriced information criterion:\n")
+  } else if (type == "goricca") {
+    cat("\nRestriktor: small sample generalized order-restriced information criterion approximation:\n")
   }
+  
   cat("\nResults:\n")  
   
   print(format(df, digits = digits, scientific = FALSE), 

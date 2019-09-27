@@ -179,7 +179,7 @@ goric <- function(object, ...,
           conList[[c]] <- do.call("con_gorica_est", CALL.restr) 
         }
         isSummary <- lapply(conList, function(x) summary(x, 
-                                                         goric       = type,
+                                                         type        = type,
                                                          sample.nobs = sample.nobs)) 
       } else if (all(isCharacter)) {
         # if constraints is character 
@@ -194,7 +194,7 @@ goric <- function(object, ...,
           conList[[c]] <- do.call("con_gorica_est", CALL.restr)  
         }
         isSummary <- lapply(conList, function(x) summary(x, 
-                                                         goric       = type,
+                                                         type        = type,
                                                          sample.nobs = sample.nobs))
       }
       CALL$object <- NULL; CALL$comparison <- NULL; CALL$type <- NULL

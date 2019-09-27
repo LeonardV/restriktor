@@ -9,7 +9,7 @@
 comparable to the Akaike weights. 
 }
 \usage{goric(object, ..., comparison = c("unconstrained", "complement", "none"), 
-      VCOV = NULL, type = "goric", bound = NULL, debug = FALSE)
+      VCOV = NULL, sample.nobs = NULL, type = "goric", bound = NULL, debug = FALSE)
 
 \method{print}{goric}(x, digits = max(3, getOption("digits") - 4), \dots)
 
@@ -45,8 +45,12 @@ comparable to the Akaike weights.
   \item{VCOV}{variance-coviance matrix. Only needed if object is of class numeric and
   \code{type = "gorica"}.}
   
-  \item{type}{if "\code{gorica}", the log-likihood is computed using the multivariate normal
-  distribution function.}
+  \item{sample.nobs}{not used for now.}
+  
+  \item{type}{if \code{"goric"} (default), the generalized order-restricted 
+  information criterion value is computed. If \code{"gorica"} the 
+  log-likihood is computed using the multivariate normal distribution 
+  function. }
   
   \item{bound}{not used yet.}
   

@@ -27,9 +27,9 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
   }
   
   Amat <- z$constraints
-  meq <- z$neq
-  p <- z$model.org$rank
-  rdf <- z$df.residual
+  meq  <- z$neq
+  p    <- z$model.org$rank
+  rdf  <- z$df.residual
   b.restr <- z$b.restr
   r <- weighted.residuals(z)
   
@@ -39,8 +39,8 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
   se.type <- z$se
   ans$se.type <- se.type
     attr(ans$se.type, "bootCIs") <- bootCIs    
-    attr(ans$se.type, "level") <- level    
-    attr(ans$se.type, "bty") <- bty
+    attr(ans$se.type, "level")   <- level    
+    attr(ans$se.type, "bty")     <- bty
 
   ans$residuals <- r
   if (is.null(z$bootout) && se.type != "none") {
@@ -179,40 +179,24 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
     # compute penalty term based on simulated level probabilities (wt.bar)
     # The value 1 is the penalty for estimating the variance/dispersion parameter.
     if (goric %in% c("goric", "gorica")) {
-      if (all(c(Amat) == 0)) {
-        # unconstrained case
-        PT <- 1 + length(b.restr)
-      } else if (attr(wt.bar, "method") == "boot") { 
-        PT <- 1 + sum(0 : ncol(Amat) * wt.bar)  
-      } else if (attr(wt.bar, "method") == "pmvnorm") {
-        min.C <- ncol(Amat) - nrow(Amat) #p - q1 - q2
-        max.C <- ncol(Amat) - meq # p - q2
-        PT <- 1 + sum(min.C : max.C * wt.bar) 
-      }
+      PT <- penalty_goric(Amat        = Amat, 
+                          meq         = meq, 
+                          LP          = wt.bar, 
+                          correction  = FALSE, 
+                          sample.nobs = NULL)
     } else if (goric %in% c("goricc", "goricca")) {
-      # small sample correction
-      if (all(c(Amat) == 0)) {
-        # unconstrained case
-        PT <- 1 + length(b.restr)
-      } else if (attr(wt.bar, "method") == "boot") { 
-        N   <- length(r)  
-        lPT <- 0 : ncol(Amat)
-        PT  <- 1 + sum( ( (N * (lPT + 1) / (N - lPT - 2) ) ) * wt.bar)
-      } else if (attr(wt.bar, "method") == "pmvnorm") {
-        min.C <- ncol(Amat) - nrow(Amat) #p - q1 - q2
-        max.C <- ncol(Amat) - meq # p - q2
-        N     <- length(r)  
-        lPT   <- min.C : max.C
-        PT    <- 1 + sum( ( (N * (lPT + 1) / (N - lPT - 2) ) ) * wt.bar)
-      }
+      PT <- penalty_goric(Amat        = Amat, 
+                          meq         = meq, 
+                          LP          = wt.bar, 
+                          correction  = TRUE, 
+                          sample.nobs = length(r))
     } else {
       stop("Restriktor ERROR: ", sQuote(goric), ": unknown goric method.")  
     }
     
-    
     # compute log-likelihood value
     if (goric %in% c("goric", "goricc")) {
-      ll <- z$loglik
+      ll   <- z$loglik
     } else if (goric %in% c("gorica", "goricca")) {
       # unconstrained vcov
       VCOV <- z$Sigma

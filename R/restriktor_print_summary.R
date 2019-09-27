@@ -106,11 +106,15 @@ print.summary.restriktor <- function(x, digits = max(3, getOption("digits") - 2)
     PT <- attr(goric, "penalty")
     result.goric <- c(ll, PT, goric)
       names(result.goric) <- c("Loglik", "Penalty", paste0(attr(goric, "type"))) 
-    if (attr(goric, "type") %in% c("goric", "goricc")) {
+    if (attr(goric, "type") == "goric") {
       cat("\nGeneralized order-restricted information criterion: \n")
-    } else {
-      cat("\nGeneralized order-restricted information criterion approximation: \n")
-    }
+    } else if (attr(goric, "type") == "goricc") {
+      cat("\nSmall sample generalized order-restricted information criterion: \n")
+    } else if (attr(goric, "type") == "gorica") {
+      cat("\nGeneralized order-restricted information criteron approximation: \n")
+    } else if (attr(goric, "type") == "goricca") {
+      cat("\nSmall sample generalized order-restricted information criteron approximation: \n")
+    } 
     
     print(result.goric, digits = digits)
   }  

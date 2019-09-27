@@ -11,7 +11,7 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
   stopifnot(comparison %in% c("unconstrained", "complement", "none"))
   
   type <- tolower(type)
-  stopifnot(type %in% c("goric", "gorica"))
+  stopifnot(type %in% c("goric", "goricc", "gorica", "goricca"))
   
   ldots <- list(...)
   m.restr <- match(names(ldots), c("B", "mix.weights", "mix.bootstrap", 
@@ -135,8 +135,8 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
         objectnames[i] <- as.character(CALL[[i]])
       }
     } else if (inherits(object, "numeric")) {
-      if (type == "goric") {
-        stop("Restriktor ERROR: object of class numeric is only supported for type = 'gorica'.")
+      if (type %in% c("goric", "goricc")) {
+        stop("Restriktor ERROR: object of class numeric is only supported for type = 'goric(c)a'.")
       }
       if (is.null(VCOV)) {
         stop("Restriktor ERROR: the argument VCOV is not found.")
@@ -189,7 +189,7 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
       CALL$debug <- NULL; CALL$B <- NULL; CALL$mig.weights <- NULL; 
       CALL$mix.bootstrap <- NULL; CALL$parallel <- NULL; CALL$ncpus <- NULL; 
       CALL$cl <- NULL; CALL$seed <- NULL; CALL$control <- NULL; 
-      CALL$verbose <- NULL; #CALL[[1]] <- NULL
+      CALL$verbose <- NULL; 
       
       idx <- length(conList) 
       objectnames <- vector("character", idx)
@@ -459,10 +459,10 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
       # check if any constraint is violated
       if (check.ciq || check.ceq) {   
         #llc <- con_loglik_lm(ans$model.org)
-        if (type == "goric") {
+        if (type %in% c("goric", "goricc")) {
           llc <- logLik(ans$model.org)
           betasc <- b.unrestr
-        } else if (type == "gorica") {
+        } else if (type %in% c("gorica", "goricca")) {
           llc <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE)
           betasc <- b.unrestr
         }
@@ -484,13 +484,13 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
         for (l in 1:length(nr)) {
           idx <- c(nr[l], nr[-l])
           Amatx <- Amat[idx, , drop = FALSE]
-          if (type == "goric") {          
+          if (type %in% c("goric", "goricc")) {          
             Hc.restr <- restriktor(ans$model.org, constraints = Amatx, 
                                    neq = 1, rhs = bvec[idx], 
                                    mix.weights = "none", se = "none")
             betas[[l]] <- coef(Hc.restr)
-            ll[[l]] <- logLik(Hc.restr)
-          } else if (type == "gorica") {
+            ll[[l]]    <- logLik(Hc.restr)
+          } else if (type %in% c("gorica", "goricca")) {
             ldots4 <- ldots[m.restr > 0L]
             ldots4$mix.weights <- "none"
             CALL.restr <- c(list(object      = b.unrestr,
@@ -499,9 +499,10 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
                                  neq         = 1,
                                  VCOV        = VCOV),
                             ldots4)
-            Hc.restr <- do.call("con_gorica_est", CALL.restr) 
+            Hc.restr   <- do.call("con_gorica_est", CALL.restr) 
             betas[[l]] <- Hc.restr$b.restr
-            ll[[l]] <- dmvnorm(c(b.unrestr - Hc.restr$b.restr), sigma = VCOV, log = TRUE)            
+            ll[[l]]    <- dmvnorm(c(b.unrestr - Hc.restr$b.restr), 
+                                  sigma = VCOV, log = TRUE)            
           }
         }
         if (debug) {
@@ -517,10 +518,10 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
         # redundant, this will be catched by the first statement.
         # in case of equality constraints only, the complement is 
         # equal to the unconstrained log-likelihood
-        if (type == "goric") {
+        if (type %in% c("goric", "goricc")) {
           llc <- logLik(ans$model.org)
           betasc <- b.unrestr
-        } else if (type == "gorica") {
+        } else if (type %in% c("gorica", "goricca")) {
           llc <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE)
           betasc <- b.unrestr
         }
@@ -533,40 +534,49 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
       } else {
         stop("Restriktor ERROR: you might have found a bug, please contact me!")
       }
-      #llm <- unlist(lapply(isSummary, function(x) attr(x$goric, "loglik"))) 
-      if (type == "goric") {
+      if (type %in% c("goric", "goricc")) {
         llm <- logLik(conList[[1]])
-      } else if (type == "gorica") {
+      } else if (type %in% c("gorica", "goricca")) {
         llm <- dmvnorm(c(b.unrestr - b.restr), sigma = VCOV, log = TRUE)
       }
     } 
     
     # compute the number of free parameters f in the complement
-    p <- ncol(VCOV)#length(b.unrestr)
+    p   <- ncol(VCOV)#length(b.unrestr)
     # rank q1
     lq1 <- qr(Amat.ciq)$rank
     # rank q2
     lq2 <- qr(Amat.ceq)$rank
     # free parameters. Note that Amat includes q1 and q2 constraints
-    f <- p - qr(Amat)$rank # p - q1 - q2
+    f   <- p - qr(Amat)$rank # p - q1 - q2
     if (debug) { cat("number of free parameters =", (f + lq2), "\n") }
+    
     # compute penalty term value PTc
-    if (type == "goric") {
+    if (type %in% c("goric", "gorica")) {
       idx <- length(wt.bar)
       if (attr(wt.bar, "method") == "boot") {
         PTc <- as.numeric(1 + p - wt.bar[idx-meq] * lq1)
       } else if (attr(wt.bar, "method") == "pmvnorm") {
-        # the q2 equalities are not included in wt.bar. Hence, do not have to be subtracted.
+        # here, the q2 equalities are not included in wt.bar. Hence, they do not have to be subtracted.
         PTc <- as.numeric(1 + p - wt.bar[idx] * lq1)
       } else {
         stop("Restriktor ERROR: no level probabilities (chi-bar-square weights) found.")
       }
-    } else if (type == "gorica") {
-      #wt.bar <- con_weights(cov = Amat %*% VCOV %*% t(Amat), meq = meq)
-      wt.bar <- conList[[1]]$wt.bar
-      idx <- length(wt.bar)
-      PTc <- as.numeric(1 + p - wt.bar[idx] * lq1)
+    } else if (type %in% c("goricc", "goricca")) {
+      # idx <- length(wt.bar)
+      # # small sample correction
+      # if (attr(wt.bar, "method") == "boot") { 
+      #   N   <- length(r)  
+      #   lPT <- 0 : ncol(Amat)
+      #   PT  <- 1 + sum( ( (N * (lPT + 1) / (N - lPT - 2) ) ) * wt.bar[idx-meq])
+      # } else if (attr(wt.bar, "method") == "pmvnorm") {
+      #   min.C <- ncol(Amat) - nrow(Amat) #p - q1 - q2
+      #   max.C <- ncol(Amat) - meq # p - q2
+      #   N     <- length(r)  
+      #   lPT   <- min.C : max.C
+      #   PT    <- 1 + sum( ( (N * (lPT + 1) / (N - lPT - 2) ) ) * wt.bar[idx])
     }
+      
     
     if (debug) {
       cat("penalty term value =", PTc, "\n")
@@ -616,14 +626,13 @@ goric <- function(object, ..., comparison = c("unconstrained", "complement", "no
                        goric = goric.Hm)
       df$model <- as.character(df$model)
     } else if (type == "gorica") {
-      if (inherits(object, "numeric")) {
+#      if (inherits(object, "numeric")) {
         ll <- unlist(lapply(conList, function(x) dmvnorm(c(x$b.unrestr - x$b.restr), 
-                                                          sigma = VCOV, log = TRUE) )) 
-      } else { 
-        ll <- unlist(lapply(conList, function(x) dmvnorm(c(x$b.unrestr - x$b.restr), 
-                                                            sigma = VCOV, 
-                                                            log = TRUE) )) 
-      }
+                                                           sigma = VCOV, log = TRUE) )) 
+      # } else { 
+      #   ll <- unlist(lapply(conList, function(x) dmvnorm(c(x$b.unrestr - x$b.restr), 
+      #                                                      sigma = VCOV, log = TRUE) )) 
+      # }
       goric.Hm <- -2*(ll - PT)
       df <- data.frame(model = objectnames, loglik = ll, penalty = PT, 
                        gorica = goric.Hm)

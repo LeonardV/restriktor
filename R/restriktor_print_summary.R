@@ -1,3 +1,6 @@
+## to do
+# 
+
 print.summary.restriktor <- function(x, digits = max(3, getOption("digits") - 2),
                                      signif.stars = getOption("show.signif.stars"), ...) {
   
@@ -102,8 +105,13 @@ print.summary.restriktor <- function(x, digits = max(3, getOption("digits") - 2)
     ll <- attr(goric, "loglik") 
     PT <- attr(goric, "penalty")
     result.goric <- c(ll, PT, goric)
-    names(result.goric) <- c("Loglik", "Penalty", "Goric")
-    cat("\nGeneralized Order-Restricted Information Criterion:\n")
+      names(result.goric) <- c("Loglik", "Penalty", paste0(attr(goric, "type"))) 
+    if (attr(goric, "type") %in% c("goric", "goricc")) {
+      cat("\nGeneralized order-restricted information criterion: \n")
+    } else {
+      cat("\nGeneralized order-restricted information criterion approximation: \n")
+    }
+    
     print(result.goric, digits = digits)
   }  
   cat("\n")

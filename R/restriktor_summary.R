@@ -1,10 +1,19 @@
+## to do
+# GORIC = TRUE vervangen door GORIC = c("goric", "goricc", "gorica", "goricca")
+# gebruik con_goric() functie om LL, Penalty and Goric te berekenen.
+
 summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc", 
-                               level = 0.95, GORIC = TRUE, ...) {
+                               level = 0.95, 
+                               goric = "goric", ...) {
   z <- object
   
   if (!inherits(z, "restriktor")) {
     stop("object of class ", sQuote(class(z)), " is not supported.")
   }
+  
+  goric <- tolower(goric)
+  stopifnot(goric %in% c("goric", "goricc", "gorica", "goricca", "none"))
+  
   # bty = "stud" needs bootstrap variances
   if (bootCIs & !(bty %in% c("norm", "basic", "perc", "bca"))) {
     if (bty == "stud") {
@@ -163,35 +172,65 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
     
   wt.bar <- z$wt.bar
   ## compute goric
-  if (GORIC && !(attr(wt.bar, "method") == "none")) {
+  if (goric != "none" && !(attr(wt.bar, "method") == "none")) {
     ## REF: Kuiper, R.M.; Hoijtink, H.J.A.; Silvapulle, M. J. (2012) 
     ## Journal of statistical planning and inference, volume 142, pp. 2454 - 2463
     
     # compute penalty term based on simulated level probabilities (wt.bar)
     # The value 1 is the penalty for estimating the variance/dispersion parameter.
-    if (all(c(Amat) == 0)) {
-      # unconstrained case
-      PT <- 1 + length(b.restr)
-    } else if (attr(wt.bar, "method") == "boot") { 
+    if (goric %in% c("goric", "gorica")) {
+      if (all(c(Amat) == 0)) {
+        # unconstrained case
+        PT <- 1 + length(b.restr)
+      } else if (attr(wt.bar, "method") == "boot") { 
         PT <- 1 + sum(0 : ncol(Amat) * wt.bar)  
-    } else if (attr(wt.bar, "method") == "pmvnorm") {
+      } else if (attr(wt.bar, "method") == "pmvnorm") {
         min.C <- ncol(Amat) - nrow(Amat) #p - q1 - q2
         max.C <- ncol(Amat) - meq # p - q2
         PT <- 1 + sum(min.C : max.C * wt.bar) 
+      }
+    } else if (goric %in% c("goricc", "goricca")) {
+      # small sample correction
+      if (all(c(Amat) == 0)) {
+        # unconstrained case
+        PT <- 1 + length(b.restr)
+      } else if (attr(wt.bar, "method") == "boot") { 
+        N   <- length(r)  
+        lPT <- 0 : ncol(Amat)
+        PT  <- 1 + sum( ( (N * (lPT + 1) / (N - lPT - 2) ) ) * wt.bar)
+      } else if (attr(wt.bar, "method") == "pmvnorm") {
+        min.C <- ncol(Amat) - nrow(Amat) #p - q1 - q2
+        max.C <- ncol(Amat) - meq # p - q2
+        N     <- length(r)  
+        lPT   <- min.C : max.C
+        PT    <- 1 + sum( ( (N * (lPT + 1) / (N - lPT - 2) ) ) * wt.bar)
+      }
     } else {
-        stop("restriktor ERROR: unable to compute penalty for GORIC.")  
+      stop("Restriktor ERROR: ", sQuote(goric), ": unknown goric method.")  
     }
     
+    
+    # compute log-likelihood value
+    if (goric %in% c("goric", "goricc")) {
+      ll <- z$loglik
+    } else if (goric %in% c("gorica", "goricca")) {
+      # unconstrained vcov
+      VCOV <- z$Sigma
+      ll <- dmvnorm(c(z$b.unrestr - z$b.restr), sigma = VCOV, log = TRUE)  
+    }
+    
+    
     if (inherits(z, c("conLM", "conMLM"))) {
-      ans$goric <- -2*(z$loglik - PT)
+      ans$goric <- -2*(ll - PT)
     } else if (inherits(z, "conGLM")) {
       if (!(z$model.org$family$family %in% c("gaussian", "Gamma", "inverse.gaussian"))) {
         PT <- PT - 1
       }
-      ans$goric <- -2*z$loglik / 1 + 2*PT
+      ans$goric <- -2*ll / 1 + 2*PT
     }
+    attr(ans$goric, "type")    <- goric
     attr(ans$goric, "penalty") <- PT
-    attr(ans$goric, "loglik")  <- z$loglik 
+    attr(ans$goric, "loglik")  <- ll
   }
   
   if (inherits(z, "conRLM")) {

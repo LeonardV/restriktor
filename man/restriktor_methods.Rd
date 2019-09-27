@@ -16,7 +16,7 @@
 \method{print}{restriktor}(x, digits = max(3, getOption("digits") - 2), \dots)
 
 \method{summary}{restriktor}(object, bootCIs = TRUE, 
-        bty = "perc", level = 0.95, GORIC = TRUE, \dots)
+        bty = "perc", level = 0.95, goric = "goric", \dots)
 
 \method{print}{summary.restriktor}(x, digits = max(3, getOption("digits") - 2),
               signif.stars = getOption("show.signif.stars"), \dots)     
@@ -30,24 +30,31 @@
 }
 \arguments{
   \item{object}{an object of class \code{restriktor}.}
+  
   \item{x}{an object of class \code{restriktor}.}
+  
   \item{bootCIs}{if TRUE (default), nonparametric bootstrap 
   confidence intervals are generated. Only available if \code{object}
   contains \code{bootout} object.}
+  
   \item{bty}{a character string representing the type of interval
   required. The value should be any of the values \code{"norm",
   "basic","perc","bca"}. The value \code{"stud"} is not supported.
   For more details see \code{\link{boot.ci}}.}
+  
   \item{level}{the confidence level of the interval (default = 0.95).}
-  \item{GORIC}{if TRUE (default), the Generalized Order-restricted 
-  Information Criterion value is computed, the penalty term and the
-  log-likelihood. The GORIC is a modification of the AIC and the 
-  ORIC such that it can be applied to a (in)equality restricted
-  hypotheses in multivariate normal linear models. For more 
-  information see the \pkg{goric} package.}
+  
+  \item{goric}{if \code{"goric"} (default), the generalized order-restricted 
+  information criterion value is computed. If \code{"gorica"} the 
+  log-likihood is computed using the multivariate normal distribution 
+  function. If \code{"goricc" or "goricca"}, a small sample version
+  of the \code{"goric" or "gorica"} is computed.}
+  
   \item{digits}{the number of significant digits to use when printing.}
+  
   \item{signif.stars}{If TRUE, "significance stars are printed 
   for each coefficient.}
+  
   \item{\ldots}{no additional arguments for now.}
 }
 \details{

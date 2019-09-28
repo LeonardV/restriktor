@@ -520,16 +520,14 @@ goric <- function(object, ...,
         if (debug) {
           cat("log-likelihood value =", ll[[l]], "\n")
         }
-        # take the highest log-likelihood value as a substitute for 
-        # the complement
+        # take the highest log-likelihood value as a substitute for the complement
         ll.unlist <- unlist(ll)
         ll.idx <- which(ll.unlist == max(ll.unlist))
         llc <- max(ll.unlist)
-        betasc <- betas[[ll.idx]]#data.frame(matrix(unlist(betas), nrow=length(betas), byrow=TRUE))
+        betasc <- betas[[ll.idx]]
       } else if (nrow(Amat) == meq) { 
-        # redundant, this will be catched by the first statement.
-        # in case of equality constraints only, the complement is 
-        # equal to the unconstrained log-likelihood
+        # redundant, this will be catched by the first statement. In case of equality 
+        # constraints only, the complement is equal to the unconstrained log-likelihood
         if (type %in% c("goric", "goricc")) {
           llc <- logLik(ans$model.org)
           betasc <- b.unrestr
@@ -554,7 +552,7 @@ goric <- function(object, ...,
     } 
     
     # compute the number of free parameters f in the complement
-    p   <- ncol(VCOV)#length(b.unrestr)
+    p   <- ncol(VCOV)
     # rank q1
     lq1 <- qr(Amat.ciq)$rank
     # rank q2
@@ -569,13 +567,13 @@ goric <- function(object, ...,
       if (attr(wt.bar, "method") == "boot") {
         PTc <- as.numeric(1 + p - wt.bar[idx-meq] * lq1)
       } else if (attr(wt.bar, "method") == "pmvnorm") {
-        # here, the q2 equalities are not included in wt.bar. Hence, they do not have to be subtracted.
+        # here, the q2 equalities are not included in wt.bar. Hence, they do not 
+        # have to be subtracted.
         PTc <- as.numeric(1 + p - wt.bar[idx] * lq1)
       } else {
         stop("Restriktor ERROR: no level probabilities (chi-bar-square weights) found.")
       }
     } else if (type %in% c("goricc", "goricca")) {
-      #stop("Restriktor ERROR: small sample correction for the complement is not implemented (yet).")
       idx <- length(wt.bar) 
       if (is.null(sample.nobs)) {
         stop("Restriktor ERROR: the argument sample.nobs is not found.")

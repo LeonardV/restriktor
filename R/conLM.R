@@ -155,7 +155,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   if (mix.weights != "none") {
     if (nrow(Amat) == meq) {
       # equality constraints only
-      wt.bar <- rep(0L, ncol(Sigma) + 1)
+      wt.bar <- rep(0L, ncol(Sigma) + 1) 
       wt.bar.idx <- ncol(Sigma) - meq + 1
       wt.bar[wt.bar.idx] <- 1
     } else if (all(c(Amat) == 0)) { 
@@ -220,7 +220,6 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
     # compute constrained estimates using quadprog
     out.solver <- con_solver_lm(X         = X, 
                                 y         = y, 
-                                #b.unrestr = b.unrestr, 
                                 w         = weights, 
                                 Amat      = Amat,
                                 bvec      = bvec, 

@@ -56,6 +56,15 @@ con_constraints <- function(model, constraints, bvec = NULL, meq = 0L,
     stop("no restriktions were specified.") 
   }
   
+  if (!(nrow(Amat) == length(bvec))) {
+    warning("restriktor WARNING: The number of constraints does not match 
+                    the \'rhs\' (nrow(Amat) != length(rhs)).")
+  }
+  
+  if (meq > nrow(Amat)) { 
+    stop("restriktor ERROR: The maximum number of equality constraints = ", nrow(Amat), "\n")
+  }
+  
   if (length(CON$ceq.nonlinear.idx) > 0L || length(CON$cin.nonlinear.idx) > 0L) {
     stop("restriktor ERROR: can not handle (yet) nonlinear (in)equality restriktions")
   }

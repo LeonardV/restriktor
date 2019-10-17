@@ -1,5 +1,4 @@
 ## to do
-# GORIC = TRUE vervangen door GORIC = c("goric", "goricc", "gorica", "goricca")
 # gebruik con_goric() functie om LL, Penalty and Goric te berekenen.
 
 summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc", 
@@ -205,7 +204,7 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
     
     
     if (inherits(z, c("conLM", "conMLM"))) {
-      ans$goric <- -2*(ll - PT)
+      ans$goric <- -2*(ll - PT) 
     } else if (inherits(z, "conGLM")) {
       if (!(z$model.org$family$family %in% c("gaussian", "Gamma", "inverse.gaussian"))) {
         PT <- PT - 1

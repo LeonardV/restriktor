@@ -589,7 +589,7 @@ goric <- function(object, ...,
         # lPT <- min.col : max.col
         # PTc <- 1 + p - sum( ((N * (lPT + 1) / (N - lPT - 2))) * wt.bar[idx])   
         
-        PTu <- sum( ( (N * (ncol(VCOV) + 1) / (N - ncol(VCOV) - 2) ) ) * 1L) 
+        PTu <- ( (N * (ncol(VCOV) + 1) / (N - ncol(VCOV) - 2) ) ) 
         PTm <- unlist(lapply(isSummary, function(x) attr(x$goric, "penalty")))
         PTc <- 1 + p + log(1 - exp(PTm - PTu))
       }

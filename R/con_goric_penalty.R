@@ -2,7 +2,7 @@
 penalty_goric <- function(Amat, meq, LP, correction = FALSE, 
                           sample.nobs = NULL, ...) {
 
-  if (correction) {
+  if (correction) { 
     N <- sample.nobs  
     # unconstrained case
     if (all(c(Amat) == 0)) {

@@ -580,18 +580,21 @@ goric <- function(object, ...,
       }
       N <- sample.nobs
       # small sample correction
-      if (attr(wt.bar, "method") == "boot") {
-        lPT <- 0 : ncol(Amat)
-        PTc  <- sum( ( (N * (lPT + 1) / (N - lPT - 2) ) ) * wt.bar[idx-meq])
-      } else if (attr(wt.bar, "method") == "pmvnorm") {
-        # min.col <- ncol(Amat) - nrow(Amat) # p - q1 - q2
-        # max.col <- ncol(Amat) - meq        # p - q2
-        # lPT <- min.col : max.col
-        # PTc <- 1 + p - sum( ((N * (lPT + 1) / (N - lPT - 2))) * wt.bar[idx])   
+     if (attr(wt.bar, "method") == "boot") {
+       lPT <- 0 : ncol(Amat)
+       PTc  <- sum( ( (N * (lPT + 1) / (N - lPT - 2) ) ) * wt.bar[idx-meq])
+     } else if (attr(wt.bar, "method") == "pmvnorm") {
+        min.col <- ncol(Amat) - nrow(Amat) # p - q1 - q2
+        max.col <- ncol(Amat) - meq        # p - q2
+        lPT <- min.col : max.col
+        PTc <- sum( ((N * (lPT + 1) / (N - lPT - 2))) * wt.bar[idx])
         
-        PTu <- ( (N * (ncol(VCOV) + 1) / (N - ncol(VCOV) - 2) ) ) 
-        PTm <- unlist(lapply(isSummary, function(x) attr(x$goric, "penalty")))
-        PTc <- 1 + p + log(1 - exp(PTm - PTu))
+        # PTu <- (N * (ncol(Amat) + 1) / (N - ncol(Amat) - 2) )
+        # PTm <- unlist(lapply(isSummary, function(x) attr(x$goric, "penalty")))
+        # 1 + p + log(1 - exp(PTm - PTu))   
+        # 
+        # PTc <- as.numeric(1 + p - wt.bar[idx] * lq1)        
+        # PTc <- ( (N * (ncol(VCOV) + 1) / (N - ncol(VCOV) - 2) ) ) * PTc
       }
     }
     if (debug) {
@@ -625,12 +628,11 @@ goric <- function(object, ...,
     if (type %in% c("goric", "gorica")) {
       PTu <- 1 + ncol(VCOV)
     } else if (type %in% c("goricc", "goricca")) {
-      lPT <- ncol(VCOV)
       if (is.null(sample.nobs)) {
         stop("Restriktor ERROR: the argument sample.nobs is not found.")
       }
       N   <- sample.nobs
-      PTu <- sum( ( (N * (lPT + 1) / (N - lPT - 2) ) ) * 1L)
+      PTu <- ( (N * (ncol(VCOV) + 1) / (N - ncol(VCOV) - 2) ) ) 
     }
     
     goric.Hm <- -2*(llm - PTm)

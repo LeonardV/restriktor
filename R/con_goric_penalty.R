@@ -7,7 +7,7 @@ penalty_goric <- function(Amat, meq, LP, correction = FALSE,
     # unconstrained case
     if (all(c(Amat) == 0)) {
       lPT <- ncol(Amat)
-      PT  <- sum( ( (N * (lPT + 1) / (N - lPT - 2)) ) * 1L)
+      PT  <- ( (N * (lPT + 1) / (N - lPT - 2)) ) 
     } else if (attr(LP, "method") == "boot") { 
       # if level-probabilities are simulated  
       lPT <- 0 : ncol(Amat)
@@ -17,7 +17,7 @@ penalty_goric <- function(Amat, meq, LP, correction = FALSE,
       min.col <- ncol(Amat) - nrow(Amat) # p - q1 - q2
       max.col <- ncol(Amat) - meq        # p - q2
       lPT     <- min.col : max.col
-      PT      <- sum( ( (N * (lPT + 1) / (N - lPT - 2) ) ) * LP)
+      PT      <- sum( ( (N * (lPT + 1) / (N - lPT - 2) ) ) * LP) 
     }
   } else {
     if (all(c(Amat) == 0)) {

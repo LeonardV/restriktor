@@ -471,7 +471,7 @@ goric <- function(object, ...,
       ## compute log-likelihood for complement
       # check if any constraint is violated
       if (check.ciq || check.ceq) {    
-        if (type %in% c("goric", "goricc")) {
+        if (type %in% c("goric", "goricc")) { 
           llc <- logLik(ans$model.org)
           betasc <- b.unrestr
         } else if (type %in% c("gorica", "goricca")) {
@@ -569,7 +569,7 @@ goric <- function(object, ...,
       } else if (attr(wt.bar, "method") == "pmvnorm") {
         # here, the q2 equalities are not included in wt.bar. Hence, they do not 
         # have to be subtracted.
-        PTc <- as.numeric(1 + p - wt.bar[idx] * lq1)
+        PTc <- as.numeric(1 + p - wt.bar[idx] * lq1)                            # CHECK for meq!!!
       } else {
         stop("Restriktor ERROR: no level probabilities (chi-bar-square weights) found.")
       }
@@ -581,21 +581,18 @@ goric <- function(object, ...,
       N <- sample.nobs
       # small sample correction
      if (attr(wt.bar, "method") == "boot") {
-       lPT <- 0 : ncol(Amat)
-       PTc  <- sum( ( (N * (lPT + 1) / (N - lPT - 2) ) ) * wt.bar[idx-meq])
+       PTc <- 1 + wt.bar[idx-meq] * (N * (p - lq1) + (p - lq1) + 2) / (N - (p - lq1) - 2) + 
+         (1 - wt.bar[idx-meq]) * (N * p + p + 2) / (N - p - 2)
      } else if (attr(wt.bar, "method") == "pmvnorm") {
-        min.col <- ncol(Amat) - nrow(Amat) # p - q1 - q2
-        max.col <- ncol(Amat) - meq        # p - q2
-        lPT <- min.col : max.col
-        PTc <- sum( ((N * (lPT + 1) / (N - lPT - 2))) * wt.bar[idx])
+        #PTu <- N * (ncol(Amat) + 1) / (N - ncol(Amat) - 2)  
+        #PTm <- 1 + sum( ( (N * lPT + lPT + 2) / (N - lPT - 2) ) * wt.bar)  
+
+        #1 + wt.bar[1] * ((N * f + f + 2) / (N - f - 2)) + wt.bar[2] + ( (N * (f + lq1) + (f + lq1) + 2) / (N - (f + lq1) - 2) ) 
+        #PTc <- PTu - wt.bar[idx] * ( (N * lPT[idx] + lPT[idx] + 2) / (N - lPT[idx] - 2) )
         
-        # PTu <- (N * (ncol(Amat) + 1) / (N - ncol(Amat) - 2) )
-        # PTm <- unlist(lapply(isSummary, function(x) attr(x$goric, "penalty")))
-        # 1 + p + log(1 - exp(PTm - PTu))   
-        # 
-        # PTc <- as.numeric(1 + p - wt.bar[idx] * lq1)        
-        # PTc <- ( (N * (ncol(VCOV) + 1) / (N - ncol(VCOV) - 2) ) ) * PTc
-      }
+        PTc <- 1 + wt.bar[idx] * (N * (p - lq1) + (p - lq1) + 2) / (N - (p - lq1) - 2) + 
+          (1 - wt.bar[idx]) * (N * p + p + 2) / (N - p - 2) 
+        }
     }
     if (debug) {
       cat("penalty term value =", PTc, "\n")

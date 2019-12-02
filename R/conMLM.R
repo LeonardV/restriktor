@@ -105,45 +105,6 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
     meq  <- 0L
   }
   
-  # compute the reduced row-echelon form of the constraints matrix
-  # rAmat <- GaussianElimination(t(Amat))
-  # if (mix.weights == "pmvnorm") {
-  #   if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
-  #     stop(paste("Restriktor ERROR: The constraint matrix must be full row-rank.", 
-  #                "\n  There might be redundant constraints (in that case, delete those or use mix.weights = \"boot\")."))
-  #   }
-  # } 
-  # else if (rAmat$rank < nrow(Amat) && 
-  #          !(se %in% c("none", "boot.model.based", "boot.standard")) && 
-  #          rAmat$rank != 0L) {
-  #   se <- "none"
-  #   warning(paste("Restriktor Warning: No standard errors could be computed. 
-  #                 The constraint matrix must be full row-rank ( choose e.g. rows", 
-  #                 paste(rAmat$pivot, collapse = " "), "), 
-  #                 Try se = \"boot.model.based\" or \"boot.standard\"."))  
-  # }
-
-  ## remove any linear dependent rows from the constraint matrix
-  # determine the rank of the constraint matrix/
-  if (!all(Amat == 0)) {
-    # remove any zero vectors
-    allZero.idx <- rowSums(abs(Amat)) == 0
-    Amat <- Amat[!allZero.idx, , drop = FALSE]
-    bvec <- bvec[!allZero.idx]
-    rank <- qr(Amat)$rank
-    s <- svd(Amat)
-    while (rank != length(s$d)) {
-      # check which singular values are zero
-      zero.idx <- which(zapsmall(s$d) <= 1e-16)
-      # remove linear dependent rows and reconstruct the constraint matrix
-      Amat <- s$u[-zero.idx, ] %*% diag(s$d) %*% t(s$v)
-      Amat <- zapsmall(Amat)
-      bvec <- bvec[-zero.idx]
-      s <- svd(Amat)
-      #cat("rank = ", rank, " ... non-zero det = ", length(s$d), "\n")
-    }
-  }  
-  
   timing$constraints <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
   

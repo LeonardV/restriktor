@@ -22,28 +22,21 @@ summary.gorica_est <- function(object, type, ...) {
                           LP          = wt.bar, 
                           correction  = FALSE, 
                           sample.nobs = NULL)
-    } else if (type %in% c("goricc", "goricca")) {
+      if (type == "gorica") {
+        PT <- PT - 1 
+      }
+    } else if (type %in% c("goricc", "goricac")) {
       PT <- penalty_goric(Amat        = Amat, 
                           meq         = meq, 
                           LP          = wt.bar, 
                           correction  = TRUE, 
                           sample.nobs = ldots$sample.nobs)
+      if (type == "goricac") {
+        PT <- PT - 1 
+      }
     } else {
       stop("restriktor ERROR: unable to compute penalty term value.")  
     }
-    
-    
-    # # compute penalty term based on simulated level probabilities (wt.bar)
-    # if (all(c(Amat) == 0)) {
-    #   # unconstrained case
-    #   PT <- length(b.restr)
-    # } else if (attr(wt.bar, "method") == "boot") { 
-    #   PT <- sum(0 : ncol(Amat) * wt.bar)  
-    # } else if (attr(wt.bar, "method") == "pmvnorm") {
-    #   min.C <- ncol(Amat) - nrow(Amat)
-    #   max.C <- ncol(Amat) - meq
-    #   PT <- sum(min.C : max.C * wt.bar) 
-    # } 
     
     ans$goric <- -2*(z$loglik - PT)
     attr(ans$goric, "penalty") <- PT

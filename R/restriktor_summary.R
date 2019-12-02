@@ -11,7 +11,7 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
   }
   
   goric <- tolower(goric)
-  stopifnot(goric %in% c("goric", "goricc", "gorica", "goricca", "none"))
+  stopifnot(goric %in% c("goric", "goricc", "gorica", "goricac", "none"))
   
   # bty = "stud" needs bootstrap variances
   if (bootCIs & !(bty %in% c("norm", "basic", "perc", "bca"))) {
@@ -183,12 +183,18 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
                           LP          = wt.bar, 
                           correction  = FALSE, 
                           sample.nobs = NULL)
-    } else if (goric %in% c("goricc", "goricca")) {
+      if (goric == "gorica") {
+        PT <- PT - 1 
+      }
+    } else if (goric %in% c("goricc", "goricac")) {
       PT <- penalty_goric(Amat        = Amat, 
                           meq         = meq, 
                           LP          = wt.bar, 
                           correction  = TRUE, 
                           sample.nobs = length(r))
+      if (goric == "goricac") {
+        PT <- PT - 1 
+      }
     } else {
       stop("Restriktor ERROR: ", sQuote(goric), ": unknown goric method.")  
     }
@@ -196,7 +202,7 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
     # compute log-likelihood value
     if (goric %in% c("goric", "goricc")) {
       ll   <- z$loglik
-    } else if (goric %in% c("gorica", "goricca")) {
+    } else if (goric %in% c("gorica", "goricac")) {
       # unconstrained vcov
       VCOV <- z$Sigma
       ll <- dmvnorm(c(z$b.unrestr - z$b.restr), sigma = VCOV, log = TRUE)  

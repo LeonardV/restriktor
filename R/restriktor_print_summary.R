@@ -112,7 +112,7 @@ print.summary.restriktor <- function(x, digits = max(3, getOption("digits") - 2)
       cat("\nSmall sample generalized order-restricted information criterion: \n")
     } else if (attr(goric, "type") == "gorica") {
       cat("\nGeneralized order-restricted information criteron approximation: \n")
-    } else if (attr(goric, "type") == "goricca") {
+    } else if (attr(goric, "type") == "goricac") {
       cat("\nSmall sample generalized order-restricted information criteron approximation: \n")
     } 
     

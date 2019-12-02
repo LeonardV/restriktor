@@ -13,7 +13,7 @@ goric <- function(object, ...,
   stopifnot(comparison %in% c("unconstrained", "complement", "none"))
   
   type <- tolower(type)
-  stopifnot(type %in% c("goric", "goricc", "gorica", "goricca"))
+  stopifnot(type %in% c("goric", "goricc", "gorica", "goricac"))
   
   ldots <- list(...)
   m.restr <- match(names(ldots), c("B", "mix.weights", "mix.bootstrap", 
@@ -147,7 +147,7 @@ goric <- function(object, ...,
       if (is.null(VCOV)) {
         stop("Restriktor ERROR: the argument VCOV is not found.")
       }
-      if (is.null(sample.nobs) && type %in% c("goricc", "goricca")) {
+      if (is.null(sample.nobs) && type %in% c("goricc", "goricac")) {
         stop("Restriktor ERROR: the argument sample.nobs is not found.")
       }
       
@@ -474,7 +474,7 @@ goric <- function(object, ...,
         if (type %in% c("goric", "goricc")) { 
           llc <- logLik(ans$model.org)
           betasc <- b.unrestr
-        } else if (type %in% c("gorica", "goricca")) {
+        } else if (type %in% c("gorica", "goricac")) {
           llc <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE)
           betasc <- b.unrestr
         }
@@ -502,7 +502,7 @@ goric <- function(object, ...,
                                    mix.weights = "none", se = "none")
             betas[[l]] <- coef(Hc.restr)
             ll[[l]]    <- logLik(Hc.restr)
-          } else if (type %in% c("gorica", "goricca")) {
+          } else if (type %in% c("gorica", "goricac")) {
             ldots4 <- ldots[m.restr > 0L]
             ldots4$mix.weights <- "none"
             CALL.restr <- c(list(object      = b.unrestr,
@@ -531,7 +531,7 @@ goric <- function(object, ...,
         if (type %in% c("goric", "goricc")) {
           llc <- logLik(ans$model.org)
           betasc <- b.unrestr
-        } else if (type %in% c("gorica", "goricca")) {
+        } else if (type %in% c("gorica", "goricac")) {
           llc <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE)
           betasc <- b.unrestr
         }
@@ -546,7 +546,7 @@ goric <- function(object, ...,
       }
       if (type %in% c("goric", "goricc")) {
         llm <- logLik(conList[[1]])
-      } else if (type %in% c("gorica", "goricca")) {
+      } else if (type %in% c("gorica", "goricac")) {
         llm <- dmvnorm(c(b.unrestr - b.restr), sigma = VCOV, log = TRUE)
       }
     } 
@@ -573,7 +573,7 @@ goric <- function(object, ...,
       } else {
         stop("Restriktor ERROR: no level probabilities (chi-bar-square weights) found.")
       }
-    } else if (type %in% c("goricc", "goricca")) {
+    } else if (type %in% c("goricc", "goricac")) {
       idx <- length(wt.bar) 
       if (is.null(sample.nobs)) {
         stop("Restriktor ERROR: the argument sample.nobs is not found.")
@@ -584,12 +584,6 @@ goric <- function(object, ...,
        PTc <- 1 + wt.bar[idx-meq] * (N * (p - lq1) + (p - lq1) + 2) / (N - (p - lq1) - 2) + 
          (1 - wt.bar[idx-meq]) * (N * p + p + 2) / (N - p - 2)
      } else if (attr(wt.bar, "method") == "pmvnorm") {
-        #PTu <- N * (ncol(Amat) + 1) / (N - ncol(Amat) - 2)  
-        #PTm <- 1 + sum( ( (N * lPT + lPT + 2) / (N - lPT - 2) ) * wt.bar)  
-
-        #1 + wt.bar[1] * ((N * f + f + 2) / (N - f - 2)) + wt.bar[2] + ( (N * (f + lq1) + (f + lq1) + 2) / (N - (f + lq1) - 2) ) 
-        #PTc <- PTu - wt.bar[idx] * ( (N * lPT[idx] + lPT[idx] + 2) / (N - lPT[idx] - 2) )
-        
         PTc <- 1 + wt.bar[idx] * (N * (p - lq1) + (p - lq1) + 2) / (N - (p - lq1) - 2) + 
           (1 - wt.bar[idx]) * (N * p + p + 2) / (N - p - 2) 
         }
@@ -607,7 +601,7 @@ goric <- function(object, ...,
       llm <- unlist(lapply(isSummary, function(x) attr(x$goric, "loglik"))) 
       # unrestricted
       llu <- logLik(ans$model.org)
-    } else if (type %in% c("gorica", "goricca")) {
+    } else if (type %in% c("gorica", "goricac")) {
       # model 
       if (inherits(object, "numeric")) {
         llm <- unlist(lapply(conList, function(x) dmvnorm(c(x$b.unrestr - x$b.restr), 
@@ -624,7 +618,7 @@ goric <- function(object, ...,
     
     if (type %in% c("goric", "gorica")) {
       PTu <- 1 + ncol(VCOV)
-    } else if (type %in% c("goricc", "goricca")) {
+    } else if (type %in% c("goricc", "goricac")) {
       if (is.null(sample.nobs)) {
         stop("Restriktor ERROR: the argument sample.nobs is not found.")
       }
@@ -649,7 +643,7 @@ goric <- function(object, ...,
       df <- data.frame(model = objectnames, loglik = ll, penalty = PT, 
                        goric = goric.Hm)
       df$model <- as.character(df$model)
-    } else if (type %in% c("gorica", "goricca")) {
+    } else if (type %in% c("gorica", "goricac")) {
 #      if (inherits(object, "numeric")) {
         ll <- unlist(lapply(conList, function(x) dmvnorm(c(x$b.unrestr - x$b.restr), 
                                                            sigma = VCOV, log = TRUE) )) 
@@ -675,7 +669,7 @@ goric <- function(object, ...,
       df.c  <- data.frame(model = "complement", loglik = llc, penalty = PTc, 
                           goric = goric.Hc)
       df <- rbind(df.Hm, df.c)
-    } else if (type %in% c("gorica", "goricca")) {
+    } else if (type %in% c("gorica", "goricac")) {
       # model
       gorica.Hm <- -2*(llm - PTm)
       df.Hm  <- data.frame(model = objectnames, loglik = llm, penalty = PTm, 
@@ -746,7 +740,7 @@ goric <- function(object, ...,
   
   if (type %in% c("goric", "goricc")) {
     class(ans) <- "goric"
-  } else if (type %in% c("gorica", "goricca")) {
+  } else if (type %in% c("gorica", "goricac")) {
     class(ans) <- c("gorica", "goric")
   }
   
@@ -773,7 +767,7 @@ print.goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     cat("\nRestriktor: generalized order-restriced information criterion approximation:\n")
   } else if (type == "goricc") {
     cat("\nRestriktor: small sample generalized order-restriced information criterion:\n")
-  } else if (type == "goricca") {
+  } else if (type == "goricac") {
     cat("\nRestriktor: small sample generalized order-restriced information criterion approximation:\n")
   }
   
@@ -820,7 +814,7 @@ summary.goric <- function(object, brief = TRUE,
     cat("\nRestriktor: generalized order-restriced information criterion approximation:\n")
   } else if (type == "goricc") {
     cat("\nRestriktor: small sample generalized order-restriced information criterion:\n")
-  } else if (type == "goricca") {
+  } else if (type == "goricac") {
     cat("\nRestriktor: small sample generalized order-restriced information criterion approximation:\n")
   }
   

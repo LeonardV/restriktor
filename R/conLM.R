@@ -68,10 +68,14 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   
   # deal with constraints
   if (!is.null(constraints)) {
-    restr.OUT <- con_constraints(object, 
+    restr.OUT <- con_constraints(object,
+                                 VCOV        = Sigma,
+                                 est         = b.unrestr,
                                  constraints = Amat, 
                                  bvec        = bvec, 
-                                 meq         = meq, 
+                                 meq         = meq,
+                                 mix.weights = mix.weights,
+                                 se          = se,
                                  debug       = debug)  
     # a list with useful information about the restriktions.}
     CON <- restr.OUT$CON
@@ -117,33 +121,6 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   #                   Try se = \"boot.model.based\" or \"boot.standard\"."))  
   # }
   
-  
-  ## compute the reduced row-echelon form of the constraints matrix
-  ## remove any linear dependent rows from the constraint matrix
-  ## determine the rank of the constraint matrix
-  # if (!all(Amat == 0)) {
-  #   # remove any zero vectors
-  #   allZero.idx <- rowSums(abs(Amat)) == 0
-  #   Amat <- Amat[!allZero.idx, , drop = FALSE]
-  #   bvec <- bvec[!allZero.idx] 
-  #   rank <- qr(Amat)$rank
-  #   s <- svd(Amat)
-  #   while (rank != length(s$d)) {
-  #     # check which singular values are zero
-  #     zero.idx <- which(zapsmall(s$d) <= 1e-16)
-  #     # remove linear dependent rows and reconstruct the constraint matrix
-  #     Amat <- s$u[-zero.idx, ] %*% diag(s$d) %*% t(s$v) 
-  #     Amat <- zapsmall(Amat)
-  #     
-  #     if (all(bvec[zero.idx] != bvec[-zero.idx])) {
-  #       stop("Restriktor ERROR: conflicting constraints!") 
-  #     }
-  #      
-  #     bvec <- bvec[-zero.idx]
-  #     s <- svd(Amat)
-  #     #cat("rank = ", rank, " ... non-zero det = ", length(s$d), "\n")
-  #   }
-  # }
   
   timing$constraints <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
@@ -318,7 +295,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   # compute standard errors based on the augmented inverted information matrix or
   # based on the standard bootstrap or model.based bootstrap
   if (se != "none") {
-    if (!(se %in% c("boot.model.based","boot.standard"))) {
+    if (!(se %in% c("boot.model.based", "boot.standard"))) {
       information.inv <- con_augmented_information(information  = OUT$information, 
                                                    is.augmented = is.augmented,
                                                    X            = X, 

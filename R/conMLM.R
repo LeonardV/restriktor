@@ -12,16 +12,6 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
   # not available yet.
   se <- "none"
   
-  # standard error methods
-  # if (se == "default") {
-  #   se <- "standard"
-  # } else if (se == "boot.residual") {
-  #   se <- "boot.model.based"
-  # }
-  # if (!(se %in% c("none","standard","const","boot.model.based","boot.standard",
-  #                 "HC","HC0","HC1","HC2","HC3","HC4","HC4m","HC5"))) {
-  #   stop("Restriktor ERROR: standard error method ", sQuote(se), " unknown.")
-  # }
   # check method to compute chi-square-bar weights
   if (!(mix.weights %in% c("pmvnorm", "boot", "none"))) {
     stop("Restriktor ERROR: ", sQuote(mix.weights), " method unknown. Choose from \"pmvnorm\", \"boot\", or \"none\"")
@@ -74,9 +64,13 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
   # deal with constraints
   if (!is.null(constraints)) {
     restr.OUT <- con_constraints(object, 
+                                 VCOV        = Sigma,
+                                 est         = b.unrestr,
                                  constraints = Amat, 
                                  bvec        = bvec, 
                                  meq         = meq, 
+                                 mix.weights = mix.weights,
+                                 se          = se,
                                  debug       = debug)  
     # a list with useful information about the restriktions.}
     CON <- restr.OUT$CON

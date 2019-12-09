@@ -100,9 +100,13 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   # deal with constraints
   if (!is.null(constraints)) {
     restr.OUT <- con_constraints(object, 
+                                 VCOV        = Sigma,
+                                 est         = b.unrestr,
                                  constraints = Amat, 
                                  bvec        = bvec, 
                                  meq         = meq, 
+                                 mix.weights = mix.weights,
+                                 se          = se,
                                  debug       = debug)  
     # a list with useful information about the restrictions.}
     CON <- restr.OUT$CON

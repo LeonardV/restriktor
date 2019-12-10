@@ -88,7 +88,8 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       ## are inconsistent
       consistent.check <- con_solver_gorica(est = est, VCOV = VCOV, 
                                             Amat = Amat, bvec = bvec, meq = meq)
-      ## remove any linear dependent rows from the constraint matrix
+      ## remove any linear dependent rows from the constraint matrix. Amat
+      ## must be of full row rank.
       # remove any zero vectors
       allZero.idx <- rowSums(abs(Amat)) == 0
       Amat <- Amat[!allZero.idx, , drop = FALSE]
@@ -119,8 +120,6 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
                       The constraint matrix must be full row-rank.
                       Try to set se = \"none\", \"boot.model.based\" or \"boot.standard\".")) 
   }
-  
-  
   
   OUT <- list(CON      = CON, 
               parTable = parTable,

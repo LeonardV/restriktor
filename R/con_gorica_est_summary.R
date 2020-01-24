@@ -23,7 +23,7 @@ summary.gorica_est <- function(object, type, ...) {
                           correction  = FALSE, 
                           sample.nobs = NULL)
       if (type == "gorica") {
-        PT <- PT - 1 
+        PT <- PT - 1
       }
     } else if (type %in% c("goricc", "goricac")) {
       PT <- penalty_goric(Amat        = Amat, 
@@ -32,7 +32,7 @@ summary.gorica_est <- function(object, type, ...) {
                           correction  = TRUE, 
                           sample.nobs = ldots$sample.nobs)
       if (type == "goricac") {
-        PT <- PT - 1 
+        PT <- PT - 1
       }
     } else {
       stop("restriktor ERROR: unable to compute penalty term value.")  

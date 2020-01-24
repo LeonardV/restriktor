@@ -6,7 +6,7 @@ con_weights <- function(cov, meq) {
   if (meq == 0L) {
     wt.bar <- ic.weights(cov)
   } else if (meq > 0) {
-    wt.bar <- ic.weights(solve(solve(cov)[-(1:meq), -(1:meq)]))
+    wt.bar <- ic.weights(solve(solve(cov)[-c(1:meq), -c(1:meq)]))
   }
   wt.bar
 }
@@ -103,11 +103,6 @@ con_weights_boot <- function(VCOV, Amat, meq,
   dimL <- ncol(VCOV) - iact
   wt.bar <- sapply(1:(ncol(VCOV) + 1), function(x) sum(x == (dimL + 1))) / R
   
-  # if ((ncol(Amat) + 1) == length(wt.bar)) { 
-  #   idx.min <- (ncol(Amat) - nrow(Amat)) + 1 
-  #   idx.max <- (ncol(Amat) - meq) + 1 
-  #   wt.bar <- wt.bar[idx.min:idx.max]
-  # }
   wt.bar
 }
 

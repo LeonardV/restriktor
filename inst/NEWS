@@ -1,3 +1,17 @@
+Changes in Version 0.2-600
+ o Released on CRAN (January 24, 2020)
+ o Fixed bug; the penalty term value was not correct for the gorica(c). Since, 
+ there is no nuisance parameter we need to substract 1 from the penalty term value. 
+ This was only done for the hypothesized model (Hm) and not for the unconstrained 
+ model (Hu) or the complement (Hc). 
+
+
+Changes in Version 0.2-500
+ o Released on CRAN (December 12, 2019)
+ o Added support; small-sample size correction for type goric (goricc) and
+ gorica (goricac)
+
+
 Changes in Version 0.2-15
  o Released on CRAN (May 24, 2019)
  o Added support; Generalized Order-Restrikted Information Criterion Approximation (GORICA).

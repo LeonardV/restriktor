@@ -1,3 +1,5 @@
+# aanpassen class goric en gorica om problemen met het goric en gorica package te voorkomen
+
 goric <- function(object, ..., 
                   comparison = c("unconstrained", "complement", "none"), 
                   VCOV = NULL, sample.nobs = NULL,
@@ -75,8 +77,7 @@ goric <- function(object, ...,
                            constraints = constraints[[c]]), ldots3)
       conList[[c]] <- do.call("restriktor", CALL.restr) 
     }
-    # compute symmary for each restriktor object. Here is the goric value 
-    # computed. Note, not the gorica value
+    # compute summary for each restriktor object. 
     isSummary <- lapply(conList, function(x) summary(x, 
                                                      goric       = type,
                                                      sample.nobs = sample.nobs))
@@ -142,7 +143,7 @@ goric <- function(object, ...,
       }
     } else if (inherits(object, "numeric")) {
       if (type %in% c("goric", "goricc")) {
-        stop("Restriktor ERROR: object of class numeric is only supported for type = 'goric(c)a'.")
+        stop("Restriktor ERROR: object of class numeric is only supported for type = 'gorica(c)'.")
       }
       if (is.null(VCOV)) {
         stop("Restriktor ERROR: the argument VCOV is not found.")
@@ -157,7 +158,7 @@ goric <- function(object, ...,
       ldots3 <- ldots[m.restr > 0L]
       if (all(isList)) { 
         # create lists
-        #constraints <- list(); rhs <- list(); neq <- list()
+        # constraints <- list(); rhs <- list(); neq <- list()
         # extract constraints, rhs and neq
         constraints       <- lapply(ldots2,      FUN = function(x) { x$constraints } )
         constraints.check <- sapply(constraints, FUN = function(x) { is.null(x)} )
@@ -195,7 +196,7 @@ goric <- function(object, ...,
         }
         isSummary <- lapply(conList, function(x) summary(x, 
                                                          type        = type,
-                                                         sample.nobs = sample.nobs))
+                                                         sample.nobs = sample.nobs)) 
       }
       CALL$object <- NULL; CALL$comparison <- NULL; CALL$type <- NULL
       CALL$VCOV <- NULL; CALL$bound <- NULL; 
@@ -586,14 +587,19 @@ goric <- function(object, ...,
      } else if (attr(wt.bar, "method") == "pmvnorm") {
         PTc <- 1 + wt.bar[idx] * (N * (p - lq1) + (p - lq1) + 2) / (N - (p - lq1) - 2) + 
           (1 - wt.bar[idx]) * (N * p + p + 2) / (N - p - 2) 
-        }
+     }
     }
     if (debug) {
       cat("penalty term value =", PTc, "\n")
     }
+    
+    # correct PTc for gorica(c)
+    if (type %in% c("gorica", "goricac")) {
+     PTc <- PTc - 1
+    }
   } 
     
-  # compute loglik-value, goric(a)-values, and PT-values
+  ## compute loglik-value, goric(a)-values, and PT-values if comparison = unconstrained
   if (comparison == "unconstrained") { 
     PTm <- unlist(lapply(isSummary, function(x) attr(x$goric, "penalty")))
     if (type %in% c("goric", "goricc")) {
@@ -626,6 +632,11 @@ goric <- function(object, ...,
       PTu <- ( (N * (ncol(VCOV) + 1) / (N - ncol(VCOV) - 2) ) ) 
     }
     
+    ## correct PT for gorica(c)
+    if (type %in% c("gorica", "goricac")) {
+      PTu <- PTu - 1
+    }
+    
     goric.Hm <- -2*(llm - PTm)
     goric.Hu <- -2*(llu - PTu)
     df.Hm <- data.frame(model = objectnames, loglik = llm, penalty = PTm, 
@@ -636,6 +647,7 @@ goric <- function(object, ...,
     df <- rbind(df.Hm, df.u)
     names(df)[4] <- type
   } else if (comparison == "none") {
+    ## compute loglik-value, goric(a)-values, and PT-values if comparison = none
     PT <- unlist(lapply(isSummary, function(x) attr(x$goric, "penalty")))
     if (type %in% c("goric", "goricc")) {
       ll <- unlist(lapply(isSummary, function(x) attr(x$goric, "loglik"))) 
@@ -644,20 +656,18 @@ goric <- function(object, ...,
                        goric = goric.Hm)
       df$model <- as.character(df$model)
     } else if (type %in% c("gorica", "goricac")) {
-#      if (inherits(object, "numeric")) {
-        ll <- unlist(lapply(conList, function(x) dmvnorm(c(x$b.unrestr - x$b.restr), 
-                                                           sigma = VCOV, log = TRUE) )) 
-      # } else { 
-      #   ll <- unlist(lapply(conList, function(x) dmvnorm(c(x$b.unrestr - x$b.restr), 
-      #                                                      sigma = VCOV, log = TRUE) )) 
-      # }
+      ll <- unlist(lapply(conList, function(x) dmvnorm(c(x$b.unrestr - x$b.restr), 
+                                                         sigma = VCOV, log = TRUE) )) 
       goric.Hm <- -2*(ll - PT)
       df <- data.frame(model = objectnames, loglik = ll, penalty = PT, 
                        gorica = goric.Hm)
       df$model <- as.character(df$model)
     }
   } else if (comparison == "complement") {
+    ## compute loglik-value, goric(a)-values, and PT-values if comparison = complement
     PTm <- unlist(lapply(isSummary, function(x) attr(x$goric, "penalty")))
+    # The PTm should not be corrected here! The PTm is already corrected in the 
+    # restriktor.summary() function.
     if (type %in% c("goric", "goricc")) {
       # model
       goric.Hm <- -2*(llm - PTm)
@@ -703,7 +713,7 @@ goric <- function(object, ...,
     # it might happen that a diagonal value results in NaN.
     diag(rw) <- 1
     rownames(rw) <- modelnames
-    colnames(rw) <- paste0("vs ", modelnames)
+    colnames(rw) <- paste0("vs. ", modelnames)
     ans$relative.gw <- rw
   }
   
@@ -739,9 +749,9 @@ goric <- function(object, ...,
   ans$type <- type
   
   if (type %in% c("goric", "goricc")) {
-    class(ans) <- "goric"
+    class(ans) <- "con_goric"
   } else if (type %in% c("gorica", "goricac")) {
-    class(ans) <- c("gorica", "goric")
+    class(ans) <- c("con_gorica", "con_goric")
   }
   
   ans
@@ -749,7 +759,7 @@ goric <- function(object, ...,
 
 
 
-print.goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
+print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
 
   type <- x$type
   comparison <- x$comparison
@@ -788,7 +798,7 @@ print.goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
 
 
 
-summary.goric <- function(object, brief = TRUE, 
+summary.con_goric <- function(object, brief = TRUE, 
                           digits = max(3, getOption("digits") - 4), ...) {
   
   x <- object
@@ -898,7 +908,7 @@ summary.goric <- function(object, brief = TRUE,
 
 
 
-coef.goric <- function(object, ...)  {
+coef.con_goric <- function(object, ...)  {
   return(object$ormle$b.restr)
 }
 

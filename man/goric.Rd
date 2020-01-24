@@ -1,8 +1,8 @@
 \name{goric}
 \alias{goric}
-\alias{print.goric}
-\alias{summary.goric}
-\alias{coef.goric}
+\alias{print.con_goric}
+\alias{summary.con_goric}
+\alias{coef.con_goric}
 
 \title{Generalized Order-Restrikted Information Criterion (Approximation) Weights}
 \description{The \code{goric} function computes GORIC(A) weights, which are 
@@ -11,11 +11,11 @@ comparable to the Akaike weights.
 \usage{goric(object, ..., comparison = c("unconstrained", "complement", "none"), 
       VCOV = NULL, sample.nobs = NULL, type = "goric", bound = NULL, debug = FALSE)
 
-\method{print}{goric}(x, digits = max(3, getOption("digits") - 4), \dots)
+\method{print}{con_goric}(x, digits = max(3, getOption("digits") - 4), \dots)
 
-\method{summary}{goric}(object, brief = TRUE, digits = max(3, getOption("digits") - 4), \dots)
+\method{summary}{con_goric}(object, brief = TRUE, digits = max(3, getOption("digits") - 4), \dots)
 
-\method{coef}{goric}(object, \dots)
+\method{coef}{con_goric}(object, \dots)
 }
 
 \arguments{

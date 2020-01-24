@@ -23,8 +23,8 @@ con_augmented_information <- function(information  = NULL,
   
   if (!all(c(H) == 0L)) { 
     # lagrangean coefs
-    lambda <- as.numeric(solve(H%*% solve(t(X)%*%X)%*%t(H)) %*% 
-                           (H%*%b.unrestr-bvec))
+    lambda <- as.numeric(solve(H %*% solve(t(X) %*% X) %*% t(H)) %*% 
+                           (H %*% b.unrestr-bvec))
     
     #equality constraints
     if (meq > 0L) {

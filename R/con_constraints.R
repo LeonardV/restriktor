@@ -1,5 +1,5 @@
 con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L, 
-                            mix.weights, se, debug = FALSE, ...) {
+                            debug = FALSE, ...) {
   
   ## build a bare-bones parameter table for this model
   # if model is a numeric vecter
@@ -75,51 +75,71 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
   }
   
   
+  # rAmat <- GaussianElimination(t(Amat))
+  # if (mix.weights == "pmvnorm") {
+  #   if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
+  #     ask <- askYesNo(paste("Restriktor WARNING: The constraint matrix is not full",
+  #                           "\nrow-rank, which is required for mix.weights = \"pmvnorm\".",
+  #                           "\nThis means that there might be redundant constraints (in that case, delete those or use mix.weights = \"boot\").",
+  #                           "\n\nContinu with mix.weights = \"boot\"?"), 
+  #                     prompts = getOption("askYesNo", gettext(c("Yes", "No"))))
+  #     if (ask) {
+  #       mix.weights <- "boot" 
+  #     } else {
+  #       stop("Stopped by user")
+  #     }
+  #   }
+  # } 
+  
+  
   ## still to catch 
   #H1 <- 'x1 < 4; x1 > 1' # range restrictie
   #H1 <- 'x1 < 1; x1 > 1' # equality
   #H1 <- 'x1 > 3; x1 > 4' # 
   #H1 <- 'x1 > -1; x1 > 4'#
   
-  rAmat <- GaussianElimination(t(Amat))
-  if (mix.weights == "pmvnorm") {
-    if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
-      ## check for inconsistent constraints: quadprog gives an error if constraints
-      ## are inconsistent
-      consistent.check <- con_solver_gorica(est = est, VCOV = VCOV, 
-                                            Amat = Amat, bvec = bvec, meq = meq)
-      ## remove any linear dependent rows from the constraint matrix. Amat
-      ## must be of full row rank.
-      # remove any zero vectors
-      allZero.idx <- rowSums(abs(Amat)) == 0
-      Amat <- Amat[!allZero.idx, , drop = FALSE]
-      bvec <- bvec[!allZero.idx]
-      # rank Amat
-      rank <- qr(Amat)$rank 
-      # singular value decomposition
-      s <- svd(Amat)
-      # continue untill Amat is of full-row rank
-      while (rank != length(s$d)) {
-        # check which singular values are zero
-        zero.idx <- which(zapsmall(s$d) <= 1e-16)
-        # remove linear dependent rows and reconstruct the constraint matrix
-        Amat <- s$u[-zero.idx, ] %*% diag(s$d) %*% t(s$v)
-        # zapping small ones to zero
-        Amat <- zapsmall(Amat)
-        bvec <- bvec[-zero.idx]
-        s <- svd(Amat)
-        if (debug) {
-          cat("rank = ", rank, " ... non-zero det. = ", length(s$d), "\n")
-        }
-      }
-    }
-  } else if (rAmat$rank < nrow(Amat) &&
-             !(se %in% c("none", "boot.model.based", "boot.standard")) &&
-             rAmat$rank != 0L) {
-    warning(paste("Restriktor Warning: No standard errors could be computed.
-                      The constraint matrix must be full row-rank.
-                      Try to set se = \"none\", \"boot.model.based\" or \"boot.standard\".")) 
-  }
+  # if (mix.weights == "pmvnorm") {
+  #   if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
+  #     ## check for inconsistent constraints: quadprog gives an error if constraints
+  #     ## are inconsistent
+  #     # consistent.check <- con_solver_gorica(est  = est, 
+  #     #                                       VCOV = VCOV, 
+  #     #                                       Amat = Amat, 
+  #     #                                       bvec = bvec, 
+  #     #                                       meq  = meq)
+  #     
+  #     ## remove any linear dependent rows from the constraint matrix. Amat
+  #     ## must be of full row rank.
+  #     # remove any zero vectors
+  #     allZero.idx <- rowSums(abs(Amat)) == 0
+  #     Amat <- Amat[!allZero.idx, , drop = FALSE]
+  #     bvec <- bvec[!allZero.idx]
+  #     # rank Amat
+  #     rank <- qr(Amat)$rank 
+  #     # singular value decomposition
+  #     s <- svd(Amat)
+  #     # continue untill Amat is of full-row rank
+  #     while (rank != length(s$d)) {
+  #       # check which singular values are zero
+  #       zero.idx <- which(zapsmall(s$d) <= 1e-16)
+  #       # remove linear dependent rows and reconstruct the constraint matrix
+  #       Amat <- s$u[-zero.idx, ] %*% diag(s$d) %*% t(s$v)
+  #       # zapping small ones to zero
+  #       Amat <- zapsmall(Amat)
+  #       bvec <- bvec[-zero.idx]
+  #       s <- svd(Amat)
+  #       if (debug) {
+  #         cat("rank = ", rank, " ... non-zero det. = ", length(s$d), "\n")
+  #       }
+  #     }
+  #   }
+  # } else if (rAmat$rank < nrow(Amat) &&
+  #            !(se %in% c("none", "boot.model.based", "boot.standard")) &&
+  #            rAmat$rank != 0L) {
+  #   warning(paste("Restriktor Warning: No standard errors could be computed.
+  #                     The constraint matrix must be full row-rank.
+  #                     Try to set se = \"none\", \"boot.model.based\" or \"boot.standard\".")) 
+  # }
   
   OUT <- list(CON      = CON, 
               parTable = parTable,

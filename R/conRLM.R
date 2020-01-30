@@ -105,8 +105,6 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                                  constraints = Amat, 
                                  bvec        = bvec, 
                                  meq         = meq, 
-                                 mix.weights = mix.weights,
-                                 se          = se,
                                  debug       = debug)  
     # a list with useful information about the restrictions.}
     CON <- restr.OUT$CON
@@ -133,6 +131,23 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     meq  <- 0L
   }
   
+  
+  rAmat <- GaussianElimination(t(Amat))
+  if (mix.weights == "pmvnorm") {
+    if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
+      ask <- askYesNo(paste("Restriktor WARNING: The constraint matrix is not full",
+                            "\nrow-rank, which is required for mix.weights = \"pmvnorm\".",
+                            "\nThis means that there might be redundant constraints (in that case, delete those or use mix.weights = \"boot\").",
+                            "\n\nTry to continu with mix.weights = \"boot\"?"), 
+                      prompts = getOption("askYesNo", gettext(c("Yes", "No"))))
+      if (is.na(ask) | !ask) {
+        stop("Stopped by user")
+      } else {
+        mix.weights <- "boot"
+      }
+      
+    }
+  } 
 
   if(ncol(Amat) != length(b.unrestr)) {
     stop("Restriktor ERROR: the columns of constraints does not", 
@@ -159,45 +174,6 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   correc <- 1.207617 
   R2.org <- (yMy - rMr) / (yMy + rMr * (correc - 1))
   
-  
-  is.augmented <- TRUE
-  # compute chi-square-bar weights
-  if (mix.weights != "none") {
-    if (nrow(Amat) == meq) {
-      # equality constraints only
-      wt.bar <- rep(0L, ncol(Sigma) + 1)
-      wt.bar.idx <- ncol(Sigma) - meq + 1
-      wt.bar[wt.bar.idx] <- 1
-    } else if (all(c(Amat) == 0)) { 
-      # unrestricted case
-      wt.bar <- c(rep(0L, p), 1)
-      is.augmented <- FALSE
-    } else if (mix.weights == "boot") { 
-      # compute chi-square-bar weights based on Monte Carlo simulation
-      wt.bar <- con_weights_boot(VCOV     = Sigma,
-                                 Amat     = Amat, 
-                                 meq      = meq, 
-                                 R        = mix.bootstrap,
-                                 parallel = parallel,
-                                 ncpus    = ncpus,
-                                 cl       = cl,
-                                 seed     = seed,
-                                 verbose  = verbose)
-      attr(wt.bar, "mix.bootstrap") <- mix.bootstrap 
-    } else if (mix.weights == "pmvnorm" && (meq < nrow(Amat))) {
-      # compute chi-square-bar weights based on pmvnorm
-      wt.bar <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
-    } 
-  } else {
-    wt.bar <- NA
-  }
-  attr(wt.bar, "method") <- mix.weights
-  
-  if (debug) {
-    print(list(mix.weights = wt.bar))
-  }
-  
-  timing$mix.weights <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
   
   # # check if the constraints are in line with the data    
@@ -227,7 +203,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 constraints = Amat, 
                 rhs         = bvec, 
                 neq         = meq, 
-                wt.bar      = wt.bar,
+                wt.bar      = NULL,
                 iact        = 0L,
                 converged   = object$converged, 
                 iter        = object$conv,
@@ -307,7 +283,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 constraints = Amat, 
                 rhs         = bvec, 
                 neq         = meq, 
-                wt.bar      = wt.bar,
+                wt.bar      = NULL,
                 iact        = rfit$iact,
                 converged   = rfit$converged, 
                 iter        = rfit$conv,
@@ -319,15 +295,27 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   OUT$se <- se 
   OUT$information <- 1 / stddev^2 * crossprod(X)
   if (se != "none") {
+    is.augmented <- TRUE
+    if (all(c(Amat) == 0)) { 
+      # unrestricted case
+      is.augmented <- FALSE
+    } 
+    
     if (!(se %in% c("boot.model.based","boot.standard"))) {
-      information.inv <- con_augmented_information(information  = OUT$information,
-                                                   is.augmented = is.augmented,
-                                                   X            = X, 
-                                                   b.unrestr    = b.unrestr, 
-                                                   b.restr      = b.restr,
-                                                   Amat         = Amat, 
-                                                   bvec         = bvec, 
-                                                   meq          = meq)
+      information.inv <- try(con_augmented_information(information  = OUT$information,
+                                                       is.augmented = is.augmented,
+                                                       X            = X, 
+                                                       b.unrestr    = b.unrestr, 
+                                                       b.restr      = b.restr,
+                                                       Amat         = Amat, 
+                                                       bvec         = bvec, 
+                                                       meq          = meq))
+      
+      if (inherits(information.inv, "try-error")) {
+        stop(paste("Restriktor Warning: No standard errors could be computed.
+                      Try to set se = \"none\", \"boot.model.based\" or \"boot.standard\"."))
+      }
+      
           
       attr(OUT$information, "inverted")  <- information.inv$information
       attr(OUT$information, "augmented") <- information.inv$information.augmented
@@ -369,6 +357,44 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     timing$standard.error <- (proc.time()[3] - start.time)
     start.time <- proc.time()[3]
   }
+  
+  ## determine level probabilities
+  if (mix.weights != "none") {
+    if (nrow(Amat) == meq) {
+      # equality constraints only
+      wt.bar <- rep(0L, ncol(Sigma) + 1)
+      wt.bar.idx <- ncol(Sigma) - meq + 1
+      wt.bar[wt.bar.idx] <- 1
+    } else if (all(c(Amat) == 0)) { 
+      # unrestricted case
+      wt.bar <- c(rep(0L, p), 1)
+    } else if (mix.weights == "boot") { 
+      # compute chi-square-bar weights based on Monte Carlo simulation
+      wt.bar <- con_weights_boot(VCOV     = Sigma,
+                                 Amat     = Amat, 
+                                 meq      = meq, 
+                                 R        = mix.bootstrap,
+                                 parallel = parallel,
+                                 ncpus    = ncpus,
+                                 cl       = cl,
+                                 seed     = seed,
+                                 verbose  = verbose)
+      attr(wt.bar, "mix.bootstrap") <- mix.bootstrap 
+    } else if (mix.weights == "pmvnorm" && (meq < nrow(Amat))) {
+      # compute chi-square-bar weights based on pmvnorm
+      wt.bar <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
+    } 
+  } else {
+    wt.bar <- NA
+  }
+  attr(wt.bar, "method") <- mix.weights
+  OUT$wt.bar <- wt.bar
+  
+  if (debug) {
+    print(list(mix.weights = wt.bar))
+  }
+  
+  timing$mix.weights <- (proc.time()[3] - start.time)
   
   OUT$timing$total <- (proc.time()[3] - start.time0)
   

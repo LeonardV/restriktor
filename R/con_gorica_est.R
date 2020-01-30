@@ -82,36 +82,42 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
     meq  <- 0L
   }
   
-  # # compute the reduced row-echelon form of the constraints matrix
-  # rAmat <- GaussianElimination(t(Amat))
-  # if (mix.weights == "pmvnorm") {
-  #   if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
-  #     stop(paste("Restriktor ERROR: The constraint matrix must have full row-rank.", 
-  #                "\n  There might be redundant constraints (in that case, delete those or use mix.weights = \"boot\")."))
-  #   }
-  # } 
-  
-  
-  ## remove any linear dependent rows from the constraint matrix
-  # determine the rank of the constraint matrix/
-  if (!all(Amat == 0)) {
-    # remove any zero vectors
-    allZero.idx <- rowSums(abs(Amat)) == 0
-    Amat <- Amat[!allZero.idx, , drop = FALSE]
-    bvec <- bvec[!allZero.idx]
-    rank <- qr(Amat)$rank
-    s <- svd(Amat)
-    while (rank != length(s$d)) {
-      # check which singular values are zero
-      zero.idx <- which(zapsmall(s$d) <= 1e-16)
-      # remove linear dependent rows and reconstruct the constraint matrix
-      Amat <- s$u[-zero.idx, ] %*% diag(s$d) %*% t(s$v)
-      Amat <- zapsmall(Amat)
-      bvec <- bvec[-zero.idx]
-      s <- svd(Amat)
-      #cat("rank = ", rank, " ... non-zero det = ", length(s$d), "\n")
+  rAmat <- GaussianElimination(t(Amat))
+  if (mix.weights == "pmvnorm") {
+    if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
+      ask <- askYesNo(paste("Restriktor WARNING: The constraint matrix is not full",
+                            "\nrow-rank, which is required for mix.weights = \"pmvnorm\".",
+                            "\nThis means that there might be redundant constraints (in that case, delete those or use mix.weights = \"boot\").",
+                            "\n\nTry to continu with mix.weights = \"boot\"?"), 
+                      prompts = getOption("askYesNo", gettext(c("Yes", "No"))))
+      if (is.na(ask) | !ask) {
+        stop("Stopped by user")
+      } else {
+        mix.weights <- "boot"
+      }
     }
-  }  
+  } 
+  
+  # ## remove any linear dependent rows from the constraint matrix
+  # # determine the rank of the constraint matrix/
+  # if (!all(Amat == 0)) {
+  #   # remove any zero vectors
+  #   allZero.idx <- rowSums(abs(Amat)) == 0
+  #   Amat <- Amat[!allZero.idx, , drop = FALSE]
+  #   bvec <- bvec[!allZero.idx]
+  #   rank <- qr(Amat)$rank
+  #   s <- svd(Amat)
+  #   while (rank != length(s$d)) {
+  #     # check which singular values are zero
+  #     zero.idx <- which(zapsmall(s$d) <= 1e-16)
+  #     # remove linear dependent rows and reconstruct the constraint matrix
+  #     Amat <- s$u[-zero.idx, ] %*% diag(s$d) %*% t(s$v)
+  #     Amat <- zapsmall(Amat)
+  #     bvec <- bvec[-zero.idx]
+  #     s <- svd(Amat)
+  #     #cat("rank = ", rank, " ... non-zero det = ", length(s$d), "\n")
+  #   }
+  # }  
   
   
   timing$constraints <- (proc.time()[3] - start.time)
@@ -126,42 +132,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
     stop("nrow(Amat) != length(bvec)")
   }
   
-  # compute chi-square-bar weights
-  if (mix.weights != "none") {
-    if (nrow(Amat) == meq) {
-      # equality constraints only
-      wt.bar <- rep(0L, ncol(Sigma) + 1)
-      wt.bar.idx <- ncol(Sigma) - meq + 1
-      wt.bar[wt.bar.idx] <- 1
-    } else if (all(c(Amat) == 0)) { 
-      # unrestricted case
-      wt.bar <- c(rep(0L, p), 1)
-    } else if (mix.weights == "boot") { 
-      # compute chi-square-bar weights based on Monte Carlo simulation
-      wt.bar <- con_weights_boot(VCOV     = Sigma,
-                                 Amat     = Amat, 
-                                 meq      = meq, 
-                                 R        = mix.bootstrap,
-                                 parallel = parallel,
-                                 ncpus    = ncpus,
-                                 cl       = cl,
-                                 seed     = seed,
-                                 verbose  = verbose)
-      attr(wt.bar, "mix.bootstrap") <- mix.bootstrap 
-    } else if (mix.weights == "pmvnorm" && (meq < nrow(Amat))) {
-      # compute chi-square-bar weights based on pmvnorm
-      wt.bar <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
-    } 
-  } else {
-    wt.bar <- NA
-  }
-  attr(wt.bar, "method") <- mix.weights
-  
-  if (debug) {
-    print(list(mix.weights = wt.bar))
-  }
-  
-  timing$mix.weights <- (proc.time()[3] - start.time)
+
   start.time <- proc.time()[3]
   
   # check if the constraints are not in line with the data, else skip optimization
@@ -179,7 +150,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
                 constraints = Amat, 
                 rhs         = bvec, 
                 neq         = meq, 
-                wt.bar      = wt.bar,
+                wt.bar      = NULL,
                 iact        = 0L, 
                 control     = control)  
   } else {
@@ -211,12 +182,50 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
                 constraints = Amat, 
                 rhs         = bvec, 
                 neq         = meq, 
-                wt.bar      = wt.bar,
+                wt.bar      = NULL,
                 iact        = out.solver$iact, 
                 control     = control)
   }
   
   
+  ## determine level probabilties
+  if (mix.weights != "none") {
+    if (nrow(Amat) == meq) {
+      # equality constraints only
+      wt.bar <- rep(0L, ncol(Sigma) + 1)
+      wt.bar.idx <- ncol(Sigma) - meq + 1
+      wt.bar[wt.bar.idx] <- 1
+    } else if (all(c(Amat) == 0)) { 
+      # unrestricted case
+      wt.bar <- c(rep(0L, p), 1)
+    } else if (mix.weights == "boot") { 
+      # compute chi-square-bar weights based on Monte Carlo simulation
+      wt.bar <- con_weights_boot(VCOV     = Sigma,
+                                 Amat     = Amat, 
+                                 meq      = meq, 
+                                 R        = mix.bootstrap,
+                                 parallel = parallel,
+                                 ncpus    = ncpus,
+                                 cl       = cl,
+                                 seed     = seed,
+                                 verbose  = verbose)
+      attr(wt.bar, "mix.bootstrap") <- mix.bootstrap 
+    } else if (mix.weights == "pmvnorm" && (meq < nrow(Amat))) {
+      # compute chi-square-bar weights based on pmvnorm
+      wt.bar <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
+    } 
+  } else {
+    wt.bar <- NA
+  }
+  attr(wt.bar, "method") <- mix.weights
+  
+  OUT$wt.bar <- wt.bar
+  
+  if (debug) {
+    print(list(mix.weights = wt.bar))
+  }
+  
+  timing$mix.weights <- (proc.time()[3] - start.time)
   OUT$timing$total <- (proc.time()[3] - start.time0)
   
   class(OUT) <- c("gorica_est")

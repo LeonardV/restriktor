@@ -10,7 +10,7 @@ penalty_goric <- function(Amat, meq, LP, correction = FALSE,
       PT  <- ( (N * (lPT + 1) / (N - lPT - 2)) ) 
     } else if (attr(LP, "method") == "boot") { 
       # if level-probabilities are simulated  
-      lPT <- 0 : ncol(Amat)
+      lPT <- 1 : ncol(Amat)
       PT  <- sum( ( (N * (lPT + 1) / (N - lPT - 2) ) ) * LP)
     # if level probabilities are computed using the multivariate normal distribution  
     } else if (attr(LP, "method") == "pmvnorm") {
@@ -23,7 +23,7 @@ penalty_goric <- function(Amat, meq, LP, correction = FALSE,
     if (all(c(Amat) == 0)) {
       PT <- 1 + ncol(Amat)
     } else if (attr(LP, "method") == "boot") {  
-      PT <- 1 + sum(0 : ncol(Amat) * LP)  
+      PT <- 1 + sum(1 : ncol(Amat) * LP)  
     } else if (attr(LP, "method") == "pmvnorm") {
       min.col <- ncol(Amat) - nrow(Amat) # p - q1 - q2
       max.col <- ncol(Amat) - meq        # p - q2

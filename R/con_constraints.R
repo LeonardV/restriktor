@@ -76,22 +76,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
   
   
   # rAmat <- GaussianElimination(t(Amat))
-  # if (mix.weights == "pmvnorm") {
-  #   if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
-  #     ask <- askYesNo(paste("Restriktor WARNING: The constraint matrix is not full",
-  #                           "\nrow-rank, which is required for mix.weights = \"pmvnorm\".",
-  #                           "\nThis means that there might be redundant constraints (in that case, delete those or use mix.weights = \"boot\").",
-  #                           "\n\nContinu with mix.weights = \"boot\"?"), 
-  #                     prompts = getOption("askYesNo", gettext(c("Yes", "No"))))
-  #     if (ask) {
-  #       mix.weights <- "boot" 
-  #     } else {
-  #       stop("Stopped by user")
-  #     }
-  #   }
-  # } 
-  
-  
+
   ## still to catch 
   #H1 <- 'x1 < 4; x1 > 1' # range restrictie
   #H1 <- 'x1 < 1; x1 > 1' # equality

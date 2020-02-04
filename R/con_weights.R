@@ -55,8 +55,17 @@ con_weights_boot <- function(VCOV, Amat, meq,
     }
   }
   dimL   <- ncol(VCOV) - iact
-  wt.bar <- sapply(1:ncol(VCOV), function(x) sum(x == dimL)) / R
-   
-  wt.bar
+  ## the length of wt.bar must be nrow(Amat) + 1. 
+  wt.bar <- c(table(dimL) / R)
+  
+  ## if length wt.bar != (nrow(Amat) + 1) then fill in 0 for the remaining LPs
+  dimWt <- rep(0, nrow(Amat) + 1 - meq)
+  dimWt[1:length(wt.bar)] <- wt.bar 
+   names(dimWt) <- 0:(nrow(Amat) - meq)
+  
+  #wt.bar <- sapply(0:ncol(VCOV), function(x) sum(x == dimL)) / R
+  
+  out <- dimWt
+  out
 }
 

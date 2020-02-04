@@ -4,8 +4,8 @@ con_pvalue_Fbar <- function(wt.bar, Ts.org, df.residual, type = "A",
   
   wt.method <- attr(wt.bar, "method")
   if (wt.method == "boot") {
-    idx.start <- 1 + (ncol(Amat) - nrow(Amat))
-    idx.end   <- 1 + (ncol(Amat) - meq) 
+    idx.start <- (ncol(Amat) - nrow(Amat))# + 1
+    idx.end   <- (ncol(Amat) - meq)# + 1
   }
   
   if (type == "global") {
@@ -22,10 +22,10 @@ con_pvalue_Fbar <- function(wt.bar, Ts.org, df.residual, type = "A",
     # p value based on the f-distribution
     # 
     if (wt.method == "boot") {
-      pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual, 
+      pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
                           wt.bar = wt.bar[idx.start:idx.end])
     } else if (wt.method == "pmvnorm") {
-      pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual, 
+      pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
                           wt.bar = wt.bar)
     } else {
       stop("Restriktor ERROR: mix.weights method ", sQuote(wt.method), " unknown.")
@@ -36,7 +36,7 @@ con_pvalue_Fbar <- function(wt.bar, Ts.org, df.residual, type = "A",
     # p value based on F-distribution or chi-square distribution
     if (wt.method == "boot") {
       pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
-                          wt.bar = wt.bar[idx.start:idx.end]) 
+                          wt.bar = wt.bar[idx.start:idx.end])
     } else if (wt.method == "pmvnorm") {
       pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
                           wt.bar = wt.bar)
@@ -47,10 +47,9 @@ con_pvalue_Fbar <- function(wt.bar, Ts.org, df.residual, type = "A",
     # compute df
     df.bar <- (meq - meq.alt):(nrow(Amat) - meq.alt)#meq:nrow(Amat)
     # p value based on F-distribution or chi-square distribution
-    
     if (wt.method == "boot") {
       pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
-                          wt.bar = rev(wt.bar[idx.start:idx.end])) 
+                          wt.bar = rev(wt.bar[idx.start:idx.end]))
     } else if (wt.method == "pmvnorm") {
       pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
                           wt.bar = rev(wt.bar))

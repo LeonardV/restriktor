@@ -695,9 +695,6 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                                  Amat     = Amat, 
                                  meq      = meq, 
                                  R        = attr(object$wt.bar, "mix.bootstrap"),
-                                 parallel = parallel,
-                                 ncpus    = ncpus,
-                                 cl       = cl,
                                  seed     = seed,
                                  verbose  = verbose)
       attr(wt.bar, "mix.bootstrap") <- attr(object$wt.bar, "mix.bootstrap")

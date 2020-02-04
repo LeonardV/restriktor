@@ -34,22 +34,25 @@ con_weights_boot <- function(VCOV, Amat, meq,
   ## create vector
   iact <- vector("numeric", R)
   for (i in 1:R) {
-    QP <- try(solve.QP(Dmat = Dmat, 
-                       dvec = dvec[i, ], 
-                       Amat = t(Amat),
-                       bvec = bvec, 
-                       meq  = meq))
-    if (verbose) {
-      cat(" ...number of active constraints =", length(QP$iact), "\n")
-    }
-    
-    if (inherits(QP, "try-error")) {
+    if (all(Amat %*% Z[i, ] - bvec >= 0 * bvec) & meq == 0) {
+      iact[i] <- 0L
+    } else {
+      QP <- try(solve.QP(Dmat = Dmat, 
+                         dvec = dvec[i, ], 
+                         Amat = t(Amat),
+                         bvec = bvec, 
+                         meq  = meq))
       if (verbose) {
-        cat("quadprog FAILED\n")
+        cat(" ...number of active constraints =", length(QP$iact), "\n")
       }
-      iact[i] <- as.numeric(NA)
-    }    
-    iact[i] <- ifelse(QP$iact[1] == 0L, 0L, length(QP$iact)) 
+      if (inherits(QP, "try-error")) {
+        if (verbose) {
+          cat("quadprog FAILED\n")
+        }
+        iact[i] <- as.numeric(NA)
+      }    
+      iact[i] <- ifelse(QP$iact[1] == 0L, 0L, length(QP$iact)) 
+    }
   }
   dimL   <- ncol(VCOV) - iact
   wt.bar <- sapply(1:ncol(VCOV), function(x) sum(x == dimL)) / R

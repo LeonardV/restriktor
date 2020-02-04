@@ -10,8 +10,7 @@ and level probabilities). It can be used directly and is called by
 the \code{conTest} function.
 }
 \usage{con_weights_boot(VCOV, Amat, meq, 
-                 R = 9999L, parallel = c("no", "multicore", "snow"),
-                 ncpus = 1L, cl = NULL, seed = NULL, verbose = FALSE, ...)
+                 R = 99999L, seed = NULL, verbose = FALSE, ...)
 }
 
 \arguments{
@@ -34,18 +33,7 @@ the \code{conTest} function.
   equality constraints. }
   
   \item{R}{integer; number of bootstrap draws for \code{mix.bootstrap}. 
-  The default value is set to 99999. Parallel support is available.}
-  
-  \item{parallel}{the type of parallel operation to be used 
-  (if any). If missing, the default is set "no".}
-  
-  \item{ncpus}{integer: number of processes to be used in parallel 
-  operation: typically one would chose this to the number of 
-  available CPUs.}
-  
-  \item{cl}{an optional parallel or snow cluster for use if 
-  parallel = "snow". If not supplied, a cluster on the local 
-  machine is created for the duration of the conTest call.}
+  The default value is set to 99999.}
   
   \item{seed}{seed value.}
   
@@ -69,8 +57,8 @@ the \code{conTest} function.
 W <- matrix(c(1,0.5,0.5,1),2,2)
 Amat <- rbind(c(0,1))
 meq <- 0L
-# we only generate 999 bootstrap samples in this 
+# we only generate 99 bootstrap samples in this 
 # example; in practice you may wish to use a much higher number.
-wt.bar <- con_weights_boot(W, Amat, meq, R = 999)
+wt.bar <- con_weights_boot(W, Amat, meq, R = 99)
 wt.bar
 }

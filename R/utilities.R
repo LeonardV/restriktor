@@ -97,3 +97,37 @@ robWeights <- function(w, eps = 0.1/length(w), eps1 = 0.001, ...) {
     }
   }
 }
+
+
+# 
+# remove_linear_dependent_rows_matrix <- function(Amat, bvec) {
+#   ## remove any linear dependent rows from the constraint matrix. Amat must be of full row rank.
+#   # remove any zero vectors
+#   allZero.idx <- rowSums(abs(Amat)) == 0
+#   Amat <- Amat[!allZero.idx, , drop = FALSE]
+#   bvec <- bvec[!allZero.idx]
+#   # what is the rank of Amat
+#   rank <- qr(Amat)$rank
+#   # decompose Amat using svd
+#   s <- svd(Amat)
+#   # continue untill Amat is of full-row rank
+#   while (rank != length(s$d)) {
+#     # check which singular values are zero
+#     zero.idx <- which(zapsmall(s$d) <= 1e-16)
+#     # remove linear dependent rows and reconstruct the constraint matrix
+#     Amat <- s$u[-zero.idx, ] %*% diag(s$d) %*% t(s$v)
+#     # zapping small ones to zero
+#     Amat <- zapsmall(Amat)
+#     bvec <- bvec[-zero.idx]
+#     s <- svd(Amat)
+#   }
+#  
+#   OUT <- list(Amat, bvec)
+#   
+#   OUT
+# }
+# 
+
+
+#rankifremoved <- sapply(1:ncol(Amat), function (x) qr(Amat[-x, ])$rank)
+#which(rankifremoved == max(rankifremoved))

@@ -2,60 +2,68 @@
 con_pvalue_Fbar <- function(wt.bar, Ts.org, df.residual, type = "A",
                             Amat, bvec, meq = 0L, meq.alt = 0L) {
   
-  wt.method <- attr(wt.bar, "method")
-  if (wt.method == "boot") {
-    idx.start <- (ncol(Amat) - nrow(Amat))# + 1
-    idx.end   <- (ncol(Amat) - meq)# + 1
-  }
+  # wt.method <- attr(wt.bar, "method")
+  # if (wt.method == "boot") {
+  #   idx.start <- (ncol(Amat) - nrow(Amat)) + 1
+  #   idx.end   <- (ncol(Amat) - meq) + 1
+  # }
   
   if (type == "global") {
     # compute df
     bvecG <- attr(bvec, "bvec.global")
     df.bar <- (length(bvecG) - nrow(Amat)):(length(bvecG) - meq)
     
-    # for testing purposes
+    ## for testing purposes
     # r <- qr(attr(Amat, "Amat_global"))$rank
     # q <- qr(Amat)$rank
     # i <- 0:q
     # 1 - pfbar(Ts.org, df1 = r-q+i, df2 = df.residual, wt.bar = wt.bar)
     
-    # p value based on the f-distribution
+    ## p value based on the f-distribution
+    pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual, wt.bar = wt.bar)
+    
     # 
-    if (wt.method == "boot") {
-      pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
-                          wt.bar = wt.bar[idx.start:idx.end])
-    } else if (wt.method == "pmvnorm") {
-      pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
-                          wt.bar = wt.bar)
-    } else {
-      stop("Restriktor ERROR: mix.weights method ", sQuote(wt.method), " unknown.")
-    }
+    # if (wt.method == "boot") {
+    #   pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
+    #                       wt.bar = wt.bar[idx.start:idx.end])
+    # } else if (wt.method == "pmvnorm") {
+    #   pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
+    #                       wt.bar = wt.bar)
+    # } else {
+    #   stop("Restriktor ERROR: mix.weights method ", sQuote(wt.method), " unknown.")
+    # }
   } else if(type == "A") {
     # compute df
     df.bar <- 0:(nrow(Amat) - meq)
-    # p value based on F-distribution or chi-square distribution
-    if (wt.method == "boot") {
-      pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
-                          wt.bar = wt.bar[idx.start:idx.end])
-    } else if (wt.method == "pmvnorm") {
-      pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
-                          wt.bar = wt.bar)
-    } else {
-      stop("Restriktor ERROR: mix.weights method ", sQuote(wt.method), " unknown.")
-    }
+    ## p value based on F-distribution or chi-square distribution
+    pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
+                        wt.bar = wt.bar)
+    
+    # if (wt.method == "boot") {
+    #   pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
+    #                       wt.bar = wt.bar[idx.start:idx.end])
+    # } else if (wt.method == "pmvnorm") {
+    #   pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
+    #                       wt.bar = wt.bar)
+    # } else {
+    #   stop("Restriktor ERROR: mix.weights method ", sQuote(wt.method), " unknown.")
+    # }
   } else if (type == "B") {
     # compute df
     df.bar <- (meq - meq.alt):(nrow(Amat) - meq.alt)#meq:nrow(Amat)
-    # p value based on F-distribution or chi-square distribution
-    if (wt.method == "boot") {
-      pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
-                          wt.bar = rev(wt.bar[idx.start:idx.end]))
-    } else if (wt.method == "pmvnorm") {
-      pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
-                          wt.bar = rev(wt.bar))
-    } else {
-      stop("Restriktor ERROR: mix.weights method ", sQuote(wt.method), " unknown.")
-    }
+    ## p value based on F-distribution or chi-square distribution
+    pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
+                        wt.bar = rev(wt.bar))
+    
+    # if (wt.method == "boot") {
+    #   pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
+    #                       wt.bar = rev(wt.bar[idx.start:idx.end]))
+    # } else if (wt.method == "pmvnorm") {
+    #   pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
+    #                       wt.bar = rev(wt.bar))
+    # } else {
+    #   stop("Restriktor ERROR: mix.weights method ", sQuote(wt.method), " unknown.")
+    # }
   } else  {
     stop("hypothesis test type ", sQuote(type), " unknown.")
   }

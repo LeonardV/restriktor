@@ -85,15 +85,19 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
   rAmat <- GaussianElimination(t(Amat))
   if (mix.weights == "pmvnorm") {
     if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
-      ask <- askYesNo(paste("Restriktor WARNING: The constraint matrix is not full",
+      ask <- askYesNo(paste0("Restriktor WARNING: The constraint matrix is not full",
                             "\nrow-rank, which is required for mix.weights = \"pmvnorm\".",
-                            "\nThis means that there might be redundant constraints (in that case, delete those or use mix.weights = \"boot\").",
+                            "\nThis means that there might be redundant constraints. In that", 
+                            "\ncase, delete those or use mix.weights = \"boot\").",
                             "\n\nTry to continu with mix.weights = \"boot\"?"), 
                       prompts = getOption("askYesNo", gettext(c("Yes", "No"))))
-      if (is.na(ask) | !ask) {
-        stop("Stopped by user")
-      } else {
+      
+      if (is.na(ask)) {
+        stop("Stopped by user")  
+      } else if (ask) {
         mix.weights <- "boot"
+      } else {
+        
       }
     }
   } 
@@ -188,7 +192,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
   }
   
   
-  ## determine level probabilties
+  ## determine level probabilities
   if (mix.weights != "none") {
     if (nrow(Amat) == meq) {
       # equality constraints only
@@ -204,9 +208,6 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
                                  Amat     = Amat, 
                                  meq      = meq, 
                                  R        = mix.bootstrap,
-                                 parallel = parallel,
-                                 ncpus    = ncpus,
-                                 cl       = cl,
                                  seed     = seed,
                                  verbose  = verbose)
       attr(wt.bar, "mix.bootstrap") <- mix.bootstrap 

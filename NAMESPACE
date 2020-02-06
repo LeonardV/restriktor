@@ -28,7 +28,7 @@ importFrom("ic.infer",
            #nchoosek, NOT EXPORTED!
            ic.weights)
 
-importFrom("utils", "combn", "packageDescription", "askYesNo")
+importFrom("utils", "combn", "packageDescription", "menu")
 
 importFrom("stats", "coef", "df.residual", "dnorm", "fitted",
            "formula", "frequency", "median", "model.matrix",

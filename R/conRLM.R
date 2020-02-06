@@ -135,18 +135,17 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   rAmat <- GaussianElimination(t(Amat))
   if (mix.weights == "pmvnorm") {
     if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
-      ask <- askYesNo(paste0("Restriktor WARNING: The constraint matrix is not full",
-                             "\nrow-rank, which is required for mix.weights = \"pmvnorm\".",
-                             "\nThis means that there might be redundant constraints. In that", 
-                             "\ncase, delete those or use mix.weights = \"boot\").",
-                             "\n\nTry to continu with mix.weights = \"boot\"?"), 
-                      prompts = getOption("askYesNo", gettext(c("Yes", "No"))))
-      if (is.na(ask) | !ask) {
-        stop("Stopped by user")
-      } else {
-        mix.weights <- "boot"
-      }
+      rank.txt <- paste0("Restriktor WARNING: The constraint matrix is not full nrow-rank, which is a requirement",
+                         "\nfor mix.weights = \"pmvnorm\". This means that there might be redundant constraints.",
+                         "\nIn that case, delete those or try to use mix.weights = \"boot\".", 
+                         "\n\nTry to continu with mix.weights = \"boot\"?")
       
+      ask <- menu(c("Yes", "No"), title = rank.txt)
+      if (ask == 1) {
+        mix.weights <- "boot"
+      } else {
+        stop("Stopped by user")
+      }
     }
   } 
 

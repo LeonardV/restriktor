@@ -1,13 +1,15 @@
-# aanpassen class goric en gorica om problemen met het goric en gorica package te voorkomen
+goric <- function(object, ...) {
+  UseMethod("goric", object)
+}
 
-goric <- function(object, ..., 
-                  comparison = c("unconstrained", "complement", "none"), 
-                  VCOV = NULL, sample.nobs = NULL,
-                  type = "goric", bound = NULL, debug = FALSE) {
-  
+
+goric.default <- function(object, ..., 
+                          comparison = c("unconstrained", "complement", "none"), 
+                          VCOV = NULL, sample.nobs = NULL,
+                          type = "goric", bound = NULL, debug = FALSE) {
+
   mc <- match.call()
-  CALL <- as.list(mc)
-  CALL[[1]] <- NULL
+  CALL <- as.list(mc[-1])
   
   # some checks
   comparison <- tolower(comparison)
@@ -63,7 +65,7 @@ goric <- function(object, ...,
       objectnames[i] <- as.character(CALL[[i]])
     }
   # if the constraints syntax is of class character, e.g., x1 < x2; x2 < x3
-  } else if ( inherits(object, "lm") && all(isCharacter) ) {
+  } else if (inherits(object, "lm") && all(isCharacter)) {
     constraints <- ldots2[isCharacter]
     # standard errors are not needed
     ldots3 <- ldots[m.restr > 0L]
@@ -759,6 +761,106 @@ goric <- function(object, ...,
 
 
 
+goric.lavaan <- function(object, ...,
+                         comparison = "unconstrained",
+                         type = "gorica",
+                         standardized = FALSE,
+                         bound = NULL, debug = FALSE) {
+  
+  if (!inherits(object, "lavaan")) {
+    stop("Restriktor ERROR: the object must be of class lavaan.")
+  }
+  
+  objectList <- list(...)
+  est <- con_gorica_est_lav(object, standardized)
+  objectList$object       <- est$estimate
+  objectList$VCOV         <- est$VCOV
+  objectList$comparison   <- comparison
+  objectList$type         <- type
+  objectList$bound        <- bound
+  objectList$debug <- debug
+  if (type == "goricac") {
+    objectList$sample.nobs <- lavInspect(object, what = "ntotal")
+  }
+  res <- do.call(goric.default, objectList)
+  
+  res
+}
+
+
+goric.lm <- function(object, ...,
+                     comparison = "unconstrained",
+                     type = "gorica",
+                     bound = NULL, debug = FALSE) {
+  
+  if (!inherits(object, "lm")) {
+    stop("Restriktor ERROR: the object must be of class lm, glm, mlm, rlm.")
+  }
+  
+  objectList <- list(...)
+  objectList$object       <- object
+  objectList$comparison   <- comparison
+  objectList$type         <- type
+  objectList$bound        <- bound
+  objectList$debug        <- debug
+  if (type == "goricac") {
+    objectList$sample.nobs <- length(residuals(object))
+  }
+  res <- do.call(goric.default, objectList)
+  
+  res
+}
+
+
+goric.restriktor <- function(object, ...,
+                             comparison = "unconstrained",
+                             type = "gorica",
+                             bound = NULL, debug = FALSE) {
+  
+  if (!inherits(object, "restriktor")) {
+    stop("Restriktor ERROR: the object must be of class restriktor.")
+  }
+  
+  objectList <- list(...)
+  objectList$object       <- object
+  objectList$comparison   <- comparison
+  objectList$type         <- type
+  objectList$bound        <- bound
+  objectList$debug        <- debug
+  if (type == "goricac") {
+    objectList$sample.nobs <- length(residuals(object))
+  }
+  res <- do.call(goric.default, objectList)
+  
+  res
+}
+
+
+goric.numeric <- function(object, ...,
+                             comparison = "unconstrained",
+                             type = "gorica", sample.nobs = NULL,
+                             bound = NULL, debug = FALSE) {
+  
+  if (!inherits(object, "numeric")) {
+    stop("Restriktor ERROR: the object must be of class numeric.")
+  }
+  
+  objectList <- list(...)
+  objectList$object       <- object
+  objectList$comparison   <- comparison
+  objectList$type         <- type
+  objectList$bound        <- bound
+  objectList$debug        <- debug
+  if (type == "goricac") {
+    objectList$sample.nobs <- sample.nobs
+  }
+  res <- do.call(goric.default, objectList)
+  
+  res
+}
+
+
+
 print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
 
   type <- x$type
@@ -795,7 +897,6 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   } 
   invisible(x)
 }
-
 
 
 summary.con_goric <- function(object, brief = TRUE, 

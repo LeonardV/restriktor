@@ -805,7 +805,15 @@ goric.lm <- function(object, ...,
     stop("Restriktor ERROR: the object must be of class lm, glm, mlm, rlm.")
   }
   
+  
   objectList <- list(...)
+  mcList <- as.list(match.call())
+  mcList <- mcList[-c(1)]
+  mcList$object       <- NULL
+  mcList$comparison   <- NULL
+  mcList$type         <- NULL
+  objectList <- mcList
+  
   objectList$object       <- object
   objectList$comparison   <- comparison
   objectList$type         <- type
@@ -845,16 +853,26 @@ goric.restriktor <- function(object, ...,
 
 
 goric.numeric <- function(object, ...,
-                             comparison = "unconstrained",
-                             type = "gorica", sample.nobs = NULL,
-                             bound = NULL, debug = FALSE) {
+                          VCOV = NULL,
+                          comparison = "unconstrained",
+                          type = "gorica", sample.nobs = NULL,
+                          bound = NULL, debug = FALSE) {
   
   if (!inherits(object, "numeric")) {
     stop("Restriktor ERROR: the object must be of class numeric.")
   }
   
   objectList <- list(...)
+  mcList <- as.list(match.call())
+  mcList <- mcList[-c(1)]
+  mcList$object       <- NULL
+  mcList$comparison   <- NULL
+  mcList$type         <- NULL
+  mcList$VCOV         <- NULL
+  objectList <- list(as.name(names(mcList)))
+  
   objectList$object       <- object
+  objectList$VCOV         <- VCOV
   objectList$comparison   <- comparison
   objectList$type         <- type
   objectList$bound        <- bound

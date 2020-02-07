@@ -772,6 +772,14 @@ goric.lavaan <- function(object, ...,
   }
   
   objectList <- list(...)
+  mcList <- as.list(match.call())
+  mcList <- mcList[-c(1)]
+  mcList$object       <- NULL
+  mcList$comparison   <- NULL
+  mcList$type         <- NULL
+  mcList$standardized <- NULL
+  objectList <- mcList
+  
   est <- con_gorica_est_lav(object, standardized)
   objectList$object       <- est$estimate
   objectList$VCOV         <- est$VCOV

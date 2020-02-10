@@ -59,7 +59,7 @@ goric.default <- function(object, ...,
     idx  <- length(conList) 
     objectnames <- vector("character", idx)
     for (i in 1:idx) {
-      if (length(as.character(CALL[[i]])) > 1) {
+      if (length(as.character(CALL[[i]])) > 1) { 
         CALL[[i]] <- paste0("H", i)
       }
       objectnames[i] <- as.character(CALL[[i]])
@@ -132,7 +132,7 @@ goric.default <- function(object, ...,
       # add unrestricted object to output
       ans$model.org <- object
       # unrestricted VCOV
-      VCOV <- vcov(ans$model.org)
+      VCOV <- vcov(ans$model.org) 
       sample.nobs <- nrow(model.frame(object))
       idx <- length(conList) 
       objectnames <- vector("character", idx)
@@ -869,7 +869,12 @@ goric.numeric <- function(object, ...,
   mcList$comparison   <- NULL
   mcList$type         <- NULL
   mcList$VCOV         <- NULL
-  objectList <- list(as.name(names(mcList)))
+  
+  if (any(names(mcList) == "")) {
+    objectList <- mcList 
+  } else {
+    objectList <- list(as.name(names(mcList))) 
+  }
   
   objectList$object       <- object
   objectList$VCOV         <- VCOV

@@ -1,5 +1,5 @@
 goric <- function(object, ...) {
-  UseMethod("goric", object)
+  UseMethod("goric")
 }
 
 
@@ -668,6 +668,11 @@ goric.default <- function(object, ...,
   } else if (comparison == "complement") {
     ## compute loglik-value, goric(a)-values, and PT-values if comparison = complement
     PTm <- unlist(lapply(isSummary, function(x) attr(x$goric, "penalty")))
+    
+    if (debug) {
+     print(PTm)
+    }
+    
     # The PTm should not be corrected here! The PTm is already corrected in the 
     # restriktor.summary() function.
     if (type %in% c("goric", "goricc")) {
@@ -763,7 +768,7 @@ goric.default <- function(object, ...,
 
 goric.lavaan <- function(object, ...,
                          comparison = "unconstrained",
-                         type = "gorica",
+                         type = "goric",
                          standardized = FALSE,
                          bound = NULL, debug = FALSE) {
   
@@ -798,7 +803,7 @@ goric.lavaan <- function(object, ...,
 
 goric.lm <- function(object, ...,
                      comparison = "unconstrained",
-                     type = "gorica",
+                     type = "goric",
                      bound = NULL, debug = FALSE) {
   
   if (!inherits(object, "lm")) {
@@ -830,7 +835,7 @@ goric.lm <- function(object, ...,
 
 goric.restriktor <- function(object, ...,
                              comparison = "unconstrained",
-                             type = "gorica",
+                             type = "goric",
                              bound = NULL, debug = FALSE) {
   
   if (!inherits(object, "restriktor")) {
@@ -855,7 +860,7 @@ goric.restriktor <- function(object, ...,
 goric.numeric <- function(object, ...,
                           VCOV = NULL,
                           comparison = "unconstrained",
-                          type = "gorica", sample.nobs = NULL,
+                          type = "goric", sample.nobs = NULL,
                           bound = NULL, debug = FALSE) {
   
   if (!inherits(object, "numeric")) {

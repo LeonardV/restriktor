@@ -768,12 +768,16 @@ goric.default <- function(object, ...,
 
 goric.lavaan <- function(object, ...,
                          comparison = "unconstrained",
-                         type = "goric",
+                         type = "gorica",
                          standardized = FALSE,
                          bound = NULL, debug = FALSE) {
   
   if (!inherits(object, "lavaan")) {
     stop("Restriktor ERROR: the object must be of class lavaan.")
+  }
+  
+  if (!c(type %in% c("gorica", "goricac"))) {
+    stop("Restriktor ERROR: object of class lavaan is only supported for type = 'gorica(c)'.")
   }
   
   objectList <- list(...)
@@ -860,11 +864,15 @@ goric.restriktor <- function(object, ...,
 goric.numeric <- function(object, ...,
                           VCOV = NULL,
                           comparison = "unconstrained",
-                          type = "goric", sample.nobs = NULL,
+                          type = "gorica", sample.nobs = NULL,
                           bound = NULL, debug = FALSE) {
   
   if (!inherits(object, "numeric")) {
     stop("Restriktor ERROR: the object must be of class numeric.")
+  }
+  
+  if (!c(type %in% c("gorica", "goricac"))) {
+    stop("Restriktor ERROR: object of class numeric is only supported for type = 'gorica(c)'.")
   }
   
   objectList <- list(...)

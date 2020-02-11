@@ -18,6 +18,8 @@ con_weights <- function(cov, meq) {
 ## compute weights based on simulation.
 ## REF: Silvapulle and Sen (2005, p. 79). Constrained Statistical Inference: Order, 
 ## Inequality, and Shape Constraints. Hoboken, {NJ}: Wiley
+
+## Add parallel option
 con_weights_boot <- function(VCOV, Amat, meq, 
                              R = 99999L, seed = NULL, verbose = FALSE, ...) {
   
@@ -58,17 +60,10 @@ con_weights_boot <- function(VCOV, Amat, meq,
     }
   }
   dimL   <- ncol(VCOV) - iact
-  ## the length of wt.bar must be nrow(Amat) + 1. 
-  wt.bar <- c(table(dimL) / R)
+
+  wt.bar <- sapply(0:ncol(VCOV), function(x) sum(x == dimL)) / R
   
-  ## if length wt.bar != (nrow(Amat) + 1) then fill in 0 for the remaining LPs
-  dimWt <- rep(0, nrow(Amat) + 1 - meq)
-  dimWt[1:length(wt.bar)] <- wt.bar 
-   names(dimWt) <- 0:(nrow(Amat) - meq)
-  
-  #wt.bar <- sapply(0:ncol(VCOV), function(x) sum(x == dimL)) / R
-  
-  out <- dimWt
+  out <- wt.bar #dimWt
   out
 }
 

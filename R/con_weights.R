@@ -18,10 +18,10 @@ con_weights <- function(cov, meq) {
 ## compute weights based on simulation.
 ## REF: Silvapulle and Sen (2005, p. 79). Constrained Statistical Inference: Order, 
 ## Inequality, and Shape Constraints. Hoboken, {NJ}: Wiley
-
-## Add parallel option
 con_weights_boot <- function(VCOV, Amat, meq, 
-                             R = 99999L, seed = NULL, verbose = FALSE, ...) {
+                             R = 99999L, parallel = c("no", "multicore", "snow"),
+                             ncpus = 1L, cl = NULL, seed = NULL, 
+                             verbose = FALSE, ...) {
   
   ## seed
   if (!is.null(seed))
@@ -30,40 +30,71 @@ con_weights_boot <- function(VCOV, Amat, meq,
     runif(1)
   RNGstate <- .Random.seed
   
+  parallel <- match.arg(parallel)
+  have_mc <- have_snow <- FALSE
+  if (parallel != "no" && ncpus > 1L) {
+    if (parallel == "multicore") 
+      have_mc <- .Platform$OS.type != "windows"
+    else if (parallel == "snow") 
+      have_snow <- TRUE
+    if (!have_mc && !have_snow) 
+      ncpus <- 1L  
+  }
+  
   ## weights do not depend on bvec.
   bvec <- rep(0L, nrow(Amat)) 
   invW <- solve(VCOV) 
   Dmat <- 2*invW
   Z <- rmvnorm(n = R, mean = rep(0, ncol(VCOV)), sigma = VCOV)
-  dvec <- 2*(Z %*% invW)  
-  ## create vector
-  iact <- vector("numeric", R)
-  for (i in 1:R) {
-    if (all(Amat %*% Z[i, ] - bvec >= 0 * bvec) & meq == 0) {
-      iact[i] <- 0L
-    } else {
-      QP <- try(solve.QP(Dmat = Dmat, 
-                         dvec = dvec[i, ], 
-                         Amat = t(Amat),
-                         bvec = bvec, 
-                         meq  = meq))
-      if (verbose) {
-        cat(" ...number of active constraints =", length(QP$iact), "\n")
+  dvec <- 2*(Z %*% invW)
+  res <- vector("numeric", R)
+  
+  
+  fn <- function(b) {
+    
+    QP <- solve.QP(Dmat = Dmat, 
+                   dvec = b, 
+                   Amat = t(Amat),
+                   bvec = bvec, 
+                   meq  = meq)
+    if (verbose) {
+      cat(" ...active inequality constraints =", QP$iact, "\n")
+    }
+    
+    if (QP$iact[1] == 0L) {
+      return(0L) 
+    } else { 
+      return(length(QP$iact))
+    }  
+  }
+  
+  RR <- sum(R)
+  res <- if (ncpus > 1L && (have_mc || have_snow)) {
+    if (have_mc) {
+      parallel::parApply(cl, dvec, 1, FUN = fn)
+    }
+    else if (have_snow) {
+      if (is.null(cl)) {
+        cl <- parallel::makePSOCKcluster(rep("localhost",
+                                             ncpus))
+        parallel::clusterExport(cl, c("solve.QP"))
+        if (RNGkind()[1L] == "L'Ecuyer-CMRG")
+          parallel::clusterSetRNGStream(cl)
+        res <- parallel::parRapply(cl, dvec, fn)
+        parallel::stopCluster(cl)
+        res
       }
-      if (inherits(QP, "try-error")) {
-        if (verbose) {
-          cat("quadprog FAILED\n")
-        }
-        iact[i] <- as.numeric(NA)
-      }    
-      iact[i] <- ifelse(QP$iact[1] == 0L, 0L, length(QP$iact)) 
+      else parallel::parRapply(cl, dvec, fn)
     }
   }
-  dimL   <- ncol(VCOV) - iact
-
+  else apply(dvec, 1, fn)
+  
+  dimL   <- ncol(VCOV) - res
   wt.bar <- sapply(0:ncol(VCOV), function(x) sum(x == dimL)) / R
   
-  out <- wt.bar #dimWt
-  out
+  
+  OUT <- wt.bar
+  OUT
 }
+
 

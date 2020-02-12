@@ -205,6 +205,9 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
                                  Amat     = Amat, 
                                  meq      = meq, 
                                  R        = mix.bootstrap,
+                                 parallel = parallel, 
+                                 ncpus    = ncpus, 
+                                 cl       = cl,
                                  seed     = seed,
                                  verbose  = verbose)
       attr(wt.bar, "mix.bootstrap") <- mix.bootstrap 

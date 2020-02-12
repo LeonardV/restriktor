@@ -356,6 +356,9 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                                  Amat     = Amat, 
                                  meq      = meq, 
                                  R        = mix.bootstrap,
+                                 parallel = parallel, 
+                                 ncpus    = ncpus, 
+                                 cl       = cl,
                                  seed     = seed,
                                  verbose  = verbose)
       attr(wt.bar, "mix.bootstrap") <- mix.bootstrap 

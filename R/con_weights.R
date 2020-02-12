@@ -77,7 +77,7 @@ con_weights_boot <- function(VCOV, Amat, meq,
       if (is.null(cl)) {
         cl <- parallel::makePSOCKcluster(rep("localhost",
                                              ncpus))
-        parallel::clusterExport(cl, c("solve.QP"))
+        #clusterExport(cl, c("solve.QP"))
         if (RNGkind()[1L] == "L'Ecuyer-CMRG")
           parallel::clusterSetRNGStream(cl)
         res <- parallel::parRapply(cl, dvec, fn)

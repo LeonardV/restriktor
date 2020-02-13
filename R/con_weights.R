@@ -19,10 +19,9 @@ con_weights <- function(cov, meq) {
 ## REF: Silvapulle and Sen (2005, p. 79). Constrained Statistical Inference: Order, 
 ## Inequality, and Shape Constraints. Hoboken, {NJ}: Wiley
 con_weights_boot <- function(VCOV, Amat, meq, 
-                             R = 9999, parallel = c("no", "multicore", "snow"),
+                             R = 99999L, parallel = c("no", "multicore", "snow"),
                              ncpus = 1L, cl = NULL, seed = NULL, 
                              verbose = FALSE, ...) {
-  
   
   parallel <- match.arg(parallel)
   have_mc <- have_snow <- FALSE
@@ -104,7 +103,7 @@ con_weights_boot <- function(VCOV, Amat, meq,
   # ncol(VCOV) = maximum number of constraints
   # iact       = number of active inequality constraints
   dimL   <- ncol(VCOV) - iact
-  wt.bar <- sapply(1:(ncol(VCOV) + 1), function(x) sum(x == (dimL + 1))) / R
+  wt.bar <- sapply(0:ncol(VCOV), function(x) sum(x == dimL)) / R
   
   wt.bar
 }

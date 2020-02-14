@@ -724,9 +724,9 @@ goric.default <- function(object, ...,
     ans$relative.gw <- rw
   }
   
-  if (comparison == "complement" && is.null(bound)) {
-    ans$ormle$b.restr.complement <- betasc
-  }
+  # if (comparison == "complement" && is.null(bound)) {
+  #   ans$ormle$b.restr.complement <- betasc
+  # }
   
   # list all object estimates
   coefs <- lapply(conList, FUN = function(x) { coef(x) } )

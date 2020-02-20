@@ -95,30 +95,34 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
     meq  <- 0L
   } 
   
-  # if only new parameters are defined and no constraints
+  ## if only new parameters are defined and no constraints
   if (length(Amat) == 0L) {
     Amat <- rbind(rep(0L, p))
     bvec <- rep(0L, nrow(Amat))
     meq  <- 0L
   }
   
+  
+  ## check if constraint matrix is of full-row rank. 
   rAmat <- GaussianElimination(t(Amat))
   if (mix.weights == "pmvnorm") {
     if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
-      rank.txt <- paste0("Restriktor WARNING: The constraint matrix is not full nrow-rank, which is a requirement",
-                         "\nfor mix.weights = \"pmvnorm\". This means that there might be redundant constraints.",
-                         "\nIn that case, delete those or try to use mix.weights = \"boot\".", 
-                         "\n\nTry to continu with mix.weights = \"boot\"?")
-      
-      ask <- menu(c("Yes", "No"), title = rank.txt)
-      if (ask == 1) {
-        mix.weights <- "boot"
-      } else {
-        stop("Stopped by user")
-      }
+      warning(paste("\nRestriktor WARNING: The constraint matrix is not full row-rank, which is a requirement
+                    for mix.weights = \"pmvnorm\". This means that there might be redundant constraints.
+                    To continue, I have set mix.weights to \"boot\" (see ?restriktor for more information)."))
+      mix.weights <- "boot"
     }
-  } 
+  } else if (rAmat$rank < nrow(Amat) &&
+             !(se %in% c("none", "boot.model.based", "boot.standard")) &&
+             rAmat$rank != 0L) {
+    se <- "none"
+    warning(paste("\nRestriktor Warning: No standard errors could be computed.
+                    The constraint matrix must be full row-rank.
+                    Try se = \"boot.model.based\" or \"boot.standard\"."))
+  }
   
+  
+  ## some checks
   if (ncol(Amat) != length(b.unrestr)) {
     stop("Restriktor ERROR: length coefficients and the number of",
          "\n       columns constraints-matrix must be identical")
@@ -128,23 +132,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
     stop("nrow(Amat) != length(bvec)")
   }
   
-  # rAmat <- GaussianElimination(t(Amat))
-  # if (mix.weights == "pmvnorm") {
-  #   if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
-  #     stop(paste("Restriktor ERROR: The constraint matrix must be full row-rank.", 
-  #                "\n  There might be redundant constraints (in that case, delete those or use mix.weights = \"boot\")."))
-  #   }
-  # } else if (rAmat$rank < nrow(Amat) && 
-  #            !(se %in% c("none", "boot.model.based", "boot.standard")) && 
-  #            rAmat$rank != 0L) {
-  #   se <- "none"
-  #   warning(paste("Restriktor Warning: No standard errors could be computed. 
-  #                   The constraint matrix must be full row-rank ( choose e.g. rows", 
-  #                 paste(rAmat$pivot, collapse = " "), "), 
-  #                   Try se = \"boot.model.based\" or \"boot.standard\"."))  
-  # }
-  
-  
+
   timing$constraints <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
   

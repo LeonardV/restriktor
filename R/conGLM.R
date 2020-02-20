@@ -104,23 +104,26 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   }
   
   
+  ## check if constraint matrix is of full-row rank. 
   rAmat <- GaussianElimination(t(Amat))
   if (mix.weights == "pmvnorm") {
     if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
-      rank.txt <- paste0("Restriktor WARNING: The constraint matrix is not full nrow-rank, which is a requirement",
-                         "\nfor mix.weights = \"pmvnorm\". This means that there might be redundant constraints.",
-                         "\nIn that case, delete those or try to use mix.weights = \"boot\".", 
-                         "\n\nTry to continu with mix.weights = \"boot\"?")
-      
-      ask <- menu(c("Yes", "No"), title = rank.txt)
-      if (ask == 1) {
-        mix.weights <- "boot"
-      } else {
-        stop("Stopped by user")
-      }
+      warning(paste("\nRestriktor WARNING: The constraint matrix is not full row-rank, which is a requirement
+                    for mix.weights = \"pmvnorm\". This means that there might be redundant constraints.
+                    To continue, I have set mix.weights to \"boot\" (see ?restriktor for more information)."))
+      mix.weights <- "boot"
     }
-  } 
+  } else if (rAmat$rank < nrow(Amat) &&
+             !(se %in% c("none", "boot.model.based", "boot.standard")) &&
+             rAmat$rank != 0L) {
+    se <- "none"
+    warning(paste("\nRestriktor Warning: No standard errors could be computed.
+                    The constraint matrix must be full row-rank.
+                    Try se = \"boot.model.based\" or \"boot.standard\"."))
+  }
   
+  
+  ## some checks
   if(ncol(Amat) != length(b.unrestr)) {
     stop("Restriktor ERROR: length coefficients and the number of",
          "\n       columns constraints-matrix must be identical")

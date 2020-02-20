@@ -136,9 +136,10 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   rAmat <- GaussianElimination(t(Amat))
   if (mix.weights == "pmvnorm") {
     if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
-      warning(paste("\nRestriktor WARNING: The constraint matrix is not full row-rank, which is a requirement
-                    for mix.weights = \"pmvnorm\". This means that there might be redundant constraints.
-                    To continue, I have set mix.weights to \"boot\" (see ?restriktor for more information)."))
+      warning(paste("Restriktor WARNING: Since the constraint matrix is not full row-rank, the results are
+                    based on mix.weights = \"boot\" (the default is mix.weights = \"pmvnorm\").
+                    For more information see ?restriktor."),
+              call. = FALSE)
       mix.weights <- "boot"
     }
   } else if (rAmat$rank < nrow(Amat) &&

@@ -57,5 +57,6 @@ print.restriktor <- function(x, digits = max(3, getOption("digits") - 2), ...) {
     robWeights(x$wgt)
   }
   
+  cat("\n")
   invisible(x)
 }

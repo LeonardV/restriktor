@@ -10,8 +10,8 @@ normal models and generalized linear models.}
   \tabular{ll}{
   Package: \tab restriktor\cr
   Type: \tab Package\cr
-  Version: \tab 0.2-700\cr
-  Date: \tab 2020-02-13\cr
+  Version: \tab 0.2-750\cr
+  Date: \tab 2020-02-20\cr
   License: \tab GPL (>=2)\cr
   LazyLoad: \tab yes\cr
   }

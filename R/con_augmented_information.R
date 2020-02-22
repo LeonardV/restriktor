@@ -23,7 +23,7 @@ con_augmented_information <- function(information  = NULL,
   
   if (!all(c(H) == 0L)) { 
     # lagrangean coefs
-    lambda <- as.numeric(solve(H %*% solve(t(X) %*% X) %*% t(H)) %*% 
+    lambda <- as.numeric(ginv(H %*% solve(t(X) %*% X) %*% t(H)) %*% 
                            (H %*% b.unrestr-bvec))
     
     #equality constraints
@@ -86,14 +86,14 @@ con_augmented_information <- function(information  = NULL,
   }
   
   if (is.augmented) {
-    OUT$information <- try( MASS::ginv(E3, tol = .Machine$double.eps^(3/4))[1:npar, 
+    OUT$information <- try( ginv(E3, tol = .Machine$double.eps^(3/4))[1:npar, 
                                                                             1:npar, 
                                                                             drop = FALSE], 
                             silent = TRUE )
     OUT$information[abs(OUT$information) < sqrt(.Machine$double.eps)] <- 0L
     OUT$information.augmented <- E3
   } else { 
-    OUT$information <- try( solve(information), silent = TRUE )
+    OUT$information <- try( ginv(information), silent = TRUE )
   }
   
   OUT

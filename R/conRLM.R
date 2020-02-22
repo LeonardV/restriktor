@@ -131,15 +131,18 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     meq  <- 0L
   }
   
+  ## create list for warning messages
+  messages <- list()
   
   ## check if constraint matrix is of full-row rank. 
   rAmat <- GaussianElimination(t(Amat))
   if (mix.weights == "pmvnorm") {
     if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
-      warning(paste("Restriktor WARNING: Since the constraint matrix is not full row-rank, the results are
-                    based on mix.weights = \"boot\" (the default is mix.weights = \"pmvnorm\").
-                    For more information see ?restriktor."),
-              call. = FALSE)
+      messages$mix_weights <- paste(
+        "Restriktor message: Since the constraint matrix is not full row-rank, the level probabilities 
+ are calculated using mix.weights = \"boot\" (the default is mix.weights = \"pmvnorm\").
+ For more information see ?restriktor.\n"
+      )
       mix.weights <- "boot"
     }
   } else if (rAmat$rank < nrow(Amat) &&
@@ -313,7 +316,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                                                        b.restr      = b.restr,
                                                        Amat         = Amat, 
                                                        bvec         = bvec, 
-                                                       meq          = meq))
+                                                       meq          = meq), silent = TRUE)
       
       if (inherits(information.inv, "try-error")) {
         stop(paste("Restriktor Warning: No standard errors could be computed.
@@ -399,7 +402,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   }
   
   timing$mix.weights <- (proc.time()[3] - start.time)
-  
+  OUT$messages <- messages
   OUT$timing$total <- (proc.time()[3] - start.time0)
   
   class(OUT) <- c("restriktor", "conRLM", "conLM")

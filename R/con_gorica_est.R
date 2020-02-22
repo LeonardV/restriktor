@@ -8,11 +8,9 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
   if (!(class(object)[1] == "numeric")) {
     stop("Restriktor ERROR: object must be of class numeric.")
   }
-  
   if (is.null(VCOV)) {
     stop("Restriktor ERROR: variance-covariance matrix VCOV must be provided.")
   }
-  
   # check method to compute chi-square-bar weights
   if (!(mix.weights %in% c("pmvnorm", "boot", "none"))) {
     stop("Restriktor ERROR: ", sQuote(mix.weights), " method unknown. Choose from \"pmvnorm\", \"boot\", or \"none\"")
@@ -82,25 +80,21 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
     meq  <- 0L
   }
   
+  ## create list for warning messages
+  messages <- list()
+  
   ## check if constraint matrix is of full-row rank. 
   rAmat <- GaussianElimination(t(Amat))
   if (mix.weights == "pmvnorm") {
     if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
-      warning(paste("Restriktor WARNING: Since the constraint matrix is not full row-rank, the results are
-                    based on mix.weights = \"boot\" (the default is mix.weights = \"pmvnorm\").
-                    For more information see ?restriktor."),
-              call. = FALSE)
+      messages$mix_weights <- paste(
+        "Restriktor message: Since the constraint matrix is not full row-rank, the level probabilities 
+ are calculated using mix.weights = \"boot\" (the default is mix.weights = \"pmvnorm\").
+ For more information see ?restriktor.\n"
+      )
       mix.weights <- "boot"
     }
-  } else if (rAmat$rank < nrow(Amat) &&
-             !(se %in% c("none", "boot.model.based", "boot.standard")) &&
-             rAmat$rank != 0L) {
-    se <- "none"
-    warning(paste("\nRestriktor Warning: No standard errors could be computed.
-                    The constraint matrix must be full row-rank.
-                    Try se = \"boot.model.based\" or \"boot.standard\"."))
-  }
-  
+  } 
   
   # ## remove any linear dependent rows from the constraint matrix
   # # determine the rank of the constraint matrix/
@@ -230,6 +224,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
   }
   
   timing$mix.weights <- (proc.time()[3] - start.time)
+  OUT$messages <- messages
   OUT$timing$total <- (proc.time()[3] - start.time0)
   
   class(OUT) <- c("gorica_est")

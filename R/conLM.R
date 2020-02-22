@@ -16,11 +16,11 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   }
   if (!(se %in% c("none","standard","const","boot.model.based","boot.standard",
                   "HC","HC0","HC1","HC2","HC3","HC4","HC4m","HC5"))) {
-    stop("Restriktor ERROR: standard error method ", sQuote(se), " unknown.")
+    stop("Restriktor ERROR: standard error method ", sQuote(se), " unknown.", call. = FALSE)
   }
   # check method to compute chi-square-bar weights
   if (!(mix.weights %in% c("pmvnorm", "boot", "none"))) {
-    stop("Restriktor ERROR: ", sQuote(mix.weights), " method unknown. Choose from \"pmvnorm\", \"boot\", or \"none\"")
+    stop("Restriktor ERROR: ", sQuote(mix.weights), " method unknown. Choose from \"pmvnorm\", \"boot\", or \"none\".", call. = FALSE)
   }
   
   # timing
@@ -102,15 +102,18 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
     meq  <- 0L
   }
   
+  ## create list for warning messages
+  messages <- list()
   
   ## check if constraint matrix is of full-row rank. 
   rAmat <- GaussianElimination(t(Amat))
   if (mix.weights == "pmvnorm") {
     if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
-      warning(paste("Restriktor WARNING: Since the constraint matrix is not full row-rank, the results are
-                    based on mix.weights = \"boot\" (the default is mix.weights = \"pmvnorm\").
-                    For more information see ?restriktor."),
-              call. = FALSE)
+      messages$mix_weights <- paste(
+        "Restriktor message: Since the constraint matrix is not full row-rank, the level probabilities 
+ are calculated using mix.weights = \"boot\" (the default is mix.weights = \"pmvnorm\").
+ For more information see ?restriktor.\n"
+        )
       mix.weights <- "boot"
     }
   } else if (rAmat$rank < nrow(Amat) &&
@@ -119,14 +122,14 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
     se <- "none"
     warning(paste("\nRestriktor Warning: No standard errors could be computed.
                     The constraint matrix must be full row-rank.
-                    Try se = \"boot.model.based\" or \"boot.standard\"."))
+                    Try se = \"boot.model.based\" or \"boot.standard\"."), call. = FALSE)
   }
   
   
   ## some checks
   if (ncol(Amat) != length(b.unrestr)) {
     stop("Restriktor ERROR: length coefficients and the number of",
-         "\n       columns constraints-matrix must be identical")
+         "\n       columns constraints-matrix must be identical", call. = FALSE)
   }
   
   if (!(nrow(Amat) == length(bvec))) {
@@ -273,11 +276,11 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                                                        b.restr      = b.restr,
                                                        Amat         = Amat, 
                                                        bvec         = bvec, 
-                                                       meq          = meq))
+                                                       meq          = meq), silent = TRUE)
 
       if (inherits(information.inv, "try-error")) {
         stop(paste("Restriktor Warning: No standard errors could be computed.
-                      Try to set se = \"none\", \"boot.model.based\" or \"boot.standard\"."))
+                      Try to set se = \"none\", \"boot.model.based\" or \"boot.standard\"."), call. = FALSE)
       }
         
       attr(OUT$information, "inverted")  <- information.inv$information
@@ -286,9 +289,9 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
         print(list(information = OUT$information))
       }
     } else if (se == "boot.model.based") {
-      if (attr(object$terms, "intercept") && any(Amat[,1] == 1)) {
+      if (attr(object$terms, "intercept") && any(Amat[, 1] == 1)) {
           stop("Restriktor ERROR: no restriktions on intercept possible",
-               "\n       for 'se = boot.model.based' bootstrap method.")
+               "\n       for 'se = boot.model.based' bootstrap method.", call. = FALSE)
       }
       
       OUT$bootout <- con_boot_lm(object      = object, 
@@ -366,8 +369,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   }
   
   timing$mix.weights <- (proc.time()[3] - start.time)
-  
-  
+  OUT$messages <- messages
   OUT$timing$total <- (proc.time()[3] - start.time0)
   
   class(OUT) <- c("restriktor", "conLM")

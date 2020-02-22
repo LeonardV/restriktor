@@ -115,9 +115,11 @@ print.summary.restriktor <- function(x, digits = max(3, getOption("digits") - 2)
     } else if (attr(goric, "type") == "goricac") {
       cat("\nSmall sample generalized order-restricted information criteron approximation: \n")
     } 
-    
     print(result.goric, digits = digits)
   }  
   cat("\n")
+  cat(x$messages$mix_weights)
+  cat("\n")
+  
   invisible(x)
 }

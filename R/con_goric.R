@@ -754,6 +754,8 @@ goric.default <- function(object, ...,
   ans$ormle$b.restr <- coefs  
   ans$comparison <- comparison
   ans$type <- type
+  ans$messages$mix_weights <- do.call("rbind", lapply(isSummary, FUN = function(x) { x$messages$mix_weights }))
+  ans$messages$mix_weights <- ans$messages$mix_weights [!duplicated(ans$messages$mix_weights )]
   
   if (type %in% c("goric", "goricc")) {
     class(ans) <- "con_goric"
@@ -918,13 +920,13 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   cat(sprintf("restriktor (%s): ", packageDescription("restriktor", fields = "Version")))
 
   if (type == "goric") {
-    cat("\nRestriktor: generalized order-restriced information criterion: \n")
+    cat("generalized order-restriced information criterion: \n")
   } else if (type == "gorica") {
-    cat("\nRestriktor: generalized order-restriced information criterion approximation:\n")
+    cat("generalized order-restriced information criterion approximation:\n")
   } else if (type == "goricc") {
-    cat("\nRestriktor: small sample generalized order-restriced information criterion:\n")
+    cat("small sample generalized order-restriced information criterion:\n")
   } else if (type == "goricac") {
-    cat("\nRestriktor: small sample generalized order-restriced information criterion approximation:\n")
+    cat("small sample generalized order-restriced information criterion approximation:\n")
   }
   
   cat("\nResults:\n")
@@ -935,10 +937,12 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   if (comparison == "complement") {
     objectnames <- as.character(df$model)
     relative.gw <- apply(x$relative.gw, 2, sprintf, fmt = dig)
-    
     cat("The order-restricted hypothesis", sQuote(objectnames[1]), "has", 
         sprintf("%s", relative.gw[1,2]), "times more support than its complement.\n")
   } 
+  
+  cat(x$messages$mix_weights)
+  
   invisible(x)
 }
 
@@ -1046,9 +1050,11 @@ summary.con_goric <- function(object, brief = TRUE,
     
     cat("\nConstraint matrices:\n")
     print(conMat, quote = FALSE, scientific = FALSE)
-    
+   
     invisible(x)
   }
+  cat("\n")
+  cat(x$messages$mix_weights)
 }
 
 

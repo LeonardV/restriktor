@@ -208,7 +208,6 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
       ll <- dmvnorm(c(z$b.unrestr - z$b.restr), sigma = VCOV, log = TRUE)  
     }
     
-    
     if (inherits(z, c("conLM", "conMLM"))) {
       ans$goric <- -2*(ll - PT) 
     } else if (inherits(z, "conGLM")) {
@@ -221,6 +220,8 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
     attr(ans$goric, "penalty") <- PT
     attr(ans$goric, "loglik")  <- ll
   }
+  
+  ans$messages <- z$messages
   
   if (inherits(z, "conRLM")) {
     class(ans) <- c("summary.restriktor", "summary.conRLM")

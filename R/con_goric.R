@@ -709,9 +709,7 @@ goric.default <- function(object, ...,
   goric.weights <- exp(-delta / 2) / sum(exp(-delta / 2))
   df$goric.weights <- goric.weights
     names(df)[5] <- paste0(type, ".weights")
-  
   ans$result <- df
-  
 
   # compute relative weights
   modelnames <- as.character(df$model)
@@ -941,6 +939,7 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
         sprintf("%s", relative.gw[1,2]), "times more support than its complement.\n")
   } 
   
+  cat("\n")
   cat(x$messages$mix_weights)
   
   invisible(x)

@@ -44,6 +44,8 @@ summary.gorica_est <- function(object, type, ...) {
     attr(ans$goric, "loglik")  <- z$loglik 
   }
   
+  ans$messages <- z$messages
+
   class(ans) <- c("summary.gorica_est")
   
   

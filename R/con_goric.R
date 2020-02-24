@@ -42,7 +42,19 @@ goric.default <- function(object, ...,
   isRestr     <- sapply(objectList, function(x) inherits(x, "restriktor"))
   isCharacter <- sapply(ldots2,     function(x) inherits(x, "character"))
   isList      <- sapply(ldots2,     function(x) inherits(x, "list"))
+
+  ## catching user errors
+  # only ldots2
+  isRestr2 <- sapply(ldots2, function(x) inherits(x, "restriktor"))
+  col.check <- rbind(isRestr2, isCharacter, isList)
+  if (length(col.check) > 0) {
+    unknown.idx <- colSums(col.check) == 0
+  } 
   
+  if (length(ldots2) > 0 && any(unknown.idx)) {  
+    stop("restriktor ERROR: argument ", sQuote(names(ldots2)[unknown.idx]), " unknown.", call. = FALSE)
+  }
+    
   # create output list
   ans <- list()
   
@@ -60,7 +72,6 @@ goric.default <- function(object, ...,
     constraints <- conList
   # if the constraints syntax is of class character, e.g., x1 < x2; x2 < x3
   } else if (inherits(object, "lm") && all(isCharacter)) {
-    
     # check if constraints exists
     if (length(ldots2) == 0) {
       stop("restriktor ERROR: no constraints found!", call. = FALSE)
@@ -99,7 +110,7 @@ goric.default <- function(object, ...,
       constraints <- lapply(ldots2, FUN = function(x) { x$constraints } )
       constraints.check <- sapply(constraints, FUN = function(x) { is.null(x) } )
       if (any(constraints.check)) {
-        stop("restriktor ERROR: the constraints must be specified as a list. E.g., h1 <- list(constraints = 'x1 > 0')")
+        stop("restriktor ERROR: the constraints must be specified as a list. E.g., h1 <- list(constraints = 'x1 > 0')", call. = FALSE)
       }
       rhs <- lapply(ldots2, FUN = function(x) {x$rhs} )
       neq <- lapply(ldots2, FUN = function(x) {x$neq} )
@@ -203,11 +214,11 @@ goric.default <- function(object, ...,
       stop("restriktor ERROR: I don't know how to handle an object of class ", paste0(class(object)[1]))
     }
 
+  ## add objectnames if not available
   # constraints must be a list
   if (!is.list(constraints)) {
     constraints <- list(constraints)
   }
-    
   if (any(is.null(names(constraints))) || all(names(constraints) == "")) {  
     objectnames <- paste0("H", 1:length(constraints))
   } else {
@@ -218,7 +229,7 @@ goric.default <- function(object, ...,
   if (comparison == "complement" && length(conList) > 1L) {
     comparison <- "unconstrained"
     warning("restriktor WARNING: if comparison = 'complement', only one order-restricted hypothesis\n",
-            "                      is allowed (for now). Therefore, comparison is set to 'unconstrained'.",
+            " is allowed (for now). Therefore, comparison is set to 'unconstrained'.",
             call. = FALSE)
   } 
 
@@ -257,7 +268,7 @@ goric.default <- function(object, ...,
     
     if (!is.null(bound) && meq == 0L) {
       warning("restriktor WARNING: bounds are only available for equality restrictions \n",
-              "                      and are therefore ignored.", call. = FALSE)
+              " and are therefore ignored.", call. = FALSE)
       bound <- NULL
     } 
     

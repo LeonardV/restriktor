@@ -57,8 +57,7 @@ goric.default <- function(object, ...,
     sample.nobs   <-  nrow(model.frame(object$model.org))
     # unrestricted VCOV
     VCOV <- vcov(ans$model.org)
-    constraints <- vector(mode = "list", length = length(ldots2) + 1) 
-    
+    constraints <- conList
   # if the constraints syntax is of class character, e.g., x1 < x2; x2 < x3
   } else if (inherits(object, "lm") && all(isCharacter)) {
     
@@ -91,13 +90,6 @@ goric.default <- function(object, ...,
     idx <- length(conList) 
     objectnames <- vector("character", idx)
     CALL$object <- NULL
-    # for (i in 1:idx) {
-    #   if (length(constraints) > 0 & names(constraints)[[i]] == "") {
-    #     objectnames[i] <- paste0("H", i)
-    #   } else {
-    #     objectnames[i] <- names(constraints)[i]
-    #   }
-    # }
   # if the constraints are a list with constraints, rhs and neq for each hypothesis   
   } else if (inherits(object, "lm") && all(isList)) {
       # create lists
@@ -139,12 +131,6 @@ goric.default <- function(object, ...,
       idx <- length(conList) 
       objectnames <- vector("character", idx)
       CALL$object <- NULL
-      # for (i in 1:idx) {
-      #   if (length(as.character(CALL[[i]])) > 1) {
-      #     CALL[[i]] <- paste0("H", i)
-      #   }
-      #   objectnames[i] <- as.character(CALL[[i]])
-      # }
     } else if (inherits(object, "numeric")) {
       if (type %in% c("goric", "goricc")) {
         stop("restriktor ERROR: object of class numeric is only supported for type = 'gorica(c)'.")
@@ -213,25 +199,16 @@ goric.default <- function(object, ...,
       if (!exists("conList")) {
         stop("restriktor ERROR: no constraints found!", call. = FALSE)
       }
-      
-      # idx <- length(conList) 
-      # objectnames <- vector("character", idx)
-      # for (i in 1:idx) { 
-      #   if (length(as.character(CALL[[i]])) > 1) {
-      #     CALL[[i]] <- paste0("H", i)
-      #   }
-      #   objectnames[i] <- as.character(CALL[[i]])
-      # }
     } else {
       stop("restriktor ERROR: I don't know how to handle an object of class ", paste0(class(object)[1]))
     }
 
-  # get or create model names.
+  # constraints must be a list
   if (!is.list(constraints)) {
     constraints <- list(constraints)
   }
     
-  if (is.null(names(constraints)) || names(constraints) == "") {  
+  if (any(is.null(names(constraints))) || all(names(constraints) == "")) {  
     objectnames <- paste0("H", 1:length(constraints))
   } else {
     objectnames <- names(constraints) 

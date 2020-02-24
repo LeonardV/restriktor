@@ -37,7 +37,8 @@ goric.default <- function(object, ...,
   }
   
   # what is the constraint input type
-  objectList  <- c(list(object), ldots2)
+  objectList  <- c(list(object), ldots2)  
+  names(objectList)[1] <- as.character("object")
   isRestr     <- sapply(objectList, function(x) inherits(x, "restriktor"))
   isCharacter <- sapply(ldots2,     function(x) inherits(x, "character"))
   isList      <- sapply(ldots2,     function(x) inherits(x, "list"))
@@ -47,7 +48,7 @@ goric.default <- function(object, ...,
   
   ## how to deal with constraints
   # if all objects are of class restriktor
-  if (all(isRestr)) {  
+  if (all(isRestr)) {   
     conList   <- objectList
     isSummary <- lapply(conList, function(x) summary(x, 
                                                      goric       = type,
@@ -56,16 +57,15 @@ goric.default <- function(object, ...,
     sample.nobs   <-  nrow(model.frame(object$model.org))
     # unrestricted VCOV
     VCOV <- vcov(ans$model.org)
-    idx  <- length(conList) 
-    objectnames <- vector("character", idx)
-    for (i in 1:idx) {
-      if (length(as.character(CALL[[i]])) > 1) { 
-        CALL[[i]] <- paste0("H", i)
-      }
-      objectnames[i] <- as.character(CALL[[i]])
-    }
+    constraints <- vector(mode = "list", length = length(ldots2) + 1) 
+    
   # if the constraints syntax is of class character, e.g., x1 < x2; x2 < x3
   } else if (inherits(object, "lm") && all(isCharacter)) {
+    
+    # check if constraints exists
+    if (length(ldots2) == 0) {
+      stop("restriktor ERROR: no constraints found!", call. = FALSE)
+    }
     constraints <- ldots2[isCharacter]
     # standard errors are not needed
     ldots3 <- ldots[m.restr > 0L]
@@ -91,18 +91,20 @@ goric.default <- function(object, ...,
     idx <- length(conList) 
     objectnames <- vector("character", idx)
     CALL$object <- NULL
-    for (i in 1:idx) {
-      if (length(as.character(CALL[[i]])) > 1) {
-        CALL[[i]] <- paste0("H", i)
-      }
-      objectnames[i] <- as.character(CALL[[i]])
-    }
+    # for (i in 1:idx) {
+    #   if (length(constraints) > 0 & names(constraints)[[i]] == "") {
+    #     objectnames[i] <- paste0("H", i)
+    #   } else {
+    #     objectnames[i] <- names(constraints)[i]
+    #   }
+    # }
   # if the constraints are a list with constraints, rhs and neq for each hypothesis   
-  } else if (inherits(object, "lm") && (all(isList))) {
+  } else if (inherits(object, "lm") && all(isList)) {
       # create lists
-      #constraints <- list(); rhs <- list(); neq <- list()
+      # constraints <- list(); rhs <- list(); neq <- list()
       # extract constraints, rhs and neq
-      constraints <- lapply(ldots2, FUN = function(x) {x$constraints} )
+      #constraints <- list()
+      constraints <- lapply(ldots2, FUN = function(x) { x$constraints } )
       constraints.check <- sapply(constraints, FUN = function(x) { is.null(x) } )
       if (any(constraints.check)) {
         stop("restriktor ERROR: the constraints must be specified as a list. E.g., h1 <- list(constraints = 'x1 > 0')")
@@ -137,12 +139,12 @@ goric.default <- function(object, ...,
       idx <- length(conList) 
       objectnames <- vector("character", idx)
       CALL$object <- NULL
-      for (i in 1:idx) {
-        if (length(as.character(CALL[[i]])) > 1) {
-          CALL[[i]] <- paste0("H", i)
-        }
-        objectnames[i] <- as.character(CALL[[i]])
-      }
+      # for (i in 1:idx) {
+      #   if (length(as.character(CALL[[i]])) > 1) {
+      #     CALL[[i]] <- paste0("H", i)
+      #   }
+      #   objectnames[i] <- as.character(CALL[[i]])
+      # }
     } else if (inherits(object, "numeric")) {
       if (type %in% c("goric", "goricc")) {
         stop("restriktor ERROR: object of class numeric is only supported for type = 'gorica(c)'.")
@@ -162,7 +164,8 @@ goric.default <- function(object, ...,
         # create lists
         # constraints <- list(); rhs <- list(); neq <- list()
         # extract constraints, rhs and neq
-        constraints       <- lapply(ldots2,      FUN = function(x) { x$constraints } )
+        #constraints <- list()
+        constraints <- lapply(ldots2, FUN = function(x) { x$constraints } )
         constraints.check <- sapply(constraints, FUN = function(x) { is.null(x)} )
         if (any(constraints.check) || length(constraints) == 0) {
           stop("restriktor ERROR: no constraints found! The constraints must be specified as a list. E.g., h1 <- list(constraints = 'x1 > 0')")
@@ -211,25 +214,36 @@ goric.default <- function(object, ...,
         stop("restriktor ERROR: no constraints found!", call. = FALSE)
       }
       
-      idx <- length(conList) 
-      objectnames <- vector("character", idx)
-      for (i in 1:idx) { 
-        if (length(as.character(CALL[[i]])) > 1) {
-          CALL[[i]] <- paste0("H", i)
-        }
-        objectnames[i] <- as.character(CALL[[i]])
-      }
+      # idx <- length(conList) 
+      # objectnames <- vector("character", idx)
+      # for (i in 1:idx) { 
+      #   if (length(as.character(CALL[[i]])) > 1) {
+      #     CALL[[i]] <- paste0("H", i)
+      #   }
+      #   objectnames[i] <- as.character(CALL[[i]])
+      # }
     } else {
       stop("restriktor ERROR: I don't know how to handle an object of class ", paste0(class(object)[1]))
     }
 
+  # get or create model names.
+  if (!is.list(constraints)) {
+    constraints <- list(constraints)
+  }
+    
+  if (is.null(names(constraints)) || names(constraints) == "") {  
+    objectnames <- paste0("H", 1:length(constraints))
+  } else {
+    objectnames <- names(constraints) 
+  }
 
+  
   if (comparison == "complement" && length(conList) > 1L) {
     comparison <- "unconstrained"
     warning("restriktor WARNING: if comparison = 'complement', only one order-restricted hypothesis\n",
-            "                      is allowed (for now). Therefore, comparison is set to 'unconstrained'.")
+            "                      is allowed (for now). Therefore, comparison is set to 'unconstrained'.",
+            call. = FALSE)
   } 
-
 
   df.c <- NULL
   if (comparison == "complement") {
@@ -266,7 +280,7 @@ goric.default <- function(object, ...,
     
     if (!is.null(bound) && meq == 0L) {
       warning("restriktor WARNING: bounds are only available for equality restrictions \n",
-              "                      and are therefore ignored.")
+              "                      and are therefore ignored.", call. = FALSE)
       bound <- NULL
     } 
     
@@ -791,7 +805,11 @@ goric.lavaan <- function(object, ...,
   mcList$comparison   <- NULL
   mcList$type         <- NULL
   mcList$standardized <- NULL
-  objectList <- mcList
+  
+  mcnames <- names(mcList) == ""
+  lnames <- as.character(mcList[mcnames])
+  names(mcList)[mcnames] <- lnames
+  objectList <- mcList  
   
   est <- con_gorica_est_lav(object, standardized)
   objectList$object       <- est$estimate
@@ -825,7 +843,11 @@ goric.lm <- function(object, ...,
   mcList$object       <- NULL
   mcList$comparison   <- NULL
   mcList$type         <- NULL
-  objectList <- mcList
+  
+  mcnames <- names(mcList) == ""
+  lnames <- as.character(mcList[mcnames])
+  names(mcList)[mcnames] <- lnames
+  objectList <- mcList  
   
   objectList$object       <- object
   objectList$comparison   <- comparison
@@ -851,7 +873,17 @@ goric.restriktor <- function(object, ...,
   }
   
   objectList <- list(...)
-  objectList$object       <- object
+  mcList <- as.list(match.call())
+  mcList <- mcList[-c(1)]
+  mcList$comparison   <- NULL
+  mcList$type         <- NULL
+  
+  mcnames <- names(mcList) == ""
+  lnames <- as.character(mcList[mcnames])
+  names(mcList)[mcnames] <- lnames
+  objectList <- mcList  
+  
+  #objectList$object       <- object
   objectList$comparison   <- comparison
   objectList$type         <- type
   objectList$bound        <- bound
@@ -887,11 +919,12 @@ goric.numeric <- function(object, ...,
   mcList$type         <- NULL
   mcList$VCOV         <- NULL
   
-  if (any(names(mcList) == "")) {
-    objectList <- mcList 
-  } else {
-    objectList <- list(as.name(names(mcList))) 
-  }
+  #<FIXME>
+  mcnames <- names(mcList) == ""
+  lnames <- as.character(mcList[mcnames])
+  names(mcList)[mcnames] <- lnames
+  objectList <- mcList  
+  #</FIXME>
   
   objectList$object       <- object
   objectList$VCOV         <- VCOV

@@ -242,6 +242,7 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
   ## get parameter table
   unstandardized_parTable <- parTable(x)
   standardized_parTable   <- standardizedSolution(x, ci = FALSE, zstat = FALSE, se = FALSE)
+  unstandardized_parTable <- unstandardized_parTable[unstandardized_parTable[, "plabel"] != "", ]
   ## combine unstandardized and standardized parameter estimates  
   parameter_table <- cbind(unstandardized_parTable, standardized_parTable)
   ## Only user-specified labels

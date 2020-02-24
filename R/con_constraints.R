@@ -10,6 +10,9 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     parTable <- con_partable(model, est = FALSE, label = TRUE)  
   }
   
+  # unlist constraints
+  constraints <- unlist(constraints)
+  
   if (is.character(constraints)) {
     # parse the constraints
     CON <- lav_constraints_parse(constraints = constraints,
@@ -45,7 +48,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     
     CON$constraints <- constraints
   } else if (!is.character(constraints) && !is.null(constraints)) {
-    if (is.vector(constraints)) {
+    if (is.vector(constraints) ) {
       constraints <- rbind(constraints)
     }
     CON <- NULL

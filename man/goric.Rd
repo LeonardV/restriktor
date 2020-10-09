@@ -86,6 +86,12 @@ h1 <- list(constraints = "x1 > 0", rhs = 0, neq = 0). The \code{rhs} and \code{n
 are not required if they are equal to 0. If \code{type = "gorica"},
 then the object might be a (named) numeric vector. The constraints can again be 
 specified in two ways, see \code{\link{restriktor}}. For examples, see below.
+
+To determine the penalty term values, the chi-bar-square weights (a.k.a. level
+probabilities) must be computed. If \code{"mix.weights = "pmvnorm" "} (default), 
+the chi-bar-square weights are computed based on the multivariate normal distribution 
+function with additional Monte Carlo steps. If \code{"mix.weights = "boot" "}, the 
+chi-bar-square weights are computed using parametric bootstrapping (see \code{\link{restriktor}}).
 }
 
 \value{The function returns a dataframe with the log-likelihood,
@@ -98,8 +104,9 @@ Kuiper, R.M., Hoijtink, H., and Silvapulle, M.J. (2011). An Akaike-type
 information criterion for model selection under inequality constraints.
 \emph{Biometrika}, \bold{98}, 2, 495--501.
 
-Vanbrabant, L. and Kuiper, R. (n.d.). Giving the complement a compliment: 
-Evaluating a theory-based hypothesis against its complement using the GORIC. 
+Vanbrabant, L. and Kuiper, R. (2020). Evaluating a theory-based hypothesis against 
+its complement using an AIC-type information criterion with an application to 
+facial burn injury. Psychological Methods. 
 }
 
 \author{Leonard Vanbrabant and Rebecca Kuiper}

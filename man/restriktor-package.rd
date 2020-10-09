@@ -1,6 +1,6 @@
 \name{restriktor-package}
 \alias{restriktor-package}
-\title{Package for equality and inequality restricted estimation and hypothesis testing}
+\title{Package for equality and inequality restricted estimation, model selection and hypothesis testing}
 \description{
 Package \code{restriktor} implements estimation, testing and evaluating of linear equality and 
 inequality restriktions about parameters and effects for univariate and multivariate 

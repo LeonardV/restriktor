@@ -87,7 +87,7 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
         }
         conTestC(object, ...)
       } else if (type == "summary" && (inherits(object, c("conLM","conRLM","conGLM","conMLM")))) {
-        conTest_summary(object, ...)
+        conTest_summary(object, test = test, ...)
       } else {
         stop("type ", sQuote(type), " unknown.") 
       }

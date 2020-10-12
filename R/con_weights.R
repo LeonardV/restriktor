@@ -1,6 +1,6 @@
 # compute weights based on multivariate normal distribution function with additional
 # Monte Carlo steps.
-# REF: Groeping, U. Inference with linear Equality and Inequality constraints
+# REF: Groemping, U. Inference with linear Equality and Inequality constraints
 # using R: The Package ic.infer. 
 con_weights <- function(cov, meq) {
   if (meq == 0L) {

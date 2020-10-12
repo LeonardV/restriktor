@@ -1,6 +1,6 @@
 \name{restriktor-package}
 \alias{restriktor-package}
-\title{Package for equality and inequality restricted estimation and hypothesis testing}
+\title{Package for equality and inequality restricted estimation, model selection and hypothesis testing}
 \description{
 Package \code{restriktor} implements estimation, testing and evaluating of linear equality and 
 inequality restriktions about parameters and effects for univariate and multivariate 
@@ -10,8 +10,8 @@ normal models and generalized linear models.}
   \tabular{ll}{
   Package: \tab restriktor\cr
   Type: \tab Package\cr
-  Version: \tab 0.2-800\cr
-  Date: \tab 2020-02-22\cr
+  Version: \tab 0.2-900\cr
+  Date: \tab 2020-10-09\cr
   License: \tab GPL (>=2)\cr
   LazyLoad: \tab yes\cr
   }

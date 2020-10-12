@@ -523,6 +523,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
 
 
 # REF: Robertson, Wright and Dykstra (1988, p. 321). Order constrained statistical inference.
+# Global score 
 conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9999, 
                                p.distr = rnorm, parallel = "no", ncpus = 1L,
                                cl = NULL, seed = 1234, verbose = FALSE,
@@ -687,7 +688,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     # information matrix under the null-hypothesis
     I0 <- 1 / s20 * crossprod(X)#(t(X) %*% X)
     # score test-statistic
-    Ts <- c((G0 - G1) %*% solve(I0, (G0 - G1)))
+    Ts <- c((G0 - G1) %*% solve(I0, (G0 - G1))) 
     #############################################
     # df0 <- n - (p - nrow(Amat))
     # df1 <- n - (p - qr(Amat[0:meq,])$rank)

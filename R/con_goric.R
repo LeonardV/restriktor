@@ -110,7 +110,7 @@ goric.default <- function(object, ...,
       constraints <- lapply(ldots2, FUN = function(x) { x$constraints } )
       constraints.check <- sapply(constraints, FUN = function(x) { is.null(x) } )
       if (any(constraints.check)) {
-        stop("restriktor ERROR: the constraints must be specified as a list. E.g., h1 <- list(constraints = 'x1 > 0')", call. = FALSE)
+        stop("restriktor ERROR: the constraints must be specified as a list. For example, h1 <- list(constraints = 'x1 > 0')", call. = FALSE)
       }
       rhs <- lapply(ldots2, FUN = function(x) {x$rhs} )
       neq <- lapply(ldots2, FUN = function(x) {x$neq} )
@@ -214,11 +214,13 @@ goric.default <- function(object, ...,
       stop("restriktor ERROR: I don't know how to handle an object of class ", paste0(class(object)[1]))
     }
 
+  
   ## add objectnames if not available
   # constraints must be a list
   if (!is.list(constraints)) {
     constraints <- list(constraints)
   }
+  
   if (any(is.null(names(constraints))) || all(names(constraints) == "")) {  
     objectnames <- paste0("H", 1:length(constraints))
   } else {
@@ -233,6 +235,9 @@ goric.default <- function(object, ...,
             call. = FALSE)
   } 
 
+  
+
+# compute complement ------------------------------------------------------
   df.c <- NULL
   if (comparison == "complement") {
       # unrestricted estimates
@@ -274,6 +279,9 @@ goric.default <- function(object, ...,
     
     # for now
     bound <- NULL
+    
+
+# about equality bounds ---------------------------------------------------
     if (!is.null(bound)) {
       # if (meq > 0) {
       #   Amat.ceq <- Amat[1:meq, ,drop = FALSE]
@@ -487,7 +495,6 @@ goric.default <- function(object, ...,
           llc <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE)
           betasc <- b.unrestr
         }
-
         if (debug) {
           cat("log-likelihood_c value =", llc, "\n")
         }
@@ -549,9 +556,9 @@ goric.default <- function(object, ...,
         }
       } else if (all(c(Amat) == 0L)) {
         # unconstrained setting
-        stop("restriktor ERROR: no complement exists for the unconstrained hypothesis.")
+        stop("restriktor ERROR: For an unconstrained hypothesis no complement exists.")
       } else {
-        stop("restriktor ERROR: you might have found a bug, please contact me!")
+        stop("restriktor ERROR: you might have found a bug, please contact me at: lgf.vanbrabant@gmail.com!")
       }
       if (type %in% c("goric", "goricc")) {
         llm <- logLik(conList[[1]])

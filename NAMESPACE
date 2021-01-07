@@ -65,8 +65,7 @@ export("restriktor",
        "summary.restriktor", "conTest_summary.restriktor",
        "print.conTest", "logLik.restriktor",
        "coef.restriktor", "model.matrix.restriktor",
-       "con_weights_boot", "coef.con_goric", "summary.con_goric",
-       "plot.conTestLavaan")
+       "con_weights_boot", "coef.con_goric", "summary.con_goric")#, "plot.conTestLavaan")
 
 S3method(coef, restriktor)
 S3method(model.matrix, restriktor)
@@ -79,7 +78,7 @@ S3method(summary, restriktor)
 S3method(print, con_goric)
 S3method(summary, con_goric)
 S3method(coef, con_goric)
-S3method(plot, conTestLavaan)
+#S3method(plot, conTestLavaan)
 
 S3method(conTestC, restriktor)
 S3method(conTestLRT, conLM)

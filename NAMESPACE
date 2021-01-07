@@ -7,7 +7,9 @@ importFrom("lavaan",
            lav_func_jacobian_complex,
            parTable,
            standardizedSolution,
-           lavInspect)
+           lavInspect,
+           sem,
+           lavaan)
 
 importFrom("mvtnorm",
            rmvnorm)
@@ -40,7 +42,10 @@ importFrom("stats", "coef", "df.residual", "dnorm", "fitted",
            "sd", "start", "terms", "update", "var", "vcov",
            "weighted.residuals", "weights", "gaussian", "lm.fit",
            "lm.wfit", "mad", "coefficients", "family", "logLik",
-           "model.frame") 
+           "model.frame", "anova", "optimize") 
+
+
+importFrom("graphics", "abline", "axis", "box", "hist", "par")
 
 # export ordinary functions defined in this package
 export("restriktor", 
@@ -53,24 +58,28 @@ export("restriktor",
        "conTestWald.conRLM", 
        "conTestC.restriktor", 
        "conTest_ceq.conLM", "conTest_ceq.conRLM", "conTest_ceq.conGLM", 
-       "goric", "print.con_goric",
+       "conTestD.conLavaan", #"conTestLRT.conLavaan",
+       "bootstrapD", #"bootstrapLRT", 
+       "goric", "print.con_goric", "print.conTestLavaan",
        "print.restriktor", "print.summary.restriktor",
        "summary.restriktor", "conTest_summary.restriktor",
        "print.conTest", "logLik.restriktor",
        "coef.restriktor", "model.matrix.restriktor",
-       "con_weights_boot", "coef.con_goric", "summary.con_goric")
+       "con_weights_boot", "coef.con_goric", "summary.con_goric",
+       "plot.conTestLavaan")
 
 S3method(coef, restriktor)
 S3method(model.matrix, restriktor)
 S3method(logLik, restriktor)
 S3method(print, restriktor)
 S3method(print, conTest)
+S3method(print, conTestLavaan)
 S3method(print, summary.restriktor)
 S3method(summary, restriktor)
 S3method(print, con_goric)
 S3method(summary, con_goric)
 S3method(coef, con_goric)
-
+S3method(plot, conTestLavaan)
 
 S3method(conTestC, restriktor)
 S3method(conTestLRT, conLM)

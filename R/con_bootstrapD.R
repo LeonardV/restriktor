@@ -46,8 +46,11 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, R = 1000L,
   data <- h0@Data
   
   if (type == "bollen.stine" || type == "parametric" || type == "yuan") {
-    Sigma.hat <- computeSigmaHat(lavmodel = h0@Model)
-    Mu.hat    <- computeMuHat(lavmodel = h0@Model)
+    #Sigma.hat <- lavaan:::computeSigmaHat(lavmodel = h0@Model)
+    model.implied <- lav_model_implied(h0@Model)
+    Sigma.hat <- model.implied$cov
+    #Mu.hat    <- lavaan:::computeMuHat(lavmodel = h0@Model)
+    Mu.hat <- model.implied$mean
   }
   if (type == "bollen.stine" || type == "yuan") {
     if (h0@Options$missing != "listwise") 
@@ -94,7 +97,7 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, R = 1000L,
       ghat <- h0@test[[1]]$stat.group[[g]]
       df <- h0@test[[1]]$df
       Sigmahat <- Sigma.hat[[g]]
-      Sigmahat.inv <- inv.chol(Sigmahat)
+      Sigmahat.inv <- solve(Sigmahat)
       nmv <- nrow(Sigmahat)
       n <- data@nobs[[g]]
       tau.hat <- (ghat - df)/(n - 1)

@@ -238,7 +238,7 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
   ## create empty list
   out <- list()
   ## number of groups 
-  num_groups <- lavInspect(x, what = "ngroups")
+  #num_groups <- lavInspect(x, what = "ngroups")
   ## get parameter table
   unstandardized_parTable <- parTable(x)
   standardized_parTable   <- standardizedSolution(x, ci = FALSE, zstat = FALSE, se = FALSE)

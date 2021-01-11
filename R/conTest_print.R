@@ -239,3 +239,98 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
     }
   }
 }
+
+
+
+
+
+
+print.conTestLavaan <- function(x, digits = max(3, getOption("digits") - 2), ...) {
+  object <- x
+  cat("\nRestriktor: restricted hypothesis tests:\n\n")
+  cat("  Variable names in model         :", unlist(object$fit.h2@Data@ov.names[1]), "\n")
+  cat("  Number of variables             :", object$fit.h2@Model@nvar[1], "\n")
+  cat("  Number of groups                :", object$fit.h2@Data@ngroups, "\n")
+  cat("  Used sample size per group      :", unlist(object$fit.h2@Data@nobs), "\n")
+  cat("  Used sample size                :", sum(unlist(object$fit.h2@Data@nobs)), "\n")
+  cat("  Total sample size               :", sum(unlist(object$fit.h2@Data@norig)), "\n\n")
+  cat("  Estimator                       :", object$fit.h2@Options$estimator, "\n")
+  cat("  Missing data                    :", object$fit.h2@Options$missing, "\n")
+  cat("  Bootstrap method                :", object$type, "\n")
+  cat("  Double bootstrap method         :", object$double.bootstrap, "\n")
+  
+  dbtype <- object$double.bootstrap
+  # original LRT for hypothesis test Type A
+  TsA <- attr(object$bootA, "D.original")
+  # original LRT for hypothesis test Type B
+  TsB <- attr(object$bootB, "D.original")
+  # unadjusted pvalues for Ts
+  pvalueA <- object$bootA[1]
+  pvalueB <- object$bootB[1]
+  alpha <- object$double.bootstrap.alpha
+  
+  ###
+  if (dbtype == "no") {
+    if (!is.null(TsA)) {
+    cat("\n\n  Type A test: H0: all restriktions active (=)", "\n",
+        "          vs. H1: at least one restriktion strictly true (>)", "\n")
+    cat("         Test statistic: ", format(round(TsA, digits), nsmall = digits), ", unadjusted p-value: ",
+        if (pvalueA < 1e-04) {
+          "<0.0001"
+        } else {
+          format(round(pvalueA, digits), nsmall = digits)}, " (alpha = ", alpha, ") ", "\n\n", sep = "")
+    }
+    if (!is.null(TsB)) {
+    cat("\n  Type B test: H0: all restriktions true", "\n",
+        "          vs. H1: at least one restriktion false", "\n")
+    cat("         Test statistic: ", format(round(TsB, digits), nsmall = digits), ", unadjusted p-value: ",
+        if (pvalueB < 1e-04) {
+          "<0.0001"
+        } else {
+          format(round(pvalueB, digits), nsmall = digits)}, " (alpha = ", alpha, ") ", "\n", sep = "")
+    }
+  } else if (dbtype == "standard") {
+    # adjusted nominal levels
+    adj.alphaA  <- attr(object$bootA, "adj.alpha")
+    adj.alphaB  <- attr(object$bootB, "adj.alpha")
+    # adjusted pvalues for Ts
+    adj.pvalueA <- attr(object$bootA, "adj.pvalue")
+    adj.pvalueB <- attr(object$bootB, "adj.pvalue")
+    if (!is.null(TsA)) {
+      cat("\n\n  Type A test: H0: all restriktions active (=)", "\n",
+          "          vs. H1: at least one restriktion strictly true (>)", "\n")
+      cat("         Test statistic: ", format(round(TsA, digits),
+                                              nsmall = digits), ", adjusted p-value: ",
+          if (adj.pvalueA < 1e-04) {
+            "<0.0001"
+          } else {
+            format(round(adj.pvalueA, digits), nsmall = digits)}, " (alpha = ", alpha, ") ", "\n", sep = "")
+      cat("                                ", "  unadjusted p-value: ",
+          if (pvalueA < 1e-04) {
+            "<0.0001"
+          } else {
+            format(round(pvalueA, digits), nsmall = digits)}, " (alpha = ",
+          format(round(adj.alphaA, digits), nsmall = digits), ") ", "\n\n", sep = "")
+    }
+    if (!is.null(TsB)) {    
+      cat("\n  Type B test: H0: all restriktions true", "\n",
+          "          vs. H1: at least one restriktion false", "\n")
+      cat("         Test statistic: ", format(round(TsB, digits), nsmall = digits), ", adjusted p-value: ",
+          if (adj.pvalueB < 1e-04) {
+            "<0.0001"
+          } else {
+            format(round(adj.pvalueB, digits), nsmall = digits)}, " (alpha = ", alpha, ") ", "\n", sep = "")
+      cat("                               ", "   unadjusted p-value: ",
+          if (pvalueB < 1e-04) {
+            "<0.0001"
+          } else {
+            format(round(pvalueB, digits), nsmall = digits)}, " (alpha = ",
+          format(round(adj.alphaB, digits), nsmall = digits), ") ", "\n\n", sep = "")
+    }
+  }
+  
+  if (dbtype == "no") {
+    cat("\n  No double bootstrap method is set. The results may be spurious.\n\n")
+  }
+  
+}

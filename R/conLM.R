@@ -151,7 +151,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                 b.unrestr   = b.unrestr,
                 b.restr     = b.unrestr,
                 residuals   = residuals, # unweighted residuals
-                fitted      = object$fitted,
+                fitted      = object$fitted.values,
                 weights     = weights,
                 df.residual = object$df.residual,
                 R2.org      = so$r.squared, 

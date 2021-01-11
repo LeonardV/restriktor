@@ -196,7 +196,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 b.restr     = b.unrestr,
                 residuals   = residuals,
                 wresid      = object$wresid,
-                fitted      = object$fitted,
+                fitted      = object$fitted.values,
                 weights     = weights,  # prior weights
                 wgt         = object$w, # weights used in the IWLS process
                 scale       = object$s, 

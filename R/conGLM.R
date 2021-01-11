@@ -153,7 +153,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                 b.unrestr         = b.unrestr,
                 b.restr           = b.unrestr,
                 residuals         = residuals(object, "working"), # unweighted residuals
-                fitted            = object$fitted,
+                fitted            = object$fitted.values,
                 prior.weights     = prior.weights, #prior weights
                 weights           = weights, #working weights, weights final iteration
                 df.residual       = object$df.residual,

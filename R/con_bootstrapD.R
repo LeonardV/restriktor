@@ -168,63 +168,31 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, R = 1000L,
   
   
   fn <- function(b) {
-    if (type == "bollen.stine" || type == "ordinary" || type == "yuan") {
-      for (g in 1:h0@Data@ngroups) {
-        stopifnot(h0@SampleStats@nobs[[g]] > 1L)
-        boot.idx <- sample(x = h0@SampleStats@nobs[[g]], 
-                           size = h0@SampleStats@nobs[[g]], replace = TRUE)
+    if (type == "bollen.stine" || type == "ordinary" || 
+        type == "yuan") {
+      BOOT.idx <- vector("list", length = lavdata@ngroups)
+      for (g in 1:lavdata@ngroups) {
+        stopifnot(lavdata@nobs[[g]] > 1L)
+        boot.idx <- sample(x = lavdata@nobs[[g]], size = lavdata@nobs[[g]], 
+                           replace = TRUE)
+        BOOT.idx[[g]] <- boot.idx
         dataX[[g]] <- dataX[[g]][boot.idx, , drop = FALSE]
-        if (!is.null(dataeXo[[g]])) {
-          dataeXo[[g]] <- dataeXo[[g]][boot.idx, , drop = FALSE]
-        }
-        if (!is.null(dataWT[[g]])) {
-          dataWT[[g]] <- dataWT[[g]][boot.idx]
-        }
-        if (lavoptions$missing != "listwise") {
-          dataMp[[g]] <- lav_data_missing_patterns(dataX[[g]], 
-                                                   sort.freq = FALSE, coverage = FALSE)
-        }
-        if (length(lavdata@ov.names.x[[g]]) == 0L && 
-            all(lavdata@ov.names[[g]] %in% lavdata@ov$name[lavdata@ov$type == 
-                                                           "ordered"])) {
-          dataRp[[g]] <- lav_data_resp_patterns(dataX[[g]])
-        }
-        if (lavdata@nlevels > 1L) {
-          clus <- matrix(0, nrow(dataX[[g]]), lavdata@nlevels - 
-                           1L)
-          for (l in 2:lavdata@nlevels) {
-            clus[, (l - 1L)] <- lavdata@Lp[[g]]$cluster.idx[[l]]
-          }
-          dataLp[[g]] <- lav_data_cluster_patterns(Y = dataX[[g]], 
-                                                   clus = clus, cluster = lavdata@cluster, 
-                                                   ov.names = lavdata@ov.names[[g]], 
-                                                   ov.names.l = lavdata@ov.names.l[[g]])
-        }
       }
+      newData <- lav_data_update(lavdata = lavdata, newX = dataX, 
+                                 BOOT.idx = BOOT.idx, lavoptions = lavoptions)
     }
     else {
-      for (g in 1:h0@Data@ngroups) {
-        dataX[[g]] <- MASS::mvrnorm(n = h0@SampleStats@nobs[[g]], 
-                                    mu = Mu.hat[[g]], Sigma = Sigma.hat[[g]])
+      for (g in 1:lavdata@ngroups) {
+        dataX[[g]] <- MASS::mvrnorm(n = lavdata@nobs[[g]], 
+                                    Sigma = Sigma.hat[[g]], mu = Mu.hat[[g]])
       }
+      newData <- lav_data_update(lavdata = lavdata, newX = dataX, 
+                                 lavoptions = lavoptions)
     }
-    newData <- lavdata
-    newData@X <- dataX
-    newData@eXo <- dataeXo
-    newData@weights <- dataWT
-    newData@Mp <- dataMp
-    newData@Rp <- dataRp
-    newData@Lp <- dataLp
     if (verbose) 
       cat("  ... bootstrap draw number: ", b, "\n")
-    
     bootSampleStats <- try(lav_samplestats_from_data(lavdata = newData, 
-                                                     missing = h0@Options$missing, rescale = (h0@Options$estimator == 
-                                                                                                "ML" && h0@Options$likelihood == "normal"), 
-                                                     estimator = h0@Options$estimator, mimic = h0@Options$mimic, 
-                                                     meanstructure = h0@Options$meanstructure, conditional.x = h0@Options$conditional.x, 
-                                                     se = h0@Options$se, test = h0@Options$test, group.w.free = h0@Options$group.w.free, 
-                                                     missing.h1 = TRUE, verbose = FALSE), silent = TRUE)
+                                                     lavoptions = lavoptions), silent = TRUE)
     if (inherits(bootSampleStats, "try-error")) {
       if (verbose) 
         cat("     FAILED: creating h0@SampleStats statistics\n")
@@ -294,7 +262,7 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, R = 1000L,
     }
     
     if ("B" %in% hypothesis.type) {
-      # hypothesis test Type A
+      # hypothesis test Type B
       out.ineq.boot <- solve.QP(Dmat = I.hat.boot, dvec = theta.hat.boot %*% I.hat.boot, Amat = t(Amat),
                                 bvec = rhs, meq = nrow(Amat.ceq))
       out.un.boot <- solve.QP(Dmat = I.hat.boot, dvec = theta.hat.boot %*% I.hat.boot, 

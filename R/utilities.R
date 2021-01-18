@@ -1,12 +1,3 @@
-## get non-exported functions from lavaan
-## for testing purposes only
-lav_partable_add          <- utils::getFromNamespace("lav_partable_add", "lavaan")
-lav_data_cluster_patterns <- utils::getFromNamespace("lav_data_cluster_patterns", "lavaan")
-lav_data_missing_patterns <- utils::getFromNamespace("lav_data_missing_patterns", "lavaan")
-lav_data_resp_patterns    <- utils::getFromNamespace("lav_data_resp_patterns", "lavaan")
-lav_samplestats_from_data <- utils::getFromNamespace("lav_samplestats_from_data", "lavaan")
-
-
 ## utility functions
 coef.restriktor <- function(object, ...)  {
   

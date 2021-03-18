@@ -5,6 +5,7 @@ conTestWald     <- function(object, type = type, ...) UseMethod("conTestWald")
 conTest_summary <- function(object, ...) UseMethod("conTest_summary")
 conTest_ceq     <- function(object, ...) UseMethod("conTest_ceq")
 conTestC        <- function(object, ...) UseMethod("conTestC")
+#conTestD        <- function(object, type = type, ...) UseMethod("conTestD")
 
 
 conTest <- function(object, constraints = NULL, type = "summary", test = "F", 
@@ -116,12 +117,19 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
     CALL.test <- c(list(object = fit.restr, test = test, type = type), 
                    ldots[m.test > 0L])
     do.call("conTest", CALL.test)
-  } else if (is.null(constraints)) {
-      if (class(object)[1] == "conTest") {
-        stop("Restriktor ERROR: object is already of class conTest.")
-      } 
-      else {
-        stop("Restriktor ERROR: ")
-      }
+  } 
+  # else if (inherits(object, "character") && !is.null(constraints)) {
+  #   
+  #   class(object) <- "conLavaan"
+  #   conTestD(object, type = type, ...) 
+  #   
+  # } 
+  else if (is.null(constraints)) {
+    if (class(object)[1] == "conTest") { 
+      stop("Restriktor ERROR: object is already of class conTest.")
+    } 
+    else {
+      stop("Restriktor ERROR: no constraints found.")
+    }
   }
 }  

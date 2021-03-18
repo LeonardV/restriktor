@@ -4,21 +4,22 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
   ## build a bare-bones parameter table for this model
   # if model is a numeric vecter
   if ("numeric" %in% class(model)) {
-    parTable <- con_partable_est(model, est = FALSE, label = TRUE)
+    parTable <- con_partable_est(model, est = TRUE, label = TRUE)
   } else {
     # if model is a fitted unrestricted object
-    parTable <- con_partable(model, est = FALSE, label = TRUE)  
+    parTable <- con_partable(model, est = TRUE, label = TRUE)  
   }
   
   # unlist constraints
   constraints <- unlist(constraints)
   
   if (is.character(constraints)) {
-    # parse the constraints
+    # parse the constraints 
     CON <- lav_constraints_parse(constraints = constraints,
                                  partable    = parTable,
-                                 debug       = debug)
-    
+                                 debug       = debug,
+                                 theta       = parTable$est)
+     
     FLAT <- lavParseModelString(constraints)
     CON_FLAT <- attr(FLAT, "constraints")
     LIST <- list()
@@ -154,7 +155,8 @@ con_constraints_ceq_amat <- function(object, constraints = NULL) {
 
   # parse the constraints
   CON <- lav_constraints_parse(constraints = constraints,
-                               partable    = lavpartable)
+                               partable    = lavpartable,
+                               theta       = lavpartable$est)
 
   CON$ceq.JAC
 }
@@ -174,7 +176,8 @@ con_constraints_con_amat <- function(object, constraints = NULL) {
 
   # parse the constraints
   CON <- lav_constraints_parse(constraints = constraints,
-                               partable = lavpartable)
+                               partable    = lavpartable, 
+                               theta       = lavpartable$est)
 
   rbind(CON$ceq.JAC, CON$cin.JAC)
 }
@@ -197,7 +200,8 @@ con_constraints_rhs_bvec <- function(object, constraints = NULL) {
   
   # parse the constraints
   CON <- lav_constraints_parse(constraints = constraints,
-                               partable    = lavpartable)
+                               partable    = lavpartable,
+                               theta       = lavpartable$est)
 
   c(CON$ceq.rhs, CON$cin.rhs)
 }

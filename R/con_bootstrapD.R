@@ -1,20 +1,20 @@
-bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, R = 1000L, 
-                       type = "bollen.stine", hypothesis.type = "A",
-                       verbose = FALSE, return.D = FALSE, 
-                       double.bootstrap = "no", double.bootstrap.R = 500L, 
-                       double.bootstrap.alpha = 0.05, warn = -1L, 
-                       parallel = c("no", "multicore", "snow"), ncpus = 1L, 
-                       cl = NULL, iseed = NULL) {
+bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, type = "A", 
+                       bootstrap.type = "bollen.stine", R = 1000L,  
+                       return.D = FALSE, double.bootstrap = "no", 
+                       double.bootstrap.R = 500L, double.bootstrap.alpha = 0.05, 
+                       verbose = FALSE, warn = -1L, 
+                       parallel = c("no", "multicore", "snow"), ncpus = 1L, cl = NULL, 
+                       seed = NULL) {
   
-  type <- tolower(type)
+  bootstrap.type <- tolower(bootstrap.type)
   stopifnot(inherits(h1, "lavaan"), 
-            type %in% c("bollen.stine", "parametric", 
-                        "yuan", "nonparametric", "ordinary"), 
+            bootstrap.type %in% c("bollen.stine", "parametric", 
+                                  "yuan", "nonparametric", "ordinary"), 
             double.bootstrap %in% c("no", "FDB", "standard"),
-            hypothesis.type %in% c("A", "B"))
+            type %in% c("A", "B"))
   
-  if (type == "nonparametric") {
-    type <- "ordinary"
+  if (bootstrap.type == "nonparametric") {
+    bootstrap.type <- "ordinary"
   }
   if (h1@Model@conditional.x) {
     stop("lavaan ERROR: this function is not (yet) available if conditional.x = TRUE")
@@ -31,8 +31,8 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, R = 1000L,
   }
   if (missing(parallel)) 
     parallel <- "no"
-  parallel <- match.arg(parallel)
-  have_mc <- have_snow <- FALSE
+    parallel <- match.arg(parallel)
+    have_mc <- have_snow <- FALSE
   if (parallel != "no" && ncpus > 1L) {
     if (parallel == "multicore") 
       have_mc <- .Platform$OS.type != "windows"
@@ -45,14 +45,13 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, R = 1000L,
   
   data <- h0@Data
   
-  if (type == "bollen.stine" || type == "parametric" || type == "yuan") {
-    #Sigma.hat <- lavaan:::computeSigmaHat(lavmodel = h0@Model)
+  if (bootstrap.type == "bollen.stine" || bootstrap.type == "parametric" || 
+      bootstrap.type == "yuan") {
     model.implied <- lav_model_implied(h0@Model)
     Sigma.hat <- model.implied$cov
-    #Mu.hat    <- lavaan:::computeMuHat(lavmodel = h0@Model)
-    Mu.hat <- model.implied$mean
+    Mu.hat    <- model.implied$mean
   }
-  if (type == "bollen.stine" || type == "yuan") {
+  if (bootstrap.type == "bollen.stine" || bootstrap.type == "yuan") {
     if (h0@Options$missing != "listwise") 
       stop("lavaan ERROR: bollen.stine/yuan bootstrap not available for missing data")
     dataX <- vector("list", length = data@ngroups)
@@ -69,7 +68,7 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, R = 1000L,
   dataRp <- lavdata@Rp
   dataLp <- lavdata@Lp
   
-  if (type == "bollen.stine") {
+  if (bootstrap.type == "bollen.stine") {
     for (g in 1:h0@Data@ngroups) {
       sigma.sqrt <- lav_matrix_symmetric_sqrt(Sigma.hat[[g]])
       S.inv.sqrt <- lav_matrix_symmetric_sqrt(h0@SampleStats@icov[[g]])
@@ -80,7 +79,7 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, R = 1000L,
       dataX[[g]] <- X
     }
   }
-  if (type == "yuan") {
+  if (bootstrap.type == "yuan") {
     g.a <- function(a, Sigmahat, Sigmahat.inv, S, tau.hat, 
                     p) {
       S.a <- a * S + (1 - a) * Sigmahat
@@ -139,7 +138,7 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, R = 1000L,
   I.hat <- lavInspect(h1, "information")
   N <- lavaan::nobs(h1) 
   
-  if ("A" %in% hypothesis.type) {
+  if ("A" %in% type) {
   ## hypothesis test Type A
   # fit equality constraint model.
     out.eq <- solve.QP(Dmat = I.hat, dvec = theta.hat %*% I.hat, Amat = t(Amat),
@@ -151,7 +150,7 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, R = 1000L,
     D.original <- N * 2 * (out.eq$value - out.ineq$value)
   }
   
-  if ("B" %in% hypothesis.type) {
+  if ("B" %in% type) {
   ## hypothesis test Type B
     # fit inequality constraint model, some equality constraints may be preserved.
     out.ineq <- solve.QP(Dmat = I.hat, dvec = theta.hat %*% I.hat, Amat = t(Amat),
@@ -168,8 +167,8 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, R = 1000L,
   
   
   fn <- function(b) {
-    if (type == "bollen.stine" || type == "ordinary" || 
-        type == "yuan") {
+    if (bootstrap.type == "bollen.stine" || bootstrap.type == "ordinary" || 
+        bootstrap.type == "yuan") {
       BOOT.idx <- vector("list", length = lavdata@ngroups)
       for (g in 1:lavdata@ngroups) {
         stopifnot(lavdata@nobs[[g]] > 1L)
@@ -251,7 +250,7 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, R = 1000L,
     I.hat.boot <- lavInspect(fit.boot.h1, "information")
     
 
-    if ("A" %in% hypothesis.type) {
+    if ("A" %in% type) {
     # hypothesis test Type A
       out.eq.boot   <- solve.QP(Dmat = I.hat.boot, dvec = theta.hat.boot %*% I.hat.boot, Amat = t(Amat),
                                 bvec = rhs, meq = nrow(Amat))
@@ -261,7 +260,7 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, R = 1000L,
       D.boot <- N * 2 * (out.eq.boot$value - out.ineq.boot$value)
     }
     
-    if ("B" %in% hypothesis.type) {
+    if ("B" %in% type) {
       # hypothesis test Type B
       out.ineq.boot <- solve.QP(Dmat = I.hat.boot, dvec = theta.hat.boot %*% I.hat.boot, Amat = t(Amat),
                                 bvec = rhs, meq = nrow(Amat.ceq))
@@ -279,7 +278,8 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, R = 1000L,
       plugin.pvalue <- bootstrapD(h0 = fit.boot.h0, h1 = fit.boot.h1,
                                   constraints = constraints,
                                   R = double.bootstrap.R,
-                                  type = type, verbose = FALSE, return.D = FALSE,
+                                  bootstrap.type = bootstrap.type, verbose = FALSE,
+                                  return.D = FALSE,
                                   double.bootstrap = "no", warn = warn,
                                   parallel = parallel, ncpus = ncpus, cl = cl)
       if (verbose)
@@ -289,7 +289,8 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, R = 1000L,
     else if (double.bootstrap == "FDB") {
       plugin.pvalue <- bootstrapD(h0 = fit.boot.h0, h1 = fit.boot.h1,
                                   constraints = constraints,
-                                  R = 1L, type = type, verbose = FALSE, warn = warn,
+                                  R = 1L, bootstrap.type = bootstrap.type, 
+                                  verbose = FALSE, warn = warn,
                                   return.D = TRUE, parallel = parallel, ncpus = ncpus,
                                   cl = cl, double.bootstrap = "no")
       D.2 <- attr(plugin.pvalue, "D")
@@ -312,7 +313,7 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, R = 1000L,
         cl <- parallel::makePSOCKcluster(rep("localhost", 
                                              ncpus))
         if (RNGkind()[1L] == "L'Ecuyer-CMRG") 
-          parallel::clusterSetRNGStream(cl, iseed = iseed)
+          parallel::clusterSetRNGStream(cl, seed = seed)
         
         res <- parallel::parLapply(cl, seq_len(RR), fn)
         parallel::stopCluster(cl)

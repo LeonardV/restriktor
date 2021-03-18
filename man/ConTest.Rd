@@ -280,8 +280,8 @@ conTest(fit.restr1)
   myRhs1 <- rep(0L, nrow(Amat1)) 
   myNeq1 <- 0
   
-  conTest(fit1.lm, constraints = Amat1,
-          rhs = myRhs1, neq = myNeq1)
+  iht(fit1.lm, constraints = Amat1,
+      rhs = myRhs1, neq = myNeq1)
 }            
 
 #########################
@@ -308,8 +308,8 @@ myConstraints2 <- ' group1 < group2
 # probability based on the parametric bootstrap. We only generate 9 
 # bootstrap samples in this example; in practice you may wish to 
 # use a much higher number.
-conTest(fit2.lm, constraints = myConstraints2, type = "A", 
-        boot = "parametric", R = 9)
+iht(fit2.lm, constraints = myConstraints2, type = "A", 
+    boot = "parametric", R = 9)
 
 
 # or fit restricted linear model
@@ -325,8 +325,8 @@ conTest(fit2.con)
   myRhs2 <- rep(0L, nrow(Amat2)) 
   myNeq2 <- 0
 
-  conTest(fit2.con, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
-          type = "A", boot = "parametric", R = 9)
+  iht(fit2.con, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
+      type = "A", boot = "parametric", R = 9)
 }            
 
 ## example 3: equality constraints only.
@@ -346,7 +346,7 @@ conTest(fit3.con)
 myConstraints4 <- ' group1 == group2
                     group3  < group4 '
 
-conTest(fit2.lm, constraints = myConstraints4, type = "B", neq.alt = 1)
+iht(fit2.lm, constraints = myConstraints4, type = "B", neq.alt = 1)
 
 # fit resticted model and compute model-based bootstrapped 
 # standard errors. We only generate 9 bootstrap samples in this 
@@ -355,7 +355,7 @@ conTest(fit2.lm, constraints = myConstraints4, type = "B", neq.alt = 1)
 # bootstrap samples is too low.
 fit4.con <- restriktor(fit2.lm, constraints = myConstraints4, 
                        se = "boot.model.based", B = 9)
-conTest(fit4.con, type = "B", neq.alt = 1)
+iht(fit4.con, type = "B", neq.alt = 1)
 
 
 ## example 5:
@@ -378,12 +378,12 @@ fit5.lm <- lm(y ~ X*Z, data = DATA3)
 myConstraints5 <- ' AVE := X + 16.86137*X.Z; 
                     AVE > 0 '
 
-conTest(fit5.lm, constraints = myConstraints5)
+iht(fit5.lm, constraints = myConstraints5)
 
 # or
 fit5.con <- restriktor(fit5.lm, constraints = ' AVE := X + 16.86137*X.Z; 
                                                 AVE > 0 ')
-conTest(fit5.con)
+iht(fit5.con)
 
 
 \dontrun{
@@ -410,9 +410,9 @@ conTest(fit5.con)
   # you may wish to use a much higher number. 
   # the double bootstrap was switched off; in practice you probably 
   # want to set it to "standard".
-  example6 <- conTestD(model = burns.model, data = FacialBurns,
-                       R = 2, constraints = burns.constraints,
-                       double.bootstrap = "no", group = "Sex")
+  example6 <- iht(model = burns.model, data = FacialBurns,
+                  R = 2, constraints = burns.constraints,
+                  double.bootstrap = "no", group = "Sex")
   
   example6
   
@@ -448,10 +448,10 @@ conTest(fit5.con)
   # we only generate 10 bootstrap samples in this example; in practice
   # you may wish to use a much higher number, say > 1000. The double 
   # bootstrap is not necessary in case of an univariate ANOVA model.
-  example7 <- conTestD(model = model, data = Data.new, 
-                       start = lavaan::parTable(fit),
-                       R = 10L, double.bootstrap = "no",
-                       constraints = constraints)
+  example7 <- iht(model = model, data = Data.new, 
+                  start = lavaan::parTable(fit),
+                  R = 10L, double.bootstrap = "no",
+                  constraints = constraints)
   example7
   }
 }

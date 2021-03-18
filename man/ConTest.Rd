@@ -1,6 +1,10 @@
 \name{conTest}
 \alias{conTest}
+\alias{contest}
+\alias{conTestD}
+\alias{contestD}
 \alias{iht}
+
 
 \title{function for informative hypothesis testing (iht)}
 \description{\code{conTest} tests linear equality and/or inequality 
@@ -10,6 +14,14 @@ restricted hypotheses for linear models.
 \usage{
 conTest(object, constraints = NULL, type = "summary", test = "F", 
         rhs = NULL, neq = 0, \dots)
+
+conTestD(model = NULL, data = NULL, constraints = NULL, 
+         type = c("A","B"), R = 1000L, bootstrap.type = "bollen.stine", 
+         return.test = TRUE, neq.alt = 0, 
+         double.bootstrap = "standard", double.bootstrap.R = 249, 
+         double.bootstrap.alpha = 0.05, 
+         parallel = c("no", "multicore", "snow"), 
+         ncpus = 1L, cl = NULL, verbose = FALSE, \ldots)        
 }
 
 \arguments{
@@ -22,6 +34,9 @@ conTest(object, constraints = NULL, type = "summary", test = "F",
   from the fitted restriktor object and do not to be specified again.
   } 
   
+  \item{model}{lavaan model syntax specifying the model. See \code{\link[lavaan]{model.syntax}} 
+    for more information. }
+
   \item{constraints}{there are two ways to constrain parameters. 
   First, the constraint syntax consists of one or more text-based
   descriptions, where the syntax can be specified as a literal 
@@ -37,6 +52,9 @@ conTest(object, constraints = NULL, type = "summary", test = "F",
   error. For more information about constructing the matrix \eqn{R} and 
   \eqn{rhs} see the details in the \code{\link{restriktor}} function.}
   
+  \item{data}{the data frame containing the observed variables being used to 
+    fit the lavaan model.}
+
   \item{type}{hypothesis test type "A", "B", "C", "global", or 
    "summary" (default). See details for more information.}
   
@@ -83,8 +101,35 @@ conTest(object, constraints = NULL, type = "summary", test = "F",
   first two rows of the constraints matrix \eqn{R} are treated as 
   equality constraints. Note: only used if constraints input is a 
   matrix or vector.}
+  \item{neq.alt}{integer: number of equality constraints that are maintained under 
+    the alternative hypothesis (for hypothesis test type "B").}
 
-  
+  \item{R}{Integer; number of bootstrap draws. The default value is set to 1000.}
+  \item{bootstrap.type}{If \code{"parametric"}, the parametric bootstrap is used. 
+    If \code{"bollen.stine"}, the semi-nonparametric Bollen-Stine bootstrap 
+    is used. The default is set to \code{"bollen.stine"}.}
+  \item{return.test}{Logical; if \code{TRUE}, the function returns bootstrapped         
+    test-values.}
+  \item{double.bootstrap}{If \code{"standard"} (default) the genuine double bootstrap is 
+    used to compute an additional set of plug-in p-values for each bootstrap       
+    sample. If \code{"no"}, no double bootstrap is used. If \code{"FDB"}, 
+    the fast double bootstrap is used to compute second level LRT-values for 
+    each bootstrap sample. Note that the \code{"FDB"} is experimental and should 
+    not be used by inexperienced users.}    
+  \item{double.bootstrap.R}{Integer; number of double bootstrap draws. The default 
+    value is set to 249.}
+  \item{double.bootstrap.alpha}{The significance level to compute the adjusted 
+    alpha based on the plugin p-values. Only used if \code{double.bootstrap = "standard"}. 
+    The default value is set to 0.05.}
+  \item{parallel}{The type of parallel operation to be used (if any). If missing, 
+    the default is set "no".}
+  \item{ncpus}{Integer: number of processes to be used in parallel operation: 
+      typically one would chose this to the number of available CPUs.} 
+  \item{cl}{An optional parallel or snow cluster for use if 
+    \code{parallel = "snow"}. If not supplied, a cluster on the local machine 
+    is created for the duration of the \code{InformativeTesting} call.}
+  \item{verbose}{Logical; if \code{TRUE}, information is shown at each bootstrap         
+    draw.}
   \item{\dots}{futher options for the \code{conTest} and/or 
   \code{restriktor} function. See details for more information.}
 
@@ -137,68 +182,58 @@ See for example \code{\link{conTestF}} for all available arguments.
 }
 
 \value{
-  An object of class conTest, for which a print is available. 
-  More specifically, it is a list with the following items:
-  \item{CON}{a list with useful information about the constraints.}
-  \item{Amat}{constraints matrix.}
-  \item{bvec}{vector of right-hand side elements.}
-  \item{meq}{number of equality constraints.}
-  \item{meq.alt}{same as input neq.alt.}
-  \item{iact}{number of active constraints.}
-  \item{type}{same as input.}
-  \item{test}{same as input.}
-  \item{Ts}{test-statistic value.}
-  \item{df.residual}{the residual degrees of freedom.}
-  \item{pvalue}{tail probability for \code{Ts}.}
-  \item{b.eqrestr}{equality restricted regression coefficients. 
-  Only available for \code{type = "A"} and \code{type = "global"}, 
-  else \code{b.eqrestr = NULL}.}
-  \item{b.unrestr}{unrestricted regression coefficients.}
-  \item{b.restr}{restricted regression coefficients.}
-  \item{b.restr.alt}{restricted regression coefficients under HA 
-  if some equality constraints are maintained.}
-  \item{Sigma}{variance-covariance matrix of unrestricted model.}
-  \item{R2.org}{unrestricted R-squared.}
-  \item{R2.reduced}{restricted R-squared.}
-  \item{boot}{same as input.}
-  \item{model.org}{original model.}
+  An object of class conTest or conTestLavaan for which a print is available. 
 }
 
 \references{
-Robertson, T., Wright, F.T. and Dykstra, R.L. (1988). \emph{Order Restricted 
-Statistical Inference} New York: Wiley.
-
-Shapiro, A. (1988). Towards a unified theory of inequality-constrained 
-testing in multivariate analysis. \emph{International Statistical 
-Review} \bold{56}, 49--62.
-
-Silvapulle, M. (1992a). Robust tests of inequality constraints and 
-one-sided hypotheses in the linear model. \emph{Biometrika}, 
-\bold{79}, 621--630.
-
-Silvapulle, M. (1992b). Robust Wald-Type Tests of One-Sided Hypotheses 
-in the Linear Model. \emph{Journal of the American Statistical Association}, 
-\bold{87}, 156--161.
-
-Silvapulle, M. and Silvapulle, P. (1995). A score test against 
-one-sided alternatives. \emph{American statistical association}, 
-\bold{90}, 342--349.
-
-Silvapulle, M. (1996) On an F-type statistic for testing one-sided 
-hypotheses and computation of chi-bar-squared weights. 
-\emph{Statistics & probability letters}, \bold{28}, 137--141.
-
-Silvapulle, M. (1996) Robust bounded influence tests against 
-one-sided hypotheses in general parametric models. 
-\emph{Statistics & probability letters}, \bold{31}, 45--50.
-
-Silvapulle, M.J. and Sen, P.K. (2005). \emph{Constrained 
-Statistical Inference}. Wiley, New York
-
-Wolak, F. (1987). An exact test for multiple inequality and 
-equality constraints in the linear regression model. 
-\emph{Journal of the American statistical association}, 
-\bold{82}, 782--793.
+  Robertson, T., Wright, F.T. and Dykstra, R.L. (1988). \emph{Order Restricted 
+  Statistical Inference} New York: Wiley.
+  
+  Shapiro, A. (1988). Towards a unified theory of inequality-constrained 
+  testing in multivariate analysis. \emph{International Statistical 
+  Review} \bold{56}, 49--62.
+  
+  Silvapulle, M. (1992a). Robust tests of inequality constraints and 
+  one-sided hypotheses in the linear model. \emph{Biometrika}, 
+  \bold{79}, 621--630.
+  
+  Silvapulle, M. (1992b). Robust Wald-Type Tests of One-Sided Hypotheses 
+  in the Linear Model. \emph{Journal of the American Statistical Association}, 
+  \bold{87}, 156--161.
+  
+  Silvapulle, M. and Silvapulle, P. (1995). A score test against 
+  one-sided alternatives. \emph{American statistical association}, 
+  \bold{90}, 342--349.
+  
+  Silvapulle, M. (1996) On an F-type statistic for testing one-sided 
+  hypotheses and computation of chi-bar-squared weights. 
+  \emph{Statistics & probability letters}, \bold{28}, 137--141.
+  
+  Silvapulle, M. (1996) Robust bounded influence tests against 
+  one-sided hypotheses in general parametric models. 
+  \emph{Statistics & probability letters}, \bold{31}, 45--50.
+  
+  Silvapulle, M.J. and Sen, P.K. (2005). \emph{Constrained 
+  Statistical Inference}. Wiley, New York
+  
+  Vanbrabant, L., Van de Schoot, R., Van Loey, N.E.E. & Rosseel, Y. (2017). 
+  A General Procedure for Testing Inequality Constrained Hypotheses in SEM.
+  \emph{Methodology European Journal of Research Methods for the Behavioral and Social Sciences},
+  \bold{13}, 61-70.
+  
+  Van de Schoot, R., Hoijtink, H., & Dekovic, M. (2010). 
+  Testing inequality constrained hypotheses in SEM models. 
+  \emph{Structural Equation Modeling}, \bold{17}, 443-463.
+  
+  Van de Schoot, R., Strohmeier, D. (2011). 
+  Testing informative hypotheses in SEM increases power: An 
+  illustration contrasting classical. \emph{International Journal 
+  of Behavioral Development}, \bold{35}, 180-190.
+  
+  Wolak, F. (1987). An exact test for multiple inequality and 
+  equality constraints in the linear regression model. 
+  \emph{Journal of the American statistical association}, 
+  \bold{82}, 782--793.
 }
 
 \author{Leonard Vanbrabant and Yves Rosseel}
@@ -349,4 +384,74 @@ conTest(fit5.lm, constraints = myConstraints5)
 fit5.con <- restriktor(fit5.lm, constraints = ' AVE := X + 16.86137*X.Z; 
                                                 AVE > 0 ')
 conTest(fit5.con)
+
+
+\dontrun{
+  # testing equality and/or inequality restrictions in SEM:
+  
+  #########################
+  ### real data example ###
+  #########################
+  # Multiple group path model for facial burns example.
+  
+  # model syntax with starting values.
+  burns.model <- 'Selfesteem ~ Age + c(m1, f1)*TBSA + HADS +
+                             start(-.10, -.20)*TBSA  
+               HADS ~ Age + c(m2, f2)*TBSA + RUM +
+                      start(.10, .20)*TBSA '
+  
+  
+  # constraints syntax
+  burns.constraints <- 'f2 > 0  ; m1 < 0
+                        m2 > 0  ; f1 < 0
+                        f2 > m2 ; f1 < m1'
+  
+  # we only generate 2 bootstrap samples in this example; in practice
+  # you may wish to use a much higher number. 
+  # the double bootstrap was switched off; in practice you probably 
+  # want to set it to "standard".
+  example6 <- conTestD(model = burns.model, data = FacialBurns,
+                       R = 2, constraints = burns.constraints,
+                       double.bootstrap = "no", group = "Sex")
+  
+  example6
+  
+  ##########################
+  ### artificial example ###
+  ##########################
+  # Simple ANOVA model with 3 groups (N = 20 per group)
+  set.seed(1234)
+  Y <- cbind(c(rnorm(20,0,1), rnorm(20,0.5,1), rnorm(20,1,1)))
+  grp <- c(rep("1", 20), rep("2", 20), rep("3", 20))
+  Data <- data.frame(Y, grp)
+  
+  #create model matrix
+  fit.lm <- lm(Y ~ grp, data = Data)
+  mfit <- fit.lm$model
+  mm <- model.matrix(mfit)
+  
+  Y <- model.response(mfit)
+  X <- data.frame(mm[,2:3])
+  names(X) <- c("d1", "d2")
+  Data.new <- data.frame(Y, X)
+  
+  # model
+  model <- 'Y ~ 1 + a1*d1 + a2*d2'
+  
+  # fit without constraints
+  fit <- lavaan::sem(model, data = Data.new)
+  
+  # constraints syntax: mu1 < mu2 < mu3
+  constraints <- ' a1 > 0
+                   a1 < a2 '
+  
+  # we only generate 10 bootstrap samples in this example; in practice
+  # you may wish to use a much higher number, say > 1000. The double 
+  # bootstrap is not necessary in case of an univariate ANOVA model.
+  example7 <- conTestD(model = model, data = Data.new, 
+                       start = lavaan::parTable(fit),
+                       R = 10L, double.bootstrap = "no",
+                       constraints = constraints)
+  example7
+  }
 }

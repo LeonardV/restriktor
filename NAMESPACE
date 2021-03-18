@@ -63,8 +63,7 @@ export("restriktor",
        "conTestWald.conRLM", 
        "conTestC.restriktor", 
        "conTest_ceq.conLM", "conTest_ceq.conRLM", "conTest_ceq.conGLM", 
-       "conTestD.conLavaan", #"conTestLRT.conLavaan",
-       "bootstrapD", #"bootstrapLRT", 
+       "conTestD", "bootstrapD", 
        "goric", "print.con_goric", "print.conTestLavaan",
        "print.restriktor", "print.summary.restriktor",
        "summary.restriktor", "conTest_summary.restriktor",
@@ -85,6 +84,7 @@ S3method(summary, con_goric)
 S3method(coef, con_goric)
 #S3method(plot, conTestLavaan)
 
+#S3method(conTestD, conLavaan)
 S3method(conTestC, restriktor)
 S3method(conTestLRT, conLM)
 S3method(conTestLRT, conGLM)

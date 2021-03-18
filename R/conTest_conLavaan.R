@@ -1,17 +1,15 @@
-conTestD.conLavaan <- function(model = NULL, data, constraints = NULL, R = 1000L, 
-                               type = "bollen.stine", return.test = TRUE, 
-                               double.bootstrap = "standard", neq.alt = 0,
-                               hypothesis.type = c("A","B"), 
-                               double.bootstrap.R = 249, double.bootstrap.alpha = 0.05, 
-                               parallel = c("no", "multicore", "snow"), 
-                               ncpus = 1L, cl = NULL, verbose = FALSE, ...) {
-  
+conTestD <- function(model = NULL, data = NULL, constraints = NULL, 
+                     type = c("A","B"), R = 1000L, bootstrap.type = "bollen.stine", 
+                     return.test = TRUE, neq.alt = 0, 
+                     double.bootstrap = "standard", double.bootstrap.R = 249, 
+                     double.bootstrap.alpha = 0.05, 
+                     parallel = c("no", "multicore", "snow"), 
+                     ncpus = 1L, cl = NULL, verbose = FALSE, ...) {
+
   # fit unrestricted model
   fit.h2 <- sem(model, ..., data = data, se = "none", test = "standard") 
   
-  # # fit restricted model
-  # fit.h1 <- lavaan:::sem(model, ..., data = data, se = "none", test = "standard", 
-  #                        constraints = constraints)
+  stopifnot(!is.null(constraints))
   
   ## fit null-model
   # add constraints to parameter table
@@ -20,8 +18,6 @@ conTestD.conLavaan <- function(model = NULL, data, constraints = NULL, R = 1000L
   for(con in 1:length(CON)) {
     parTable <- lav_partable_add(parTable, CON[[con]])
   }
-  
-  
   
   # replace <, > with ==
   user.equal <- parTable
@@ -46,10 +42,10 @@ conTestD.conLavaan <- function(model = NULL, data, constraints = NULL, R = 1000L
     
   fit.h0 <- sem(user.equal, ..., data = data, se = "none", test = "standard")
   
-  if ("A" %in% hypothesis.type) {
+  if ("A" %in% type) {
     bootA <- bootstrapD(h0 = fit.h0, h1 = fit.h2, 
                         constraints = constraints, 
-                        R = R, type = type, hypothesis.type = "A", 
+                        R = R, bootstrap.type = bootstrap.type, type = "A", 
                         verbose = verbose, return.D = return.test, 
                         double.bootstrap = double.bootstrap, 
                         double.bootstrap.R = double.bootstrap.R, 
@@ -57,10 +53,10 @@ conTestD.conLavaan <- function(model = NULL, data, constraints = NULL, R = 1000L
                         parallel = parallel, ncpus = ncpus, cl = cl)
   }
   
-  if ("B" %in% hypothesis.type) {
+  if ("B" %in% type) {
     bootB <- bootstrapD(h0 = fit.h0, h1 = fit.h2, 
                         constraints = constraints, 
-                        R = R, type = type, hypothesis.type = "B", 
+                        R = R, bootstrap.type = bootstrap.type, type = "B", 
                         verbose = verbose, return.D = return.test, 
                         double.bootstrap = double.bootstrap, 
                         double.bootstrap.R = double.bootstrap.R, 
@@ -73,12 +69,12 @@ conTestD.conLavaan <- function(model = NULL, data, constraints = NULL, R = 1000L
                  double.bootstrap = double.bootstrap, 
                  double.bootstrap.alpha = double.bootstrap.alpha, 
                  return.test = return.test, 
-                 type = type)
+                 type = bootstrap.type)
   
-  if ("A" %in% hypothesis.type) {
+  if ("A" %in% type) {
     output$bootA <- bootA
   }
-  if ("B" %in% hypothesis.type) {
+  if ("B" %in% type) {
     output$bootB <- bootB
   }
   

@@ -354,7 +354,7 @@ myConstraints3 <- ' group1 < group2
 
 # fit restricted robust linear model and compute 
 # Huber-White (robust) standard errors.
-fit3.con <- restriktor(fit3.rlm, constraints = myConstraints2, 
+fit3.con <- restriktor(fit3.rlm, constraints = myConstraints3, 
                        se = "HC0")
 summary(fit3.con)
 

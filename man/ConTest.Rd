@@ -265,13 +265,13 @@ coef(fit1.lm)
 myConstraints1 <- ' GroupActive  < GroupPassive; 
                     GroupPassive < GroupNo '
 
-conTest(fit1.lm, myConstraints1)
+iht(fit1.lm, myConstraints1)
 
 
 # another way is to first fit the restricted model
 fit.restr1 <- restriktor(fit1.lm, constraints = myConstraints1)
 
-conTest(fit.restr1)
+iht(fit.restr1)
 
 \dontrun{ 
   # Or in matrix notation.
@@ -315,7 +315,7 @@ iht(fit2.lm, constraints = myConstraints2, type = "A",
 # or fit restricted linear model
 fit2.con <- restriktor(fit2.lm, constraints = myConstraints2)
 
-conTest(fit2.con)
+iht(fit2.con)
 
 \dontrun{ 
   # increasing means in matrix notation.
@@ -334,11 +334,11 @@ myConstraints3 <- ' group1 == group2
                     group2 == group3
                     group3 == group4 '
 
-conTest(fit2.lm, constraints = myConstraints3)
+iht(fit2.lm, constraints = myConstraints3)
 
 # or
 fit3.con <- restriktor(fit2.lm, constraints = myConstraints3)
-conTest(fit3.con)
+iht(fit3.con)
 
 
 ## example 4:

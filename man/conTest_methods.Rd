@@ -1,9 +1,9 @@
-\name{conTest-methods}
+\name{iht-methods}
 \alias{conTest-methods}
 \alias{iht-methods}
 \alias{print.conTest}
 
-\title{Methods for conTest}
+\title{Methods for iht}
 \description{Print function for objects of class \code{conTest}. 
 }
 
@@ -38,6 +38,6 @@
   fit.con <- restriktor(fit.lm, constraints = "GroupActive  < GroupPassive; 
                                                GroupPassive < GroupNo")
   
-  conTest(fit.con)
+  iht(fit.con)
 }
   

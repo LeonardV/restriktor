@@ -121,7 +121,7 @@ in general parametric models. \emph{Statistics & probability letters},
 
 \seealso{ 
   \link[quadprog:solve.QP]{quadprog}, 
-  \code{\link{conTest}}
+  \code{\link{iht}}
 }
 
 \examples{
@@ -145,13 +145,13 @@ coef(fit1.lm)
 myConstraints1 <- ' GroupActive  == GroupPassive; 
                     GroupPassive == GroupNo '
 
-conTest(fit1.lm, myConstraints1)
+iht(fit1.lm, myConstraints1)
 
 
 # another way is to first fit the restricted model
 fit_restr1 <- restriktor(fit1.lm, constraints = myConstraints1)
 
-conTest(fit_restr1)
+iht(fit_restr1)
 
 \dontrun{ 
   # Or in matrix notation.
@@ -160,8 +160,8 @@ conTest(fit_restr1)
   myRhs1 <- rep(0L, nrow(Amat1)) 
   myNeq1 <- 2
   
-  conTest(fit1.lm, constraints = Amat1,
-          rhs = myRhs1, neq = myNeq1)
+  iht(fit1.lm, constraints = Amat1,
+      rhs = myRhs1, neq = myNeq1)
 }            
 
 }

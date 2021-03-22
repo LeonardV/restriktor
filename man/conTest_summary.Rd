@@ -1,5 +1,6 @@
 \name{conTest_summary}
 \alias{conTest_summary}
+\alias{iht_summary}
 \alias{conTest_summary.restriktor}
 
 \title{function for computing all available hypothesis tests
@@ -35,7 +36,7 @@ function if \code{type = "summary"}.
     }
   }
   
-  \item{\dots}{the same arguments as passed to the \code{\link{conTest}} function,
+  \item{\dots}{the same arguments as passed to the \code{\link{iht}} function,
   except for \code{type}, of course.}
 }
 
@@ -109,7 +110,7 @@ equality constraints in the linear regression model.
 
 \seealso{ 
   \link[quadprog:solve.QP]{quadprog}, 
-  \code{\link{conTest}}
+  \code{\link{iht}}
 }
 
 \examples{
@@ -133,13 +134,13 @@ coef(fit1.lm)
 myConstraints1 <- ' GroupActive  < GroupPassive; 
                     GroupPassive < GroupNo '
 
-conTest(fit1.lm, myConstraints1)
+iht(fit1.lm, myConstraints1)
 
 
 # another way is to first fit the restricted model
 fit.restr1 <- restriktor(fit1.lm, constraints = myConstraints1)
 
-conTest(fit.restr1)
+iht(fit.restr1)
 
 \dontrun{ 
   # Or in matrix notation.
@@ -150,7 +151,7 @@ conTest(fit.restr1)
   
   fit1.con <- restriktor(fit1.lm, constraints = Amat1,
                          rhs = myRhs1, neq = myNeq1)
-  conTest(fit1.con)
+  iht(fit1.con)
 }            
 
 }

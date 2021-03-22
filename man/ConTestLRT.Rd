@@ -202,13 +202,13 @@ coef(fit1_lm)
 myConstraints1 <- ' GroupActive  < GroupPassive; 
                     GroupPassive < GroupNo '
 
-conTest(fit1_lm, myConstraints1, test = "LRT")
+iht(fit1_lm, myConstraints1, test = "LRT")
 
 
 # another way is to first fit the restricted model
 fit_restr1 <- restriktor(fit1_lm, constraints = myConstraints1)
 
-conTest(fit_restr1, test = "LRT")
+iht(fit_restr1, test = "LRT")
 
 \dontrun{ 
   # Or in matrix notation.
@@ -217,8 +217,8 @@ conTest(fit_restr1, test = "LRT")
   myRhs1 <- rep(0L, nrow(Amat1)) 
   myNeq1 <- 0
   
-  conTest(fit1_lm, constraints = Amat1, test = "LRT",
-          rhs = myRhs1, neq = myNeq1)
+  iht(fit1_lm, constraints = Amat1, test = "LRT",
+      rhs = myRhs1, neq = myNeq1)
 }            
 
 #########################
@@ -245,14 +245,13 @@ myConstraints2 <- ' group1 < group2
 # probability based on the parametric bootstrap. We only generate 9 
 # bootstrap samples in this example; in practice you may wish to 
 # use a much higher number.
-conTest(fit2_lm, constraints = myConstraints2, type = "A", test = "LRT",
-        boot = "parametric", R = 9)
-
+iht(fit2_lm, constraints = myConstraints2, type = "A", test = "LRT",
+    boot = "parametric", R = 9)
 
 # or fit restricted linear model
 fit2_con <- restriktor(fit2_lm, constraints = myConstraints2)
 
-conTest(fit2_con, test = "LRT")
+iht(fit2_con, test = "LRT")
 
 \dontrun{ 
   # increasing means in matrix notation.
@@ -262,8 +261,8 @@ conTest(fit2_con, test = "LRT")
   myRhs2 <- rep(0L, nrow(Amat2)) 
   myNeq2 <- 0
 
-  conTest(fit2_con, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
-          type = "A", test = "LRT", boot = "parametric", R = 9)
+  iht(fit2_con, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
+      type = "A", test = "LRT", boot = "parametric", R = 9)
 }            
 
 ## example 3:
@@ -271,8 +270,8 @@ conTest(fit2_con, test = "LRT")
 myConstraints3 <- ' group1 == group2
                     group3  < group4 '
 
-conTest(fit2_lm, constraints = myConstraints3, type = "B", 
-        test = "LRT", neq.alt = 1)
+iht(fit2_lm, constraints = myConstraints3, type = "B", 
+    test = "LRT", neq.alt = 1)
 
 # fit resticted model and compute model-based bootstrapped 
 # standard errors. We only generate 9 bootstrap samples in this 
@@ -281,7 +280,7 @@ conTest(fit2_lm, constraints = myConstraints3, type = "B",
 # bootstrap samples is too low.
 fit3_con <- restriktor(fit2_lm, constraints = myConstraints3, 
                        se = "boot.model.based", B = 9)
-conTest(fit3_con, type = "B", test = "LRT", neq.alt = 1)
+iht(fit3_con, type = "B", test = "LRT", neq.alt = 1)
 
 
 ## example 4:
@@ -304,10 +303,10 @@ fit4_lm <- lm(y ~ X*Z, data = DATA3)
 myConstraints4 <- ' AVE := X + 16.86137*X.Z; 
                     AVE > 0 '
 
-conTest(fit4_lm, constraints = myConstraints4, test = "LRT")
+iht(fit4_lm, constraints = myConstraints4, test = "LRT")
 
 # or
 fit4_con <- restriktor(fit4_lm, constraints = ' AVE := X + 16.86137*X.Z; 
                                                 AVE > 0 ')
-conTest(fit4_con, test = "LRT")
+iht(fit4_con, test = "LRT")
 }

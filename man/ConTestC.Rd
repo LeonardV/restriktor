@@ -70,7 +70,7 @@ Statistical Inference}. Wiley, New York
 
 \seealso{ 
   \link[quadprog:solve.QP]{quadprog}, 
-  \code{\link{conTest}}
+  \code{\link{iht}}
 }
 
 \examples{
@@ -94,13 +94,13 @@ coef(fit1.lm)
 myConstraints1 <- ' GroupActive  < GroupPassive; 
                     GroupPassive < GroupNo '
 
-conTest(fit1.lm, myConstraints1, type = "C")
+iht(fit1.lm, myConstraints1, type = "C")
 
 
 # another way is to first fit the restricted model
 fit.restr1 <- restriktor(fit1.lm, constraints = myConstraints1)
 
-conTest(fit.restr1, type = "C")
+iht(fit.restr1, type = "C")
 
 \dontrun{ 
   # Or in matrix notation.
@@ -111,7 +111,7 @@ conTest(fit.restr1, type = "C")
   
   fit1.con <- restriktor(fit1.lm, constraints = Amat1,
                          rhs = myRhs1, neq = myNeq1)
-  conTest(fit1.con, type = "C")
+  iht(fit1.con, type = "C")
 }            
 
 }

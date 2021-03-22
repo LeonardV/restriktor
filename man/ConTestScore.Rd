@@ -211,13 +211,13 @@ coef(fit1.lm)
 myConstraints1 <- ' GroupActive  < GroupPassive; 
                     GroupPassive < GroupNo '
 
-conTest(fit1.lm, myConstraints1, test = "score")
+iht(fit1.lm, myConstraints1, test = "score")
 
 
 # another way is to first fit the restricted model
 fit.restr1 <- restriktor(fit1.lm, constraints = myConstraints1)
 
-conTest(fit.restr1, test = "score")
+iht(fit.restr1, test = "score")
 
 \dontrun{ 
   # Or in matrix notation.
@@ -226,8 +226,8 @@ conTest(fit.restr1, test = "score")
   myRhs1 <- rep(0L, nrow(Amat1)) 
   myNeq1 <- 0
   
-  conTest(fit1.lm, constraints = Amat1, test = "score",
-          rhs = myRhs1, neq = myNeq1)
+  iht(fit1.lm, constraints = Amat1, test = "score",
+      rhs = myRhs1, neq = myNeq1)
 }            
 
 #########################
@@ -254,8 +254,8 @@ myConstraints2 <- ' group1 < group2
 # probability based on the parametric bootstrap. We only generate 9 
 # bootstrap samples in this example; in practice you may wish to 
 # use a much higher number.
-conTest(fit2.lm, constraints = myConstraints2, type = "A", test = "score",
-        boot = "parametric", R = 9)
+iht(fit2.lm, constraints = myConstraints2, type = "A", test = "score",
+    boot = "parametric", R = 9)
 
 
 # or fit restricted linear model
@@ -271,8 +271,8 @@ conTest(fit2.con, test = "score")
   myRhs2 <- rep(0L, nrow(Amat2)) 
   myNeq2 <- 0
 
-  conTest(fit2.con, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
-          type = "A", test = "score", boot = "parametric", R = 9)
+  iht(fit2.con, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
+      type = "A", test = "score", boot = "parametric", R = 9)
 }            
 
 ## example 3:
@@ -280,7 +280,7 @@ conTest(fit2.con, test = "score")
 myConstraints3 <- ' group1 == group2
                     group3  < group4 '
 
-conTest(fit2.lm, constraints = myConstraints3, type = "B", test = "score", neq.alt = 1)
+iht(fit2.lm, constraints = myConstraints3, type = "B", test = "score", neq.alt = 1)
 
 # fit resticted model and compute model-based bootstrapped 
 # standard errors. We only generate 9 bootstrap samples in this 
@@ -289,7 +289,7 @@ conTest(fit2.lm, constraints = myConstraints3, type = "B", test = "score", neq.a
 # bootstrap samples is too low.
 fit3.con <- restriktor(fit2.lm, constraints = myConstraints3, 
                        se = "boot.model.based", B = 9)
-conTest(fit3.con, type = "B", test = "score", neq.alt = 1)
+iht(fit3.con, type = "B", test = "score", neq.alt = 1)
 
 
 ## example 4:
@@ -312,10 +312,10 @@ fit4.lm <- lm(y ~ X*Z, data = DATA3)
 myConstraints4 <- ' AVE := X + 16.86137*X.Z; 
                     AVE > 0 '
 
-conTest(fit4.lm, constraints = myConstraints4, test = "score")
+iht(fit4.lm, constraints = myConstraints4, test = "score")
 
 # or
 fit4.con <- restriktor(fit4.lm, constraints = ' AVE := X + 16.86137*X.Z; 
                                                 AVE > 0 ')
-conTest(fit4.con, test = "score")
+iht(fit4.con, test = "score")
 }

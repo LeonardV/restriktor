@@ -5,6 +5,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
   # if model is a numeric vecter
   if ("numeric" %in% class(model)) {
     parTable <- con_partable_est(model, est = TRUE, label = TRUE)
+    parTable_org <- parTable
   } else {
     # if model is a fitted unrestricted object
     parTable <- con_partable(model, est = TRUE, label = TRUE)  

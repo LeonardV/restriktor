@@ -5,8 +5,8 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
                            debug = FALSE, ...) {
   
   # check class
-  if (!(class(object)[1] == "numeric")) {
-    stop("Restriktor ERROR: object must be of class numeric.")
+  if (!(class(object)[1] %in% c("numeric", "CTmeta"))) { 
+    stop("Restriktor ERROR: object must be of class numeric or CTmeta.")
   }
   if (is.null(VCOV)) {
     stop("Restriktor ERROR: variance-covariance matrix VCOV must be provided.")

@@ -923,6 +923,49 @@ goric.numeric <- function(object, ...,
 }
 
 
+goric.CTmeta <- function(object, ...,
+                         VCOV = NULL,
+                         comparison = "unconstrained",
+                         type = "gorica", sample.nobs = NULL,
+                         bound = NULL, debug = FALSE) {
+  
+  if (!inherits(object, "CTmeta")) {
+    stop("restriktor ERROR: the object must be of class CTmeta.")
+  }
+  
+  if (!c(type %in% c("gorica", "goricac"))) {
+    stop("restriktor ERROR: object of class CTmeta is only supported for type = 'gorica(c)'.")
+  }
+  
+  objectList <- list(...)
+  mcList <- as.list(match.call())
+  mcList <- mcList[-c(1)]
+  mcList$object       <- NULL
+  mcList$comparison   <- NULL
+  mcList$type         <- NULL
+  mcList$VCOV         <- NULL
+  
+  #<FIXME>
+  mcnames <- names(mcList) == ""
+  lnames <- as.character(mcList[mcnames])
+  names(mcList)[mcnames] <- lnames
+  objectList <- mcList  
+  #</FIXME>
+  
+  objectList$object       <- coef(object)
+  objectList$VCOV         <- vcov(object)
+  objectList$comparison   <- comparison
+  objectList$type         <- type
+  objectList$bound        <- bound
+  objectList$debug        <- debug
+  if (type == "goricac") {
+    objectList$sample.nobs <- sample.nobs
+  }
+  res <- do.call(goric.default, objectList)
+  
+  res
+}
+
 
 
 print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {

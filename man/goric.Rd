@@ -5,7 +5,7 @@
 \alias{summary.con_goric}
 \alias{coef.con_goric}
 
-\title{Generalized Order-Restrikted Information Criterion (Approximation) Weights}
+\title{Generalized Order-Restricted Information Criterion (Approximation) Weights}
 \description{The \code{goric} function computes GORIC(A) weights, which are 
 comparable to the Akaike weights. 
 }
@@ -25,17 +25,21 @@ comparable to the Akaike weights.
   \item{object}{an object containing the outcome of a statistical analysis.
   Currently, the following objects can be processed:
   \itemize{
-  \item a fitted object of class restriktor. 
-  \item a fitted unconstrained object of class \code{lm}, \code{rlm} or \code{glm}. 
-  \item a numeric vector containing the unconstrained estimates resulting from any 
-  statistical analysis.}
+    \item a fitted object of class restriktor. 
+    \item a fitted unconstrained object of class \code{lm}, \code{rlm} or \code{glm}. 
+    \item a numeric vector containing the unconstrained estimates resulting from any 
+    statistical analysis.
+    \item a fitted object of class \code{CTmeta}. 
+  }
   }
   
-  \item{x}{an object of class \code{goric}.}
+  \item{x}{an object of class \code{con_goric}.}
 
   \item{\ldots}{this depends on the class of the object. If object is of class 
   restriktor, further objects of class restriktor can be passed. If object is of
-  class \code{lm}, \code{rlm} or \code{glm}, the constraints can be passed. If object is of 
+  class \code{lm}, \code{rlm} or \code{glm}, the constraints can be passed. If
+  object is of class \code{lavaan}, the standardized or unstandardized vcov can
+  be used, using setting \code{standardized = TRUE}. If object is of 
   class numeric, the constraints can be passed. See details for more
   information.}
   

@@ -705,14 +705,14 @@ goric.default <- function(object, ...,
 
   ans$objectList  <- conList
   ans$objectNames <- objectnames
-  # compute goric weights and relative weights
+  # compute goric weights and ratio weights
   delta <- df$goric - min(df$goric)
   goric.weights <- exp(-delta / 2) / sum(exp(-delta / 2))
   df$goric.weights <- goric.weights
     names(df)[5] <- paste0(type, ".weights")
   ans$result <- df
 
-  # compute relative weights
+  # compute ratio weights
   modelnames <- as.character(df$model)
   if (length(modelnames) > 1) {
     rw <- goric.weights %*% t(1/goric.weights)
@@ -720,7 +720,7 @@ goric.default <- function(object, ...,
     diag(rw) <- 1
     rownames(rw) <- modelnames
     colnames(rw) <- paste0("vs. ", modelnames)
-    ans$relative.gw <- rw
+    ans$ratio.gw <- rw
   }
   
   # if (comparison == "complement" && is.null(bound)) {
@@ -981,13 +981,13 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   cat(sprintf("restriktor (%s): ", packageDescription("restriktor", fields = "Version")))
 
   if (type == "goric") {
-    cat("generalized order-restriced information criterion: \n")
+    cat("generalized order-restricted information criterion: \n")
   } else if (type == "gorica") {
-    cat("generalized order-restriced information criterion approximation:\n")
+    cat("generalized order-restricted information criterion approximation:\n")
   } else if (type == "goricc") {
-    cat("small sample generalized order-restriced information criterion:\n")
+    cat("small sample generalized order-restricted information criterion:\n")
   } else if (type == "goricac") {
-    cat("small sample generalized order-restriced information criterion approximation:\n")
+    cat("small sample generalized order-restricted information criterion approximation:\n")
   }
   
   cat("\nResults:\n")
@@ -996,9 +996,9 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   cat("---")
   if (comparison == "complement") {
     objectnames <- as.character(df$model)
-    relative.gw <- apply(x$relative.gw, 2, sprintf, fmt = dig)
+    ratio.gw <- apply(x$ratio.gw, 2, sprintf, fmt = dig)
     cat("\nThe order-restricted hypothesis", sQuote(objectnames[1]), "has", 
-        sprintf("%s", relative.gw[1,2]), "times more support than its complement.\n")
+        sprintf("%s", ratio.gw[1,2]),"times more support than its complement.\n")
   } 
   
   cat("\n")
@@ -1031,13 +1031,13 @@ summary.con_goric <- function(object, brief = TRUE,
   iact <- lapply(x$objectList, FUN = function(x) { x$iact } )
 
   if (type == "goric") {
-    cat("\nrestriktor: generalized order-restriced information criterion: \n")
+    cat("\nrestriktor: generalized order-restricted information criterion: \n")
   } else if (type == "gorica") {
-    cat("\nrestriktor: generalized order-restriced information criterion approximation:\n")
+    cat("\nrestriktor: generalized order-restricted information criterion approximation:\n")
   } else if (type == "goricc") {
-    cat("\nrestriktor: small sample generalized order-restriced information criterion:\n")
+    cat("\nrestriktor: small sample generalized order-restricted information criterion:\n")
   } else if (type == "goricac") {
-    cat("\nrestriktor: small sample generalized order-restriced information criterion approximation:\n")
+    cat("\nrestriktor: small sample generalized order-restricted information criterion approximation:\n")
   }
   
   cat("\nResults:\n")  
@@ -1046,37 +1046,37 @@ summary.con_goric <- function(object, brief = TRUE,
         print.gap = 2, quote = FALSE)
   cat("---\n")
   
-  if (!is.null(x$relative.gw)) {
+  if (!is.null(x$ratio.gw)) {
     if (type == "goric") {
-      cat("\nRelative GORIC-weights:\n")
+      cat("\nRatio GORIC-weights:\n")
     } else if (type == "gorica") {
-      cat("\nRelative GORICA-weights:\n")
+      cat("\nRatio GORICA-weights:\n")
     } else if (type == "goricc") {
-      cat("\nRelative GORICC-weights:\n")
+      cat("\nRatio GORICC-weights:\n")
     } else if (type == "goricac") {
-      cat("\nRelative GORICAC-weights:\n")
+      cat("\nRatio GORICAC-weights:\n")
     }
     
-    relative.gw <- apply(x$relative.gw, 2, sprintf, fmt = dig)
+    ratio.gw <- apply(x$ratio.gw, 2, sprintf, fmt = dig)
     
-    rownames(relative.gw) <- rownames(x$relative.gw)
-    if (max(as.numeric(relative.gw)) >= 1e4) {
-      print(format(x$relative.gw, digits = digits, scientific = TRUE), 
+    rownames(ratio.gw) <- rownames(x$ratio.gw)
+    if (max(as.numeric(ratio.gw)) >= 1e4) {
+      print(format(x$ratio.gw, digits = digits, scientific = TRUE), 
             print.gap = 2, quote = FALSE)
     } else {
-      print(format(trimws(relative.gw), digits = digits, scientific = FALSE), 
+      print(format(trimws(ratio.gw), digits = digits, scientific = FALSE), 
             print.gap = 2, quote = FALSE)
     }
     cat("---\n")
     if (length(unique(df$loglik)) != length(df$loglik)) {
       cat("Note: In case of equal log-likelihood (loglik) values, the 
-      relative weights are solely based on the difference in penalty values.\n")
+      ratio weights are solely based on the difference in penalty values.\n")
     }
   }
   
   if (comparison == "complement") {
     cat("The order-restricted hypothesis", sQuote(objectnames[1]), "has", 
-        sprintf("%s", relative.gw[1,2]), "times more support than its complement.\n")
+        sprintf("%s", ratio.gw[1,2]), "times more support than its complement.\n")
   } 
   
   if (!brief) {

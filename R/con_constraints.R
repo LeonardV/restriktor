@@ -30,7 +30,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     rhs <- unlist(lapply(CON_FLAT, "[[", "rhs"))
     LIST$lhs <- lhs
     LIST$op  <- op
-    LIST$rhs <- c(LIST$rhs, rhs)
+    LIST$rhs <- c(LIST$rhs, rhs) 
     
     parTable$lhs <- c(parTable$lhs, LIST$lhs)
     parTable$op <- c(parTable$op, LIST$op)
@@ -44,9 +44,17 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     # inequality constraints
     Amat <- con_constraints_con_amat(model, constraints = constraints)
     
-    if (all(Amat == 0)) {
-      stop("Restriktor ERROR: constraints are not correctly specified. 
-                    See ?restriktor for details.")
+    # check for not supported constraint syntax or an empty matrix
+    nsc_lhs.idx <- sum(grepl("<|>|=", parTable$lhs))
+    nsc_rhs.idx <- sum(grepl("<|>|=", parTable$rhs))
+    
+    if (all(Amat == 0) | nsc_lhs.idx > 0 | nsc_rhs.idx > 0) {
+      stop("Restriktor ERROR: Sorry, but I have no idea how to deal with your constraint syntax. \n",
+           "See ?restriktor for details on how to specify the constraint syntax or check the website \n", 
+            "https://restriktor.org/tutorial/syntax.html. \n\n",  
+           "Hint: constraints have to be specified pairwise, e.g., x1 < x2; x2 == x3; x1 > 2", sep = "",
+          call. = FALSE
+      )
     }
     
     # In case of abs() the contraints may incorretly be considered as non-linear. 

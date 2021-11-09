@@ -315,7 +315,7 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
     if (nrow(Amat) == meq) {
       # equality constraints only
       wt.bar <- rep(0L, ncol(Sigma) + 1)
-      wt.bar.idx <- ncol(Sigma) - meq + 1
+      wt.bar.idx <- ncol(Sigma) - qr(Amat)$rank + 1
       wt.bar[wt.bar.idx] <- 1
     } else if (all(c(Amat) == 0)) { 
       # unrestricted case

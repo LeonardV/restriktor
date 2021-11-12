@@ -63,8 +63,9 @@ con_solver_rlm <- function(X, y, Amat, bvec, meq,
   b.restr <- as.vector(coef(b.unrestr))
   invW <- crossprod(X)
   Dmat <- 2 * invW
+  iact <- which(Amat %*% b.restr - bvec < 0)
   
-  val <- 0
+  val <- 0 
   for (i in 1:maxit) {
     dvec <- 2 * b.restr %*% invW
     out.qp <- solve.QP(Dmat = Dmat, 
@@ -88,6 +89,7 @@ con_solver_rlm <- function(X, y, Amat, bvec, meq,
   }
   
   out <- out.qp
+  out$iact <- iact
   
   out
 }

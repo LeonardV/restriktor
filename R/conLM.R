@@ -353,7 +353,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                                  cl       = cl,
                                  seed     = seed,
                                  verbose  = verbose)
-      attr(wt.bar, "mix.bootstrap") <- mix.bootstrap 
+      attr(wt.bar, "mix.bootstrap") <- mix.bootstrap
     } else if (mix.weights == "pmvnorm" && (meq < nrow(Amat))) {
       # compute chi-square-bar weights based on pmvnorm
       wt.bar <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))

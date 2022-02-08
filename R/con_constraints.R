@@ -25,7 +25,6 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     
     
     sepc <- lengths(regmatches(constraints, gregexpr(":=", constraints)))
-    
     if(is.character(constraints) && sepc==0){
       hyp1<-list()
     for(i in 1:length(constraints)){
@@ -212,7 +211,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
   OUT
 }
 
-
+# It creates a matrix of equality constraints
 con_constraints_ceq_amat <- function(object, constraints = NULL) {
 
   # build a bare-bones parameter table for this object
@@ -223,9 +222,6 @@ con_constraints_ceq_amat <- function(object, constraints = NULL) {
     lavpartable <- con_partable(object, est = TRUE, label = TRUE)  
   }
 
-  #lavpartable <- con_partable(object, est = TRUE, label = TRUE)
-  
-
   # parse the constraints
   CON <- lav_constraints_parse(constraints = constraints,
                                partable    = lavpartable,
@@ -234,7 +230,7 @@ con_constraints_ceq_amat <- function(object, constraints = NULL) {
   CON$ceq.JAC
 }
 
-
+# It creates a matrix of inequality terms 
 con_constraints_con_amat <- function(object, constraints = NULL) {
   
   # build a bare-bones parameter table for this object
@@ -244,9 +240,6 @@ con_constraints_con_amat <- function(object, constraints = NULL) {
     # if object is a fitted unrestricted object
     lavpartable <- con_partable(object, est = TRUE, label = TRUE)  
   }
-  
-  #lavpartable <- con_partable(object, est = TRUE, label = TRUE)
-
   # parse the constraints
   CON <- lav_constraints_parse(constraints = constraints,
                                partable    = lavpartable, 
@@ -275,6 +268,8 @@ con_constraints_rhs_bvec <- function(object, constraints = NULL) {
   CON <- lav_constraints_parse(constraints = constraints,
                                partable    = lavpartable,
                                theta       = lavpartable$est)
+  
+  #returns numeric(0) if any con_constraints_ceq_amat or con_constraints_con_amat is empty and the rhs value for non empty matrix starting from the exuality 
 
   c(CON$ceq.rhs, CON$cin.rhs)
 }

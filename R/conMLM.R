@@ -70,7 +70,7 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
                                  bvec        = bvec, 
                                  meq         = meq, 
                                  debug       = debug)  
-    # a list with useful information about the restriktions.}
+    # a list with useful information about the restriktions.
     CON <- restr.OUT$CON
     # a parameter table with information about the observed variables in the object 
     # and the imposed restriktions.}

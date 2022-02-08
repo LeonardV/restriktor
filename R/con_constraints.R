@@ -1,8 +1,11 @@
+
+
+
 con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L, 
                             debug = FALSE, ...) {
   
-  ## build a bare-bones parameter table for this model
-  # if model is a numeric vecter
+##-------- build a bare-bones parameter table for this model--------------------
+  # if model is a numeric vector
   if ("numeric" %in% class(model)) {
     parTable <- con_partable_est(model, est = TRUE, label = TRUE)
     parTable_org <- parTable
@@ -11,11 +14,46 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     parTable <- con_partable(model, est = TRUE, label = TRUE)  
     parTable_org <- parTable
   }
-  
-  # unlist constraints
   constraints <- unlist(constraints)
   
+
+ 
+#-----when constraints are character type--------------------------
+  
+ 
   if (is.character(constraints)) {
+    
+    
+    sepc <- lengths(regmatches(constraints, gregexpr(":=", constraints)))
+    
+    if(is.character(constraints) && sepc==0){
+      hyp1<-list()
+    for(i in 1:length(constraints)){
+      semicolon_nr <- lengths(regmatches(constraints[i], gregexpr(";", constraints[i])))
+      if(semicolon_nr >= 1){
+        constraints[i]<-strsplit(constraints[i], split = ";")
+        constraints[[i]]<-gsub("==","=",constraints[[i]])
+      }else{
+        constraints[i]<-constraints[i]
+        constraints[[i]]<-gsub("==","=",constraints[[i]])
+      }
+      new<-unlist(constraints[i])
+      if(all(grepl("[><=]{2,}", new))==FALSE){
+        new_vect<-list()
+      for(k in 1:length(new)){
+        new_vect[[k]]<-expand_compound_constraints(new[k])
+      }
+      new_vect<-unlist(new_vect)
+      hyp1[[i]]<-implode(new_vect,sep = ";")
+      hyp1[[i]]<-gsub("=", "==",hyp1[[i]] )
+      }else{
+        stop("Do not use combined comparison signs e.g., '>=' or '<=' ")
+        
+    }
+    }
+    }
+    constraints<-unlist(hyp1)
+    
     # parse the constraints 
     CON <- lav_constraints_parse(constraints = constraints,
                                  partable    = parTable,
@@ -38,7 +76,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     parTable$label <- c(parTable$label, rep("", length(lhs)))
     
     # equality constraints
-    meq  <- nrow(con_constraints_ceq_amat(model, constraints = constraints))
+    meq  <- nrow(con_constraints_ceq_amat(model, constraints = constraints))      #ended here
     # right-hand-side
     bvec <- con_constraints_rhs_bvec(model, constraints = constraints)
     # inequality constraints
@@ -81,6 +119,8 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     
     
     CON$constraints <- constraints
+    
+#-------if constraints are not of type character and are not NULL--------------
   } else if (!is.character(constraints) && !is.null(constraints)) {
     if (is.vector(constraints) ) {
       constraints <- rbind(constraints)
@@ -238,3 +278,27 @@ con_constraints_rhs_bvec <- function(object, constraints = NULL) {
 
   c(CON$ceq.rhs, CON$cin.rhs)
 }
+
+
+#-----Function used to join vector of strings into one sting with desired separator------
+implode <- function(..., sep='') {
+  paste(..., collapse=sep)
+}
+#-----Function inherited from bain package -----------------------------------
+expand_compound_constraints <- function(hyp){
+  equality_operators <- gregexpr("[=<>]", hyp)[[1]]
+  if(length(equality_operators) > 1){
+    string_positions <- c(0, equality_operators, nchar(hyp)+1)
+    return(sapply(1:(length(string_positions)-2), function(pos){
+      substring(hyp, (string_positions[pos]+1), (string_positions[pos+2]-1))
+    }))
+  } else {
+    return(hyp)
+  }
+}
+
+
+
+
+
+

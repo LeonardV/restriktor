@@ -103,6 +103,8 @@ penalty term, GORIC(A) values and the GORIC(A) weights. Furthermore, a dataframe
 is returned with the relative GORIC(A) weights. 
 }
 
+#Add a note about what is the output of summary goric
+
 \references{
 Kuiper, R.M., Hoijtink, H., and Silvapulle, M.J. (2011). An Akaike-type
 information criterion for model selection under inequality constraints.
@@ -118,17 +120,20 @@ facial burn injury. Psychological Methods.
 
 \examples{
 library(MASS)
-## lm
+
+
 ## unrestricted linear model for ages (in months) at which an 
 ## infant starts to walk alone.
 
 # prepare data
-DATA <- subset(ZelazoKolb1972, Group != "Control")
+
+data <- subset(ZelazoKolb1972, Group != "Control")
   
 # fit unrestrikted linear model
-fit1.lm <- lm(Age ~ Group, data = DATA)
 
-# some artificial restrictions
+fit1.lm <- lm(Age ~ Group, data = data)
+
+# construct some artificial restrictions
 fit1.con <- restriktor(fit1.lm, constraints = "GroupPassive > 0;  GroupPassive < GroupNo")
 fit2.con <- restriktor(fit1.lm, constraints = "GroupPassive > 0;  GroupPassive > GroupNo")
 fit3.con <- restriktor(fit1.lm, constraints = "GroupPassive == 0; GroupPassive < GroupNo")
@@ -136,7 +141,7 @@ fit4.con <- restriktor(fit1.lm) # unrestricted model
 
 goric(fit1.con, fit2.con, fit3.con, fit4.con)
 
-# fit1.con versus the complement
+# fit1.con versus its complement
 goric(fit1.con, comparison = "complement")
 
 
@@ -146,35 +151,41 @@ n <- 10
 x1 <- rnorm(n)
 x2 <- rnorm(n)
 y <- 1 + x1 + x2 + rnorm(n)
+
 # fit unconstrained linear model
 fit.lm <- lm(y ~ x1 + x2)
 
 # extract unconstrained estimates
 est <- coef(fit.lm)
-# unconstrained variance-covariance matrix
+
+# extract unconstrained variance-covariance matrix
 VCOV <- vcov(fit.lm)
 
 ## constraint syntax (character)
 h1 <- "x1 > 0"
 h2 <- "x1 > 0; x2 > 0"
+
 # use fitted unconstrained linear model
 out <- goric(fit.lm, h1, h2, type = "gorica")
+
 # use unconstrained estimates
 out <- goric(est, VCOV = VCOV, h1, h2, type = "gorica")
 
 ## constraint syntax (matrix notation)
 h1 <- list(constraints = c(0,1,0))
 h2 <- list(constraints = rbind(c(0,1,0), c(0,0,1)))
+
 out <- goric(fit.lm, h1, h2, type = "gorica")
 out <- goric(est, VCOV = VCOV, h1, h2, type = "gorica")
 
 
-## mlm
+## Multilvariate linear model
+
 # generate data
 n <- 30
 mu <- c(1,2,3,4)
 Sigma <- matrix(5,4,4)
-  diag(Sigma) <- c(10,10,10,10)
+diag(Sigma) <- c(10,10,10,10)
 # 4 Y's.
 Y <- mvrnorm(n, mu, Sigma)
 
@@ -186,4 +197,5 @@ myConstraints2 <- rbind(c(-1,1,0,0), c(0,-1,1,0), c(0,0,-1,1))
 
 # fit restricted multivariate linear model
 fit5.con <- restriktor(fit2.mlm, constraints = myConstraints2)
+summary(fit5.con)
 }

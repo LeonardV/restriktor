@@ -36,19 +36,19 @@ goric.default <- function(object, ...,
     object <- as.vector(object)
   }
   
-  # what is the constraint input type
+# what is the constraint input type
   objectList  <- c(list(object), ldots2)  
   if (is.name(CALL$object)) {
     names(objectList)[1] <- as.character(CALL$object)
   } else {
     names(objectList)[1] <- as.character("object")
   }
-    
+#--define logical checks of types of inputs of object and ... 
   isRestr     <- sapply(objectList, function(x) inherits(x, "restriktor"))
   isCharacter <- sapply(ldots2,     function(x) inherits(x, "character"))
   isList      <- sapply(ldots2,     function(x) inherits(x, "list"))
 
-  ## catching user errors
+##-----catching user errors-------------
   # only ldots2
   isRestr2 <- sapply(ldots2, function(x) inherits(x, "restriktor"))
   col.check <- rbind(isRestr2, isCharacter, isList)
@@ -63,8 +63,9 @@ goric.default <- function(object, ...,
   # create output list
   ans <- list()
   
-  ## how to deal with constraints
-  # if all objects are of class restriktor
+##--------DEALING WITH CONSTRAINS-------------------------------------
+  
+#-----if all objects are of class restriktor----------------------------
   if (all(isRestr)) {   
     conList   <- objectList
     isSummary <- lapply(conList, function(x) summary(x, 
@@ -75,12 +76,13 @@ goric.default <- function(object, ...,
     # unrestricted VCOV
     VCOV <- vcov(ans$model.org)
     constraints <- conList
-  # if the constraints syntax is of class character, e.g., x1 < x2; x2 < x3
+#----- if the constraints syntax is of class character, e.g., 'x1 < x2; x2 < x3 ...'
   } else if (inherits(object, "lm") && all(isCharacter)) {
     # check if constraints exists
     if (length(ldots2) == 0) {
       stop("restriktor ERROR: no constraints found!", call. = FALSE)
     }
+    #assign the constrains specified in the goric() input 
     constraints <- ldots2[isCharacter]
     # standard errors are not needed
     ldots3 <- ldots[m.restr > 0L]
@@ -106,10 +108,9 @@ goric.default <- function(object, ...,
     idx <- length(conList) 
     objectnames <- vector("character", idx)
     CALL$object <- NULL
-  # if the constraints are a list with constraints, rhs and neq for each hypothesis   
+#----------if the constraints are a list with constraints, rhs and neq for each hypothesis-------------   
   } else if (inherits(object, "lm") && all(isList)) {
       # create lists
-      # constraints <- list(); rhs <- list(); neq <- list()
       # extract constraints, rhs and neq
       #constraints <- list()
       constraints <- lapply(ldots2, FUN = function(x) { x$constraints } )
@@ -147,6 +148,8 @@ goric.default <- function(object, ...,
       idx <- length(conList) 
       objectnames <- vector("character", idx)
       CALL$object <- NULL
+      
+#-----if the object is of numeric type-----------------------------------------
     } else if (inherits(object, "numeric")) {
       if (type %in% c("goric", "goricc")) {
         stop("restriktor ERROR: object of class numeric is only supported for type = 'gorica(c)'.")
@@ -189,9 +192,11 @@ goric.default <- function(object, ...,
         isSummary <- lapply(conList, function(x) summary(x, 
                                                          type        = type,
                                                          sample.nobs = sample.nobs)) 
+        
+#------- if constraints is character ------      
       } else if (all(isCharacter)) {
-        # if constraints is character 
         constraints <- ldots2[isCharacter]
+        
         # fit restriktor object for each hypothesis
         conList <- list()
         for (c in 1:length(constraints)) {
@@ -215,6 +220,8 @@ goric.default <- function(object, ...,
       if (!exists("conList")) {
         stop("restriktor ERROR: no constraints found!", call. = FALSE)
       }
+      
+#-----Stop message when the object class introduced by user is not of the type that goric() can handle----
     } else {
       stop("restriktor ERROR: I don't know how to handle an object of class ", paste0(class(object)[1]))
     }
@@ -242,7 +249,7 @@ goric.default <- function(object, ...,
 
   
 
-# compute complement ------------------------------------------------------
+#--------------- compute complement ------------------------------------------------------
   df.c <- NULL
   if (comparison == "complement") {
       # unrestricted estimates
@@ -966,7 +973,7 @@ goric.CTmeta <- function(object, ...,
   res
 }
 
-
+#' The default output of the object of call 'con_goric', 'con_gorica'
 
 print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
 
@@ -1008,6 +1015,7 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
 }
 
 
+#' The summary output of the object of call 'con_goric', 'con_gorica'
 
 
 summary.con_goric <- function(object, brief = TRUE, 

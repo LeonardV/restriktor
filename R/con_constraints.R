@@ -25,33 +25,65 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     
     
     sepc <- lengths(regmatches(constraints, gregexpr(":=", constraints)))
+    semicol <- lengths(regmatches(constraints, gregexpr(";", constraints[i])))
+    
     if(is.character(constraints) && sepc==0){
       hyp1<-list()
-    for(i in 1:length(constraints)){
-      semicolon_nr <- lengths(regmatches(constraints[i], gregexpr(";", constraints[i])))
-      if(semicolon_nr >= 1){
-        constraints[i]<-strsplit(constraints[i], split = ";")
-        constraints[[i]]<-gsub("==","=",constraints[[i]])
-      }else{
-        constraints[i]<-constraints[i]
-        constraints[[i]]<-gsub("==","=",constraints[[i]])
+      for(i in 1:length(constraints)){
+        semicolon_nr <- lengths(regmatches(constraints[i], gregexpr(";", constraints[i])))
+        if(semicolon_nr >= 1){
+          constraints[i]<-strsplit(constraints[i], split = ";")
+          constraints[[i]]<-gsub("==","=",constraints[[i]])
+        }else{
+          constraints[i]<-constraints[i]
+          constraints[[i]]<-gsub("==","=",constraints[[i]])
+        }
+        new<-unlist(constraints[i])
+        if(all(grepl("[><=]{2,}", new))==FALSE){
+          new_vect<-list()
+          for(k in 1:length(new)){
+            new_vect[[k]]<-expand_compound_constraints(new[k])
+          }
+          new_vect<-unlist(new_vect)
+          hyp1[[i]]<-implode(new_vect,sep = ";")
+          hyp1[[i]]<-gsub("=", "==",hyp1[[i]] )
+        }else{
+          stop("Do not use combined comparison signs e.g., '>=' or '<=' ")
+          
+        }
       }
-      new<-unlist(constraints[i])
-      if(all(grepl("[><=]{2,}", new))==FALSE){
-        new_vect<-list()
-      for(k in 1:length(new)){
-        new_vect[[k]]<-expand_compound_constraints(new[k])
-      }
-      new_vect<-unlist(new_vect)
-      hyp1[[i]]<-implode(new_vect,sep = ";")
-      hyp1[[i]]<-gsub("=", "==",hyp1[[i]] )
-      }else{
-        stop("Do not use combined comparison signs e.g., '>=' or '<=' ")
+      constraints<-unlist(hyp1)
+      
+    }else if(is.character(constraints) && sepc>0 && semicol==0){
+      hyp1<-list()
+      for(i in 1:length(constraints)){
+        constraints[i]<-strsplit(constraints[i], split = "\n")
+        constraints[[i]]<-gsub("==","=",constraints[[i]])
+        constraints[[i]]<-c(constraints[[i]],"")
+        new<-unlist(constraints[i])
+        if(all(grepl("[><=]{2,}", new))==FALSE){
+          new_vect<-list()
+          for(k in 1:length(new)){
+            new_vect[[k]]<-expand_compound_constraints(new[k])
+            sep_n <- lengths(regmatches(new_vect[[k]], gregexpr(":=", new_vect[[k]])))
+            for (m in length(new_vect[[k]])) {
+              if(sep_n[m]==0){
+                new_vect[[k]][m]<-gsub("=", "==",new_vect[[k]][m])
+              }
+            }
+          }
+          new_vect<-unlist(new_vect)
+          hyp1[[i]]<-implode(new_vect,sep = "\n")
+        }else{
+          stop("Do not use combined comparison signs e.g., '>=' or '<=' ")
+        }
         
+      }
+      constraints<-unlist(hyp1)
+      
+    }else if(is.character(constraints) && sepc>0 && semicol!=0){
+      stop("While introducing ":=" to a hypothesis do not use _;_ as separator. Each condition should start with a new line")
     }
-    }
-    }
-    constraints<-unlist(hyp1)
     
     # parse the constraints 
     CON <- lav_constraints_parse(constraints = constraints,

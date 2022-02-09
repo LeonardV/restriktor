@@ -1,4 +1,5 @@
 ## utility functions
+#' @keywords internal
 coef.restriktor <- function(object, ...)  {
   
   b.def <- c()
@@ -17,26 +18,27 @@ coef.restriktor <- function(object, ...)  {
   return(OUT)
 }
 
-
+#' @keywords internal
 coef.con_goric <- function(object, ...)  {
   return(object$ormle$b.restr)
 }
 
+#' @keywords internal
 coef.gorica_est <- function(object, ...)  {
   return(object$b.restr)
 }
 
-
+#' @keywords internal
 logLik.restriktor <- function(object, ...) {
   return(object$loglik)
 }
 
-
+#' @keywords internal
 model.matrix.restriktor <- function(object, ...) {
   return(model.matrix(object$model.org))
 }
 
-
+#' @keywords internal
 tukeyChi <- function(x, c = 4.685061, deriv = 0, ...) {
   u <- x / c
   out <- abs(x) > c
@@ -56,8 +58,11 @@ tukeyChi <- function(x, c = 4.685061, deriv = 0, ...) {
 }
 
 
-# code taken from robustbase package.
-# slightly addapted by LV (3-12-2017).
+
+#' @keywords internal
+#' code taken from robustbase package.
+#' slightly addapted by LV (3-12-2017).
+
 robWeights <- function(w, eps = 0.1/length(w), eps1 = 0.001, ...) {
   stopifnot(is.numeric(w))
   cat("Robustness weights:", "\n")
@@ -140,3 +145,26 @@ robWeights <- function(w, eps = 0.1/length(w), eps1 = 0.001, ...) {
 
 #rankifremoved <- sapply(1:ncol(Amat), function (x) qr(Amat[-x, ])$rank)
 #which(rankifremoved == max(rankifremoved))
+#' @keywords internal
+#' Function used to join vector of strings into one sting with desired separator
+implode <- function(..., sep='') {
+  paste(..., collapse=sep)
+}
+
+#' @keywords internal
+#' An internal function coming from 'bain' package 
+#' 
+expand_compound_constraints <- function(hyp){
+equality_operators <- gregexpr("[=<>]", hyp)[[1]]
+if(length(equality_operators) > 1){
+  string_positions <- c(0, equality_operators, nchar(hyp)+1)
+  return(sapply(1:(length(string_positions)-2), function(pos){
+    substring(hyp, (string_positions[pos]+1), (string_positions[pos+2]-1))
+  }))
+} else {
+  return(hyp)
+}
+}
+
+
+

@@ -5,7 +5,7 @@ constrained statistical estimation, inference and evaluation for linear models.
 
 #### Install R ####
 Restriktor is implemented as an R package. This means that before installing
-restriktor, you should have installed a recent version (>= 3.0.0) of R. You can
+restriktor, you should have installed a recent version (>= 4.0.0) of R. You can
 download the latest version of R from the
 [R-project website](http://www.r-project.org).
 

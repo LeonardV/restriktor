@@ -19,31 +19,33 @@ and [RKWard](https://rkward.kde.org/).
 Once you have installed R, the next step is to install restriktor. This can be
 done by typing in R:
 
-install.packages("restriktor", dependencies = TRUE)
+`install.packages("restriktor", dependencies = TRUE)`
 
 To check if the installation was successful, you can load the restriktor package
 and try for example:
 
-##### load the restriktor library #####
-library(restriktor)
+`library(restriktor)`
 
-##### construct constraint syntax based on the factor level names #####
+`# construct constraint syntax based on the factor level names 
 constraints <- 'GroupActive  < GroupPassive
                 GroupPassive < GroupControl
                 GroupControl < GroupNo'
+`
 
 Fit the unrestricted linear model, where "Age" is the response
-variable and "Group" a factor with four treatment groups.
-fit.ANOVA <- lm(Age ~ -1 + Group, data = ZelazoKolb1972)
+variable and `"Group"` a factor with four treatment groups.
 
-##### fit the restricted model #####
+`fit.ANOVA <- lm(Age ~ -1 + Group, data = ZelazoKolb1972)`
+
+`# fit the restricted model
 restr.ANOVA <- restriktor(fit.ANOVA, constraints = constraints)
+`
 
-Summary of the restricted parameter estimates
+`# summary of the restricted parameter estimates
 summary(restr.ANOVA)
-
+`
 
 If you can see the output, everything is set up and ready.
 
-##### Getting Started #####
+#### Getting Started #####
 Now that you have installed restriktor, 

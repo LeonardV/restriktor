@@ -28,7 +28,6 @@ and try for example:
 library(restriktor)
 
 # construct constraint syntax based on the factor level names
-
 constraints <- 'GroupActive  < GroupPassive
                 GroupPassive < GroupControl
                 GroupControl < GroupNo'

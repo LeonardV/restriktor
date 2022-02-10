@@ -50,5 +50,4 @@ summary(restr.ANOVA)
 
 If you can see the output, everything is set up and ready.
 
-#### Getting Started #####
-Now that you have installed restriktor, 
+For more information see [the restriktor website](http://restriktor.org).

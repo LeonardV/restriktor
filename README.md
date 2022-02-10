@@ -24,26 +24,26 @@ install.packages("restriktor", dependencies = TRUE)
 To check if the installation was successful, you can load the restriktor package
 and try for example:
 
-## load the restriktor library
+##### load the restriktor library #####
 library(restriktor)
 
-## construct constraint syntax based on the factor level names
+##### construct constraint syntax based on the factor level names #####
 constraints <- 'GroupActive  < GroupPassive
                 GroupPassive < GroupControl
                 GroupControl < GroupNo'
 
-## fit the unrestricted linear model, where "Age" is the response
-## variable and "Group" a factor with four treatment groups.
+Fit the unrestricted linear model, where "Age" is the response
+variable and "Group" a factor with four treatment groups.
 fit.ANOVA <- lm(Age ~ -1 + Group, data = ZelazoKolb1972)
 
-## fit the restricted model
+##### fit the restricted model #####
 restr.ANOVA <- restriktor(fit.ANOVA, constraints = constraints)
 
-## summary of the restricted parameter estimates
+Summary of the restricted parameter estimates
 summary(restr.ANOVA)
 
 
 If you can see the output, everything is set up and ready.
 
-#### Getting Started ####
+##### Getting Started #####
 Now that you have installed restriktor, 

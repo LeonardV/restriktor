@@ -26,8 +26,8 @@ and try for example:
 
 `library(restriktor)`
 
-`# construct constraint syntax based on the factor level names 
-constraints <- 'GroupActive  < GroupPassive
+`# construct constraint syntax based on the factor level names` 
+`constraints <- 'GroupActive  < GroupPassive
                 GroupPassive < GroupControl
                 GroupControl < GroupNo'
 `
@@ -37,12 +37,12 @@ variable and `"Group"` a factor with four treatment groups.
 
 `fit.ANOVA <- lm(Age ~ -1 + Group, data = ZelazoKolb1972)`
 
-`# fit the restricted model
-restr.ANOVA <- restriktor(fit.ANOVA, constraints = constraints)
+`# fit the restricted model`
+`restr.ANOVA <- restriktor(fit.ANOVA, constraints = constraints)
 `
 
-`# summary of the restricted parameter estimates
-summary(restr.ANOVA)
+`# summary of the restricted parameter estimates`
+`summary(restr.ANOVA)
 `
 
 If you can see the output, everything is set up and ready.

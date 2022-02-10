@@ -1,22 +1,21 @@
 ## restrikor ##
 restriktor is a free, open source R package for linear equality and inequality 
-constrained statistical estimation, inference and evaluation for linear models. More 
-information can be found online at http://restriktor.org.
+constrained statistical estimation, inference and evaluation for linear models. 
 
 
-##### Install R #####
+#### Install R ####
 Restriktor is implemented as an R package. This means that before installing
 restriktor, you should have installed a recent version (>= 3.0.0) of R. You can
 download the latest version of R from the
 [R-project website](http://www.r-project.org).
 
-##### Install Graphical User Interface (GUI) #####
+#### Install Graphical User Interface (GUI) ####
 R is a command line driven program. This means that it does not have a graphical
 user interface (GUI). Luckily, there are many good GUI's to make life easier, for
 example [Rstudio](http://rstudio.org), [R Commander](http://www.rcommander.com/)
 and [RKWard](https://rkward.kde.org/).
 
-##### Install restriktor #####
+#### Install restriktor ####
 Once you have installed R, the next step is to install restriktor. This can be
 done by typing in R:
 

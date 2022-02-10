@@ -1,5 +1,5 @@
 ## restrikor ##
-restriktor is a free, open source R package for linear equality and inequality 
+Restriktor is a free, open source R package for linear equality and inequality 
 constrained statistical estimation, inference and evaluation for linear models. 
 
 

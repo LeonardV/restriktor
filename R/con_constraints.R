@@ -26,6 +26,18 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     
     sepc <- lengths(regmatches(constraints, gregexpr(":=", constraints)))
     semicol <- lengths(regmatches(constraints, gregexpr(";", constraints)))
+    #operators check
+    op1 <- lengths(regmatches(constraints, gregexpr("=~", constraints)))
+    op2 <- lengths(regmatches(constraints, gregexpr("~", constraints)))
+    op3 <- lengths(regmatches(constraints, gregexpr("~~", constraints)))
+    if(sum(op1,op2,op3)>0){
+      stop("You used incorrect operator. While defining the hypothesis make sure you use the correct specification model. ?restriktor for details on how to specify the constraint syntax or check the website, 
+           https://restriktor.org/tutorial/syntax.html. ")
+    } #note that this webside needs an update 
+    
+    if(all(grepl("[><]{2,}", constraints))==TRUE){
+      stop("The message should not be seen if the code works fine! Unless you put <> or >< in between parameters which is not very smart.")
+    }
     
     if(is.character(constraints) && sepc==0){
       hyp1<-list()
@@ -34,9 +46,15 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
         if(semicolon_nr >= 1){
           constraints[i]<-strsplit(constraints[i], split = ";")
           constraints[[i]]<-gsub("==","=",constraints[[i]])
+          constraints[[i]]<-gsub("<=","<",constraints[[i]])
+          constraints[[i]]<-gsub(">=",">",constraints[[i]])
+          
+          
         }else{
           constraints[i]<-constraints[i]
           constraints[[i]]<-gsub("==","=",constraints[[i]])
+          constraints[[i]]<-gsub("<=","<",constraints[[i]])
+          constraints[[i]]<-gsub(">=",">",constraints[[i]])
         }
         new<-unlist(constraints[i])
         if(all(grepl("[><=]{2,}", new))==FALSE){
@@ -47,8 +65,8 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
           new_vect<-unlist(new_vect)
           hyp1[[i]]<-implode(new_vect,sep = ";")
           hyp1[[i]]<-gsub("=", "==",hyp1[[i]] )
-        }else{
-          stop("Do not use combined comparison signs e.g., '>=' or '<=' ")
+        }else if(all(grepl("[><=]{2,}", new))==TRUE){
+          stop("The message should not be seen if the code works fine! Unless you put <> or >< in between parameters which is not very smart.")
           
         }
       }
@@ -59,6 +77,8 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       for(i in 1:length(constraints)){
         constraints[i]<-strsplit(constraints[i], split = "\n")
         constraints[[i]]<-gsub("==","=",constraints[[i]])
+        constraints[[i]]<-gsub("<=","<",constraints[[i]])
+        constraints[[i]]<-gsub(">=",">",constraints[[i]])
         constraints[[i]]<-c(constraints[[i]],"")
         new<-unlist(constraints[i])
         if(all(grepl("[><=]{2,}", new))==FALSE){
@@ -69,13 +89,14 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
             for (m in length(new_vect[[k]])) {
               if(sep_n[m]==0){
                 new_vect[[k]][m]<-gsub("=", "==",new_vect[[k]][m])
+                
               }
             }
           }
           new_vect<-unlist(new_vect)
           hyp1[[i]]<-implode(new_vect,sep = "\n")
-        }else{
-          stop("Do not use combined comparison signs e.g., '>=' or '<=' ")
+        }else if(all(grepl("[><=]{2,}", new))==TRUE){
+          stop("The message should not be seen if the code works fine! Unless you put <> or >< in between parameters which is not very smart.")
         }
         
       }
@@ -88,6 +109,8 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
         constraints[[i]]<-strsplit(constraints[[i]], split = "\n")
         constraints[[i]]<-unlist(constraints[[i]])
         constraints[[i]]<-gsub("==","=",constraints[[i]])
+        constraints[[i]]<-gsub("<=","<",constraints[[i]])
+        constraints[[i]]<-gsub(">=",">",constraints[[i]])
         constraints[[i]]<-c(constraints[[i]],"")
         new<-unlist(constraints[i])
         if(all(grepl("[><=]{2,}", new))==FALSE){
@@ -103,8 +126,8 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
           }
           new_vect<-unlist(new_vect)
           hyp1[[i]]<-implode(new_vect,sep = "\n")
-        }else{
-          stop("Do not use combined comparison signs e.g., '>=' or '<=' ")
+        }else if(all(grepl("[><=]{2,}", new))==TRUE){
+          stop("The message should not be seen if the code works fine! Unless you put <> or >< in between parameters which is not very smart.")
         }
         
       }
@@ -135,7 +158,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     parTable$label <- c(parTable$label, rep("", length(lhs)))
     
     # equality constraints
-    meq  <- nrow(con_constraints_ceq_amat(model, constraints = constraints))      #ended here
+    meq  <- nrow(con_constraints_ceq_amat(model, constraints = constraints))    
     # right-hand-side
     bvec <- con_constraints_rhs_bvec(model, constraints = constraints)
     # inequality constraints
@@ -144,7 +167,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     # check for not supported constraint syntax or an empty matrix
     nsc_lhs.idx <- sum(grepl("<|>|=", parTable$lhs))
     nsc_rhs.idx <- sum(grepl("<|>|=", parTable$rhs))
-    
+ ### Now this message should not be the case anymore but I leaved it in case it might contradict something else and as a message that something went wrong while reparating compound hypothesis   
     if (all(Amat == 0) | nsc_lhs.idx > 0 | nsc_rhs.idx > 0) {
       stop("Restriktor ERROR: Sorry, but I have no idea how to deal with your constraint syntax. \n",
            "See ?restriktor for details on how to specify the constraint syntax or check the website \n", 

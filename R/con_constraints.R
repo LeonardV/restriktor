@@ -16,6 +16,59 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
   constraints <- unlist(constraints)
   
   if (is.character(constraints)) {
+    # these operators are typical lavaan operators and are not allowed in the
+    # restriktor syntax. If a lavaan model is fitted, the contraints are already
+    # in the fitted object of class lavaan. 
+    operators <- c("=~", "<~", "~*~", "~~", "~", "\\|", "%")
+    
+    # check for user input error
+    if (grepl(paste(operators, collapse = "|"), constraints)) {
+      stop("Restriktor ERROR: error in constraint syntax. Only the operators \'<, >, ==, =, :=\' are allowed.",
+           "\n", "See ?restriktor for details on how to specify the constraint syntax or check the website:",
+           "\n", "https://restriktor.org/tutorial/syntax.html.") 
+    }
+    
+    # check for user input error
+    if (all(grepl("[><]{2,}", constraints))) {
+      stop("Restriktor ERROR: error in constraint syntax. Only the operators \'<, >, ==, =, :=\' are allowed.",
+           "\n", "See ?restriktor for details on how to specify the constraint syntax or check the website:",
+           "\n", "https://restriktor.org/tutorial/syntax.html.")
+    }
+    
+    
+    # deal with constraints of format x1 < x2 < x3
+    OUT <- list()
+    for (i in 1:length(constraints)) {
+      # some constraint cleanup
+      constraint.syntax <- gsub("[#!].*(?=\n)", "", constraints, perl = TRUE)
+      constraint.syntax <- gsub(";", "\n", constraint.syntax, fixed = TRUE)
+      constraint.syntax <- gsub("[ \t]+", "", constraint.syntax,perl = TRUE)
+      constraint.syntax <- gsub("\n{2,}", "\n", constraint.syntax, perl = TRUE)
+      
+      constraint.syntax[[i]] <- strsplit(constraint.syntax[[i]], split = "\n", perl = TRUE)
+      constraint.syntax[[i]] <- unlist(constraint.syntax[[i]])
+      constraint.syntax[[i]] <- gsub("==","=", constraint.syntax[[i]], perl = TRUE)
+      constraint.syntax[[i]] <- gsub("<=","<", constraint.syntax[[i]], perl = TRUE)
+      constraint.syntax[[i]] <- gsub(">=",">", constraint.syntax[[i]], perl = TRUE)
+      constraint.syntax <- unlist(constraint.syntax[i])
+      
+      LIST <- list()
+      # this is where the constraints are transformed back to pairwise constraints
+      # x1 < x2 < x3 becomes x1 < x2; x2 < x3. This is needed for computing the
+      # constraint matrix. 
+      for (k in 1:length(constraint.syntax)) {
+        LIST[[k]] <- expand_compound_constraints(constraint.syntax[k])
+      }
+      
+      unLIST <- unlist(LIST)
+      def.idx  <- grepl(":=", unLIST)
+      unLIST[!def.idx] <- gsub("=", "==", unLIST[!def.idx])
+      OUT[[i]] <- paste(unLIST, collapse = '\n')
+    }
+    
+    constraints <- unlist(OUT)
+    
+    
     # parse the constraints 
     CON <- lav_constraints_parse(constraints = constraints,
                                  partable    = parTable,
@@ -90,7 +143,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     bvec <- if (is.null(bvec)) { rep(0L, nrow(Amat)) } else { bvec }
     meq  <- if (is.null(meq)) { 0L } else { meq }
   } else { 
-    stop("no restriktions were specified.") 
+    stop("no restrictions were specified.") 
   }
   
   if (!(nrow(Amat) == length(bvec))) {

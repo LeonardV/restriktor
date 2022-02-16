@@ -108,6 +108,23 @@ robWeights <- function(w, eps = 0.1/length(w), eps1 = 0.001, ...) {
 }
 
 
+
+
+# An internal function coming from 'bain' package 
+expand_compound_constraints <- function(hyp){
+  equality_operators <- gregexpr("[=<>]", hyp)[[1]]
+  if(length(equality_operators) > 1){
+    string_positions <- c(0, equality_operators, nchar(hyp)+1)
+    return(sapply(1:(length(string_positions)-2), function(pos) {
+      substring(hyp, (string_positions[pos]+1), (string_positions[pos+2]-1))
+    }))
+  } else {
+    return(hyp)
+  }
+}
+
+
+
 # 
 # remove_linear_dependent_rows_matrix <- function(Amat, bvec) {
 #   ## remove any linear dependent rows from the constraint matrix. Amat must be of full row rank.

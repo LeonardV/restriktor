@@ -22,19 +22,11 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     operators <- c("=~", "<~", "~*~", "~~", "~", "\\|", "%")
     
     # check for user input error
-    if (grepl(paste(operators, collapse = "|"), constraints)) {
+    if (grepl(paste(operators, collapse = "|"), constraints) | all(grepl("[><]{2,}", constraints))) {
       stop("Restriktor ERROR: error in constraint syntax. Only the operators \'<, >, ==, =, :=\' are allowed.",
            "\n", "See ?restriktor for details on how to specify the constraint syntax or check the website:",
-           "\n", "https://restriktor.org/tutorial/syntax.html.") 
+           "\n", "https://restriktor.org/tutorial/syntax.html.", call. = FALSE) 
     }
-    
-    # check for user input error
-    if (all(grepl("[><]{2,}", constraints))) {
-      stop("Restriktor ERROR: error in constraint syntax. Only the operators \'<, >, ==, =, :=\' are allowed.",
-           "\n", "See ?restriktor for details on how to specify the constraint syntax or check the website:",
-           "\n", "https://restriktor.org/tutorial/syntax.html.")
-    }
-    
     
     # deal with constraints of format x1 < x2 < x3
     OUT <- list()

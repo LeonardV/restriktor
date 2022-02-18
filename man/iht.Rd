@@ -331,9 +331,9 @@ iht(fit2.con)
 }            
 
 ## example 3: equality constraints only.
-myConstraints3 <- ' group1 == group2
-                    group2 == group3
-                    group3 == group4 '
+myConstraints3 <- ' group1 = group2
+                    group2 = group3
+                    group3 = group4 '
 
 iht(fit2.lm, constraints = myConstraints3)
 
@@ -344,8 +344,8 @@ iht(fit3.con)
 
 ## example 4:
 # combination of equality and inequality constraints.
-myConstraints4 <- ' group1 == group2
-                    group3  < group4 '
+myConstraints4 <- ' group1 = group2
+                    group3 < group4 '
 
 iht(fit2.lm, constraints = myConstraints4, type = "B", neq.alt = 1)
 

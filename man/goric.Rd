@@ -129,9 +129,9 @@ DATA <- subset(ZelazoKolb1972, Group != "Control")
 fit1.lm <- lm(Age ~ Group, data = DATA)
 
 # some artificial restrictions
-fit1.con <- restriktor(fit1.lm, constraints = "GroupPassive > 0;  GroupPassive < GroupNo")
-fit2.con <- restriktor(fit1.lm, constraints = "GroupPassive > 0;  GroupPassive > GroupNo")
-fit3.con <- restriktor(fit1.lm, constraints = "GroupPassive == 0; GroupPassive < GroupNo")
+fit1.con <- restriktor(fit1.lm, constraints = "GroupPassive > 0; GroupPassive < GroupNo")
+fit2.con <- restriktor(fit1.lm, constraints = "GroupPassive > 0; GroupPassive > GroupNo")
+fit3.con <- restriktor(fit1.lm, constraints = "GroupPassive = 0; GroupPassive < GroupNo")
 fit4.con <- restriktor(fit1.lm) # unrestricted model
 
 goric(fit1.con, fit2.con, fit3.con, fit4.con)

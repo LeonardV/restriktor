@@ -267,7 +267,7 @@ iht(fit2_con, test = "LRT")
 
 ## example 3:
 # combination of equality and inequality constraints.
-myConstraints3 <- ' group1 == group2
+myConstraints3 <- ' group1  = group2
                     group3  < group4 '
 
 iht(fit2_lm, constraints = myConstraints3, type = "B", 

@@ -10,8 +10,8 @@ normal models and generalized linear models.}
   \tabular{ll}{
   Package: \tab restriktor\cr
   Type: \tab Package\cr
-  Version: \tab 0.3-100\cr
-  Date: \tab 2021-07-21\cr
+  Version: \tab 0.3-400\cr
+  Date: \tab 2022-18-02\cr
   License: \tab GPL (>=2)\cr
   LazyLoad: \tab yes\cr
   }
@@ -86,8 +86,7 @@ normal models and generalized linear models.}
 ## Data preparation
 ## Ages (in months) at which an infant starts to walk alone.
 DATA <- ZelazoKolb1972
-idx <- which(DATA$Group == "Control")
-DATA <- DATA[-idx, ]
+DATA <- subset(DATA, Group != "Control")
 
 ## unrestricted linear model 
 fit.lm <- lm(Age ~ -1 + Group, data = DATA)

@@ -139,7 +139,9 @@ restriktor(object, constraints = NULL, \dots)
       x1 < x2
     
     ! 2. equality constraints  
-      x3 == x4; x4 == x5 '  
+      x3 == x4; x4 == x5 
+    # or 
+      x3 = x4; x4 = x5 '
   }
   The variable names x1 to x5 refer to the corresponding regression
   coefficient. Thus, constraints are impose on regression coefficients
@@ -151,8 +153,8 @@ restriktor(object, constraints = NULL, \dots)
   (The first column refers to the intercept, the remaining five
   columns refer to the regression coefficients x1 to x5.)
   \preformatted{myConstraints <-
-    rbind(c(0, 0, 0,-1, 1, 0), #equality constraint x3 == x4
-          c(0, 0, 0, 0,-1, 1), #equality constraint x4 == x5
+    rbind(c(0, 0, 0,-1, 1, 0), #equality constraint x3 = x4
+          c(0, 0, 0, 0,-1, 1), #equality constraint x4 = x5
           c(0, 1, 0, 0, 0, 0), #inequality constraint x1 > rhs
           c(0,-1, 1, 0, 0, 0)) #inequality constraint x1 < x2
   
@@ -172,9 +174,9 @@ line if they are separated by a semicolon (;).
 There can be three types of text-based descriptions in the constraints 
 syntax:
   \enumerate{
-      \item Equality constraints: The "\code{==}" operator can be 
-      used to define equality constraints (e.g., \code{x1 == 1} or 
-      \code{x1 == x2}).
+      \item Equality constraints: The "\code{==}" or "\code{=}" operator can be 
+      used to define equality constraints (e.g., \code{x1 = 1} or 
+      \code{x1 = x2}).
       
       \item Inequality constraints: The "\code{<}" or "\code{>}" 
       operator can be used to define inequality constraints 
@@ -204,7 +206,7 @@ syntax:
   
   Each element can be modified using arithmetic operators. For example, 
   if \code{x2} is expected to be twice as large as \code{x1}, 
-  then "\code{2*x2 == x1}". 
+  then "\code{2*x2 = x1}". 
   
   If \code{constraints = NULL}, the unrestricted model is fitted.
 }
@@ -372,16 +374,16 @@ summary(fit3.con)
 }            
 
 ## equality restrictions only.
-myConstraints4 <- ' group1 == group2
-                    group2 == group3
-                    group3 == group4 '
+myConstraints4 <- ' group1 = group2
+                    group2 = group3
+                    group3 = group4 '
                     
 fit4.con <- restriktor(fit3.rlm, constraints = myConstraints4)
 summary(fit4.con)
 
 
 ## combination of equality and inequality restrictions.
-myConstraints5 <- ' group1 == group2
+myConstraints5 <- ' group1  = group2
                     group3  < group4 '
 
 # fit restricted model and compute model-based bootstrapped 

@@ -20,6 +20,6 @@ LazyData: yes
 URL: https://restriktor.org
 NeedsCompilation: no
 Packaged: 2022-01-18 13:49:13 UTC; Leonard
-Author: Leonard Vanbrabant [aut, cre], Yves Rosseel [ctb]
+Author: Leonard Vanbrabant [aut, cre], Yves Rosseel [ctb], Aleksandra Dacko [ctb]
 Maintainer: Leonard Vanbrabant <info@restriktor.org>
 Suggests: 

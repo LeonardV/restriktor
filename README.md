@@ -7,13 +7,12 @@ constrained statistical estimation, inference and evaluation for linear models.
 Restriktor is implemented as an R package. This means that before installing
 restriktor, you should have installed a recent version (>= 4.0.0) of R. You can
 download the latest version of R from the
-[R-project website](http://www.r-project.org).
+[R-project website](https://www.r-project.org).
 
 #### Install Graphical User Interface (GUI) ####
 R is a command line driven program. This means that it does not have a graphical
 user interface (GUI). Luckily, there are many good GUI's to make life easier, for
-example [Rstudio](http://rstudio.org), [R Commander](http://www.rcommander.com/)
-and [RKWard](https://rkward.kde.org/).
+example Rstudio, R Commander and RKWard.
 
 #### Install restriktor ####
 Once you have installed R, the next step is to install restriktor. This can be
@@ -49,4 +48,4 @@ summary(restr.ANOVA)
 
 If you can see the output, everything is set up and ready.
 
-For more information see [the restriktor website](http://restriktor.org).
+For more information see [the restriktor website](https://restriktor.org/).

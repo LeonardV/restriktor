@@ -8,7 +8,7 @@ Authors@R: c(person(given = "Leonard", family = "Vanbrabant",
                     role  = c("ctb"),
                     email = "Yves.Rosseel@UGent.be"),
              person(given = "Aleksandra", family = "Dacko",
-                    role = "ctb",
+                    role  = c("ctb"),
                     email = "a.dacko@uu.nl")
            )
 Description: Allow for easy-to-use testing or evaluating of linear equality and inequality 

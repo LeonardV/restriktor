@@ -2,7 +2,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                      B = 999, rhs = NULL, neq = 0L, mix.weights = "pmvnorm", 
                      mix.bootstrap = 99999L, parallel = "no", ncpus = 1L, cl = NULL, 
                      seed = NULL, control = list(), verbose = FALSE, 
-                     debug = FALSE, ...) {
+                     debug = FALSE, auto_bound=FALSE,...) {
   
   # check class
   if (!(class(object)[1] == "lm")) {
@@ -49,6 +49,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                                 control$tol)] <- 0L
   # ML unconstrained MSE
   Sigma <- vcov(object)
+
   # number of parameters
   p <- length(coef(object))
   # sample size
@@ -74,11 +75,12 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                                  constraints = Amat, 
                                  bvec        = bvec, 
                                  meq         = meq,
-                                 debug       = debug)  
+                                 debug       = debug,
+                                 auto_bound = auto_bound)  
     # a list with useful information about the restriktions.}
     CON <- restr.OUT$CON
     # a parameter table with information about the observed variables in the object 
-    # and the imposed restriktions.}
+    # and the imposed restrictions.}
     parTable <- restr.OUT$parTable
     # constraints matrix
     Amat <- restr.OUT$Amat
@@ -86,6 +88,9 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
     bvec <- restr.OUT$bvec
     # neq
     meq <- restr.OUT$meq
+    
+    
+    
   } else if (is.null(constraints)) { 
     # no constraints specified - needed for GORIC to include unconstrained model
     CON <- NULL

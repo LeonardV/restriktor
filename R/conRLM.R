@@ -105,7 +105,8 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                                  constraints = Amat, 
                                  bvec        = bvec, 
                                  meq         = meq, 
-                                 debug       = debug)  
+                                 debug       = debug,
+                                 auto_bound = auto_bound)  
     # a list with useful information about the restrictions.}
     CON <- restr.OUT$CON
     # a parameter table with information about the observed variables in the object 

@@ -6,7 +6,7 @@ goric <- function(object, ...) {
 goric.default <- function(object, ..., 
                           comparison = c("unconstrained", "complement", "none"), 
                           VCOV = NULL, sample.nobs = NULL,
-                          type = "goric", bound = NULL, debug = FALSE) {
+                          type = "goric", debug = FALSE, auto_bound=FALSE) {
 
   mc <- match.call()
   CALL <- as.list(mc[-1])
@@ -21,7 +21,7 @@ goric.default <- function(object, ...,
   
   ldots <- list(...)
   arguments <- c("B", "mix.weights", "mix.bootstrap", "parallel", "ncpus", 
-                 "cl", "seed", "control", "verbose", "debug")
+                 "cl", "seed", "control", "verbose", "debug", "auto_bound")
   m.restr <- pmatch(names(ldots), arguments, 0L)
   if (length(m.restr) == 0L) {
     ldots2 <- ldots
@@ -89,11 +89,13 @@ goric.default <- function(object, ...,
     if (is.null(ldots$se)) { 
       ldots3$se <- "none"
     }
-    # fit restriktor object for each hypothesis
+#------- fit restriktor object for each hypothesis
+    
+    #the bounds has to be sort out either here or in the restriktor
     conList <- list()
     for (c in 1:length(constraints)) {
       CALL.restr <- c(list(object = object,
-                           constraints = constraints[[c]]), ldots3)
+                           constraints = constraints[[c]]), ldots3,auto_bound=auto_bound)
       conList[[c]] <- do.call("restriktor", CALL.restr) 
     }
     # compute summary for each restriktor object. 

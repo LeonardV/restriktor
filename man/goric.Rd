@@ -59,7 +59,7 @@ comparable to the Akaike weights.
   log-likihood is computed using the multivariate normal distribution 
   function. }
   
-  \item{bound}{not used yet.}
+  \item{auto.bound}{not used yet.}
   
   \item{digits}{the number of significant digits to use when printing.}
   

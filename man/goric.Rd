@@ -12,7 +12,7 @@ comparable to the Akaike weights.
 \usage{goric(object, ...)
 
 \method{goric}{default}(object, ..., comparison = c("unconstrained", "complement", "none"), 
-      VCOV = NULL, sample.nobs = NULL, type = "goric", bound = NULL, debug = FALSE)
+      VCOV = NULL, sample.nobs = NULL, type = "goric", auto.bound = FALSE, debug = FALSE)
 
 \method{print}{con_goric}(x, digits = max(3, getOption("digits") - 4), \dots)
 
@@ -59,7 +59,7 @@ comparable to the Akaike weights.
   log-likihood is computed using the multivariate normal distribution 
   function. }
   
-  \item{bound}{not used yet.}
+  \item{auto.bound}{not used yet.}
   
   \item{digits}{the number of significant digits to use when printing.}
   

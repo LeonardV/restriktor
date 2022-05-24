@@ -241,12 +241,14 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
   #num_groups <- lavInspect(x, what = "ngroups")
   ## get parameter table
   unstandardized_parTable <- parTable(x)
-  standardized_parTable   <- standardizedSolution(x, ci = FALSE, zstat = FALSE, se = FALSE)
   unstandardized_parTable <- unstandardized_parTable[unstandardized_parTable[, "plabel"] != "", ]
+  standardized_parTable   <- standardizedSolution(x, ci = FALSE, zstat = FALSE, se = FALSE)$est.std
+  
   ## combine unstandardized and standardized parameter estimates  
-  parameter_table <- cbind(unstandardized_parTable, standardized_parTable)
+  parameter_table <- cbind(unstandardized_parTable, est.std = standardized_parTable)
+  
   ## Only user-specified labels
-  parameter_table <- parameter_table[parameter_table$label != "", ]
+  parameter_table <- parameter_table[parameter_table$label != "" & parameter_table$free != 0L, ]
   ## remove any duplicate labels
   parameter_table <- parameter_table[!duplicated(parameter_table$label), ]
   ## use (un)standardized parameter estimates

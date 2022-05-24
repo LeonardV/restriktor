@@ -169,7 +169,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   start.time <- proc.time()[3]
   
   # compute R-squared 
-  # acknowledment: code taken from the lmrob() function from the robustbase package
+  # acknowledgement: code taken from the lmrob() function from the robustbase package
   wgt <- object$w
   df.int <- ifelse(attr(object$terms, "intercept"), 1L, 0L)
   y.mean <- if (df.int == 1L) { 

@@ -6,7 +6,7 @@ goric <- function(object, ...) {
 goric.default <- function(object, ..., 
                           comparison = c("unconstrained", "complement", "none"), 
                           VCOV = NULL, sample.nobs = NULL,
-                          type = "goric", bound = NULL, debug = FALSE) {
+                          type = "goric", auto.bound = FALSE, debug = FALSE) {
 
   # bounds are ignored (for now)
   bound <- NULL
@@ -678,8 +678,8 @@ goric.lavaan <- function(object, ...,
   }
   
   objectList <- list(...)
-  mcList <- as.list(match.call())
-  mcList <- mcList[-c(1)]
+  mcList <- as.list(match.call()[-1])
+  #mcList <- mcList[-c(1)]
   mcList$object       <- NULL
   mcList$comparison   <- NULL
   mcList$type         <- NULL
@@ -697,9 +697,11 @@ goric.lavaan <- function(object, ...,
   objectList$type         <- type
   objectList$bound        <- bound
   objectList$debug <- debug
+  
   if (type == "goricac") {
     objectList$sample.nobs <- lavInspect(object, what = "ntotal")
   }
+  
   res <- do.call(goric.default, objectList)
   
   res

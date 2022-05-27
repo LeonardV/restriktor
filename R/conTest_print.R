@@ -20,7 +20,8 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
   iact <- x[[1]]$iact
   R    <- attr(x[[1]]$pvalue, "R")
   
-  cat("\nRestriktor: restricted hypothesis tests (", rdf, "residual degrees of freedom ):\n")
+  #cat("\nRestriktor: restricted hypothesis tests (", rdf, "residual degrees of freedom ):\n")
+  cat("\nRestriktor: restricted hypothesis tests: \n")
   
   if (!("C" %in% names(x))) {
     if (boot %in% c("parametric", "model.based")) {

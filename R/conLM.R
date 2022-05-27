@@ -140,6 +140,9 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   timing$constraints <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
   
+  # compute residual degreees of freedom, corrected for equality constraints.
+  df.residual <- n - (p - qr(Amat[0:meq,])$rank)
+  
   # check if the constraints are not in line with the data, else skip optimization
   if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) & meq == 0) {
     b.restr  <- b.unrestr
@@ -217,8 +220,6 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
       }
       R2.reduced <- mss / (mss + rss)
       
-      # compute residual degreees of freedom, corrected for equality constraints.
-      df.residual <- n - (p - qr(Amat[0:meq,])$rank)
       # compute weighted residuals
       if (is.null(weights)) {
         s2 <- sum(residuals^2) / df.residual  

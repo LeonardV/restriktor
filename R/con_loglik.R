@@ -7,8 +7,7 @@ con_loglik_lm <- function(object, ...) {
   w <- object$weights
   if (is.null(w)) {
     w <- rep.int(1, n)
-  }
-  else {
+  } else {
     excl <- w == 0
     if (any(excl)) {
       res <- res[!excl]

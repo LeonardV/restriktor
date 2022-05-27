@@ -269,7 +269,7 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
     } else if (se == "boot.model.based") {
 
       if (attr(object$terms, "intercept") && any(Amat[,1] == 1)) {
-        stop("Restriktor ERROR: no restriktions on intercept possible",
+        stop("Restriktor ERROR: no restrictions on intercept possible",
              "\n       for 'se = boot.model.based' bootstrap method.")
       }
 

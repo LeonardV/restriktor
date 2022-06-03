@@ -67,8 +67,8 @@ goric.default <- function(object, ...,
   ans <- list()
   
   ## how to deal with constraints
-  # if all objects are of class restriktor
   if (all(isRestr)) {   
+    # if all objects are of class restriktor
     conList   <- objectList
     isSummary <- lapply(conList, function(x) summary(x, 
                                                      goric       = type,
@@ -78,8 +78,8 @@ goric.default <- function(object, ...,
     # unrestricted VCOV
     VCOV <- vcov(ans$model.org)
     constraints <- conList
-  # if the constraints syntax is of class character, e.g., x1 < x2; x2 < x3
   } else if (inherits(object, "lm") && all(isCharacter)) {
+    ## if the constraints syntax is of class character, e.g., x1 < x2; x2 < x3
     # check if constraints exists
     if (length(ldots2) == 0) {
       stop("restriktor ERROR: no constraints found!", call. = FALSE)
@@ -109,8 +109,8 @@ goric.default <- function(object, ...,
     idx <- length(conList) 
     objectnames <- vector("character", idx)
     CALL$object <- NULL
-  # if the constraints are a list with constraints, rhs and neq for each hypothesis   
   } else if (inherits(object, "lm") && all(isList)) {
+    # if the constraints are a list with constraints, rhs and neq for each hypothesis   
       # create lists
       # constraints <- list(); rhs <- list(); neq <- list()
       # extract constraints, rhs and neq
@@ -138,7 +138,7 @@ goric.default <- function(object, ...,
         conList[[c]] <- do.call("restriktor", CALL.restr) 
       }
       # compute symmary for each restriktor object. Here is the goric value 
-      # computed. Note, not the gorica value
+      # computed. Note: not the gorica value
       isSummary <- lapply(conList, function(x) summary(x, 
                                                        goric       = type,
                                                        sample.nobs = sample.nobs))
@@ -515,7 +515,7 @@ goric.default <- function(object, ...,
         llu <- dmvnorm(rep(0, ncol(VCOV)), sigma = VCOV, log = TRUE) 
       } else { 
         llm <- unlist(lapply(conList, function(x) dmvnorm(c(x$b.unrestr - x$b.restr), 
-                                                      sigma = VCOV, log = TRUE) )) 
+                                                            sigma = VCOV, log = TRUE) )) 
         # unrestricted
         llu <- dmvnorm(rep(0, ncol(VCOV)), sigma = VCOV, log = TRUE) 
       }
@@ -525,9 +525,11 @@ goric.default <- function(object, ...,
       PTu <- 1 + ncol(VCOV)
     } else if (type %in% c("goricc", "goricac")) {
       if (is.null(sample.nobs)) {
-        stop("restriktor ERROR: the argument sample.nobs is not found.")
+        stop("restriktor ERROR: if type = \'goric(a)c\' the argument \'sample.nobs\' needs to be provided.",
+             call. = FALSE)
       }
       N   <- sample.nobs
+      # unconstrained penalty
       PTu <- ( (N * (ncol(VCOV) + 1) / (N - ncol(VCOV) - 2) ) ) 
     }
     

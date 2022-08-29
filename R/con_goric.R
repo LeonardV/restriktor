@@ -584,7 +584,6 @@ goric.default <- function(object, ...,
       goric.Hc <- -2*(llc - PTc)
       df.c  <- data.frame(model = "complement", loglik = llc, penalty = PTc, 
                           goric = goric.Hc)
-      df <- rbind(df.Hm, df.c)
     } else if (type %in% c("gorica", "goricac")) {
       # model
       gorica.Hm <- -2*(llm - PTm)
@@ -595,8 +594,9 @@ goric.default <- function(object, ...,
       gorica.Hc <- -2*(llc - PTc)
       df.c  <- data.frame(model = "complement", loglik = llc, penalty = PTc, 
                           gorica = gorica.Hc)
-      df <- rbind(df.Hm, df.c)
     }
+    df <- rbind(df.Hm, df.c)
+    names(df)[4] <- type
   } else {
     stop("restriktor ERROR: I cannot compute goric-values.")
   }
@@ -898,8 +898,7 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   if (comparison == "complement") {
     objectnames <- as.character(df$model)
     ratio.gw <- apply(x$ratio.gw, 2, sprintf, fmt = dig)
-    cat("\nThe order-restricted hypothesis", sQuote(objectnames[1]), "has", 
-        sprintf("%s", ratio.gw[1,2]),"times more support than its complement.\n")
+    cat("\nThe order-restricted hypothesis", sQuote(objectnames[1]), "has", sprintf("%s", trimws(ratio.gw[1,2])), "times more support than its complement.\n")
   } 
   
   cat("\n")

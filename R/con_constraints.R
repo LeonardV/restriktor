@@ -2,7 +2,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
                             debug = FALSE, ...) {
   
   ## build a bare-bones parameter table for this model
-  # if model is a numeric vecter
+  # if model is a numeric vector
   if ("numeric" %in% class(model)) {
     parTable <- con_partable_est(model, est = TRUE, label = TRUE)
     parTable_org <- parTable
@@ -34,6 +34,9 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       # some constraint cleanup
       constraint.syntax <- gsub("[#!].*(?=\n)", "", constraints  , perl = TRUE)
       constraint.syntax <- gsub(";", "\n", constraint.syntax     , perl = TRUE)
+      constraint.syntax <- gsub(",", "\n", constraint.syntax     , perl = TRUE)
+      constraint.syntax <- gsub("&", "\n", constraint.syntax     , perl = TRUE)
+      constraint.syntax <- gsub("and", "\n", constraint.syntax     , perl = TRUE)
       constraint.syntax <- gsub("[ \t]+", "", constraint.syntax  , perl = TRUE)
       constraint.syntax <- gsub("\n{2,}", "\n", constraint.syntax, perl = TRUE)
       

@@ -36,7 +36,6 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       constraint.syntax <- gsub(";", "\n", constraint.syntax     , perl = TRUE)
       constraint.syntax <- gsub(",", "\n", constraint.syntax     , perl = TRUE)
       constraint.syntax <- gsub("&", "\n", constraint.syntax     , perl = TRUE)
-      constraint.syntax <- gsub("and", "\n", constraint.syntax     , perl = TRUE)
       constraint.syntax <- gsub("[ \t]+", "", constraint.syntax  , perl = TRUE)
       constraint.syntax <- gsub("\n{2,}", "\n", constraint.syntax, perl = TRUE)
       

@@ -38,6 +38,11 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       constraint.syntax <- gsub("&", "\n", constraint.syntax     , perl = TRUE)
       constraint.syntax <- gsub("[ \t]+", "", constraint.syntax  , perl = TRUE)
       constraint.syntax <- gsub("\n{2,}", "\n", constraint.syntax, perl = TRUE)
+      if(all(grepl("and", constraint.syntax))){
+        stop("Restriktor ERROR: error in constraint syntax. Only the operators ',' '&' and ';' are allowed",
+             "\n", "to combine the constraints for each hypothesis.See ?restriktor for details on how to specify the constraint syntax",
+             "\n", "or check the website: https://restriktor.org/tutorial/syntax.html.", call. = FALSE) 
+      }
       
       constraint.syntax[[i]] <- strsplit(constraint.syntax[[i]], split = "\n", perl = TRUE)
       constraint.syntax[[i]] <- unlist(constraint.syntax[[i]])

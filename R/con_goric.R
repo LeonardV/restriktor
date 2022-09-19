@@ -607,7 +607,15 @@ goric.default <- function(object, ...,
   delta <- df$goric - min(df$goric)
   goric.weights <- exp(-delta / 2) / sum(exp(-delta / 2))
   df$goric.weights <- goric.weights
-    names(df)[5] <- paste0(type, ".weights")
+  names(df)[5] <- paste0(type, ".weights")
+  if (comparison == "unconstrained"){
+    vector<-df$goric.weights[-length(df$goric.weights)]
+    #recalculate the values to not include the unconstrained case 
+    vector<-round(vector/sum(vector),3)
+    vector<-c(vector,0)
+    #add additional column & specify its name 
+    df$goric.weights.no_uncon<-vector
+  }  
   ans$result <- df
 
   # compute ratio weights
@@ -877,7 +885,10 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   x2 <- lapply(x$result[-1], sprintf, fmt = dig)
   x2$model <- x$result$model
   df <- as.data.frame(x2)
-  df <- df[, c(5,1,2,3,4)]
+  if(comparison=="unconstrained"){
+    df <- df[, c(6,1,2,3,4,5)]
+  }else df <- df[, c(5,1,2,3,4)]
+  
   
   cat(sprintf("restriktor (%s): ", packageDescription("restriktor", fields = "Version")))
 
@@ -899,7 +910,7 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     objectnames <- as.character(df$model)
     ratio.gw <- apply(x$ratio.gw, 2, sprintf, fmt = dig)
     cat("\nThe order-restricted hypothesis", sQuote(objectnames[1]), "has", sprintf("%s", trimws(ratio.gw[1,2])), "times more support than its complement.\n")
-  } 
+  }
   
   cat("\n")
   cat(x$messages$mix_weights)
@@ -920,7 +931,9 @@ summary.con_goric <- function(object, brief = TRUE,
   x2 <- lapply(x$result[-1], sprintf, fmt = dig)
   x2$model <- x$result$model
   df <- as.data.frame(x2)
-  df <- df[, c(5,1,2,3,4)]
+  if(comparison=="unconstrained"){
+    df <- df[, c(6,1,2,3,4,5)]
+  }else df <- df[, c(5,1,2,3,4)]
   
   objectnames   <- as.character(df$model)
   #goric.weights <- as.numeric(as.character(df$goric.weights))

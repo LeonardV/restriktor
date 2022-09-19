@@ -892,26 +892,9 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   }
   
   cat("\nResults:\n")
-  if(rownames(x$ratio.gw)[length(rownames(x$ratio.gw))]== "unconstrained"){
-    #get the df last column and convert to double data type
-    vector<-as.double(df[-nrow(df),5])
-    #recalculate the values to not include the unconstrained case 
-    vector<-round(vector/sum(vector),3)
-    #back to the character data type
-    vector<-as.character(vector)
-    vector<-c(vector,"-")
-    #merge with original dataframe
-    df_new<-cbind(df,vector)
-    #here the name of the column has to be changed 
-    colnames(df_new)<-c(colnames(df),colnames(df)[length(colnames(df))])
-    print(format(df_new, digits = digits, scientific = FALSE), 
-          print.gap = 2, quote = FALSE)
-    cat("---\n")
-  }else{
-    print(format(df, digits = digits, scientific = FALSE), 
-          print.gap = 2, quote = FALSE)
-    cat("---\n")
-  }
+  print(format(df, digits = digits, scientific = FALSE), 
+        print.gap = 2, quote = FALSE)
+  cat("---")
   if (comparison == "complement") {
     objectnames <- as.character(df$model)
     ratio.gw <- apply(x$ratio.gw, 2, sprintf, fmt = dig)
@@ -958,23 +941,11 @@ summary.con_goric <- function(object, brief = TRUE,
   }
   
   cat("\nResults:\n")  
-  if(rownames(x$ratio.gw)[length(rownames(x$ratio.gw))]== "unconstrained"){
-    vector<-as.double(df[-nrow(df),5])
-    vector<-round(vector/sum(vector),3)
-    vector<-as.character(vector)
-    vector<-c(vector,"-")
-    df_new<-cbind(df,vector)
-    #here the name of the column has to be changed 
-    colnames(df_new)<-c(colnames(df),colnames(df)[length(colnames(df))])
-    print(format(df_new, digits = digits, scientific = FALSE), 
-          print.gap = 2, quote = FALSE)
-    cat("---\n")
-  }else{
-    print(format(df, digits = digits, scientific = FALSE), 
+  
+  print(format(df, digits = digits, scientific = FALSE), 
         print.gap = 2, quote = FALSE)
-    cat("---\n")
-  }
-
+  cat("---\n")
+  
   if (!is.null(x$ratio.gw)) {
     if (type == "goric") {
       cat("\nRatio GORIC-weights:\n")
@@ -1000,8 +971,8 @@ summary.con_goric <- function(object, brief = TRUE,
     if (length(unique(df$loglik)) != length(df$loglik)) {
       cat("Note: In case of equal log-likelihood (loglik) values, the 
       ratio weights are solely based on the difference in penalty values.\n")
-    }}
-  
+    }
+  }
   
   if (comparison == "complement") {
     cat("The order-restricted hypothesis", sQuote(objectnames[1]), "has", 

@@ -608,13 +608,14 @@ goric.default <- function(object, ...,
   goric.weights <- exp(-delta / 2) / sum(exp(-delta / 2))
   df$goric.weights <- goric.weights
   names(df)[5] <- paste0(type, ".weights")
-  if (comparison == "unconstrained"){
-    vector<-df$goric.weights[-length(df$goric.weights)]
+  if (comparison == "unconstrained" ){
+    vector<-df[-nrow(df),5]
     #recalculate the values to not include the unconstrained case 
     vector<-round(vector/sum(vector),3)
     vector<-c(vector,0)
     #add additional column & specify its name 
-    df$goric.weights.no_uncon<-vector
+    df[,6]=vector
+    names(df)[6] <- paste0(type, ".weights.no_uncon")
   }  
   ans$result <- df
 

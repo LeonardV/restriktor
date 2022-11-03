@@ -747,25 +747,18 @@ goric.lm <- function(object, ...,
   res
 }
 
-goric.rma <- function(object, ...,names=NULL,
+goric.rma <- function(object, ...,
                           VCOV = NULL,
                           comparison = "complement",
                           type = "gorica", sample.nobs = NULL,
                           bound = NULL, debug = FALSE) {
   
-  if (!inherits(metaan, c("rma.uni", "rma"))) {
+  if (!inherits(object, c( "rma"))) {
     stop("restriktor ERROR: the object must be of class lm, glm, mlm, rlm, rma (only 'rma.uni').")
   }
   
   if (!c(type %in% c("gorica", "goricac"))) {
     stop("restriktor ERROR: object of class rma is only supported for type = 'gorica(c)'.")
-  }
-  VCOV <- object$vb
-  object <-coef(object)
-  if(!is.null(names)){
-    names(object)<-names
-    dimnames(VCOV)[[1]]<-names
-    dimnames(VCOV)[[2]]<-names
   }
   objectList <- list(...)
   mcList <- as.list(match.call())
@@ -775,8 +768,15 @@ goric.rma <- function(object, ...,names=NULL,
   mcList$type         <- NULL
   mcList$VCOV         <- NULL
   
-  objectList$object       <- object
-  objectList$VCOV         <- VCOV
+  #<FIXME>
+  mcnames <- names(mcList) == ""
+  lnames <- as.character(mcList[mcnames])
+  names(mcList)[mcnames] <- lnames
+  objectList <- mcList  
+  #</FIXME>
+  
+  objectList$object       <- coef(object)
+  objectList$VCOV         <- vcov(object)
   objectList$comparison   <- comparison
   objectList$type         <- type
   objectList$bound        <- bound

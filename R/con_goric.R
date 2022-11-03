@@ -709,7 +709,6 @@ goric.lavaan <- function(object, ...,
   res
 }
 
-
 goric.lm <- function(object, ...,
                      comparison = "unconstrained",
                      type = "goric",
@@ -719,20 +718,23 @@ goric.lm <- function(object, ...,
     stop("restriktor ERROR: the object must be of class lm, glm, mlm, rlm.")
   }
   
-  
   objectList <- list(...)
   mcList <- as.list(match.call())
   mcList <- mcList[-c(1)]
   mcList$object       <- NULL
   mcList$comparison   <- NULL
   mcList$type         <- NULL
+  mcList$VCOV         <- NULL
   
+  #<FIXME>
   mcnames <- names(mcList) == ""
   lnames <- as.character(mcList[mcnames])
   names(mcList)[mcnames] <- lnames
   objectList <- mcList  
+  #</FIXME>
   
   objectList$object       <- object
+  objectList$VCOV         <- VCOV
   objectList$comparison   <- comparison
   objectList$type         <- type
   objectList$bound        <- bound
@@ -745,7 +747,47 @@ goric.lm <- function(object, ...,
   res
 }
 
-
+goric.rma <- function(object, ...,names=NULL,
+                          VCOV = NULL,
+                          comparison = "complement",
+                          type = "gorica", sample.nobs = NULL,
+                          bound = NULL, debug = FALSE) {
+  
+  if (!inherits(metaan, c("rma.uni", "rma"))) {
+    stop("restriktor ERROR: the object must be of class lm, glm, mlm, rlm, rma (only 'rma.uni').")
+  }
+  
+  if (!c(type %in% c("gorica", "goricac"))) {
+    stop("restriktor ERROR: object of class rma is only supported for type = 'gorica(c)'.")
+  }
+  VCOV <- object$vb
+  object <-coef(object)
+  if(!is.null(names)){
+    names(object)<-names
+    dimnames(VCOV)[[1]]<-names
+    dimnames(VCOV)[[2]]<-names
+  }
+  objectList <- list(...)
+  mcList <- as.list(match.call())
+  mcList <- mcList[-c(1)]
+  mcList$object       <- NULL
+  mcList$comparison   <- NULL
+  mcList$type         <- NULL
+  mcList$VCOV         <- NULL
+  
+  objectList$object       <- object
+  objectList$VCOV         <- VCOV
+  objectList$comparison   <- comparison
+  objectList$type         <- type
+  objectList$bound        <- bound
+  objectList$debug        <- debug
+  if (type == "goricac") {
+    objectList$sample.nobs <- sample.nobs
+  }
+  res <- do.call(goric.default, objectList)
+  
+  res
+}
 
 goric.restriktor <- function(object, ...,
                              comparison = "unconstrained",

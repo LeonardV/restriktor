@@ -8,7 +8,6 @@ con_augmented_information <- function(information  = NULL,
                                       Amat         = NULL, 
                                       bvec         = NULL, 
                                       meq          = NULL) {
-  
   if (all(c(Amat) == 0)) {
     is.augmented <- FALSE
   }

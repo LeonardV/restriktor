@@ -44,9 +44,8 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   weights <- weights(object)
   # unconstrained estimates
   b.unrestr <- coef(object)
-  b.unrestr[abs(b.unrestr) < ifelse(is.null(control$tol), 
-                                sqrt(.Machine$double.eps), 
-                                control$tol)] <- 0L
+  b.unrestr[abs(b.unrestr) < ifelse(is.null(control$tol), sqrt(.Machine$double.eps), 
+                                    control$tol)] <- 0L
   # ML unconstrained MSE
   Sigma <- vcov(object)
   # number of parameters
@@ -281,7 +280,8 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
 
       if (inherits(information.inv, "try-error")) {
         stop(paste("Restriktor Warning: No standard errors could be computed.
-                      Try to set se = \"none\", \"boot.model.based\" or \"boot.standard\"."), call. = FALSE)
+                      Try to set se = \"none\", \"boot.model.based\" or \"boot.standard\"."), 
+             call. = FALSE)
       }
         
       attr(OUT$information, "inverted")  <- information.inv$information

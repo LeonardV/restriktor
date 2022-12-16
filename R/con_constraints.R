@@ -2,7 +2,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
                             debug = FALSE, ...) {
   
   ## build a bare-bones parameter table for this model
-  # if model is a numeric vecter
+  # if model is a numeric vector
   if ("numeric" %in% class(model)) {
     parTable <- con_partable_est(model, est = TRUE, label = TRUE)
     parTable_org <- parTable
@@ -34,6 +34,8 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       # some constraint cleanup
       constraint.syntax <- gsub("[#!].*(?=\n)", "", constraints  , perl = TRUE)
       constraint.syntax <- gsub(";", "\n", constraint.syntax     , perl = TRUE)
+      constraint.syntax <- gsub(",", "\n", constraint.syntax     , perl = TRUE)
+      constraint.syntax <- gsub("&", "\n", constraint.syntax     , perl = TRUE)
       constraint.syntax <- gsub("[ \t]+", "", constraint.syntax  , perl = TRUE)
       constraint.syntax <- gsub("\n{2,}", "\n", constraint.syntax, perl = TRUE)
       
@@ -97,7 +99,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       stop("Restriktor ERROR: Sorry, but I have no idea how to deal with your constraint syntax. \n",
            "See ?restriktor for details on how to specify the constraint syntax or check the website \n", 
             "https://restriktor.org/tutorial/syntax.html. \n\n",  
-           "Hint: constraints have to be specified pairwise, e.g., x1 < x2; x2 == x3; x1 > 2", sep = "",
+           "Hint: constraints have to be specified pairwise, e.g., x1 < x2; x2 = x3 or x2 == x3; x1 > 2", sep = "",
           call. = FALSE
       )
     }

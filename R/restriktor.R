@@ -37,7 +37,7 @@ restriktor <- function(object, constraints = NULL, ...) {
     # EM algorithm for incomplete multivariate normal data 
     data_imp <- two_stage(object     = object, 
                           emControl  = arguments$emControl, 
-                          auxilliary = arguments$auxilliary)
+                          auxiliary  = arguments$auxiliary)
     
     object <- update(object, data = data_imp)
   }

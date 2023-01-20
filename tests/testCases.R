@@ -6,6 +6,7 @@
 # constraints on factors and interactions
 
 library(restriktor)
+
 n <- 100
 p <- 4
 betas = c(0.1,0.2,0.3,0.4,0.5)
@@ -22,7 +23,7 @@ model1 <- y ~  1 + x1 + x2 + x3 + x4
 model2 <- y ~ -1 + x1 + x2 + x3 + x4
 # intercept model with interaction
 model3 <- y ~ 1 + x1*f1 + x2*f1 + x3*f1 + x4*f1
-# intercept model with interaction
+# no intercept model with interaction
 model4 <- y ~ -1 + x1*f1 + x2*f1 + x3*f1 + x4*f1
 
 ############################ lm #################################
@@ -38,5 +39,10 @@ constraints1 <- 'x1 > 0; x2 > 0; x3 > 0'
 fit.restr1 <- restriktor(linmod1, constraints1)
 fit.restr2 <- restriktor(linmod2, constraints1)
 fit.restr3 <- restriktor(linmod3, constraints1)
+
+goric(fit.restr1, fit.restr2, fit.restr3)
+goric(fit.restr1, comparison = "complement")
+goric(linmod1, constraints = list(constraints1, 'x1 = x2 > x3'))
+
 
 ## to do: add tests

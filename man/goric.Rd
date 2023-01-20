@@ -48,7 +48,7 @@ comparable to the Akaike weights.
   \item{constraints}{list; there are two ways to constrain parameters. 
   First, the constraint syntax consists of one or more text-based
   descriptions, where the syntax can be specified as a literal 
-  string enclosed by single quotes. Only the names of \code{coef(model)} of
+  string enclosed by single quotes. Only the names of \code{coef(model)} or
   \code{names(vector)} can be used as names. See details for more information. 
   Note that objects of class "mlm" do not (yet) support this method. 
   
@@ -64,8 +64,8 @@ comparable to the Akaike weights.
   \item{comparison}{if "\code{unconstrained}" (default) the unconstrained model is 
   included in the set of models. If "\code{complement}" then the restricted object 
   is compared against its complement. Note that the complement can only be computed 
-  for one model/hypothesis at a time (for now). If "\code{none}" the model is only compared
-  against the models provided by the user.}
+  for one model/hypothesis at a time (for now). If "\code{none}" the model is only 
+  compared against the models provided by the user.}
   
   \item{VCOV}{variance-coviance matrix. Only needed if object is of class numeric and
   \code{type = "gorica"} or \code{type = "goricac"}.}
@@ -75,7 +75,7 @@ comparable to the Akaike weights.
   \item{type}{if \code{"goric"} (default), the generalized order-restricted 
   information criterion value is computed. If \code{"gorica"} the 
   log-likihood is computed using the multivariate normal distribution 
-  function. }
+  function.}
   
   \item{auto.bound}{not used yet.}
   

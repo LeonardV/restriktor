@@ -11,7 +11,8 @@ comparable to the Akaike weights.
 }
 \usage{goric(object, ...)
 
-\method{goric}{default}(object, ..., comparison = c("unconstrained", "complement", "none"), 
+\method{goric}{default}(object, ..., constraints = NULL,
+      comparison = c("unconstrained", "complement", "none"), 
       VCOV = NULL, sample.nobs = NULL, type = "goric", auto.bound = FALSE, debug = FALSE)
 
 \method{print}{con_goric}(x, digits = max(3, getOption("digits") - 4), \dots)
@@ -29,7 +30,8 @@ comparable to the Akaike weights.
     \item a fitted unconstrained object of class \code{lm}, \code{rlm} or \code{glm}. 
     \item a numeric vector containing the unconstrained estimates resulting from any 
     statistical analysis.
-    \item a fitted object of class \code{CTmeta}. 
+    \item a fitted object of class \code{CTmeta}.
+    \item a fitted object of class \code{rma}.
   }
   }
   
@@ -37,27 +39,43 @@ comparable to the Akaike weights.
 
   \item{\ldots}{this depends on the class of the object. If object is of class 
   restriktor, further objects of class restriktor can be passed. If object is of
-  class \code{lm}, \code{rlm} or \code{glm}, the constraints can be passed. If
-  object is of class \code{lavaan}, the standardized or unstandardized vcov can
-  be used, using setting \code{standardized = TRUE}. If object is of 
-  class numeric, the constraints can be passed. See details for more
-  information.}
+  class \code{lm}, \code{rlm} or \code{glm}, further objects of class \code{lm}, 
+  \code{rlm} or \code{glm} can be passed. Note that, the objects have to be of
+  the same class. If object is of class \code{lavaan}, the standardized or 
+  unstandardized vcov can be used, using setting \code{standardized = TRUE}. 
+  See details for more information.}
+  
+  \item{constraints}{list; there are two ways to constrain parameters. 
+  First, the constraint syntax consists of one or more text-based
+  descriptions, where the syntax can be specified as a literal 
+  string enclosed by single quotes. Only the names of \code{coef(model)} or
+  \code{names(vector)} can be used as names. See details for more information. 
+  Note that objects of class "mlm" do not (yet) support this method. 
+  
+  Second, the constraint syntax consists of a matrix \eqn{R} (or a vector in 
+  case of one constraint) and defines the left-hand side of the 
+  constraint \eqn{R\theta \ge rhs}, where each row represents one 
+  constraint. The number of columns needs to correspond to the 
+  number of parameters estimated (\eqn{\theta}) by model. The rows 
+  should be linear independent, otherwise the function gives an 
+  error. For more information about constructing the matrix \eqn{R} and 
+  \eqn{rhs} see details.}
   
   \item{comparison}{if "\code{unconstrained}" (default) the unconstrained model is 
   included in the set of models. If "\code{complement}" then the restricted object 
   is compared against its complement. Note that the complement can only be computed 
-  for one model/hypothesis at a time (for now). If "\code{none}" the model is only compared
-  against the models provided by the user.}
+  for one model/hypothesis at a time (for now). If "\code{none}" the model is only 
+  compared against the models provided by the user.}
   
   \item{VCOV}{variance-coviance matrix. Only needed if object is of class numeric and
-  \code{type = "gorica"}.}
+  \code{type = "gorica"} or \code{type = "goricac"}.}
   
-  \item{sample.nobs}{not used for now.}
+  \item{sample.nobs}{the number of observations if \code{type = "goricac"}.}
   
   \item{type}{if \code{"goric"} (default), the generalized order-restricted 
   information criterion value is computed. If \code{"gorica"} the 
   log-likihood is computed using the multivariate normal distribution 
-  function. }
+  function.}
   
   \item{auto.bound}{not used yet.}
   
@@ -80,14 +98,15 @@ In case of one order-constrained hypothesis, say H1, the complement
 Hc can be computed as competing hypothesis. The complement is defined 
 as Hc = not H1.
 
-If the object(s) is of class restriktor the constraints are automatically extracted.
-Otherwise, the constraint syntax can be parsed via the \ldots. If the object is 
+If the object(s) is of class restriktor the constraints are inherited. Otherwise, 
+the constraint syntax can be parsed via the constraint argument. If the object is 
 an unconstrained model of class \code{lm}, \code{rlm} or \code{glm}, then the 
 constraints can be specified in two ways, see \code{\link{restriktor}}. Note 
 that if the constraints are written in matrix notation, then the constraints
-for each model/hypothesis is put in a named list. For example, 
-h1 <- list(constraints = "x1 > 0", rhs = 0, neq = 0). The \code{rhs} and \code{neq}
-are not required if they are equal to 0. If \code{type = "gorica"},
+for each model/hypothesis is put in a named list with specific names amat, rhs, 
+and neq. For example with three parameters x1, x2, x3, and x1 > 0: 
+list(model1 = list(amat = rbind(c(1, 0, 0)), rhs = 0, neq = 0))). The \code{rhs} 
+and \code{neq} are not required if they are equal to 0. If \code{type = "gorica"},
 then the object might be a (named) numeric vector. The constraints can again be 
 specified in two ways, see \code{\link{restriktor}}. For examples, see below.
 
@@ -158,15 +177,15 @@ VCOV <- vcov(fit.lm)
 h1 <- "x1 > 0"
 h2 <- "x1 > 0; x2 > 0"
 # use fitted unconstrained linear model
-out <- goric(fit.lm, h1, h2, type = "gorica")
+out <- goric(fit.lm, constraints = list(h1, h2), type = "gorica")
 # use unconstrained estimates
-out <- goric(est, VCOV = VCOV, h1, h2, type = "gorica")
+out <- goric(est, VCOV = VCOV, constraints = list(h1, h2), type = "gorica")
 
 ## constraint syntax (matrix notation)
-h1 <- list(constraints = c(0,1,0))
-h2 <- list(constraints = rbind(c(0,1,0), c(0,0,1)))
-out <- goric(fit.lm, h1, h2, type = "gorica")
-out <- goric(est, VCOV = VCOV, h1, h2, type = "gorica")
+h1 <- list(amat = c(0,1,0), rhs = 0, neq = 0)
+h2 <- list(amat = rbind(c(0,1,0), c(0,0,1)), rhs = c(0,0), neq = 0)
+out <- goric(fit.lm, constraints = list(h1, h2), type = "gorica")
+out <- goric(est, VCOV = VCOV, constraints = list(h1, h2), type = "gorica")
 
 
 ## mlm
@@ -174,7 +193,7 @@ out <- goric(est, VCOV = VCOV, h1, h2, type = "gorica")
 n <- 30
 mu <- c(1,2,3,4)
 Sigma <- matrix(5,4,4)
-  diag(Sigma) <- c(10,10,10,10)
+diag(Sigma) <- c(10,10,10,10)
 # 4 Y's.
 Y <- mvrnorm(n, mu, Sigma)
 

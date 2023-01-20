@@ -1,12 +1,15 @@
 Package: restriktor
 Title: Restricted Statistical Estimation and Inference for Linear Models
-Version: 0.3-500
+Version: 0.4-100
 Authors@R: c(person(given = "Leonard", family = "Vanbrabant",
                     role =  c("aut","cre"),
                     email = "info@restriktor.org"),
              person(given = "Yves", family = "Rosseel",
                     role  = c("ctb"),
                     email = "Yves.Rosseel@UGent.be"),
+             person(given = "Rebecca", family = "Kuiper",
+                    role  = c("aut"),
+                    email = "r.m.kuiper@uu.nl"),
              person(given = "Aleksandra", family = "Dacko",
                     role  = c("ctb"),
                     email = "a.dacko@uu.nl")
@@ -14,12 +17,12 @@ Authors@R: c(person(given = "Leonard", family = "Vanbrabant",
 Description: Allow for easy-to-use testing or evaluating of linear equality and inequality 
  restrictions about parameters and effects in (generalized) linear statistical models.
 Depends: R(>= 4.0.0)
-Imports: boot, ic.infer, lavaan(>= 0.6-10), MASS, mvtnorm, quadprog
+Imports: boot, ic.infer, lavaan(>= 0.6-10), MASS, mvtnorm, quadprog, norm2
 License: GPL (>= 2)
 LazyData: yes
 URL: https://restriktor.org
 NeedsCompilation: no
-Packaged: 2022-06-03 16:40:11 UTC; Leonard
-Author: Leonard Vanbrabant [aut, cre], Yves Rosseel [ctb], Aleksandra Dacko [ctb]
+Packaged: 2023-01-20 10:34:11 UTC; Leonard
+Author: Leonard Vanbrabant [aut, cre], Yves Rosseel [ctb], Rebecca Kuiper [aut], Aleksandra Dacko [ctb]
 Maintainer: Leonard Vanbrabant <info@restriktor.org>
 Suggests: 

@@ -40,19 +40,22 @@ importFrom("ic.infer",
            #nchoosek, NOT EXPORTED!
            ic.weights)
 
-importFrom("utils", "combn", "packageDescription", "menu")
+importFrom("utils", combn, packageDescription, menu)
 
-importFrom("stats", "coef", "df.residual", "dnorm", "fitted",
-           "formula", "frequency", "median", "model.matrix",
-           "naresid", "pchisq", "pf", "pnorm", "printCoefmat", "pt",
-           "quantile", "rchisq", "residuals", "rnorm", "rt", "runif",
-           "sd", "start", "terms", "update", "var", "vcov",
-           "weighted.residuals", "weights", "gaussian", "lm.fit",
-           "lm.wfit", "mad", "coefficients", "family", "logLik",
-           "model.frame", "anova", "optimize") 
+importFrom("stats", coef, df.residual, dnorm, fitted,
+           formula, frequency, median, model.matrix,
+           naresid, pchisq, pf, pnorm, printCoefmat, pt,
+           quantile, rchisq, residuals, rnorm, rt, runif,
+           sd, start, terms, update, var, vcov,
+           weighted.residuals, weights, gaussian, lm.fit,
+           lm.wfit, mad, coefficients, family, logLik,
+           model.frame, anova, optimize) 
 
 
-importFrom("graphics", "abline", "axis", "box", "hist", "par")
+importFrom("graphics", abline, axis, box, hist, par)
+
+
+importFrom("norm2", emNorm)
 
 # export ordinary functions defined in this package
 export("restriktor", 
@@ -71,7 +74,7 @@ export("restriktor",
        "summary.restriktor", "conTest_summary.restriktor",
        "print.conTest", "logLik.restriktor",
        "coef.restriktor", "model.matrix.restriktor",
-       "con_weights_boot", "coef.con_goric", "summary.con_goric")#, "plot.conTestLavaan")
+       "con_weights_boot", "coef.con_goric", "summary.con_goric")
 
 S3method(coef, restriktor)
 S3method(model.matrix, restriktor)
@@ -113,3 +116,4 @@ S3method(goric, lm)
 S3method(goric, lavaan)
 S3method(goric, numeric)
 S3method(goric, CTmeta)
+S3method(goric, rma)

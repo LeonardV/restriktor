@@ -126,7 +126,21 @@ restriktor(object, constraints = NULL, \dots)
   \item{debug}{if TRUE, debugging information about the constraints
   is printed out.
   }
-  \item{\ldots}{no additional arguments for now.}
+  \item{\ldots}{
+    \itemize{
+      \item \code{missing} the default setting for objects of class "lm" is listwise:
+      all cases with missing values are removed from the data before the analysis. This
+      is only valid if the data are missing completely at random (MCAR). Another 
+      option is to use "two.stage". In this approach, we first impute the missing
+      data using an EM algorithm. Then, we use the complete data as input for the
+      regular analysis. The standard errors and test statistics are not adjusted 
+      correctly to reflect the two-step procedure (yet).
+      \item \code{auxiliary} [vector] The inclusion of auxiliary variables can improve the
+      imputation model. These auxiliary variables are not part of the target model.
+      \item \code{emControl} a list of control arguments for the \code{emnorm} function
+      from the \pkg{norm2} package.
+    }
+  }
 }
 
 \details{
@@ -209,12 +223,25 @@ syntax:
   then "\code{2*x2 = x1}". 
   
   If \code{constraints = NULL}, the unrestricted model is fitted.
+  
+  The "two.stage" approach for missing data uses the EM algorithm from the 
+  \code{norm2} package. The response variables are assumed to be jointly 
+  normal. In practice, missing-data procedures designed for variables that are 
+  normal are sometimes applied to variables that are not. Binary and ordinal 
+  variables are sometimes imputed under a normal model, and the imputed values 
+  may be classified or rounded. This is also how restriktor handles (ordered)
+  factors for now. 
+  
+  A better strategy (not implemented yet) would be to convert (ordered) factors 
+  into a pair of dummy variables. If the (ordered) factors have missing values, 
+  the dummy variables could be included as columns of Y and imputed, but then you 
+  have to decide how to convert the continuously distributed imputed values for 
+  these dummy codes back into categories. 
 }
 
 \value{
-An object of class restriktor, for which a print and a 
-summary method are available. More specifically, it is a list 
-with the following items:
+An object of class restriktor, for which a print and a summary method are available. 
+More specifically, it is a list with the following items:
 
 \item{CON}{a list with useful information about the restrictions.}
 \item{call}{the matched call.}

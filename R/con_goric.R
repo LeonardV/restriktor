@@ -202,6 +202,8 @@ goric.default <- function(object, ..., constraints = NULL,
       wt.bar <- conList[[1]]$wt.bar
       # constraints matrix
       Amat <- conList[[1]]$constraints
+      # remove all zero rows
+      Amat <- Amat[apply(Amat, 1, function(x) !all(x == 0)), , drop = FALSE]
       # number of equalities
       meq <- conList[[1]]$neq
       # rhs
@@ -304,10 +306,10 @@ goric.default <- function(object, ..., constraints = NULL,
 #       
     if (is.null(bound)) {
       # check if any equality constraint is violated
-      check.ceq <- !(all(Amat.ceq %*% c(b.unrestr) - bvec.ceq == 0))
+      check.ceq <- !(all(c(Amat.ceq %*% c(b.unrestr)) - bvec.ceq == 0))
       if (nrow(Amat) > meq) {
         # check if any inequality constraint is violated
-        check.ciq <- !(all(Amat.ciq %*% c(b.unrestr) - bvec.ciq >= 0))
+        check.ciq <- !(all(c(Amat.ciq %*% c(b.unrestr)) - bvec.ciq >= 0))
       } else {
         check.ciq <- FALSE
       }

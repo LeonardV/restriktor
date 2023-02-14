@@ -13,7 +13,7 @@ restriktor <- function(object, constraints = NULL, ...) {
   
   arguments <- list(...)
   if (length(arguments)) {
-    pnames <- c("se", "B", "rhs", "neq", "mix.weights", "mix.bootstrap", "missing",
+    pnames <- c("se", "B", "rhs", "neq", "mix.weights", "mix.bootstrap", 
                 "auxilliary", "emControl", "parallel", "ncpus", "cl", "seed", "control",  
                 "verbose", "debug", "auto_bound")
     pm <- pmatch(names(arguments), pnames, nomatch = 0L)
@@ -22,28 +22,7 @@ restriktor <- function(object, constraints = NULL, ...) {
       stop("Restriktor ERROR: ", names(arguments[pm.idx]), " invalid argument(s).")
     }
   }
-  
-  missing <- arguments$missing
-  
-  if (is.null(missing)) { 
-    missing <- "none"
-  } else if (missing %in% c("em", "EM", "two.stage", "twostage")) {
-    missing <- "two.stage" 
-  } else if (!(missing %in% c("none", "two.stage"))) {
-      stop("Restriktor ERROR: missing method ", sQuote(missing), " unknown.", call. = FALSE)
-  }  
-  
-  if (missing == "two.stage") {
-    # EM algorithm for incomplete multivariate normal data 
-    data_imp <- two_stage(object     = object, 
-                          emControl  = arguments$emControl, 
-                          auxiliary  = arguments$auxiliary)
-    
-    object <- update(object, data = data_imp)
-  }
-  
-  arguments$missing <- NULL
-  
+
   if (class(object)[1] == "lm") {
     conLM(object, constraints, ...)
   } 

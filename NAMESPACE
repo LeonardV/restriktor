@@ -7,7 +7,12 @@ importFrom("lavaan",
            lav_func_jacobian_complex,
            lav_partable_constraints_ciq,
            lav_partable_constraints_ceq,
+           lav_matrix_vech_idx,
+           lav_matrix_vechru_idx,
            lav_matrix_symmetric_sqrt,
+           lav_matrix_bdiag,
+           lav_matrix_duplication_post,
+           lav_matrix_duplication_pre_post,
            lav_samplestats_from_data,
            lav_data_update,
            lav_partable_add,
@@ -15,8 +20,9 @@ importFrom("lavaan",
            standardizedSolution,
            parTable,
            lavInspect,
-           sem,
-           lavaan)
+           sem,   # conTestD
+           lavaan # conTestD
+           )
 
 importFrom("mvtnorm",
            rmvnorm)
@@ -49,11 +55,9 @@ importFrom("stats", coef, df.residual, dnorm, fitted,
            sd, start, terms, update, var, vcov,
            weighted.residuals, weights, gaussian, lm.fit,
            lm.wfit, mad, coefficients, family, logLik,
-           model.frame, anova, optimize) 
-
+           model.frame, anova, optimize, sigma, cov) 
 
 importFrom("graphics", abline, axis, box, hist, par)
-
 
 importFrom("norm2", emNorm)
 

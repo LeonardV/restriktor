@@ -121,8 +121,7 @@ restriktor(object, constraints = NULL, \dots)
       than \code{tol} are set to 0.
     }
   }
-  \item{verbose}{logical; if TRUE, information is shown at each 
-  bootstrap draw.}
+  \item{verbose}{logical; if TRUE, information is shown at each bootstrap draw.}
   \item{debug}{if TRUE, debugging information about the constraints
   is printed out.
   }
@@ -222,9 +221,8 @@ syntax:
 }
 
 \value{
-An object of class restriktor, for which a print and a 
-summary method are available. More specifically, it is a list 
-with the following items:
+An object of class restriktor, for which a print and a summary method are available. 
+More specifically, it is a list with the following items:
 
 \item{CON}{a list with useful information about the restrictions.}
 \item{call}{the matched call.}

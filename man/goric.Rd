@@ -1,6 +1,12 @@
 \name{goric}
 \alias{goric}
 \alias{goric.default}
+\alias{goric.restriktor}
+\alias{goric.lm}
+\alias{goric.numeric}
+\alias{goric.lavaan}
+\alias{goric.CTmeta}
+\alias{goric.rma}
 \alias{print.con_goric}
 \alias{summary.con_goric}
 \alias{coef.con_goric}
@@ -9,55 +15,120 @@
 \description{The \code{goric} function computes GORIC(A) weights, which are 
 comparable to the Akaike weights. 
 }
+
 \usage{goric(object, ...)
 
-\method{goric}{default}(object, ..., comparison = c("unconstrained", "complement", "none"), 
-      VCOV = NULL, sample.nobs = NULL, type = "goric", auto.bound = FALSE, debug = FALSE)
+\method{goric}{default}(object, ..., constraints = NULL,
+      comparison = c("unconstrained", "complement", "none"), 
+      VCOV = NULL, sample.nobs = NULL, type = "goric", 
+      auto.bound = FALSE, debug = FALSE)
+
+\method{goric}{restriktor}(object, ..., constraints = NULL,
+      comparison = "unconstrained", type = "goric", 
+      auto.bound = NULL, debug = FALSE)
+
+\method{goric}{lm}(object, ..., constraints = NULL,
+      comparison = "unconstrained", type = "goric",
+      missing = "none", auxiliary = c(), emControl = list(),
+      auto.bound = NULL, debug = FALSE)
+
+\method{goric}{numeric}(object, ..., constraints = NULL,
+      VCOV = NULL, comparison = "unconstrained",
+      type = "gorica", sample.nobs = NULL,
+      auto.bound = NULL, debug = FALSE)
+
+\method{goric}{lavaan}(object, ..., constraints = NULL,
+      comparison = "unconstrained", type = "gorica",
+      standardized = FALSE, auto.bound = NULL, debug = FALSE)
+
+\method{goric}{CTmeta}(object, ..., constraints = NULL,
+      comparison = "unconstrained", type = "gorica", 
+      sample.nobs = NULL, auto.bound = NULL, debug = FALSE)
+
+\method{goric}{rma}(object, ..., constraints = NULL,
+      VCOV = NULL, comparison = "unconstrained", type = "gorica", 
+      sample.nobs = NULL, auto.bound = NULL, debug = FALSE)
+
 
 \method{print}{con_goric}(x, digits = max(3, getOption("digits") - 4), \dots)
 
-\method{summary}{con_goric}(object, brief = TRUE, digits = max(3, getOption("digits") - 4), \dots)
+\method{summary}{con_goric}(object, brief = FALSE, digits = max(3, getOption("digits") - 4), \dots)
 
 \method{coef}{con_goric}(object, \dots)
 }
 
 \arguments{
-  \item{object}{an object containing the outcome of a statistical analysis.
+  \item{object}{an object containing the outcome of an unconstrained statistical analysis.
   Currently, the following objects can be processed:
   \itemize{
     \item a fitted object of class restriktor. 
     \item a fitted unconstrained object of class \code{lm}, \code{rlm} or \code{glm}. 
     \item a numeric vector containing the unconstrained estimates resulting from any 
     statistical analysis.
-    \item a fitted object of class \code{CTmeta}. 
+    \item a fitted object of class \code{lavaan}.
+    \item a fitted object of class \code{CTmeta}.
+    \item a fitted object of class \code{rma}.
   }
   }
   
   \item{x}{an object of class \code{con_goric}.}
 
   \item{\ldots}{this depends on the class of the object. If object is of class 
-  restriktor, further objects of class restriktor can be passed. If object is of
-  class \code{lm}, \code{rlm} or \code{glm}, the constraints can be passed. If
-  object is of class \code{lavaan}, the standardized or unstandardized vcov can
-  be used, using setting \code{standardized = TRUE}. If object is of 
-  class numeric, the constraints can be passed. See details for more
-  information.}
+  restriktor, further objects of class restriktor can be passed. Note that, the 
+  objects have to be of the same class. If object is of class \code{lavaan}, the 
+  standardized or unstandardized vcov can be used, using setting \code{standardized = TRUE}. 
+  See details for more information.}
+  
+  \item{constraints}{list; there are two ways to constrain parameters. 
+  First, the constraint syntax consists of one or more text-based
+  descriptions, where the syntax can be specified as a literal 
+  string enclosed by single quotes. Only the names of \code{coef(model)} or
+  \code{names(vector)} can be used as names. See details for more information. 
+  Note that objects of class "mlm" do not (yet) support this method. 
+  
+  Second, the constraint syntax consists of a matrix \eqn{R} (or a vector in 
+  case of one constraint) and defines the left-hand side of the constraint 
+  \eqn{R\theta \ge rhs}, where each row represents one constraint. The number of 
+  columns needs to correspond to the number of parameters estimated (\eqn{\theta}) 
+  by model. The rows should be linear independent, otherwise the function gives an 
+  error. For more information about constructing the matrix \eqn{R} and \eqn{rhs} 
+  see details.}
   
   \item{comparison}{if "\code{unconstrained}" (default) the unconstrained model is 
   included in the set of models. If "\code{complement}" then the restricted object 
   is compared against its complement. Note that the complement can only be computed 
-  for one model/hypothesis at a time (for now). If "\code{none}" the model is only compared
-  against the models provided by the user.}
+  for one model/hypothesis at a time (for now). If "\code{none}" the model is only 
+  compared against the models provided by the user.}
   
   \item{VCOV}{variance-coviance matrix. Only needed if object is of class numeric and
-  \code{type = "gorica"}.}
+  \code{type = "gorica"} or \code{type = "goricac"}.}
   
-  \item{sample.nobs}{not used for now.}
+  \item{sample.nobs}{the number of observations if \code{type = "goricac"}. Note that, 
+  if \code{type = "goricc"}, the number of observations are inherited from the fitted
+  object.}
   
-  \item{type}{if \code{"goric"} (default), the generalized order-restricted 
+  \item{type}{if \code{"goric"}, the generalized order-restricted 
   information criterion value is computed. If \code{"gorica"} the 
   log-likihood is computed using the multivariate normal distribution 
-  function. }
+  function.}
+  
+  \item{missing}{the default setting for objects of class "lm" is listwise:
+  all cases with missing values are removed from the data before the analysis. This
+  is only valid if the data are missing completely at random (MCAR). Another 
+  option is to use "two.stage". In this approach, missing data are imputed using 
+  an EM algorithm. However, we cannot use the complete data as input for futher 
+  analyses, because the resulting complete data variance-covariance matrix will 
+  not be correct. Therefore, we compute the correct aymptotic covariance (Savalei and Bentler, 2009)
+  and use it as input for the \code{goric.numeric} function to compute a GORICA(C)
+  value. Note that, the parameter estimates are also recomputed using the complete data.} 
+  
+  \item{auxiliary}{Vector. The inclusion of auxiliary variables can improve the
+  imputation model. These auxiliary variables are not part of the target model.}
+  
+  \item{emControl}{a list of control arguments for the \code{emnorm} function
+  from the \pkg{norm2} package.}
+  
+  \item{standardized}{if TRUE, standardized parameter estimates are used.}
   
   \item{auto.bound}{not used yet.}
   
@@ -65,7 +136,7 @@ comparable to the Akaike weights.
   
   \item{debug}{if TRUE, debugging information is printed out.}
   
-  \item{brief}{if FALSE, an extended overview is printed.}
+  \item{brief}{if TRUE, a short overview is printed.}
 }
 
 \details{The GORIC(A) values themselves are not interpretable and 
@@ -80,14 +151,15 @@ In case of one order-constrained hypothesis, say H1, the complement
 Hc can be computed as competing hypothesis. The complement is defined 
 as Hc = not H1.
 
-If the object(s) is of class restriktor the constraints are automatically extracted.
-Otherwise, the constraint syntax can be parsed via the \ldots. If the object is 
+If the object(s) is of class restriktor the constraints are inherited. Otherwise, 
+the constraint syntax can be parsed via the constraint argument. If the object is 
 an unconstrained model of class \code{lm}, \code{rlm} or \code{glm}, then the 
 constraints can be specified in two ways, see \code{\link{restriktor}}. Note 
 that if the constraints are written in matrix notation, then the constraints
-for each model/hypothesis is put in a named list. For example, 
-h1 <- list(constraints = "x1 > 0", rhs = 0, neq = 0). The \code{rhs} and \code{neq}
-are not required if they are equal to 0. If \code{type = "gorica"},
+for each model/hypothesis is put in a named list with specific names amat, rhs, 
+and neq. For example with three parameters x1, x2, x3, and x1 > 0: 
+list(model1 = list(amat = rbind(c(1, 0, 0)), rhs = 0, neq = 0))). The \code{rhs} 
+and \code{neq} are not required if they are equal to 0. If \code{type = "gorica"},
 then the object might be a (named) numeric vector. The constraints can again be 
 specified in two ways, see \code{\link{restriktor}}. For examples, see below.
 
@@ -96,6 +168,20 @@ probabilities) must be computed. If \code{"mix.weights = "pmvnorm" "} (default),
 the chi-bar-square weights are computed based on the multivariate normal distribution 
 function with additional Monte Carlo steps. If \code{"mix.weights = "boot" "}, the 
 chi-bar-square weights are computed using parametric bootstrapping (see \code{\link{restriktor}}).
+
+The "two.stage" approach for missing data uses the EM algorithm from the 
+\code{norm2} package. The response variables are assumed to be jointly 
+normal. In practice, missing-data procedures designed for variables that are 
+normal are sometimes applied to variables that are not. Binary and ordinal 
+variables are sometimes imputed under a normal model, and the imputed values 
+may be classified or rounded. This is also how restriktor handles (ordered)
+factors for now. 
+
+A better strategy (not implemented yet) would be to convert (ordered) factors 
+into a pair of dummy variables. If the (ordered) factors have missing values, 
+the dummy variables could be included as columns of Y and imputed, but then you 
+have to decide how to convert the continuously distributed imputed values for 
+these dummy codes back into categories. 
 }
 
 \value{The function returns a dataframe with the log-likelihood,
@@ -111,6 +197,8 @@ information criterion for model selection under inequality constraints.
 Vanbrabant, L. and Kuiper, R. (2020). Evaluating a theory-based hypothesis against 
 its complement using an AIC-type information criterion with an application to 
 facial burn injury. Psychological Methods. 
+
+Savalei, 
 }
 
 \author{Leonard Vanbrabant and Rebecca Kuiper}
@@ -129,15 +217,28 @@ DATA <- subset(ZelazoKolb1972, Group != "Control")
 fit1.lm <- lm(Age ~ Group, data = DATA)
 
 # some artificial restrictions
-fit1.con <- restriktor(fit1.lm, constraints = "GroupPassive > 0; GroupPassive < GroupNo")
-fit2.con <- restriktor(fit1.lm, constraints = "GroupPassive > 0; GroupPassive > GroupNo")
-fit3.con <- restriktor(fit1.lm, constraints = "GroupPassive = 0; GroupPassive < GroupNo")
-fit4.con <- restriktor(fit1.lm) # unrestricted model
+H1 <- "GroupPassive > 0; GroupPassive < GroupNo"
+H2 <- "GroupPassive > 0; GroupPassive > GroupNo"
+H3 <- "GroupPassive = 0; GroupPassive < GroupNo"
 
-goric(fit1.con, fit2.con, fit3.con, fit4.con)
 
-# fit1.con versus the complement
-goric(fit1.con, comparison = "complement")
+# object is of class lm
+goric(fit1.lm, constraints = list(H1 = H1, H2 = H2, H3 = H3))
+
+# same result, but using objects of class restriktor
+fit1.con <- restriktor(fit1.lm, constraints = H1)
+fit2.con <- restriktor(fit1.lm, constraints = H2)
+fit3.con <- restriktor(fit1.lm, constraints = H3)
+
+goric(fit1.con, fit2.con, fit3.con)
+
+# same result, but using the parameter estimates and covariance matrix as input
+# Note, that in case of a numeric input only the gorica(c) can be computed. 
+goric(coef(fit1.lm), VCOV = vcov(fit1.lm), constraints = list(H1 = H1, H2 = H2, H3 = H3))
+
+
+# hypothesis H1 versus the complement (i.e., not H1)
+goric(fit1.lm, constraints = list(H1 = H1), comparison = "complement")
 
 
 ## GORICA
@@ -158,32 +259,20 @@ VCOV <- vcov(fit.lm)
 h1 <- "x1 > 0"
 h2 <- "x1 > 0; x2 > 0"
 # use fitted unconstrained linear model
-out <- goric(fit.lm, h1, h2, type = "gorica")
+goric(fit.lm, constraints = list(h1, h2), type = "gorica")
 # use unconstrained estimates
-out <- goric(est, VCOV = VCOV, h1, h2, type = "gorica")
+goric(est, VCOV = VCOV, constraints = list(h1, h2), type = "gorica")
 
 ## constraint syntax (matrix notation)
-h1 <- list(constraints = c(0,1,0))
-h2 <- list(constraints = rbind(c(0,1,0), c(0,0,1)))
-out <- goric(fit.lm, h1, h2, type = "gorica")
-out <- goric(est, VCOV = VCOV, h1, h2, type = "gorica")
+h1 <- list(amat = c(0,1,0))
+h2 <- list(amat = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0)
+goric(fit.lm, constraints = list(h1, h2), type = "gorica")
+goric(est, VCOV = VCOV, constraints = list(h1, h2), type = "gorica")
 
 
-## mlm
-# generate data
-n <- 30
-mu <- c(1,2,3,4)
-Sigma <- matrix(5,4,4)
-  diag(Sigma) <- c(10,10,10,10)
-# 4 Y's.
-Y <- mvrnorm(n, mu, Sigma)
-
-# fit unrestricted multivariate linear model
-fit2.mlm <- lm(Y ~ 1)
-
-# constraints
-myConstraints2 <- rbind(c(-1,1,0,0), c(0,-1,1,0), c(0,0,-1,1))
-
-# fit restricted multivariate linear model
-fit5.con <- restriktor(fit2.mlm, constraints = myConstraints2)
+## use parallel processing for computing the level probabilities (i.e., mixing weights)
+\dontrun{
+goric(fit.lm, constraints = list(H1), comparison = "complement",
+      mix.weights = "boot", parallel = "snow", ncpus = 8, mix.bootstrap = 99999)
+}
 }

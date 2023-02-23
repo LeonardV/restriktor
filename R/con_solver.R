@@ -146,9 +146,11 @@ con_solver_glm <- function(X, y, Amat, bvec, meq,
 con_solver_gorica <- function(est, VCOV, Amat, bvec, meq) {
     
     VCOV <- as.matrix(VCOV)
-    invVCOV <- ginv(VCOV)
+    invVCOV <- solve(VCOV)
+    #invVCOV <- ginv(VCOV)
+    #invVCOV <- chol2inv(chol(VCOV))
     
-    Dmat <- 2 * invVCOV
+    Dmat <- 2 * invVCOV 
     dvec <- 2 * (est %*% invVCOV)
     
     out.qp <- solve.QP(Dmat = Dmat, 

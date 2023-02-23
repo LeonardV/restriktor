@@ -105,11 +105,9 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     nsc_rhs.idx <- sum(grepl("<|>|=", parTable$rhs))
     
     if (all(Amat == 0) | nsc_lhs.idx > 0 | nsc_rhs.idx > 0) {
-      stop("Restriktor ERROR: Sorry, but I have no idea how to deal with your constraint syntax. \n",
+      stop("Restriktor ERROR: I have no idea how to deal with this constraint syntax. \n",
            "See ?restriktor for details on how to specify the constraint syntax or check the website \n", 
-            "https://restriktor.org/tutorial/syntax.html. \n\n",  
-           "Hint: constraints have to be specified pairwise, e.g., x1 < x2; x2 == x3; x1 > 2", sep = "",
-          call. = FALSE
+            "https://restriktor.org/tutorial/syntax.html. \n", sep = "", call. = FALSE
       )
     }
     

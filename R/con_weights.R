@@ -31,8 +31,8 @@ con_weights_boot <- function(VCOV, Amat, meq,
     else if (parallel == "snow")
       have_snow <- TRUE
     if (!have_mc && !have_snow)
-      ncpus <- 1L
-  }
+      ncpus <- 1L  
+    }
   
   if (!is.null(seed))
     set.seed(seed)
@@ -80,11 +80,13 @@ con_weights_boot <- function(VCOV, Amat, meq,
                                              ncpus))
         if (RNGkind()[1L] == "L'Ecuyer-CMRG")
           parallel::clusterSetRNGStream(cl)
+        
         res <- parallel::parLapply(cl, seq_len(RR), fn)
         parallel::stopCluster(cl)
         res
+      } else { 
+        parallel::parLapply(cl, seq_len(RR), fn)
       }
-      else parallel::parLapply(cl, seq_len(RR), fn)
     }
   }
   else lapply(seq_len(RR), fn) 

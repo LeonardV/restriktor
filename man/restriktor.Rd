@@ -137,11 +137,15 @@ restriktor(object, constraints = NULL, \dots)
     # 1. inequality constraints
       x1 > 0
       x1 < x2
+    #or
+      0 < x1 < x2
     
     ! 2. equality constraints  
       x3 == x4; x4 == x5 
     # or 
-      x3 = x4; x4 = x5 '
+      x3 = x4; x4 = x5 
+    # or
+      x3 = x4 = x5'
   }
   The variable names x1 to x5 refer to the corresponding regression
   coefficient. Thus, constraints are impose on regression coefficients
@@ -169,7 +173,13 @@ Blank lines and comments can be used in between the constraints,
 and constraints can be split over multiple lines. Both the 
 hashtag (#) and the exclamation (!) characters can be used to 
 start a comment. Multiple constraints can be placed on a single 
-line if they are separated by a semicolon (;).
+line if they are separated by: a semicolon (;), a comma (,) or the "&" sign. 
+
+In addition compound constraints can be stated via one or more longer equality 
+or inequality sentences e.g. 'x1 > x2 > x3 ; x3 < 4 < x4' or 
+'x1 == x2 == x3 & x4=1'.
+Alternatively, the constrains can be specifies as '(x1,x2)>(x3,x4)' which is 
+equivalent to 'x1>x3 ; x1>x4 ; x2>x3 ; x2>x4'. 
 
 There can be three types of text-based descriptions in the constraints 
 syntax:

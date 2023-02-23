@@ -34,10 +34,16 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       # some constraint cleanup
       constraint.syntax <- gsub("[#!].*(?=\n)", "", constraints  , perl = TRUE)
       constraint.syntax <- gsub(";", "\n", constraint.syntax     , perl = TRUE)
-      constraint.syntax <- gsub(",", "\n", constraint.syntax     , perl = TRUE)
       constraint.syntax <- gsub("&", "\n", constraint.syntax     , perl = TRUE)
       constraint.syntax <- gsub("[ \t]+", "", constraint.syntax  , perl = TRUE)
       constraint.syntax <- gsub("\n{2,}", "\n", constraint.syntax, perl = TRUE)
+      if(length(gregexpr("[\\(\\)]", constraints)[[1]])%%2 ==0){
+        constraint.syntax<-gsub("\\),", "\\)\n", constraint.syntax     , perl = TRUE)
+      }else{
+        constraint.syntax <- gsub(",", "\n", constraint.syntax     , perl = TRUE)
+      }
+      
+      
       if(all(grepl("and", constraint.syntax))){
         stop("Restriktor ERROR: error in constraint syntax. Only the operators ',' '&' and ';' are allowed",
              "\n", "to combine the constraints for each hypothesis.See ?restriktor for details on how to specify the constraint syntax",
@@ -51,13 +57,11 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       constraint.syntax[[i]] <- gsub(">=",">", constraint.syntax[[i]], perl = TRUE)
       constraint.syntax <- unlist(constraint.syntax[i])
       
-      LIST <- list()
       # this is where the constraints are transformed back to pairwise constraints
       # x1 < x2 < x3 becomes x1 < x2; x2 < x3. This is needed for computing the
       # constraint matrix. 
-      for (k in 1:length(constraint.syntax)) {
-        LIST[[k]] <- expand_compound_constraints(constraint.syntax[k])
-      }
+      LIST<-lapply(constraint.syntax, function(x){sapply(x, expand_compound_constraints)})
+      LIST<-lapply(constraint.syntax, function(x){sapply(x, expand_parentheses)})
       
       unLIST <- unlist(LIST)
       def.idx  <- grepl(":=", unLIST)

@@ -123,7 +123,22 @@ expand_compound_constraints <- function(hyp){
   }
 }
 
-
+expand_parentheses <- function(hyp){
+  parenth_locations <- gregexpr("[\\(\\)]", hyp)[[1]]
+  if(!parenth_locations[1] == -1){
+    if(length(parenth_locations) %% 2 > 0) stop("Not all opening parentheses are matched by a closing parenthesis, or vice versa.")
+    expanded_contents <- strsplit(substring(hyp, (parenth_locations[1]+1), (parenth_locations[2]-1)), ",")[[1]]
+    if(length(parenth_locations) == 2){
+      return(paste0(substring(hyp, 1, (parenth_locations[1]-1)), expanded_contents, substring(hyp, (parenth_locations[2]+1), nchar(hyp))))
+    } else {
+      return(apply(
+        expand.grid(expanded_contents, expand_parentheses(substring(hyp, (parenth_locations[2]+1), nchar(hyp)))),
+        1, paste, collapse = ""))
+    }
+  } else {
+    return(hyp)
+  }
+}
 
 # 
 # remove_linear_dependent_rows_matrix <- function(Amat, bvec) {

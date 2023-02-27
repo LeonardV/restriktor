@@ -539,11 +539,14 @@ goric.default <- function(object, ..., constraints = NULL,
     df <- rbind(df.Hm, df.c)
     names(df)[4] <- type
   } else {
-    stop("restriktor ERROR: I cannot compute goric-values.")
+    stop("restriktor ERROR: I don't know how to compute the goric-values.")
   }
 
-  loglik.weights  <- exp(df$loglik)  / sum(exp(df$loglik))
-  penalty.weights <- exp(df$penalty) / sum(exp(df$penalty))
+  LL <- -2*df$loglik
+  minLL <- min(LL)
+  loglik.weights <- exp(-0.5 * (LL - minLL)) / sum(exp(-0.5 * (LL - minLL)))
+  #loglik.weights  <- exp(df$loglik) / sum(exp(df$loglik))
+  penalty.weights <- exp(-df$penalty) / sum(exp(-df$penalty))
   df$loglik.weights <- loglik.weights
   df$penalty.weights <- penalty.weights
   
@@ -553,7 +556,8 @@ goric.default <- function(object, ..., constraints = NULL,
   delta <- df$goric - min(df$goric)
   goric.weights <- exp(-delta / 2) / sum(exp(-delta / 2))
   df$goric.weights <- goric.weights
-    names(df)[7] <- paste0(type, ".weights")
+  names(df)[7] <- paste0(type, ".weights")
+    
   # if (comparison == "unconstrained" & length(df$model) > 2) {
   #   gw_no_unc <- df[df$model != "unconstrained", 6]
   #   # recalculate the values excluding the unconstrained model
@@ -571,15 +575,20 @@ goric.default <- function(object, ..., constraints = NULL,
   if (length(modelnames) > 1) {
     goric_rw   <- goric.weights %*% t(1/goric.weights)
     penalty_rw <- penalty.weights %*% t(1/penalty.weights)
+    loglik_rw  <- loglik.weights %*% t(1/loglik.weights)
     # it might happen that a diagonal value results in NaN.
     diag(goric_rw) <- 1
     diag(penalty_rw) <- 1
+    diag(loglik_rw) <- 1
     rownames(goric_rw) <- modelnames
     rownames(penalty_rw) <- modelnames
+    rownames(loglik_rw) <- modelnames
     colnames(goric_rw) <- paste0("vs. ", modelnames)
     colnames(penalty_rw) <- paste0("vs. ", modelnames)
+    colnames(loglik_rw) <- paste0("vs. ", modelnames)
     ans$ratio.gw <- goric_rw
     ans$ratio.pw <- penalty_rw
+    ans$ratio.lw <- loglik_rw
   }
   
   
@@ -1182,6 +1191,10 @@ summary.con_goric <- function(object, brief = FALSE,
     cat("Note: if log-likelihood values are equal or close to each other, the goric ratio weights are determined", 
         "\n only by the difference in penalty values. Please check the ratio penalty-weights. \n\n")
   }
+  if (comparison == "complement") {
+    cat("The order-restricted hypothesis", sQuote(objectnames[1]), "has", 
+        sprintf("%.3f", as.numeric(ratio.gw[1,2])), "times more support than its complement.\n\n")
+  } 
   
   if (!is.null(x$ratio.gw)) {
     if (type == "goric") {
@@ -1193,7 +1206,6 @@ summary.con_goric <- function(object, brief = FALSE,
     } else if (type == "goricac") {
       cat("\nRatio GORICAC-weights:\n") 
     }
-    
 
   if (max(as.numeric(ratio.gw), na.rm = TRUE) >= 1e4) {
       print(format(ratio.gw, digits = digits, scientific = TRUE), 
@@ -1220,11 +1232,22 @@ summary.con_goric <- function(object, brief = FALSE,
     cat("---\n")
   }
   
-  if (comparison == "complement") {
-    cat("The order-restricted hypothesis", sQuote(objectnames[1]), "has", 
-        sprintf("%.3f", as.numeric(ratio.gw[1,2])), "times more support than its complement.\n")
-  } 
+  if (!is.null(x$ratio.lw)) {
+    cat("\nRatio loglik-weights:\n")
+    ratio.lw <- apply(x$ratio.lw, 2, sprintf, fmt = dig)
+    rownames(ratio.lw) <- rownames(x$ratio.lw) 
+    
+    if (max(as.numeric(ratio.lw)) >= 1e4) {
+      print(format(trimws(ratio.lw), digits = digits, scientific = TRUE), 
+            print.gap = 2, quote = FALSE)
+    } else {
+      print(format(trimws(ratio.lw), digits = digits, scientific = FALSE), 
+            print.gap = 2, quote = FALSE)
+    }
+    cat("---\n")
+  }
   
+
   if (!brief) {
     cat("\n\nOrder/Inequality restricted coefficients:\n")
     coefs <- trimws(apply(x$ormle$b.restr, 2, sprintf, fmt = dig))

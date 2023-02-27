@@ -111,7 +111,7 @@ robWeights <- function(w, eps = 0.1/length(w), eps1 = 0.001, ...) {
 
 
 # An internal function coming from 'bain' package 
-expand_compound_constraints <- function(hyp){
+expand_compound_constraints <- function(hyp) {
   equality_operators <- gregexpr("[=<>]", hyp)[[1]]
   if(length(equality_operators) > 1){
     string_positions <- c(0, equality_operators, nchar(hyp)+1)
@@ -123,7 +123,33 @@ expand_compound_constraints <- function(hyp){
   }
 }
 
+expand_parentheses <- function(hyp) {
+  parenth_locations <- gregexpr("[\\(\\)]", hyp)[[1]]
+  if (!parenth_locations[1] == -1){
+    if (length(parenth_locations) %% 2 > 0) stop("Not all opening parentheses are matched by a closing parenthesis, or vice versa.")
+    expanded_contents <- strsplit(substring(hyp, (parenth_locations[1]+1), (parenth_locations[2]-1)), ",")[[1]]
+    if (length(parenth_locations) == 2){
+      return(paste0(substring(hyp, 1, (parenth_locations[1]-1)), expanded_contents, substring(hyp, (parenth_locations[2]+1), nchar(hyp))))
+    } else {
+      return(apply(
+        expand.grid(expanded_contents, expand_parentheses(substring(hyp, (parenth_locations[2]+1), nchar(hyp)))),
+        1, paste, collapse = ""))
+    }
+  } else {
+    return(hyp)
+  }
+}
 
+# compute_weights_ratioWeights <- function(x) {
+#   IC <- 2*x
+#   minIC <- min(IC)
+#   weights <- exp(-0.5 * (IC - minIC)) / sum(exp(-0.5 * (IC - minIC)))
+#   ratio_weights <- weights %*% t(1/weights)
+# 
+#   out <- list(weights = weights, ratio_weights = ratio_weights)
+# 
+#   return(out)
+# }
 
 # 
 # remove_linear_dependent_rows_matrix <- function(Amat, bvec) {

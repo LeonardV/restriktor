@@ -1,6 +1,6 @@
 Package: restriktor
 Title: Restricted Statistical Estimation and Inference for Linear Models
-Version: 0.4-100
+Version: 0.4-300
 Authors@R: c(person(given = "Leonard", family = "Vanbrabant",
                     role =  c("aut","cre"),
                     email = "info@restriktor.org"),
@@ -22,7 +22,7 @@ License: GPL (>= 2)
 LazyData: yes
 URL: https://restriktor.org
 NeedsCompilation: no
-Packaged: 2023-01-20 10:34:11 UTC; Leonard
+Packaged: 2023-02-14 14:08:11 UTC; Leonard
 Author: Leonard Vanbrabant [aut, cre], Yves Rosseel [ctb], Rebecca Kuiper [aut], Aleksandra Dacko [ctb]
 Maintainer: Leonard Vanbrabant <info@restriktor.org>
 Suggests: 

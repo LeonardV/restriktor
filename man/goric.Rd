@@ -198,7 +198,9 @@ Vanbrabant, L. and Kuiper, R. (2020). Evaluating a theory-based hypothesis again
 its complement using an AIC-type information criterion with an application to 
 facial burn injury. Psychological Methods. 
 
-Savalei, 
+Victoria Savalei \& Peter M. Bentler (2009) A Two-Stage Approach to
+Missing Data: Theory and Application to Auxiliary Variables, Structural Equation 
+Modeling: A Multidisciplinary Journal, 16:3, 477-497, DOI: 10.1080/10705510903008238
 }
 
 \author{Leonard Vanbrabant and Rebecca Kuiper}

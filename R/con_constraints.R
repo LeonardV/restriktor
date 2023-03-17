@@ -78,7 +78,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
                                  partable    = parTable,
                                  debug       = debug,
                                  theta       = parTable$est)
-     
+    CON$constraints <- constraints
     FLAT <- lavParseModelString(constraints)
     CON_FLAT <- attr(FLAT, "constraints")
     LIST <- list()

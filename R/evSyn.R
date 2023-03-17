@@ -248,7 +248,7 @@ evSyn.est <- function(object, VCOV = NULL, constraints = NULL,
                 EvSyn_approach = EvSyn_approach, Cumulative.GORICA = CumulativeGorica, 
                 Cumulative.GORICA.weights = CumulativeGoricaWeights,
                 Final.ratio.GORICA.weights = Final.ratio.GORICA.weights,
-                hypotheses = constraints_usr)
+                hypotheses = hypotheses)
   } else if (comparison == "none") {
     colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. H", 1:NrHypos))
     

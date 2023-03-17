@@ -1193,7 +1193,7 @@ summary.con_goric <- function(object, brief = TRUE,
   
   
   if (any(combn(as.numeric(df$loglik), 2, FUN = function(x) abs(diff(x))) <= 1e-5)) { 
-    cat("Note: If log-likelihood values are equal or close to each other, the Goric ratio weights are determined", 
+    cat("Note: If log-likelihood values are equal or close to each other, the goric ratio weights are determined", 
         "only by the difference in penalty values. Please check the ratio penalty-weights.\n\n")
   }
   if (comparison == "complement") {
@@ -1321,12 +1321,15 @@ summary.con_goric <- function(object, brief = TRUE,
       length(hypotheses_usr[[j]]) <- max_length
     }
     
-    hypotheses_usr <- data.frame(do.call(rbind, hypotheses_usr))
+    hypotheses_usr <- do.call(rbind, hypotheses_usr)
+    row.names(hypotheses_usr) <- paste0(objectnames[1:length(x$objectList)], ":")
     hypotheses_usr[is.na(hypotheses_usr)] <- ""
-    row.names(hypotheses_usr) <- objectnames[1:length(x$objectList)]
-    colnames(hypotheses_usr) <- NULL
-    print(hypotheses_usr, quote = FALSE)
     
+    name.width <- max(sapply(hypotheses_usr, nchar))
+    hypotheses_usr <- format(hypotheses_usr, width = name.width, justify = "left")
+    hypotheses_usr <- as.data.frame(hypotheses_usr)
+    names(hypotheses_usr) <- NULL
+    print(hypotheses_usr)
   }
   cat("\n")
   cat(x$messages$mix_weights)

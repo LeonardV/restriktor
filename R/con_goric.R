@@ -65,7 +65,7 @@ goric.default <- function(object, ..., constraints = NULL,
     isSummary <- lapply(conList, function(x) summary(x, 
                                                      goric       = type,
                                                      sample.nobs = sample.nobs))
-    ans$constraints_usr <- lapply(conList, function(x) x$CON$constraints)
+    ans$hypotheses_usr <- lapply(conList, function(x) x$CON$constraints)
     ans$model.org <- object[[1]]$model.org
     sample.nobs   <- nrow(model.frame(object[[1]]$model.org))
     # unrestricted VCOV
@@ -87,7 +87,7 @@ goric.default <- function(object, ..., constraints = NULL,
     isSummary <- lapply(conList, function(x) summary(x, 
                                                      goric       = type,
                                                      sample.nobs = sample.nobs))
-    ans$constraints_usr <- lapply(conList, function(x) x$CON$constraints)
+    ans$hypotheses_usr <- lapply(conList, function(x) x$CON$constraints)
     # add unrestricted object to output
     ans$model.org <- object[[1]]
     # unrestricted VCOV
@@ -137,7 +137,7 @@ goric.default <- function(object, ..., constraints = NULL,
       }
       names(conList) <- names(constraints)
       
-      ans$constraints_usr <- lapply(conList, function(x) x$CON$constraints)
+      ans$hypotheses_usr <- lapply(conList, function(x) x$CON$constraints)
       
       isSummary <- lapply(conList, function(x) summary(x, 
                                                        type        = type,
@@ -1212,11 +1212,13 @@ summary.con_goric <- function(object, brief = TRUE,
       cat("\nRatio GORICAC-weights:\n") 
     }
 
-  if (max(as.numeric(ratio.gw), na.rm = TRUE) >= 1e4) {
-      print(format(ratio.gw, digits = digits, scientific = TRUE), 
-            print.gap = 2, quote = FALSE)
+    ratio.gw <- apply(x$ratio.gw, 2, sprintf, fmt = dig)
+    rownames(ratio.gw) <- rownames(x$ratio.gw)
+    if (max(as.numeric(ratio.gw), na.rm = TRUE) >= 1e4) {
+      print(format(trimws(ratio.gw), digits = digits, scientific = TRUE), 
+            print.gap = 2, quote = FALSE) 
     } else {
-      print(format(ratio.gw, digits = digits, scientific = FALSE), 
+      print(format(trimws(ratio.gw), digits = digits, scientific = FALSE), 
             print.gap = 2, quote = FALSE)
     }
     cat("---\n")
@@ -1276,7 +1278,6 @@ summary.con_goric <- function(object, brief = TRUE,
       }
     }
     
-    
     fn <- function(Amat, bvec, meq, iact, vnames) {
       colnames(Amat) <- vnames
       out.rest <- cbind(round(Amat, 4), c(rep("   ==", meq), rep("   >=", nrow(Amat) - 
@@ -1309,6 +1310,23 @@ summary.con_goric <- function(object, brief = TRUE,
     print(conMat, quote = FALSE, scientific = FALSE)
    
     invisible(x)
+  } else {
+    cat("\norder-restricted hypotheses:\n")
+    hypotheses_usr <- object$hypotheses_usr
+    hypotheses_usr <- lapply(hypotheses_usr, function(x) unlist(strsplit(x, "\n")))
+    #calculate max length of vectors
+    max_length <- max(sapply(hypotheses_usr, function(x) length(x)))
+    
+    for (j in 1:length(hypotheses_usr)) {
+      length(hypotheses_usr[[j]]) <- max_length
+    }
+    
+    hypotheses_usr <- data.frame(do.call(rbind, hypotheses_usr))
+    hypotheses_usr[is.na(hypotheses_usr)] <- ""
+    row.names(hypotheses_usr) <- objectnames[1:length(x$objectList)]
+    colnames(hypotheses_usr) <- NULL
+    print(hypotheses_usr, quote = FALSE)
+    
   }
   cat("\n")
   cat(x$messages$mix_weights)

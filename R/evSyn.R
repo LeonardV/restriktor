@@ -4,29 +4,26 @@
 # 3. IC values (AIC, ORIC, GORIC, GORICA)
 # 4. IC weights or (Bayesian) posterior model probs. 
 
-# In case of an equal-evidence approach, aggregating evidence from, say, 5 studies with n=100 observations is the same as obtaining evidence from 1 study (as if it was possible) with n=500 observations (like meta-analysis does).
-# In the added-evidence approach, the aggregated evidence from, says, 5 studies is stronger than as if the data were combined (as if that was possible).
+# In case of an equal-evidence approach, aggregating evidence from, say, 5 studies 
+# with n=100 observations is the same as obtaining evidence from 1 study 
+# (as if it was possible) with n=500 observations (like meta-analysis does).
+# In the added-evidence approach, the aggregated evidence from, says, 5 studies 
+# is stronger than as if the data were combined (as if that was possible).
 
-#library(GoricEvSyn)
+
 #' @param TypeEv The type of evidence-synthesis approach: Equal-evidence approach (0) or Added-evidence approach (1).
 #' @param S The number of (primary) studies. That is, the results (evidence) of S studies will be aggregated.
 #' @param Param_studies List of S 'named' vectors with the k_s (standardized) parameter estimates of interest of Study s. Thus, there are S items in the list and each item is a 'named' vector with k_s elements: the k_s number of parameter estimates ratioevant for that study. In case each study has the same number of parameters (k) which denote the same (in terms of hypothesis specification), Param_studies can be an S x k 'named' matrix. Note: The names of the vectors (or the column names of the S x 'k' matrix) with estimates should be used in the hypothesis specification.
 #' @param CovMx_studies List of the S covariance matrices of the (standardized) parameter estimates of interest (of size k_s x k_s). In case number of parameters are the same, it can also be a S*k_s x k_s matrix. Note: The columns (and rows) do not need to be named.
-#' @param SameHypo Indicator whether the same hypotheses are used (1) or not (0) in all S studies. If SameHypo = 1, then the same estimates in Param_studies should have the same name.
-#' @param NrHypos The number of theory-based hypotheses that will be evaluated within each study (is a scalar with an integer value).
 #' @param Hypo_studies A vector of strings containing the NrHypos theory-based hypotheses. If SameHypo = 0, then there should be S specifications of the NrHypos theory-based hypotheses, that is S times NrHypos strings.
 #' @param comparison Indicator of which safeguard-hypothesis should be used: "unconstrained" (default; i.e., all possible theories including the one specified), "none" (only advised when set of hyptheses cover all theories), or (only when 'NrHypos = 1') "complement" (i.e., the remaining theories).
-#' @param Name_studies Optional. Vector of S numbers or S characters to be printed at the x-axis of the plot with GORIC(A) weights. Default: Name_studies = 1:S.
-#' @param PrintPlot Optional. Indicator whether plot of GORIC(A) weigths should be printed (TRUE; default) or not (FALSE). The GORIC(A) weights per study are plotted and the cumulative GORIC(A) weights (where those for the last study are the final ones).
 #'
 
 
-#evSyn <- function(object, ...) { UseMethod("evSyn") }
+evSyn <- function(object, ...) { UseMethod("evSyn") }
 
 
-# sample-nobs
-# number of studies gelijk aan est/VCOV?
-# print & plot functies
+# print functies
 
 
 evSyn <- function(object, ...) {
@@ -258,10 +255,14 @@ evSyn.est <- function(object, VCOV = NULL, constraints = NULL,
     colnames(ratio.weight_mu) <- c(paste0("H", 1:NrHypos, " vs. Unc."), "Unc. vs. Unc.")
     colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. H", 1:NrHypos), "vs. Hu")
     
-    out <- list(GORICA_m = GORICA_m, GORICA.weight_m = weight_m, 
-                ratio.GORICA.weight_mu = ratio.weight_mu, LL_m = LL, PT_m = PT,
-                EvSyn_approach = EvSyn_approach, Cumulative.GORICA = CumulativeGorica, 
-                Cumulative.GORICA.weights = CumulativeGoricaWeights,
+    out <- list(GORICA_m        = GORICA_m, 
+                GORICA.weight_m = weight_m, 
+                ratio.GORICA.weight_mu = ratio.weight_mu, 
+                LL_m = LL, 
+                PT_m = PT,
+                EvSyn_approach    = EvSyn_approach, 
+                Cumulative.GORICA = CumulativeGorica, 
+                Cumulative.GORICA.weights  = CumulativeGoricaWeights,
                 Final.ratio.GORICA.weights = Final.ratio.GORICA.weights)
   }
   
@@ -351,10 +352,14 @@ evSyn.LL <- function(object, PT = NULL, type = c("added", "equal"),
   rownames(Final.rel.GORICA.weights) <- hnames
   colnames(Final.rel.GORICA.weights) <- paste0("vs. ", hnames)
   
-  out <- list(LL_m = LL, PT_m = PT, GORICA_m = IC, GORICA.weight_m = weight_m,
-              EvSyn_approach = EvSyn_approach, Cumulative.GORICA = CumulativeGorica, 
+  out <- list(LL_m = LL, 
+              PT_m = PT, 
+              GORICA_m = IC, 
+              GORICA.weight_m   = weight_m,
+              EvSyn_approach    = EvSyn_approach, 
+              Cumulative.GORICA = CumulativeGorica, 
               Cumulative.GORICA.weights = CumulativeGoricaWeights,
-              Final.rel.GORICA.weights = Final.rel.GORICA.weights)
+              Final.rel.GORICA.weights  = Final.rel.GORICA.weights)
   
   
   class(out) <- c("evSyn.LL", "evSyn")
@@ -414,18 +419,17 @@ evSyn.ICvalues <- function(object, hypo_names = NULL) {
   rownames(Final.ratio.GORICA.weights) <- hnames
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hnames)
   
-  out <- list(GORICA_m = IC, GORICA.weight_m = weight_m,
-              EvSyn_approach = EvSyn_approach, Cumulative.GORICA = CumulativeGorica, 
-              Cumulative.GORICA.weights = CumulativeGoricaWeights,
+  out <- list(GORICA_m          = IC, 
+              GORICA.weight_m   = weight_m,
+              EvSyn_approach    = EvSyn_approach, 
+              Cumulative.GORICA = CumulativeGorica, 
+              Cumulative.GORICA.weights  = CumulativeGoricaWeights,
               Final.ratio.GORICA.weights = Final.ratio.GORICA.weights)
   
   class(out) <- c("evSyn.ICvalues", "evSyn")
   
   return(out)
 }
-
-
-
 
 
 
@@ -469,10 +473,10 @@ evSyn.ICweights <- function(object, PriorWeights = NULL, hypo_names = NULL) {
   rownames(Final.rel.weights) <- hypo_names
   colnames(Final.rel.weights) <- paste0("vs. ", hypo_names)
   
-  out <- list(weight_m = Weights,
-              EvSyn_approach = EvSyn_approach,
+  out <- list(weight_m           = Weights,
+              EvSyn_approach     = EvSyn_approach,
               Cumulative.weights = CumulativeWeights,
-              Final.rel.weights = Final.rel.weights)
+              Final.rel.weights  = Final.rel.weights)
   
   class(out) <- c("evSyn.ICweights", "evSyn")
   
@@ -481,4 +485,62 @@ evSyn.ICweights <- function(object, PriorWeights = NULL, hypo_names = NULL) {
 }
 
 
-#print.evSyn
+
+## plot function
+plot.evSyn <- function(x, ...) {
+  namesH <- colnames(x$GORICA_m)
+  NrHypos_incl <- ncol(x$GORICA_m)
+  S <- nrow(x$GORICA_m)
+  Name_studies <- as.factor(1:S)
+  
+  weight_m <- x$GORICA.weight_m
+  CumulativeGoricaWeights <- x$Cumulative.GORICA.weights
+  
+  # Create data frame for per study weights
+  per_study_df <- data.frame(study = rep(Name_studies, NrHypos_incl),
+                             weight = c(weight_m))
+  per_study_df$weight_type <- "per study"
+  
+  # Create data frame for cumulative weights
+  cumulative_df <- data.frame(study = rep(Name_studies, NrHypos_incl),
+                              weight = c(CumulativeGoricaWeights[1:S, ]))
+  cumulative_df$weight_type <- "cumulative"
+  
+  # Combine data frames
+  plot_data <- rbind(per_study_df, cumulative_df)
+  plot_data$variable <- rep(rep(namesH, each = S), times = 2)
+  
+  # Create plot
+  ggplot(plot_data, aes(x = .data[['study']], 
+                        y = .data[['weight']], 
+                        shape    = .data[['weight_type']], 
+                        linetype = .data[['weight_type']], 
+                        color    = .data[['variable']])) +
+    geom_point(size = 3) +
+    geom_line(data = plot_data[plot_data[['weight_type']] == "cumulative", ], 
+              aes(group = .data[['variable']]), linewidth = 1) +
+    #scale_shape_manual(values = c(8, 16)) +
+    #scale_linetype_manual(values = c("solid", "dashed")) +
+    #scale_color_manual(values = c("#D81B60", "#1E88E5")) +
+    theme(
+      plot.margin = unit(c(1,1,1,1), "cm"),
+      legend.position = "bottom",
+      legend.margin = margin(t = 10, r = 0, b = 3, l = 0),
+      #legend.title = element_text(size = 18),
+      legend.key = element_blank(),
+      legend.text = element_text(size = 12),
+      axis.text.x  = element_text(size = 12), axis.text.y = element_text(size = 12),
+      axis.title.x = element_text(size = 14, vjust = -3), axis.title.y = element_text(size = 14, vjust = 5),
+      panel.background = element_blank(),
+      axis.line = element_line(colour = "black"),
+      plot.title = element_text(hjust = 0.5, size = 14)
+    ) +
+    scale_y_continuous(limits = c(0, 1), n.breaks = 10) +
+    scale_x_discrete(expand = c(0, 0.05)) +
+    labs(x = "Studies", y = "GORIC(A) weights",
+         title = "GORIC(A) weights per study and cumulative",
+         shape = "", color = "", linetype = "") +
+    guides(shape = guide_legend(override.aes = list(linetype = 0)))
+}
+
+

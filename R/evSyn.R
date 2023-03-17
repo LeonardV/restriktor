@@ -20,10 +20,12 @@
 #'
 
 
-evSyn <- function(object, ...) { UseMethod("evSyn") }
-
-
+# TODO
 # print functies
+
+
+
+evSyn <- function(object, ...) { UseMethod("evSyn") }
 
 
 evSyn <- function(object, ...) {
@@ -233,6 +235,9 @@ evSyn.est <- function(object, VCOV = NULL, constraints = NULL,
   
   rownames(Final.ratio.GORICA.weights) <- hnames
   
+  hypotheses <- res_goric$constraints_usr
+  names(hypotheses) <- hnames
+  
   # Output
   if (NrHypos == 1 & comparison == "complement") {
     colnames(ratio.weight_mu) <- c("H1 vs. Hc1")
@@ -242,14 +247,16 @@ evSyn.est <- function(object, VCOV = NULL, constraints = NULL,
                 ratio.GORICA.weight_mc = ratio.weight_mu, LL_m = LL, PT_m = PT,
                 EvSyn_approach = EvSyn_approach, Cumulative.GORICA = CumulativeGorica, 
                 Cumulative.GORICA.weights = CumulativeGoricaWeights,
-                Final.ratio.GORICA.weights = Final.ratio.GORICA.weights)
+                Final.ratio.GORICA.weights = Final.ratio.GORICA.weights,
+                hypotheses = constraints_usr)
   } else if (comparison == "none") {
     colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. H", 1:NrHypos))
     
     out <- list(GORICA_m = GORICA_m, GORICA.weight_m = weight_m, LL_m = LL, PT_m = PT,
                 EvSyn_approach = EvSyn_approach, Cumulative.GORICA = CumulativeGorica, 
                 Cumulative.GORICA.weights = CumulativeGoricaWeights,
-                Final.ratio.GORICA.weights = Final.ratio.GORICA.weights)
+                Final.ratio.GORICA.weights = Final.ratio.GORICA.weights,
+                hypotheses = hypotheses)
   } else { 
     # unconstrained
     colnames(ratio.weight_mu) <- c(paste0("H", 1:NrHypos, " vs. Unc."), "Unc. vs. Unc.")

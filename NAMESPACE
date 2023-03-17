@@ -61,6 +61,10 @@ importFrom("graphics", abline, axis, box, hist, par)
 
 importFrom("norm2", emNorm)
 
+importFrom("ggplot2", ggplot, aes, .data, geom_point, geom_line, theme, unit, margin,
+           element_blank, element_text, element_line, scale_y_continuous, 
+           scale_x_discrete, labs, guides, guide_legend)
+
 # export ordinary functions defined in this package
 export("restriktor", 
        "conLM.lm", "conRLM.rlm", "conGLM.glm", "conMLM.mlm", 
@@ -79,7 +83,7 @@ export("restriktor",
        "print.conTest", "logLik.restriktor",
        "coef.restriktor", "model.matrix.restriktor",
        "con_weights_boot", "coef.con_goric", "summary.con_goric", 
-       "evSyn")
+       "evSyn", "plot.evSyn")
 
 S3method(coef, restriktor)
 S3method(model.matrix, restriktor)
@@ -127,3 +131,4 @@ S3method(evSyn, est)
 S3method(evSyn, LL)
 S3method(evSyn, ICvalues)
 S3method(evSyn, ICweights)
+S3method(plot, evSyn)

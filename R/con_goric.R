@@ -32,7 +32,6 @@ goric.default <- function(object, ..., constraints = NULL,
   stopifnot(type %in% c("goric", "goricc", "gorica", "goricac"))
   
   ldots <- list(...)
-  
   ldots$missing <- NULL
   
   # are constraints specified as a character string or in matrix form
@@ -1101,11 +1100,11 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   cat("\nResults:\n")
   print(format(df, digits = digits, scientific = FALSE), 
         print.gap = 2, quote = FALSE)
-  cat("---")
+  
   if (comparison == "complement") {
     objectnames <- as.character(df$model)
-    ratio.gw <- apply(x$ratio.gw, 2, sprintf, fmt = dig)
-    cat("\nThe order-restricted hypothesis", sQuote(objectnames[1]), "has", sprintf("%s", trimws(ratio.gw[1,2])), "times more support than its complement.\n")
+    ratio.gw <- apply(x$ratio.gw, 2, sprintf, fmt = dig)  
+    cat("---", "\nThe order-restricted hypothesis", sQuote(objectnames[1]), "has", sprintf("%s", trimws(ratio.gw[1,2])), "times more support than its complement.\n")
   } 
   
   cat("\n")
@@ -1117,7 +1116,7 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
 
 
 
-summary.con_goric <- function(object, brief = FALSE, 
+summary.con_goric <- function(object, brief = TRUE, 
                           digits = max(3, getOption("digits") - 4), ...) {
   
   x <- object
@@ -1188,8 +1187,8 @@ summary.con_goric <- function(object, brief = FALSE,
   
   
   if (any(combn(as.numeric(df$loglik), 2, FUN = function(x) abs(diff(x))) <= 1e-5)) { 
-    cat("Note: if log-likelihood values are equal or close to each other, the goric ratio weights are determined", 
-        "\n only by the difference in penalty values. Please check the ratio penalty-weights. \n\n")
+    cat("Note: If log-likelihood values are equal or close to each other, the Goric ratio weights are determined", 
+        "only by the difference in penalty values. Please check the ratio penalty-weights.\n\n")
   }
   if (comparison == "complement") {
     cat("The order-restricted hypothesis", sQuote(objectnames[1]), "has", 
@@ -1249,7 +1248,7 @@ summary.con_goric <- function(object, brief = FALSE,
   
 
   if (!brief) {
-    cat("\n\nOrder/Inequality restricted coefficients:\n")
+    cat("\n\nOrder-restricted coefficients:\n")
     coefs <- trimws(apply(x$ormle$b.restr, 2, sprintf, fmt = dig))
     rownames(coefs) <- rownames(x$ormle$b.restr)
     print(format(coefs, digits = digits, scientific = FALSE), print.gap = 2L,
@@ -1285,7 +1284,7 @@ summary.con_goric <- function(object, brief = FALSE,
      conMat$complement <- paste("not", x$objectNames) 
     }
     
-    cat("\nRestricted matrices:\n")
+    cat("\nRestriction matrices:\n")
     print(conMat, quote = FALSE, scientific = FALSE)
    
     invisible(x)

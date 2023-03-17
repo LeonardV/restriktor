@@ -65,10 +65,12 @@ goric.default <- function(object, ..., constraints = NULL,
     isSummary <- lapply(conList, function(x) summary(x, 
                                                      goric       = type,
                                                      sample.nobs = sample.nobs))
+    ans$constraints_usr <- lapply(conList, function(x) x$CON$constraints)
     ans$model.org <- object[[1]]$model.org
     sample.nobs   <- nrow(model.frame(object[[1]]$model.org))
     # unrestricted VCOV
     VCOV <- vcov(ans$model.org)
+    
     #constraints <- conList
   } else if (any(object_class %in% c("lm","rlm","glm","mlm")) && all(isConChar)) { 
     # standard errors are not needed
@@ -85,6 +87,7 @@ goric.default <- function(object, ..., constraints = NULL,
     isSummary <- lapply(conList, function(x) summary(x, 
                                                      goric       = type,
                                                      sample.nobs = sample.nobs))
+    ans$constraints_usr <- lapply(conList, function(x) x$CON$constraints)
     # add unrestricted object to output
     ans$model.org <- object[[1]]
     # unrestricted VCOV
@@ -133,6 +136,8 @@ goric.default <- function(object, ..., constraints = NULL,
         conList[[con]] <- do.call("con_gorica_est", CALL.restr)  
       }
       names(conList) <- names(constraints)
+      
+      ans$constraints_usr <- lapply(conList, function(x) x$CON$constraints)
       
       isSummary <- lapply(conList, function(x) summary(x, 
                                                        type        = type,
@@ -486,6 +491,7 @@ goric.default <- function(object, ..., constraints = NULL,
     df.u <- data.frame(model = "unconstrained", loglik = llu, penalty = PTu, 
                        goric = goric.Hu)
     df <- rbind(df.Hm, df.u)
+    rownames(df) <- NULL
     names(df)[4] <- type
   } else if (comparison == "none") {
     ## compute loglik-value, goric(a)-values, and PT-values if comparison = none
@@ -1250,12 +1256,27 @@ summary.con_goric <- function(object, brief = TRUE,
   if (!brief) {
     cat("\n\nOrder-restricted coefficients:\n")
     coefs <- trimws(apply(x$ormle$b.restr, 2, sprintf, fmt = dig))
+    coefs[coefs == "NA"] <- ""
     rownames(coefs) <- rownames(x$ormle$b.restr)
     print(format(coefs, digits = digits, scientific = FALSE), print.gap = 2L,
           quote = FALSE)
     cat("---\n")
     
     vnames <- names(x$ormle$b.restr)
+    vnames_len <- length(x$objectList)
+    first_na <- apply(x$ormle$b.restr[1:vnames_len, ], 1, function(x) { which(is.na(x))[1] }) -1
+    first_na[is.na(first_na)] <- 0
+    
+    selected_names <- list()
+    for (i in 1:length(first_na)) {
+      if (first_na[i] == 0) {
+        selected_names[[i]] <- vnames
+      } else {
+        selected_names[[i]] <- vnames[1:first_na[i]]
+      }
+    }
+    
+    
     fn <- function(Amat, bvec, meq, iact, vnames) {
       colnames(Amat) <- vnames
       out.rest <- cbind(round(Amat, 4), c(rep("   ==", meq), rep("   >=", nrow(Amat) - 
@@ -1274,9 +1295,9 @@ summary.con_goric <- function(object, brief = TRUE,
     }
     
     conMat <- list()
-    for (i in 1:length(x$objectList)) {
+    for (i in 1:vnames_len) {
       conMat[[i]] <- fn(Amat = Amat[[i]], bvec = bvec[[i]], meq = meq[[i]], 
-                        iact = iact[[i]], vnames = vnames)  
+                        iact = iact[[i]], vnames = selected_names[[i]])  
     }
     names(conMat) <- x$objectNames
     

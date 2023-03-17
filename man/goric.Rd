@@ -52,7 +52,7 @@ comparable to the Akaike weights.
 
 \method{print}{con_goric}(x, digits = max(3, getOption("digits") - 4), \dots)
 
-\method{summary}{con_goric}(object, brief = FALSE, digits = max(3, getOption("digits") - 4), \dots)
+\method{summary}{con_goric}(object, brief = TRUE, digits = max(3, getOption("digits") - 4), \dots)
 
 \method{coef}{con_goric}(object, \dots)
 }

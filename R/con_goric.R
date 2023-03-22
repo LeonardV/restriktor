@@ -33,27 +33,35 @@ goric.default <- function(object, ..., constraints = NULL,
   
   ldots <- list(...)
   ldots$missing <- NULL
-  
-  # are constraints specified as a character string or in matrix form
-  isConChar <- sapply(constraints, function(x) inherits(x, "character"))
-  isConMat  <- sapply(constraints, function(x) is.numeric(x[[1]]))
 
-  # check if constraints are a list if specified in matrix notation
-  if (!any(sapply(constraints, is.list)) && any(isConMat)) {
-    stop("restriktor ERROR: constraints must be specified as a list, e.g., list(m1 = list('x1 > 0'), m2 = list('x1 == 0'))",
-         call. = FALSE)
-  }
-  
-    
-  # check if any constraints are specified
-  if (!c("restriktor" %in% object_class)) {
-    if (length(isConChar) == 0 && length(isConMat) == 0) {
-      stop("restriktor ERROR: no constraint syntax found.", call. = FALSE)
+  conChar <- sapply(constraints, function(x) inherits(x, "character"))
+  isConChar <- all(conChar)
+
+  if (!"restriktor" %in% object_class) { 
+    if (!is.list(constraints)) { 
+      stop("restriktor ERROR: constraints must be specified as a named list, ",
+           "e.g., constraints = list(m1 = 'x1 > 0', m2 = 'x1 == 0') or ",
+           "constraints = list(m1 = list(amat = rbind(c(1, 0, 0)), rhs = 0, neq = 0))",
+           call. = FALSE)
     }
+    
+    # give constraints list a name if null
+    if (is.null(names(constraints))) {
+      names(constraints) <- paste0("H", 1:length(constraints)) 
+    }
+    
+    # conMat <- list()
+    # for (i in names(constraints)) {
+    #   conMat[[i]] <- sapply(constraints[[i]], function(x) inherits(x, "matrix"))
+    # }
+    # # does each list contains a matrix (Amat) 
+    # isConMat <- sum(unlist(conMat)) == length(constraints) 
+    # 
+    # check if any constraints are specified
+    # if (!isConChar & !isConMat) {
+    #   stop("restriktor ERROR: no constraint syntax found.", call. = FALSE)
+    # }
   }
-  
-
-
 # -------------------------------------------------------------------------
   # create output list
   ans <- list()
@@ -72,7 +80,7 @@ goric.default <- function(object, ..., constraints = NULL,
     VCOV <- vcov(ans$model.org)
     
     #constraints <- conList
-  } else if (any(object_class %in% c("lm","rlm","glm","mlm")) && all(isConChar)) { 
+  } else if (any(object_class %in% c("lm","rlm","glm","mlm")) && isConChar) { 
     # standard errors are not needed
     ldots$se <- "none"
     # fit restriktor object for each hypothesis
@@ -96,10 +104,7 @@ goric.default <- function(object, ..., constraints = NULL,
     idx <- length(conList) 
     objectnames <- vector("character", idx)
     CALL$object <- NULL
-  } else if (any(object_class %in% c("lm","rlm","glm","mlm")) && all(isConMat)) {
-    # if the constraints are a list with constraints, rhs and neq for each hypothesis   
-      rhs <- lapply(constraints, FUN = function(x) {x$rhs})
-      neq <- lapply(constraints, FUN = function(x) {x$neq})
+  } else if (any(object_class %in% c("lm","rlm","glm","mlm")) && !isConChar) {
       # standard errors are not needed
       ldots$se <- "none"
       # fit restriktor object for each hypothesis
@@ -126,7 +131,7 @@ goric.default <- function(object, ..., constraints = NULL,
       idx <- length(conList) 
       objectnames <- vector("character", idx)
       CALL$object <- NULL
-    } else if (object_class == "numeric" & all(isConChar)) {
+    } else if (object_class == "numeric" & isConChar) {
       # fit restriktor object for each hypothesis
       conList <- list()
       for (con in 1:length(constraints)) {
@@ -142,7 +147,7 @@ goric.default <- function(object, ..., constraints = NULL,
       isSummary <- lapply(conList, function(x) summary(x, 
                                                        type        = type,
                                                        sample.nobs = sample.nobs)) 
-    } else if (object_class == "numeric" & all(isConMat)) {
+    } else if (object_class == "numeric" & !isConChar) {
         conList <- list()
         for (con in 1:length(constraints)) {
           CALL.restr <- append(list(object      = object$object,
@@ -1109,12 +1114,14 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   
   if (comparison == "complement") {
     objectnames <- as.character(df$model)
-    ratio.gw <- apply(x$ratio.gw, 2, sprintf, fmt = dig)  
-    cat("---", "\nThe order-restricted hypothesis", sQuote(objectnames[1]), "has", sprintf("%s", trimws(ratio.gw[1,2])), "times more support than its complement.\n")
+    #ratio.gw <- apply(x$ratio.gw, 2, sprintf, fmt = dig)  
+    #ratio.gw <- trimws(ratio.gw)
+    class(x$ratio.gw) <- "numeric"
+    cat("---", "\nThe order-restricted hypothesis", sQuote(objectnames[1]), "has", sprintf("%.3f", x$ratio.gw[1,2]), "times more support than its complement.\n")
   } 
   
   cat("\n")
-  cat(x$messages$mix_weights)
+  message(x$messages$mix_weights)
   
   invisible(x)
 }
@@ -1131,7 +1138,7 @@ summary.con_goric <- function(object, brief = TRUE,
   dig <- paste0("%6.", digits, "f")
   
   ratio.gw <- x$ratio.gw
-    rownames(ratio.gw) <- rownames(x$ratio.gw)
+  rownames(ratio.gw) <- rownames(x$ratio.gw)
   
   # len_mod <- nrow(x$result)
   # # does any of the models have more support than the unconstrained. 
@@ -1214,11 +1221,14 @@ summary.con_goric <- function(object, brief = TRUE,
 
     ratio.gw <- apply(x$ratio.gw, 2, sprintf, fmt = dig)
     rownames(ratio.gw) <- rownames(x$ratio.gw)
-    if (max(as.numeric(ratio.gw), na.rm = TRUE) >= 1e4) {
-      print(format(trimws(ratio.gw), digits = digits, scientific = TRUE), 
+    #ratio.gw <- trimws(ratio.gw)
+    class(ratio.gw) <- "numeric"
+    
+    if (max(ratio.gw, na.rm = TRUE) >= 1e4) {
+      print(format(ratio.gw, digits = digits, scientific = TRUE), 
             print.gap = 2, quote = FALSE) 
     } else {
-      print(format(trimws(ratio.gw), digits = digits, scientific = FALSE), 
+      print(format(ratio.gw, digits = digits, scientific = FALSE), 
             print.gap = 2, quote = FALSE)
     }
     cat("---\n")
@@ -1228,12 +1238,14 @@ summary.con_goric <- function(object, brief = TRUE,
     cat("\nRatio penalty-weights:\n")
     ratio.pw <- apply(x$ratio.pw, 2, sprintf, fmt = dig)
     rownames(ratio.pw) <- rownames(x$ratio.pw)
+    #ratio.pw <- trimws(ratio.pw)
+    class(ratio.pw) <- "numeric"
     
-    if (max(as.numeric(ratio.pw)) >= 1e4) {
-      print(format(trimws(x$ratio.pw), digits = digits, scientific = TRUE), 
+    if (max(ratio.pw, na.rm = TRUE) >= 1e4) {
+      print(format(x$ratio.pw, digits = digits, scientific = TRUE), 
             print.gap = 2, quote = FALSE)
     } else {
-      print(format(trimws(ratio.pw), digits = digits, scientific = FALSE), 
+      print(format(ratio.pw, digits = digits, scientific = FALSE), 
             print.gap = 2, quote = FALSE)
     }
     cat("---\n")
@@ -1243,12 +1255,14 @@ summary.con_goric <- function(object, brief = TRUE,
     cat("\nRatio loglik-weights:\n")
     ratio.lw <- apply(x$ratio.lw, 2, sprintf, fmt = dig)
     rownames(ratio.lw) <- rownames(x$ratio.lw) 
+    #ratio.lw <- trimws(ratio.lw)
+    class(ratio.lw) <- "numeric"
     
-    if (max(as.numeric(ratio.lw)) >= 1e4) {
-      print(format(trimws(ratio.lw), digits = digits, scientific = TRUE), 
+    if (max(ratio.lw, na.rm = TRUE) >= 1e4) {
+      print(format(ratio.lw, digits = digits, scientific = TRUE), 
             print.gap = 2, quote = FALSE)
     } else {
-      print(format(trimws(ratio.lw), digits = digits, scientific = FALSE), 
+      print(format(ratio.lw, digits = digits, scientific = FALSE), 
             print.gap = 2, quote = FALSE)
     }
     cat("---\n")
@@ -1311,28 +1325,35 @@ summary.con_goric <- function(object, brief = TRUE,
    
     invisible(x)
   } else {
-    cat("\norder-restricted hypotheses:\n")
-    hypotheses_usr <- object$hypotheses_usr
-    hypotheses_usr <- lapply(hypotheses_usr, function(x) unlist(strsplit(x, "\n")))
-    #calculate max length of vectors
-    max_length <- max(sapply(hypotheses_usr, function(x) length(x)))
-    
-    for (j in 1:length(hypotheses_usr)) {
-      length(hypotheses_usr[[j]]) <- max_length
+    if (!is.null(object$hypotheses_usr)) {
+      cat("\norder-restricted hypotheses:\n")
+      
+      # 
+      hypotheses_usr <- object$hypotheses_usr
+      hypotheses_usr <- lapply(hypotheses_usr, function(x) unlist(strsplit(x, "\n")))
+      # remove user specified paramters
+      hypotheses_usr <- lapply(hypotheses_usr, function(x) x[!grepl(":=", x)])
+      
+      #calculate max length of vectors
+      max_length <- max(sapply(hypotheses_usr, function(x) length(x)))
+      
+      for (j in 1:length(hypotheses_usr)) {
+        length(hypotheses_usr[[j]]) <- max_length
+      }
+      
+      hypotheses_usr <- do.call(rbind, hypotheses_usr)
+      row.names(hypotheses_usr) <- paste0(objectnames[1:length(x$objectList)], ":")
+      hypotheses_usr[is.na(hypotheses_usr)] <- ""
+      
+      name.width <- max(sapply(hypotheses_usr, nchar))
+      hypotheses_usr <- format(hypotheses_usr, width = name.width, justify = "left")
+      hypotheses_usr <- as.data.frame(hypotheses_usr)
+      names(hypotheses_usr) <- NULL
+      print(hypotheses_usr)
     }
-    
-    hypotheses_usr <- do.call(rbind, hypotheses_usr)
-    row.names(hypotheses_usr) <- paste0(objectnames[1:length(x$objectList)], ":")
-    hypotheses_usr[is.na(hypotheses_usr)] <- ""
-    
-    name.width <- max(sapply(hypotheses_usr, nchar))
-    hypotheses_usr <- format(hypotheses_usr, width = name.width, justify = "left")
-    hypotheses_usr <- as.data.frame(hypotheses_usr)
-    names(hypotheses_usr) <- NULL
-    print(hypotheses_usr)
   }
   cat("\n")
-  cat(x$messages$mix_weights)
+  message(x$messages$mix_weights)
 }
 
 

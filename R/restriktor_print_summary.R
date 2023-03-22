@@ -118,7 +118,7 @@ print.summary.restriktor <- function(x, digits = max(3, getOption("digits") - 2)
     print(result.goric, digits = digits)
   }  
   cat("\n")
-  cat(x$messages$mix_weights)
+  message(x$messages$mix_weights)
   cat("\n")
   
   invisible(x)

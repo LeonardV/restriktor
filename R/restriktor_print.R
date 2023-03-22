@@ -58,7 +58,7 @@ print.restriktor <- function(x, digits = max(3, getOption("digits") - 2), ...) {
     cat("\n")
   }
   
-  cat(x$messages$mix_weights)
+  message(x$messages$mix_weights)
   
   invisible(x)
 }

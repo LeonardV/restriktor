@@ -82,8 +82,8 @@ export("restriktor",
        "summary.restriktor", "conTest_summary.restriktor",
        "print.conTest", "logLik.restriktor",
        "coef.restriktor", "model.matrix.restriktor",
-       "con_weights_boot", "coef.con_goric", "summary.con_goric", 
-       "evSyn", "plot.evSyn")
+       "con_weights_boot", "coef.con_goric", "summary.con_goric")#, 
+       #"evSyn", "plot.evSyn")
 
 S3method(coef, restriktor)
 S3method(model.matrix, restriktor)

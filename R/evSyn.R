@@ -234,9 +234,8 @@ evSyn.est <- function(object, VCOV = NULL, constraints = NULL,
   Final.ratio.GORICA.weights <- Final.GORICA.weights %*% t(1/Final.GORICA.weights)
   
   rownames(Final.ratio.GORICA.weights) <- hnames
-  
-  hypotheses <- res_goric$constraints_usr
-  names(hypotheses) <- hnames
+  hypotheses <- res_goric$hypotheses_usr
+  #names(hypotheses) <- hnames
   
   # Output
   if (NrHypos == 1 & comparison == "complement") {

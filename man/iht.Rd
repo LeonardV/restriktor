@@ -208,21 +208,21 @@ See for example \code{\link{conTestF}} for all available arguments.
   
   Silvapulle, M. (1996) On an F-type statistic for testing one-sided 
   hypotheses and computation of chi-bar-squared weights. 
-  \emph{Statistics & probability letters}, \bold{28}, 137--141.
+  \emph{Statistics and probability letters}, \bold{28}, 137--141.
   
   Silvapulle, M. (1996) Robust bounded influence tests against 
   one-sided hypotheses in general parametric models. 
-  \emph{Statistics & probability letters}, \bold{31}, 45--50.
+  \emph{Statistics and probability letters}, \bold{31}, 45--50.
   
   Silvapulle, M.J. and Sen, P.K. (2005). \emph{Constrained 
   Statistical Inference}. Wiley, New York
   
-  Vanbrabant, L., Van de Schoot, R., Van Loey, N.E.E. & Rosseel, Y. (2017). 
+  Vanbrabant, L., Van de Schoot, R., Van Loey, N.E.E. and Rosseel, Y. (2017). 
   A General Procedure for Testing Inequality Constrained Hypotheses in SEM.
   \emph{Methodology European Journal of Research Methods for the Behavioral and Social Sciences},
   \bold{13}, 61-70.
   
-  Van de Schoot, R., Hoijtink, H., & Dekovic, M. (2010). 
+  Van de Schoot, R., Hoijtink, H., and Dekovic, M. (2010). 
   Testing inequality constrained hypotheses in SEM models. 
   \emph{Structural Equation Modeling}, \bold{17}, 443-463.
   

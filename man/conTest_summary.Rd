@@ -89,11 +89,11 @@ one-sided alternatives. \emph{American statistical association},
 
 Silvapulle, M. (1996) On an F-type statistic for testing one-sided 
 hypotheses and computation of chi-bar-squared weights. 
-\emph{Statistics & probability letters}, \bold{28}, 137--141.
+\emph{Statistics and probability letters}, \bold{28}, 137--141.
 
 Silvapulle, M. (1996) Robust bounded influence tests against 
 one-sided hypotheses in general parametric models. 
-\emph{Statistics & probability letters}, \bold{31}, 45--50.
+\emph{Statistics and probability letters}, \bold{31}, 45--50.
 
 Silvapulle, M.J. and Sen, P.K. (2005). \emph{Constrained 
 Statistical Inference}. Wiley, New York

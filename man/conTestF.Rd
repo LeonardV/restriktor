@@ -184,7 +184,7 @@ one-sided hypotheses in the linear model. \emph{Biometrika},
 
 Silvapulle, M. (1996) On an F-type statistic for testing one-sided 
 hypotheses and computation of chi-bar-squared weights. 
-\emph{Statistics & probability letters}, \bold{28}, 137--141.
+\emph{Statistics and probability letters}, \bold{28}, 137--141.
 
 Silvapulle, M.J. and Sen, P.K. (2005). \emph{Constrained 
 Statistical Inference}. Wiley, New York

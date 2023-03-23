@@ -136,7 +136,7 @@ summary(fit.con)
     \bold{87}, 156--161.
 
     Silvapulle, M. (1996). Robust bounded influence tests against one-sided 
-    hypotheses in general parametric models. \emph{Statistics & probability 
+    hypotheses in general parametric models. \emph{Statistics and probability 
     letters}, \bold{31}, 45--50.
     
     Silvapulle, M.J. and Sen, P.K. (2005). \emph{Constrained Statistical Inference}. 

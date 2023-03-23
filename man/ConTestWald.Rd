@@ -161,7 +161,7 @@ in the Linear Model. \emph{Journal of the American Statistical Association},
 \bold{87}, 156--161.
 
 Silvapulle, M. (1996) Robust bounded influence tests against one-sided hypotheses
-in general parametric models. \emph{Statistics & probability letters}, 
+in general parametric models. \emph{Statistics and probability letters}, 
 \bold{31}, 45--50.
 
 Silvapulle, M.J. and Sen, P.K. (2005). \emph{Constrained 

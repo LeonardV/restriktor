@@ -104,14 +104,14 @@ one-sided hypotheses in the linear model. \emph{Biometrika},
 
 Silvapulle, M. (1996) Robust bounded influence tests against 
 one-sided hypotheses in general parametric models. 
-\emph{Statistics & probability letters}, \bold{31}, 45--50.
+\emph{Statistics and probability letters}, \bold{31}, 45--50.
 
 Silvapulle, M. (1992b). Robust Wald-Type Tests of One-Sided Hypotheses 
 in the Linear Model. \emph{Journal of the American Statistical Association}, 
 \bold{87}, 156--161.
 
 Silvapulle, M. (1996) Robust bounded influence tests against one-sided hypotheses
-in general parametric models. \emph{Statistics & probability letters}, 
+in general parametric models. \emph{Statistics and probability letters}, 
 \bold{31}, 45--50.
 
 }

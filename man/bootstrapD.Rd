@@ -64,7 +64,7 @@
   Silvapulle, M.J. and Sen, P.K. (2005). \emph{Constrained 
   Statistical Inference}. Wiley, New York
 
-  Yuan, K.-H., Hayashi, K., & Yanagihara, H. (2007). A class of population
+  Yuan, K.-H., Hayashi, K., and Yanagihara, H. (2007). A class of population
   covariance matrices in the bootstrap approach to covariance structure analysis.
   Multivariate Behavioral Research, 42, 261--281.
 }

@@ -14,6 +14,8 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
   
   # unlist constraints
   constraints <- unlist(constraints)
+  # for summary function
+  constraints_usr <- constraints
   
   if (is.character(constraints)) {
     # these operators are typical lavaan operators and are not allowed in the
@@ -78,7 +80,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
                                  partable    = parTable,
                                  debug       = debug,
                                  theta       = parTable$est)
-    CON$constraints <- constraints
+    CON$constraints <- constraints_usr
     FLAT <- lavParseModelString(constraints)
     CON_FLAT <- attr(FLAT, "constraints")
     LIST <- list()
@@ -135,7 +137,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     }
     
     
-    CON$constraints <- constraints
+    #CON$constraints <- constraints
   } else if (!is.character(constraints) && !is.null(constraints)) {
     if (is.vector(constraints) ) {
       constraints <- rbind(constraints)

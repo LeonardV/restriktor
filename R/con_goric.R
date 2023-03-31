@@ -1326,30 +1326,30 @@ summary.con_goric <- function(object, brief = TRUE,
     invisible(x)
   } else {
     if (!is.null(object$hypotheses_usr)) {
-      cat("\norder-restricted hypotheses:\n")
-      
-      # 
+      cat("\norder-restricted hypotheses:\n\n")
       hypotheses_usr <- object$hypotheses_usr
-      hypotheses_usr <- lapply(hypotheses_usr, function(x) unlist(strsplit(x, "\n")))
+      #hypotheses_usr <- lapply(hypotheses_usr, function(x) unlist(strsplit(x, "\n")))
       # remove user specified paramters
-      hypotheses_usr <- lapply(hypotheses_usr, function(x) x[!grepl(":=", x)])
+      #hypotheses_usr <- lapply(hypotheses_usr, function(x) x[!grepl(":=", x)])
       
-      #calculate max length of vectors
-      max_length <- max(sapply(hypotheses_usr, function(x) length(x)))
-      
-      for (j in 1:length(hypotheses_usr)) {
-        length(hypotheses_usr[[j]]) <- max_length
+      for (i in 1:length(x$objectList)) {
+        text <- gsub("(\\n\\s+)+", "\n", hypotheses_usr[[i]])
+        cat(paste0(objectnames[i],":\n", trimws(gsub("\\h+", " ", text, perl = TRUE))), "\n\n")
       }
       
-      hypotheses_usr <- do.call(rbind, hypotheses_usr)
-      row.names(hypotheses_usr) <- paste0(objectnames[1:length(x$objectList)], ":")
-      hypotheses_usr[is.na(hypotheses_usr)] <- ""
-      
-      name.width <- max(sapply(hypotheses_usr, nchar))
-      hypotheses_usr <- format(hypotheses_usr, width = name.width, justify = "left")
-      hypotheses_usr <- as.data.frame(hypotheses_usr)
-      names(hypotheses_usr) <- NULL
-      print(hypotheses_usr)
+      #calculate max length of vectors
+      #max_length <- max(sapply(hypotheses_usr, function(x) length(x)))
+      # for (j in 1:length(hypotheses_usr)) {
+      #   length(hypotheses_usr[[j]]) <- max_length
+      # }
+      # hypotheses_usr <- do.call(rbind, hypotheses_usr)
+      # row.names(hypotheses_usr) <- paste0(objectnames[1:length(x$objectList)], ":")
+      # hypotheses_usr[is.na(hypotheses_usr)] <- ""
+      # name.width <- max(sapply(hypotheses_usr, nchar))
+      # hypotheses_usr <- format(hypotheses_usr, width = name.width, justify = "left")
+      # hypotheses_usr <- as.data.frame(hypotheses_usr)
+      # names(hypotheses_usr) <- NULL
+      # print(hypotheses_usr)
     }
   }
   cat("\n")

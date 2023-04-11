@@ -4,12 +4,12 @@ Version: 0.4-501
 Authors@R: c(person(given = "Leonard", family = "Vanbrabant",
                     role =  c("aut","cre"),
                     email = "info@restriktor.org"),
-             person(given = "Yves", family = "Rosseel",
-                    role  = c("ctb"),
-                    email = "Yves.Rosseel@UGent.be"),
              person(given = "Rebecca", family = "Kuiper",
                     role  = c("aut"),
                     email = "r.m.kuiper@uu.nl"),
+             person(given = "Yves", family = "Rosseel",
+                    role  = c("ctb"),
+                    email = "Yves.Rosseel@UGent.be"),
              person(given = "Aleksandra", family = "Dacko",
                     role  = c("ctb"),
                     email = "a.dacko@uu.nl")
@@ -23,6 +23,7 @@ LazyData: yes
 URL: https://restriktor.org
 NeedsCompilation: no
 Packaged: 2023-03-31 11:11:11 UTC; Leonard
-Author: Leonard Vanbrabant [aut, cre], Yves Rosseel [ctb], Rebecca Kuiper [aut], Aleksandra Dacko [ctb]
+Author: Leonard Vanbrabant [aut, cre], Rebecca Kuiper [aut], Yves Rosseel [ctb], Aleksandra Dacko [ctb]
 Maintainer: Leonard Vanbrabant <info@restriktor.org>
-Suggests: 
+Suggests: knitr, fastDummies, bain, rmarkdown
+VignetteBuilder: knitr

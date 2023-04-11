@@ -217,6 +217,25 @@ syntax:
   then "\code{2*x2 = x1}". 
   
   If \code{constraints = NULL}, the unrestricted model is fitted.
+  
+  ### Note on not full row-rank ###
+  
+  If the restriction matrix is not of full row-rank, this means one of the following:
+  \itemize{
+   \item There is at least one redundant restriction. Then, either 
+    \itemize{
+      \item[a] Leave the redundant one out 
+      \item[b] Use another (more time-consuming) way of obtaining the level probabilities 
+      for the penalty term (goric function does this by default): Bootstrapping, as discussed above.
+      }
+   \item There is at least one range restriction (e.g., -2 < group1 < 2). 
+         Such a restriction can be evaluated but there is a sensitivity (of a scaling 
+         factor in the covariance matrix, like with a prior in a Bayes factor) which 
+         currently cannot be checked for.
+   \item There is at least one conflicting restriction (e.g., 2 < group1 < -2).
+  }
+  Such a restriction can evidently never hold and is thus impossible to evaluate. 
+  To prevent this type of error delete the one that is incorrect.
 }
 
 \value{

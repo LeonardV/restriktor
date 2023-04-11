@@ -140,48 +140,67 @@ comparable to the Akaike weights.
 }
 
 \details{The GORIC(A) values themselves are not interpretable and 
-the interest lie in their differences. The GORIC(A) weights reflect 
-the support of each hypothesis in the set. To compare two hypotheses 
-(and not one to the whole set), one can examine the ratio of the 
-two corresponding GORIC(A) weights. To avoid selecting a weakly supported 
-hypothesis as the best one, the unconstrained hypothesis is usually 
-included as safeguard.
-
-In case of one order-constrained hypothesis, say H1, the complement 
-Hc can be computed as competing hypothesis. The complement is defined 
-as Hc = not H1.
-
-If the object(s) is of class restriktor the constraints are inherited. Otherwise, 
-the constraint syntax can be parsed via the constraint argument. If the object is 
-an unconstrained model of class \code{lm}, \code{rlm} or \code{glm}, then the 
-constraints can be specified in two ways, see \code{\link{restriktor}}. Note 
-that if the constraints are written in matrix notation, then the constraints
-for each model/hypothesis is put in a named list with specific names amat, rhs, 
-and neq. For example with three parameters x1, x2, x3, and x1 > 0: 
-list(model1 = list(amat = rbind(c(1, 0, 0)), rhs = 0, neq = 0))). The \code{rhs} 
-and \code{neq} are not required if they are equal to 0. If \code{type = "gorica"},
-then the object might be a (named) numeric vector. The constraints can again be 
-specified in two ways, see \code{\link{restriktor}}. For examples, see below.
-
-To determine the penalty term values, the chi-bar-square weights (a.k.a. level
-probabilities) must be computed. If \code{"mix.weights = "pmvnorm" "} (default), 
-the chi-bar-square weights are computed based on the multivariate normal distribution 
-function with additional Monte Carlo steps. If \code{"mix.weights = "boot" "}, the 
-chi-bar-square weights are computed using parametric bootstrapping (see \code{\link{restriktor}}).
-
-The "two.stage" approach for missing data uses the EM algorithm from the 
-\code{norm2} package. The response variables are assumed to be jointly 
-normal. In practice, missing-data procedures designed for variables that are 
-normal are sometimes applied to variables that are not. Binary and ordinal 
-variables are sometimes imputed under a normal model, and the imputed values 
-may be classified or rounded. This is also how restriktor handles (ordered)
-factors for now. 
-
-A better strategy (not implemented yet) would be to convert (ordered) factors 
-into a pair of dummy variables. If the (ordered) factors have missing values, 
-the dummy variables could be included as columns of Y and imputed, but then you 
-have to decide how to convert the continuously distributed imputed values for 
-these dummy codes back into categories. 
+  the interest lie in their differences. The GORIC(A) weights reflect 
+  the support of each hypothesis in the set. To compare two hypotheses 
+  (and not one to the whole set), one can examine the ratio of the 
+  two corresponding GORIC(A) weights. To avoid selecting a weakly supported 
+  hypothesis as the best one, the unconstrained hypothesis is usually 
+  included as safeguard.
+  
+  In case of one order-constrained hypothesis, say H1, the complement 
+  Hc can be computed as competing hypothesis. The complement is defined 
+  as Hc = not H1.
+  
+  If the object(s) is of class restriktor the constraints are inherited. Otherwise, 
+  the constraint syntax can be parsed via the constraint argument. If the object is 
+  an unconstrained model of class \code{lm}, \code{rlm} or \code{glm}, then the 
+  constraints can be specified in two ways, see \code{\link{restriktor}}. Note 
+  that if the constraints are written in matrix notation, then the constraints
+  for each model/hypothesis is put in a named list with specific names amat, rhs, 
+  and neq. For example with three parameters x1, x2, x3, and x1 > 0: 
+  list(model1 = list(amat = rbind(c(1, 0, 0)), rhs = 0, neq = 0))). The \code{rhs} 
+  and \code{neq} are not required if they are equal to 0. If \code{type = "gorica"},
+  then the object might be a (named) numeric vector. The constraints can again be 
+  specified in two ways, see \code{\link{restriktor}}. For examples, see below.
+  
+  To determine the penalty term values, the chi-bar-square weights (a.k.a. level
+  probabilities) must be computed. If \code{"mix.weights = "pmvnorm" "} (default), 
+  the chi-bar-square weights are computed based on the multivariate normal distribution 
+  function with additional Monte Carlo steps. If \code{"mix.weights = "boot" "}, the 
+  chi-bar-square weights are computed using parametric bootstrapping (see \code{\link{restriktor}}).
+  
+  The "two.stage" approach for missing data uses the EM algorithm from the 
+  \code{norm2} package. The response variables are assumed to be jointly 
+  normal. In practice, missing-data procedures designed for variables that are 
+  normal are sometimes applied to variables that are not. Binary and ordinal 
+  variables are sometimes imputed under a normal model, and the imputed values 
+  may be classified or rounded. This is also how restriktor handles (ordered)
+  factors for now. 
+  
+  A better strategy (not implemented yet) would be to convert (ordered) factors 
+  into a pair of dummy variables. If the (ordered) factors have missing values, 
+  the dummy variables could be included as columns of Y and imputed, but then you 
+  have to decide how to convert the continuously distributed imputed values for 
+  these dummy codes back into categories. 
+  
+  ### Note on not full row-rank ###
+  
+  If the restriction matrix is not of full row-rank, this means one of the following:
+  \itemize{
+   \item There is at least one redundant restriction. Then, either 
+    \itemize{
+      \item[a] Leave the redundant one out 
+      \item[b] Use another (more time-consuming) way of obtaining the level probabilities 
+      for the penalty term (goric function does this by default): Bootstrapping, as discussed above.
+      }
+   \item There is at least one range restriction (e.g., -2 < group1 < 2). 
+         Such a restriction can be evaluated but there is a sensitivity (of a scaling 
+         factor in the covariance matrix, like with a prior in a Bayes factor) which 
+         currently cannot be checked for.
+   \item There is at least one conflicting restriction (e.g., 2 < group1 < -2).
+  }
+    Such a restriction can evidently never hold and is thus impossible to evaluate. 
+    To prevent this type of error delete the one that is incorrect.
 }
 
 \value{The function returns a dataframe with the log-likelihood,

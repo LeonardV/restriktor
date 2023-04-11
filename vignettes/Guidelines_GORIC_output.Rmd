@@ -1,0 +1,854 @@
+---
+title: 'Guidelines interpretation GORIC(A) output'
+author: "Rebecca M. Kuiper and Leonard Vanbrabant"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+fontsize: 14pt
+output: 
+  #rmarkdown::html_vignette:
+  pdf_document:
+  toc: true
+  toc_float: true
+vignette: >
+  %\VignetteIndexEntry{Guidelines interpretation GORIC(A) output}
+  %\VignetteEngine{knitr::rmarkdown}
+  #%\\VignetteDepends{restriktor, fastDummies, bain, rmarkdown}
+  \usepackage[utf8]{inputenc}
+number_sections: true
+
+#remotes::install_local(build_vignettes = TRUE, force = TRUE) # run in console
+---
+
+
+<style>
+body {
+  width: 100%;
+  margin: 0 auto;
+}
+</style>
+
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 80), tidy = TRUE)
+knitr::opts_chunk$set(comment = NA, warning = FALSE)
+options(width = 1200) # width console output
+
+library(fastDummies) # dymmy_cols()
+library(restriktor)
+library(bain)
+
+```
+
+```{r, echo=FALSE, results = FALSE, message = FALSE, warning = FALSE}
+n.coef <- 3 # Number of dummy variables (model without intercept)
+
+mu <- rep(0, n.coef)
+intercept <- 0
+
+r2 <- 0.15
+samplesize <- 100
+
+
+b.ratios <- c(3,2,1)
+
+sample <- NULL
+
+# Determine true / population beta coefficients in data generating process
+D_ <- matrix(rep(1:n.coef), nrow = samplesize)
+D <- as.factor(D_)
+sample$D <- D
+sample <- dummy_cols(sample, select_columns = 'D')
+
+#sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
+sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
+diag(sigma) <- 1
+        
+# Define error variance
+var.e <- 1 - r2 # (because all vars are standardized, var(resid)=(1-R2)*sigma_y)
+        
+if(sum(abs(b.ratios)) == 0){ # all zeros (thus under H0)
+  betas <- b.ratios
+} else{
+  # Solve for x here
+  fun <- function (x) {
+    (t(b.ratios*x) %*% sigma %*% b.ratios*x) / (t(b.ratios*x) %*% sigma %*% b.ratios*x + var.e) - r2
+  }
+  
+  x <-uniroot(fun, lower=0, upper=100)$root
+  
+  # Construct betas
+  betas <- b.ratios*x
+}
+
+set.seed(123) # set seed: to obtain same results when you re-run it
+epsilon <- rnorm(samplesize, sd=sqrt(var.e))
+sample$y <- as.matrix(sample[,2:(1+n.coef)]) %*% matrix(betas, nrow = n.coef) + epsilon
+
+# Obtain fit
+fit <- lm(y ~ 0 + D, data=sample)
+#fit
+
+```
+
+
+# Goal GORIC(A) 
+The information criteria GORIC and GORICA - referred to as GORIC(A) - can evaluate one or more informative, theory-based hypotheses. Hence, you do not have to specify a null hypothesis nor (only) equality restrictions. You can (also) compare the size and/or ordering of mean parameters or of (standardized) regression-type parameters. You could, for example, evaluate the hypothesis $H_m: \mu_1 > \mu_2 > \mu_3$ (mean parameters) or $H_m: \beta_1 - \beta_2 > \beta_3 - \beta_4$ (regression parameters; a possible representation of an interaction effect).
+The goal of the GORIC(A) is to select the best from a set of candidate hypotheses/models.
+
+
+
+# GORIC(A) output
+The GORIC(A) is an information criterion and, therefore, balances fit and complexity. Fit denotes the compatibility of the hypothesis with the data, expressed by the maximum log likelihood part. Complexity reflects the size of the hypothesis in terms of (expected) number of parameters, expressed by the penalty part.
+Stated otherwise, GORIC(A) selects the hypothesis that describes the data best with the fewest number of parameters, out of a set of candidate hypotheses.
+
+## GORIC(A) values
+The hypothesis with the smallest GORIC(A) value is the preferred one in the set of candidate hypotheses; since that hypothesis then has the smallest (Kullback--Leibler) distance to the truth.
+The GORIC(A) values themselves are not interpretable; only the differences between the values can be inspected (i.e., the smaller, the better). To improve the interpretation, GORIC(A) weights can be computed. 
+
+# GORIC(A) weights and ratios
+A GORIC(A) weight ($w_m$) represent the relative likelihood of a hypothesis ($H_m$) given the data and the set of hypotheses. The hypothesis with the largest GORIC(A) weight is the preferred one in the set of candidate hypotheses.
+Additionally, the ratio of two GORICA weights ($w_m/w_{m'}$) can be used to quantify their relative support. This leads to conclusions like Hypothesis $H_1$ is $w_1/w_2$ more supported than the competing hypothesis $H_2$.
+
+
+# Hypotheses sets
+The set of hypotheses should consist of the hypotheses of interest (reflecting one or more theories from the literature of based on expertise), possibly with a failsafe hypothesis (to prevent from selecting a hypothesis which is the best of the worst).
+I will distinguish different types of set of hypotheses:
+The first distinction is based on the number of informative hypotheses: one or more;
+The second distinction is based on the choice of safeguard hypothesis.
+In the next section, I will describe these type of sets and give guidelines for interpretation the results from each of them. I will also remark on how to specify your hypothesis such that the GORIC(A) output helps you even more.
+Subsequently, I will discuss two special cases situations one should be aware of:
+
+- The case of equal fit, which can happen in case of overlapping hypotheses. This is discussed together with finding support for the boundary of hypotheses;
+
+- The case of just below maximum fit, which can occur when there is at least one equality restriction in (one of) the hypothesis under investigation. 
+
+Consequently, be aware of specifying overlapping hypotheses and hypotheses containing one or more equality restrictions.
+
+
+
+# Interpretation output
+
+## General 
+
+In general, the GORIC(A) output is interpreted as follows:
+
+- The hypothesis with the highest GORIC(A) weight is the preferred one: the best from the set.
+
+- The GORIC(A) weight of that hypothesis denotes its relative strength in the set (given the data). 
+
+- Additionally, one can compare the strength of that hypothesis versus a competing hypothesis using the ratio of their GORIC(A) weights.
+
+Afterwards, you need to inspect a bit more output to check for special cases (like support for overlap of the hypotheses of interest).
+
+
+Next, I will go into more detail for each type of hypothesis set.
+
+
+
+## One informative hypothesis
+Here, I assume you have one informative hypothesis, that is, there are no competing hypotheses of interest.
+Then, I would advise you to evaluate it with its complement (an option in the software), as opposed to the unconstrained hypothesis. I will describe both situations next.
+
+
+### vs Complement
+The complement of a hypothesis denotes all the other possible hypotheses (i.e., all the other possible orderings); so, excluding the one of interest.
+The complement acts like a competing hypothesis. 
+Either you hypothesis or its complement is the best and the ratio of their GORIC(A) weights denotes the relative strength.
+
+Say, your hypothesis of interest has a GORIC(A) weight of $w_m$ and, thus, its complement of $w_c = 1 - w_m$. Then, your hypothesis has $w_m/(1-w_m)$ more support than its complement. This relative support can go from (approximately) zero to infinity - the first denoting infinite support for the complement and the latter infinite support your hypothesis.
+When the ratio is close to 1, then both hypotheses are (approximately) equally good (in terms of balancing fit and complexity).
+Notably, the ratio of GORIC(A) weights (and other output) can also denote support for their boundary, which is discussed in the Special cases Section.
+
+
+#### Example
+```{r, message = FALSE, warning = FALSE}
+# H1 vs complement
+H1 <- "D1 > D2 > D3"
+
+# Apply GORIC #
+set.seed(123) 
+results_1c <- goric(fit, constraints = list(H1), comparison = "complement")
+results_1c
+```
+From this, you can conclude that $H_1: \mu_1 > \mu_2 > \mu_3$ is $.83/.17 \approx 4.88$ time more supported than its complement.
+
+Population information:
+In the data generation, I used an $R^2$ of .15 and a ratio of means of 3:2:1, leading to population mean values of 0.9776818, 0.6517879, and 0.3258939. I then sampled 100 observations, ran an ANOVA, and applied the GORIC.
+When I would sample more observations, the GORIC(A) weight for $H_1$ converge to 1.
+
+Note: As will become clear in the Special cases Section, one should additionally check the fit and/or penalty part, since there could be support for the boundary of these two hypotheses.
+Since the loglik.weights differ, there is no support for the boundary of these hypotheses; only support for $H_1$.
+
+
+
+
+### vs Unconstrained
+The unconstrained hypothesis denotes all the possible hypotheses (i.e., all the possible orderings); so, including the one of interest.
+Since it covers the hypothesis of interest, it cannot act like a competing hypothesis. The unconstrained can only be used as a failsafe:  
+
+- If the unconstrained is better, then your hypothesis of interest is weak, that is, it is not supported by the data.  
+
+- If your hypothesis is better, then it is not weak. In this case, the ratio of GORIC(A) weights is bounded, that is, it will never denote infinite support. You can find more details about this in the Special cases Section and in the Example section below.
+
+
+#### Example
+```{r, message = FALSE, warning = FALSE}
+# H1 vs unconstrained (default)
+H1 <- "D1 > D2 > D3"
+
+# Apply GORIC #
+set.seed(123) 
+results_1u <- goric(fit, constraints = list(H1))
+results_1u
+```
+From this, you can conclude that $H_1: \mu_1 > \mu_2 > \mu_3$ is ($.763/.237 > 1$ times) more supported than the unconstrained.
+
+When you look at the fit/loglik value, you can see that they are the same for both hypotheses. The unconstrained has, by definition, the maximum fit. Here, $H_1$ also has maximum fit, meaning that its restrictions are in agreement with the data. Since both have the same fit, their GORIC(A) weights solely depend on the penalty values and, thus, are bounded: they equal the penalty weights (not 1 and 0). This means (see also the Special cases Section) that there is support for the overlap. In this case, the overlap is $H_1$.
+Because of this, we could say that $H_1$ has full support: it has the maximum fit and is (by definition) more parsimonious than the unconstrained. 
+
+Population information:
+In the data generation, I used an $R^2$ of .15 and a ratio of means of 3:2:1, leading to population mean values of 0.9776818, 0.6517879, and 0.3258939. I then sampled 100 observations, ran an ANOVA, and applied the GORIC.
+When I would sample more observations, the GORIC(A) weight for $H_1$ remains the same.
+When I would have samples less observations, the fit/loglik values may differ. Then the GORIC(A) weight of $H_1$ is less than the penalty weight of $H_1$.
+
+
+
+## Multiple informative hypotheses
+Let us assume that the literature states two competing informative hypotheses. Then, a safeguard hypothesis is needed if these informative hypotheses do not cover the whole parameter space, that is, do not cover all possible theories/orderings. Namely, when both informative hypotheses are weak hypotheses, GORIC(A) selects the best out of a set of weak hypotheses (i.e., best of the worst). To refrain from this, one should include a safeguard hypothesis.
+
+
+### Complement as failsafe
+The complement of a set of hypotheses denotes all the other possible hypotheses (i.e., all the other possible orderings); so, excluding the ones of interest.
+The complement acts like another competing hypothesis. One can also compare its strength to that of the hypotheses of interest.
+
+As always, the hypothesis with the highest GORIC(A) weight is the preferred one. 
+  
+- If the best hypothesis is the complement of the set, then the hypotheses of interest are weak. One should not compare the strength of the hypotheses of interest (to avoid choosing the best from worst). Notably, one can compare the strength of the complement versus each of the hypotheses of interest by inspecting their ratio of GORIC(A) weights.
+
+- If the best hypothesis is one of the hypotheses of interest, then it is not weak and can be compared to the other hypothesis/-es of interest. Note that one can compare all the non-weak hypotheses to all the hypotheses of interest. Be ware of the special cases, as will be discussed in the Special cases Section.
+
+Important: This option is unfortunately not yet available in GORIC(A) software.
+
+
+
+### Unconstrained as failsafe
+The unconstrained hypothesis denotes all the possible hypotheses (i.e., all the possible orderings); so, including the ones of interest.
+Since it covers the hypotheses of interest, it cannot act like a competing hypothesis. The unconstrained can only be used as a failsafe:  
+
+- If the best hypothesis is the unconstrained is, then your hypotheses of interest are weak, that is, they are not supported by the data. One should not compare the strength of the hypotheses of interest (to avoid choosing the best from worst).
+
+- If the best hypothesis is one of the hypotheses of interest, then it is not weak and can be compared to the other hypothesis/-es of interest. Note that one can compare all the non-weak hypotheses to all the hypotheses of interest. Be ware of the special cases, as will be discussed in the Special cases Section.
+
+
+#### Example
+```{r, message = FALSE, warning = FALSE}
+# H1, H2, and unconstrained (default)
+H1 <- "D1 > D2 > D3"
+H2 <- "D1 < D2 < D3"
+
+# Apply GORIC #
+set.seed(123) 
+results_12u <- goric(fit, constraints = list(H1, H2))
+results_12u
+round(results_12u$ratio.gw, 3)
+```
+From this, you can conclude that $H_1: \mu_1 > \mu_2 > \mu_3$ is not a weak, since it is $.763/.237 > 1$ times more supported than the unconstrained.
+Therefore, $H_1$ can be compared to its competing hypothesis $H_2: \mu_1 < \mu_2 < \mu_3$. Note that $H_2$ is weak ($.000/.237 < 1$ or $.000 < .237$); so, we already now that $H_1$ is better, but not yet how much better.
+
+From the GORIC weights (or their ratios in results_12u\$ratio.gw - H1 vs. H2), you can conclude that $H_1$ is an infinite times (or 2871.23 times) more supported than $H_2$.
+Notably, if you would calculate the GORIC(A) weights for the set consisting of solely $H_1$ and $H_2$, you would obtain 1.000 and .000, respectively.
+
+Population information:
+In the data generation, I used an $R^2$ of .15 and a ratio of means of 3:2:1, leading to population mean values of 0.9776818, 0.6517879, and 0.3258939. I then sampled 100 observations, ran an ANOVA, and applied the GORIC.
+When I would sample more observations, it does not affect the results in this case. In case $H_2$ did receive some support (i.e., had a GORIC(A) weight larger than 0), increasing the same size would lead to GORIC(A) weights as reported here, where the ratio of GORIC(A) weights for $H_1$ and the unconstrained is fixed and the ratio of GORIC(A) weights for $H_1$ and $H_2$ is infinite.
+
+Note: $H_1$ and its competing (non-overlapping) hypothesis $H_2$ do not have the same fit/loglik value. Hence, there is no support for the boundary of these hypotheses; only support for $H_1$. This will become clear in the Special cases Section.
+
+
+
+### No failsafe
+Only if your hypotheses of interest cover all theories/orderings (i.e., cover the whole parameter space), then you do not need a failsafe hypothesis. Namely, the truth is covered in one or more hypotheses.
+Be ware of the special cases, like overlapping hypotheses, as will be discussed in the Special cases Section.
+
+
+#### Example
+```{r, message = FALSE, warning = FALSE}
+# H1, H2, and unconstrained (default)
+H1 <- "D1 > D2" # # => H1: D1 > D2, D3
+H2 <- "D1 < D2" # # => H2: D1 < D2, D3
+
+# Apply GORIC #
+set.seed(123) 
+results_12 <- goric(fit, constraints = list(H1, H2), comparison = "none")
+results_12
+round(results_12$ratio.gw, 3)
+```
+
+From this, you can conclude that $H_1: \mu_1 > \mu_2, \mu_3$ is $.978/.022 \approx 45$ times more supported than $H_2: \mu_1 < \mu_2, \mu_3$.
+
+Population information:
+In the data generation, I used an $R^2$ of .15 and a ratio of means of 3:2:1, leading to population mean values of 0.9776818, 0.6517879, and 0.3258939. I then sampled 100 observations, ran an ANOVA, and applied the GORIC.
+When I would sample more observations, the GORIC(A) weights of $H_1$ and $H_2$ will converge to 1 and 0, respectively, leading to an infinite support for $H_1$ versus $H_2$.
+
+Note: As will become clear in the Special cases Section, one should additionally check the fit and/or penalty part, since there could be support for the boundary of these two hypotheses.
+Since the loglik.weights differ, there is no support for the boundary of these hypotheses; only support for $H_1$.
+
+
+
+
+## Note: Hypothesis specification
+A hypothesis is considered the best of the set of it has the highest GORIC(A) weight. In that case, all ratios of GORIC(A) weights of that hypothesis versus another one is 1 or higher.
+In case of decision making, you may want to pre-specify a benchmark for the ratio of GORIC(A) weights: if the ratio of GORIC(A) weights is larger than $x$, then I am willing to choose (to make policy based on) this best hypothesis. It can be hard to pre-specify $x$; unless there is already previous research perhaps - and you should also take in to account the special cases discussed in the Special cases Section.
+Therefore, my advise then is to create the hypotheses in such a way that finding a ratio of 1 (or higher) is enough evidence for the preferred hypothesis.
+
+For example, let us assume that we compare an outcome (e.g., a standardized level of happiness) for three types of treatments: a new treatment (A), the established treatment (B), and a placebo treatment (P). You could evaluate $H_1: \mu_A > \mu_B > \mu_P$ versus its complement $H_c$. Now, it can be hard to decide to go for Treatment A when $H_1$ is 1 or perhaps 1.1 times more supported than $H_c$. Then, it could be handy (if possible) to specify the hypothesis in such a way that a ratio of (just) over 1 makes you willing to choose for Treatment A. You could specify a minimum difference between Treatments A and B and additional state (as a check) that Treatment B (and then also A) does better than the placebo: $H_1: \mu_A - \mu_B > .1,  \mu_B > \mu_P$.
+
+
+### Example
+```{r, echo = F, message = FALSE, warning = FALSE}
+b.ratios <- c(3,2.5,1)
+
+sample <- NULL
+
+# Determine true / population beta coefficients in data generating process
+D_ <- matrix(rep(1:n.coef), nrow = samplesize)
+D <- as.factor(D_)
+sample$D <- D
+sample <- dummy_cols(sample, select_columns = 'D')
+
+#sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
+sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
+diag(sigma) <- 1
+        
+# Define error variance
+var.e <- 1 - r2 # (because all vars are standardized, var(resid)=(1-R2)*sigma_y)
+        
+if(sum(abs(b.ratios)) == 0){ # all zeros (thus under H0)
+  betas <- b.ratios
+}else{
+  # Solve for x here
+  fun <- function (x) {
+    (t(b.ratios*x) %*% sigma %*% b.ratios*x) / (t(b.ratios*x) %*% sigma %*% b.ratios*x + var.e) - r2
+  }
+  
+  x <-uniroot(fun, lower=0, upper=100)$root
+  
+  # Construct betas
+  betas <- b.ratios*x
+}
+
+set.seed(123) # set seed: to obtain same results when you re-run it
+epsilon <- rnorm(samplesize, sd=sqrt(var.e))
+sample$y <- as.matrix(sample[,2:(1+n.coef)]) %*% matrix(betas, nrow = n.coef) + epsilon
+
+# Obtain fit
+fit <- lm(y ~ 0 + D, data=sample)
+#fit
+```
+
+
+
+```{r, message = FALSE, warning = FALSE}
+# General hypothesis vs complement
+H1g <- "D1 > D2 > D3" 
+
+# Apply GORIC #
+set.seed(123) 
+results_12 <- goric(fit, constraints = list(H1g = H1g), comparison = "complement")
+results_12
+round(results_12$ratio.gw, 3)
+```
+
+From this, you can conclude that $H_{1g}: \mu_1 > \mu_2 > \mu_3$ is $.919/.081 \approx 11.4$ times more supported than its complement.
+Since the ratio is larger than 1, $H_{1g}$ is the best. Sometimes you may want a minimum support for your hypothesis of interest. You could do this by pre-specifying a benchmark value for the ratio: when the ratio of GORIC(A) weights is higher than that benchmark, then you select the hypothesis. Alternatively, often more easier, you could make you hypothesis more specific, such that a ratio of 1 or more is sufficient to select the hypothesis:
+
+
+```{r, message = FALSE, warning = FALSE}
+# More specific hypothesis vs complement
+H1m <- "D1 - D2 > .2, D2 > D3" 
+
+# Apply GORIC #
+set.seed(123) 
+results_12 <- goric(fit, constraints = list(H1m = H1m), comparison = "complement")
+results_12
+round(results_12$ratio.gw, 3)
+```
+
+From this, you can conclude that $H_{1m}: \mu_1 - \mu_2 > .2, \mu_2 > \mu_3$ is $.783/.217 \approx 3.6 > 1$ times more supported than its complement.
+Since the difference in treatment means is at least as large as pre-specified, you can now convincingly go for Treatment A.
+
+
+Population information:
+In the data generation, I used an $R^2$ of .15 and a ratio of means of 3:2.5:1, leading to population mean values of 0.8855591, 0.7379659, and 0.2951864. I then sampled 100 observations, ran an ANOVA, and applied the GORIC.
+When I would sample more observations, the GORIC(A) weight of both $H_{1g}$ and $H_{1m}$ will converge to 1; reflecting full support.
+
+
+
+
+# Special cases
+
+## Equal fit
+
+### Overlapping hypotheses
+You should be aware when some of the hypotheses overlap. Note that all hypotheses overlap with the unconstrained hypotheses (per definition). Also, competing hypotheses can overlap; e.g., $\beta_1 < \beta_2, \beta_3$ and $\beta_1 < \beta_2 < \beta_3$ overlap, since the latter is a subset / special case of the first.
+
+When hypotheses overlap and the truth lies in this overlapping part: 
+
+- Then, the hypotheses share support, that is, they divide the support. Consequently, none of them will obtain full support (i.e., a GORIC(A) weight of 1) and their relative support (i.e., ratio of GORIC(A) weights) is even bounded. Bear in mind that the most parsimonious hypothesis will be the best one.
+
+- Then, their values of the fit part will be equal (i.e., these hypotheses will have the same maximum log likelihood) and their ratio of GORIC(A) weights will be solely based on the penalty part (and thus equal the so-called penalty weights).
+
+- Then, it does not make sense to interpret their ratio of GORIC(A) weights, you just know that there is support for the overlap of the hypothesis. If possible and if of interest, you can specify the overlap and evaluate that versus its complement (to obtain the support for the overlapping part).
+
+
+Thus, when hypotheses have the same fit values (and thus when the ratio of their GORIC(A) weights equal the ratio of corresponding penalty weights), you know that there is support for the overlap of the hypotheses.
+Note that, when one hypothesis is a subset of another, this implies support for the subset. 
+Note further that, in some cases, this implies support for the boundary of hypotheses, as will be discussed next.
+
+
+In contrast, when there is support for only one of the overlapping hypotheses, this implies support for the non-overlapping part (bear in mind that the GORIC(A) weight itself addresses the support for the complete hypothesis). If possible and if of interest, you can specify the non-overlapping part and evaluate that versus its complement (to obtain the support for the non-overlapping part).
+
+
+#### Example: subset true
+```{r, echo = F, message = FALSE, warning = FALSE}
+b.ratios <- c(3,2,1)
+
+sample <- NULL
+
+# Determine true / population beta coefficients in data generating process
+D_ <- matrix(rep(1:n.coef), nrow = samplesize)
+D <- as.factor(D_)
+sample$D <- D
+sample <- dummy_cols(sample, select_columns = 'D')
+
+#sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
+sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
+diag(sigma) <- 1
+        
+# Define error variance
+var.e <- 1 - r2 # (because all vars are standardized, var(resid)=(1-R2)*sigma_y)
+        
+if(sum(abs(b.ratios)) == 0){ # all zeros (thus under H0)
+  betas <- b.ratios
+}else{
+  # Solve for x here
+  fun <- function (x) {
+    (t(b.ratios*x) %*% sigma %*% b.ratios*x) / (t(b.ratios*x) %*% sigma %*% b.ratios*x + var.e) - r2
+  }
+  
+  x <-uniroot(fun, lower=0, upper=100)$root
+  
+  # Construct betas
+  betas <- b.ratios*x
+}
+
+set.seed(123) # set seed: to obtain same results when you re-run it
+epsilon <- rnorm(samplesize, sd=sqrt(var.e))
+sample$y <- as.matrix(sample[,2:(1+n.coef)]) %*% matrix(betas, nrow = n.coef) + epsilon
+
+# Obtain fit
+fit <- lm(y ~ 0 + D, data=sample)
+#fit
+```
+
+
+```{r, message = FALSE, warning = FALSE}
+# H1, H2, and unconstrained (default) - subset true
+H1 <- "D1 > D2 > D3"
+H2 <- "D1 > D2" # H2: D1 > D2, D3
+
+# Apply GORIC #
+set.seed(123) 
+results_12u <- goric(fit, constraints = list(H1, H2))
+results_12u
+round(results_12u$ratio.gw, 3)
+```
+From this, you can conclude that $H_1: \mu_1 > \mu_2 > \mu_3$ and $H_2: \mu_1 > \mu_2, \mu_3$ are not weak, since they are $.548/.171 > 1$ and $.281/.171 > 1$, respectively, times more supported than the unconstrained.
+Therefore, $H_1$ and $H_2$ can be compared. From the GORIC weights goric.weights (or their ratios in results_12u\$ratio.gw - H1 vs. H2), you can conclude that $H_1$ is $.548/.281$ times (or $1.95$ times) more supported than $H_2$.
+Notably, if you would calculate the GORIC(A) weight for the set consisting of solely $H_1$ and $H_2$, you would obtain $.548/(.548+.281) \approx .66$ and $.34$.
+
+We also need to check the fit/loglik values of $H_1$ and $H_2$. These are the same. Hence, the relative support is bounded and, now, attains the maximum value. Thus, there is support for the overlap of the hypotheses, which is $H_1$ here. You could choose to investigate the support for this overlap, by evaluating $H_1$ versus its complement. We already did this in the first example subsection, there we found that $H_1$ is 4.88 times more supported than its complement.
+
+Population information:
+In the data generation, I used an $R^2$ of .15 and a ratio of means of 3:2:1, leading to population mean values of 0.9776818, 0.6517879, and 0.3258939. I then sampled 100 observations, ran an ANOVA, and applied the GORIC.
+When I would sample more observations, it does not affect the GORIC(A) weights for $H_1$, $H_2$, and the unconstrained. 
+
+
+In the next example, I give an example in case the non-overlapping part is true.
+
+
+#### Example: non-overlapping part true
+```{r, echo = F, message = FALSE, warning = FALSE}
+b.ratios <- c(3,2,3)
+
+sample <- NULL
+
+# Determine true / population beta coefficients in data generating process
+D_ <- matrix(rep(1:n.coef), nrow = samplesize)
+D <- as.factor(D_)
+sample$D <- D
+sample <- dummy_cols(sample, select_columns = 'D')
+
+#sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
+sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
+diag(sigma) <- 1
+        
+# Define error variance
+var.e <- 1 - r2 # (because all vars are standardized, var(resid)=(1-R2)*sigma_y)
+        
+if(sum(abs(b.ratios)) == 0){ # all zeros (thus under H0)
+  betas <- b.ratios
+}else{
+  # Solve for x here
+  fun <- function (x) {
+    (t(b.ratios*x) %*% sigma %*% b.ratios*x) / (t(b.ratios*x) %*% sigma %*% b.ratios*x + var.e) - r2
+  }
+  
+  x <-uniroot(fun, lower=0, upper=100)$root
+  
+  # Construct betas
+  betas <- b.ratios*x
+}
+
+set.seed(123) # set seed: to obtain same results when you re-run it
+epsilon <- rnorm(samplesize, sd=sqrt(var.e))
+sample$y <- as.matrix(sample[,2:(1+n.coef)]) %*% matrix(betas, nrow = n.coef) + epsilon
+
+# Obtain fit
+fit <- lm(y ~ 0 + D, data=sample)
+#fit
+```
+
+
+```{r, message = FALSE, warning = FALSE}
+# H1, H2, and unconstrained (default) - non-overlapping part true
+H1 <- "D1 > D2 > D3"
+H2 <- "D1 > D2" # H2: D1 > D2, D3
+
+# Apply GORIC #
+set.seed(123) 
+results_12u <- goric(fit, constraints = list(H1, H2))
+results_12u
+round(results_12u$ratio.gw, 3)
+```
+From this, you can conclude that $H_1: \mu_1 > \mu_2 > \mu_3$ and $H_2: \mu_1 > \mu_2, \mu_3$ are not weak, since since they are $.323/.255 > 1$ and $.421/.255 > 1$, respectively, times more supported than the unconstrained.
+Therefore, $H_1$ and $H_2$ can be compared. From the GORIC weights goric.weights (or their ratios in results_12u\$ratio.gw - H1 vs. H2), you can conclude that $H_2$ is $.421/.323$ times (or $1.30$ times) more supported than $H_1$.
+Notably, if you would calculate the GORIC(A) weight for the set consisting of solely $H_1$ and $H_2$, you would obtain $.323/(.323+.421) \approx .43$ and $.57$.
+
+Since the fit/loglik values of $H_1$ and $H_2$ are not the same, there is no support for their overlap, but for $H_2$, or even the non-overlapping part of $H_2$ and $H_1$. In this case, it is possible to specify the the non-overlapping part, namely $\mu_1 > \mu_2 < \mu_3$. If of interest, you could evaluate that versus its complement.
+
+Population information:
+In the data generation, I used an $R^2$ of .15 and a ratio of means of 3:2:3, leading to population mean values of 0.6186005, 0.4124004, and 0.6186005. I then sampled 100 observations, ran an ANOVA, and applied the GORIC.
+When I would sample more observations, the ratio of GORIC(A) weights for $H_2$ versus $H_1$ would go to infinity. 
+Note that the GORIC(A) weight of $H_1$ would go to 0, but that of $H_2$ not to 1 since the unconstrained always obtains support (it also includes $H_2$ / the true ordering).
+
+
+
+### Support for boundary
+When hypotheses do not overlap, there can mathematically still be overlap, namely the boundary of these hypotheses. There is always a boundary when inspecting a hypothesis versus its complement, but also other pairs of hypotheses can share a boundary.
+As a very simple example: the overlap/boundary of $\beta_1 > 0$ and its complement (here, $\beta_1 < 0$) is $\beta_1 = 0$.
+
+Consequently, when non-overlapping hypotheses have (approximately) the same fit values (and thus when the ratio of their GORIC(A) weights (approximately) equal the ratio of corresponding penalty weights), you know that there is support for the boundary of these hypotheses.
+
+
+#### Example: $H_1$ versus its complement
+```{r, echo = F, message = FALSE, warning = FALSE}
+b.ratios <- c(3,2,2)
+
+sample <- NULL
+
+# Determine true / population beta coefficients in data generating process
+D_ <- matrix(rep(1:n.coef), nrow = samplesize)
+D <- as.factor(D_)
+sample$D <- D
+sample <- dummy_cols(sample, select_columns = 'D')
+
+#sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
+sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
+diag(sigma) <- 1
+        
+# Define error variance
+var.e <- 1 - r2 # (because all vars are standardized, var(resid)=(1-R2)*sigma_y)
+        
+if(sum(abs(b.ratios)) == 0){ # all zeros (thus under H0)
+  betas <- b.ratios
+}else{
+  # Solve for x here
+  fun <- function (x) {
+    (t(b.ratios*x) %*% sigma %*% b.ratios*x) / (t(b.ratios*x) %*% sigma %*% b.ratios*x + var.e) - r2
+  }
+  
+  x <-uniroot(fun, lower=0, upper=100)$root
+  
+  # Construct betas
+  betas <- b.ratios*x
+}
+
+set.seed(123) # set seed: to obtain same results when you re-run it
+epsilon <- rnorm(samplesize, sd=sqrt(var.e))
+sample$y <- as.matrix(sample[,2:(1+n.coef)]) %*% matrix(betas, nrow = n.coef) + epsilon
+
+# Obtain fit
+fit <- lm(y ~ 0 + D, data=sample)
+#fit
+```
+
+```{r, message = FALSE, warning = FALSE}
+# H1 vs complement
+H1 <- "D1 > D2 > D3"
+
+# Apply GORIC #
+set.seed(123) 
+results_1c <- goric(fit, constraints = list(H1), comparison = "complement")
+results_1c
+#
+coef(fit)
+```
+From this, you can conclude that $H_1: \mu_1 > \mu_2 > \mu_3$ is $.683/.317 \approx 2.16$ time more supported than its complement.
+
+When additionally checking the fit/loglik, you can see that the fit values of $H_1$ and its complement resemble and, thus, their loglik.weights are almost the same. Likewise, you can see that the GORICA weights resemble the penalty weights.
+This indicates that there is support for the boundary of the hypotheses. Bear in mind that the overlap of a hypothesis and its complement is the boundary of them. The boundaries are: $\mu_1 = \mu_2 > \mu_3$, $\mu_1 > \mu_2 = \mu_3$, and $\mu_1 = \mu_2 = \mu_3$. By inspecting the sample means (coef(fit)), you can conclude that there is support for $\mu_1 > \mu_2 = \mu_3$. If of interest, one can evaluate this boundary hypothesis versus its complement. Notably, boundary hypothesis contain at least one equality, which you may want to rephrase as an about-equality, as discusses in the next section. 
+
+Population information:
+In the data generation, I used an $R^2$ of .15 and a ratio of means of 3:2:2, leading to population mean values of 0.7139568, 0.4759712, and 0.4759712. I then sampled 100 observations, ran an ANOVA, and applied the GORIC.
+When I would sample more observations, the fit values will become more closer and the GORIC(A) weights will converge to the penalty weights, but they will never exactly equate because of how the output for the complement is calculated (but it will asymptotically equate within, say, 3 decimals).
+
+
+#### Example: $H_1$, $H_2$, and the unconstrained
+```{r, message = FALSE, warning = FALSE}
+# H1, H2, and unconstrained (default) - non-overlapping part true
+H1 <- "D1 > D2 > D3"
+H2 <- "D1 > D2 < D3"
+
+# Apply GORIC #
+set.seed(123) 
+results_12u <- goric(fit, constraints = list(H1, H2))
+results_12u
+round(results_12u$ratio.gw, 3)
+round(results_12u$ratio.pw, 3)
+```
+From this, you can conclude that $H_1: \mu_1 > \mu_2 > \mu_3$ and $H_2: \mu_1 > \mu_2 < \mu_3$ are not weak, since since they are $.477/.159 > 1$ and $.354/.159 > 1$, respectively, times more supported than the unconstrained.
+Therefore, $H_1$ and $H_2$ can be compared. From the GORIC weights goric.weights (or their ratios in results_12u\$ratio.gw - H1 vs. H2), you can conclude that $H_1$ is $.477/.364$ times (or $1.31$ times) more supported than $H_1$.
+
+When additionally checking the fit/loglik, you can see that the fit values of $H_1$ and $H_2$ resemble and, thus, their loglik.weights are almost the same. Likewise, you can see that the GORICA weights of $H_1$ vs $H_2$ (in results_12u\$ratio.gw - H1 vs. H2) resemble the penalty weights of $H_1$ vs $H_2$  (in results_12u\$ratio.pw - H1 vs. H2).
+This indicates that there is support for the overlap of these hypotheses. In this case, the overlap means $\mu_1 > \mu_2$ together with the boundary of $\mu_2 > \mu_3$ and $\mu_2 < \mu_3$, which is $\mu_2 = \mu_3$; hence, $\mu_1 > \mu_2 = \mu_3$.
+If of interest, one can evaluate this new hypothesis versus its complement. Notably, this hypothesis contains an equality, which you may want to rephrase as an about-equality, as discusses in the next section. 
+
+Population information:
+In the data generation, I used an $R^2$ of .15 and a ratio of means of 3:2:2, leading to population mean values of 0.7139568, 0.4759712, and 0.4759712. I then sampled 100 observations, ran an ANOVA, and applied the GORIC.
+When I would sample more observations, the fit values will become more closer and the GORIC(A) weights will converge to the penalty weights.
+
+
+
+
+### Note
+
+In many situations, the ratio of penalty weights does not equal 1. 
+A ratio of GORIC(A) weights of 1 means that the hypotheses are equally likely (in terms of balancing fit and complexity); then, both hypotheses are equally supported. This does not per se mean that there is support for their overlap (or boundary). Only when the penalty values of the hypotheses are the same, this coincides. For example, the penalty of $\beta_1 > 0$ equals that of its complement (here, $\beta_1 < 0$), thus their ratio of GORIC(A) weights will equal 1 when $\beta_1 = 0$. See also the example below for more insight.
+
+Bear in mind that when the ratio of GORIC(A) weights equal the ratio of penalty weights (which does not need to be 1), then there is support for the overlap (or boundary).
+
+
+
+## Just below maxmimum fit
+
+### Equality restriction (=)
+Even if, in the population, the equality is true (e.g., $\beta_1 = \beta_2$, that is, $\beta_1 - \beta_2 = 0$), the probability of finding this in your data is 0. In your data, the relationship will never be exactly 0. Therefore, the fit value (i.e., the maximum log likelihood) of a true hypothesis with equality restriction will never equate the maximum fit (i.e., the maximum log likelihood of the unconstrained), but a value (just) below this maximum. Consequently, a true hypothesis with equality restriction will never obtain a GORIC(A) weight of 1, but one lower than 1.
+
+So, be ware of interpreting your results when there is at least one equality restriction in the set.
+Moreover, only include an equality restriction when you are really interest in it. Perhaps you could specify an about-equality restrictions, as discussed next.
+
+
+#### Example
+```{r, echo = F, message = FALSE, warning = FALSE}
+b.ratios <- c(3,3,1.5)
+
+sample <- NULL
+
+# Determine true / population beta coefficients in data generating process
+D_ <- matrix(rep(1:n.coef), nrow = samplesize)
+D <- as.factor(D_)
+sample$D <- D
+sample <- dummy_cols(sample, select_columns = 'D')
+
+#sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
+sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
+diag(sigma) <- 1
+        
+# Define error variance
+var.e <- 1 - r2 # (because all vars are standardized, var(resid)=(1-R2)*sigma_y)
+        
+if(sum(abs(b.ratios)) == 0){ # all zeros (thus under H0)
+  betas <- b.ratios
+}else{
+  # Solve for x here
+  fun <- function (x) {
+    (t(b.ratios*x) %*% sigma %*% b.ratios*x) / (t(b.ratios*x) %*% sigma %*% b.ratios*x + var.e) - r2
+  }
+  
+  x <-uniroot(fun, lower=0, upper=100)$root
+  
+  # Construct betas
+  betas <- b.ratios*x
+}
+
+set.seed(125) # set seed: to obtain same results when you re-run it
+epsilon <- rnorm(samplesize, sd=sqrt(var.e))
+sample$y <- as.matrix(sample[,2:(1+n.coef)]) %*% matrix(betas, nrow = n.coef) + epsilon
+
+# Obtain fit
+fit <- lm(y ~ 0 + D, data=sample)
+#fit
+```
+
+
+```{r, message = FALSE, warning = FALSE}
+# Equality versus its complement
+H1 <- "D1 = D2 > 0, D3 > 0" 
+
+# Apply GORIC #
+set.seed(123) 
+results_0c <- goric(fit, constraints = list(H1), comparison = "complement")
+results_0c
+round(results_0c$ratio.gw, 3)
+```
+
+From this, you can conclude that $H_1: \mu_1 = \mu_2 > 0, \mu_3 > 0$ is $.817/.183 \approx 4.4$ times more supported than its complement.
+
+When you look at the fit/loglik part, you see that both fit/loglik values resemble. Thus, you can conclude that there is support for the overlap/boundary of these hypotheses. In this case, the fit of the complement is based on the fit for $\mu_1 > 0, \mu_2 > 0, \mu_3 > 0$ (so, the hypothesis that does not restrict the first two means to be equal).
+Note that the preferred hypothesis $H_1$ does not have the highest fit/loglik. Since $H_1$ contains an equality, it will also never have maximum fit. Consequently, the weight for a true equality hypothesis will never be 1. This could be a reason to evaluate an about-equality hypothesis instead, as discussed in the next section.
+
+Population information:
+In the data generation, I used an $R^2$ of .15 and a ratio of means of 3:3:1.5, leading to population mean values of 0.6967672, 0.6967672, and 0.3483836. I then sampled 100 observations, ran an ANOVA, and applied the GORIC.
+When I would sample more observations, the results are conclusion-wise the same and, more importantly, the weight for $H_1$ will not converge to 1.
+
+
+### About-equality restrictions
+Instead of equality restrictions (e.g., $\beta_1 - \beta_2 = 0$) one can specify about-equality restrictions (e.g., $-0.2 < \beta_1 - \beta_2 < 0.2$). In this case, the hypothesis can have a maximum fit and a GORIC(A) weight of 1.
+In practice, it can be hard to specify such a range. Notably, when the range is too broad, the hypothesis will per definition have maximum fit. In addition, the broader the  range, the lower  the fit for the complement. Thus, you should specify the range meaningfully; preferably based on literature and/or expertise (or perhaps data-based, based on standard errors for example).
+
+
+#### Example
+```{r, message = FALSE, warning = FALSE}
+# Equality versus its complement
+H1 <- "-0.2 < D1 - D2 < .2, D1 > 0, D2 > 0, D3 > 0"
+
+# Apply GORIC #
+set.seed(123) 
+results_12 <- goric(fit, constraints = list(H1), comparison = "complement")
+results_12
+round(results_12$ratio.gw, 3)
+coef(fit)
+```
+
+From this, you can conclude that $H_1: -0.2 < \mu_1 - \mu_2 < .2, \mu_1 > 0, \mu_2 > 0, \mu_3 > 0$ is $.908/.092 \approx 9.89$ times more supported than its complement.
+Now, the fit/loglik value of this about-equality hypothesis $H_1$ is the highest (while it will never be the case for an equality hypothesis). The fit values of $H_1$ and its complement are still close (and will always be), but the weight for the about-equality hypothesis will converge to 1.
+
+
+
+Population information:
+In the data generation, I used an $R^2$ of .15 and a ratio of means of 3:2:1, leading to population mean values of 0.9776818, 0.6517879, and 0.3258939. I then sampled 100 observations, ran an ANOVA, and applied the GORIC.
+When I would sample more observations, the fit/loglik values of $H_1$ and its complement will remain close (with the highest value for $H_1$) and the weight of $H_1$ will converge to 1.
+
+
+
+
+# Remarks Bayesian model selection
+All of the above also holds true for model selection using Bayes factors (BFs; comparable to ratio of GORIC(A) weights) and posterior model probabilities (PMPs; comparable to the GORIC(A) weights).
+However, there is one extra element to take into account in case of Bayesian model selection: prior sensitivity in case of at least one equality restrictions. In the R package bain, one can do this by checking the results for multiple so-called fraction values; as shown in the first example below.
+
+In terms of conclusions (i.e., there is support for $H_1$), the output of GORIC(A) and bain are (often if not always) the same. In terms of the amount of support, bain renders more support for equalities than the GORIC(A). This is the case when the equalities are true but also when they are false; where the first is shown in the first example below and the latter in the second example below.
+
+
+## Example: prior sensitivity bain
+```{r, message = FALSE, warning = FALSE}
+# Equality versus its complement
+H1 <- "D1 = D2 > 0 & D3 > 0" 
+
+# Apply bain
+set.seed(123)
+bain1_1 <- bain(fit, H1)
+bain1_1
+set.seed(123)
+bain1_2 <- bain(fit, H1, fraction = 2)     
+bain1_2
+set.seed(123)
+bain1_3 <- bain(fit, H1, fraction = 3)     
+bain1_3
+``` 
+From this, you can see (from BF.c) that the equality hypothesis $H_1$ is approximately $23$, $16$, and $13$ times more supported than its complement when using a fraction of $1$, $2$, and $3$, respectively.
+
+Population information:
+In the data generation, I used an $R^2$ of .15 and a ratio of means of 3:3:1.5, leading to population mean values of 0.6967672, 0.6967672, and 0.3483836. I then sampled 100 observations, ran an ANOVA, and applied bain.
+
+In terms of conclusions (i.e., there is support for $H_1$), the output of GORIC(A) and bain are the same. In terms of the amount of support, bain renders more support for equalities than the GORIC(A). This is the case when the equalities are true but also when they are false:
+
+
+## Example: support for false equality
+
+```{r, echo = F, message = FALSE, warning = FALSE}
+b.ratios <- c(3,2.5,1)
+
+sample <- NULL
+
+# Determine true / population beta coefficients in data generating process
+D_ <- matrix(rep(1:n.coef), nrow = samplesize)
+D <- as.factor(D_)
+sample$D <- D
+sample <- dummy_cols(sample, select_columns = 'D')
+
+#sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
+sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
+diag(sigma) <- 1
+        
+# Define error variance
+var.e <- 1 - r2 # (because all vars are standardized, var(resid)=(1-R2)*sigma_y)
+        
+if(sum(abs(b.ratios)) == 0){ # all zeros (thus under H0)
+  betas <- b.ratios
+}else{
+  # Solve for x here
+  fun <- function (x) {
+    (t(b.ratios*x) %*% sigma %*% b.ratios*x) / (t(b.ratios*x) %*% sigma %*% b.ratios*x + var.e) - r2
+  }
+  
+  x <-uniroot(fun, lower=0, upper=100)$root
+  
+  # Construct betas
+  betas <- b.ratios*x
+}
+
+set.seed(125) # set seed: to obtain same results when you re-run it
+epsilon <- rnorm(samplesize, sd=sqrt(var.e))
+sample$y <- as.matrix(sample[,2:(1+n.coef)]) %*% matrix(betas, nrow = n.coef) + epsilon
+
+# Obtain fit
+fit <- lm(y ~ 0 + D, data=sample)
+#fit
+```
+
+```{r, message = FALSE, warning = FALSE}
+# Equality versus its complement
+H1 <- "D1 = D2 > 0 & D3 > 0" 
+
+# Apply bain
+set.seed(123)
+bain1_1 <- bain(fit, H1)
+bain1_1
+
+# Apply GORIC #
+set.seed(123) 
+results_12 <- goric(fit, constraints = list(H1), comparison = "complement")
+results_12
+``` 
+From the bain output, you can see (from BF.c) that the incorrect equality hypothesis $H_1$ is approximately $19.5$ times more supported than its complement (when using a fraction of $1$).
+From the GORIC output, you can see that the incorrect equality hypothesis $H_1$ is approximately $3.8$ times more supported than its complement.
+
+Population information:
+In the data generation, I used an $R^2$ of .15 and a ratio of means of 3:2.5:1, leading to population mean values of 0.8855591, 0.7379659, and 0.29518646. I then sampled 100 observations, ran an ANOVA, and applied bain and the GORIC.
+
+Note: When I would sample more observations, the support for $H_1$ will go to 0, for both methods; thus, rendering full support for the complement.
+
+
+
+[//]: #The following line is needed to prevent R Markdown from including a lot of white space below the last content.
+<div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>

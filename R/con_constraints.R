@@ -42,7 +42,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       constraint.syntax <- gsub("\n{2,}", "\n", constraint.syntax, perl = TRUE)
       # the regular expression "[\\(\\)]" is a pattern that matches either an opening 
       # parenthesis ( or a closing parenthesis ).
-      if(length(gregexpr("[\\(\\)]", constraints)[[1]]) %% 2 == 0) {
+      if (length(gregexpr("[\\(\\)]", constraints)[[1]]) %% 2 == 0) {
         constraint.syntax <- gsub("\\),", "\\)\n", constraint.syntax, perl = TRUE)
       } else {
         constraint.syntax <- gsub(",", "\n", constraint.syntax, perl = TRUE)
@@ -62,6 +62,8 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       # for (k in 1:length(constraint.syntax)) {
       #   LIST[[k]] <- expand_compound_constraints(constraint.syntax[k])
       # }
+      
+      #if (grepl("abs\\(.*\\)", constraint.syntax))
       
       LIST <- lapply(constraint.syntax, function(x) { sapply(x, expand_parentheses) })
       LIST <- lapply(LIST, function(x) { sapply(x, expand_compound_constraints) })
@@ -114,15 +116,15 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       )
     }
     
-    # In case of abs() the contraints may incorretly be considered as non-linear. 
-    # Here, we remove the abs() from the constraint function which is redundant 
-    # for determining if the constraints are linear. 
+    ## In case of abs() the contraints may incorretly be considered as non-linear. 
+    ## Here, we remove the abs() from the constraint function which is redundant 
+    ## for determining if the constraints are linear. 
     
     # check if any abs() functie exists in string. 
     if (any(grepl("abs\\(.*\\)", c(LIST$lhs, LIST$rhs)))) {
       LIST2 <- LIST
       
-      # reomve abs( and ) from string
+      # remove abs( and ) from string
       LIST2$lhs <- gsub("abs\\(|\\)", "", LIST2$lhs)
       LIST2$rhs <- gsub("abs\\(|\\)", "", LIST2$rhs)
       

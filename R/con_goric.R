@@ -578,6 +578,7 @@ goric.default <- function(object, ..., constraints = NULL,
   #   #names(df)[6] <- paste0(type, ".weights.no_unconstrained")
   # }    
   
+  rownames(df) <- NULL
   ans$result <- df
 
   # compute ratio weights

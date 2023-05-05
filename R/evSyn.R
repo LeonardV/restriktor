@@ -22,10 +22,23 @@
 
 # TODO
 # print functies
-
-
+# manual
+# exampples
 
 evSyn <- function(object, ...) { UseMethod("evSyn") }
+
+
+# -------------------------------------------------------------------------
+## est (list + vec) + cov (list + mat)
+## LL (list + vec) + PT (list + vec)
+## IC weights (list + vec) rowSums = 1
+## IC values (list + vec)
+
+## object = est, VCOV = cov
+## object = LL, PT = PT
+## object = IC weights + rowsum check
+## object = IC values
+# -------------------------------------------------------------------------
 
 
 evSyn <- function(object, ...) {
@@ -39,37 +52,65 @@ evSyn <- function(object, ...) {
       stop("Restriktor Error: ", names(arguments[pm.idx]), " invalid argument(s).")
     }
   }
+
+  # object must be a list
+  if (!is.list(object)) {
+    stop("Restriktor ERROR: object must be a list of numeric vectors.", call. = FALSE)
+  }
+  # object must be a list with numeric vectors
+  obj_isnum <- sapply(object, is.numeric)
+  if ( !any(obj_isnum) ) {
+    stop("Restriktor ERROR: object must be a list of numeric vectors.", call. = FALSE)
+  }
   
-  ## est + VCOV
+  VCOV <- arguments$VCOV
+  PT   <- arguments$PT
+  
+  if (!is.null(VCOV) && !is.list(VCOV)) {
+    stop("Restriktor ERROR: VCOV must be a list of matrices.", call. = FALSE)
+  } else if (!is.null(VCOV) ) {
+    # check if it is a list of matrices
+    VCOV_isMat <- sapply(VCOV, is.matrix)
+    if (!any(VCOV_isMat)) {
+      stop("Restriktor ERROR: VCOV must be a list of matrices.", call. = FALSE)  
+    }
+  }
+
+  if (!is.null(PT) && !is.list(PT)) {
+    stop("Restriktor ERROR: PT must be a list of numeric vectors.", call. = FALSE)
+  } else if ( !is.null(PT) ) {
+    # check if it is a list of numeric vectors
+    PT_isNum <- sapply(PT, is.numeric)
+    if (!any(PT_isNum)) {
+      stop("Restriktor ERROR: PT must be a list of numeric vectors.", call. = FALSE)  
+    }
+  }
+
+  if (!is.null(VCOV) & !is.null(PT)) {
+    stop("Restriktor ERROR: both VCOV and PT are found, which confuses me.")
+  }
+  
+  
+  # if all vectors sum to 1, object contains IC weights
+  obj_isICweights <- FALSE
+  if ( all(sapply(object, sum) == 1) ) {
+   obj_isICweights <- TRUE  
+  } 
+  
+  
+  ## est (vector) + VCOV (matrix)
   ## check if list contains a vector/matrix with the the parameter estimates
-  if (is.list(object) & is.list(arguments$VCOV)) {
-    obj_class <- unique(unlist(lapply(object, class)))
-    
-    # if matrix, then make it numeric vectors
-    if ("matrix" %in% obj_class) {
-      vnames <- lapply(object, function(x) colnames(x))
-      object <- lapply(object, function(x) as.numeric(x))
-      # colnames are not inherited, so these are fixed here.
-      for (i in 1:length(object)) {
-        names(object[[i]]) <- vnames[[i]]
-      }
-    } 
+  if (!is.null(VCOV)) {
     evSyn.est(object, ...)
-  } else if (inherits(object, c("matrix", "data.frame")) & 
-             !is.null(arguments$PT)) {
+  } else if (!is.null(PT)) {
     # LL + PT
     evSyn.LL(object, ...)
-  } else if (inherits(object, c("matrix", "data.frame")) & 
-             all(rowSums(object) - 1 > .Machine$double.eps) &
-             is.null(arguments$PT) & 
-             is.null(arguments$VCOV)) { 
-    # IC values
-    evSyn.ICvalues(object, ...)
-  } else if (inherits(object, "matrix") & is.null(arguments$PT) & 
-             all(rowSums(object) - 1 <= .Machine$double.eps) &
-             is.null(arguments$VCOV)) { 
+  } else if (is.null(VCOV) & is.null(PT) & obj_isICweights) { 
     # IC penalty weights
     evSyn.ICweights(object, ...)
+  } else if (is.null(VCOV) & is.null(PT) & !obj_isICweights) { 
+    # IC values
+    evSyn.ICvalues(object, ...)
   } else {
     stop("restriktor Error: I don't know how to handle the input.")
   }
@@ -83,9 +124,6 @@ evSyn.est <- function(object, VCOV = NULL, constraints = NULL,
                       type = c("equal", "added"), 
                       comparison = c("unconstrained", "complement", "none"), ...) {
   
-  if (!is.list(object) && is.null(VCOV)) {
-    stop("Restriktor Error: object must be a list with (standardized) parameter estimates for each study.")
-  }
   if (length(object) != length(VCOV)) {
     stop("Restriktor Error: object must have the same length as VCOV.")
   }
@@ -94,32 +132,17 @@ evSyn.est <- function(object, VCOV = NULL, constraints = NULL,
   S <- length(object)
   V <- length(VCOV)
   
-  if (!is.list(VCOV)) {
-    stop("Restriktor Error: VCOV must be a list with the variance-covariance matrices for each study.")
-  } else {
-    # check if the matrices are all symmetrical
-    VCOV_isSym <- sapply(VCOV, isSymmetric)
-    if (!all(VCOV_isSym)) {
-      sprintf("Restriktor Error: the %sth covariance matrix in VCOV is not symmetric.", which(!VCOV_isSym))
-      stop(call. = FALSE)  
-    }
+  # check if the matrices are all symmetrical
+  VCOV_isSym <- sapply(VCOV, isSymmetric)
+  if (!all(VCOV_isSym)) {
+    sprintf("Restriktor Error: the %sth covariance matrix in VCOV is not symmetric.", which(!VCOV_isSym))
+    stop(call. = FALSE)  
   }
-  
+
   if (S != V) {
     stop("Restriktor Error: the number of studies does not match the number of VCOV.")
   }
-  if (!is.list(object)) {
-    stop("Restriktor Error: object must be list with (standardized) parameter estimates for each study.", call. = FALSE)
-  }
-  # if object is a list of class matrix, make it a vector
-  if (any(sapply(object, is.matrix))) {
-    object <- lapply(object, function(x) unlist(as.data.frame(x)))
-  }
-  
-  if (!all(sapply(object, is.vector))) {
-    stop("Restriktor Error: object must be a list with named numeric vectors", call. = FALSE)
-  }
-  
+
   # if only 1 hypothesis is provided, that hypothesis will be applied to all studies
   # This also means that the vector with parameter estimates must have equal names between the studies.
   # check if the user specified the same hypothesis in each study. 
@@ -282,30 +305,11 @@ evSyn.est <- function(object, VCOV = NULL, constraints = NULL,
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on log likelihood and penalty values
-evSyn.LL <- function(object, PT = NULL, type = c("added", "equal"),
+evSyn.LL <- function(object, PT, type = c("added", "equal"),
                      hypo_names = NULL) {
-  
-  if (is.null(PT)) {
-    stop("restriktor Error: no penalty term values found.")
-  }
-  
-  if (inherits(object, "data.frame")) {
-    object <- as.matrix(object)  
-  }
-  if (inherits(PT, "data.frame")) {
-    PT <- as.matrix(PT)  
-  }
-  
-  if (!inherits(object, c("matrix", "data.frame"))) {
-    stop("Restriktor Error: object must be a data.frame or matrix with the log-likelihood values.")
-  }
-  
-  if (!inherits(PT, c("matrix", "data.frame"))) {
-    stop("Restriktor Error: PT must be a data.frame or matrix with the penalty term values.")
-  }
-  
-  S <- nrow(object)
-  NrHypos <- ncol(object) - 1
+  LL <- object
+  S <- length(LL)
+  NrHypos <- length(LL[[1]]) - 1
   if (is.null(hypo_names)) {
     hnames <- paste0("H", 1:(NrHypos + 1))
   } else {
@@ -315,10 +319,15 @@ evSyn.LL <- function(object, PT = NULL, type = c("added", "equal"),
   weight_m <- matrix(NA, nrow = S, ncol = (NrHypos + 1))
   CumulativeGorica <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
   CumulativeGoricaWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
+  
+  LL <- data.frame(do.call(rbind, LL))
+  PT <- data.frame(do.call(rbind, PT))
+  #LL <- lapply(LL, function(x) setNames(x, hnames))
+  #PT <- lapply(PT, function(x) setNames(x, hnames))
+  
   colnames(CumulativeGorica) <- colnames(CumulativeGoricaWeights) <- colnames(LL) <- colnames(PT) <- colnames(weight_m) <- hnames
   rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("Study_", 1:S), "Final")
   rownames(LL) <- rownames(PT) <- rownames(weight_m) <- paste0("Study_", 1:S)
-  
   
   sumLL <- 0
   sumPT <- 0
@@ -339,7 +348,7 @@ evSyn.LL <- function(object, PT = NULL, type = c("added", "equal"),
     EvSyn_approach <- "Added-evidence approach"
   } else { 
     # equal-ev approach
-    for(s in 1:S){
+    for (s in 1:S){
       sumLL <- sumLL + LL[s, ]
       sumPT <- sumPT + PT[s, ]
       CumulativeGorica[s, ] <- as.matrix(-2 * sumLL + 2 * sumPT/s)
@@ -371,7 +380,6 @@ evSyn.LL <- function(object, PT = NULL, type = c("added", "equal"),
   class(out) <- c("evSyn.LL", "evSyn")
   
   return(out)
-  
 }
 
 
@@ -380,14 +388,9 @@ evSyn.LL <- function(object, PT = NULL, type = c("added", "equal"),
 # GORIC(A) evidence synthesis based on AIC or ORIC or GORIC or GORICA values
 evSyn.ICvalues <- function(object, hypo_names = NULL) {
   
-  if (inherits(object, "data.frame")) {
-    object <- as.matrix(object)  
-  }
-  
   IC <- object
-  S  <- nrow(IC)
-  
-  NrHypos <- ncol(IC) - 1
+  S  <- length(IC)
+  NrHypos <- S - 1
   weight_m <- matrix(NA, nrow = S, ncol = (NrHypos + 1))
   
   if (is.null(hypo_names)) {
@@ -395,6 +398,8 @@ evSyn.ICvalues <- function(object, hypo_names = NULL) {
   } else {
     hnames <- hypo_names
   }
+  
+  IC <- data.frame(do.call(rbind, IC))
   
   weight_m <- matrix(NA, nrow = S, ncol = (NrHypos + 1))
   CumulativeGorica <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
@@ -443,13 +448,11 @@ evSyn.ICvalues <- function(object, hypo_names = NULL) {
 # GORIC(A) evidence synthesis based on AIC or ORIC or GORIC or GORICA weights or (Bayesian) posterior model probabilities
 evSyn.ICweights <- function(object, PriorWeights = NULL, hypo_names = NULL) {
   
-  if (inherits(object, "data.frame")) {
-    object <- as.matrix(object)  
-  }
-  
   Weights <- object
-  NrHypos <- ncol(Weights) - 1
-  S <- nrow(object)
+  S <- length(object[[1]])
+  NrHypos <- S - 1
+  
+  Weights <- do.call(rbind, Weights)
   
   if (is.null(PriorWeights)) {
     PriorWeights <- rep(1/(NrHypos + 1), (NrHypos + 1))
@@ -470,7 +473,7 @@ evSyn.ICweights <- function(object, PriorWeights = NULL, hypo_names = NULL) {
   for(s in 2:S) {
     CumulativeWeights[s, ] <- CumulativeWeights[(s-1), ] * Weights[s, ] / sum( CumulativeWeights[(s-1), ] * Weights[s, ] )
   }
-  EvSyn_approach <- "Added-evidence approach (which is the only option when the input consists of Weights)"
+  EvSyn_approach <- "Added-evidence approach (which is the only option when the input consists of weights)"
   
   CumulativeWeights[(S+1), ] <- CumulativeWeights[S, ]
   

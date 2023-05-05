@@ -65,6 +65,9 @@ importFrom("ggplot2", ggplot, aes, .data, geom_point, geom_line, theme, unit, ma
            element_blank, element_text, element_line, scale_y_continuous, 
            scale_x_discrete, labs, guides, guide_legend)
 
+importFrom("lpSolve", lp)
+
+
 # export ordinary functions defined in this package
 export("restriktor", 
        "conLM.lm", "conRLM.rlm", "conGLM.glm", "conMLM.mlm", 

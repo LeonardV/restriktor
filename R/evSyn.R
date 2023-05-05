@@ -25,6 +25,7 @@
 # manual
 # exampples
 
+
 evSyn <- function(object, ...) { UseMethod("evSyn") }
 
 
@@ -122,7 +123,7 @@ evSyn <- function(object, ...) {
 # GORIC(A) evidence synthesis based on the (standard) parameter estimates and the covariance matrix
 evSyn.est <- function(object, VCOV = NULL, constraints = NULL,
                       type = c("equal", "added"), 
-                      comparison = c("unconstrained", "complement", "none"), ...) {
+                      comparison = c("unconstrained", "complement", "none")) {
   
   if (length(object) != length(VCOV)) {
     stop("Restriktor Error: object must have the same length as VCOV.")

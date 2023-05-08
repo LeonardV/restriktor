@@ -321,8 +321,8 @@ evSyn.LL <- function(object, PT, type = c("added", "equal"),
   CumulativeGorica <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
   CumulativeGoricaWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
   
-  LL <- data.frame(do.call(rbind, LL))
-  PT <- data.frame(do.call(rbind, PT))
+  LL <- do.call(rbind, LL)
+  PT <- do.call(rbind, PT)
   #LL <- lapply(LL, function(x) setNames(x, hnames))
   #PT <- lapply(PT, function(x) setNames(x, hnames))
   
@@ -337,11 +337,11 @@ evSyn.LL <- function(object, PT, type = c("added", "equal"),
     # added-ev approach
     for(s in 1:S) {
       minIC <- min(IC[s, ])
-      weight_m[s, ] <- as.matrix(exp(-0.5*(IC[s, ]-minIC)) / sum(exp(-0.5*(IC[s, ]-minIC))))
+      weight_m[s, ] <- exp(-0.5*(IC[s, ]-minIC)) / sum(exp(-0.5*(IC[s, ]-minIC)))
       
       sumLL <- sumLL + LL[s, ]
       sumPT <- sumPT + PT[s, ]
-      CumulativeGorica[s, ] <- as.matrix(-2 * sumLL + 2 * sumPT)
+      CumulativeGorica[s, ] <- -2 * sumLL + 2 * sumPT
       
       minGoric <- min(CumulativeGorica[s, ])
       CumulativeGoricaWeights[s, ] <- as.matrix(exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric))))
@@ -352,10 +352,10 @@ evSyn.LL <- function(object, PT, type = c("added", "equal"),
     for (s in 1:S){
       sumLL <- sumLL + LL[s, ]
       sumPT <- sumPT + PT[s, ]
-      CumulativeGorica[s, ] <- as.matrix(-2 * sumLL + 2 * sumPT/s)
+      CumulativeGorica[s, ] <- -2 * sumLL + 2 * sumPT/s
       
       minGoric <- min(CumulativeGorica[s, ])
-      CumulativeGoricaWeights[s, ] <- as.matrix(exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric))))
+      CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
     }
     EvSyn_approach <- "Equal-evidence approach"
   }
@@ -391,7 +391,7 @@ evSyn.ICvalues <- function(object, hypo_names = NULL) {
   
   IC <- object
   S  <- length(IC)
-  NrHypos <- S - 1
+  NrHypos <- length(IC[[1]]) - 1
   weight_m <- matrix(NA, nrow = S, ncol = (NrHypos + 1))
   
   if (is.null(hypo_names)) {
@@ -400,7 +400,7 @@ evSyn.ICvalues <- function(object, hypo_names = NULL) {
     hnames <- hypo_names
   }
   
-  IC <- data.frame(do.call(rbind, IC))
+  IC <- do.call(rbind, IC)
   
   weight_m <- matrix(NA, nrow = S, ncol = (NrHypos + 1))
   CumulativeGorica <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
@@ -412,12 +412,12 @@ evSyn.ICvalues <- function(object, hypo_names = NULL) {
   sumIC <- 0
   for(s in 1:S){
     minIC <- min(IC[s, ])
-    weight_m[s, ] <- matrix(exp(-0.5*(IC[s, ]-minIC)) / sum(exp(-0.5*(IC[s, ]-minIC))))
+    weight_m[s, ] <- exp(-0.5*(IC[s, ]-minIC)) / sum(exp(-0.5*(IC[s, ]-minIC)))
   
     sumIC <- sumIC + IC[s, ]
     CumulativeGorica[s, ] <- sumIC
     minGoric <- min(CumulativeGorica[s, ])
-    CumulativeGoricaWeights[s, ] <- matrix(exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric))))
+    CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
   }
   
   EvSyn_approach <- "Added-evidence approach (which is the only option when the input consists of IC's)"

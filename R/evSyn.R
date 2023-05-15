@@ -23,7 +23,7 @@
 # TODO
 # print functies
 # manual
-# exampples
+# examples
 
 
 evSyn <- function(object, ...) { UseMethod("evSyn") }
@@ -94,7 +94,7 @@ evSyn <- function(object, ...) {
   
   # if all vectors sum to 1, object contains IC weights
   obj_isICweights <- FALSE
-  if ( all(sapply(object, sum) == 1) ) {
+  if ( all(abs(sapply(object, sum) - 1) <= sqrt(.Machine$double.eps)) ) {
    obj_isICweights <- TRUE  
   } 
   
@@ -238,7 +238,6 @@ evSyn.est <- function(object, VCOV = NULL, constraints = NULL,
       minGoric <- min(CumulativeGorica[s, ])
       CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
     }
-    EvSyn_approach <- "Added-evidence approach"
   } else { 
     # equal-evidence approach
     for(s in 1:S) {
@@ -248,7 +247,6 @@ evSyn.est <- function(object, VCOV = NULL, constraints = NULL,
       minGoric <- min(CumulativeGorica[s, ])
       CumulativeGoricaWeights[s,] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
     }
-    EvSyn_approach <- "Equal-evidence approach"
   }
   
   CumulativeGorica[(S+1), ] <- CumulativeGorica[S, ]
@@ -266,17 +264,19 @@ evSyn.est <- function(object, VCOV = NULL, constraints = NULL,
     colnames(ratio.weight_mu) <- c("H1 vs. Hc1")
     colnames(Final.ratio.GORICA.weights) <- c("vs. H1", "vs. Hc")
     
-    out <- list(GORICA_m = GORICA_m, GORICA.weight_m = weight_m, 
+    out <- list(type = type, 
+                GORICA_m = GORICA_m, GORICA.weight_m = weight_m, 
                 ratio.GORICA.weight_mc = ratio.weight_mu, LL_m = LL, PT_m = PT,
-                EvSyn_approach = EvSyn_approach, Cumulative.GORICA = CumulativeGorica, 
+                Cumulative.GORICA = CumulativeGorica, 
                 Cumulative.GORICA.weights = CumulativeGoricaWeights,
                 Final.ratio.GORICA.weights = Final.ratio.GORICA.weights,
                 hypotheses = hypotheses)
   } else if (comparison == "none") {
     colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. H", 1:NrHypos))
     
-    out <- list(GORICA_m = GORICA_m, GORICA.weight_m = weight_m, LL_m = LL, PT_m = PT,
-                EvSyn_approach = EvSyn_approach, Cumulative.GORICA = CumulativeGorica, 
+    out <- list(type = type,
+                GORICA_m = GORICA_m, GORICA.weight_m = weight_m, LL_m = LL, PT_m = PT,
+                Cumulative.GORICA = CumulativeGorica, 
                 Cumulative.GORICA.weights = CumulativeGoricaWeights,
                 Final.ratio.GORICA.weights = Final.ratio.GORICA.weights,
                 hypotheses = hypotheses)
@@ -285,12 +285,12 @@ evSyn.est <- function(object, VCOV = NULL, constraints = NULL,
     colnames(ratio.weight_mu) <- c(paste0("H", 1:NrHypos, " vs. Unc."), "Unc. vs. Unc.")
     colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. H", 1:NrHypos), "vs. Hu")
     
-    out <- list(GORICA_m        = GORICA_m, 
+    out <- list(type = type,
+                GORICA_m        = GORICA_m, 
                 GORICA.weight_m = weight_m, 
                 ratio.GORICA.weight_mu = ratio.weight_mu, 
                 LL_m = LL, 
                 PT_m = PT,
-                EvSyn_approach    = EvSyn_approach, 
                 Cumulative.GORICA = CumulativeGorica, 
                 Cumulative.GORICA.weights  = CumulativeGoricaWeights,
                 Final.ratio.GORICA.weights = Final.ratio.GORICA.weights)
@@ -346,7 +346,6 @@ evSyn.LL <- function(object, PT, type = c("added", "equal"),
       minGoric <- min(CumulativeGorica[s, ])
       CumulativeGoricaWeights[s, ] <- as.matrix(exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric))))
     }
-    EvSyn_approach <- "Added-evidence approach"
   } else { 
     # equal-ev approach
     for (s in 1:S){
@@ -357,7 +356,6 @@ evSyn.LL <- function(object, PT, type = c("added", "equal"),
       minGoric <- min(CumulativeGorica[s, ])
       CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
     }
-    EvSyn_approach <- "Equal-evidence approach"
   }
   
   CumulativeGorica[(S+1), ] <- CumulativeGorica[S,]
@@ -368,15 +366,14 @@ evSyn.LL <- function(object, PT, type = c("added", "equal"),
   rownames(Final.rel.GORICA.weights) <- hnames
   colnames(Final.rel.GORICA.weights) <- paste0("vs. ", hnames)
   
-  out <- list(LL_m = LL, 
+  out <- list(type = type,
+              LL_m = LL, 
               PT_m = PT, 
               GORICA_m = IC, 
               GORICA.weight_m   = weight_m,
-              EvSyn_approach    = EvSyn_approach, 
               Cumulative.GORICA = CumulativeGorica, 
               Cumulative.GORICA.weights = CumulativeGoricaWeights,
               Final.rel.GORICA.weights  = Final.rel.GORICA.weights)
-  
   
   class(out) <- c("evSyn.LL", "evSyn")
   
@@ -419,9 +416,7 @@ evSyn.ICvalues <- function(object, hypo_names = NULL) {
     minGoric <- min(CumulativeGorica[s, ])
     CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
   }
-  
-  EvSyn_approach <- "Added-evidence approach (which is the only option when the input consists of IC's)"
-  
+
   CumulativeGorica[(S+1), ] <- CumulativeGorica[S, ]
   CumulativeGoricaWeights[(S+1), ] <- CumulativeGoricaWeights[S, ]
   
@@ -431,9 +426,9 @@ evSyn.ICvalues <- function(object, hypo_names = NULL) {
   rownames(Final.ratio.GORICA.weights) <- hnames
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hnames)
   
-  out <- list(GORICA_m          = IC, 
+  out <- list(type              = "added",
+              GORICA_m          = IC, 
               GORICA.weight_m   = weight_m,
-              EvSyn_approach    = EvSyn_approach, 
               Cumulative.GORICA = CumulativeGorica, 
               Cumulative.GORICA.weights  = CumulativeGoricaWeights,
               Final.ratio.GORICA.weights = Final.ratio.GORICA.weights)
@@ -474,7 +469,7 @@ evSyn.ICweights <- function(object, PriorWeights = NULL, hypo_names = NULL) {
   for(s in 2:S) {
     CumulativeWeights[s, ] <- CumulativeWeights[(s-1), ] * Weights[s, ] / sum( CumulativeWeights[(s-1), ] * Weights[s, ] )
   }
-  EvSyn_approach <- "Added-evidence approach (which is the only option when the input consists of weights)"
+  
   
   CumulativeWeights[(S+1), ] <- CumulativeWeights[S, ]
   
@@ -483,8 +478,8 @@ evSyn.ICweights <- function(object, PriorWeights = NULL, hypo_names = NULL) {
   rownames(Final.rel.weights) <- hypo_names
   colnames(Final.rel.weights) <- paste0("vs. ", hypo_names)
   
-  out <- list(weight_m           = Weights,
-              EvSyn_approach     = EvSyn_approach,
+  out <- list(type               = "added",
+              weight_m           = Weights,
               Cumulative.weights = CumulativeWeights,
               Final.rel.weights  = Final.rel.weights)
   
@@ -493,6 +488,71 @@ evSyn.ICweights <- function(object, PriorWeights = NULL, hypo_names = NULL) {
   return(out)
   
 }
+
+
+
+## print function
+print.evSyn <- function(object, brief = TRUE, 
+                        digits = max(3, getOption("digits") - 4), ...) {
+  
+  x <- object
+  # added or equal approach
+  type <- x$type
+  dig <- paste0("%6.", digits, "f")
+  
+  # make the first letter upper-case
+  Type <- paste(toupper(substr(type, 1, 1)), substr(type, 2, nchar(type)), sep="")
+  cat("\n", paste(Type, "Evidence Synthesis results:\n"), sep = "")
+  
+  cat("\nGORICA values:\n")  
+  
+  print(apply(x$GORICA_m, c(1,2), function(x) 
+    format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = 3, nsmall = 3)), 
+    print.gap = 2, quote = FALSE, right = TRUE)
+  cat("---\n")
+  
+  cat("\nGORICA weights:\n")  
+  print(apply(x$GORICA.weight_m, c(1,2), function(x) sprintf("%.3f", x)), 
+        print.gap = 2, quote = FALSE, right = TRUE)
+  cat("---\n")
+  
+  cat("\nLog-likelihood values:\n")  
+  print(apply(x$LL_m, c(1,2), function(x) 
+    format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = 3, nsmall = 3)), 
+    print.gap = 2, quote = FALSE, right = TRUE)
+  cat("---\n")
+  
+  cat("\nPenalty term values:\n")  
+  print(apply(x$PT_m, c(1,2), function(x) sprintf("%.3f", x)), 
+        print.gap = 2, quote = FALSE, right = TRUE)
+  cat("---\n")
+  
+  cat("\nCumulative GORICA values:\n")  
+  print(apply(x$Cumulative.GORICA, c(1,2), function(x) 
+    format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = 3, nsmall = 3)), 
+    print.gap = 2, quote = FALSE, right = TRUE)
+  cat("---\n")
+
+  cat("\nCumulative GORICA weights:\n")  
+  print(apply(x$Cumulative.GORICA.weights, c(1,2), function(x) sprintf("%.3f", x)), 
+        print.gap = 2, quote = FALSE, right = TRUE)
+  cat("---\n")
+
+  if (!is.null(x$Final.ratio.GORICA.weights)) {
+    cat("\nFinal ratio GORICA weights:\n")  
+    print(apply(x$Final.ratio.GORICA.weights, c(1,2), function(x) 
+      format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = 3, nsmall = 3)), 
+          print.gap = 2, quote = FALSE, right = TRUE)
+    cat("---\n")
+  }
+  
+  
+    
+  cat("\n")
+  message(x$messages$mix_weights)
+}
+
+
 
 
 

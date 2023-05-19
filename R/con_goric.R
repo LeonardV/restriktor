@@ -131,7 +131,7 @@ goric.default <- function(object, ..., constraints = NULL,
       idx <- length(conList) 
       objectnames <- vector("character", idx)
       CALL$object <- NULL
-    } else if (object_class == "numeric" & isConChar) {
+    } else if ("numeric" %in% object_class & isConChar) {
       # fit restriktor object for each hypothesis
       conList <- list()
       for (con in 1:length(constraints)) {
@@ -147,7 +147,7 @@ goric.default <- function(object, ..., constraints = NULL,
       isSummary <- lapply(conList, function(x) summary(x, 
                                                        type        = type,
                                                        sample.nobs = sample.nobs)) 
-    } else if (object_class == "numeric" & !isConChar) {
+    } else if ("numeric" %in% object_class & !isConChar) {
         conList <- list()
         for (con in 1:length(constraints)) {
           CALL.restr <- append(list(object      = object$object,
@@ -419,7 +419,7 @@ goric.default <- function(object, ..., constraints = NULL,
       } else if (attr(wt.bar, "method") == "pmvnorm") {
         # here, the q2 equalities are not included in wt.bar. Hence, they do not 
         # have to be subtracted.
-        PTc <- as.numeric(1 + p - wt.bar[idx] * lq1) #- length(bound)            # Dit moet nog voor de overige PTc gefixed worden!                             
+        PTc <- as.numeric(1 + p - wt.bar[idx] * lq1) 
       } else {
         stop("restriktor ERROR: no level probabilities (chi-bar-square weights) found.")
       }

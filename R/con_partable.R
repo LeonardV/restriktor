@@ -70,7 +70,7 @@ con_partable_est <- function(object, label = FALSE, est = FALSE,
                              as.data.frame. = FALSE) {
   
   #  we first check the class of object
-  if (!(class(object)[1] == "numeric")) {
+  if (!inherits(object, "numeric")) {#!(class(object)[1] == "numeric")) {
     stop("Restriktor ERROR: It only works objects of class numeric")
   }
   

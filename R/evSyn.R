@@ -21,9 +21,26 @@
 
 
 # TODO
-# print functies
-# manual
-# examples
+
+# SAME HYPOTHESIS FOR ALL STUDIES, SO ONLY H1
+
+# inherit names, so replace study_1 with custom labels: REPLACE hypo_names
+
+
+# FIXME: remove nuisance parameters to avoid singularity
+# FIXME: inherit list names
+# FIXME: check if type = "equal" is wrongfuly used, then give a message
+
+# Verder zat ik naar de output te kijken en bedacht ik me het volgende:
+# Bij $cumaltive.GORIC(.weights) wil je bij beide niet
+# Study 1
+# Study 2
+# Study 3
+# Etc
+# MAAR:
+#   Study 1
+# Studies 1-2
+# Studies 1-3
 
 
 evSyn <- function(object, ...) { UseMethod("evSyn") }
@@ -91,7 +108,6 @@ evSyn <- function(object, ...) {
     stop("Restriktor ERROR: both VCOV and PT are found, which confuses me.")
   }
   
-  
   # if all vectors sum to 1, object contains IC weights
   obj_isICweights <- FALSE
   if ( all(abs(sapply(object, sum) - 1) <= sqrt(.Machine$double.eps)) ) {
@@ -107,10 +123,16 @@ evSyn <- function(object, ...) {
     # LL + PT
     evSyn.LL(object, ...)
   } else if (is.null(VCOV) & is.null(PT) & obj_isICweights) { 
-    # IC penalty weights
+    # IC weights
+    if (!is.null(arguments$type) && arguments$type == "equal") {
+      message("When the input consists of weights, the only available approach is the added-evidence method.")
+    }
     evSyn.ICweights(object, ...)
   } else if (is.null(VCOV) & is.null(PT) & !obj_isICweights) { 
     # IC values
+    if (!is.null(arguments$type) && arguments$type == "equal") { 
+      message("When the input consists of GORIC(A) valuese, the only available approach is the added-evidence method.")
+    }
     evSyn.ICvalues(object, ...)
   } else {
     stop("restriktor Error: I don't know how to handle the input.")
@@ -362,9 +384,9 @@ evSyn.LL <- function(object, PT, type = c("added", "equal"),
   CumulativeGoricaWeights[(S+1), ] <- CumulativeGoricaWeights[S, ]
   
   Final.GORICA.weights <- CumulativeGoricaWeights[S,]
-  Final.rel.GORICA.weights <- Final.GORICA.weights %*% t(1/Final.GORICA.weights)
-  rownames(Final.rel.GORICA.weights) <- hnames
-  colnames(Final.rel.GORICA.weights) <- paste0("vs. ", hnames)
+  Final.ratio.GORICA.weights <- Final.GORICA.weights %*% t(1/Final.GORICA.weights)
+  rownames(Final.ratio.GORICA.weights) <- hnames
+  colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hnames)
   
   out <- list(type = type,
               LL_m = LL, 
@@ -373,7 +395,7 @@ evSyn.LL <- function(object, PT, type = c("added", "equal"),
               GORICA.weight_m   = weight_m,
               Cumulative.GORICA = CumulativeGorica, 
               Cumulative.GORICA.weights = CumulativeGoricaWeights,
-              Final.rel.GORICA.weights  = Final.rel.GORICA.weights)
+              Final.ratio.GORICA.weights  = Final.ratio.GORICA.weights)
   
   class(out) <- c("evSyn.LL", "evSyn")
   
@@ -474,14 +496,14 @@ evSyn.ICweights <- function(object, PriorWeights = NULL, hypo_names = NULL) {
   CumulativeWeights[(S+1), ] <- CumulativeWeights[S, ]
   
   Final.weights <- CumulativeWeights[S, ]
-  Final.rel.weights <- Final.weights %*% t(1/Final.weights)
-  rownames(Final.rel.weights) <- hypo_names
-  colnames(Final.rel.weights) <- paste0("vs. ", hypo_names)
+  Final.ratio.GORICA.weights <- Final.weights %*% t(1/Final.weights)
+  rownames(Final.ratio.GORICA.weights) <- hypo_names
+  colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hypo_names)
   
   out <- list(type               = "added",
               weight_m           = Weights,
               Cumulative.weights = CumulativeWeights,
-              Final.rel.weights  = Final.rel.weights)
+              Final.ratio.GORICA.weights  = Final.ratio.GORICA.weights)
   
   class(out) <- c("evSyn.ICweights", "evSyn")
   
@@ -492,13 +514,11 @@ evSyn.ICweights <- function(object, PriorWeights = NULL, hypo_names = NULL) {
 
 
 ## print function
-print.evSyn <- function(object, brief = TRUE, 
+print.evSyn <- function(x, 
                         digits = max(3, getOption("digits") - 4), ...) {
   
-  x <- object
   # added or equal approach
   type <- x$type
-  dig <- paste0("%6.", digits, "f")
   
   # make the first letter upper-case
   Type <- paste(toupper(substr(type, 1, 1)), substr(type, 2, nchar(type)), sep="")
@@ -507,29 +527,35 @@ print.evSyn <- function(object, brief = TRUE,
   cat("\nGORICA values:\n")  
   
   print(apply(x$GORICA_m, c(1,2), function(x) 
-    format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = 3, nsmall = 3)), 
+    format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3)), 
     print.gap = 2, quote = FALSE, right = TRUE)
   cat("---\n")
   
-  cat("\nGORICA weights:\n")  
-  print(apply(x$GORICA.weight_m, c(1,2), function(x) sprintf("%.3f", x)), 
-        print.gap = 2, quote = FALSE, right = TRUE)
-  cat("---\n")
+  if (!all(is.na(x$GORICA.weight_m))) {
+    cat("\nGORICA weights:\n")  
+    print(apply(x$GORICA.weight_m, c(1,2), function(x) sprintf("%.3f", x)), 
+          print.gap = 2, quote = FALSE, right = TRUE)
+    cat("---\n")
+  }
   
-  cat("\nLog-likelihood values:\n")  
-  print(apply(x$LL_m, c(1,2), function(x) 
-    format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = 3, nsmall = 3)), 
-    print.gap = 2, quote = FALSE, right = TRUE)
-  cat("---\n")
+  if (!is.null(x$LL_m)) {
+    cat("\nLog-likelihood values:\n")  
+    print(apply(x$LL_m, c(1,2), function(x) 
+      format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3)), 
+      print.gap = 2, quote = FALSE, right = TRUE)
+    cat("---\n")
+  }
   
-  cat("\nPenalty term values:\n")  
-  print(apply(x$PT_m, c(1,2), function(x) sprintf("%.3f", x)), 
-        print.gap = 2, quote = FALSE, right = TRUE)
-  cat("---\n")
+  if (!is.null(x$PT_m)) {
+    cat("\nPenalty term values:\n")  
+    print(apply(x$PT_m, c(1,2), function(x) sprintf("%.3f", x)), 
+          print.gap = 2, quote = FALSE, right = TRUE)
+    cat("---\n")
+  }
   
   cat("\nCumulative GORICA values:\n")  
   print(apply(x$Cumulative.GORICA, c(1,2), function(x) 
-    format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = 3, nsmall = 3)), 
+    format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3)), 
     print.gap = 2, quote = FALSE, right = TRUE)
   cat("---\n")
 
@@ -541,13 +567,11 @@ print.evSyn <- function(object, brief = TRUE,
   if (!is.null(x$Final.ratio.GORICA.weights)) {
     cat("\nFinal ratio GORICA weights:\n")  
     print(apply(x$Final.ratio.GORICA.weights, c(1,2), function(x) 
-      format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = 3, nsmall = 3)), 
+      format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3)), 
           print.gap = 2, quote = FALSE, right = TRUE)
     cat("---\n")
   }
   
-  
-    
   cat("\n")
   message(x$messages$mix_weights)
 }

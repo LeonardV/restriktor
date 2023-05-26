@@ -5,6 +5,7 @@
 \alias{evSyn.ICweights}
 \alias{evSyn.ICvalues}
 \alias{evSyn.LL}
+\alias{print.evSyn}
 \alias{plot.evSyn}
 
 \title{GORIC(A) Evidence synthesis}
@@ -24,6 +25,8 @@ same central theory.}
 \method{evSyn}{ICvalues}(object, hypo_names = NULL)
 
 \method{evSyn}{ICweights}(object, PriorWeights = NULL, hypo_names = NULL)
+
+\method{print}{evSyn}(x, digits = max(3, getOption("digits") - 4), \dots)
 
 \method{plot}{evSyn}(x, \dots)
 }
@@ -64,6 +67,8 @@ same central theory.}
   \item{hypo_names}{character vector for labelling the hypotheses. By default the
   names are set to H1, H2, ...}
 
+  \item{digits}{the number of significant digits to use when printing.}
+
   \item{\ldots}{This depends on the class of the object.}
 }
 
@@ -75,11 +80,7 @@ for the theory-based hypotheses.}
 \author{Leonard Vanbrabant and Rebecca Kuiper}
 
 \examples{
-# Number of primary studies for which the evidence for a central theory should be
-# determined and synthesized.
-S <- 4 
-
-# beta values from the analyses
+## Example 1 - 4 studies
 est_1 <- c(beta1 = 0.09)
 est_2 <- c(beta1 = 0.14)
 est_3 <- c(beta1 = 1.09)
@@ -94,23 +95,156 @@ vcov_est_4 <- matrix(c(0.179^2), nrow = 1)
 CovMx_studies <- list(vcov_est_1, vcov_est_2, vcov_est_3, vcov_est_4)
 
 # Set of hypotheses for each study
+# Note: in this case the same for each study
 H0   <- "beta1 == 0"
 Hpos <- "beta1 > 0"
 Hneg <- "beta1 < 0"
-Hypo_studies <- list(H0, Hpos, Hneg)
+hypotheses <- list(H0, Hpos, Hneg)
 
-# Since this covers the whole space / covers all theories, we do not need a safeguard
-# hypothesis:
+# Since this covers the whole space / covers all theories, we do not need a safeguard-hypothesis:
 comparison <- "none"
 
-out1 <- evSyn(object = Param_studies, VCOV = CovMx_studies, 
-              constraints = Hypo_studies,
-              type = "added", 
-              comparison = "none") 
+evS4_added <- evSyn(object = Param_studies, VCOV = CovMx_studies, 
+                    constraints = hypotheses,
+                    type = "added", 
+                    comparison = "none")
+evS4_added
 \dontrun{
-  plot(out1)
+plot(evS4_added)
+}
+evS4_equal <- evSyn(object = Param_studies, VCOV = CovMx_studies, 
+                    constraints = hypotheses,
+                    type = "equal", 
+                    comparison = "none")
+
+evS4_equal
+\dontrun{
+plot(evS4_equal)
 }
 
+## Example 2 - 2 studies
+est_1 <- c(1.88, 2.54, 0.02)
+names(est_1) <- c("group1", "group2", "group3")
+vcov_est_1 <- diag(c(0.2149074, 0.2149074, 0.1408014))
+
+est_2 <- c(0.98, 0.02, 0.27)
+names(est_2) <- c("gr1", "gr2", "gr3") 
+vcov_est_2 <- diag(c(0.1382856, 0.1024337, 0.0987754))
+
+# beta values from the analyses
+object <- list(est_1, est_2)
+# standard error of the beta's (from the S primary studies)
+VCOV <- CovMx_studies <- list(vcov_est_1, vcov_est_2)
+
+# names(est_1) # Specify restrictions using those names
+H11 <- 'group1 == group2 > group3'
+H12 <- 'group2 > group1 > group3'
+
+# names(est_2) # Specify restrictions using those names
+H21 <- 'gr1 == gr2 > gr3'
+H22 <- 'gr2 > gr1 > gr3' 
+
+# hypotheses
+hypotheses <- list(list(H11, H12), list(H21, H22))
+
+evS2_added <- evSyn(object, VCOV = VCOV, constraints = hypotheses,
+                    type = "added", comparison = "unconstrained") 
+evS2_added
+\dontrun{
+plot(evS2_added)
+}
+
+## Example 3 - 3 studies
+
+# generate data
+ratio <- c(1,1.1,1.2)
+n <- c(30, 50, 100)
+
+# Generate data1
+n1 <- n[1]
+x11 <- rnorm(n1)
+x12 <- rnorm(n1)
+x13 <- rnorm(n1)
+data <- cbind(x11, x12, x13)
+# Standardize data - since parameters for continuous variables will be compared
+data1 <- as.data.frame(scale(data))
+y1 <- ratio[1]*data1$x11 + ratio[2]*data1$x12 + ratio[3]*data1$x13 + rnorm(n1)
+# Note: since there is one outcome, the outcome does not need to be standardized.
+
+fit.lm1 <- lm(y1 ~ 1 + x11 + x12 + x13, data = data1)
+
+n2 <- n[2]
+x21 <- rnorm(n2)
+x22 <- rnorm(n2)
+x23 <- rnorm(n2)
+data <- cbind(x21, x22, x23)
+data2 <- as.data.frame(scale(data))
+y2 <- ratio[1]*data2$x21 + ratio[2]*data2$x22 + ratio[3]*data2$x23 + rnorm(n2)
+fit.lm2 <- lm(y2 ~ 1 + x21 + x22 + x23, data = data2)
+
+# Generate data3
+n3 <- n[3]
+x31 <- rnorm(n3)
+x32 <- rnorm(n3)
+x33 <- rnorm(n3)
+data <- cbind(x31, x32, x33)
+data3 <- as.data.frame(scale(data))
+y3 <- ratio[1]*data3$x31 + ratio[2]*data3$x32 + ratio[3]*data3$x33 + rnorm(n3)
+fit.lm3 <- lm(y3 ~ 1 + x31 + x32 + x33, data = data3)
+
+# Extract estimates and their covariance matrix (per study)
+est_1 <- coef(fit.lm1)
+est_2 <- coef(fit.lm2)
+est_3 <- coef(fit.lm3)
+vcov_est_1 <- vcov(fit.lm1)
+vcov_est_2 <- vcov(fit.lm2)
+vcov_est_3 <- vcov(fit.lm3)
+
+names(est_1) <- names(est_2) <- names(est_3) <- c("intercept", "x1", "x2", "x3")
+
+# Parameter estimate values from the primary studies
+Param_studies <- list(est_1, est_2, est_3)
+
+# standard error of the beta's
+CovMx_studies <- list(vcov_est_1, vcov_est_2, vcov_est_3)
+
+# Set of hypotheses for each study. Note: in this case the same for each study
+hypothesis <- 'x1 < x2 < x3'  
+
+# In our theory, we compare estimates of continuous variables, so we standardized 
+# the data beforehand to ensure comparability. In 'Param_studies' and 'CovMx_studies', 
+# the intercept can be omitted without affecting the GORIC(A) weights, as there are 
+# no restrictions on it. Since we have only one theory-based hypothesis, we will 
+# utilize the more powerful complement of the hypothesis (Vanbrabant, Van Loey, Kuiper, 2019). 
+# The complement represents the remaining 11 theories, while the unconstrained 
+# scenario includes all 12 possible theories, including H1.
+
+# Evidence synthesis
+evS3 <- evSyn(object = Param_studies, VCOV = CovMx_studies, constraints = list(hypothesis),
+              type = "added", 
+              comparison = "complement") 
+evS3
+\dontrun{
+plot(evS3)
+}
+
+## Example 4 - loglikelihood values and penalty values
+# make it a list
+LL <- as.list(data.frame(t(myLLs)))
+penalty.values <- as.list(data.frame(t(myPTs)))
+
+evS_LL_added <- evSyn(object = LL, PT = penalty.values, type = "added")
+evS_LL_equal <- evSyn(object = LL, PT = penalty.values, type = "equal")
+
+evS_LL_added
+evS_LL_equal
+
+
+## Example 5 - AIC, ORIC, GORIC(A) values
+goric.values <- as.list(data.frame(t(myGORICs)))
+
+evS_Gv <- evSyn(goric.values)
+evS_Gv
 }
 
 

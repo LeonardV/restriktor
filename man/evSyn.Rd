@@ -15,7 +15,7 @@ same central theory.}
 
 \usage{evSyn(object, \ldots)
 
-\method{evSyn}{est}(object, VCOV = NULL, constraints = NULL,
+\method{evSyn}{est}(object, VCOV = NULL, hypothesis = NULL,
       type = c("equal", "added"), 
       comparison = c("unconstrained", "complement", "none"))
 
@@ -24,7 +24,7 @@ same central theory.}
 
 \method{evSyn}{ICvalues}(object, hypo_names = NULL)
 
-\method{evSyn}{ICweights}(object, PriorWeights = NULL, hypo_names = NULL)
+\method{evSyn}{ICweights}(object, priorWeights = NULL, hypo_names = NULL)
 
 \method{print}{evSyn}(x, digits = max(3, getOption("digits") - 4), \dots)
 
@@ -34,16 +34,16 @@ same central theory.}
 \arguments{
   \item{object}{Currently, the following objects can be processed:
     \itemize{
-      \item a list with (standardized) parameter estimates;   
-      \item a list with log-likelihood values;
-      \item a list with GORIC(A) weights;
-      \item a list wiht GORIC(A) values;
+      \item a list of vectors with (standardized) parameter estimates;   
+      \item a list of vectors with log-likelihood values;
+      \item a list of vectors with GORIC(A) weights;
+      \item a list of vectors with GORIC(A) values;
     }
   }
-  \item{VCOV}{a list with covariance matrices of the (standardized) parameter estimates 
+  \item{VCOV}{a list of covariance matrices of the (standardized) parameter estimates 
   of interest.} 
   
-  \item{PT}{a list with the penalty values.}
+  \item{PT}{a list of penalty values.}
   
   \item{x}{an object of class \code{evSyn}}
 
@@ -55,11 +55,11 @@ same central theory.}
   approach, the aggregated evidence from, says, 5 studies is stronger than as if 
   the data were combined (as if that was possible).}
 
-  \item{constraints}{see \code{\link{restriktor}}.}
+  \item{hypothesis}{see constraints \code{\link{restriktor}}.}
 
   \item{comparison}{see \code{\link{goric}}.} 
   
-  \item{PriorWeights}{vector that represents the prior belief for this model. By default,
+  \item{priorWeights}{vector that represents the prior belief for this model. By default,
   equal prior weights are used (i.e., 1/(#hypotheses)). Notably, in case the prior
   weights do not sum to 1, it will be rescaled such that it does; which implies that
   relative importance can be used and not per se weights.}
@@ -73,7 +73,8 @@ same central theory.}
 }
 
 
-\value{The output comprises, among other things, the cumulative and final evidence 
+\value{An object of class evSyn for which a print and plot function is available. 
+The output comprises, among other things, the cumulative and final evidence 
 for the theory-based hypotheses.}
 
 
@@ -99,13 +100,13 @@ CovMx_studies <- list(vcov_est_1, vcov_est_2, vcov_est_3, vcov_est_4)
 H0   <- "beta1 == 0"
 Hpos <- "beta1 > 0"
 Hneg <- "beta1 < 0"
-hypotheses <- list(H0, Hpos, Hneg)
+hypotheses <- list(Hypos = list(H0, Hpos, Hneg))
 
 # Since this covers the whole space / covers all theories, we do not need a safeguard-hypothesis:
 comparison <- "none"
 
 evS4_added <- evSyn(object = Param_studies, VCOV = CovMx_studies, 
-                    constraints = hypotheses,
+                    hypothesis = hypotheses,
                     type = "added", 
                     comparison = "none")
 evS4_added
@@ -113,7 +114,7 @@ evS4_added
 plot(evS4_added)
 }
 evS4_equal <- evSyn(object = Param_studies, VCOV = CovMx_studies, 
-                    constraints = hypotheses,
+                    hypothesis = hypotheses,
                     type = "equal", 
                     comparison = "none")
 
@@ -145,9 +146,9 @@ H21 <- 'gr1 == gr2 > gr3'
 H22 <- 'gr2 > gr1 > gr3' 
 
 # hypotheses
-hypotheses <- list(list(H11, H12), list(H21, H22))
+hypotheses <- list(H1 = list(H11, H12), H2 = list(H21, H22))
 
-evS2_added <- evSyn(object, VCOV = VCOV, constraints = hypotheses,
+evS2_added <- evSyn(object, VCOV = VCOV, hypothesis = hypotheses,
                     type = "added", comparison = "unconstrained") 
 evS2_added
 \dontrun{
@@ -220,7 +221,8 @@ hypothesis <- 'x1 < x2 < x3'
 # scenario includes all 12 possible theories, including H1.
 
 # Evidence synthesis
-evS3 <- evSyn(object = Param_studies, VCOV = CovMx_studies, constraints = list(hypothesis),
+evS3 <- evSyn(object = Param_studies, VCOV = CovMx_studies, 
+              hypothesis = list(H1 = hypothesis),
               type = "added", 
               comparison = "complement") 
 evS3

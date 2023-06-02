@@ -10,37 +10,13 @@
 # In the added-evidence approach, the aggregated evidence from, says, 5 studies 
 # is stronger than as if the data were combined (as if that was possible).
 
-
-#' @param TypeEv The type of evidence-synthesis approach: Equal-evidence approach (0) or Added-evidence approach (1).
-#' @param S The number of (primary) studies. That is, the results (evidence) of S studies will be aggregated.
-#' @param Param_studies List of S 'named' vectors with the k_s (standardized) parameter estimates of interest of Study s. Thus, there are S items in the list and each item is a 'named' vector with k_s elements: the k_s number of parameter estimates ratioevant for that study. In case each study has the same number of parameters (k) which denote the same (in terms of hypothesis specification), Param_studies can be an S x k 'named' matrix. Note: The names of the vectors (or the column names of the S x 'k' matrix) with estimates should be used in the hypothesis specification.
-#' @param CovMx_studies List of the S covariance matrices of the (standardized) parameter estimates of interest (of size k_s x k_s). In case number of parameters are the same, it can also be a S*k_s x k_s matrix. Note: The columns (and rows) do not need to be named.
-#' @param Hypo_studies A vector of strings containing the NrHypos theory-based hypotheses. If SameHypo = 0, then there should be S specifications of the NrHypos theory-based hypotheses, that is S times NrHypos strings.
-#' @param comparison Indicator of which safeguard-hypothesis should be used: "unconstrained" (default; i.e., all possible theories including the one specified), "none" (only advised when set of hyptheses cover all theories), or (only when 'NrHypos = 1') "complement" (i.e., the remaining theories).
-#'
-
-
 # TODO
 
-# SAME HYPOTHESIS FOR ALL STUDIES, SO ONLY H1
 
-# inherit names, so replace study_1 with custom labels: REPLACE hypo_names
-
-
+# FIXME: inherit names, so replace study_1 with custom labels: REPLACE hypo_names
 # FIXME: remove nuisance parameters to avoid singularity
 # FIXME: inherit list names
 # FIXME: check if type = "equal" is wrongfuly used, then give a message
-
-# Verder zat ik naar de output te kijken en bedacht ik me het volgende:
-# Bij $cumaltive.GORIC(.weights) wil je bij beide niet
-# Study 1
-# Study 2
-# Study 3
-# Etc
-# MAAR:
-#   Study 1
-# Studies 1-2
-# Studies 1-3
 
 
 evSyn <- function(object, ...) { UseMethod("evSyn") }
@@ -63,7 +39,7 @@ evSyn <- function(object, ...) {
   
   arguments <- list(...)
   if (length(arguments)) {
-    pnames <- c("VCOV", "PT", "constraints", "type", "comparison", "hypo_names")
+    pnames <- c("VCOV", "PT", "hypothesis", "type", "comparison", "hypo_names")
     pm <- pmatch(names(arguments), pnames, nomatch = 0L)
     if (any(pm == 0L)) { 
       pm.idx <- which(pm == 0L)
@@ -143,10 +119,11 @@ evSyn <- function(object, ...) {
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on the (standard) parameter estimates and the covariance matrix
-evSyn.est <- function(object, VCOV = NULL, constraints = NULL,
+evSyn.est <- function(object, VCOV = NULL, hypothesis = NULL,
                       type = c("equal", "added"), 
                       comparison = c("unconstrained", "complement", "none")) {
   
+  constraints <- hypothesis
   if (length(object) != length(VCOV)) {
     stop("Restriktor Error: object must have the same length as VCOV.")
   }
@@ -170,16 +147,35 @@ evSyn.est <- function(object, VCOV = NULL, constraints = NULL,
   # This also means that the vector with parameter estimates must have equal names between the studies.
   # check if the user specified the same hypothesis in each study. 
   # number of hypotheses (this should be equal in each study, see check below)
+  
+  # if constraints is a unnamed list (or any list element), I assume that all 
+  # constraints must be applied to each study. Thus, len_H = 1
+  list_names <- names(constraints)
+  
+  if (any(list_names == "") | is.null(list_names)) {
+    stop("Restriktor ERROR: constraints must be a named list, for example: 
+         'list(H1 = H1) or list(H1 = list(H11, H12), H2 = list(H21, H22))'", call. = FALSE)
+#    len_H <- 1
+#    NrHypos <- length(constraints)
+  } 
+  # is one set of hypotheses provided for each study or has each study its own hypotheses
+  # if len_H = 1, then we apply the same hypotheses to each study.
+  len_H <- length(constraints)
+  # number of hypotheses per study
   NrHypos <- unique(sapply(constraints, length))
-  len_H <- length(unique(sapply(constraints, function(x) gsub("\\s", "", x))))
-  if (len_H == 1L | NrHypos == 1) {
+  
+  #len_H <- length(unique(sapply(constraints, function(x) gsub("\\s", "", x))))
+  
+  #if (len_H == 1L | NrHypos == 1) {
+  if (len_H == 1) {
     SameHypo <- TRUE  
-    Nrhypos <- 1L
+    #Nrhypos <- 1L
   } else {
     SameHypo <- FALSE  
   }
     
-  # number of constraints must be equal for each studie. In each study a set of shared theories (i.e., constraints) are compared.
+  # number of constraints must be equal for each studie. In each study a set of 
+  # shared theories (i.e., constraints) are compared.
   if (length(NrHypos) > 1L) {
     stop("Restriktor Error: the number of constraints must be equal in each study.", call. = FALSE)
   }
@@ -189,9 +185,8 @@ evSyn.est <- function(object, VCOV = NULL, constraints = NULL,
             call. = FALSE)
   }
   
-  # if NrHypos == 1, this means that we apply the same hypotheses to each study
-  if (NrHypos == 1) {
-    NrHypos <- length(constraints)
+  if (len_H == 1) {
+    #NrHypos <- length(constraints)
     NrHypos_incl <- NrHypos + 1
     sameHypo <- TRUE
     if (comparison == "none"){
@@ -209,8 +204,18 @@ evSyn.est <- function(object, VCOV = NULL, constraints = NULL,
     rownames(LL) <- rownames(PT) <- paste0("study_", 1:S)
 
   CumulativeGoricaWeights <- CumulativeGorica <- matrix(NA, nrow = S+1, ncol = NrHypos_incl)
-    rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("study ", 1:S), "final")
-    
+  #  rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("study_", 1:S), "final")
+  
+  sequence <- vector(mode = "character", length = S)
+  for (i in 1:S) {
+    if (i == 1) {
+      sequence[i] <- "1"
+    } else {
+      sequence[i] <- paste0("1..", i)
+    }
+  }
+  rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("study_", sequence), "final")
+     
   if (NrHypos == 1 & comparison == "complement") {
     hnames <- c("H1", "Hc")
     ratio.weight_mu <- matrix(data = NA, nrow = S, ncol = 1)
@@ -228,12 +233,21 @@ evSyn.est <- function(object, VCOV = NULL, constraints = NULL,
 
   for(s in 1:S) {
     if (sameHypo) {
+      
+      cnm <- TRUE #check_name_match(vector_names = names(object[[s]]), list = constraints)
+      # check if object names matches constraint labels
+      # check_name <- all(sapply(constraints, function(x) check_name_match(vector_names = names(object[[s]]), 
+      #                                                                    list         = x)))
+      if (!cnm) {
+        stop(paste("Restriktor ERROR: object names", paste(names(object[[s]]), collapse = ", ") ),
+        " do not match the names in the constraint syntax.", call. = FALSE)
+      }
       res_goric <- goric(object[[s]], VCOV = VCOV[[s]], 
-                         constraints = constraints,
+                         constraints = as.list(unlist(constraints)),
                          type = 'gorica', comparison = comparison)
     } else {
       res_goric <- goric(object[[s]], VCOV = VCOV[[s]], 
-                         constraints = constraints[[s]],
+                         constraints = constraints,
                          type = 'gorica', comparison = comparison)
     }
     
@@ -349,7 +363,17 @@ evSyn.LL <- function(object, PT, type = c("added", "equal"),
   #PT <- lapply(PT, function(x) setNames(x, hnames))
   
   colnames(CumulativeGorica) <- colnames(CumulativeGoricaWeights) <- colnames(LL) <- colnames(PT) <- colnames(weight_m) <- hnames
-  rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("Study_", 1:S), "Final")
+  
+  sequence <- vector(mode = "character", length = S)
+  for (i in 1:S) {
+    if (i == 1) {
+      sequence[i] <- "1"
+    } else {
+      sequence[i] <- paste0("1..", i)
+    }
+  }
+  rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("study_", sequence), "final")
+  #rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("Study_", 1:S), "Final")
   rownames(LL) <- rownames(PT) <- rownames(weight_m) <- paste0("Study_", 1:S)
   
   sumLL <- 0
@@ -425,8 +449,18 @@ evSyn.ICvalues <- function(object, hypo_names = NULL) {
   CumulativeGorica <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
   CumulativeGoricaWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
   colnames(CumulativeGorica) <- colnames(CumulativeGoricaWeights) <- colnames(IC) <- colnames(weight_m) <- hnames
-  rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("Study", 1:S), "Final")
-  rownames(IC) <- rownames(weight_m) <- paste0("Study", 1:S)
+  
+  sequence <- vector(mode = "character", length = S)
+  for (i in 1:S) {
+    if (i == 1) {
+      sequence[i] <- "1"
+    } else {
+      sequence[i] <- paste0("1..", i)
+    }
+  }
+  rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("study_", sequence), "final")
+  #rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("Study_", 1:S), "Final")
+  rownames(IC) <- rownames(weight_m) <- paste0("Study_", 1:S)
   
   sumIC <- 0
   for(s in 1:S){
@@ -464,7 +498,7 @@ evSyn.ICvalues <- function(object, hypo_names = NULL) {
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on AIC or ORIC or GORIC or GORICA weights or (Bayesian) posterior model probabilities
-evSyn.ICweights <- function(object, PriorWeights = NULL, hypo_names = NULL) {
+evSyn.ICweights <- function(object, priorWeights = NULL, hypo_names = NULL) {
   
   Weights <- object
   S <- length(object[[1]])
@@ -472,11 +506,11 @@ evSyn.ICweights <- function(object, PriorWeights = NULL, hypo_names = NULL) {
   
   Weights <- do.call(rbind, Weights)
   
-  if (is.null(PriorWeights)) {
-    PriorWeights <- rep(1/(NrHypos + 1), (NrHypos + 1))
+  if (is.null(priorWeights)) {
+    priorWeights <- rep(1/(NrHypos + 1), (NrHypos + 1))
   }
   # To make it sum to 1 (if it not already did)
-  PriorWeights <- PriorWeights / sum(PriorWeights) 
+  priorWeights <- priorWeights / sum(priorWeights) 
   
   if (is.null(hypo_names)) {
     hypo_names <- paste0("H", 1:(NrHypos+1))
@@ -484,9 +518,19 @@ evSyn.ICweights <- function(object, PriorWeights = NULL, hypo_names = NULL) {
   
   CumulativeWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
   colnames(CumulativeWeights) <- hypo_names
-  rownames(CumulativeWeights) <- c(paste0("Study", 1:S), "Final")
   
-  CumulativeWeights[1, ] <- PriorWeights * Weights[1, ] / sum( PriorWeights * Weights[1, ] )
+  sequence <- vector(mode = "character", length = S)
+  for (i in 1:S) {
+    if (i == 1) {
+      sequence[i] <- "1"
+    } else {
+      sequence[i] <- paste0("1..", i)
+    }
+  }
+  rownames(CumulativeGorica) <- c(paste0("study_", sequence), "final")
+  #rownames(CumulativeWeights) <- c(paste0("Study_", 1:S), "Final")
+  
+  CumulativeWeights[1, ] <- priorWeights * Weights[1, ] / sum( priorWeights * Weights[1, ] )
   
   for(s in 2:S) {
     CumulativeWeights[s, ] <- CumulativeWeights[(s-1), ] * Weights[s, ] / sum( CumulativeWeights[(s-1), ] * Weights[s, ] )
@@ -514,8 +558,7 @@ evSyn.ICweights <- function(object, PriorWeights = NULL, hypo_names = NULL) {
 
 
 ## print function
-print.evSyn <- function(x, 
-                        digits = max(3, getOption("digits") - 4), ...) {
+print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   
   # added or equal approach
   type <- x$type

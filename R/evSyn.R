@@ -12,15 +12,19 @@
 
 # TODO
 
-
 # FIXME: inherit names, so replace study_1 with custom labels: REPLACE hypo_names
 # FIXME: remove nuisance parameters to avoid singularity
 # FIXME: inherit list names
 # FIXME: check if type = "equal" is wrongfuly used, then give a message
+# FIXME: print en summary functie
+# FIXME: constraints vervangen door hypothesis
+# FIXME: waarom hypothesis bij goric en evSyn
+
+# hoofdletter
+# Studies 1-3
 
 
 evSyn <- function(object, ...) { UseMethod("evSyn") }
-
 
 # -------------------------------------------------------------------------
 ## est (list + vec) + cov (list + mat)
@@ -201,7 +205,7 @@ evSyn.est <- function(object, VCOV = NULL, hypothesis = NULL,
   }
   
   LL <- PT <- weight_m <- GORICA_m <- matrix(data = NA, nrow = S, ncol = NrHypos_incl)
-    rownames(LL) <- rownames(PT) <- paste0("study_", 1:S)
+    rownames(LL) <- rownames(PT) <- paste0("Study ", 1:S)
 
   CumulativeGoricaWeights <- CumulativeGorica <- matrix(NA, nrow = S+1, ncol = NrHypos_incl)
   #  rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("study_", 1:S), "final")
@@ -211,10 +215,10 @@ evSyn.est <- function(object, VCOV = NULL, hypothesis = NULL,
     if (i == 1) {
       sequence[i] <- "1"
     } else {
-      sequence[i] <- paste0("1..", i)
+      sequence[i] <- paste0("1-", i)
     }
   }
-  rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("study_", sequence), "final")
+  rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("Studies ", sequence), "Final")
      
   if (NrHypos == 1 & comparison == "complement") {
     hnames <- c("H1", "Hc")
@@ -228,7 +232,7 @@ evSyn.est <- function(object, VCOV = NULL, hypothesis = NULL,
   }
     
   colnames(GORICA_m) <- colnames(weight_m) <- colnames(LL) <- colnames(PT) <- colnames(CumulativeGorica) <- colnames(CumulativeGoricaWeights) <- hnames
-  rownames(GORICA_m) <- rownames(ratio.weight_mu) <- rownames(weight_m) <- paste0("study_", 1:S)
+  rownames(GORICA_m) <- rownames(ratio.weight_mu) <- rownames(weight_m) <- paste0("Study ", 1:S)
   
 
   for(s in 1:S) {
@@ -369,12 +373,12 @@ evSyn.LL <- function(object, PT, type = c("added", "equal"),
     if (i == 1) {
       sequence[i] <- "1"
     } else {
-      sequence[i] <- paste0("1..", i)
+      sequence[i] <- paste0("1-", i)
     }
   }
-  rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("study_", sequence), "final")
+  rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("Studies ", sequence), "Final")
   #rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("Study_", 1:S), "Final")
-  rownames(LL) <- rownames(PT) <- rownames(weight_m) <- paste0("Study_", 1:S)
+  rownames(LL) <- rownames(PT) <- rownames(weight_m) <- paste0("Study ", 1:S)
   
   sumLL <- 0
   sumPT <- 0
@@ -455,12 +459,12 @@ evSyn.ICvalues <- function(object, hypo_names = NULL) {
     if (i == 1) {
       sequence[i] <- "1"
     } else {
-      sequence[i] <- paste0("1..", i)
+      sequence[i] <- paste0("1-", i)
     }
   }
-  rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("study_", sequence), "final")
+  rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("Studies ", sequence), "Final")
   #rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("Study_", 1:S), "Final")
-  rownames(IC) <- rownames(weight_m) <- paste0("Study_", 1:S)
+  rownames(IC) <- rownames(weight_m) <- paste0("Study ", 1:S)
   
   sumIC <- 0
   for(s in 1:S){
@@ -524,10 +528,10 @@ evSyn.ICweights <- function(object, priorWeights = NULL, hypo_names = NULL) {
     if (i == 1) {
       sequence[i] <- "1"
     } else {
-      sequence[i] <- paste0("1..", i)
+      sequence[i] <- paste0("1-", i)
     }
   }
-  rownames(CumulativeGorica) <- c(paste0("study_", sequence), "final")
+  rownames(CumulativeGorica) <- c(paste0("Studies ", sequence), "Final")
   #rownames(CumulativeWeights) <- c(paste0("Study_", 1:S), "Final")
   
   CumulativeWeights[1, ] <- priorWeights * Weights[1, ] / sum( priorWeights * Weights[1, ] )

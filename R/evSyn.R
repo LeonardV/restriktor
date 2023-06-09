@@ -12,17 +12,6 @@
 
 # TODO
 
-# FIXME: inherit names, so replace study_1 with custom labels: REPLACE hypo_names
-# FIXME: remove nuisance parameters to avoid singularity
-# FIXME: inherit list names
-# FIXME: check if type = "equal" is wrongfuly used, then give a message
-# FIXME: print en summary functie
-# FIXME: constraints vervangen door hypothesis
-# FIXME: waarom hypothesis bij goric en evSyn
-
-# hoofdletter
-# Studies 1-3
-
 
 evSyn <- function(object, ...) { UseMethod("evSyn") }
 
@@ -43,7 +32,7 @@ evSyn <- function(object, ...) {
   
   arguments <- list(...)
   if (length(arguments)) {
-    pnames <- c("VCOV", "PT", "hypothesis", "type", "comparison", "hypo_names")
+    pnames <- c("VCOV", "PT", "hypotheses", "type", "comparison", "hypo_names")
     pm <- pmatch(names(arguments), pnames, nomatch = 0L)
     if (any(pm == 0L)) { 
       pm.idx <- which(pm == 0L)
@@ -123,11 +112,10 @@ evSyn <- function(object, ...) {
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on the (standard) parameter estimates and the covariance matrix
-evSyn.est <- function(object, VCOV = NULL, hypothesis = NULL,
+evSyn.est <- function(object, VCOV = NULL, hypotheses = NULL,
                       type = c("equal", "added"), 
                       comparison = c("unconstrained", "complement", "none")) {
   
-  constraints <- hypothesis
   if (length(object) != length(VCOV)) {
     stop("Restriktor Error: object must have the same length as VCOV.")
   }
@@ -152,23 +140,23 @@ evSyn.est <- function(object, VCOV = NULL, hypothesis = NULL,
   # check if the user specified the same hypothesis in each study. 
   # number of hypotheses (this should be equal in each study, see check below)
   
-  # if constraints is a unnamed list (or any list element), I assume that all 
-  # constraints must be applied to each study. Thus, len_H = 1
-  list_names <- names(constraints)
+  # if hypotheses is a unnamed list (or any list element), I assume that all 
+  # hypotheses must be applied to each study. Thus, len_H = 1
+  list_names <- names(hypotheses)
   
   if (any(list_names == "") | is.null(list_names)) {
-    stop("Restriktor ERROR: constraints must be a named list, for example: 
+    stop("Restriktor ERROR: hypotheses must be a named list, for example: 
          'list(H1 = H1) or list(H1 = list(H11, H12), H2 = list(H21, H22))'", call. = FALSE)
 #    len_H <- 1
-#    NrHypos <- length(constraints)
+#    NrHypos <- length(hypotheses)
   } 
   # is one set of hypotheses provided for each study or has each study its own hypotheses
   # if len_H = 1, then we apply the same hypotheses to each study.
-  len_H <- length(constraints)
+  len_H <- length(hypotheses)
   # number of hypotheses per study
-  NrHypos <- unique(sapply(constraints, length))
+  NrHypos <- unique(sapply(hypotheses, length))
   
-  #len_H <- length(unique(sapply(constraints, function(x) gsub("\\s", "", x))))
+  #len_H <- length(unique(sapply(hypotheses, function(x) gsub("\\s", "", x))))
   
   #if (len_H == 1L | NrHypos == 1) {
   if (len_H == 1) {
@@ -178,10 +166,10 @@ evSyn.est <- function(object, VCOV = NULL, hypothesis = NULL,
     SameHypo <- FALSE  
   }
     
-  # number of constraints must be equal for each studie. In each study a set of 
-  # shared theories (i.e., constraints) are compared.
+  # number of hypotheses must be equal for each studie. In each study a set of 
+  # shared theories (i.e., hypotheses) are compared.
   if (length(NrHypos) > 1L) {
-    stop("Restriktor Error: the number of constraints must be equal in each study.", call. = FALSE)
+    stop("Restriktor Error: the number of hypotheses must be equal in each study.", call. = FALSE)
   }
   if (comparison == "complement" & NrHypos > 1L) {
     warning("Restriktor Warning: if comparison = 'complement', only one order-restricted hypothesis\n",
@@ -190,7 +178,7 @@ evSyn.est <- function(object, VCOV = NULL, hypothesis = NULL,
   }
   
   if (len_H == 1) {
-    #NrHypos <- length(constraints)
+    #NrHypos <- length(hypotheses)
     NrHypos_incl <- NrHypos + 1
     sameHypo <- TRUE
     if (comparison == "none"){
@@ -238,20 +226,20 @@ evSyn.est <- function(object, VCOV = NULL, hypothesis = NULL,
   for(s in 1:S) {
     if (sameHypo) {
       
-      cnm <- TRUE #check_name_match(vector_names = names(object[[s]]), list = constraints)
-      # check if object names matches constraint labels
-      # check_name <- all(sapply(constraints, function(x) check_name_match(vector_names = names(object[[s]]), 
+      cnm <- TRUE #check_name_match(vector_names = names(object[[s]]), list = hypotheses)
+      # check if object names matches hypotheses labels
+      # check_name <- all(sapply(hypotheses, function(x) check_name_match(vector_names = names(object[[s]]), 
       #                                                                    list         = x)))
       if (!cnm) {
         stop(paste("Restriktor ERROR: object names", paste(names(object[[s]]), collapse = ", ") ),
-        " do not match the names in the constraint syntax.", call. = FALSE)
+        " do not match the names in the hypothesis syntax.", call. = FALSE)
       }
       res_goric <- goric(object[[s]], VCOV = VCOV[[s]], 
-                         constraints = as.list(unlist(constraints)),
+                         hypotheses = as.list(unlist(hypotheses)),
                          type = 'gorica', comparison = comparison)
     } else {
       res_goric <- goric(object[[s]], VCOV = VCOV[[s]], 
-                         constraints = constraints,
+                         hypotheses = hypotheses,
                          type = 'gorica', comparison = comparison)
     }
     
@@ -377,7 +365,6 @@ evSyn.LL <- function(object, PT, type = c("added", "equal"),
     }
   }
   rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("Studies ", sequence), "Final")
-  #rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("Study_", 1:S), "Final")
   rownames(LL) <- rownames(PT) <- rownames(weight_m) <- paste0("Study ", 1:S)
   
   sumLL <- 0
@@ -392,7 +379,6 @@ evSyn.LL <- function(object, PT, type = c("added", "equal"),
       sumLL <- sumLL + LL[s, ]
       sumPT <- sumPT + PT[s, ]
       CumulativeGorica[s, ] <- -2 * sumLL + 2 * sumPT
-      
       minGoric <- min(CumulativeGorica[s, ])
       CumulativeGoricaWeights[s, ] <- as.matrix(exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric))))
     }
@@ -568,8 +554,29 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   type <- x$type
   
   # make the first letter upper-case
-  Type <- paste(toupper(substr(type, 1, 1)), substr(type, 2, nchar(type)), sep="")
-  cat("\n", paste(Type, "Evidence Synthesis results:\n"), sep = "")
+  #Type <- paste(toupper(substr(type, 1, 1)), substr(type, 2, nchar(type)), sep="")
+  cat("\n", "restriktor: ", paste(type, "Evidence Synthesis results:\n"), sep = "")
+
+  cat("\nFinal ratio GORICA weights:\n")  
+  print(apply(x$Final.ratio.GORICA.weights, c(1,2), function(x) 
+    format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3)), 
+    print.gap = 2, quote = FALSE, right = TRUE)
+  
+  cat("\n")
+  message(x$messages$mix_weights)
+}
+
+
+## summary function
+summary.evSyn <- function(object, digits = max(3, getOption("digits") - 4), ...) {
+  
+  x <- object
+  # added or equal approach
+  type <- x$type
+  
+  # make the first letter upper-case
+  #Type <- paste(toupper(substr(type, 1, 1)), substr(type, 2, nchar(type)), sep="")
+  cat("\n", "restriktor: ", paste(type, "Evidence Synthesis results:\n"), sep = "")
   
   cat("\nGORICA values:\n")  
   
@@ -588,6 +595,39 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   if (!is.null(x$LL_m)) {
     cat("\nLog-likelihood values:\n")  
     print(apply(x$LL_m, c(1,2), function(x) 
+      format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3)), 
+      print.gap = 2, quote = FALSE, right = TRUE)
+    cat("---\n")
+  }
+  
+  if (!is.null(x$LL_m)) {
+    cat("\nCumulative Log-likelihood values:\n")  
+    Cumulative.LL <- apply(x$LL_m, 2, cumsum)  
+    
+    S <- nrow(Cumulative.LL)
+    sequence <- vector(mode = "character", length = S)
+    for (i in 1:S) {
+      if (i == 1) {
+        sequence[i] <- "1"
+      } else {
+        sequence[i] <- paste0("1-", i)
+      }
+    }
+    rownames(Cumulative.LL) <- paste0("Studies ", sequence)
+    Cumulative.LL <- rbind(Cumulative.LL, Final = Cumulative.LL[S, ])
+
+    print(apply(Cumulative.LL, c(1,2), function(x) 
+      format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3)), 
+      print.gap = 2, quote = FALSE, right = TRUE)
+    cat("---\n")
+    
+    cat("\nFinal ratio Log-likelihood values:\n")  
+    Final.ratio.Cumulative.LL <- Cumulative.LL[S, ] %*% t(1/Cumulative.LL[S, ])
+    rownames(Final.ratio.Cumulative.LL) <- colnames(Final.ratio.Cumulative.LL)
+    colnames(Final.ratio.Cumulative.LL) <- paste0("vs. ", rownames(Final.ratio.Cumulative.LL))
+    
+      
+    print(apply(Final.ratio.Cumulative.LL, c(1,2), function(x) 
       format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3)), 
       print.gap = 2, quote = FALSE, right = TRUE)
     cat("---\n")

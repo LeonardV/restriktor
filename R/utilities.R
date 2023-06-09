@@ -141,30 +141,7 @@ expand_parentheses <- function(hyp) {
 }
 
 
-# check_name_match <- function(vector_names, list) {
-#   all_match <- TRUE
-#   
-#   for (element in list) {
-#     match_found <- FALSE
-#     
-#     # split element by space
-#     names_in_element <- unlist(strsplit(element, " "))
-#     
-#     # check if any name matches vector names
-#     for (name in names_in_element) {
-#       if (name %in% vector_names) {
-#         match_found <- TRUE
-#         break
-#       }
-#     }
-#     # if no match found, set all_match to FALSE and break loop
-#     if (!match_found) {
-#       all_match <- FALSE
-#       break
-#     }
-#   }
-#   return(all_match)
-# }
+
 
 # compute_weights_ratioWeights <- function(x) {
 #   IC <- 2*x

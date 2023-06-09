@@ -166,7 +166,7 @@ H1 <- "D1 > D2 > D3"
 
 # Apply GORIC #
 set.seed(123) 
-results_1c <- goric(fit, constraints = list(H1), comparison = "complement")
+results_1c <- goric(fit, hypotheses = list(H1), comparison = "complement")
 results_1c
 ```
 From this, you can conclude that $H_1: \mu_1 > \mu_2 > \mu_3$ is $.83/.17 \approx 4.88$ time more supported than its complement.
@@ -197,7 +197,7 @@ H1 <- "D1 > D2 > D3"
 
 # Apply GORIC #
 set.seed(123) 
-results_1u <- goric(fit, constraints = list(H1))
+results_1u <- goric(fit, hypotheses = list(H1))
 results_1u
 ```
 From this, you can conclude that $H_1: \mu_1 > \mu_2 > \mu_3$ is ($.763/.237 > 1$ times) more supported than the unconstrained.
@@ -247,7 +247,7 @@ H2 <- "D1 < D2 < D3"
 
 # Apply GORIC #
 set.seed(123) 
-results_12u <- goric(fit, constraints = list(H1, H2))
+results_12u <- goric(fit, hypotheses = list(H1, H2))
 results_12u
 round(results_12u$ratio.gw, 3)
 ```
@@ -278,7 +278,7 @@ H2 <- "D1 < D2" # # => H2: D1 < D2, D3
 
 # Apply GORIC #
 set.seed(123) 
-results_12 <- goric(fit, constraints = list(H1, H2), comparison = "none")
+results_12 <- goric(fit, hypotheses = list(H1, H2), comparison = "none")
 results_12
 round(results_12$ratio.gw, 3)
 ```
@@ -353,7 +353,7 @@ H1g <- "D1 > D2 > D3"
 
 # Apply GORIC #
 set.seed(123) 
-results_12 <- goric(fit, constraints = list(H1g = H1g), comparison = "complement")
+results_12 <- goric(fit, hypotheses = list(H1g = H1g), comparison = "complement")
 results_12
 round(results_12$ratio.gw, 3)
 ```
@@ -368,7 +368,7 @@ H1m <- "D1 - D2 > .2, D2 > D3"
 
 # Apply GORIC #
 set.seed(123) 
-results_12 <- goric(fit, constraints = list(H1m = H1m), comparison = "complement")
+results_12 <- goric(fit, hypotheses = list(H1m = H1m), comparison = "complement")
 results_12
 round(results_12$ratio.gw, 3)
 ```
@@ -458,7 +458,7 @@ H2 <- "D1 > D2" # H2: D1 > D2, D3
 
 # Apply GORIC #
 set.seed(123) 
-results_12u <- goric(fit, constraints = list(H1, H2))
+results_12u <- goric(fit, hypotheses = list(H1, H2))
 results_12u
 round(results_12u$ratio.gw, 3)
 ```
@@ -526,7 +526,7 @@ H2 <- "D1 > D2" # H2: D1 > D2, D3
 
 # Apply GORIC #
 set.seed(123) 
-results_12u <- goric(fit, constraints = list(H1, H2))
+results_12u <- goric(fit, hypotheses = list(H1, H2))
 results_12u
 round(results_12u$ratio.gw, 3)
 ```
@@ -598,7 +598,7 @@ H1 <- "D1 > D2 > D3"
 
 # Apply GORIC #
 set.seed(123) 
-results_1c <- goric(fit, constraints = list(H1), comparison = "complement")
+results_1c <- goric(fit, hypotheses = list(H1), comparison = "complement")
 results_1c
 #
 coef(fit)
@@ -621,7 +621,7 @@ H2 <- "D1 > D2 < D3"
 
 # Apply GORIC #
 set.seed(123) 
-results_12u <- goric(fit, constraints = list(H1, H2))
+results_12u <- goric(fit, hypotheses = list(H1, H2))
 results_12u
 round(results_12u$ratio.gw, 3)
 round(results_12u$ratio.pw, 3)
@@ -649,7 +649,7 @@ Bear in mind that when the ratio of GORIC(A) weights equal the ratio of penalty 
 
 
 
-## Just below maxmimum fit
+## Just below maximum fit
 
 ### Equality restriction (=)
 Even if, in the population, the equality is true (e.g., $\beta_1 = \beta_2$, that is, $\beta_1 - \beta_2 = 0$), the probability of finding this in your data is 0. In your data, the relationship will never be exactly 0. Therefore, the fit value (i.e., the maximum log likelihood) of a true hypothesis with equality restriction will never equate the maximum fit (i.e., the maximum log likelihood of the unconstrained), but a value (just) below this maximum. Consequently, a true hypothesis with equality restriction will never obtain a GORIC(A) weight of 1, but one lower than 1.
@@ -707,7 +707,7 @@ H1 <- "D1 = D2 > 0, D3 > 0"
 
 # Apply GORIC #
 set.seed(123) 
-results_0c <- goric(fit, constraints = list(H1), comparison = "complement")
+results_0c <- goric(fit, hypotheses = list(H1), comparison = "complement")
 results_0c
 round(results_0c$ratio.gw, 3)
 ```
@@ -734,7 +734,7 @@ H1 <- "-0.2 < D1 - D2 < .2, D1 > 0, D2 > 0, D3 > 0"
 
 # Apply GORIC #
 set.seed(123) 
-results_12 <- goric(fit, constraints = list(H1), comparison = "complement")
+results_12 <- goric(fit, hypotheses = list(H1), comparison = "complement")
 results_12
 round(results_12$ratio.gw, 3)
 coef(fit)
@@ -837,7 +837,7 @@ bain1_1
 
 # Apply GORIC #
 set.seed(123) 
-results_12 <- goric(fit, constraints = list(H1), comparison = "complement")
+results_12 <- goric(fit, hypotheses = list(H1), comparison = "complement")
 results_12
 ``` 
 From the bain output, you can see (from BF.c) that the incorrect equality hypothesis $H_1$ is approximately $19.5$ times more supported than its complement (when using a fraction of $1$).

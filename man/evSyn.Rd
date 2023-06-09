@@ -6,6 +6,7 @@
 \alias{evSyn.ICvalues}
 \alias{evSyn.LL}
 \alias{print.evSyn}
+\alias{summary.evSyn}
 \alias{plot.evSyn}
 
 \title{GORIC(A) Evidence synthesis}
@@ -15,7 +16,7 @@ same central theory.}
 
 \usage{evSyn(object, \ldots)
 
-\method{evSyn}{est}(object, VCOV = NULL, hypothesis = NULL,
+\method{evSyn}{est}(object, VCOV = NULL, hypotheses = NULL,
       type = c("equal", "added"), 
       comparison = c("unconstrained", "complement", "none"))
 
@@ -27,6 +28,8 @@ same central theory.}
 \method{evSyn}{ICweights}(object, priorWeights = NULL, hypo_names = NULL)
 
 \method{print}{evSyn}(x, digits = max(3, getOption("digits") - 4), \dots)
+
+\method{summary}{evSyn}(object, digits = max(3, getOption("digits") - 4), \dots)
 
 \method{plot}{evSyn}(x, \dots)
 }
@@ -55,7 +58,7 @@ same central theory.}
   approach, the aggregated evidence from, says, 5 studies is stronger than as if 
   the data were combined (as if that was possible).}
 
-  \item{hypothesis}{see constraints \code{\link{restriktor}}.}
+  \item{hypotheses}{see \code{\link{goric}}.}
 
   \item{comparison}{see \code{\link{goric}}.} 
   
@@ -73,7 +76,7 @@ same central theory.}
 }
 
 
-\value{An object of class evSyn for which a print and plot function is available. 
+\value{An object of class evSyn for which a print, summary and plot function is available. 
 The output comprises, among other things, the cumulative and final evidence 
 for the theory-based hypotheses.}
 
@@ -106,19 +109,21 @@ hypotheses <- list(Hypos = list(H0, Hpos, Hneg))
 comparison <- "none"
 
 evS4_added <- evSyn(object = Param_studies, VCOV = CovMx_studies, 
-                    hypothesis = hypotheses,
+                    hypotheses = hypotheses,
                     type = "added", 
                     comparison = "none")
 evS4_added
+summary(evS4_added)
 \dontrun{
 plot(evS4_added)
 }
 evS4_equal <- evSyn(object = Param_studies, VCOV = CovMx_studies, 
-                    hypothesis = hypotheses,
+                    hypotheses = hypotheses,
                     type = "equal", 
                     comparison = "none")
 
 evS4_equal
+summary(evS4_equal)
 \dontrun{
 plot(evS4_equal)
 }
@@ -148,7 +153,7 @@ H22 <- 'gr2 > gr1 > gr3'
 # hypotheses
 hypotheses <- list(H1 = list(H11, H12), H2 = list(H21, H22))
 
-evS2_added <- evSyn(object, VCOV = VCOV, hypothesis = hypotheses,
+evS2_added <- evSyn(object, VCOV = VCOV, hypotheses = hypotheses,
                     type = "added", comparison = "unconstrained") 
 evS2_added
 \dontrun{
@@ -222,7 +227,7 @@ hypothesis <- 'x1 < x2 < x3'
 
 # Evidence synthesis
 evS3 <- evSyn(object = Param_studies, VCOV = CovMx_studies, 
-              hypothesis = list(H1 = hypothesis),
+              hypotheses = list(H1 = hypothesis),
               type = "added", 
               comparison = "complement") 
 evS3

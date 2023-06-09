@@ -1,18 +1,19 @@
 goric <- function(object, ...) { UseMethod("goric") }
 
 
-goric.default <- function(object, ..., constraints = NULL,
+goric.default <- function(object, ..., hypotheses = NULL,
                           comparison = c("unconstrained", "complement", "none"), 
                           VCOV = NULL, sample.nobs = NULL,
                           type = "goric", 
                           auto.bound = FALSE, debug = FALSE) {
 
+  constraints <- hypotheses
   # class objects
   object_class <- unlist(lapply(object, class))
   
   # is object class restriktor
   if ("restriktor" %in% object_class && !is.null(constraints)) {
-    warning("restriktor Warning: constraints are inherited from the restriktor object and are therefore ignored.", 
+    warning("restriktor Warning: hypotheses are inherited from the restriktor object and are therefore ignored.", 
             call. = FALSE)
     constraints <- NULL
   }
@@ -39,9 +40,9 @@ goric.default <- function(object, ..., constraints = NULL,
 
   if (!"restriktor" %in% object_class) { 
     if (!is.list(constraints)) { 
-      stop("restriktor ERROR: constraints must be specified as a named list, ",
-           "e.g., constraints = list(m1 = 'x1 > 0', m2 = 'x1 == 0') or ",
-           "constraints = list(m1 = list(amat = rbind(c(1, 0, 0)), rhs = 0, neq = 0))",
+      stop("restriktor ERROR: hypotheses must be specified as a named list, ",
+           "e.g., hypotheses = list(m1 = 'x1 > 0', m2 = 'x1 == 0') or ",
+           "hypotheses = list(m1 = list(amat = rbind(c(1, 0, 0)), rhs = 0, neq = 0))",
            call. = FALSE)
     }
     
@@ -105,66 +106,76 @@ goric.default <- function(object, ..., constraints = NULL,
     objectnames <- vector("character", idx)
     CALL$object <- NULL
   } else if (any(object_class %in% c("lm","rlm","glm","mlm")) && !isConChar) {
-      # standard errors are not needed
-      ldots$se <- "none"
-      # fit restriktor object for each hypothesis
+    # tolower names Amat and rhs
+    for (i in seq_along(constraints)) { 
+      names(constraints[[i]]) <- tolower(names(constraints[[i]]))
+    }
+    
+    # standard errors are not needed
+    ldots$se <- "none"
+    # fit restriktor object for each hypothesis
+    conList <- list()
+    for (con in 1:length(constraints)) {
+      CALL.restr <- append(list(object      = object$object,
+                                constraints = constraints[[con]]$amat,
+                                rhs         = constraints[[con]]$rhs,
+                                neq         = constraints[[con]]$neq), ldots)
+      
+      conList[[con]] <- do.call("restriktor", CALL.restr) 
+    }
+    names(conList) <- names(constraints)
+    # compute symmary for each restriktor object. Here is the goric value 
+    # computed. Note: not the gorica value
+    isSummary <- lapply(conList, function(x) summary(x, 
+                                                     goric       = type,
+                                                     sample.nobs = sample.nobs))
+    # add unrestricted object to output
+    ans$model.org <- object[[1]]
+    # unrestricted VCOV
+    VCOV <- vcov(ans$model.org) 
+    sample.nobs <- nrow(model.frame(object[[1]]))
+    idx <- length(conList) 
+    objectnames <- vector("character", idx)
+    CALL$object <- NULL
+  } else if ("numeric" %in% object_class & isConChar) {
+    # fit restriktor object for each hypothesis
+    conList <- list()
+    for (con in 1:length(constraints)) {
+      CALL.restr <- append(list(object      = object$object, 
+                                constraints = constraints[[con]],
+                                VCOV        = as.matrix(VCOV)), ldots)
+      conList[[con]] <- do.call("con_gorica_est", CALL.restr)  
+    }
+    names(conList) <- names(constraints)
+    
+    ans$hypotheses_usr <- lapply(conList, function(x) x$CON$constraints)
+    
+    isSummary <- lapply(conList, function(x) summary(x, 
+                                                     type        = type,
+                                                     sample.nobs = sample.nobs)) 
+    } else if ("numeric" %in% object_class & !isConChar) {
+    # tolower names Amat and rhs
+    for (i in seq_along(constraints)) { 
+      names(constraints[[i]]) <- tolower(names(constraints[[i]]))
+    }
+    
       conList <- list()
       for (con in 1:length(constraints)) {
         CALL.restr <- append(list(object      = object$object,
+                                  VCOV        = as.matrix(VCOV),
                                   constraints = constraints[[con]]$amat,
                                   rhs         = constraints[[con]]$rhs,
                                   neq         = constraints[[con]]$neq), ldots)
-        
-        conList[[con]] <- do.call("restriktor", CALL.restr) 
+        conList[[con]] <- do.call("con_gorica_est", CALL.restr) 
       }
       names(conList) <- names(constraints)
-      # compute symmary for each restriktor object. Here is the goric value 
-      # computed. Note: not the gorica value
-      isSummary <- lapply(conList, function(x) summary(x, 
-                                                       goric       = type,
-                                                       sample.nobs = sample.nobs))
-      # add unrestricted object to output
-      ans$model.org <- object[[1]]
-      # unrestricted VCOV
-      VCOV <- vcov(ans$model.org) 
-      sample.nobs <- nrow(model.frame(object[[1]]))
-      idx <- length(conList) 
-      objectnames <- vector("character", idx)
-      CALL$object <- NULL
-    } else if ("numeric" %in% object_class & isConChar) {
-      # fit restriktor object for each hypothesis
-      conList <- list()
-      for (con in 1:length(constraints)) {
-        CALL.restr <- append(list(object      = object$object, 
-                                  constraints = constraints[[con]],
-                                  VCOV        = as.matrix(VCOV)), ldots)
-        conList[[con]] <- do.call("con_gorica_est", CALL.restr)  
-      }
-      names(conList) <- names(constraints)
-      
-      ans$hypotheses_usr <- lapply(conList, function(x) x$CON$constraints)
       
       isSummary <- lapply(conList, function(x) summary(x, 
                                                        type        = type,
                                                        sample.nobs = sample.nobs)) 
-    } else if ("numeric" %in% object_class & !isConChar) {
-        conList <- list()
-        for (con in 1:length(constraints)) {
-          CALL.restr <- append(list(object      = object$object,
-                                    VCOV        = as.matrix(VCOV),
-                                    constraints = constraints[[con]]$amat,
-                                    rhs         = constraints[[con]]$rhs,
-                                    neq         = constraints[[con]]$neq), ldots)
-          conList[[con]] <- do.call("con_gorica_est", CALL.restr) 
-        }
-        names(conList) <- names(constraints)
-        
-        isSummary <- lapply(conList, function(x) summary(x, 
-                                                         type        = type,
-                                                         sample.nobs = sample.nobs)) 
-      } else {
-        stop("restriktor ERROR: I don't know how to handle an object of class ", paste0(class(object)[1]))
-      }
+    } else {
+      stop("restriktor ERROR: I don't know how to handle an object of class ", paste0(class(object)[1]))
+    }
 
   
   ## add objectnames if not available
@@ -390,7 +401,7 @@ goric.default <- function(object, ..., constraints = NULL,
         }
       } else if (all(c(Amat) == 0L)) {
         # unconstrained setting
-        stop("restriktor ERROR: ror an unconstrained hypothesis no complement exists.")
+        stop("restriktor ERROR: for an unconstrained hypothesis no complement exists.")
       } else {
         stop("restriktor ERROR: you might have found a bug, please contact me at: info@restriktor.org!")
       }
@@ -646,7 +657,7 @@ goric.default <- function(object, ..., constraints = NULL,
 
 
 # object of class lm ------------------------------------------------------
-goric.lm <- function(object, ..., constraints = NULL,
+goric.lm <- function(object, ..., hypotheses = NULL,
                      comparison = "unconstrained",
                      type = "goric",
                      missing = "none", auxiliary = c(), emControl = list(),
@@ -656,12 +667,12 @@ goric.lm <- function(object, ..., constraints = NULL,
     stop("restriktor ERROR: the object must be of class lm, glm, mlm, rlm.")
   }
   
-  if (is.null(constraints)) {
-   stop("restriktor ERROR: no constraint syntax found.") 
+  if (is.null(hypotheses)) {
+   stop("restriktor ERROR: no hypothesis syntax found.") 
   }
   
-  if (!is.null(constraints) && !is.list(constraints)) {
-    stop("restriktor ERROR: the constraints must be specified as a list. \nFor example, constraints = list(h1 = 'x1 > x2 > x3')", call. = FALSE)
+  if (!is.list(hypotheses)) {
+    stop("restriktor ERROR: the hypotheses must be specified as a list. \nFor example, hypotheses = list(h1 = 'x1 > x2 > x3')", call. = FALSE)
   }
   
   if (missing %in% c("em", "EM", "two.stage", "twostage")) {
@@ -703,7 +714,7 @@ goric.lm <- function(object, ..., constraints = NULL,
     objectList$VCOV        <- NULL
   } 
     
-    objectList$constraints <- constraints
+    objectList$hypotheses  <- hypotheses
     objectList$comparison  <- comparison
     objectList$type        <- type
     objectList$auto.bound  <- auto.bound
@@ -726,7 +737,7 @@ goric.lm <- function(object, ..., constraints = NULL,
     # which arguments are allowed
     arguments <- c("B", "mix.weights", "mix.bootstrap", "parallel", "ncpus", 
                    "cl", "seed", "control", "verbose", "debug", "comparison",
-                   "type", "auto.bound", "constraints", "missing", "auxiliary",
+                   "type", "auto.bound", "hypotheses", "missing", "auxiliary",
                    "VCOV", "sample.nobs", "object")
     
     # check for unkown arguments
@@ -752,10 +763,12 @@ goric.lm <- function(object, ..., constraints = NULL,
 
 
 # object of class restriktor ----------------------------------------------
-goric.restriktor <- function(object, ..., constraints = NULL,
+goric.restriktor <- function(object, ..., hypotheses = NULL,
                              comparison = "unconstrained",
                              type = "goric",
                              auto.bound = NULL, debug = FALSE) {
+  
+  # hypotheses are inherited from the restriktor object
   
   if (!inherits(object, "restriktor")) {
     stop("restriktor ERROR: the object must be of class restriktor.")
@@ -771,7 +784,7 @@ goric.restriktor <- function(object, ..., constraints = NULL,
   names(mcList)[mcnames] <- lnames
   objectList <- mcList  
   
-  objectList$constraints <- constraints
+  objectList$hypotheses  <- hypotheses
   objectList$comparison  <- comparison
   objectList$type        <- type
   objectList$auto.bound  <- auto.bound
@@ -793,7 +806,7 @@ goric.restriktor <- function(object, ..., constraints = NULL,
   # which arguments are allowed
   arguments <- c("B", "mix.weights", "mix.bootstrap", "parallel", "ncpus", 
                  "cl", "seed", "control", "verbose", "debug", "comparison",
-                 "type", "auto.bound", "constraints", "missing", "auxiliary",
+                 "type", "auto.bound", "hypotheses", "missing", "auxiliary",
                  "VCOV", "sample.nobs", "object")
   
   # check for unkown arguments
@@ -810,7 +823,7 @@ goric.restriktor <- function(object, ..., constraints = NULL,
 
 
 # object of class numeric -------------------------------------------------
-goric.numeric <- function(object, ..., constraints = NULL,
+goric.numeric <- function(object, ..., hypotheses = NULL,
                           VCOV = NULL,
                           comparison = "unconstrained",
                           type = "gorica", sample.nobs = NULL,
@@ -818,6 +831,10 @@ goric.numeric <- function(object, ..., constraints = NULL,
   
   if (!inherits(object, "numeric")) {
     stop("restriktor ERROR: the object must be of class numeric.")
+  }
+  
+  if (is.null(hypotheses)) {
+    stop("restriktor ERROR: no hypothesis syntax found.") 
   }
   
   if (!c(type %in% c("gorica", "goricac"))) {
@@ -840,8 +857,8 @@ goric.numeric <- function(object, ..., constraints = NULL,
     stop("restriktor ERROR: the argument sample.nobs is not found.")
   }
   
-  if (!is.null(constraints) && !is.list(constraints)) {
-    stop("restriktor ERROR: the constraints must be specified as a list. \nFor example, constraints = list(h1 = 'x1 > x2 > x3')", call. = FALSE)
+  if (!is.list(hypotheses)) {
+    stop("restriktor ERROR: the hypotheses must be specified as a list. \nFor example, hypotheses = list(h1 = 'x1 > x2 > x3')", call. = FALSE)
   }
   
   
@@ -856,7 +873,7 @@ goric.numeric <- function(object, ..., constraints = NULL,
   objectList <- mcList  
   
   objectList$object      <- object
-  objectList$constraints <- constraints
+  objectList$hypotheses  <- hypotheses
   objectList$comparison  <- comparison
   objectList$type        <- type
   objectList$auto.bound  <- auto.bound
@@ -870,7 +887,7 @@ goric.numeric <- function(object, ..., constraints = NULL,
   # which arguments are allowed
   arguments <- c("B", "mix.weights", "mix.bootstrap", "parallel", "ncpus", 
                  "cl", "seed", "control", "verbose", "debug", "comparison",
-                 "type", "auto.bound", "constraints", "missing", "auxiliary",
+                 "type", "auto.bound", "hypotheses", "missing", "auxiliary",
                  "VCOV", "sample.nobs", "object")
   
   # check for unkown arguments
@@ -887,7 +904,7 @@ goric.numeric <- function(object, ..., constraints = NULL,
 
 
 # object of class lavaan --------------------------------------------------
-goric.lavaan <- function(object, ..., constraints = NULL,
+goric.lavaan <- function(object, ..., hypotheses = NULL,
                          comparison = "unconstrained",
                          type = "gorica",
                          standardized = FALSE,
@@ -897,12 +914,17 @@ goric.lavaan <- function(object, ..., constraints = NULL,
     stop("restriktor ERROR: the object must be of class lavaan.")
   }
   
+  if (is.null(hypotheses)) {
+    stop("restriktor ERROR: no hypothesis syntax found.") 
+  }
+  
   if (!c(type %in% c("gorica", "goricac"))) {
     stop("restriktor ERROR: object of class lavaan is only supported for type = 'gorica(c)'.")
   }
   
-  if (!is.null(constraints) && !is.list(constraints)) {
-    stop("restriktor ERROR: the constraints must be specified as a list. \nFor example, constraints = list(h1 = 'x1 > x2 > x3')", call. = FALSE)
+  
+  if (!is.list(hypotheses)) {
+    stop("restriktor ERROR: the hypotheses must be specified as a list. \nFor example, hypotheses = list(h1 = 'x1 > x2 > x3')", call. = FALSE)
   }
   
   objectList <- list(...)
@@ -936,7 +958,7 @@ goric.lavaan <- function(object, ..., constraints = NULL,
   # which arguments are allowed
   arguments <- c("B", "mix.weights", "mix.bootstrap", "parallel", "ncpus", 
                  "cl", "seed", "control", "verbose", "debug", "comparison",
-                 "type", "auto.bound", "constraints", "missing", "auxiliary",
+                 "type", "auto.bound", "hypotheses", "missing", "auxiliary",
                  "VCOV", "sample.nobs", "object")
   
   # check for unkown arguments
@@ -952,7 +974,7 @@ goric.lavaan <- function(object, ..., constraints = NULL,
 
 
 # object of class CTmeta --------------------------------------------------
-goric.CTmeta <- function(object, ..., constraints = NULL,
+goric.CTmeta <- function(object, ..., hypotheses = NULL,
                          comparison = "unconstrained",
                          type = "gorica", sample.nobs = NULL,
                          auto.bound = NULL, debug = FALSE) {
@@ -961,12 +983,16 @@ goric.CTmeta <- function(object, ..., constraints = NULL,
     stop("restriktor ERROR: the object must be of class CTmeta.")
   }
   
+  if (is.null(hypotheses)) {
+    stop("restriktor ERROR: no hypothesis syntax found.") 
+  }
+  
   if (!c(type %in% c("gorica", "goricac"))) {
     stop("restriktor ERROR: object of class CTmeta is only supported for type = 'gorica(c)'.")
   }
   
-  if (!is.null(constraints) && !is.list(constraints)) {
-    stop("restriktor ERROR: the constraints must be specified as a list. \nFor example, constraints = list(h1 = 'x1 > x2 > x3')", call. = FALSE)
+  if (!is.list(hypotheses)) {
+    stop("restriktor ERROR: the hypotheses must be specified as a list. \nFor example, hypotheses = list(h1 = 'x1 > x2 > x3')", call. = FALSE)
   }
   
   objectList <- list(...)
@@ -982,7 +1008,7 @@ goric.CTmeta <- function(object, ..., constraints = NULL,
   
   objectList$object <- coef(object) 
   objectList$VCOV   <- vcov(object)
-  objectList$constraints <- constraints
+  objectList$hypotheses  <- hypotheses
   objectList$comparison  <- comparison
   objectList$type        <- type
   objectList$auto.bound  <- auto.bound
@@ -999,7 +1025,7 @@ goric.CTmeta <- function(object, ..., constraints = NULL,
   # which arguments are allowed
   arguments <- c("B", "mix.weights", "mix.bootstrap", "parallel", "ncpus", 
                  "cl", "seed", "control", "verbose", "debug", "comparison",
-                 "type", "auto.bound", "constraints", "missing", "auxiliary",
+                 "type", "auto.bound", "hypotheses", "missing", "auxiliary",
                  "VCOV", "sample.nobs", "object")
   
   # check for unkown arguments
@@ -1017,7 +1043,7 @@ goric.CTmeta <- function(object, ..., constraints = NULL,
 
 
 # object of class rma -----------------------------------------------------
-goric.rma <- function(object, ..., constraints = NULL,
+goric.rma <- function(object, ..., hypotheses = NULL,
                       VCOV = NULL,
                       comparison = "unconstrained",
                       type = "gorica", sample.nobs = NULL,
@@ -1027,12 +1053,16 @@ goric.rma <- function(object, ..., constraints = NULL,
     stop("restriktor ERROR: the object must be of class lm, glm, mlm, rlm, rma (only 'rma.uni').")
   }
   
+  if (is.null(hypotheses)) {
+    stop("restriktor ERROR: no hypothesis syntax found.") 
+  }
+  
   if (!c(type %in% c("gorica", "goricac"))) {
     stop("restriktor ERROR: object of class rma is only supported for type = 'gorica(c)'.")
   }
   
-  if (!is.null(constraints) && !is.list(constraints)) {
-    stop("restriktor ERROR: the constraints must be specified as a list. \nFor example, constraints = list(h1 = 'x1 > x2 > x3')", call. = FALSE)
+  if (!is.list(hypotheses)) {
+    stop("restriktor ERROR: the hypotheses must be specified as a list. \nFor example, hypotheses = list(h1 = 'x1 > x2 > x3')", call. = FALSE)
   }
   
   objectList <- list(...)
@@ -1063,7 +1093,7 @@ goric.rma <- function(object, ..., constraints = NULL,
   # which arguments are allowed
   arguments <- c("B", "mix.weights", "mix.bootstrap", "parallel", "ncpus", 
                  "cl", "seed", "control", "verbose", "debug", "comparison",
-                 "type", "auto.auto.bound", "constraints", "missing", "auxiliary",
+                 "type", "auto.auto.bound", "hypotheses", "missing", "auxiliary",
                  "VCOV", "sample.nobs", "object")
   
   # check for unkown arguments
@@ -1076,7 +1106,6 @@ goric.rma <- function(object, ..., constraints = NULL,
   
   res
 }
-
 
 
 

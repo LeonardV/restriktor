@@ -17,12 +17,12 @@ Authors@R: c(person(given = "Leonard", family = "Vanbrabant",
 Description: Allow for easy-to-use testing or evaluating of linear equality and inequality 
  restrictions about parameters and effects in (generalized) linear statistical models.
 Depends: R(>= 4.0.0)
-Imports: boot, ic.infer, lavaan(>= 0.6-10), MASS, mvtnorm, quadprog, norm2, ggplot2, lpSolve
+Imports: boot, ic.infer, lavaan(>= 0.6-10), MASS, mvtnorm, quadprog, norm2, ggplot2
 License: GPL (>= 2)
 LazyData: yes
 URL: https://restriktor.org
 NeedsCompilation: no
-Packaged: 2023-03-31 11:11:11 UTC; Leonard
+Packaged: 2023-06-12 11:11:11 UTC; Leonard
 Author: Leonard Vanbrabant [aut, cre], Rebecca Kuiper [aut], Yves Rosseel [ctb], Aleksandra Dacko [ctb]
 Maintainer: Leonard Vanbrabant <info@restriktor.org>
 Suggests: knitr, fastDummies, bain, rmarkdown

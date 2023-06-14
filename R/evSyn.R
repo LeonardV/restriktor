@@ -12,6 +12,9 @@
 
 # TODO
 
+# can gorica function do more than restriktor, see mail RK
+# update VIGNETTE
+
 
 evSyn <- function(object, ...) { UseMethod("evSyn") }
 
@@ -116,6 +119,15 @@ evSyn.est <- function(object, VCOV = NULL, hypotheses = NULL,
                       type = c("equal", "added"), 
                       comparison = c("unconstrained", "complement", "none")) {
   
+  if (missing(comparison)) 
+    comparison <- "none"
+  comparison <- match.arg(comparison)
+
+  if (missing(type)) 
+    type <- "added"
+  type <- match.arg(type)
+  
+    
   if (length(object) != length(VCOV)) {
     stop("Restriktor Error: object must have the same length as VCOV.")
   }
@@ -336,6 +348,11 @@ evSyn.est <- function(object, VCOV = NULL, hypotheses = NULL,
 # GORIC(A) evidence synthesis based on log likelihood and penalty values
 evSyn.LL <- function(object, PT, type = c("added", "equal"),
                      hypo_names = NULL) {
+  
+  if (missing(type)) 
+    type <- "added"
+  type <- match.arg(type)
+  
   LL <- object
   S <- length(LL)
   NrHypos <- length(LL[[1]]) - 1

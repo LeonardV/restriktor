@@ -27,9 +27,7 @@ and try for example:
 library(restriktor)
 
 # construct constraint syntax based on the factor level names
-constraints <- 'GroupActive  < GroupPassive
-                GroupPassive < GroupControl
-                GroupControl < GroupNo'
+constraints <- 'GroupActive < GroupPassive < GroupControl < GroupNo'
 ```
 
 Fit the unrestricted linear model, where "Age" is the response
@@ -44,6 +42,13 @@ restr.ANOVA <- restriktor(fit.ANOVA, constraints = constraints)
 
 # summary of the restricted parameter estimates
 summary(restr.ANOVA)
+
+
+# informative hypothesis tests
+iht(restr.ANOVA)
+
+# Generalized Order-Restricted Information Criterion (GORIC)
+goric(restr.ANOVA, comparison = "complement")
 ```
 
 If you can see the output, everything is set up and ready.

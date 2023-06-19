@@ -13,7 +13,10 @@
 # TODO
 
 # can gorica function do more than restriktor, see mail RK
-# update VIGNETTE
+
+# update VIGNETTE (ask rebecca for newest version)
+# nieuwe versie naar CRAN
+# update restriktor websit
 
 
 evSyn <- function(object, ...) { UseMethod("evSyn") }
@@ -569,10 +572,12 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   
   # added or equal approach
   type <- x$type
-  
   # make the first letter upper-case
   #Type <- paste(toupper(substr(type, 1, 1)), substr(type, 2, nchar(type)), sep="")
-  cat("\n", "restriktor: ", paste(type, "Evidence Synthesis results:\n"), sep = "")
+  cat(sprintf("restriktor (%s): ", packageDescription("restriktor", fields = "Version")))
+  
+  #cat("\n", "restriktor: ", paste(type, "Evidence Synthesis results:\n"), sep = "")
+  cat(paste(type, "Evidence Synthesis results:\n"), sep = "")
 
   cat("\nFinal ratio GORICA weights:\n")  
   print(apply(x$Final.ratio.GORICA.weights, c(1,2), function(x) 
@@ -593,7 +598,8 @@ summary.evSyn <- function(object, digits = max(3, getOption("digits") - 4), ...)
   
   # make the first letter upper-case
   #Type <- paste(toupper(substr(type, 1, 1)), substr(type, 2, nchar(type)), sep="")
-  cat("\n", "restriktor: ", paste(type, "Evidence Synthesis results:\n"), sep = "")
+  cat(sprintf("restriktor (%s): ", packageDescription("restriktor", fields = "Version")))
+  cat(paste(type, "Evidence Synthesis results:\n"), sep = "")
   
   cat("\nGORICA values:\n")  
   

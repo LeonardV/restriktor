@@ -118,7 +118,7 @@ evSyn <- function(object, ...) {
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on the (standard) parameter estimates and the covariance matrix
-evSyn.est <- function(object, VCOV = NULL, hypotheses = NULL,
+evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
                       type = c("equal", "added"), 
                       comparison = c("unconstrained", "complement", "none")) {
   
@@ -129,25 +129,29 @@ evSyn.est <- function(object, VCOV = NULL, hypotheses = NULL,
   if (missing(type)) 
     type <- "added"
   type <- match.arg(type)
-  
-    
-  if (length(object) != length(VCOV)) {
-    stop("Restriktor Error: object must have the same length as VCOV.")
-  }
+
+  # check if VCOV and hypotheses are both a non-empty list
+  if ( !is.list(VCOV) & length(VCOV) == 0 ) {
+    stop("Restriktor ERROR: VCOV must be a list of covariance matrices of the (standardized) parameter estimates of interest.", call. = FALSE)  
+  } 
+
+  if ( !is.list(hypotheses) & length(hypotheses) == 0 ) {
+    stop("Restriktor ERROR: hypotheses must be a list.", call. = FALSE)  
+  } 
   
   # number of primary studies
   S <- length(object)
   V <- length(VCOV)
   
+  if (S != V) {
+    stop("Restriktor ERROR: the number of items in the object list (i.e., number of (standardized) estimates) must equal the number of items in the VCOV list.", call. = FALSE)
+  }
+
   # check if the matrices are all symmetrical
   VCOV_isSym <- sapply(VCOV, isSymmetric)
   if (!all(VCOV_isSym)) {
-    sprintf("Restriktor Error: the %sth covariance matrix in VCOV is not symmetric.", which(!VCOV_isSym))
+    sprintf("Restriktor ERROR: the %sth covariance matrix in VCOV is not symmetric.", which(!VCOV_isSym))
     stop(call. = FALSE)  
-  }
-
-  if (S != V) {
-    stop("Restriktor Error: the number of studies does not match the number of VCOV.")
   }
 
   # if only 1 hypothesis is provided, that hypothesis will be applied to all studies
@@ -159,7 +163,7 @@ evSyn.est <- function(object, VCOV = NULL, hypotheses = NULL,
   # hypotheses must be applied to each study. Thus, len_H = 1
   list_names <- names(hypotheses)
   
-  if (any(list_names == "") | is.null(list_names)) {
+  if (any(list_names == "") | length(list_names) == 0) {
     stop("Restriktor ERROR: hypotheses must be a named list, for example: 
          'list(H1 = H1) or list(H1 = list(H11, H12), H2 = list(H21, H22))'", call. = FALSE)
 #    len_H <- 1
@@ -184,7 +188,7 @@ evSyn.est <- function(object, VCOV = NULL, hypotheses = NULL,
   # number of hypotheses must be equal for each studie. In each study a set of 
   # shared theories (i.e., hypotheses) are compared.
   if (length(NrHypos) > 1L) {
-    stop("Restriktor Error: the number of hypotheses must be equal in each study.", call. = FALSE)
+    stop("Restriktor ERROR: the number of hypotheses must be equal in each study.", call. = FALSE)
   }
   if (comparison == "complement" & NrHypos > 1L) {
     warning("Restriktor Warning: if comparison = 'complement', only one order-restricted hypothesis\n",
@@ -349,12 +353,18 @@ evSyn.est <- function(object, VCOV = NULL, hypotheses = NULL,
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on log likelihood and penalty values
-evSyn.LL <- function(object, PT, type = c("added", "equal"),
+evSyn.LL <- function(object, PT = list(), type = c("added", "equal"),
                      hypo_names = NULL) {
   
   if (missing(type)) 
     type <- "added"
   type <- match.arg(type)
+  
+  # check if PT is a non-empty list
+  if ( !is.list(PT) & length(PT) == 0 ) {
+    stop("Restriktor ERROR: PT must be a list of penalty weights.", call. = FALSE)  
+  } 
+  
   
   LL <- object
   S <- length(LL)

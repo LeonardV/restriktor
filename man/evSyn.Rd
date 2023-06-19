@@ -1,5 +1,6 @@
 \name{evSyn}
 \alias{evSyn}
+\alias{evsyn}
 \alias{evSyn.default}
 \alias{evSyn.est}
 \alias{evSyn.ICweights}
@@ -16,11 +17,11 @@ same central theory.}
 
 \usage{evSyn(object, \ldots)
 
-\method{evSyn}{est}(object, VCOV = NULL, hypotheses = NULL,
+\method{evSyn}{est}(object, VCOV = list(), hypotheses = list(),
       type = c("equal", "added"), 
       comparison = c("unconstrained", "complement", "none"))
 
-\method{evSyn}{LL}(object, PT, type = c("added", "equal"),
+\method{evSyn}{LL}(object, PT = list(), type = c("added", "equal"),
       hypo_names = NULL)
 
 \method{evSyn}{ICvalues}(object, hypo_names = NULL)
@@ -37,8 +38,8 @@ same central theory.}
 \arguments{
   \item{object}{Currently, the following objects can be processed:
     \itemize{
-      \item a list of vectors with (standardized) parameter estimates;   
-      \item a list of vectors with log-likelihood values;
+      \item a list of vectors with (standardized) parameter estimates (the \code{VCOV} argument is required);   
+      \item a list of vectors with log-likelihood values (the \code{PT} argument is required);
       \item a list of vectors with GORIC(A) weights;
       \item a list of vectors with GORIC(A) values;
     }
@@ -60,7 +61,11 @@ same central theory.}
 
   \item{hypotheses}{see \code{\link{goric}}.}
 
-  \item{comparison}{see \code{\link{goric}}.} 
+  \item{comparison}{if "\code{unconstrained}" (default) the unconstrained model is 
+  included in the set of models. If "\code{complement}" then the restricted object 
+  is compared against its complement. Note that the complement can only be computed 
+  for one model/hypothesis at a time (for now). If "\code{none}" the model is only 
+  compared against the models provided by the user.} 
   
   \item{priorWeights}{vector that represents the prior belief for this model. By default,
   equal prior weights are used (i.e., 1/(#hypotheses)). Notably, in case the prior

@@ -53,15 +53,18 @@ con_weights_boot <- function(VCOV, Amat, meq,
                        dvec = dvec[b, ], 
                        Amat = t(Amat),
                        bvec = bvec, 
-                       meq  = meq))
-    if (verbose) {
-      cat(" ...active inequality constraints =", QP$iact, "\n")
-    }
+                       meq  = meq), silent = TRUE)
     
     if (inherits(QP, "try-error")) {
       if (verbose) cat("quadprog FAILED\n")
       return(NULL)
+    } else {
+      if (verbose) {
+        cat(" ...active inequality constraints =", QP$iact, "\n")
+      }
+      
     }    
+    
     if (QP$iact[1] == 0L) {
       return(0L) 
     } else { 
@@ -93,6 +96,7 @@ con_weights_boot <- function(VCOV, Amat, meq,
   
   error.idx <- integer(0)
   iact <- vector("numeric", ncol(Amat))
+  
   for (b in seq_len(R)) {
     if (!is.null(res[[b]])) {
       iact[b] <- res[[b]]
@@ -105,7 +109,11 @@ con_weights_boot <- function(VCOV, Amat, meq,
   # compute the number of positive components of VCOV.
   # ncol(VCOV) = maximum number of constraints
   # iact       = number of active inequality constraints
-  dimL   <- ncol(VCOV) - iact[-error.idx]
+  if (length(error.idx) > 0) {
+    dimL <- ncol(VCOV) - iact[-error.idx]
+  } else {
+    dimL <- ncol(VCOV) - iact
+  }
   wt.bar <- sapply(0:ncol(VCOV), function(x) sum(x == dimL)) / length(dimL)
   attr(wt.bar, "error.idx") <- error.idx
   

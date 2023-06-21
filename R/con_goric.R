@@ -1133,7 +1133,22 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   } else if (type == "goricac") {
     cat("small sample generalized order-restricted information criterion approximation:\n")
   }
+
+  wt_bar <- sapply(x$objectList, function(x) attr(x$wt.bar, "method") == "boot")
+  if (sum(wt_bar) > 0) {
+    wt_method_boot <- x$objectList[wt_bar]
+    wt_boostrap_draws  <- sapply(wt_method_boot, function(x) attr(x$wt.bar, "mix.bootstrap"))
+    wt_boostrap_errors <- lapply(wt_method_boot, function(x) attr(x$wt.bar, "error.idx"))
   
+    len <- length(wt_method_boot)
+    if (len > 0) {
+      cat("\n")
+      for (i in 1:len) {
+        cat("Number of successful bootstrap draws for", names(wt_method_boot)[i], ":", (wt_boostrap_draws[1] - length(wt_boostrap_errors[[i]])), "\n")
+      }
+    }
+  }
+    
   cat("\nResults:\n")
   print(format(df, digits = digits, scientific = FALSE), 
         print.gap = 2, quote = FALSE)
@@ -1147,8 +1162,6 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   }
   
   message(x$messages$mix_weights)
-  
-#  cat("Number of successful bootstrap draws:", (R - length(error.idx)), "\n")
   
   invisible(x)
 }

@@ -401,7 +401,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
         }
       } else if (all(c(Amat) == 0L)) {
         # unconstrained setting
-        stop("restriktor ERROR: for an unconstrained hypothesis no complement exists.")
+        stop("restriktor ERROR: no complement exists for an unconstrained hypothesis.")
       } else {
         stop("restriktor ERROR: you might have found a bug, please contact me at: info@restriktor.org!")
       }
@@ -497,6 +497,10 @@ goric.default <- function(object, ..., hypotheses = NULL,
     ## correct PT for gorica(c)
     if (type %in% c("gorica", "goricac")) {
       PTu <- PTu - 1
+    }
+    
+    if (is.null(PTm)) {
+      stop("restriktor ERROR: no chi-bar-square weights are found. Use mix.weights = 'pmvnorm' (default) or 'boot'.", call. = FALSE)
     }
     
     goric.Hm <- -2*(llm - PTm)
@@ -668,7 +672,7 @@ goric.lm <- function(object, ..., hypotheses = NULL,
   }
   
   if (is.null(hypotheses)) {
-   stop("restriktor ERROR: no hypothesis syntax found.") 
+   stop("restriktor ERROR: The 'hypotheses' argument is missing. Please make sure to provide a valid set of hypotheses, for example, hypotheses = list(h1 = 'x1 > x2 > x3').", call. = FALSE) 
   }
   
   if (!is.list(hypotheses)) {
@@ -834,8 +838,7 @@ goric.numeric <- function(object, ..., hypotheses = NULL,
   }
   
   if (is.null(hypotheses)) {
-    stop("restriktor ERROR: no hypothesis syntax found.") 
-  }
+    stop("restriktor ERROR: The 'hypotheses' argument is missing. Please make sure to provide a valid set of hypotheses, for example, hypotheses = list(h1 = 'x1 > x2 > x3').", call. = FALSE)   }
   
   if (!c(type %in% c("gorica", "goricac"))) {
     stop("restriktor ERROR: object of class numeric is only supported for type = 'gorica(c)'.")
@@ -915,7 +918,7 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
   }
   
   if (is.null(hypotheses)) {
-    stop("restriktor ERROR: no hypothesis syntax found.") 
+    stop("restriktor ERROR: The 'hypotheses' argument is missing. Please make sure to provide a valid set of hypotheses, for example, hypotheses = list(h1 = 'x1 > x2 > x3').", call. = FALSE) 
   }
   
   if (!c(type %in% c("gorica", "goricac"))) {
@@ -984,7 +987,7 @@ goric.CTmeta <- function(object, ..., hypotheses = NULL,
   }
   
   if (is.null(hypotheses)) {
-    stop("restriktor ERROR: no hypothesis syntax found.") 
+    stop("restriktor ERROR: The 'hypotheses' argument is missing. Please make sure to provide a valid set of hypotheses, for example, hypotheses = list(h1 = 'x1 > x2 > x3').", call. = FALSE) 
   }
   
   if (!c(type %in% c("gorica", "goricac"))) {
@@ -1054,7 +1057,7 @@ goric.rma <- function(object, ..., hypotheses = NULL,
   }
   
   if (is.null(hypotheses)) {
-    stop("restriktor ERROR: no hypothesis syntax found.") 
+    stop("restriktor ERROR: The 'hypotheses' argument is missing. Please make sure to provide a valid set of hypotheses, for example, hypotheses = list(h1 = 'x1 > x2 > x3').", call. = FALSE) 
   }
   
   if (!c(type %in% c("gorica", "goricac"))) {

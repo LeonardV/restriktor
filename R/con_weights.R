@@ -101,11 +101,13 @@ con_weights_boot <- function(VCOV, Amat, meq,
       error.idx <- c(error.idx, b)
     }
   }
+  
   # compute the number of positive components of VCOV.
   # ncol(VCOV) = maximum number of constraints
   # iact       = number of active inequality constraints
-  dimL   <- ncol(VCOV) - iact
-  wt.bar <- sapply(0:ncol(VCOV), function(x) sum(x == dimL)) / R
+  dimL   <- ncol(VCOV) - iact[-error.idx]
+  wt.bar <- sapply(0:ncol(VCOV), function(x) sum(x == dimL)) / length(dimL)
+  attr(wt.bar, "error.idx") <- error.idx
   
   wt.bar
 }

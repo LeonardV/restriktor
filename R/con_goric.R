@@ -1120,15 +1120,8 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   comparison <- x$comparison
   dig <- paste0("%6.", digits, "f")
   x2 <- lapply(x$result[-1], sprintf, fmt = dig)
-  #x2$model <- x$result$model
-  #df <- as.data.frame(x2)
   df <- data.frame(model = x$result$model, x2)
-  # if (comparison == "unconstrained" & length(x2$model) > 2) { 
-  #   df <- df[, c(8, 1:7)]
-  # } else { 
-  #   df <- df[, c(7, 1:6)] #df[, c(5,1,2,3,4)]
-  # }
-  
+
   cat(sprintf("restriktor (%s): ", packageDescription("restriktor", fields = "Version")))
 
   if (type == "goric") {
@@ -1147,14 +1140,15 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   
   if (comparison == "complement") {
     objectnames <- as.character(df$model)
-    #ratio.gw <- apply(x$ratio.gw, 2, sprintf, fmt = dig)  
-    #ratio.gw <- trimws(ratio.gw)
     class(x$ratio.gw) <- "numeric"
-    cat("---", "\nThe order-restricted hypothesis", sQuote(objectnames[1]), "has", sprintf("%.3f", x$ratio.gw[1,2]), "times more support than its complement.\n")
-  } 
+    cat("---", "\nThe order-restricted hypothesis", sQuote(objectnames[1]), "has", sprintf("%.3f", x$ratio.gw[1,2]), "times more support than its complement.\n\n")
+  } else {
+    cat("---\n")  
+  }
   
-  cat("\n")
   message(x$messages$mix_weights)
+  
+#  cat("Number of successful bootstrap draws:", (R - length(error.idx)), "\n")
   
   invisible(x)
 }
@@ -1173,40 +1167,8 @@ summary.con_goric <- function(object, brief = TRUE,
   ratio.gw <- x$ratio.gw
   rownames(ratio.gw) <- rownames(x$ratio.gw)
   
-  # len_mod <- nrow(x$result)
-  # # does any of the models have more support than the unconstrained. 
-  # check_sup <- any(as.numeric(x$result$gorica.weights)[-len_mod] > as.numeric(x$result$gorica.weights)[len_mod])
-  # if (comparison == "unconstrained" & len_mod > 2 & check_sup) {
-  #   #gw_no_unc <- as.numeric(df[df$model != "unconstrained", 7])
-  #   gw_no_unc <- x$result[x$result$model != "unconstrained", 7]
-  #   gw_no_unc <- x$result[, 7]
-  #   # recalculate the values excluding the unconstrained model
-  #   gw_no_unc <- gw_no_unc / sum(gw_no_unc)
-  #   
-  #   ratio.no_unc.gw <- gw_no_unc %*% t(1/gw_no_unc)
-  #   #ratio.no_unc.gw <- apply(tmp, 2, sprintf, fmt = dig)
-  #   colnames(ratio.no_unc.gw) <- colnames(x$ratio.gw)[-len_mod]
-  #   
-  #   extra_rows <- matrix(rep(NA, (nrow(ratio.gw) - nrow(ratio.no_unc.gw)) * ncol(ratio.no_unc.gw)), 
-  #                        nrow = (nrow(ratio.gw) - nrow(ratio.no_unc.gw)), ncol = ncol(ratio.no_unc.gw))
-  #   ratio.no_unc.gw <- rbind(ratio.no_unc.gw, extra_rows)
-  #   
-  #   ratio.gw <- cbind(ratio.gw, rep(NA, nrow(ratio.gw)), ratio.no_unc.gw)
-  #   ratio.gw <- apply(ratio.gw, 2, sprintf, fmt = dig)
-  #   ratio.gw <- trimws(ratio.gw)
-  #   ratio.gw[ratio.gw == "NA"] <- ""
-  #   rownames(ratio.gw) <- rownames(x$ratio.gw)
-  # }
-  
-  
   x2 <- lapply(x$result[-1], sprintf, fmt = dig)
-  #x2$model <- x$result$model
   df <- data.frame(model = x$result$model, x2)
-  # if (comparison == "unconstrained" & length(x2$model) > 2) {
-  #   df <- df[, c(8, 1:7)]
-  # } else { 
-  #   df <- df[, c(7, 1:6)]
-  # }
   
   objectnames <- as.character(df$model)
   
@@ -1254,7 +1216,6 @@ summary.con_goric <- function(object, brief = TRUE,
 
     ratio.gw <- apply(x$ratio.gw, 2, sprintf, fmt = dig)
     rownames(ratio.gw) <- rownames(x$ratio.gw)
-    #ratio.gw <- trimws(ratio.gw)
     class(ratio.gw) <- "numeric"
     
     if (max(ratio.gw, na.rm = TRUE) >= 1e4) {
@@ -1271,7 +1232,6 @@ summary.con_goric <- function(object, brief = TRUE,
     cat("\nRatio penalty-weights:\n")
     ratio.pw <- apply(x$ratio.pw, 2, sprintf, fmt = dig)
     rownames(ratio.pw) <- rownames(x$ratio.pw)
-    #ratio.pw <- trimws(ratio.pw)
     class(ratio.pw) <- "numeric"
     
     if (max(ratio.pw, na.rm = TRUE) >= 1e4) {
@@ -1288,7 +1248,6 @@ summary.con_goric <- function(object, brief = TRUE,
     cat("\nRatio loglik-weights:\n")
     ratio.lw <- apply(x$ratio.lw, 2, sprintf, fmt = dig)
     rownames(ratio.lw) <- rownames(x$ratio.lw) 
-    #ratio.lw <- trimws(ratio.lw)
     class(ratio.lw) <- "numeric"
     
     if (max(ratio.lw, na.rm = TRUE) >= 1e4) {

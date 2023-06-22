@@ -1139,14 +1139,16 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     wt_method_boot <- x$objectList[wt_bar]
     wt_bootstrap_draws  <- sapply(wt_method_boot, function(x) attr(x$wt.bar, "mix.bootstrap"))
     wt_bootstrap_errors <- lapply(wt_method_boot, function(x) attr(x$wt.bar, "error.idx"))
-  
+    max_nchar <- max(nchar(names(wt_method_boot)))
+    
     len <- length(wt_method_boot)
-    if (len > 0) {
+    if (len > 0) { 
       cat("\n")
-      cat("Number of requested bootstrap draws :", wt_bootstrap_draws[1], "\n")
+      cat("Level probabilities:\n")
+      cat("  Number of requested bootstrap draws", wt_bootstrap_draws[1], "\n")
       for (i in 1:len) {
         #cat("Number of successful bootstrap draws for", names(wt_method_boot)[i], ":", (wt_bootstrap_draws[1] - length(wt_bootstrap_errors[[i]])), "\n")
-        cat(paste0("Number of successful bootstrap draws for ", names(wt_method_boot)[i], ": ", (wt_bootstrap_draws[1] - length(wt_bootstrap_errors[[i]])), "\n"))
+        cat(paste0("  Number of successful bootstrap draws for ", sprintf(paste0("%", max_nchar, "s"), names(wt_method_boot)[i]), ": ", (wt_bootstrap_draws[1] - length(wt_bootstrap_errors[[i]])), "\n"))
       }
     }
   }
@@ -1192,14 +1194,35 @@ summary.con_goric <- function(object, brief = TRUE,
   bvec <- x$rhs
   iact <- lapply(x$objectList, FUN = function(x) { x$iact } )
 
+  cat(sprintf("restriktor (%s): ", packageDescription("restriktor", fields = "Version")))
+  
   if (type == "goric") {
-    cat("\nrestriktor: generalized order-restricted information criterion: \n")
+    cat("generalized order-restricted information criterion: \n")
   } else if (type == "gorica") {
-    cat("\nrestriktor: generalized order-restricted information criterion approximation:\n")
+    cat("generalized order-restricted information criterion approximation:\n")
   } else if (type == "goricc") {
-    cat("\nrestriktor: small sample generalized order-restricted information criterion:\n")
+    cat("small sample generalized order-restricted information criterion:\n")
   } else if (type == "goricac") {
-    cat("\nrestriktor: small sample generalized order-restricted information criterion approximation:\n")
+    cat("small sample generalized order-restricted information criterion approximation:\n")
+  }
+  
+  wt_bar <- sapply(x$objectList, function(x) attr(x$wt.bar, "method") == "boot")
+  if (sum(wt_bar) > 0) {
+    wt_method_boot <- x$objectList[wt_bar]
+    wt_bootstrap_draws  <- sapply(wt_method_boot, function(x) attr(x$wt.bar, "mix.bootstrap"))
+    wt_bootstrap_errors <- lapply(wt_method_boot, function(x) attr(x$wt.bar, "error.idx"))
+    max_nchar <- max(nchar(names(wt_method_boot)))
+    
+    len <- length(wt_method_boot)
+    if (len > 0) { 
+      cat("\n")
+      cat("Level probabilities:\n")
+      cat("  Number of requested bootstrap draws", wt_bootstrap_draws[1], "\n")
+      for (i in 1:len) {
+        #cat("Number of successful bootstrap draws for", names(wt_method_boot)[i], ":", (wt_bootstrap_draws[1] - length(wt_bootstrap_errors[[i]])), "\n")
+        cat(paste0("  Number of successful bootstrap draws for ", sprintf(paste0("%", max_nchar, "s"), names(wt_method_boot)[i]), ": ", (wt_bootstrap_draws[1] - length(wt_bootstrap_errors[[i]])), "\n"))
+      }
+    }
   }
   
   cat("\nResults:\n")  

@@ -1137,14 +1137,16 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   wt_bar <- sapply(x$objectList, function(x) attr(x$wt.bar, "method") == "boot")
   if (sum(wt_bar) > 0) {
     wt_method_boot <- x$objectList[wt_bar]
-    wt_boostrap_draws  <- sapply(wt_method_boot, function(x) attr(x$wt.bar, "mix.bootstrap"))
-    wt_boostrap_errors <- lapply(wt_method_boot, function(x) attr(x$wt.bar, "error.idx"))
+    wt_bootstrap_draws  <- sapply(wt_method_boot, function(x) attr(x$wt.bar, "mix.bootstrap"))
+    wt_bootstrap_errors <- lapply(wt_method_boot, function(x) attr(x$wt.bar, "error.idx"))
   
     len <- length(wt_method_boot)
     if (len > 0) {
       cat("\n")
+      cat("Number of requested bootstrap draws :", wt_bootstrap_draws[1], "\n")
       for (i in 1:len) {
-        cat("Number of successful bootstrap draws for", names(wt_method_boot)[i], ":", (wt_boostrap_draws[1] - length(wt_boostrap_errors[[i]])), "\n")
+        #cat("Number of successful bootstrap draws for", names(wt_method_boot)[i], ":", (wt_bootstrap_draws[1] - length(wt_bootstrap_errors[[i]])), "\n")
+        cat(paste0("Number of successful bootstrap draws for ", names(wt_method_boot)[i], ": ", (wt_bootstrap_draws[1] - length(wt_bootstrap_errors[[i]])), "\n"))
       }
     }
   }

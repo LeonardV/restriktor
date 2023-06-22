@@ -26,6 +26,14 @@ print.restriktor <- function(x, digits = max(3, getOption("digits") - 2), ...) {
     cat("restricted multivariate linear model:\n\n")
   }
   
+  wt_method_boot <- attr(x$wt.bar, "method")
+  if (wt_method_boot == "boot") {
+    wt_bootstrap_draws <- attr(x$wt.bar, "mix.bootstrap")
+    wt_boostrap_errors <- attr(x$wt.bar, "error.idx")
+    cat("Number of requested bootstrap draws :", wt_bootstrap_draws, "\n")
+    cat("Number of successful bootstrap draws:", (wt_bootstrap_draws - length(wt_boostrap_errors)), "\n\n")
+  }
+  
   coef <- coef(x)
   ny <- ncol(coef(x$model.org))
   if (!is.null(ny) && ny > 1L) {

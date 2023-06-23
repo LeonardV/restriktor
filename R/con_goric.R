@@ -40,28 +40,15 @@ goric.default <- function(object, ..., hypotheses = NULL,
 
   if (!"restriktor" %in% object_class) { 
     if (!is.list(constraints)) { 
-      stop("restriktor ERROR: hypotheses must be specified as a named list, ",
-           "e.g., hypotheses = list(m1 = 'x1 > 0', m2 = 'x1 == 0') or ",
-           "hypotheses = list(m1 = list(amat = rbind(c(1, 0, 0)), rhs = 0, neq = 0))",
-           call. = FALSE)
+      stop("Restriktor ERROR: The 'hypotheses' argument must be a named list. 
+           Please provide hypotheses in the following format: 'list(H1 = H1)' or 'list(S1 = list(H11, H12), S2 = list(H21, H22))'", call. = FALSE)
     }
     
     # give constraints list a name if null
     if (is.null(names(constraints))) {
       names(constraints) <- paste0("H", 1:length(constraints)) 
     }
-    
-    # conMat <- list()
-    # for (i in names(constraints)) {
-    #   conMat[[i]] <- sapply(constraints[[i]], function(x) inherits(x, "matrix"))
-    # }
-    # # does each list contains a matrix (Amat) 
-    # isConMat <- sum(unlist(conMat)) == length(constraints) 
-    # 
-    # check if any constraints are specified
-    # if (!isConChar & !isConMat) {
-    #   stop("restriktor ERROR: no constraint syntax found.", call. = FALSE)
-    # }
+
   }
 # -------------------------------------------------------------------------
   # create output list
@@ -195,10 +182,9 @@ goric.default <- function(object, ..., hypotheses = NULL,
 
   
   if (comparison == "complement" && length(conList) > 1L) {
+    warning("Restriktor Warning: Only one order-restricted hypothesis is allowed (for now) when comparison = 'complement'.",
+            " Setting comparison to 'unconstrained' instead.", call. = FALSE)
     comparison <- "unconstrained"
-    warning("restriktor Warning: if comparison = 'complement', only one order-restricted hypothesis\n",
-            " is allowed (for now). Therefore, comparison is set to 'unconstrained'.",
-            call. = FALSE)
   } 
 
   

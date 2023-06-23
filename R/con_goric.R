@@ -96,15 +96,20 @@ goric.default <- function(object, ..., hypotheses = NULL,
     # tolower names Amat and rhs
     for (i in seq_along(constraints)) { 
       names(constraints[[i]]) <- tolower(names(constraints[[i]]))
+      if (!names(constraints[[i]]) %in% c("constraints", "rhs", "neq")) {
+        stop("Restriktor ERROR: The list objects must be named as follows: 
+             hypotheses = list(constraints = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0).", 
+             call. = FALSE)
+      }
     }
-    
+
     # standard errors are not needed
     ldots$se <- "none"
     # fit restriktor object for each hypothesis
     conList <- list()
     for (con in 1:length(constraints)) {
       CALL.restr <- append(list(object      = object$object,
-                                constraints = constraints[[con]]$amat,
+                                constraints = constraints[[con]]$constraints,
                                 rhs         = constraints[[con]]$rhs,
                                 neq         = constraints[[con]]$neq), ldots)
       
@@ -144,13 +149,18 @@ goric.default <- function(object, ..., hypotheses = NULL,
     # tolower names Amat and rhs
     for (i in seq_along(constraints)) { 
       names(constraints[[i]]) <- tolower(names(constraints[[i]]))
+      if (!names(constraints[[i]]) %in% c("constraints", "rhs", "neq")) {
+        stop("Restriktor ERROR: The list objects must be named as follows: 
+             hypotheses = list(constraints = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0).", 
+             call. = FALSE)
+      }
     }
     
       conList <- list()
       for (con in 1:length(constraints)) {
         CALL.restr <- append(list(object      = object$object,
                                   VCOV        = as.matrix(VCOV),
-                                  constraints = constraints[[con]]$amat,
+                                  constraints = constraints[[con]]$constraints,
                                   rhs         = constraints[[con]]$rhs,
                                   neq         = constraints[[con]]$neq), ldots)
         conList[[con]] <- do.call("con_gorica_est", CALL.restr) 

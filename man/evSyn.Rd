@@ -108,7 +108,7 @@ CovMx_studies <- list(vcov_est_1, vcov_est_2, vcov_est_3, vcov_est_4)
 H0   <- "beta1 == 0"
 Hpos <- "beta1 > 0"
 Hneg <- "beta1 < 0"
-hypotheses <- list(Hypos = list(H0, Hpos, Hneg))
+hypotheses <- list(H0 = H0, Hpos = Hpos, Hneg = Hneg)
 
 # Since this covers the whole space / covers all theories, we do not need a safeguard-hypothesis:
 comparison <- "none"

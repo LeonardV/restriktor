@@ -14,10 +14,10 @@
 
 # can gorica function do more than restriktor, see mail RK
 
-# update VIGNETTE (ask rebecca for newest version)
+# update VIGNETTE (ik krijg toegang tot .Rmd files)
+# ik krijg alle files mbt evSyn om aan te passen ()
 # nieuwe versie naar CRAN
-# update restriktor websit
-
+# update restriktor website
 
 evSyn <- function(object, ...) { UseMethod("evSyn") }
 
@@ -100,13 +100,13 @@ evSyn <- function(object, ...) {
   } else if (is.null(VCOV) & is.null(PT) & obj_isICweights) { 
     # IC weights
     if (!is.null(arguments$type) && arguments$type == "equal") {
-      message("When the input consists of weights, the only available approach is the added-evidence method.")
+      message("The added-evidence method is the only available approach when weights are included in the input.")
     }
     evSyn.ICweights(object, ...)
   } else if (is.null(VCOV) & is.null(PT) & !obj_isICweights) { 
     # IC values
     if (!is.null(arguments$type) && arguments$type == "equal") { 
-      message("When the input consists of GORIC(A) valuese, the only available approach is the added-evidence method.")
+      message("The added-evidence method is the only available approach when the input consists of GORIC(A) values.")
     }
     evSyn.ICvalues(object, ...)
   } else {
@@ -164,53 +164,67 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
   list_names <- names(hypotheses)
   
   if (any(list_names == "") | length(list_names) == 0) {
-    stop("Restriktor ERROR: hypotheses must be a named list, for example: 
-         'list(H1 = H1) or list(H1 = list(H11, H12), H2 = list(H21, H22))'", call. = FALSE)
-#    len_H <- 1
-#    NrHypos <- length(hypotheses)
-  } 
-  # is one set of hypotheses provided for each study or has each study its own hypotheses
-  # if len_H = 1, then we apply the same hypotheses to each study.
-  len_H <- length(hypotheses)
-  # number of hypotheses per study
-  NrHypos <- unique(sapply(hypotheses, length))
-  
-  #len_H <- length(unique(sapply(hypotheses, function(x) gsub("\\s", "", x))))
-  
-  #if (len_H == 1L | NrHypos == 1) {
-  if (len_H == 1) {
-    SameHypo <- TRUE  
-    #Nrhypos <- 1L
-  } else {
-    SameHypo <- FALSE  
-  }
+    stop("Restriktor ERROR: The 'hypotheses' argument must be a named list. Please provide hypotheses in the following format: 
+         'list(H1 = H1)' or 'list(S1 = list(H11, H12), S2 = list(H21, H22))'", call. = FALSE)
     
+  } 
+
+  # determine if same set of hypotheses in each study or different set of hypotheses in each study.
+  diffSet_hypotheses <- sapply(hypotheses, is.list)
+  if (all(!diffSet_hypotheses)) {
+    # same hypotheses in each study
+    sameHypo <- TRUE  
+  } else if (all(diffSet_hypotheses)) {
+    # different hypotheses in each study
+    sameHypo <- FALSE  
+  } else {
+    stop("Restriktor ERROR: To apply hypotheses, use the following format:\n",
+         "If you want to apply the same set of hypotheses for each study, use: hypotheses = list(H1, H2, ...).\n",
+         "If you want to apply a different set of hypotheses for each study, use: hypotheses = list(S1 = list(H1, H2), S2 = list(H3, H4)).",
+         call. = FALSE)
+    
+  }
+  
+  ## for testing purposes only
+  #hypo = list(H1 = list(hypothesis1), H2 = list(hypothesis1, hypothesis2))
+  #hypo = list(H1 = list(hypothesis1, hypothesis2), H2 = list(hypothesis1, hypothesis2))  
+  #hypo = list(H1 = list(hypothesis1), H2 = list(hypothesis2))  
+  #hypo = list(H1 = hypothesis1)  
+  
   # number of hypotheses must be equal for each studie. In each study a set of 
   # shared theories (i.e., hypotheses) are compared.
-  if (length(NrHypos) > 1L) {
-    stop("Restriktor ERROR: the number of hypotheses must be equal in each study.", call. = FALSE)
-  }
-  if (comparison == "complement" & NrHypos > 1L) {
-    warning("Restriktor Warning: if comparison = 'complement', only one order-restricted hypothesis\n",
-            " is allowed (for now). Therefore, comparison is set to 'unconstrained'.",
-            call. = FALSE)
-  }
-  
-  if (len_H == 1) {
-    #NrHypos <- length(hypotheses)
-    NrHypos_incl <- NrHypos + 1
-    sameHypo <- TRUE
-    if (comparison == "none"){
-      NrHypos_incl <- NrHypos
+  len_H <- sapply(hypotheses, length)
+  if (!sameHypo) {
+    if (length(unique(len_H)) > 1) {
+      stop("Restriktor ERROR: The number of hypotheses must be consistent across all studies.", call. = FALSE)
     }
-  } else {
-    NrHypos_incl <- NrHypos + 1
-    if (comparison == "none"){
-      NrHypos_incl <- NrHypos
+    
+    if (length(object) != length(len_H)) {
+      stop("Restriktor ERROR: The number of hypotheses does not match the number of studies.", call. = FALSE)
     }
-    sameHypo <- FALSE
   }
+
+  # if same hypo for each study, then only one hypo is allowed for comparison = complement
+  comp_check_same <- sameHypo & length(len_H) == 1
+  # if diff hypo for each study, then only one hypo is allowed for comparison = complement
+  comp_check_diff <- !sameHypo & all(len_H == 1)
   
+  
+  if (comparison == "complement") {
+    if ((sameHypo && !comp_check_same) | (!sameHypo && !comp_check_diff)) {
+      warning("Restriktor Warning: Only one order-restricted hypothesis is allowed (for now) when comparison = 'complement'.",
+              " Setting comparison to 'unconstrained' instead.", call. = FALSE)
+      comparison <- "unconstrained"
+    }
+  }
+
+  
+  NrHypos <- length(len_H)
+  NrHypos_incl <- NrHypos + 1
+  if (comparison == "none"){
+    NrHypos_incl <- NrHypos
+  }
+
   LL <- PT <- weight_m <- GORICA_m <- matrix(data = NA, nrow = S, ncol = NrHypos_incl)
     rownames(LL) <- rownames(PT) <- paste0("Study ", 1:S)
 
@@ -244,28 +258,19 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
 
   for(s in 1:S) {
     if (sameHypo) {
-      
-      cnm <- TRUE #check_name_match(vector_names = names(object[[s]]), list = hypotheses)
-      # check if object names matches hypotheses labels
-      # check_name <- all(sapply(hypotheses, function(x) check_name_match(vector_names = names(object[[s]]), 
-      #                                                                    list         = x)))
-      if (!cnm) {
-        stop(paste("Restriktor ERROR: object names", paste(names(object[[s]]), collapse = ", ") ),
-        " do not match the names in the hypothesis syntax.", call. = FALSE)
-      }
       res_goric <- goric(object[[s]], VCOV = VCOV[[s]], 
                          hypotheses = as.list(unlist(hypotheses)),
                          type = 'gorica', comparison = comparison)
     } else {
-      res_goric <- goric(object[[s]], VCOV = VCOV[[s]], 
-                         hypotheses = hypotheses,
+      res_goric <- goric(object[[s]], VCOV = VCOV[[s]],
+                         hypotheses = hypotheses[[s]],
                          type = 'gorica', comparison = comparison)
     }
     
     if (comparison == "unconstrained") {
-      ratio.weight_mu[s,] <- res_goric$ratio.gw[, NrHypos_incl]
+      ratio.weight_mu[s, ] <- res_goric$ratio.gw[, NrHypos_incl]
     } else if (comparison == "complement") {
-      ratio.weight_mu[s,] <- res_goric$ratio.gw[1, NrHypos_incl]
+      ratio.weight_mu[s, ] <- res_goric$ratio.gw[1, NrHypos_incl]
     } 
     
   

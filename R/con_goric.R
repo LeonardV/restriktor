@@ -1228,7 +1228,7 @@ summary.con_goric <- function(object, brief = TRUE,
   cat("\nResults:\n")  
   
   print(format(df, digits = digits, scientific = FALSE), 
-        print.gap = 2, quote = FALSE)
+        print.gap = 2, quote = FALSE, right = TRUE)
   cat("---\n")
   
   
@@ -1257,11 +1257,11 @@ summary.con_goric <- function(object, brief = TRUE,
     class(ratio.gw) <- "numeric"
     
     if (max(ratio.gw, na.rm = TRUE) >= 1e4) {
-      print(format(ratio.gw, digits = digits, scientific = TRUE), 
-            print.gap = 2, quote = FALSE) 
+      print(format(ratio.gw, digits = digits, scientific = TRUE, trim = TRUE), 
+            print.gap = 2, quote = FALSE, right = FALSE) 
     } else {
-      print(format(ratio.gw, digits = digits, scientific = FALSE), 
-            print.gap = 2, quote = FALSE)
+      print(format(ratio.gw, digits = digits, scientific = FALSE, trim = TRUE), 
+            print.gap = 5, quote = FALSE, right = FALSE)
     }
     cat("---\n")
   }
@@ -1273,11 +1273,11 @@ summary.con_goric <- function(object, brief = TRUE,
     class(ratio.pw) <- "numeric"
     
     if (max(ratio.pw, na.rm = TRUE) >= 1e4) {
-      print(format(x$ratio.pw, digits = digits, scientific = TRUE), 
-            print.gap = 2, quote = FALSE)
+      print(format(x$ratio.pw, digits = digits, scientific = TRUE, trim = TRUE), 
+            print.gap = 2, quote = FALSE, right = FALSE)
     } else {
-      print(format(ratio.pw, digits = digits, scientific = FALSE), 
-            print.gap = 2, quote = FALSE)
+      print(format(ratio.pw, digits = digits, scientific = FALSE, trim = TRUE), 
+            print.gap = 2, quote = FALSE, right = FALSE)
     }
     cat("---\n")
   }
@@ -1289,11 +1289,11 @@ summary.con_goric <- function(object, brief = TRUE,
     class(ratio.lw) <- "numeric"
     
     if (max(ratio.lw, na.rm = TRUE) >= 1e4) {
-      print(format(ratio.lw, digits = digits, scientific = TRUE), 
-            print.gap = 2, quote = FALSE)
+      print(format(ratio.lw, digits = digits, scientific = TRUE, trim = TRUE), 
+            print.gap = 2, quote = FALSE, right = FALSE)
     } else {
-      print(format(ratio.lw, digits = digits, scientific = FALSE), 
-            print.gap = 2, quote = FALSE)
+      print(format(ratio.lw, digits = digits, scientific = FALSE, trim = TRUE), 
+            print.gap = 2, quote = FALSE, right = FALSE)
     }
     cat("---\n")
   }
@@ -1304,7 +1304,7 @@ summary.con_goric <- function(object, brief = TRUE,
     coefs <- trimws(apply(x$ormle$b.restr, 2, sprintf, fmt = dig))
     coefs[coefs == "NA"] <- ""
     rownames(coefs) <- rownames(x$ormle$b.restr)
-    print(format(coefs, digits = digits, scientific = FALSE), print.gap = 2L,
+    print(format(coefs, digits = digits, scientific = FALSE), print.gap = 2,
           quote = FALSE)
     cat("---\n")
     

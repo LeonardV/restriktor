@@ -160,9 +160,9 @@ comparable to the Akaike weights.
   If the object is an unconstrained model of class \code{lm}, \code{rlm} or \code{glm}, 
   then the hypotheses can be specified in two ways, see \code{\link{restriktor}}. Note 
   that if the hypotheses are written in matrix notation, then the hypotheses
-  for each model/hypothesis is put in a named list with specific names amat, rhs, 
+  for each model/hypothesis is put in a named list with specific names constraints, rhs, 
   and neq. For example with three parameters x1, x2, x3, and x1 > 0: 
-  list(model1 = list(amat = rbind(c(1, 0, 0)), rhs = 0, neq = 0))). The \code{rhs} 
+  list(model1 = list(constraints = rbind(c(1, 0, 0)), rhs = 0, neq = 0))). The \code{rhs} 
   and \code{neq} are not required if they are equal to 0. If \code{type = "gorica"},
   then the object might be a (named) numeric vector. The hypotheses can again be 
   specified in two ways, see \code{\link{restriktor}}. For examples, see below.
@@ -289,8 +289,8 @@ goric(fit.lm, hypotheses = list(h1, h2), type = "gorica")
 goric(est, VCOV = VCOV, hypotheses = list(h1, h2), type = "gorica")
 
 ## constraint syntax (matrix notation)
-h1 <- list(amat = c(0,1,0))
-h2 <- list(amat = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0)
+h1 <- list(constraints = c(0,1,0))
+h2 <- list(constraints = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0)
 goric(fit.lm, hypotheses = list(h1, h2), type = "gorica")
 goric(est, VCOV = VCOV, hypotheses = list(h1, h2), type = "gorica")
 

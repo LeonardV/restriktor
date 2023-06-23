@@ -96,7 +96,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     # tolower names Amat and rhs
     for (i in seq_along(constraints)) { 
       names(constraints[[i]]) <- tolower(names(constraints[[i]]))
-      if (!names(constraints[[i]]) %in% c("constraints", "rhs", "neq")) {
+      if (any(!names(constraints[[i]]) %in% c("constraints", "rhs", "neq"))) { 
         stop("Restriktor ERROR: The list objects must be named as follows: 
              hypotheses = list(constraints = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0).", 
              call. = FALSE)
@@ -149,7 +149,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     # tolower names Amat and rhs
     for (i in seq_along(constraints)) { 
       names(constraints[[i]]) <- tolower(names(constraints[[i]]))
-      if (!names(constraints[[i]]) %in% c("constraints", "rhs", "neq")) {
+      if (any(!names(constraints[[i]]) %in% c("constraints", "rhs", "neq"))) {
         stop("Restriktor ERROR: The list objects must be named as follows: 
              hypotheses = list(constraints = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0).", 
              call. = FALSE)

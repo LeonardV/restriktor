@@ -150,8 +150,7 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
   # check if the matrices are all symmetrical
   VCOV_isSym <- sapply(VCOV, isSymmetric)
   if (!all(VCOV_isSym)) {
-    sprintf("Restriktor ERROR: the %sth covariance matrix in VCOV is not symmetric.", which(!VCOV_isSym))
-    stop(call. = FALSE)  
+    stop(sprintf("Restriktor ERROR: the %sth covariance matrix in VCOV is not symmetric.", which(!VCOV_isSym)), call. = FALSE)  
   }
 
   # if only 1 hypothesis is provided, that hypothesis will be applied to all studies
@@ -716,10 +715,15 @@ plot.evSyn <- function(x, ...) {
   CumulativeGoricaWeights <- x$Cumulative.GORICA.weights
   
   # Create data frame for per study weights
-  per_study_df <- data.frame(study = rep(Name_studies, NrHypos_incl),
-                             weight = c(weight_m))
-  per_study_df$weight_type <- "per study"
-  
+  if (all(is.na(weight_m))) {
+    per_study_df <- NULL
+    times <- 1
+  } else {
+    per_study_df <- data.frame(study = rep(Name_studies, NrHypos_incl),
+                               weight = c(weight_m))
+    per_study_df$weight_type <- "per study"
+    times <- 2
+  }
   # Create data frame for cumulative weights
   cumulative_df <- data.frame(study = rep(Name_studies, NrHypos_incl),
                               weight = c(CumulativeGoricaWeights[1:S, ]))
@@ -727,10 +731,10 @@ plot.evSyn <- function(x, ...) {
   
   # Combine data frames
   plot_data <- rbind(per_study_df, cumulative_df)
-  plot_data$variable <- rep(rep(namesH, each = S), times = 2)
+  plot_data$variable <- rep(rep(namesH, each = S), times = times)
   
   # Create plot
-  ggplot(plot_data, aes(x = .data[['study']], 
+  ggplot(plot_data, aes(x = .data[['study']],  
                         y = .data[['weight']], 
                         shape    = .data[['weight_type']], 
                         linetype = .data[['weight_type']], 
@@ -738,14 +742,10 @@ plot.evSyn <- function(x, ...) {
     geom_point(size = 3) +
     geom_line(data = plot_data[plot_data[['weight_type']] == "cumulative", ], 
               aes(group = .data[['variable']]), linewidth = 1) +
-    #scale_shape_manual(values = c(8, 16)) +
-    #scale_linetype_manual(values = c("solid", "dashed")) +
-    #scale_color_manual(values = c("#D81B60", "#1E88E5")) +
     theme(
       plot.margin = unit(c(1,1,1,1), "cm"),
       legend.position = "bottom",
       legend.margin = margin(t = 10, r = 0, b = 3, l = 0),
-      #legend.title = element_text(size = 18),
       legend.key = element_blank(),
       legend.text = element_text(size = 12),
       axis.text.x  = element_text(size = 12), axis.text.y = element_text(size = 12),

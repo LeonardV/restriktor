@@ -751,7 +751,7 @@ summary.evSyn <- function(object, digits = max(3, getOption("digits") - 4), ...)
   }
   
   
-  cat("\nFinal results:\n")
+  cat("\nFinal cumulative results:\n")
   
   final <- rbind()
   #cat("\n    Cumulative GORICA weights:\n")  
@@ -762,7 +762,7 @@ summary.evSyn <- function(object, digits = max(3, getOption("digits") - 4), ...)
   #cat(paste0(adjusted_output, "\n"), sep = "")
   #cat("    ---\n")
   fcgw <- as.matrix(t(fcgw))
-  row.names(fcgw) <- "Cumulative GORICA weights"
+  row.names(fcgw) <- "GORICA weights"
   final <- rbind(final, fcgw)
   
   if (!is.null(x[["Cumulative_GORICA"]])) {
@@ -774,7 +774,7 @@ summary.evSyn <- function(object, digits = max(3, getOption("digits") - 4), ...)
     #cat(paste0(adjusted_output, "\n"), sep = "")
     #cat("    ---\n")
     fcgv <- as.matrix(t(fcgv))
-    row.names(fcgv) <- "Cumulative GORICA values"
+    row.names(fcgv) <- "GORICA values"
     final <- rbind(final, fcgv)
   }
   
@@ -787,7 +787,7 @@ summary.evSyn <- function(object, digits = max(3, getOption("digits") - 4), ...)
     #cat(paste0(adjusted_output, "\n"), sep = "")
     #cat("    ---\n")
     fcllv <- as.matrix(t(fcllv))
-    row.names(fcllv) <- "Cumulative Log-likelhood values"
+    row.names(fcllv) <- "Log-likelhood values"
     final <- rbind(final, fcllv)
   }
   
@@ -799,7 +799,7 @@ summary.evSyn <- function(object, digits = max(3, getOption("digits") - 4), ...)
     #adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
     #cat(paste0(adjusted_output, "\n"), sep = "")
     fcptv <- as.matrix(t(fcptv))
-    row.names(fcptv) <- "Cumulative Penalty term values"
+    row.names(fcptv) <- "Penalty term values"
     final <- rbind(final, fcptv)
     
     #cat("    ---\n")
@@ -811,10 +811,10 @@ summary.evSyn <- function(object, digits = max(3, getOption("digits") - 4), ...)
   cat(paste0(adjusted_output, "\n"), sep = "")
   
   
-  cat("\nFinal ratios:\n")
+  cat("\nFinal cumulative ratios:\n")
 
   if (!is.null(x$Final_ratio_GORICA_weights)) {
-    cat("\n    Final ratio GORICA weights:\n")  
+    cat("\n    GORICA weights:\n")  
     frgw <- apply(x$Final_ratio_GORICA_weights[,,drop = FALSE], c(1,2), function(x) 
       format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3))
     formatted_frgw <- format(frgw, justify = "right")
@@ -825,7 +825,7 @@ summary.evSyn <- function(object, digits = max(3, getOption("digits") - 4), ...)
   }
   
   if (!is.null(x$LL_m)) {
-    cat("\n    Final ratio Log-likelihood values:\n")  
+    cat("\n    Log-likelihood values:\n")  
     Final_ratio_Cumulative_LL <- Cumulative_LL[S, ] %*% t(1/Cumulative_LL[S, ])
     rownames(Final_ratio_Cumulative_LL) <- colnames(Final_ratio_Cumulative_LL)
     colnames(Final_ratio_Cumulative_LL) <- paste0("vs. ", rownames(Final_ratio_Cumulative_LL))

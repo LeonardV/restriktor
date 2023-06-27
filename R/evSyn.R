@@ -419,6 +419,9 @@ evSyn.LL <- function(object, PT = list(), type = c("added", "equal"),
   } else { 
     # equal-ev approach
     for (s in 1:S){
+      minIC <- min(IC[s, ])
+      weight_m[s, ] <- exp(-0.5*(IC[s, ]-minIC)) / sum(exp(-0.5*(IC[s, ]-minIC)))
+      
       sumLL <- sumLL + LL[s, ]
       sumPT <- sumPT + PT[s, ]
       CumulativeGorica[s, ] <- -2 * sumLL + 2 * sumPT/s
@@ -580,6 +583,7 @@ evSyn.ICweights <- function(object, priorWeights = NULL, hypo_names = NULL) {
 }
 
 
+## final gorica weights toevoegen
 
 ## print function
 print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {

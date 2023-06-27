@@ -308,28 +308,31 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
   
   rownames(Final.ratio.GORICA.weights) <- hnames
   hypotheses <- res_goric$hypotheses_usr
-  #names(hypotheses) <- hnames
   
   # Output
   if (NrHypos == 1 & comparison == "complement") {
     colnames(ratio.weight_mu) <- c("H1 vs. Hc1")
     colnames(Final.ratio.GORICA.weights) <- c("vs. H1", "vs. Hc")
     
-    out <- list(type = type, 
-                GORICA_m = GORICA_m, GORICA.weight_m = weight_m, 
-                ratio.GORICA.weight_mc = ratio.weight_mu, LL_m = LL, PT_m = PT,
-                Cumulative.GORICA = CumulativeGorica, 
-                Cumulative.GORICA.weights = CumulativeGoricaWeights,
-                Final.ratio.GORICA.weights = Final.ratio.GORICA.weights,
+    out <- list(type     = type, 
+                GORICA_m = GORICA_m, 
+                GORICA_weight_m = weight_m, 
+                ratio_GORICA_weight_mc = ratio.weight_mu, 
+                LL_m = LL, PT_m = PT,
+                Cumulative_GORICA = CumulativeGorica, 
+                Cumulative_GORICA_weights = CumulativeGoricaWeights,
+                Final_ratio_GORICA_weights = Final.ratio.GORICA.weights,
                 hypotheses = hypotheses)
   } else if (comparison == "none") {
     colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. H", 1:NrHypos))
     
     out <- list(type = type,
-                GORICA_m = GORICA_m, GORICA.weight_m = weight_m, LL_m = LL, PT_m = PT,
-                Cumulative.GORICA = CumulativeGorica, 
-                Cumulative.GORICA.weights = CumulativeGoricaWeights,
-                Final.ratio.GORICA.weights = Final.ratio.GORICA.weights,
+                GORICA_m = GORICA_m, 
+                GORICA_weight_m = weight_m, 
+                LL_m = LL, PT_m = PT,
+                Cumulative_GORICA = CumulativeGorica, 
+                Cumulative_GORICA_weights = CumulativeGoricaWeights,
+                Final_ratio_GORICA_weights = Final.ratio.GORICA.weights,
                 hypotheses = hypotheses)
   } else { 
     # unconstrained
@@ -338,13 +341,13 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
     
     out <- list(type = type,
                 GORICA_m        = GORICA_m, 
-                GORICA.weight_m = weight_m, 
-                ratio.GORICA.weight_mu = ratio.weight_mu, 
+                GORICA_weight_m = weight_m, 
+                ratio_GORICA_weight_mu = ratio.weight_mu, 
                 LL_m = LL, 
                 PT_m = PT,
-                Cumulative.GORICA = CumulativeGorica, 
-                Cumulative.GORICA.weights  = CumulativeGoricaWeights,
-                Final.ratio.GORICA.weights = Final.ratio.GORICA.weights)
+                Cumulative_GORICA = CumulativeGorica, 
+                Cumulative_GORICA_weights  = CumulativeGoricaWeights,
+                Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
   }
   
   class(out) <- c("evSyn.est", "evSyn")
@@ -443,10 +446,10 @@ evSyn.LL <- function(object, PT = list(), type = c("added", "equal"),
               LL_m = LL, 
               PT_m = PT, 
               GORICA_m = IC, 
-              GORICA.weight_m   = weight_m,
-              Cumulative.GORICA = CumulativeGorica, 
-              Cumulative.GORICA.weights = CumulativeGoricaWeights,
-              Final.ratio.GORICA.weights  = Final.ratio.GORICA.weights)
+              GORICA_weight_m   = weight_m,
+              Cumulative_GORICA = CumulativeGorica, 
+              Cumulative_GORICA_weights = CumulativeGoricaWeights,
+              Final_ratio_GORICA_weights  = Final.ratio.GORICA.weights)
   
   class(out) <- c("evSyn.LL", "evSyn")
   
@@ -511,10 +514,10 @@ evSyn.ICvalues <- function(object, hypo_names = NULL) {
   
   out <- list(type              = "added",
               GORICA_m          = IC, 
-              GORICA.weight_m   = weight_m,
-              Cumulative.GORICA = CumulativeGorica, 
-              Cumulative.GORICA.weights  = CumulativeGoricaWeights,
-              Final.ratio.GORICA.weights = Final.ratio.GORICA.weights)
+              GORICA_weight_m   = weight_m,
+              Cumulative_GORICA = CumulativeGorica, 
+              Cumulative_GORICA_weights  = CumulativeGoricaWeights,
+              Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
   
   class(out) <- c("evSyn.ICvalues", "evSyn")
   
@@ -544,7 +547,8 @@ evSyn.ICweights <- function(object, priorWeights = NULL, hypo_names = NULL) {
   }
   
   CumulativeWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
-  colnames(CumulativeWeights) <- hypo_names
+  colnames(Weights) <- colnames(CumulativeWeights) <- hypo_names
+  
   
   sequence <- vector(mode = "character", length = S)
   for (i in 1:S) {
@@ -554,7 +558,7 @@ evSyn.ICweights <- function(object, priorWeights = NULL, hypo_names = NULL) {
       sequence[i] <- paste0("1-", i)
     }
   }
-  rownames(CumulativeGorica) <- c(paste0("Studies ", sequence), "Final")
+  rownames(CumulativeWeights) <- c(paste0("Studies ", sequence), "Final")
   #rownames(CumulativeWeights) <- c(paste0("Study_", 1:S), "Final")
   
   CumulativeWeights[1, ] <- priorWeights * Weights[1, ] / sum( priorWeights * Weights[1, ] )
@@ -571,10 +575,10 @@ evSyn.ICweights <- function(object, priorWeights = NULL, hypo_names = NULL) {
   rownames(Final.ratio.GORICA.weights) <- hypo_names
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hypo_names)
   
-  out <- list(type               = "added",
-              weight_m           = Weights,
-              Cumulative.weights = CumulativeWeights,
-              Final.ratio.GORICA.weights  = Final.ratio.GORICA.weights)
+  out <- list(type                       = "added",
+              GORICA_weight_m            = Weights,
+              Cumulative_GORICA_weights  = CumulativeWeights,
+              Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
   
   class(out) <- c("evSyn.ICweights", "evSyn")
   
@@ -596,9 +600,16 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   
   #cat("\n", "restriktor: ", paste(type, "Evidence Synthesis results:\n"), sep = "")
   cat(paste(type, "Evidence Synthesis results:\n"), sep = "")
-
+  
+  if (!is.null(x$Cumulative_GORICA_weights)) {
+    cat("\nFinal cumulative GORICA weights:\n")   
+    print(sapply(x$Cumulative_GORICA_weights["Final", ], function(x) sprintf("%.3f", x)), 
+          print.gap = 2, quote = FALSE, right = TRUE)
+    cat("---\n")
+  }
+  
   cat("\nFinal ratio GORICA weights:\n")  
-  print(apply(x$Final.ratio.GORICA.weights, c(1,2), function(x) 
+  print(apply(x$Final_ratio_GORICA_weights, c(1,2), function(x) 
     format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3)), 
     print.gap = 2, quote = FALSE, right = TRUE)
   
@@ -613,39 +624,89 @@ summary.evSyn <- function(object, digits = max(3, getOption("digits") - 4), ...)
   x <- object
   # added or equal approach
   type <- x$type
+  # number of studies
+  S <- nrow(x$GORICA_weight_m[,,drop = FALSE])
   
   # make the first letter upper-case
   #Type <- paste(toupper(substr(type, 1, 1)), substr(type, 2, nchar(type)), sep="")
   cat(sprintf("restriktor (%s): ", packageDescription("restriktor", fields = "Version")))
   cat(paste(type, "Evidence Synthesis results:\n"), sep = "")
   
-  cat("\nGORICA values:\n")  
+  indentation <- "    "  # Four spaces for indentation
   
-  print(apply(x$GORICA_m, c(1,2), function(x) 
-    format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3)), 
-    print.gap = 2, quote = FALSE, right = TRUE)
-  cat("---\n")
+  cat("\nStudy results:\n")
   
-  if (!all(is.na(x$GORICA.weight_m))) {
-    cat("\nGORICA weights:\n")  
-    print(apply(x$GORICA.weight_m, c(1,2), function(x) sprintf("%.3f", x)), 
-          print.gap = 2, quote = FALSE, right = TRUE)
-    cat("---\n")
-  }
-  
-  if (!is.null(x$LL_m)) {
-    cat("\nLog-likelihood values:\n")  
-    print(apply(x$LL_m, c(1,2), function(x) 
-      format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3)), 
-      print.gap = 2, quote = FALSE, right = TRUE)
-    cat("---\n")
-  }
-  
-  if (!is.null(x$LL_m)) {
-    cat("\nCumulative Log-likelihood values:\n")  
-    Cumulative.LL <- apply(x$LL_m, 2, cumsum)  
+  if (!is.null(x$GORICA_m)) {
+    cat("\n    GORICA values:\n")  
+    gv <- apply(x$GORICA_m[,,drop = FALSE], c(1,2), function(x) 
+                format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), 
+                       digits = digits, nsmall = 3))
     
-    S <- nrow(Cumulative.LL)
+    formatted_gv <- format(gv, justify = "right")
+    captured_output <- capture.output(print(formatted_gv, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+    cat("    ---\n")
+  }
+  
+  if (!is.null(x$GORICA_weight_m)) {
+    cat("\n    GORICA weights:\n")  
+    gw <- apply(x$GORICA_weight_m[,,drop = FALSE], c(1,2), function(x) sprintf("%.3f", x))
+    formatted_gw <- format(gw, justify = "right")
+    captured_output <- capture.output(print(formatted_gw, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+    cat("    ---\n")
+  }
+  
+  if (!is.null(x$LL_m)) {
+    cat("\n    Log-likelihood values:\n")  
+    llv <- apply(x$LL_m[,,drop = FALSE], c(1,2), function(x) 
+            format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3))
+    formatted_llv <- format(llv, justify = "right")
+    captured_output <- capture.output(print(formatted_llv, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+    cat("    ---\n")
+  }
+  
+  if (!is.null(x$PT_m)) {
+    cat("\n    Penalty term values:\n")  
+    ptv <- apply(x$PT_m[,,drop = FALSE], c(1,2), function(x) sprintf("%.3f", x))
+    formatted_ptv <- format(ptv, justify = "right")
+    captured_output <- capture.output(print(formatted_ptv, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+    cat("    ---\n")
+  }
+  
+  
+  
+  cat("\nCumulative results:\n")
+  if (!is.null(x[["Cumulative_GORICA"]])) {
+    cat("\n    GORICA values:\n")  
+    cgv <- apply(x$Cumulative_GORICA[1:S, , drop = FALSE], c(1,2), function(x) 
+      format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3))
+    formatted_cgv <- format(cgv, justify = "right")
+    captured_output <- capture.output(print(formatted_cgv, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+    cat("    ---\n")
+  }
+  if (!is.null(x[["Cumulative_GORICA_weights"]])) {
+    cat("\n    GORICA weights:\n")  
+    cgw <- apply(x$Cumulative_GORICA_weights[1:S, , drop = FALSE], c(1,2), function(x) sprintf("%.3f", x))
+    formatted_cgw <- format(cgw, justify = "right")
+    captured_output <- capture.output(print(formatted_cgw, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+    cat("    ---\n")
+  }
+  
+  if (!is.null(x$LL_m)) {
+    cat("\n    Log-likelihood values:\n")  
+    Cumulative_LL <- apply(x$LL_m, 2, cumsum)  
+    
     sequence <- vector(mode = "character", length = S)
     for (i in 1:S) {
       if (i == 1) {
@@ -654,50 +715,128 @@ summary.evSyn <- function(object, digits = max(3, getOption("digits") - 4), ...)
         sequence[i] <- paste0("1-", i)
       }
     }
-    rownames(Cumulative.LL) <- paste0("Studies ", sequence)
-    Cumulative.LL <- rbind(Cumulative.LL, Final = Cumulative.LL[S, ])
-
-    print(apply(Cumulative.LL, c(1,2), function(x) 
-      format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3)), 
-      print.gap = 2, quote = FALSE, right = TRUE)
-    cat("---\n")
+    rownames(Cumulative_LL) <- paste0("Studies ", sequence)
+    x$Cumulative_LogLik <- Cumulative_LL
     
-    cat("\nFinal ratio Log-likelihood values:\n")  
-    Final.ratio.Cumulative.LL <- Cumulative.LL[S, ] %*% t(1/Cumulative.LL[S, ])
-    rownames(Final.ratio.Cumulative.LL) <- colnames(Final.ratio.Cumulative.LL)
-    colnames(Final.ratio.Cumulative.LL) <- paste0("vs. ", rownames(Final.ratio.Cumulative.LL))
-    
-      
-    print(apply(Final.ratio.Cumulative.LL, c(1,2), function(x) 
-      format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3)), 
-      print.gap = 2, quote = FALSE, right = TRUE)
-    cat("---\n")
+    cllv <- apply(Cumulative_LL[,,drop = FALSE], c(1,2), function(x) 
+      format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3))
+    formatted_cllv <- format(cllv, justify = "right")
+    captured_output <- capture.output(print(formatted_cllv, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+    cat("    ---\n")
   }
   
   if (!is.null(x$PT_m)) {
-    cat("\nPenalty term values:\n")  
-    print(apply(x$PT_m, c(1,2), function(x) sprintf("%.3f", x)), 
-          print.gap = 2, quote = FALSE, right = TRUE)
-    cat("---\n")
+    cat("\n    Penalty term values:\n")  
+    Cumulative_PT <- apply(x$PT_m[,,drop = FALSE], 2, cumsum)  
+    
+    sequence <- vector(mode = "character", length = S)
+    for (i in 1:S) {
+      if (i == 1) {
+        sequence[i] <- "1"
+      } else {
+        sequence[i] <- paste0("1-", i)
+      }
+    }
+    rownames(Cumulative_PT) <- paste0("Studies ", sequence)
+    x$Cumulative_PT <- Cumulative_PT
+    cptv <- apply(Cumulative_PT[,,drop = FALSE], c(1,2), function(x) 
+      format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3))
+    formatted_cptv <- format(cptv, justify = "right")
+    captured_output <- capture.output(print(formatted_cptv, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+    cat("    ---\n")
   }
   
-  cat("\nCumulative GORICA values:\n")  
-  print(apply(x$Cumulative.GORICA, c(1,2), function(x) 
-    format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3)), 
-    print.gap = 2, quote = FALSE, right = TRUE)
-  cat("---\n")
+  
+  cat("\nFinal results:\n")
+  
+  final <- rbind()
+  #cat("\n    Cumulative GORICA weights:\n")  
+  fcgw <- sapply(x[["Cumulative_GORICA_weights"]]["Final", ], function(x) sprintf("%.3f", x))
+  #formatted_fcgw <- format(fcgw, justify = "right")
+  #captured_output <- capture.output(print(formatted_fcgw, row.names = TRUE, right = TRUE, quote = "FALSE"))
+  #adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+  #cat(paste0(adjusted_output, "\n"), sep = "")
+  #cat("    ---\n")
+  fcgw <- as.matrix(t(fcgw))
+  row.names(fcgw) <- "Cumulative GORICA weights"
+  final <- rbind(final, fcgw)
+  
+  if (!is.null(x[["Cumulative_GORICA"]])) {
+    #cat("\n    Cumulative GORICA values:\n")  
+    fcgv <- sapply(x[["Cumulative_GORICA"]]["Final", ], function(x) sprintf("%.3f", x))
+    #formatted_fcgv <- format(fcgv, justify = "right")
+    #captured_output <- capture.output(print(formatted_fcgv, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    #adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    #cat(paste0(adjusted_output, "\n"), sep = "")
+    #cat("    ---\n")
+    fcgv <- as.matrix(t(fcgv))
+    row.names(fcgv) <- "Cumulative GORICA values"
+    final <- rbind(final, fcgv)
+  }
+  
+  if (!is.null(x$Cumulative_LogLik)) {
+    #cat("\n    Cumulative Log-likelhood values:\n")  
+    fcllv <- sapply(Cumulative_LL[S, ], function(x) sprintf("%.3f", x))
+    #formatted_fcllv <- format(fcllv, justify = "right")
+    #captured_output <- capture.output(print(formatted_fcllv, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    #adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    #cat(paste0(adjusted_output, "\n"), sep = "")
+    #cat("    ---\n")
+    fcllv <- as.matrix(t(fcllv))
+    row.names(fcllv) <- "Cumulative Log-likelhood values"
+    final <- rbind(final, fcllv)
+  }
+  
+  if (!is.null(x$Cumulative_PT)) {
+    #cat("\n    Cumulative Penalty term values:\n")  
+    fcptv <- sapply(Cumulative_PT[S, ], function(x) sprintf("%.3f", x))
+    #formatted_fcptv <- format(fcptv, justify = "right")
+    #captured_output <- capture.output(print(formatted_fcptv, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    #adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    #cat(paste0(adjusted_output, "\n"), sep = "")
+    fcptv <- as.matrix(t(fcptv))
+    row.names(fcptv) <- "Cumulative Penalty term values"
+    final <- rbind(final, fcptv)
+    
+    #cat("    ---\n")
+  }
+  
+  formatted_final <- format(final, justify = "right")
+  captured_output <- capture.output(print(formatted_final, row.names = TRUE, right = TRUE, quote = "FALSE"))
+  adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+  cat(paste0(adjusted_output, "\n"), sep = "")
+  
+  
+  cat("\nFinal ratios:\n")
 
-  cat("\nCumulative GORICA weights:\n")  
-  print(apply(x$Cumulative.GORICA.weights, c(1,2), function(x) sprintf("%.3f", x)), 
-        print.gap = 2, quote = FALSE, right = TRUE)
-  cat("---\n")
-
-  if (!is.null(x$Final.ratio.GORICA.weights)) {
-    cat("\nFinal ratio GORICA weights:\n")  
-    print(apply(x$Final.ratio.GORICA.weights, c(1,2), function(x) 
-      format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3)), 
-          print.gap = 2, quote = FALSE, right = TRUE)
-    cat("---\n")
+  if (!is.null(x$Final_ratio_GORICA_weights)) {
+    cat("\n    Final ratio GORICA weights:\n")  
+    frgw <- apply(x$Final_ratio_GORICA_weights[,,drop = FALSE], c(1,2), function(x) 
+      format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3))
+    formatted_frgw <- format(frgw, justify = "right")
+    captured_output <- capture.output(print(formatted_frgw, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+    cat("    ---\n")
+  }
+  
+  if (!is.null(x$LL_m)) {
+    cat("\n    Final ratio Log-likelihood values:\n")  
+    Final_ratio_Cumulative_LL <- Cumulative_LL[S, ] %*% t(1/Cumulative_LL[S, ])
+    rownames(Final_ratio_Cumulative_LL) <- colnames(Final_ratio_Cumulative_LL)
+    colnames(Final_ratio_Cumulative_LL) <- paste0("vs. ", rownames(Final_ratio_Cumulative_LL))
+      
+    frllv <- apply(Final_ratio_Cumulative_LL[,,drop = FALSE], c(1,2), function(x) 
+      format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3))
+    formatted_frllv <- format(frllv, justify = "right")
+    captured_output <- capture.output(print(formatted_frllv, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+    cat("    ---\n")
   }
   
   cat("\n")
@@ -715,8 +854,8 @@ plot.evSyn <- function(x, ...) {
   S <- nrow(x$GORICA_m)
   Name_studies <- as.factor(1:S)
   
-  weight_m <- x$GORICA.weight_m
-  CumulativeGoricaWeights <- x$Cumulative.GORICA.weights
+  weight_m <- x$GORICA_weight_m
+  CumulativeGoricaWeights <- x$Cumulative_GORICA_weights
   
   # Create data frame for per study weights
   if (all(is.na(weight_m))) {

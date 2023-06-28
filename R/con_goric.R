@@ -1131,6 +1131,10 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   }
 
   wt_bar <- sapply(x$objectList, function(x) attr(x$wt.bar, "method") == "boot")
+  # we need a check if the hypothesis is equalities only
+  ceq_only <- sapply(x$objectList, function(x) nrow(x$constraints) == x$neq)
+  wt_bar <- as.logical(wt_bar * !ceq_only)
+  
   if (sum(wt_bar) > 0) {
     wt_method_boot <- x$objectList[wt_bar]
     wt_bootstrap_draws  <- sapply(wt_method_boot, function(x) attr(x$wt.bar, "mix.bootstrap"))

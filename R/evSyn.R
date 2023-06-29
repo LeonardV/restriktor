@@ -421,7 +421,7 @@ evSyn.LL <- function(object, PT = list(), type = c("added", "equal"),
     }
   } else { 
     # equal-ev approach
-    for (s in 1:S){
+    for (s in 1:S) {
       minIC <- min(IC[s, ])
       weight_m[s, ] <- exp(-0.5*(IC[s, ]-minIC)) / sum(exp(-0.5*(IC[s, ]-minIC)))
       
@@ -619,13 +619,101 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
 
 
 ## summary function
-summary.evSyn <- function(object, digits = max(3, getOption("digits") - 4), ...) {
+summary.evSyn <- function(object, ...) {
   
   x <- object
   # added or equal approach
   type <- x$type
   # number of studies
   S <- nrow(x$GORICA_weight_m[,,drop = FALSE])
+
+  ans <- x
+  class(ans) <- NULL
+  
+  if (!is.null(x$LL_m)) {
+    Cumulative_LL <- apply(x$LL_m, 2, cumsum)  
+    
+    sequence <- vector(mode = "character", length = S)
+    for (i in 1:S) {
+      if (i == 1) {
+        sequence[i] <- "1"
+      } else {
+        sequence[i] <- paste0("1-", i)
+      }
+    }
+    rownames(Cumulative_LL) <- paste0("Studies ", sequence)
+    ans$Cumulative_LogLik <- Cumulative_LL
+  }
+  
+  if (!is.null(x$PT_m)) {
+    Cumulative_PT <- apply(x$PT_m[,,drop = FALSE], 2, cumsum)  
+    if (type == "equal") {
+      Cumulative_PT <- Cumulative_PT / 1:S
+    } 
+    sequence <- vector(mode = "character", length = S)
+    for (i in 1:S) {
+      if (i == 1) {
+        sequence[i] <- "1"
+      } else {
+        sequence[i] <- paste0("1-", i)
+      }
+    }
+    rownames(Cumulative_PT) <- paste0("Studies ", sequence)
+    ans$Cumulative_PT <- Cumulative_PT
+  }
+  
+
+  final <- rbind()
+  fcgw <- x[["Cumulative_GORICA_weights"]]["Final", ]
+  fcgw <- as.matrix(t(fcgw))
+  row.names(fcgw) <- "GORICA weights"
+  final <- rbind(final, fcgw)
+  
+  if (!is.null(x[["Cumulative_GORICA"]])) {
+    fcgv <- x[["Cumulative_GORICA"]]["Final", ]
+    fcgv <- as.matrix(t(fcgv))
+    row.names(fcgv) <- "GORICA values"
+    final <- rbind(final, fcgv)
+  }
+  
+  if (!is.null(ans$Cumulative_LogLik)) {
+    fcllv <- ans$Cumulative_LogLik[S, ]
+    fcllv <- as.matrix(t(fcllv))
+    row.names(fcllv) <- "Log-likelhood values"
+    final <- rbind(final, fcllv)
+  }
+  
+  if (!is.null(ans$Cumulative_PT)) { 
+    CPT <- ans$Cumulative_PT[S, ]
+    fcptv <- as.matrix(t(CPT))
+    row.names(fcptv) <- "Penalty term values"
+    final <- rbind(final, fcptv)
+  }
+  
+  ans$Final_Cumulative_results <- final
+
+  if (!is.null(x$LL_m)) {
+    Final_ratio_Cumulative_LL <- ans$Cumulative_LogLik[S, ] %*% t(1/ans$Cumulative_LogLik[S, ])
+    rownames(Final_ratio_Cumulative_LL) <- colnames(Final_ratio_Cumulative_LL)
+    colnames(Final_ratio_Cumulative_LL) <- paste0("vs. ", rownames(Final_ratio_Cumulative_LL))
+    ans$Final_ratio_Cumulative_LL <- Final_ratio_Cumulative_LL  
+  }
+  
+  ans$n_studies <- S
+  ans$messages$mix_weights <- x$messages$mix_weights
+  class(ans) <- "summary.evSyn"
+  
+  ans
+}
+
+
+## print.summary function
+print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
+  
+  # added or equal approach
+  type <- x$type
+  # number of studies
+  S <- x$n_studies
   
   # make the first letter upper-case
   #Type <- paste(toupper(substr(type, 1, 1)), substr(type, 2, nchar(type)), sep="")
@@ -634,20 +722,7 @@ summary.evSyn <- function(object, digits = max(3, getOption("digits") - 4), ...)
   
   indentation <- "    "  # Four spaces for indentation
   
-  cat("\nStudy results:\n")
-  
-  if (!is.null(x$GORICA_m)) {
-    cat("\n    GORICA values:\n")  
-    gv <- apply(x$GORICA_m[,,drop = FALSE], c(1,2), function(x) 
-                format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), 
-                       digits = digits, nsmall = 3))
-    
-    formatted_gv <- format(gv, justify = "right")
-    captured_output <- capture.output(print(formatted_gv, row.names = TRUE, right = TRUE, quote = "FALSE"))
-    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
-    cat(paste0(adjusted_output, "\n"), sep = "")
-    cat("    ---\n")
-  }
+  cat("\nStudy-specific results:\n")
   
   if (!is.null(x$GORICA_weight_m)) {
     cat("\n    GORICA weights:\n")  
@@ -659,10 +734,23 @@ summary.evSyn <- function(object, digits = max(3, getOption("digits") - 4), ...)
     cat("    ---\n")
   }
   
+  if (!is.null(x$GORICA_m)) {
+    cat("\n    GORICA values:\n")  
+    gv <- apply(x$GORICA_m[,,drop = FALSE], c(1,2), function(x) 
+      format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), 
+             digits = digits, nsmall = 3))
+    
+    formatted_gv <- format(gv, justify = "right")
+    captured_output <- capture.output(print(formatted_gv, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+    cat("    ---\n")
+  }
+  
   if (!is.null(x$LL_m)) {
     cat("\n    Log-likelihood values:\n")  
     llv <- apply(x$LL_m[,,drop = FALSE], c(1,2), function(x) 
-            format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3))
+      format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3))
     formatted_llv <- format(llv, justify = "right")
     captured_output <- capture.output(print(formatted_llv, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
@@ -683,16 +771,7 @@ summary.evSyn <- function(object, digits = max(3, getOption("digits") - 4), ...)
   
   
   cat("\nCumulative results:\n")
-  if (!is.null(x[["Cumulative_GORICA"]])) {
-    cat("\n    GORICA values:\n")  
-    cgv <- apply(x$Cumulative_GORICA[1:S, , drop = FALSE], c(1,2), function(x) 
-      format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3))
-    formatted_cgv <- format(cgv, justify = "right")
-    captured_output <- capture.output(print(formatted_cgv, row.names = TRUE, right = TRUE, quote = "FALSE"))
-    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
-    cat(paste0(adjusted_output, "\n"), sep = "")
-    cat("    ---\n")
-  }
+  
   if (!is.null(x[["Cumulative_GORICA_weights"]])) {
     cat("\n    GORICA weights:\n")  
     cgw <- apply(x$Cumulative_GORICA_weights[1:S, , drop = FALSE], c(1,2), function(x) sprintf("%.3f", x))
@@ -703,22 +782,20 @@ summary.evSyn <- function(object, digits = max(3, getOption("digits") - 4), ...)
     cat("    ---\n")
   }
   
+  if (!is.null(x[["Cumulative_GORICA"]])) {
+    cat("\n    GORICA values:\n")  
+    cgv <- apply(x$Cumulative_GORICA[1:S, , drop = FALSE], c(1,2), function(x) 
+      format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3))
+    formatted_cgv <- format(cgv, justify = "right")
+    captured_output <- capture.output(print(formatted_cgv, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+    cat("    ---\n")
+  }
+  
   if (!is.null(x$LL_m)) {
     cat("\n    Log-likelihood values:\n")  
-    Cumulative_LL <- apply(x$LL_m, 2, cumsum)  
-    
-    sequence <- vector(mode = "character", length = S)
-    for (i in 1:S) {
-      if (i == 1) {
-        sequence[i] <- "1"
-      } else {
-        sequence[i] <- paste0("1-", i)
-      }
-    }
-    rownames(Cumulative_LL) <- paste0("Studies ", sequence)
-    x$Cumulative_LogLik <- Cumulative_LL
-    
-    cllv <- apply(Cumulative_LL[,,drop = FALSE], c(1,2), function(x) 
+    cllv <- apply(x$Cumulative_LogLik[,,drop = FALSE], c(1,2), function(x) 
       format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3))
     formatted_cllv <- format(cllv, justify = "right")
     captured_output <- capture.output(print(formatted_cllv, row.names = TRUE, right = TRUE, quote = "FALSE"))
@@ -729,19 +806,7 @@ summary.evSyn <- function(object, digits = max(3, getOption("digits") - 4), ...)
   
   if (!is.null(x$PT_m)) {
     cat("\n    Penalty term values:\n")  
-    Cumulative_PT <- apply(x$PT_m[,,drop = FALSE], 2, cumsum)  
-    
-    sequence <- vector(mode = "character", length = S)
-    for (i in 1:S) {
-      if (i == 1) {
-        sequence[i] <- "1"
-      } else {
-        sequence[i] <- paste0("1-", i)
-      }
-    }
-    rownames(Cumulative_PT) <- paste0("Studies ", sequence)
-    x$Cumulative_PT <- Cumulative_PT
-    cptv <- apply(Cumulative_PT[,,drop = FALSE], c(1,2), function(x) 
+    cptv <- apply(x$Cumulative_PT[,,drop = FALSE], c(1,2), function(x) 
       format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3))
     formatted_cptv <- format(cptv, justify = "right")
     captured_output <- capture.output(print(formatted_cptv, row.names = TRUE, right = TRUE, quote = "FALSE"))
@@ -752,59 +817,9 @@ summary.evSyn <- function(object, digits = max(3, getOption("digits") - 4), ...)
   
   
   cat("\nFinal cumulative results:\n")
-  
-  final <- rbind()
-  #cat("\n    Cumulative GORICA weights:\n")  
-  fcgw <- sapply(x[["Cumulative_GORICA_weights"]]["Final", ], function(x) sprintf("%.3f", x))
-  #formatted_fcgw <- format(fcgw, justify = "right")
-  #captured_output <- capture.output(print(formatted_fcgw, row.names = TRUE, right = TRUE, quote = "FALSE"))
-  #adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
-  #cat(paste0(adjusted_output, "\n"), sep = "")
-  #cat("    ---\n")
-  fcgw <- as.matrix(t(fcgw))
-  row.names(fcgw) <- "GORICA weights"
-  final <- rbind(final, fcgw)
-  
-  if (!is.null(x[["Cumulative_GORICA"]])) {
-    #cat("\n    Cumulative GORICA values:\n")  
-    fcgv <- sapply(x[["Cumulative_GORICA"]]["Final", ], function(x) sprintf("%.3f", x))
-    #formatted_fcgv <- format(fcgv, justify = "right")
-    #captured_output <- capture.output(print(formatted_fcgv, row.names = TRUE, right = TRUE, quote = "FALSE"))
-    #adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
-    #cat(paste0(adjusted_output, "\n"), sep = "")
-    #cat("    ---\n")
-    fcgv <- as.matrix(t(fcgv))
-    row.names(fcgv) <- "GORICA values"
-    final <- rbind(final, fcgv)
-  }
-  
-  if (!is.null(x$Cumulative_LogLik)) {
-    #cat("\n    Cumulative Log-likelhood values:\n")  
-    fcllv <- sapply(Cumulative_LL[S, ], function(x) sprintf("%.3f", x))
-    #formatted_fcllv <- format(fcllv, justify = "right")
-    #captured_output <- capture.output(print(formatted_fcllv, row.names = TRUE, right = TRUE, quote = "FALSE"))
-    #adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
-    #cat(paste0(adjusted_output, "\n"), sep = "")
-    #cat("    ---\n")
-    fcllv <- as.matrix(t(fcllv))
-    row.names(fcllv) <- "Log-likelhood values"
-    final <- rbind(final, fcllv)
-  }
-  
-  if (!is.null(x$Cumulative_PT)) {
-    #cat("\n    Cumulative Penalty term values:\n")  
-    fcptv <- sapply(Cumulative_PT[S, ], function(x) sprintf("%.3f", x))
-    #formatted_fcptv <- format(fcptv, justify = "right")
-    #captured_output <- capture.output(print(formatted_fcptv, row.names = TRUE, right = TRUE, quote = "FALSE"))
-    #adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
-    #cat(paste0(adjusted_output, "\n"), sep = "")
-    fcptv <- as.matrix(t(fcptv))
-    row.names(fcptv) <- "Penalty term values"
-    final <- rbind(final, fcptv)
-    
-    #cat("    ---\n")
-  }
-  
+  final <- x$Final_Cumulative_results
+  final <- apply(final[,,drop = FALSE], c(1,2), function(x) 
+    format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3))
   formatted_final <- format(final, justify = "right")
   captured_output <- capture.output(print(formatted_final, row.names = TRUE, right = TRUE, quote = "FALSE"))
   adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
@@ -812,10 +827,11 @@ summary.evSyn <- function(object, digits = max(3, getOption("digits") - 4), ...)
   
   
   cat("\nFinal cumulative ratios:\n")
-
+  
   if (!is.null(x$Final_ratio_GORICA_weights)) {
     cat("\n    GORICA weights:\n")  
-    frgw <- apply(x$Final_ratio_GORICA_weights[,,drop = FALSE], c(1,2), function(x) 
+    frgw <- x$Final_ratio_GORICA_weights
+    frgw <- apply(frgw[,,drop = FALSE], c(1,2), function(x) 
       format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3))
     formatted_frgw <- format(frgw, justify = "right")
     captured_output <- capture.output(print(formatted_frgw, row.names = TRUE, right = TRUE, quote = "FALSE"))
@@ -826,11 +842,8 @@ summary.evSyn <- function(object, digits = max(3, getOption("digits") - 4), ...)
   
   if (!is.null(x$LL_m)) {
     cat("\n    Log-likelihood values:\n")  
-    Final_ratio_Cumulative_LL <- Cumulative_LL[S, ] %*% t(1/Cumulative_LL[S, ])
-    rownames(Final_ratio_Cumulative_LL) <- colnames(Final_ratio_Cumulative_LL)
-    colnames(Final_ratio_Cumulative_LL) <- paste0("vs. ", rownames(Final_ratio_Cumulative_LL))
-      
-    frllv <- apply(Final_ratio_Cumulative_LL[,,drop = FALSE], c(1,2), function(x) 
+    frllv <- x$Final_ratio_Cumulative_LL
+    frllv <- apply(frllv[,,drop = FALSE], c(1,2), function(x) 
       format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3))
     formatted_frllv <- format(frllv, justify = "right")
     captured_output <- capture.output(print(formatted_frllv, row.names = TRUE, right = TRUE, quote = "FALSE"))
@@ -844,14 +857,13 @@ summary.evSyn <- function(object, digits = max(3, getOption("digits") - 4), ...)
 }
 
 
-
-
+#debug(restriktor::plot.evSyn)
 
 ## plot function
 plot.evSyn <- function(x, ...) {
-  namesH <- colnames(x$GORICA_m)
-  NrHypos_incl <- ncol(x$GORICA_m)
-  S <- nrow(x$GORICA_m)
+  namesH <- colnames(x$GORICA_weight_m)
+  NrHypos_incl <- ncol(x$GORICA_weight_m[,,drop = FALSE])
+  S <- nrow(x$GORICA_weight_m[,,drop = FALSE])
   Name_studies <- as.factor(1:S)
   
   weight_m <- x$GORICA_weight_m
@@ -885,6 +897,7 @@ plot.evSyn <- function(x, ...) {
     geom_point(size = 3) +
     geom_line(data = plot_data[plot_data[['weight_type']] == "cumulative", ], 
               aes(group = .data[['variable']]), linewidth = 1) +
+    scale_color_brewer(palette = "Dark2") +
     theme(
       plot.margin = unit(c(1,1,1,1), "cm"),
       legend.position = "bottom",

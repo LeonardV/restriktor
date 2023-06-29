@@ -63,7 +63,7 @@ importFrom("norm2", emNorm)
 
 importFrom("ggplot2", ggplot, aes, .data, geom_point, geom_line, theme, unit, margin,
            element_blank, element_text, element_line, scale_y_continuous, 
-           scale_x_discrete, labs, guides, guide_legend)
+           scale_x_discrete, labs, guides, guide_legend, scale_color_brewer)
 
 #importFrom("lpSolve", lp)
 
@@ -86,7 +86,8 @@ export("restriktor",
        "print.conTest", "logLik.restriktor",
        "coef.restriktor", "model.matrix.restriktor",
        "con_weights_boot", "coef.con_goric", "summary.con_goric", 
-       "evSyn", "plot.evSyn", "print.evSyn", "summary.evSyn")
+       "evSyn", "plot.evSyn", "print.evSyn", "summary.evSyn",
+       "print.summary.evSyn")
 
 S3method(coef, restriktor)
 S3method(model.matrix, restriktor)
@@ -137,3 +138,4 @@ S3method(evSyn, ICweights)
 S3method(plot, evSyn)
 S3method(print, evSyn)
 S3method(summary, evSyn)
+S3method(print, summary.evSyn)

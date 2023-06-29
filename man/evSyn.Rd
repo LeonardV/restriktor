@@ -7,6 +7,7 @@
 \alias{evSyn.ICvalues}
 \alias{evSyn.LL}
 \alias{print.evSyn}
+\alias{print.summary.evSyn}
 \alias{summary.evSyn}
 \alias{plot.evSyn}
 
@@ -30,7 +31,9 @@ same central theory.}
 
 \method{print}{evSyn}(x, digits = max(3, getOption("digits") - 4), \dots)
 
-\method{summary}{evSyn}(object, digits = max(3, getOption("digits") - 4), \dots)
+\method{summary}{evSyn}(object, \dots)
+
+\method{print}{summary.evSyn}(x, digits = max(3, getOption("digits") - 4), \dots)  
 
 \method{plot}{evSyn}(x, \dots)
 }

@@ -50,7 +50,7 @@ same central theory.}
   \item{VCOV}{a list of covariance matrices of the (standardized) parameter estimates 
   of interest.} 
   
-  \item{PT}{a list of penalty values.}
+  \item{PT}{a list of vectors with penalty values.}
   
   \item{x}{an object of class \code{evSyn}}
 

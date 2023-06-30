@@ -57,7 +57,7 @@ tukeyChi <- function(x, c = 4.685061, deriv = 0, ...) {
 
 
 # code taken from robustbase package.
-# slightly addapted by LV (3-12-2017).
+# addapted by LV (3-12-2017).
 robWeights <- function(w, eps = 0.1/length(w), eps1 = 0.001, ...) {
   stopifnot(is.numeric(w))
   cat("Robustness weights:", "\n")
@@ -110,7 +110,7 @@ robWeights <- function(w, eps = 0.1/length(w), eps1 = 0.001, ...) {
 
 
 
-# An internal function coming from 'bain' package 
+# function taken from 'bain' package 
 expand_compound_constraints <- function(hyp) {
   equality_operators <- gregexpr("[=<>]", hyp)[[1]]
   if(length(equality_operators) > 1){
@@ -123,6 +123,7 @@ expand_compound_constraints <- function(hyp) {
   }
 }
 
+# function taken from 'bain' package 
 expand_parentheses <- function(hyp) {
   parenth_locations <- gregexpr("[\\(\\)]", hyp)[[1]]
   if (!parenth_locations[1] == -1 & !grepl("abs\\(.*\\)", hyp) ) {
@@ -141,7 +142,15 @@ expand_parentheses <- function(hyp) {
 }
 
 
-
+format_numeric <- function(x, digits = 3) {
+  if (abs(x) <= 1e-8) {
+    format(0, nsmall = digits)
+  } else if (abs(x) >= 1e3 || abs(x) <= 1e-3) {
+    format(x, scientific = TRUE, digits = digits)
+  } else {
+    format(round(x, digits), nsmall = digits) 
+  }
+}
 
 # compute_weights_ratioWeights <- function(x) {
 #   IC <- 2*x

@@ -328,6 +328,29 @@ print.conTestLavaan <- function(x, digits = max(3, getOption("digits") - 2), ...
             format(round(pvalueB, digits), nsmall = digits)}, " (alpha = ",
           format(round(adj.alphaB, digits), nsmall = digits), ") ", "\n\n", sep = "")
     }
+  } else if (dbtype == "FDB") {
+    # adjusted pvalues for Ts
+    adj.pvalueA <- attr(object$bootA, "adj.pvalue")
+    adj.pvalueB <- attr(object$bootB, "adj.pvalue")
+    if (!is.null(TsA)) {
+      cat("\n\n  Type A test: H0: all restriktions active (=)", "\n",
+          "          vs. H1: at least one restriktion strictly true (>)", "\n")
+      cat("         Test statistic: ", format(round(TsA, digits),
+                                              nsmall = digits), ", adjusted p-value: ",
+          if (adj.pvalueA < 1e-04) {
+            "<0.0001"
+          } else {
+            format(round(adj.pvalueA, digits), nsmall = digits)}, " (alpha = ", alpha, ") ", "\n", sep = "")
+    }
+    if (!is.null(TsB)) {    
+      cat("\n  Type B test: H0: all restriktions true", "\n",
+          "          vs. H1: at least one restriktion false", "\n")
+      cat("         Test statistic: ", format(round(TsB, digits), nsmall = digits), ", adjusted p-value: ",
+          if (adj.pvalueB < 1e-04) {
+            "<0.0001"
+          } else {
+            format(round(adj.pvalueB, digits), nsmall = digits)}, " (alpha = ", alpha, ") ", "\n", sep = "")
+    }
   }
   
   if (dbtype == "no") {

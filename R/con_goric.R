@@ -41,7 +41,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
   if (!"restriktor" %in% object_class) { 
     if (!is.list(constraints)) { 
       stop("Restriktor ERROR: The 'hypotheses' argument must be a named list. 
-           Please provide hypotheses in the following format: 'list(H1 = H1)' or 'list(S1 = list(H11, H12), S2 = list(H21, H22))'", call. = FALSE)
+           Please provide hypotheses in the following format: 'list(H1 = H1)' or 
+           'list(S1 = list(H11, H12), S2 = list(H21, H22))'", call. = FALSE)
     }
     
     # give constraints list a name if null
@@ -97,8 +98,10 @@ goric.default <- function(object, ..., hypotheses = NULL,
     for (i in seq_along(constraints)) { 
       names(constraints[[i]]) <- tolower(names(constraints[[i]]))
       if (any(!names(constraints[[i]]) %in% c("constraints", "rhs", "neq"))) { 
-        stop("Restriktor ERROR: The list objects must be named as follows: 
-             hypotheses = list(constraints = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0).", 
+        stop("Restriktor ERROR: The list objects must be named 'constraints', 'rhs' and 'neq', e.g.:
+              h1 <- list(constraints = c(0,1,0))
+              h2 <- list(constraints = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0)
+              hypotheses = list(H1 = h1, H2 = h2).", 
              call. = FALSE)
       }
     }
@@ -150,8 +153,10 @@ goric.default <- function(object, ..., hypotheses = NULL,
     for (i in seq_along(constraints)) { 
       names(constraints[[i]]) <- tolower(names(constraints[[i]]))
       if (any(!names(constraints[[i]]) %in% c("constraints", "rhs", "neq"))) {
-        stop("Restriktor ERROR: The list objects must be named as follows: 
-             hypotheses = list(constraints = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0).", 
+        stop("Restriktor ERROR: The list objects must be named 'constraints', 'rhs' and 'neq', e.g.:
+              h1 <- list(constraints = c(0,1,0))
+              h2 <- list(constraints = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0)
+              hypotheses = list(H1 = h1, H2 = h2).", 
              call. = FALSE)
       }
     }
@@ -192,7 +197,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
 
   
   if (comparison == "complement" && length(conList) > 1L) {
-    warning("Restriktor Warning: Only one order-restricted hypothesis is allowed (for now) when comparison = 'complement'.",
+    warning("Restriktor Warning: Only one hypothesis is allowed (for now) when comparison = 'complement'.",
             " Setting comparison to 'unconstrained' instead.", call. = FALSE)
     comparison <- "unconstrained"
   } 
@@ -668,11 +673,13 @@ goric.lm <- function(object, ..., hypotheses = NULL,
   }
   
   if (is.null(hypotheses)) {
-   stop("restriktor ERROR: The 'hypotheses' argument is missing. Please make sure to provide a valid set of hypotheses, for example, hypotheses = list(h1 = 'x1 > x2 > x3').", call. = FALSE) 
+   stop("restriktor ERROR: The 'hypotheses' argument is missing. Please make sure 
+        to provide a valid set of hypotheses, for example, hypotheses = list(h1 = 'x1 > x2 > x3').", call. = FALSE) 
   }
   
   if (!is.list(hypotheses)) {
-    stop("restriktor ERROR: the hypotheses must be specified as a list. \nFor example, hypotheses = list(h1 = 'x1 > x2 > x3')", call. = FALSE)
+    stop("restriktor ERROR: the hypotheses must be specified as a list. 
+         For example, hypotheses = list(h1 = 'x1 > x2 > x3')", call. = FALSE)
   }
   
   if (missing %in% c("em", "EM", "two.stage", "twostage")) {
@@ -834,7 +841,8 @@ goric.numeric <- function(object, ..., hypotheses = NULL,
   }
   
   if (is.null(hypotheses)) {
-    stop("restriktor ERROR: The 'hypotheses' argument is missing. Please make sure to provide a valid set of hypotheses, for example, hypotheses = list(h1 = 'x1 > x2 > x3').", call. = FALSE)   }
+    stop("restriktor ERROR: The 'hypotheses' argument is missing. Please make sure 
+         to provide a valid set of hypotheses, for example, hypotheses = list(h1 = 'x1 > x2 > x3').", call. = FALSE)   }
   
   if (!c(type %in% c("gorica", "goricac"))) {
     stop("restriktor ERROR: object of class numeric is only supported for type = 'gorica(c)'.")
@@ -857,7 +865,8 @@ goric.numeric <- function(object, ..., hypotheses = NULL,
   }
   
   if (!is.list(hypotheses)) {
-    stop("restriktor ERROR: the hypotheses must be specified as a list. \nFor example, hypotheses = list(h1 = 'x1 > x2 > x3')", call. = FALSE)
+    stop("restriktor ERROR: the hypotheses must be specified as a list. 
+         For example, hypotheses = list(h1 = 'x1 > x2 > x3')", call. = FALSE)
   }
   
   
@@ -914,7 +923,8 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
   }
   
   if (is.null(hypotheses)) {
-    stop("restriktor ERROR: The 'hypotheses' argument is missing. Please make sure to provide a valid set of hypotheses, for example, hypotheses = list(h1 = 'x1 > x2 > x3').", call. = FALSE) 
+    stop("restriktor ERROR: The 'hypotheses' argument is missing. Please make sure 
+         to provide a valid set of hypotheses, for example, hypotheses = list(h1 = 'x1 > x2 > x3').", call. = FALSE) 
   }
   
   if (!c(type %in% c("gorica", "goricac"))) {
@@ -923,7 +933,8 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
   
   
   if (!is.list(hypotheses)) {
-    stop("restriktor ERROR: the hypotheses must be specified as a list. \nFor example, hypotheses = list(h1 = 'x1 > x2 > x3')", call. = FALSE)
+    stop("restriktor ERROR: the hypotheses must be specified as a list. 
+         For example, hypotheses = list(h1 = 'x1 > x2 > x3')", call. = FALSE)
   }
   
   objectList <- list(...)
@@ -983,7 +994,8 @@ goric.CTmeta <- function(object, ..., hypotheses = NULL,
   }
   
   if (is.null(hypotheses)) {
-    stop("restriktor ERROR: The 'hypotheses' argument is missing. Please make sure to provide a valid set of hypotheses, for example, hypotheses = list(h1 = 'x1 > x2 > x3').", call. = FALSE) 
+    stop("restriktor ERROR: The 'hypotheses' argument is missing. Please make sure to 
+         provide a valid set of hypotheses, for example, hypotheses = list(h1 = 'x1 > x2 > x3').", call. = FALSE) 
   }
   
   if (!c(type %in% c("gorica", "goricac"))) {
@@ -991,7 +1003,8 @@ goric.CTmeta <- function(object, ..., hypotheses = NULL,
   }
   
   if (!is.list(hypotheses)) {
-    stop("restriktor ERROR: the hypotheses must be specified as a list. \nFor example, hypotheses = list(h1 = 'x1 > x2 > x3')", call. = FALSE)
+    stop("restriktor ERROR: the hypotheses must be specified as a list. 
+         For example, hypotheses = list(h1 = 'x1 > x2 > x3')", call. = FALSE)
   }
   
   objectList <- list(...)

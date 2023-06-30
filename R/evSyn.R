@@ -531,22 +531,21 @@ evSyn.ICvalues <- function(object, hypo_names = NULL) {
 evSyn.ICweights <- function(object, priorWeights = NULL, hypo_names = NULL) {
   
   Weights <- object
-  S <- length(object[[1]])
-  NrHypos <- S - 1
-  
+  S <- length(Weights)
   Weights <- do.call(rbind, Weights)
+  NrHypos <- ncol(Weights)
   
   if (is.null(priorWeights)) {
-    priorWeights <- rep(1/(NrHypos + 1), (NrHypos + 1))
+    priorWeights <- rep(1/(NrHypos), (NrHypos))
   }
   # To make it sum to 1 (if it not already did)
   priorWeights <- priorWeights / sum(priorWeights) 
   
   if (is.null(hypo_names)) {
-    hypo_names <- paste0("H", 1:(NrHypos+1))
+    hypo_names <- paste0("H", 1:(NrHypos)) 
   }
   
-  CumulativeWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
+  CumulativeWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos))
   colnames(Weights) <- colnames(CumulativeWeights) <- hypo_names
   
   
@@ -559,8 +558,6 @@ evSyn.ICweights <- function(object, priorWeights = NULL, hypo_names = NULL) {
     }
   }
   rownames(CumulativeWeights) <- c(paste0("Studies ", sequence), "Final")
-  #rownames(CumulativeWeights) <- c(paste0("Study_", 1:S), "Final")
-  
   CumulativeWeights[1, ] <- priorWeights * Weights[1, ] / sum( priorWeights * Weights[1, ] )
   
   for(s in 2:S) {
@@ -587,9 +584,6 @@ evSyn.ICweights <- function(object, priorWeights = NULL, hypo_names = NULL) {
 }
 
 
-## final gorica weights toevoegen
-
-## print function
 print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   
   # added or equal approach
@@ -602,17 +596,15 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   cat(paste(type, "Evidence Synthesis results:\n"), sep = "")
   
   if (!is.null(x$Cumulative_GORICA_weights)) {
-    cat("\nFinal cumulative GORICA weights:\n")   
-    print(sapply(x$Cumulative_GORICA_weights["Final", ], function(x) sprintf("%.3f", x)), 
+    cat("\nFinal GORICA weights:\n") 
+    print(sapply(x$Cumulative_GORICA_weights["Final", ], function(x) format_numeric(x, digits = digits)), 
           print.gap = 2, quote = FALSE, right = TRUE)
     cat("---\n")
   }
   
-  cat("\nFinal ratio GORICA weights:\n")  
-  print(apply(x$Final_ratio_GORICA_weights, c(1,2), function(x) 
-    format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3)), 
-    print.gap = 2, quote = FALSE, right = TRUE)
-  
+  cat("\nRatio final GORICA weights:\n")  
+  print(apply(x$Final_ratio_GORICA_weights, c(1,2), function(x) format_numeric(x, digits = digits)), 
+        print.gap = 2, quote = FALSE, right = TRUE)
   cat("\n")
   message(x$messages$mix_weights)
 }
@@ -726,8 +718,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   
   if (!is.null(x$GORICA_weight_m)) {
     cat("\n    GORICA weights:\n")  
-    gw <- apply(x$GORICA_weight_m[,,drop = FALSE], c(1,2), function(x) sprintf("%.3f", x))
-    formatted_gw <- format(gw, justify = "right")
+    formatted_gw <- apply(x$GORICA_weight_m[,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     captured_output <- capture.output(print(formatted_gw, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
     cat(paste0(adjusted_output, "\n"), sep = "")
@@ -736,11 +727,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   
   if (!is.null(x$GORICA_m)) {
     cat("\n    GORICA values:\n")  
-    gv <- apply(x$GORICA_m[,,drop = FALSE], c(1,2), function(x) 
-      format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), 
-             digits = digits, nsmall = 3))
-    
-    formatted_gv <- format(gv, justify = "right")
+    formatted_gv <- apply(x$GORICA_m[,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     captured_output <- capture.output(print(formatted_gv, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
     cat(paste0(adjusted_output, "\n"), sep = "")
@@ -749,9 +736,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   
   if (!is.null(x$LL_m)) {
     cat("\n    Log-likelihood values:\n")  
-    llv <- apply(x$LL_m[,,drop = FALSE], c(1,2), function(x) 
-      format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3))
-    formatted_llv <- format(llv, justify = "right")
+    formatted_llv <- apply(x$LL_m[,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     captured_output <- capture.output(print(formatted_llv, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
     cat(paste0(adjusted_output, "\n"), sep = "")
@@ -760,8 +745,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   
   if (!is.null(x$PT_m)) {
     cat("\n    Penalty term values:\n")  
-    ptv <- apply(x$PT_m[,,drop = FALSE], c(1,2), function(x) sprintf("%.3f", x))
-    formatted_ptv <- format(ptv, justify = "right")
+    formatted_ptv <- apply(x$PT_m[,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     captured_output <- capture.output(print(formatted_ptv, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
     cat(paste0(adjusted_output, "\n"), sep = "")
@@ -769,13 +753,11 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   }
   
   
-  
   cat("\nCumulative results:\n")
   
   if (!is.null(x[["Cumulative_GORICA_weights"]])) {
     cat("\n    GORICA weights:\n")  
-    cgw <- apply(x$Cumulative_GORICA_weights[1:S, , drop = FALSE], c(1,2), function(x) sprintf("%.3f", x))
-    formatted_cgw <- format(cgw, justify = "right")
+    formatted_cgw <- apply(x$Cumulative_GORICA_weights[1:S, , drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     captured_output <- capture.output(print(formatted_cgw, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
     cat(paste0(adjusted_output, "\n"), sep = "")
@@ -784,9 +766,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   
   if (!is.null(x[["Cumulative_GORICA"]])) {
     cat("\n    GORICA values:\n")  
-    cgv <- apply(x$Cumulative_GORICA[1:S, , drop = FALSE], c(1,2), function(x) 
-      format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3))
-    formatted_cgv <- format(cgv, justify = "right")
+    formatted_cgv <- apply(x$Cumulative_GORICA[1:S, , drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     captured_output <- capture.output(print(formatted_cgv, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
     cat(paste0(adjusted_output, "\n"), sep = "")
@@ -795,9 +775,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   
   if (!is.null(x$LL_m)) {
     cat("\n    Log-likelihood values:\n")  
-    cllv <- apply(x$Cumulative_LogLik[,,drop = FALSE], c(1,2), function(x) 
-      format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3))
-    formatted_cllv <- format(cllv, justify = "right")
+    formatted_cllv <- apply(x$Cumulative_LogLik[,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     captured_output <- capture.output(print(formatted_cllv, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
     cat(paste0(adjusted_output, "\n"), sep = "")
@@ -806,9 +784,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   
   if (!is.null(x$PT_m)) {
     cat("\n    Penalty term values:\n")  
-    cptv <- apply(x$Cumulative_PT[,,drop = FALSE], c(1,2), function(x) 
-      format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3))
-    formatted_cptv <- format(cptv, justify = "right")
+    formatted_cptv <- apply(x$Cumulative_PT[,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     captured_output <- capture.output(print(formatted_cptv, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
     cat(paste0(adjusted_output, "\n"), sep = "")
@@ -816,24 +792,18 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   }
   
   
-  cat("\nFinal cumulative results:\n")
-  final <- x$Final_Cumulative_results
-  final <- apply(final[,,drop = FALSE], c(1,2), function(x) 
-    format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3))
-  formatted_final <- format(final, justify = "right")
+  cat("\nFinal results:\n")
+  formatted_final <- apply(x$Final_Cumulative_results[,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
   captured_output <- capture.output(print(formatted_final, row.names = TRUE, right = TRUE, quote = "FALSE"))
   adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
   cat(paste0(adjusted_output, "\n"), sep = "")
   
   
-  cat("\nFinal cumulative ratios:\n")
+  cat("\nFinal ratios:\n")
   
   if (!is.null(x$Final_ratio_GORICA_weights)) {
     cat("\n    GORICA weights:\n")  
-    frgw <- x$Final_ratio_GORICA_weights
-    frgw <- apply(frgw[,,drop = FALSE], c(1,2), function(x) 
-      format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3))
-    formatted_frgw <- format(frgw, justify = "right")
+    formatted_frgw <- apply(x$Final_ratio_GORICA_weights, c(1,2), function(x) format_numeric(x, digits = digits))
     captured_output <- capture.output(print(formatted_frgw, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
     cat(paste0(adjusted_output, "\n"), sep = "")
@@ -842,10 +812,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   
   if (!is.null(x$LL_m)) {
     cat("\n    Log-likelihood values:\n")  
-    frllv <- x$Final_ratio_Cumulative_LL
-    frllv <- apply(frllv[,,drop = FALSE], c(1,2), function(x) 
-      format(x, scientific = (abs(x) >= 1e3 | (abs(x) <= 1e-3)), digits = digits, nsmall = 3))
-    formatted_frllv <- format(frllv, justify = "right")
+    formatted_frllv <- apply(x$Final_ratio_Cumulative_LL, c(1,2), function(x) format_numeric(x, digits = digits))
     captured_output <- capture.output(print(formatted_frllv, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
     cat(paste0(adjusted_output, "\n"), sep = "")
@@ -857,7 +824,6 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
 }
 
 
-#debug(restriktor::plot.evSyn)
 
 ## plot function
 plot.evSyn <- function(x, ...) {

@@ -360,7 +360,7 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on log likelihood and penalty values
-evSyn.LL <- function(object, PT = list(), type = c("added", "equal"),
+evSyn.LL <- function(object, PT = list(), type = c("equal", "added"),
                      hypo_names = NULL) {
   
   if (missing(type)) 

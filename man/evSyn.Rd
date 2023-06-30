@@ -22,7 +22,7 @@ same central theory.}
       type = c("equal", "added"), 
       comparison = c("unconstrained", "complement", "none"))
 
-\method{evSyn}{LL}(object, PT = list(), type = c("added", "equal"),
+\method{evSyn}{LL}(object, PT = list(), type = c("equal", "added"),
       hypo_names = NULL)
 
 \method{evSyn}{ICvalues}(object, hypo_names = NULL)

@@ -7,7 +7,7 @@ conTestD <- function(model = NULL, data = NULL, constraints = NULL,
                      ncpus = 1L, cl = NULL, verbose = FALSE, ...) {
 
   # fit unrestricted model
-  fit.h2 <- sem(model, ..., data = data, se = "none", test = "standard") 
+  fit.h2 <- sem(model, ..., data = data, test = "standard") #se = "none"
   
   stopifnot(!is.null(constraints))
   
@@ -40,7 +40,7 @@ conTestD <- function(model = NULL, data = NULL, constraints = NULL,
     }
   }
     
-  fit.h0 <- sem(user.equal, ..., data = data, se = "none", test = "standard")
+  fit.h0 <- sem(user.equal, ..., data = data, test = "standard") # se = "none"
   
   if ("A" %in% type) {
     bootA <- bootstrapD(h0 = fit.h0, h1 = fit.h2, 

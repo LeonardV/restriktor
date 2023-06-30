@@ -161,7 +161,6 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, type = "A",
                        Amat = t(matrix(0, nrow = dim(Amat)[1], ncol = dim(Amat)[2])),
                        bvec = rep(0, length(rhs)), meq = 0)
     
-  
     D.original <- N * 2 * (out.ineq$value - out.un$value)
   }
   
@@ -384,5 +383,7 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, type = "A",
     attr(pvalue, "adj.pvalue") <- adj.pvalue
   }
   options(old_options)
+  
+  attr(pvalue, "Amat") <- Amat
   pvalue
 }

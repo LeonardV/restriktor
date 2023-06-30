@@ -148,9 +148,9 @@ meatHC <- function(x,
     rW[idx.rW] <- 1e-08
     
     if (any(rW == 0)) {
-      warning("Restriktor WARNING: weights ", idx.rW, " are exactly zero. This causes problems for", 
-              "\ncomputing the hat-matrix. To compute the ", sQuote(type), " standard errors, we added a small",
-              "\nnumber 1e-08. Note that the results may not be trustworthy.")
+      warning(paste("Restriktor WARNING: The following weights", idx.rW, "are exactly zero. This can lead to issues when", 
+                    "\ncalculating the hat-matrix. To compute the", sQuote(type), "standard errors, a small",
+                    "\nvalue of 1e-08 has been added. Please note that the results may be less reliable."))
     }
     
     ## matrix form ##

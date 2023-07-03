@@ -6,8 +6,8 @@ date: "`r format(Sys.time(), '%d %B %Y')`"
 output: 
   rmarkdown::html_vignette:
   #pdf_document:
-  toc: true
-  toc_float: true
+  #toc: true
+  #toc_float: true
 vignette: >
   %\VignetteIndexEntry{Guidelines interpretation GORIC(A) output}
   %\VignetteEngine{knitr::rmarkdown}
@@ -216,7 +216,7 @@ Therefore, I advise using the *complement* in case of one informative hypothesis
 #### Example
 ```{r, message = FALSE, warning = FALSE}
 # H1 vs unconstrained (default)
-H1 <- "D1 > D2 > D3"
+H1 <- "D1 > D2 > D3" # mu1 > mu2 > mu3
 
 # Apply GORIC #
 set.seed(123) 
@@ -228,7 +228,7 @@ From this, you can conclude that $H_1: \mu_1 > \mu_2 > \mu_3$ is more supported 
 When you look at the fit/loglik value, you can see that they are the same for both hypotheses (also reflected by the loglik.weights; leading to a ratio of loglik.weights of 1). The unconstrained has, by definition, the maximum fit. Here, $H_1$ also has maximum fit, meaning that its restrictions are in agreement with the data. Since both have the same fit, their GORIC(A) weights solely depend on the penalty values and, thus, are bounded: they equal the penalty.weights (and thus not 1 and 0, what you otherwise would find in case of full support). 
 Finding equal fit (or GORIC(A) weights being equal to the penalty weights) means  that there is support for the overlap (see also the Special cases Section).  
 The informative hypothesis $H_1$ is completely contained in the unconstrained (by definition). Hence, the overlap of the two hypotheses is $H_1$.
-Therefore, we can say that $H_1$ has (full) support: it has the maximum fit and is (by definition) more parsimonious than the unconstrained. Note that, now, we cannot say anything regarding the uncertainty (which we could in the case of using the compelment as the failsafe).
+Therefore, we can say that $H_1$ has (full) support: it has the maximum fit and is (by definition) more parsimonious than the unconstrained. Note that, now, we cannot say anything regarding the uncertainty (which we could in the case of using the complement as the failsafe).
 
 Population information:  
 In the data generation, I used a ratio of population means of 3:2:1; implying that $H_1$ is correct. More specifically, I used population mean values of approximately 0.98, 0.65, and 0.33. This implies that Cohen's $d$ is approximately .27; thus, there is a small to medium population effect size (which are in the same order as hypothesized). I then sampled 100 observations, ran an ANOVA (with three groups), and applied the GORIC.  
@@ -286,7 +286,7 @@ results_12u
 round(results_12u$ratio.gw, 3)
 ```
 From this, you can conclude that $H_1: \mu_1 > \mu_2 > \mu_3$ is not a weak hypothesis, since it is $.763/.237 > 1$ times more supported than the unconstrained.
-Therefore, $H_1$ can be compared to its competing hypothesis $H_2: \mu_1 < \mu_2 < \mu_3$. Note that $H_2$ is weak $(.000/.237 < 1$ or $.000 < .237)$; so, we already now that $H_1$ is better, but not yet how much better.
+Therefore, $H_1$ can be compared to its competing hypothesis $H_2: \mu_1 < \mu_2 < \mu_3$. Note that $H_2$ is weak $(.000/.237 < 1$ or $.000 < .237)$; so, we already know that $H_1$ is better, but not yet how much better.
 
 From the GORIC weights (or their ratios in results_12u\$ratio.gw - H1 vs. H2), you can conclude that $H_1$ is .763/.000 = an infinite times (or 2871.23 times) more supported than $H_2$. This denotes (almost) full support for $H_1$.  
 In comparison, if you would calculate the GORIC(A) weights for the set consisting of solely $H_1$ and $H_2$ (thus, without the unconstrained), you would obtain GORIC weights of 1.000 and .000, respectively; denoting full support for $H_1$.  

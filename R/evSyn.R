@@ -158,16 +158,6 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
   # check if the user specified the same hypothesis in each study. 
   # number of hypotheses (this should be equal in each study, see check below)
   
-  # if hypotheses is a unnamed list (or any list element), I assume that all 
-  # hypotheses must be applied to each study. Thus, len_H = 1
-  # list_names <- names(hypotheses)
-  # 
-  # if (any(list_names == "") | length(list_names) == 0) {
-  #   stop("Restriktor ERROR: The 'hypotheses' argument must be a named list. Please provide hypotheses in the following format: 
-  #        'list(H1 = H1)' or 'list(S1 = list(H11, H12), S2 = list(H21, H22))'", call. = FALSE)
-  #   
-  # } 
-
   # determine if same set of hypotheses in each study or different set of hypotheses in each study.
   diffSet_hypotheses <- sapply(hypotheses, is.list)
   if (all(!diffSet_hypotheses)) {

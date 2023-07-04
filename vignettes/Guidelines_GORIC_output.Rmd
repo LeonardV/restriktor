@@ -32,10 +32,8 @@ knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 80), tidy = TRUE)
 knitr::opts_chunk$set(comment = NA, warning = FALSE)
 options(width = 1200) # width console output
 
-#library(fastDummies) # dymmy_cols()
 library(restriktor)
 library(bain)
-
 ```
 
 ```{r, echo=FALSE, results = FALSE, message = FALSE, warning = FALSE}

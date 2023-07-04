@@ -167,7 +167,7 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
     # different hypotheses in each study
     sameHypo <- FALSE  
   } else {
-    stop("Restriktor ERROR: To apply hypotheses, use the following format:\n",
+    stop("Restriktor ERROR: use the following hypotheses format:\n",
          "If you want to apply the same set of hypotheses for each study, use: hypotheses = list(H1, H2, ...).\n",
          "If you want to apply a different set of hypotheses for each study, use: hypotheses = list(S1 = list(H1, H2), S2 = list(H3, H4)).",
          call. = FALSE)
@@ -229,22 +229,58 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
     }
   }
   rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("Studies ", sequence), "Final")
-     
+    
   if (NrHypos == 1 & comparison == "complement") {
+    exist_hnames <- names(hypotheses)
+    if (!is.null(exist_hnames)) {
+      exist_hnames <- c(exist_hnames, "Hc")
+      hnames_idx <- exist_hnames != ""
+    } else {
+      exist_hnames <- vector("character", 2L)
+      hnames_idx <- exist_hnames != ""
+    }
     hnames <- c("H1", "Hc")
+    hnames_idx <- exist_hnames != ""
+    exist_hnames[!hnames_idx] <- hnames[!hnames_idx]
+    hnames <- exist_hnames
+    names(hypotheses) <- hnames[-max(length(hnames))] # remove Hc
+    
     ratio.weight_mu <- matrix(data = NA, nrow = S, ncol = 1)
   } else if (comparison == "none"){
+    # existing hypo names
+    exist_hnames <- names(hypotheses)
+    if (!is.null(exist_hnames)) {
+      hnames_idx <- exist_hnames != ""
+    } else {
+      exist_hnames <- vector("character", length(hypotheses))
+      hnames_idx <- exist_hnames != ""
+    }
     hnames <- c(paste0("H", 1:NrHypos))
+    exist_hnames[!hnames_idx] <- hnames[!hnames_idx]
+    hnames <- exist_hnames
+    names(hypotheses) <- hnames
     ratio.weight_mu <- matrix(data = NA, nrow = S, ncol = NrHypos_incl)
   } else {
+    exist_hnames <- names(hypotheses)
+    if (!is.null(exist_hnames)) {
+      exist_hnames <- c(exist_hnames, "Hu")
+      hnames_idx <- exist_hnames != ""
+    } else {
+      exist_hnames <- vector("character", length(hypotheses) + 1L)
+      hnames_idx <- exist_hnames != ""
+    }
     hnames <- c(paste0("H", 1:NrHypos), "Hu")
+    hnames_idx <- exist_hnames != ""
+    exist_hnames[!hnames_idx] <- hnames[!hnames_idx]
+    hnames <- exist_hnames
+    names(hypotheses) <- hnames[-max(length(hnames))] # remove Hu
     ratio.weight_mu <- matrix(data = NA, nrow = S, ncol = NrHypos_incl)
   }
     
   colnames(GORICA_m) <- colnames(weight_m) <- colnames(LL) <- colnames(PT) <- colnames(CumulativeGorica) <- colnames(CumulativeGoricaWeights) <- hnames
   rownames(GORICA_m) <- rownames(ratio.weight_mu) <- rownames(weight_m) <- paste0("Study ", 1:S)
   
-
+  
   for(s in 1:S) {
     if (sameHypo) {
       res_goric <- goric(object[[s]], VCOV = VCOV[[s]], 
@@ -262,7 +298,6 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
       ratio.weight_mu[s, ] <- res_goric$ratio.gw[1, NrHypos_incl]
     } 
     
-  
     LL[s, ] <- res_goric$result$loglik
     PT[s, ] <- res_goric$result$penalty
     GORICA_m[s, ] <- res_goric$result$gorica
@@ -301,8 +336,10 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
   
   # Output
   if (NrHypos == 1 & comparison == "complement") {
-    colnames(ratio.weight_mu) <- c("H1 vs. Hc1")
-    colnames(Final.ratio.GORICA.weights) <- c("vs. H1", "vs. Hc")
+     #colnames(ratio.weight_mu) <- c("H1 vs. Hc1")
+     #colnames(Final.ratio.GORICA.weights) <- c("vs. H1", "vs. Hc")
+    colnames(ratio.weight_mu) <- c(paste0(names(hypotheses), " vs. ", "Hc"))
+    colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(Final.ratio.GORICA.weights)))
     
     out <- list(type     = type, 
                 GORICA_m = GORICA_m, 
@@ -314,7 +351,8 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
                 Final_ratio_GORICA_weights = Final.ratio.GORICA.weights,
                 hypotheses = hypotheses)
   } else if (comparison == "none") {
-    colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. H", 1:NrHypos))
+    #colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. H", 1:NrHypos))
+    colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(Final.ratio.GORICA.weights)))
     
     out <- list(type = type,
                 GORICA_m = GORICA_m, 
@@ -326,8 +364,10 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
                 hypotheses = hypotheses)
   } else { 
     # unconstrained
-    colnames(ratio.weight_mu) <- c(paste0("H", 1:NrHypos, " vs. Unc."), "Unc. vs. Unc.")
-    colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. H", 1:NrHypos), "vs. Hu")
+    #colnames(ratio.weight_mu) <- c(paste0("H", 1:NrHypos, " vs. Unc."), "Unc. vs. Unc.")
+    #colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. H", 1:NrHypos), "vs. Hu")
+    colnames(ratio.weight_mu) <- c(paste0(colnames(Final.ratio.GORICA.weights), " vs. ", "Hu"))
+    colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(Final.ratio.GORICA.weights)))
     
     out <- list(type = type,
                 GORICA_m        = GORICA_m, 

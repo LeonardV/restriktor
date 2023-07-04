@@ -65,7 +65,7 @@ comparable to the Akaike weights.
     \item a fitted unconstrained object of class \code{lm}, \code{rlm} or \code{glm}. 
     \item a numeric vector containing the unconstrained estimates resulting from any 
     statistical analysis.
-    \item a fitted object of class \code{lavaan}.
+    \item a fitted object of class \code{lavaan}. See examples on how to specify the hypotheses.
     \item a fitted object of class \code{CTmeta}.
     \item a fitted object of class \code{rma}.
   }
@@ -187,6 +187,7 @@ comparable to the Akaike weights.
   have to decide how to convert the continuously distributed imputed values for 
   these dummy codes back into categories. 
   
+
   ### Note on not full row-rank ###
   
   If the restriction matrix is not of full row-rank, this means one of the following:
@@ -212,6 +213,7 @@ penalty term, GORIC(A) values and the GORIC(A) weights. Furthermore, a dataframe
 is returned with the relative GORIC(A) weights. 
 }
 
+
 \references{
 Kuiper, R.M., Hoijtink, H., and Silvapulle, M.J. (2011). An Akaike-type
 information criterion for model selection under inequality constraints.
@@ -230,6 +232,37 @@ Modeling: A Multidisciplinary Journal, 16:3, 477-497, DOI: 10.1080/1070551090300
 
 
 \examples{
+\dontrun{
+## By following these examples, you can appropriately specify hypotheses based on 
+## your research questions and analytical framework.
+
+# The hypotheses (i.e., constraints) have to be in a list. It is recommended to name
+# each hypothesis in the list. Otherwise the hypotheses are named accordingly 'H1', 'H2', \ldots
+
+# text-based syntax (the labels x1, x2, and x2 are the names of coef(model) or names(vector))
+h1 <- '(x1, x2, x3) > 0; x3 > 0'
+h2 <- '(x1, x3) > 0; x2 = 0'
+h3 <- 'x1 > 0; x2 < 0; x3 = 0'
+hypotheses = list(hypo1 = h1, hypo2 = h2, hypo3 = h3)
+
+# define constraints matrix directly (note that the constraints have to be specified pairwise).
+# the element names (i.e., constraints, rhs, neq) must be used. 
+h1 <- list(constraints = c(0,1,0)) 
+h2 <- list(constraints = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0) 
+hypotheses = list(H1 = h1, H2 = h2)
+
+# mixed syntax:  
+hypotheses = list(Ha = h1, Hb = 'x1 = x2 > x3')
+
+# lavaan object syntax:
+# we need labels (here a, b and c) to define our hypothesis.
+model.lav <- "y ~  1 + a*x1 + b*x2 + c*x3 + x4"
+# fit lavaan model, for example
+fit.lav <- sem(model, data = DATA)
+# define hypothesis syntax
+hypotheses = list(h1 = 'a > b > c')
+}
+
 library(MASS)
 ## lm
 ## unrestricted linear model for ages (in months) at which an 
@@ -284,20 +317,20 @@ VCOV <- vcov(fit.lm)
 h1 <- "x1 > 0"
 h2 <- "x1 > 0; x2 > 0"
 # use fitted unconstrained linear model
-goric(fit.lm, hypotheses = list(h1, h2), type = "gorica")
+goric(fit.lm, hypotheses = list(h1 = h1, h2 = h2), type = "gorica")
 # use unconstrained estimates
-goric(est, VCOV = VCOV, hypotheses = list(h1, h2), type = "gorica")
+goric(est, VCOV = VCOV, hypotheses = list(h1 = h1, h2 = h2), type = "gorica")
 
 ## constraint syntax (matrix notation)
 h1 <- list(constraints = c(0,1,0))
 h2 <- list(constraints = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0)
-goric(fit.lm, hypotheses = list(h1, h2), type = "gorica")
-goric(est, VCOV = VCOV, hypotheses = list(h1, h2), type = "gorica")
+goric(fit.lm, hypotheses = list(h1 = h1, h2 = h2), type = "gorica")
+goric(est, VCOV = VCOV, hypotheses = list(h1 = h1, h2 = h2), type = "gorica")
 
 
 ## use parallel processing for computing the level probabilities (i.e., mixing weights)
 \dontrun{
-goric(fit.lm, hypotheses = list(H1), comparison = "complement",
+goric(fit.lm, hypotheses = list(H1 = H1), comparison = "complement",
       mix.weights = "boot", parallel = "snow", ncpus = 8, mix.bootstrap = 99999)
 }
 }

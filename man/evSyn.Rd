@@ -62,7 +62,13 @@ same central theory.}
   approach, the aggregated evidence from, says, 5 studies is stronger than as if 
   the data were combined (as if that was possible).}
 
-  \item{hypotheses}{see \code{\link{goric}}.}
+  \item{hypotheses}{When applying the same set of hypotheses to each study, 
+  the syntax structure should be as follows: hypotheses = list(H1, H2, \ldots). 
+  However, if a different set of hypotheses is applied to each study, the syntax 
+  structure should be as follows: hypotheses = list(Study1 = list(H1, H2), Study2 = list(H3, H4)).
+  See \code{\link{goric}} how to specify the hypotheses syntax or see the example 
+  section below.
+}
 
   \item{comparison}{if "\code{unconstrained}" (default) the unconstrained model is 
   included in the set of models. If "\code{complement}" then the restricted object 
@@ -76,7 +82,7 @@ same central theory.}
   relative importance can be used and not per se weights.}
   
   \item{hypo_names}{character vector for labelling the hypotheses. By default the
-  names are set to H1, H2, ...}
+  names are set to H1, H2, \ldots}
 
   \item{digits}{the number of significant digits to use when printing.}
 
@@ -92,6 +98,35 @@ for the theory-based hypotheses.}
 \author{Leonard Vanbrabant and Rebecca Kuiper}
 
 \examples{
+\dontrun{
+## By following these examples, you can appropriately specify hypotheses based on 
+## your research questions and analytical framework.
+
+# The hypotheses (i.e., constraints) have to be in a list. It is recommended to name
+# each hypothesis in the list. Otherwise the hypotheses are named accordingly 'H1', 'H2', \ldots
+
+# text-based syntax (the labels x1, x2, and x2 are the names of coef(model) or names(vector))
+h1 <- '(x1, x2, x3) > 0; x3 > 0'
+h2 <- '(x1, x3) > 0; x2 = 0'
+h3 <- 'x1 > 0; x2 < 0; x3 = 0'
+hypotheses = list(hypo1 = h1, hypo2 = h2, hypo3 = h3)
+
+# define constraints matrix directly (note that the constraints have to be specified pairwise).
+# the element names (i.e., constraints, rhs, neq) must be used. 
+h1 <- list(constraints = c(0,1,0)) 
+h2 <- list(constraints = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0) 
+hypotheses = list(H1 = h1, H2 = h2)
+
+# mixed syntax:  
+hypotheses = list(Ha = h1, Hb = 'x1 = x2 > x3')
+
+# the same set of hypotheses for each study:
+hypotheses = list(H1, H2, \ldots)
+
+# a different set of hypotheses for each study: 
+hypotheses = list(Study1 = list(H1, H2), Study2 = list(H3, H4))
+}
+
 ## Example 1 - 4 studies
 est_1 <- c(beta1 = 0.09)
 est_2 <- c(beta1 = 0.14)
@@ -108,7 +143,7 @@ CovMx_studies <- list(vcov_est_1, vcov_est_2, vcov_est_3, vcov_est_4)
 
 # Set of hypotheses for each study
 # Note: in this case the same for each study
-H0   <- "beta1 == 0"
+H0   <- "beta1 = 0"
 Hpos <- "beta1 > 0"
 Hneg <- "beta1 < 0"
 hypotheses <- list(H0 = H0, Hpos = Hpos, Hneg = Hneg)
@@ -151,11 +186,11 @@ object <- list(est_1, est_2)
 VCOV <- CovMx_studies <- list(vcov_est_1, vcov_est_2)
 
 # names(est_1) # Specify restrictions using those names
-H11 <- 'group1 == group2 > group3'
+H11 <- 'group1 = group2 > group3'
 H12 <- 'group2 > group1 > group3'
 
 # names(est_2) # Specify restrictions using those names
-H21 <- 'gr1 == gr2 > gr3'
+H21 <- 'gr1 = gr2 > gr3'
 H22 <- 'gr2 > gr1 > gr3' 
 
 # hypotheses

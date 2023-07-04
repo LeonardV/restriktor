@@ -847,7 +847,7 @@ round(results_0c$ratio.gw, 3) # ratio of GORIC weights
 <!-- From this, you can conclude that $H_1: \mu_1 = \mu_2 > 0, \mu_3 > 0$ is $.817/.183 \approx 4.4$ times more supported than its complement. -->
 
 From this, you can conclude that $H_1: \mu_1 = \mu_2 > 0, \ \mu_3 > 0$ is more supported than its complement.
-When you look at the fit/loglik part, you see that both fit/loglik values resemble; that is, the ratio of loglik.weights is close to 1 (namely, .993). Thus, you can conclude that there is support for the overlap/boundary of these hypotheses. 
+When you look at the fit/loglik part, you see that both fit/loglik values resemble; that is, the ratio of loglik.weights is close to 1 (namely, .997). Thus, you can conclude that there is support for the overlap/boundary of these hypotheses. 
 
 Here, the complement receives the highest fit; that is, the estimates are in agreement with the complement. In this case, the fit of the complement is based on the fit for $\mu_1 > 0, \mu_2 > 0, \mu_3 > 0$ (so, the hypothesis that does not restrict the first two means to be equal). 
 Consequently, the preferred hypothesis $H_1$ does not have the highest fit/loglik (it has the best fit-complexity balance). Notably, since $H_1$ contains an equality, it will also never have maximum fit. Moreover, the weight for a true equality hypothesis will never be 1. This could be a reason to evaluate an about-equality hypothesis instead, as discussed in the next section.
@@ -953,7 +953,7 @@ if(sum(abs(b.ratios)) == 0){ # all zeros (thus under H0)
 # k <- n.coef
 # ES = (1/1) * sqrt((1/k) * sum((betas - mean(betas))^2))
 
-set.seed(120) # set seed: to obtain same results when you re-run it
+set.seed(124) # set seed: to obtain same results when you re-run it
 epsilon <- rnorm(samplesize, sd=sqrt(var.e))
 sample$y <- as.matrix(sample[,2:(1+n.coef)]) %*% matrix(betas, nrow = n.coef) + epsilon
 

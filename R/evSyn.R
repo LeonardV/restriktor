@@ -644,13 +644,24 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
 summary.evSyn <- function(object, ...) {
   
   x <- object
+  class(x) <- NULL
+  
+  ans <- list()
   # added or equal approach
-  type <- x$type
+  ans$type <- x$type
   # number of studies
   S <- nrow(x$GORICA_weight_m[,,drop = FALSE])
 
-  ans <- x
-  class(ans) <- NULL
+  # reorder
+  ans$n_studies <- S
+  ans$hypotheses <- x$hypotheses
+  ans$GORICA_weight_m <- x$GORICA_weight_m
+  ans$GORICA_m <- x$GORICA_m
+  ans$LL_m <- x$LL_m
+  ans$PT_m <- x$PT_m
+  
+  ans$Cumulative_GORICA_weights <- x$Cumulative_GORICA_weights
+  ans$Cumulative_GORICA <- x$Cumulative_GORICA
   
   if (!is.null(x$LL_m)) {
     Cumulative_LL <- apply(x$LL_m, 2, cumsum)  
@@ -669,7 +680,7 @@ summary.evSyn <- function(object, ...) {
   
   if (!is.null(x$PT_m)) {
     Cumulative_PT <- apply(x$PT_m[,,drop = FALSE], 2, cumsum)  
-    if (type == "equal") {
+    if (x$type == "equal") {
       Cumulative_PT <- Cumulative_PT / 1:S
     } 
     sequence <- vector(mode = "character", length = S)
@@ -721,7 +732,10 @@ summary.evSyn <- function(object, ...) {
     ans$Final_ratio_Cumulative_LL <- Final_ratio_Cumulative_LL  
   }
   
-  ans$n_studies <- S
+  ans$Ratio_GORICA_weight_mu <- x$ratio_GORICA_weight_mu
+  ans$Ratio_GORICA_weight_mc <- x$ratio_GORICA_weight_mc
+  ans$Final_ratio_GORICA_weights <- x$Final_ratio_GORICA_weights
+  
   ans$messages$mix_weights <- x$messages$mix_weights
   class(ans) <- "summary.evSyn"
   
@@ -737,8 +751,6 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   # number of studies
   S <- x$n_studies
   
-  # make the first letter upper-case
-  #Type <- paste(toupper(substr(type, 1, 1)), substr(type, 2, nchar(type)), sep="")
   cat(sprintf("restriktor (%s): ", packageDescription("restriktor", fields = "Version")))
   cat(paste(type, "Evidence Synthesis results:\n"), sep = "")
   

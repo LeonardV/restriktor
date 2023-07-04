@@ -25,5 +25,5 @@ NeedsCompilation: no
 Packaged: 2023-07-04 11:11:11 UTC; Leonard
 Author: Leonard Vanbrabant [aut, cre], Rebecca Kuiper [aut], Yves Rosseel [ctb], Aleksandra Dacko [ctb]
 Maintainer: Leonard Vanbrabant <info@restriktor.org>
-Suggests: knitr, fastDummies, bain, rmarkdown
+Suggests: knitr, bain, rmarkdown
 VignetteBuilder: knitr

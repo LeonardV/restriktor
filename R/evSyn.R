@@ -321,7 +321,7 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
       sumPT <- sumPT + PT[s, ]
       CumulativeGorica[s,] <- -2 * sumLL + 2 * sumPT/s
       minGoric <- min(CumulativeGorica[s, ])
-      CumulativeGoricaWeights[s,] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
+      CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
     }
   }
   
@@ -339,7 +339,7 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
      #colnames(ratio.weight_mu) <- c("H1 vs. Hc1")
      #colnames(Final.ratio.GORICA.weights) <- c("vs. H1", "vs. Hc")
     colnames(ratio.weight_mu) <- c(paste0(names(hypotheses), " vs. ", "Hc"))
-    colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(Final.ratio.GORICA.weights)))
+    colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(CumulativeGorica)))
     
     out <- list(type     = type, 
                 GORICA_m = GORICA_m, 
@@ -352,7 +352,7 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
                 hypotheses = hypotheses)
   } else if (comparison == "none") {
     #colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. H", 1:NrHypos))
-    colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(Final.ratio.GORICA.weights)))
+    colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(CumulativeGorica)))
     
     out <- list(type = type,
                 GORICA_m = GORICA_m, 
@@ -366,8 +366,8 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
     # unconstrained
     #colnames(ratio.weight_mu) <- c(paste0("H", 1:NrHypos, " vs. Unc."), "Unc. vs. Unc.")
     #colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. H", 1:NrHypos), "vs. Hu")
-    colnames(ratio.weight_mu) <- c(paste0(colnames(Final.ratio.GORICA.weights), " vs. ", "Hu"))
-    colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(Final.ratio.GORICA.weights)))
+    colnames(ratio.weight_mu) <- c(paste0(colnames(CumulativeGorica), " vs. ", "Hu"))
+    colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(CumulativeGorica)))
     
     out <- list(type = type,
                 GORICA_m        = GORICA_m, 
@@ -627,8 +627,15 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   
   if (!is.null(x$Cumulative_GORICA_weights)) {
     cat("\nFinal GORICA weights:\n") 
-    print(sapply(x$Cumulative_GORICA_weights["Final", ], function(x) format_numeric(x, digits = digits)), 
-          print.gap = 2, quote = FALSE, right = TRUE)
+    # print(sapply(x$Cumulative_GORICA_weights["Final", , drop = TRUE], 
+    #             FUN = function(x) format_numeric(x, digits = digits)), 
+    #       print.gap = 2, quote = FALSE, right = TRUE)
+    
+    cgw <- sapply(x$Cumulative_GORICA_weights["Final", , drop = FALSE], 
+                  FUN = function(x) format_numeric(x, digits = digits))
+    names(cgw) <- colnames(x$Cumulative_GORICA_weights)
+    print(cgw, print.gap = 2, quote = FALSE, right = TRUE)
+    
     cat("---\n")
   }
   
@@ -664,8 +671,9 @@ summary.evSyn <- function(object, ...) {
   ans$Cumulative_GORICA <- x$Cumulative_GORICA
   
   if (!is.null(x$LL_m)) {
-    Cumulative_LL <- apply(x$LL_m, 2, cumsum)  
-    
+    Cumulative_LL <- apply(x$LL_m, 2, cumsum)
+    Cumulative_LL <- matrix(Cumulative_LL, nrow = nrow(x$LL_m), 
+                            dimnames = list(rownames(x$LL_m), colnames(x$LL_m)))
     sequence <- vector(mode = "character", length = S)
     for (i in 1:S) {
       if (i == 1) {
@@ -674,12 +682,14 @@ summary.evSyn <- function(object, ...) {
         sequence[i] <- paste0("1-", i)
       }
     }
-    rownames(Cumulative_LL) <- paste0("Studies ", sequence)
+    row.names(Cumulative_LL) <- paste0("Studies ", sequence)
     ans$Cumulative_LogLik <- Cumulative_LL
   }
   
   if (!is.null(x$PT_m)) {
-    Cumulative_PT <- apply(x$PT_m[,,drop = FALSE], 2, cumsum)  
+    Cumulative_PT <- apply(x$PT_m[,, drop = FALSE], 2, cumsum)  
+    Cumulative_PT <- matrix(Cumulative_PT, nrow = nrow(x$PT_m), 
+                            dimnames = list(rownames(x$PT_m), colnames(x$PT_m)))
     if (x$type == "equal") {
       Cumulative_PT <- Cumulative_PT / 1:S
     } 
@@ -700,6 +710,7 @@ summary.evSyn <- function(object, ...) {
   fcgw <- x[["Cumulative_GORICA_weights"]]["Final", ]
   fcgw <- as.matrix(t(fcgw))
   row.names(fcgw) <- "GORICA weights"
+  colnames(fcgw)  <- colnames(x[["Cumulative_GORICA_weights"]])
   final <- rbind(final, fcgw)
   
   if (!is.null(x[["Cumulative_GORICA"]])) {
@@ -727,8 +738,8 @@ summary.evSyn <- function(object, ...) {
 
   if (!is.null(x$LL_m)) {
     Final_ratio_Cumulative_LL <- ans$Cumulative_LogLik[S, ] %*% t(1/ans$Cumulative_LogLik[S, ])
-    rownames(Final_ratio_Cumulative_LL) <- colnames(Final_ratio_Cumulative_LL)
-    colnames(Final_ratio_Cumulative_LL) <- paste0("vs. ", rownames(Final_ratio_Cumulative_LL))
+    rownames(Final_ratio_Cumulative_LL) <- colnames(ans$Cumulative_LogLik)
+    colnames(Final_ratio_Cumulative_LL) <- paste0("vs. ", colnames(ans$Cumulative_LogLik))
     ans$Final_ratio_Cumulative_LL <- Final_ratio_Cumulative_LL  
   }
   

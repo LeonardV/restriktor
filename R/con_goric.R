@@ -569,9 +569,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
   }
 
   LL <- -2*df$loglik
-  minLL <- min(LL)
-  loglik.weights <- exp(-0.5 * (LL - minLL)) / sum(exp(-0.5 * (LL - minLL)))
-  #loglik.weights  <- exp(df$loglik) / sum(exp(df$loglik))
+  delta_LL <- LL - min(LL)
+  loglik.weights <- exp(0.5 * -delta_LL) / sum(exp(0.5 * -delta_LL))
   penalty.weights <- exp(-df$penalty) / sum(exp(-df$penalty))
   df$loglik.weights <- loglik.weights
   df$penalty.weights <- penalty.weights
@@ -580,20 +579,9 @@ goric.default <- function(object, ..., hypotheses = NULL,
   ans$objectNames <- objectnames
   # compute goric weights and ratio weights
   delta <- df$goric - min(df$goric)
-  goric.weights <- exp(-delta / 2) / sum(exp(-delta / 2))
+  goric.weights <- exp(0.5 * -delta) / sum(exp(0.5 * -delta))
   df$goric.weights <- goric.weights
   names(df)[7] <- paste0(type, ".weights")
-    
-  # if (comparison == "unconstrained" & length(df$model) > 2) {
-  #   gw_no_unc <- df[df$model != "unconstrained", 6]
-  #   # recalculate the values excluding the unconstrained model
-  #   gw_no_unc <- round(gw_no_unc / sum(gw_no_unc), 3)
-  #   gw_no_unc <- c(gw_no_unc, 0)
-  #   # add additional column & specify its name 
-  #   df[, paste0(type, ".weights.no_unc")] <- gw_no_unc
-  #   #names(df)[6] <- paste0(type, ".weights.no_unconstrained")
-  # }    
-  
   rownames(df) <- NULL
   ans$result <- df
 

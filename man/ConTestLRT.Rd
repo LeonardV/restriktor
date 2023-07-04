@@ -199,8 +199,7 @@ coef(fit1_lm)
 # constraint syntax: assuming that the walking 
 # exercises would not have a negative effect of increasing the 
 # mean age at which a child starts to walk. 
-myConstraints1 <- ' GroupActive  < GroupPassive; 
-                    GroupPassive < GroupNo '
+myConstraints1 <- ' GroupActive  < GroupPassive < GroupNo '
 
 iht(fit1_lm, myConstraints1, test = "LRT")
 
@@ -237,9 +236,7 @@ fit2_lm <- lm(y ~ -1 + group, data = DATA2)
 coef(fit2_lm)
 
 ## example 2: increasing means
-myConstraints2 <- ' group1 < group2
-                    group2 < group3
-                    group3 < group4 '
+myConstraints2 <- ' group1 < group2 < group3 < group4 '
 
 # compute F-test for hypothesis test Type A and compute the tail 
 # probability based on the parametric bootstrap. We only generate 9 

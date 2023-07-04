@@ -234,9 +234,7 @@ fit2.rlm <- rlm(y ~ -1 + group, data = DATA2, method = "MM")
 coef(fit2.rlm)
 
 ## example 2: increasing means
-myConstraints2 <- ' group1 < group2
-                    group2 < group3
-                    group3 < group4 '
+myConstraints2 <- ' group1 < group2 < group3 < group4 '
 
 # compute Wald-test for hypothesis test Type A and compute the tail 
 # probability based on the parametric bootstrap. We only generate 9 

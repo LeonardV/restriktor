@@ -246,9 +246,7 @@ fit2.lm <- lm(y ~ -1 + group, data = DATA2)
 coef(fit2.lm)
 
 ## example 2: increasing means
-myConstraints2 <- ' group1 < group2
-                    group2 < group3
-                    group3 < group4 '
+myConstraints2 <- ' group1 < group2 < group3 < group4 '
 
 # compute F-test for hypothesis test Type A and compute the tail 
 # probability based on the parametric bootstrap. We only generate 9 

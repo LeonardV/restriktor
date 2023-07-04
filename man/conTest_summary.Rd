@@ -131,8 +131,7 @@ coef(fit1.lm)
 # constraint syntax: assuming that the walking 
 # exercises would not have a negative effect of increasing the 
 # mean age at which a child starts to walk. 
-myConstraints1 <- ' GroupActive  < GroupPassive; 
-                    GroupPassive < GroupNo '
+myConstraints1 <- ' GroupActive  < GroupPassive < GroupNo '
 
 iht(fit1.lm, myConstraints1)
 

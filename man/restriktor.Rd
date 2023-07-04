@@ -319,8 +319,7 @@ coef(fit1.lm)
 # restricted linear model with restrictions that the walking 
 # exercises would not have a negative effect of increasing the 
 # mean age at which a child starts to walk. 
-fit1.con <- restriktor(fit1.lm, constraints = ' GroupActive  < GroupPassive; 
-                                                GroupPassive < GroupNo ')
+fit1.con <- restriktor(fit1.lm, constraints = ' GroupActive  < GroupPassive < GroupNo ')
 summary(fit1.con)
 
 \dontrun{ 
@@ -376,9 +375,7 @@ fit3.rlm <- rlm(y ~ -1 + group, data = DATA2, method = "MM")
 coef(fit3.rlm)
 
 ## increasing means
-myConstraints3 <- ' group1 < group2
-                    group2 < group3
-                    group3 < group4 '
+myConstraints3 <- ' group1 < group2 < group3 < group4 '
 
 # fit restricted robust linear model and compute 
 # Huber-White (robust) standard errors.
@@ -400,9 +397,7 @@ summary(fit3.con)
 }            
 
 ## equality restrictions only.
-myConstraints4 <- ' group1 = group2
-                    group2 = group3
-                    group3 = group4 '
+myConstraints4 <- ' group1 = group2 = group3 = group4 '
                     
 fit4.con <- restriktor(fit3.rlm, constraints = myConstraints4)
 summary(fit4.con)

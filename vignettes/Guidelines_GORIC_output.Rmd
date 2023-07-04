@@ -32,7 +32,7 @@ knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 80), tidy = TRUE)
 knitr::opts_chunk$set(comment = NA, warning = FALSE)
 options(width = 1200) # width console output
 
-library(fastDummies) # dymmy_cols()
+#library(fastDummies) # dymmy_cols()
 library(restriktor)
 library(bain)
 
@@ -48,7 +48,6 @@ intercept <- 0
 r2 <- 0.15
 samplesize <- 100
 
-
 b.ratios <- c(3,2,1)
 
 sample <- NULL
@@ -58,8 +57,11 @@ D_ <- matrix(rep(1:n.coef), nrow = samplesize)
 D <- as.factor(D_)
 sample$D <- D
 #install.packages('fastDummies')
-library(fastDummies)
-sample <- dummy_cols(sample, select_columns = 'D')
+#library(fastDummies)
+#sample <- dummy_cols(sample, select_columns = 'D')
+
+sample <- model.matrix(~sample$D-1)
+colnames(sample) <- paste0("D_", 1:ncol(sample))
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -68,9 +70,9 @@ diag(sigma) <- 1
 # Define error variance
 var.e <- 1 - r2 # (because all vars are standardized, var(resid)=(1-R2)*sigma_y)
         
-if(sum(abs(b.ratios)) == 0){ # all zeros (thus under H0)
+if (sum(abs(b.ratios)) == 0) { # all zeros (thus under H0)
   betas <- b.ratios
-}else{
+} else {
   # Solve for x here
   fun <- function (x) {
     (t(b.ratios*x) %*% sigma %*% b.ratios*x) / (t(b.ratios*x) %*% sigma %*% b.ratios*x + var.e) - r2
@@ -97,7 +99,7 @@ if(sum(abs(b.ratios)) == 0){ # all zeros (thus under H0)
 
 set.seed(123) # set seed: to obtain same results when you re-run it
 epsilon <- rnorm(samplesize, sd=sqrt(var.e))
-sample$y <- as.matrix(sample[,2:(1+n.coef)]) %*% matrix(betas, nrow = n.coef) + epsilon
+sample$y <- as.matrix(sample[, 1:n.coef]) %*% matrix(betas, nrow = n.coef) + epsilon
 
 # Obtain fit
 fit <- lm(y ~ 0 + D, data=sample)
@@ -351,8 +353,10 @@ D_ <- matrix(rep(1:n.coef), nrow = samplesize)
 D <- as.factor(D_)
 sample$D <- D
 #install.packages('fastDummies')
-library(fastDummies)
-sample <- dummy_cols(sample, select_columns = 'D')
+#library(fastDummies)
+#sample <- dummy_cols(sample, select_columns = 'D')
+sample <- model.matrix(~sample$D-1)
+colnames(sample) <- paste0("D_", 1:ncol(sample))
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -363,13 +367,13 @@ var.e <- 1 - r2 # (because all vars are standardized, var(resid)=(1-R2)*sigma_y)
         
 if (sum(abs(b.ratios)) == 0) { # all zeros (thus under H0)
   betas <- b.ratios
-} else{
+} else {
   # Solve for x here
   fun <- function (x) {
     (t(b.ratios*x) %*% sigma %*% b.ratios*x) / (t(b.ratios*x) %*% sigma %*% b.ratios*x + var.e) - r2
   }
   
-  x <-uniroot(fun, lower=0, upper=100)$root
+  x <- uniroot(fun, lower=0, upper=100)$root
   
   # Construct betas
   betas <- b.ratios*x
@@ -380,7 +384,7 @@ if (sum(abs(b.ratios)) == 0) { # all zeros (thus under H0)
 
 set.seed(123) # set seed: to obtain same results when you re-run it
 epsilon <- rnorm(samplesize, sd=sqrt(var.e))
-sample$y <- as.matrix(sample[,2:(1+n.coef)]) %*% matrix(betas, nrow = n.coef) + epsilon
+sample$y <- as.matrix(sample[,1:n.coef]) %*% matrix(betas, nrow = n.coef) + epsilon
 
 # Obtain fit
 fit <- lm(y ~ 0 + D, data=sample)
@@ -471,8 +475,12 @@ D_ <- matrix(rep(1:n.coef), nrow = samplesize)
 D <- as.factor(D_)
 sample$D <- D
 #install.packages('fastDummies')
-library(fastDummies)
-sample <- dummy_cols(sample, select_columns = 'D')
+#library(fastDummies)
+#sample <- dummy_cols(sample, select_columns = 'D')
+
+sample <- model.matrix(~sample$D-1)
+colnames(sample) <- paste0("D_", 1:ncol(sample))
+
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -483,13 +491,13 @@ var.e <- 1 - r2 # (because all vars are standardized, var(resid)=(1-R2)*sigma_y)
         
 if (sum(abs(b.ratios)) == 0) { # all zeros (thus under H0)
   betas <- b.ratios
-} else{
+} else {
   # Solve for x here
   fun <- function (x) {
     (t(b.ratios*x) %*% sigma %*% b.ratios*x) / (t(b.ratios*x) %*% sigma %*% b.ratios*x + var.e) - r2
   }
   
-  x <-uniroot(fun, lower=0, upper=100)$root
+  x <- uniroot(fun, lower=0, upper=100)$root
   
   # Construct betas
   betas <- b.ratios*x
@@ -504,7 +512,7 @@ if (sum(abs(b.ratios)) == 0) { # all zeros (thus under H0)
 
 set.seed(123) # set seed: to obtain same results when you re-run it
 epsilon <- rnorm(samplesize, sd=sqrt(var.e))
-sample$y <- as.matrix(sample[,2:(1+n.coef)]) %*% matrix(betas, nrow = n.coef) + epsilon
+sample$y <- as.matrix(sample[,1:n.coef]) %*% matrix(betas, nrow = n.coef) + epsilon
 
 # Obtain fit
 fit <- lm(y ~ 0 + D, data=sample)
@@ -551,8 +559,11 @@ D_ <- matrix(rep(1:n.coef), nrow = samplesize)
 D <- as.factor(D_)
 sample$D <- D
 #install.packages('fastDummies')
-library(fastDummies)
-sample <- dummy_cols(sample, select_columns = 'D')
+#library(fastDummies)
+#sample <- dummy_cols(sample, select_columns = 'D')
+
+sample <- model.matrix(~sample$D-1)
+colnames(sample) <- paste0("D_", 1:ncol(sample))
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -563,13 +574,13 @@ var.e <- 1 - r2 # (because all vars are standardized, var(resid)=(1-R2)*sigma_y)
         
 if (sum(abs(b.ratios)) == 0) { # all zeros (thus under H0)
   betas <- b.ratios
-} else{
+} else {
   # Solve for x here
   fun <- function (x) {
     (t(b.ratios*x) %*% sigma %*% b.ratios*x) / (t(b.ratios*x) %*% sigma %*% b.ratios*x + var.e) - r2
   }
   
-  x <-uniroot(fun, lower=0, upper=100)$root
+  x <- uniroot(fun, lower=0, upper=100)$root
   
   # Construct betas
   betas <- b.ratios*x
@@ -580,7 +591,7 @@ if (sum(abs(b.ratios)) == 0) { # all zeros (thus under H0)
 
 set.seed(123) # set seed: to obtain same results when you re-run it
 epsilon <- rnorm(samplesize, sd=sqrt(var.e))
-sample$y <- as.matrix(sample[,2:(1+n.coef)]) %*% matrix(betas, nrow = n.coef) + epsilon
+sample$y <- as.matrix(sample[,1:n.coef]) %*% matrix(betas, nrow = n.coef) + epsilon
 
 # Obtain fit
 fit <- lm(y ~ 0 + D, data=sample)
@@ -645,8 +656,11 @@ D_ <- matrix(rep(1:n.coef), nrow = samplesize)
 D <- as.factor(D_)
 sample$D <- D
 #install.packages('fastDummies')
-library(fastDummies)
-sample <- dummy_cols(sample, select_columns = 'D')
+#library(fastDummies)
+#sample <- dummy_cols(sample, select_columns = 'D')
+
+sample <- model.matrix(~sample$D-1)
+colnames(sample) <- paste0("D_", 1:ncol(sample))
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -657,13 +671,13 @@ var.e <- 1 - r2 # (because all vars are standardized, var(resid)=(1-R2)*sigma_y)
         
 if(sum(abs(b.ratios)) == 0){ # all zeros (thus under H0)
   betas <- b.ratios
-}else{
+} else{
   # Solve for x here
   fun <- function (x) {
     (t(b.ratios*x) %*% sigma %*% b.ratios*x) / (t(b.ratios*x) %*% sigma %*% b.ratios*x + var.e) - r2
   }
   
-  x <-uniroot(fun, lower=0, upper=100)$root
+  x <- uniroot(fun, lower=0, upper=100)$root
   
   # Construct betas
   betas <- b.ratios*x
@@ -674,7 +688,7 @@ if(sum(abs(b.ratios)) == 0){ # all zeros (thus under H0)
 
 set.seed(123) # set seed: to obtain same results when you re-run it
 epsilon <- rnorm(samplesize, sd=sqrt(var.e))
-sample$y <- as.matrix(sample[,2:(1+n.coef)]) %*% matrix(betas, nrow = n.coef) + epsilon
+sample$y <- as.matrix(sample[, 1:n.coef]) %*% matrix(betas, nrow = n.coef) + epsilon
 
 # Obtain fit
 fit <- lm(y ~ 0 + D, data=sample)
@@ -736,7 +750,7 @@ results_12u
 round(results_12u$ratio.gw, 3)
 round(results_12u$ratio.pw, 3)
 ```
-From this, you can conclude that $H_1: \mu_1 > \mu_2 > \mu_3$ and $H_2: \mu_1 > \mu_2 < \mu_3$ are not weak, since since they are $.477/.159 > 1$ and $.354/.159 > 1$, respectively, times more supported than the unconstrained.
+From this, you can conclude that $H_1: \mu_1 > \mu_2 > \mu_3$ and $H_2: \mu_1 > \mu_2 < \mu_3$ are not weak, since since they are $.477/.159 > 1$ and $.364/.159 > 1$, respectively, times more supported than the unconstrained.
 Therefore, $H_1$ and $H_2$ can be compared. 
 <!-- From the GORIC weights goric.weights (or their ratios in results_12u\$ratio.gw - H1 vs. H2), you can conclude that $H_1$ is $.477/.364$ times (or $1.31$ times) more supported than $H_1$. -->
 
@@ -795,8 +809,11 @@ D_ <- matrix(rep(1:n.coef), nrow = samplesize)
 D <- as.factor(D_)
 sample$D <- D
 #install.packages('fastDummies')
-library(fastDummies)
-sample <- dummy_cols(sample, select_columns = 'D')
+#library(fastDummies)
+#sample <- dummy_cols(sample, select_columns = 'D')
+
+sample <- model.matrix(~sample$D-1)
+colnames(sample) <- paste0("D_", 1:ncol(sample))
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -807,13 +824,13 @@ var.e <- 1 - r2 # (because all vars are standardized, var(resid)=(1-R2)*sigma_y)
         
 if(sum(abs(b.ratios)) == 0){ # all zeros (thus under H0)
   betas <- b.ratios
-}else{
+} else{
   # Solve for x here
   fun <- function (x) {
     (t(b.ratios*x) %*% sigma %*% b.ratios*x) / (t(b.ratios*x) %*% sigma %*% b.ratios*x + var.e) - r2
   }
   
-  x <-uniroot(fun, lower=0, upper=100)$root
+  x <- uniroot(fun, lower=0, upper=100)$root
   
   # Construct betas
   betas <- b.ratios*x
@@ -824,7 +841,7 @@ if(sum(abs(b.ratios)) == 0){ # all zeros (thus under H0)
 
 set.seed(125) # set seed: to obtain same results when you re-run it
 epsilon <- rnorm(samplesize, sd=sqrt(var.e))
-sample$y <- as.matrix(sample[,2:(1+n.coef)]) %*% matrix(betas, nrow = n.coef) + epsilon
+sample$y <- as.matrix(sample[, 1:n.coef]) %*% matrix(betas, nrow = n.coef) + epsilon
 
 # Obtain fit
 fit <- lm(y ~ 0 + D, data=sample)
@@ -916,8 +933,11 @@ D_ <- matrix(rep(1:n.coef), nrow = samplesize)
 D <- as.factor(D_)
 sample$D <- D
 #install.packages('fastDummies')
-library(fastDummies)
-sample <- dummy_cols(sample, select_columns = 'D')
+#library(fastDummies)
+#sample <- dummy_cols(sample, select_columns = 'D')
+
+sample <- model.matrix(~sample$D-1)
+colnames(sample) <- paste0("D_", 1:ncol(sample))
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -926,15 +946,15 @@ diag(sigma) <- 1
 # Define error variance
 var.e <- 1 - r2 # (because all vars are standardized, var(resid)=(1-R2)*sigma_y)
         
-if(sum(abs(b.ratios)) == 0){ # all zeros (thus under H0)
+if (sum(abs(b.ratios)) == 0) { # all zeros (thus under H0)
   betas <- b.ratios
-}else{
+} else{
   # Solve for x here
   fun <- function (x) {
     (t(b.ratios*x) %*% sigma %*% b.ratios*x) / (t(b.ratios*x) %*% sigma %*% b.ratios*x + var.e) - r2
   }
   
-  x <-uniroot(fun, lower=0, upper=100)$root
+  x <- uniroot(fun, lower=0, upper=100)$root
   
   # Construct betas
   betas <- b.ratios*x
@@ -955,7 +975,7 @@ if(sum(abs(b.ratios)) == 0){ # all zeros (thus under H0)
 
 set.seed(124) # set seed: to obtain same results when you re-run it
 epsilon <- rnorm(samplesize, sd=sqrt(var.e))
-sample$y <- as.matrix(sample[,2:(1+n.coef)]) %*% matrix(betas, nrow = n.coef) + epsilon
+sample$y <- as.matrix(sample[, 1:n.coef]) %*% matrix(betas, nrow = n.coef) + epsilon
 
 # Obtain fit
 fit <- lm(y ~ 0 + D, data=sample)
@@ -996,8 +1016,11 @@ D_ <- matrix(rep(1:n.coef), nrow = samplesize)
 D <- as.factor(D_)
 sample$D <- D
 #install.packages('fastDummies')
-library(fastDummies)
-sample <- dummy_cols(sample, select_columns = 'D')
+#library(fastDummies)
+#sample <- dummy_cols(sample, select_columns = 'D')
+
+sample <- model.matrix(~sample$D-1)
+colnames(sample) <- paste0("D_", 1:ncol(sample))
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -1006,15 +1029,15 @@ diag(sigma) <- 1
 # Define error variance
 var.e <- 1 - r2 # (because all vars are standardized, var(resid)=(1-R2)*sigma_y)
         
-if(sum(abs(b.ratios)) == 0){ # all zeros (thus under H0)
+if (sum(abs(b.ratios)) == 0) { # all zeros (thus under H0)
   betas <- b.ratios
-}else{
+} else {
   # Solve for x here
   fun <- function (x) {
     (t(b.ratios*x) %*% sigma %*% b.ratios*x) / (t(b.ratios*x) %*% sigma %*% b.ratios*x + var.e) - r2
   }
   
-  x <-uniroot(fun, lower=0, upper=100)$root
+  x <- uniroot(fun, lower=0, upper=100)$root
   
   # Construct betas
   betas <- b.ratios*x
@@ -1032,7 +1055,7 @@ if(sum(abs(b.ratios)) == 0){ # all zeros (thus under H0)
 
 set.seed(125) # set seed: to obtain same results when you re-run it
 epsilon <- rnorm(samplesize, sd=sqrt(var.e))
-sample$y <- as.matrix(sample[,2:(1+n.coef)]) %*% matrix(betas, nrow = n.coef) + epsilon
+sample$y <- as.matrix(sample[, 1:n.coef]) %*% matrix(betas, nrow = n.coef) + epsilon
 
 # Obtain fit
 fit <- lm(y ~ 0 + D, data=sample)
@@ -1089,8 +1112,11 @@ D_ <- matrix(rep(1:n.coef), nrow = samplesize)
 D <- as.factor(D_)
 sample$D <- D
 #install.packages('fastDummies')
-library(fastDummies)
-sample <- dummy_cols(sample, select_columns = 'D')
+#library(fastDummies)
+#sample <- dummy_cols(sample, select_columns = 'D')
+
+sample <- model.matrix(~sample$D-1)
+colnames(sample) <- paste0("D_", 1:ncol(sample))
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -1099,15 +1125,15 @@ diag(sigma) <- 1
 # Define error variance
 var.e <- 1 - r2 # (because all vars are standardized, var(resid)=(1-R2)*sigma_y)
         
-if(sum(abs(b.ratios)) == 0){ # all zeros (thus under H0)
+if (sum(abs(b.ratios)) == 0) { # all zeros (thus under H0)
   betas <- b.ratios
-}else{
+} else {
   # Solve for x here
   fun <- function (x) {
     (t(b.ratios*x) %*% sigma %*% b.ratios*x) / (t(b.ratios*x) %*% sigma %*% b.ratios*x + var.e) - r2
   }
   
-  x <-uniroot(fun, lower=0, upper=100)$root
+  x <- uniroot(fun, lower=0, upper=100)$root
   
   # Construct betas
   betas <- b.ratios*x
@@ -1118,7 +1144,7 @@ if(sum(abs(b.ratios)) == 0){ # all zeros (thus under H0)
 
 set.seed(125) # set seed: to obtain same results when you re-run it
 epsilon <- rnorm(samplesize, sd=sqrt(var.e))
-sample$y <- as.matrix(sample[,2:(1+n.coef)]) %*% matrix(betas, nrow = n.coef) + epsilon
+sample$y <- as.matrix(sample[, 1:n.coef]) %*% matrix(betas, nrow = n.coef) + epsilon
 
 # Obtain fit
 fit <- lm(y ~ 0 + D, data=sample)
@@ -1170,8 +1196,11 @@ D_ <- matrix(rep(1:n.coef), nrow = samplesize)
 D <- as.factor(D_)
 sample$D <- D
 #install.packages('fastDummies')
-library(fastDummies)
-sample <- dummy_cols(sample, select_columns = 'D')
+#library(fastDummies)
+#sample <- dummy_cols(sample, select_columns = 'D')
+
+sample <- model.matrix(~sample$D-1)
+colnames(sample) <- paste0("D_", 1:ncol(sample))
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -1199,7 +1228,7 @@ if(sum(abs(b.ratios)) == 0){ # all zeros (thus under H0)
 
 set.seed(125) # set seed: to obtain same results when you re-run it
 epsilon <- rnorm(samplesize, sd=sqrt(var.e))
-sample$y <- as.matrix(sample[,2:(1+n.coef)]) %*% matrix(betas, nrow = n.coef) + epsilon
+sample$y <- as.matrix(sample[, 1:n.coef]) %*% matrix(betas, nrow = n.coef) + epsilon
 
 # Obtain fit
 fit <- lm(y ~ 0 + D, data=sample)
@@ -1249,8 +1278,11 @@ D_ <- matrix(rep(1:n.coef), nrow = samplesize)
 D <- as.factor(D_)
 sample$D <- D
 #install.packages('fastDummies')
-library(fastDummies)
-sample <- dummy_cols(sample, select_columns = 'D')
+#library(fastDummies)
+#sample <- dummy_cols(sample, select_columns = 'D')
+
+sample <- model.matrix(~sample$D-1)
+colnames(sample) <- paste0("D_", 1:ncol(sample))
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -1259,15 +1291,15 @@ diag(sigma) <- 1
 # Define error variance
 var.e <- 1 - r2 # (because all vars are standardized, var(resid)=(1-R2)*sigma_y)
         
-if(sum(abs(b.ratios)) == 0){ # all zeros (thus under H0)
+if (sum(abs(b.ratios)) == 0) { # all zeros (thus under H0)
   betas <- b.ratios
-}else{
+} else {
   # Solve for x here
   fun <- function (x) {
     (t(b.ratios*x) %*% sigma %*% b.ratios*x) / (t(b.ratios*x) %*% sigma %*% b.ratios*x + var.e) - r2
   }
   
-  x <-uniroot(fun, lower=0, upper=100)$root
+  x <- uniroot(fun, lower=0, upper=100)$root
   
   # Construct betas
   betas <- b.ratios*x
@@ -1278,7 +1310,7 @@ if(sum(abs(b.ratios)) == 0){ # all zeros (thus under H0)
 
 set.seed(125) # set seed: to obtain same results when you re-run it
 epsilon <- rnorm(samplesize, sd=sqrt(var.e))
-sample$y <- as.matrix(sample[,2:(1+n.coef)]) %*% matrix(betas, nrow = n.coef) + epsilon
+sample$y <- as.matrix(sample[, 1:n.coef]) %*% matrix(betas, nrow = n.coef) + epsilon
 
 # Obtain fit
 fit <- lm(y ~ 0 + D, data=sample)
@@ -1321,8 +1353,11 @@ D_ <- matrix(rep(1:n.coef), nrow = samplesize)
 D <- as.factor(D_)
 sample$D <- D
 #install.packages('fastDummies')
-library(fastDummies)
-sample <- dummy_cols(sample, select_columns = 'D')
+#library(fastDummies)
+#sample <- dummy_cols(sample, select_columns = 'D')
+
+sample <- model.matrix(~sample$D-1)
+colnames(sample) <- paste0("D_", 1:ncol(sample))
 
 #sigma <- matrix(-0.99, nrow = n.coef, ncol = n.coef)
 sigma <- matrix(-1, nrow = n.coef, ncol = n.coef)
@@ -1331,15 +1366,15 @@ diag(sigma) <- 1
 # Define error variance
 var.e <- 1 - r2 # (because all vars are standardized, var(resid)=(1-R2)*sigma_y)
         
-if(sum(abs(b.ratios)) == 0){ # all zeros (thus under H0)
+if (sum(abs(b.ratios)) == 0) { # all zeros (thus under H0)
   betas <- b.ratios
-}else{
+} else {
   # Solve for x here
   fun <- function (x) {
     (t(b.ratios*x) %*% sigma %*% b.ratios*x) / (t(b.ratios*x) %*% sigma %*% b.ratios*x + var.e) - r2
   }
   
-  x <-uniroot(fun, lower=0, upper=100)$root
+  x <- uniroot(fun, lower=0, upper=100)$root
   
   # Construct betas
   betas <- b.ratios*x
@@ -1350,7 +1385,7 @@ if(sum(abs(b.ratios)) == 0){ # all zeros (thus under H0)
 
 set.seed(125) # set seed: to obtain same results when you re-run it
 epsilon <- rnorm(samplesize, sd=sqrt(var.e))
-sample$y <- as.matrix(sample[,2:(1+n.coef)]) %*% matrix(betas, nrow = n.coef) + epsilon
+sample$y <- as.matrix(sample[, 1:n.coef]) %*% matrix(betas, nrow = n.coef) + epsilon
 
 # Obtain fit
 fit <- lm(y ~ 0 + D, data=sample)

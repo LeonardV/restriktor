@@ -130,6 +130,7 @@ S3method(conRLM, rlm)
 S3method(conGLM, glm)
 S3method(conMLM, mlm)
 
+S3method(goric, default)
 S3method(goric, restriktor)
 S3method(goric, lm)
 S3method(goric, lavaan)

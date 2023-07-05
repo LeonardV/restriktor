@@ -12,8 +12,12 @@
 
 # TODO
 
-evSyn <- function(object, ...) { UseMethod("evSyn") }
+#evSyn <- function(object, ...) { UseMethod("evSyn") }
 
+evSyn_est       <- function(object, ...) UseMethod("evSyn_est")
+evSyn_LL        <- function(object, ...) UseMethod("evSyn_LL")
+evSyn_ICweights <- function(object, ...) UseMethod("evSyn_ICweights")
+evSyn_ICvalues  <- function(object, ...) UseMethod("evSyn_ICvalues")
 # -------------------------------------------------------------------------
 ## est (list + vec) + cov (list + mat)
 ## LL (list + vec) + PT (list + vec)
@@ -86,22 +90,22 @@ evSyn <- function(object, ...) {
   ## est (vector) + VCOV (matrix)
   ## check if list contains a vector/matrix with the the parameter estimates
   if (!is.null(VCOV)) {
-    evSyn.est(object, ...)
+    evSyn_est(object, ...)
   } else if (!is.null(PT)) {
     # LL + PT
-    evSyn.LL(object, ...)
+    evSyn_LL(object, ...)
   } else if (is.null(VCOV) & is.null(PT) & obj_isICweights) { 
     # IC weights
     if (!is.null(arguments$type) && arguments$type == "equal") {
       message("The added-evidence method is the only available approach when weights are included in the input.")
     }
-    evSyn.ICweights(object, ...)
+    evSyn_ICweights(object, ...)
   } else if (is.null(VCOV) & is.null(PT) & !obj_isICweights) { 
     # IC values
     if (!is.null(arguments$type) && arguments$type == "equal") { 
       message("The added-evidence method is the only available approach when the input consists of GORIC(A) values.")
     }
-    evSyn.ICvalues(object, ...)
+    evSyn_ICvalues(object, ...)
   } else {
     stop("restriktor Error: I don't know how to handle the input.")
   }
@@ -111,9 +115,9 @@ evSyn <- function(object, ...) {
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on the (standard) parameter estimates and the covariance matrix
-evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
-                      type = c("equal", "added"), 
-                      comparison = c("unconstrained", "complement", "none")) {
+evSyn_est.list <- function(object, ..., VCOV = list(), hypotheses = list(),
+                           type = c("equal", "added"), 
+                           comparison = c("unconstrained", "complement", "none")) {
   
   if (missing(comparison)) 
     comparison <- "none"
@@ -371,8 +375,8 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on log likelihood and penalty values
-evSyn.LL <- function(object, PT = list(), type = c("equal", "added"),
-                     hypo_names = NULL) {
+evSyn_LL.list <- function(object, ..., PT = list(), type = c("equal", "added"),
+                          hypo_names = NULL) {
   
   if (missing(type)) 
     type <- "added"
@@ -463,7 +467,7 @@ evSyn.LL <- function(object, PT = list(), type = c("equal", "added"),
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on AIC or ORIC or GORIC or GORICA values
-evSyn.ICvalues <- function(object, hypo_names = NULL) {
+evSyn_ICvalues.list <- function(object, ..., hypo_names = NULL) {
   
   IC <- object
   S  <- length(IC)
@@ -525,7 +529,7 @@ evSyn.ICvalues <- function(object, hypo_names = NULL) {
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on AIC or ORIC or GORIC or GORICA weights or (Bayesian) posterior model probabilities
-evSyn.ICweights <- function(object, priorWeights = NULL, hypo_names = NULL) {
+evSyn_ICweights.list <- function(object, ..., priorWeights = NULL, hypo_names = NULL) {
   
   Weights <- object
   S <- length(Weights)

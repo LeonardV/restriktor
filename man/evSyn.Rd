@@ -1,11 +1,10 @@
 \name{evSyn}
 \alias{evSyn}
 \alias{evsyn}
-\alias{evSyn.default}
-\alias{evSyn.est}
-\alias{evSyn.ICweights}
-\alias{evSyn.ICvalues}
-\alias{evSyn.LL}
+\alias{evSyn_est.list}
+\alias{evSyn_ICweights.list}
+\alias{evSyn_ICvalues.list}
+\alias{evSyn_LL.list}
 \alias{print.evSyn}
 \alias{print.summary.evSyn}
 \alias{summary.evSyn}
@@ -16,18 +15,19 @@
 hypotheses from multiple studies that may use diverse designs to investigate the 
 same central theory.}
 
-\usage{evSyn(object, \ldots)
+\usage{
+evSyn(object, \ldots)
 
-\method{evSyn}{est}(object, VCOV = list(), hypotheses = list(),
+\method{evSyn_est}{list}(object, \ldots, VCOV = list(), hypotheses = list(),
       type = c("equal", "added"), 
       comparison = c("unconstrained", "complement", "none"))
 
-\method{evSyn}{LL}(object, PT = list(), type = c("equal", "added"),
+\method{evSyn_LL}{list}(object, \ldots, PT = list(), type = c("equal", "added"),
       hypo_names = NULL)
 
-\method{evSyn}{ICvalues}(object, hypo_names = NULL)
+\method{evSyn_ICvalues}{list}(object, \ldots, hypo_names = NULL)
 
-\method{evSyn}{ICweights}(object, priorWeights = NULL, hypo_names = NULL)
+\method{evSyn_ICweights}{list}(object, \ldots, priorWeights = NULL, hypo_names = NULL)
 
 \method{print}{evSyn}(x, digits = max(3, getOption("digits") - 4), \dots)
 

@@ -80,14 +80,20 @@ export("restriktor",
        "conTestC.restriktor", 
        "conTest_ceq.conLM", "conTest_ceq.conRLM", "conTest_ceq.conGLM", 
        "conTestD", "bootstrapD", 
-       "goric", "print.con_goric", "print.conTestLavaan",
-       "print.restriktor", "print.summary.restriktor",
+       "goric", 
+       #"print.con_goric", "print.conTestLavaan",
+       #"print.restriktor", "print.summary.restriktor",
        "summary.restriktor", "conTest_summary.restriktor",
-       "print.conTest", "logLik.restriktor",
+       #"print.conTest", 
+       "logLik.restriktor",
        "coef.restriktor", "model.matrix.restriktor",
-       "con_weights_boot", "coef.con_goric", "summary.con_goric", 
-       "evSyn", "plot.evSyn", "print.evSyn", "summary.evSyn",
-       "print.summary.evSyn")
+       "con_weights_boot", "coef.con_goric", 
+       #"summary.con_goric", 
+       "evSyn", "plot.evSyn"#, 
+       #"print.evSyn", 
+       #"summary.evSyn",
+       #"print.summary.evSyn"
+       )
 
 S3method(coef, restriktor)
 S3method(model.matrix, restriktor)
@@ -131,10 +137,10 @@ S3method(goric, numeric)
 S3method(goric, CTmeta)
 S3method(goric, rma)
 
-S3method(evSyn, est)
-S3method(evSyn, LL)
-S3method(evSyn, ICvalues)
-S3method(evSyn, ICweights)
+S3method(evSyn_est, list)
+S3method(evSyn_LL, list)
+S3method(evSyn_ICvalues, list)
+S3method(evSyn_ICweights, list)
 S3method(plot, evSyn)
 S3method(print, evSyn)
 S3method(summary, evSyn)

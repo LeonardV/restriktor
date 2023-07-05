@@ -12,13 +12,6 @@
 
 # TODO
 
-# can gorica function do more than restriktor, see mail RK
-
-# update VIGNETTE (ik krijg toegang tot .Rmd files)
-# ik krijg alle files mbt evSyn om aan te passen ()
-# nieuwe versie naar CRAN
-# update restriktor website
-
 evSyn <- function(object, ...) { UseMethod("evSyn") }
 
 # -------------------------------------------------------------------------
@@ -207,7 +200,6 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
     }
   }
 
-  
   NrHypos <- length(len_H)
   NrHypos_incl <- NrHypos + 1
   if (comparison == "none"){
@@ -218,19 +210,9 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
     rownames(LL) <- rownames(PT) <- paste0("Study ", 1:S)
 
   CumulativeGoricaWeights <- CumulativeGorica <- matrix(NA, nrow = S+1, ncol = NrHypos_incl)
-  #  rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("study_", 1:S), "final")
-  
-  # sequence <- vector(mode = "character", length = S)
-  # for (i in 1:S) {
-  #   if (i == 1) {
-  #     sequence[i] <- "1"
-  #   } else {
-  #     sequence[i] <- paste0("1-", i)
-  #   }
-  # }
+
   sequence <- paste0("Studies 1-", 1:S)
   sequence[1] <- "Studies 1"
-  
   rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(sequence, "Final")
     
   if (NrHypos == 1 & comparison == "complement") {
@@ -339,8 +321,6 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
   
   # Output
   if (NrHypos == 1 & comparison == "complement") {
-     #colnames(ratio.weight_mu) <- c("H1 vs. Hc1")
-     #colnames(Final.ratio.GORICA.weights) <- c("vs. H1", "vs. Hc")
     colnames(ratio.weight_mu) <- c(paste0(names(hypotheses), " vs. ", "Complement"))
     colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(CumulativeGorica)))
     
@@ -354,7 +334,6 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
                 Cumulative_GORICA_weights = CumulativeGoricaWeights,
                 Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
   } else if (comparison == "none") {
-    #colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. H", 1:NrHypos))
     colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(CumulativeGorica)))
     
     out <- list(type = type,
@@ -367,8 +346,6 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
                 Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
   } else { 
     # unconstrained
-    #colnames(ratio.weight_mu) <- c(paste0("H", 1:NrHypos, " vs. Unc."), "Unc. vs. Unc.")
-    #colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. H", 1:NrHypos), "vs. Hu")
     colnames(ratio.weight_mu) <- c(paste0(colnames(CumulativeGorica), " vs. ", "Unconstrained"))
     colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(CumulativeGorica)))
     
@@ -422,19 +399,7 @@ evSyn.LL <- function(object, PT = list(), type = c("equal", "added"),
   
   LL <- do.call(rbind, LL)
   PT <- do.call(rbind, PT)
-  #LL <- lapply(LL, function(x) setNames(x, hnames))
-  #PT <- lapply(PT, function(x) setNames(x, hnames))
-  
   colnames(CumulativeGorica) <- colnames(CumulativeGoricaWeights) <- colnames(LL) <- colnames(PT) <- colnames(weight_m) <- hnames
-  
-  # sequence <- vector(mode = "character", length = S)
-  # for (i in 1:S) {
-  #   if (i == 1) {
-  #     sequence[i] <- "1"
-  #   } else {
-  #     sequence[i] <- paste0("1-", i)
-  #   }
-  # }
   
   sequence <- paste0("Studies 1-", 1:S)
   sequence[1] <- "Studies 1"
@@ -518,19 +483,10 @@ evSyn.ICvalues <- function(object, hypo_names = NULL) {
   CumulativeGoricaWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
   colnames(CumulativeGorica) <- colnames(CumulativeGoricaWeights) <- colnames(IC) <- colnames(weight_m) <- hnames
   
-  # sequence <- vector(mode = "character", length = S)
-  # for (i in 1:S) {
-  #   if (i == 1) {
-  #     sequence[i] <- "1"
-  #   } else {
-  #     sequence[i] <- paste0("1-", i)
-  #   }
-  # }
   sequence <- paste0("Studies 1-", 1:S)
   sequence[1] <- "Studies 1"
   
   rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(sequence, "Final")
-  #rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(paste0("Study_", 1:S), "Final")
   rownames(IC) <- rownames(weight_m) <- paste0("Study ", 1:S)
   
   sumIC <- 0
@@ -589,16 +545,6 @@ evSyn.ICweights <- function(object, priorWeights = NULL, hypo_names = NULL) {
   CumulativeWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos))
   colnames(Weights) <- colnames(CumulativeWeights) <- hypo_names
   
-  
-  # sequence <- vector(mode = "character", length = S)
-  # for (i in 1:S) {
-  #   if (i == 1) {
-  #     sequence[i] <- "1"
-  #   } else {
-  #     sequence[i] <- paste0("1-", i)
-  #   }
-  # }
-  
   sequence <- paste0("Studies 1-", 1:S)
   sequence[1] <- "Studies 1"
   
@@ -608,7 +554,6 @@ evSyn.ICweights <- function(object, priorWeights = NULL, hypo_names = NULL) {
   for(s in 2:S) {
     CumulativeWeights[s, ] <- CumulativeWeights[(s-1), ] * Weights[s, ] / sum( CumulativeWeights[(s-1), ] * Weights[s, ] )
   }
-  
   
   CumulativeWeights[(S+1), ] <- CumulativeWeights[S, ]
   
@@ -643,7 +588,6 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
                   FUN = function(x) format_numeric(x, digits = digits))
     names(cgw) <- colnames(x$Cumulative_GORICA_weights)
     print(cgw, print.gap = 2, quote = FALSE, right = TRUE)
-    
     cat("---\n")
   }
   

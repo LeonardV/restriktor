@@ -65,7 +65,7 @@ same central theory.}
   \item{hypotheses}{When applying the same set of hypotheses to each study, 
   the syntax structure should be as follows: hypotheses = list(H1, H2, \ldots). 
   However, if a different set of hypotheses is applied to each study, the syntax 
-  structure should be as follows: hypotheses = list(Study1 = list(H1, H2), Study2 = list(H3, H4)).
+  structure should be as follows: hypotheses = list(H1 = list(H11, H12), H2 = list(H21, H22)).
   See \code{\link{goric}} how to specify the hypotheses syntax or see the example 
   section below.
 }
@@ -106,7 +106,7 @@ for the theory-based hypotheses.}
 # each hypothesis in the list. Otherwise the hypotheses are named accordingly 'H1', 'H2', \ldots
 
 # text-based syntax (the labels x1, x2, and x2 are the names of coef(model) or names(vector))
-h1 <- '(x1, x2, x3) > 0; x3 > 0'
+h1 <- '(x1, x2, x3) > 0'
 h2 <- '(x1, x3) > 0; x2 = 0'
 h3 <- 'x1 > 0; x2 < 0; x3 = 0'
 hypotheses = list(hypo1 = h1, hypo2 = h2, hypo3 = h3)

@@ -240,7 +240,7 @@ Modeling: A Multidisciplinary Journal, 16:3, 477-497, DOI: 10.1080/1070551090300
 # each hypothesis in the list. Otherwise the hypotheses are named accordingly 'H1', 'H2', \ldots
 
 # text-based syntax (the labels x1, x2, and x2 are the names of coef(model) or names(vector))
-h1 <- '(x1, x2, x3) > 0; x3 > 0'
+h1 <- '(x1, x2, x3) > 0'
 h2 <- '(x1, x3) > 0; x2 = 0'
 h3 <- 'x1 > 0; x2 < 0; x3 = 0'
 hypotheses = list(hypo1 = h1, hypo2 = h2, hypo3 = h3)

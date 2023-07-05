@@ -233,13 +233,13 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
   if (NrHypos == 1 & comparison == "complement") {
     exist_hnames <- names(hypotheses)
     if (!is.null(exist_hnames)) {
-      exist_hnames <- c(exist_hnames, "Hc")
+      exist_hnames <- c(exist_hnames, "Complement")
       hnames_idx <- exist_hnames != ""
     } else {
       exist_hnames <- vector("character", 2L)
       hnames_idx <- exist_hnames != ""
     }
-    hnames <- c("H1", "Hc")
+    hnames <- c("H1", "Complement")
     hnames_idx <- exist_hnames != ""
     exist_hnames[!hnames_idx] <- hnames[!hnames_idx]
     hnames <- exist_hnames
@@ -263,13 +263,13 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
   } else {
     exist_hnames <- names(hypotheses)
     if (!is.null(exist_hnames)) {
-      exist_hnames <- c(exist_hnames, "Hu")
+      exist_hnames <- c(exist_hnames, "Unconstrained")
       hnames_idx <- exist_hnames != ""
     } else {
       exist_hnames <- vector("character", length(hypotheses) + 1L)
       hnames_idx <- exist_hnames != ""
     }
-    hnames <- c(paste0("H", 1:NrHypos), "Hu")
+    hnames <- c(paste0("H", 1:NrHypos), "Unconstrained")
     hnames_idx <- exist_hnames != ""
     exist_hnames[!hnames_idx] <- hnames[!hnames_idx]
     hnames <- exist_hnames
@@ -338,7 +338,7 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
   if (NrHypos == 1 & comparison == "complement") {
      #colnames(ratio.weight_mu) <- c("H1 vs. Hc1")
      #colnames(Final.ratio.GORICA.weights) <- c("vs. H1", "vs. Hc")
-    colnames(ratio.weight_mu) <- c(paste0(names(hypotheses), " vs. ", "Hc"))
+    colnames(ratio.weight_mu) <- c(paste0(names(hypotheses), " vs. ", "Complement"))
     colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(CumulativeGorica)))
     
     out <- list(type     = type, 
@@ -366,7 +366,7 @@ evSyn.est <- function(object, VCOV = list(), hypotheses = list(),
     # unconstrained
     #colnames(ratio.weight_mu) <- c(paste0("H", 1:NrHypos, " vs. Unc."), "Unc. vs. Unc.")
     #colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. H", 1:NrHypos), "vs. Hu")
-    colnames(ratio.weight_mu) <- c(paste0(colnames(CumulativeGorica), " vs. ", "Hu"))
+    colnames(ratio.weight_mu) <- c(paste0(colnames(CumulativeGorica), " vs. ", "Unconstrained"))
     colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(CumulativeGorica)))
     
     out <- list(type = type,
@@ -672,6 +672,7 @@ summary.evSyn <- function(object, ...) {
   
   if (!is.null(x$LL_m)) {
     Cumulative_LL <- apply(x$LL_m, 2, cumsum)
+    # to preserve dimension if nrows = 1
     Cumulative_LL <- matrix(Cumulative_LL, nrow = nrow(x$LL_m), 
                             dimnames = list(rownames(x$LL_m), colnames(x$LL_m)))
     sequence <- vector(mode = "character", length = S)

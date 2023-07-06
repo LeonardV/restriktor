@@ -65,7 +65,7 @@ evSyn(object, \ldots)
   \item{hypotheses}{When applying the same set of hypotheses to each study, 
   the syntax structure should be as follows: hypotheses = list(H1, H2, \ldots). 
   However, if a different set of hypotheses is applied to each study, the syntax 
-  structure should be as follows: hypotheses = list(H1 = list(H11, H12), H2 = list(H21, H22)).
+  structure should be as follows: hypotheses = list(set1 = list(H11, H12), set2 = list(H21, H22)).
   See \code{\link{goric}} how to specify the hypotheses syntax or see the example 
   section below.
 }
@@ -124,7 +124,20 @@ hypotheses = list(Ha = h1, Hb = 'x1 = x2 > x3')
 hypotheses = list(H1, H2, \ldots)
 
 # a different set of hypotheses for each study: 
-hypotheses = list(Study1 = list(H1, H2), Study2 = list(H3, H4))
+# note that the list names set1 and set2 are redundant and can be left out. 
+# It is crucial to ensure that the hypotheses across each set are ordered in a similar manner.
+
+H11 <- 'group1 = group2 > group3' 
+H12 <- 'group2 > group1 > group3'   
+
+H21 <- 'gr1 = gr2 > gr3'
+H22 <- 'gr2 > gr1 > gr3'
+
+# correct
+hypotheses = list(set1 = list(H11, H12), set2 = list(H21, H22))
+
+# NOT correct
+hypotheses = list(set1 = list(H12, H11), set2 = list(H21, H22))
 }
 
 ## Example 1 - 4 studies

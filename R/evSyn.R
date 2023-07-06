@@ -127,6 +127,22 @@ evSyn_est.list <- function(object, ..., VCOV = list(), hypotheses = list(),
     type <- "added"
   type <- match.arg(type)
 
+  # number of primary studies
+  S <- length(object)
+  V <- length(VCOV)
+  
+  if (S != V) {
+    stop("Restriktor ERROR: the number of items in the object list (i.e., number of (standardized) estimates) must equal the number of items in the VCOV list.", call. = FALSE)
+  }
+  
+  # list(list(H11 = H11), list(H21 = H21)), 
+  nested_hypo <- all(sapply(hypotheses, is.list))
+  # if not nested, list(H0, Hpos, Hneg = Hneg), make it nested
+  if (!nested_hypo) {
+    hypotheses <- list(hypotheses)
+    hypotheses <- rep(hypotheses, S)
+  }
+  
   # check if VCOV and hypotheses are both a non-empty list
   if ( !is.list(VCOV) & length(VCOV) == 0 ) {
     stop("Restriktor ERROR: VCOV must be a list of covariance matrices of the (standardized) parameter estimates of interest.", call. = FALSE)  
@@ -136,141 +152,61 @@ evSyn_est.list <- function(object, ..., VCOV = list(), hypotheses = list(),
     stop("Restriktor ERROR: hypotheses must be a list.", call. = FALSE)  
   } 
   
-  # number of primary studies
-  S <- length(object)
-  V <- length(VCOV)
-  
-  if (S != V) {
-    stop("Restriktor ERROR: the number of items in the object list (i.e., number of (standardized) estimates) must equal the number of items in the VCOV list.", call. = FALSE)
-  }
-
   # check if the matrices are all symmetrical
   VCOV_isSym <- sapply(VCOV, isSymmetric)
   if (!all(VCOV_isSym)) {
     stop(sprintf("Restriktor ERROR: the %sth covariance matrix in VCOV is not symmetric.", which(!VCOV_isSym)), call. = FALSE)  
   }
 
-  # if only 1 hypothesis is provided, that hypothesis will be applied to all studies
-  # This also means that the vector with parameter estimates must have equal names between the studies.
-  # check if the user specified the same hypothesis in each study. 
-  # number of hypotheses (this should be equal in each study, see check below)
-  
-  # determine if same set of hypotheses in each study or different set of hypotheses in each study.
-  diffSet_hypotheses <- sapply(hypotheses, is.list)
-  if (all(!diffSet_hypotheses)) {
-    # same hypotheses in each study
-    sameHypo <- TRUE  
-  } else if (all(diffSet_hypotheses)) {
-    # different hypotheses in each study
-    sameHypo <- FALSE  
-  } else {
-    stop("Restriktor ERROR: use the following hypotheses format:\n",
-         "If you want to apply the same set of hypotheses for each study, use: hypotheses = list(H1, H2, ...).\n",
-         "If you want to apply a different set of hypotheses for each study, use: hypotheses = list( list(H11, H12), list(H21, H22) ).",
-         call. = FALSE)
-    
-  }
-  
   # number of hypotheses must be equal for each studie. In each study a set of 
   # shared theories (i.e., hypotheses) are compared.
   len_H <- sapply(hypotheses, length) 
-  if (!sameHypo) {
-    if (length(unique(len_H)) > 1) {
-      stop("Restriktor ERROR: The number of hypotheses must be consistent across all studies.", call. = FALSE)
-    }
-    
-    if (length(object) != length(len_H)) {
-      stop("Restriktor ERROR: The number of hypotheses does not match the number of studies.", call. = FALSE)
-    }
+  NrHypos <- unique(len_H)
+  
+  if (length(unique(len_H)) > 1) {
+    stop("Restriktor ERROR: The number of hypotheses must be consistent across all studies.", call. = FALSE)
+  }
+  
+  if (length(object) != length(len_H)) {
+    stop("Restriktor ERROR: The number of hypothesis sets ", "(",length(len_H), ")", " does not match the number of studies (", S, ")",".", call. = FALSE)
   }
 
-  # if same hypo for each study, then only one hypo is allowed for comparison = complement
-  comp_check_same <- sameHypo & length(len_H) == 1
-  # if diff hypo for each study, then only one hypo is allowed for comparison = complement
-  comp_check_diff <- !sameHypo & all(len_H == 1)
-  
+  complement_check <- all(len_H == 1)
   if (comparison == "complement") {
-    if ((sameHypo && !comp_check_same) | (!sameHypo && !comp_check_diff)) {
+    #if ((sameHypo && !comp_check_same) | (!sameHypo && !comp_check_diff)) {
+     if (!complement_check) {  
       warning("Restriktor Warning: Only one order-restricted hypothesis is allowed (for now) when comparison = 'complement'.",
               " Setting comparison to 'unconstrained' instead.", call. = FALSE)
       comparison <- "unconstrained"
     }
   }
 
+  list_hypo_names <- lapply(hypotheses, names)
+  # each study must have the same hypotheses namen
+  #element_hypo_names <- l_hnames[[1]]
+  element_hypo_names <- list_hypo_names[[1]]
+  # check if it is similar is the other lists, but also if the same order is used. 
+  # else try to fix the order if the same names are used, but in a different order.
+  check_name_in_list <- lapply(list_hypo_names, function(x) all(element_hypo_names == x))
   
-  # hypotheses <- list(Set1 = list(Ha = H10, H2 = H11, H3 = H12), 
-  #                    Set2 = list(Ha = H20, H2 = H21, H3 = H22))
-  # 
-  # hypotheses <- list(Set1 = list(Ha = H10, H2 = H11, H3 = H12), 
-  #                    Set2 = list(Ha = H20, H3 = H21, H2 = H22))
-  # 
-  # hypotheses <- list(Set1 = list(H10, H11, H12), 
-  #                    Set2 = list(H20, H21, H22))
-  # 
-  # hypotheses <- list(Set1 = list(H11), 
-  #                    Set2 = list(H21))
-  # 
-  # hypotheses <- list(list(H11), list(H21))
-  # 
-  # hypotheses <- list(H11, H21, H22)
-  # hypotheses <- list(Ha = H11, Hb = H21, Hc = H22)
-  
-  # nested_hypo <- all(sapply(hypotheses, is.list))
-  
-  # if (nested_hypo) {
-  #   h_names <- lapply(hypotheses, names)
-  #   ## check if the same H names are used in each study
-  #   # Get the elements in first list
-  #   list_elements <- h_names[[1]]
-  #   # Check if elements in first list are present in other lists
-  #   hnames_equal_in_other_columns <- lapply(h_names, function(l) l == list_elements)
-  #   # all element names are equal
-  #   all_hnames_equal <- all(sapply(hnames_equal_in_other_columns, all))
-  # 
-  #   if (all_hnames_equal && !is.null(list_elements)) {
-  #     exist_hnames <- list_elements 
-  #   } else if (is.null(list_elements)) {
-  #      
-  #   }
-  # }
-  
-  # if list(S1 = list(H11 = H11), S2 = list(H21 = H21)), then hypo_class = list
-  nested_hypo <- all(sapply(hypotheses, is.list))
-  # if (any(nested_hypo)) {
-  #   vnames_nested_hypo <- sapply(hypotheses, names)
-  #   
-  # }
-  
-  #hypo_class <- unique(sapply(hypotheses, class))
-  # if list(H0, Hpos, Hneg = Hneg), then hypo_class = character
-  
-  if (!nested_hypo) {
-    exist_hnames <- names(hypotheses)
-    NrHypos <- length(len_H)
-  } else {
-    l_hnames <- lapply(hypotheses, names)
-    exist_hnames <- unique(unlist(l_hnames))
-    NrHypos <- unique(len_H)
-    if (!is.null(exist_hnames) && length(exist_hnames) != NrHypos) {
-    
-      l_hnames <- lapply(l_hnames, function(x) paste0("(",x,")", collapse = ', '))
-      l_hnames <- paste(l_hnames, collapse = ' and ')
-      
-      warning(paste0("Restriktor WARNING: the hypothesis names in each hypothesis set ", l_hnames, " must be identical.\n",
-                     "For example hypotheses = list(list(Ha = H11, Hb = H12), list(Ha = H21, Hb = H22))\n",
-                     "Hence, I renamed the hypotheses to H1, H2, ... instead."), call. = FALSE)
-      exist_hnames <- NULL
-    }
+  # this should trigger the warning: list(list(Ha = H11), list(Hb = H21))
+  if (!is.null(element_hypo_names) && !all(unlist(check_name_in_list))) {
+    l_hnames <- lapply(list_hypo_names, function(x) paste0("(",x,")", collapse = ', '))
+    l_hnames <- paste(l_hnames, collapse = ' and ')
+    warning(paste0("Restriktor WARNING: The hypothesis names ", l_hnames, " in each hypothesis set must be identical and in the same order. ",
+                   "For example, hypotheses = list(list(Ha = H11, Hb = H12), list(Ha = H21, Hb = H22)). ",
+                   "Hence, the hypotheses have been renamed to H1, H2, ... instead."),
+            call. = FALSE)
+    element_hypo_names <- NULL
   }
-  
+ 
   NrHypos_incl <- NrHypos + 1
-  if (comparison == "none"){
+  if (comparison == "none") {
     NrHypos_incl <- NrHypos
   }
 
   LL <- PT <- weight_m <- GORICA_m <- matrix(data = NA, nrow = S, ncol = NrHypos_incl)
-    rownames(LL) <- rownames(PT) <- paste0("Study ", 1:S)
-
+  rownames(LL) <- rownames(PT) <- paste0("Study ", 1:S)
   CumulativeGoricaWeights <- CumulativeGorica <- matrix(NA, nrow = S+1, ncol = NrHypos_incl)
 
   sequence <- paste0("Studies 1-", 1:S)
@@ -278,50 +214,56 @@ evSyn_est.list <- function(object, ..., VCOV = list(), hypotheses = list(),
   rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(sequence, "Final")
   
   if (NrHypos == 1 & comparison == "complement") {
-    #exist_hnames <- names(hypotheses)
-    if (!is.null(exist_hnames)) {
-      exist_hnames <- c(exist_hnames, "Complement")
-      hnames_idx <- exist_hnames != ""
+    if (!is.null(element_hypo_names)) {
+      element_hypo_names <- c(element_hypo_names, "Complement")
+      hnames_idx <- element_hypo_names != ""
     } else {
-      exist_hnames <- vector("character", 2L)
-      hnames_idx <- exist_hnames != ""
+      element_hypo_names <- vector("character", 2L)
+      hnames_idx <- element_hypo_names != ""
     }
     hnames <- c("H1", "Complement")
-    hnames_idx <- exist_hnames != ""
-    exist_hnames[!hnames_idx] <- hnames[!hnames_idx]
-    hnames <- exist_hnames
-    #names(hypotheses) <- hnames[-max(length(hnames))] # remove Hc              FIXME!
+    hnames_idx <- element_hypo_names != ""
+    element_hypo_names[!hnames_idx] <- hnames[!hnames_idx]
+    hnames <- element_hypo_names
+    
+    hypotheses <- lapply(hypotheses, function(h) {
+      names(h)[1:(length(hnames) - 1L)] <- hnames[-max(length(hnames))]  
+      return(h)
+    })
     ratio.weight_mu <- matrix(data = NA, nrow = S, ncol = 1)
   } else if (comparison == "none"){
-    # existing hypo names
-    #exist_hnames <- names(hypotheses)
-    if (!is.null(exist_hnames)) {
-      hnames_idx <- exist_hnames != ""
+    if (!is.null(element_hypo_names)) {
+      hnames_idx <- element_hypo_names != ""
     } else {
-      #exist_hnames <- vector("character", length(hypotheses))
-      exist_hnames <- vector("character", unique(len_H))
-      hnames_idx <- exist_hnames != ""
+      element_hypo_names <- vector("character", unique(len_H))
+      hnames_idx <- element_hypo_names != ""
     }
     hnames <- c(paste0("H", 1:NrHypos))
-    exist_hnames[!hnames_idx] <- hnames[!hnames_idx]
-    hnames <- exist_hnames
-    #names(hypotheses) <- hnames
+    element_hypo_names[!hnames_idx] <- hnames[!hnames_idx]
+    hnames <- element_hypo_names
+    
+    hypotheses <- lapply(hypotheses, function(h) {
+      names(h)[1:length(hnames)] <- hnames 
+      return(h)
+    })
     ratio.weight_mu <- matrix(data = NA, nrow = S, ncol = NrHypos_incl)
   } else {
-    #exist_hnames <- names(hypotheses)                                          FIXME!
-    if (!is.null(exist_hnames)) {
-      exist_hnames <- c(exist_hnames, "Unconstrained")
-      hnames_idx <- exist_hnames != ""
+    if (!is.null(element_hypo_names)) {
+      element_hypo_names <- c(element_hypo_names, "Unconstrained")
+      hnames_idx <- element_hypo_names != ""
     } else {
-      #exist_hnames <- vector("character", length(hypotheses) + 1L)
-      exist_hnames <- vector("character", unique(len_H) + 1L)
-      hnames_idx <- exist_hnames != ""
+      element_hypo_names <- vector("character", unique(len_H) + 1L)
+      hnames_idx <- element_hypo_names != ""
     }
     hnames <- c(paste0("H", 1:NrHypos), "Unconstrained")
-    hnames_idx <- exist_hnames != ""
-    exist_hnames[!hnames_idx] <- hnames[!hnames_idx]
-    hnames <- exist_hnames
-    #names(hypotheses) <- hnames[-max(length(hnames))] # remove Hu              FIXME!
+    hnames_idx <- element_hypo_names != ""
+    element_hypo_names[!hnames_idx] <- hnames[!hnames_idx]
+    hnames <- element_hypo_names
+
+    hypotheses <- lapply(hypotheses, function(h) {
+      names(h)[1:(length(hnames) - 1L)] <- hnames[-max(length(hnames))]
+      return(h)
+    })
     ratio.weight_mu <- matrix(data = NA, nrow = S, ncol = NrHypos_incl)
   }
     
@@ -329,15 +271,15 @@ evSyn_est.list <- function(object, ..., VCOV = list(), hypotheses = list(),
   rownames(GORICA_m) <- rownames(ratio.weight_mu) <- rownames(weight_m) <- paste0("Study ", 1:S)
   
   for(s in 1:S) {
-    if (sameHypo) {
-      res_goric <- goric(object[[s]], VCOV = VCOV[[s]], 
-                         hypotheses = as.list(unlist(hypotheses)),
-                         type = 'gorica', comparison = comparison)
-    } else {
+    # if (sameHypo) {
+    #   res_goric <- goric(object[[s]], VCOV = VCOV[[s]], 
+    #                      hypotheses = as.list(unlist(hypotheses)),
+    #                      type = 'gorica', comparison = comparison)
+    # } else {
       res_goric <- goric(object[[s]], VCOV = VCOV[[s]],
                          hypotheses = hypotheses[[s]],
                          type = 'gorica', comparison = comparison)
-    }
+#    }
     
     if (comparison == "unconstrained") {
       ratio.weight_mu[s, ] <- res_goric$ratio.gw[, NrHypos_incl]

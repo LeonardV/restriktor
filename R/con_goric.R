@@ -1271,22 +1271,6 @@ summary.con_goric <- function(object, brief = TRUE,
     cat("---\n")
   }
   
-  if (!is.null(x$ratio.pw)) {
-    cat("\nRatio penalty-weights:\n")
-    ratio.pw <- apply(x$ratio.pw, 2, sprintf, fmt = dig)
-    rownames(ratio.pw) <- rownames(x$ratio.pw)
-    class(ratio.pw) <- "numeric"
-    
-    if (max(ratio.pw, na.rm = TRUE) >= 1e4) {
-      print(format(x$ratio.pw, digits = digits, scientific = TRUE, trim = TRUE), 
-            print.gap = 2, quote = FALSE, right = FALSE)
-    } else {
-      print(format(ratio.pw, digits = digits, scientific = FALSE, trim = TRUE), 
-            print.gap = 2, quote = FALSE, right = FALSE)
-    }
-    cat("---\n")
-  }
-  
   if (!is.null(x$ratio.lw)) {
     cat("\nRatio loglik-weights:\n")
     ratio.lw <- apply(x$ratio.lw, 2, sprintf, fmt = dig)
@@ -1303,7 +1287,22 @@ summary.con_goric <- function(object, brief = TRUE,
     cat("---\n")
   }
   
-
+  if (!is.null(x$ratio.pw)) {
+    cat("\nRatio penalty-weights:\n")
+    ratio.pw <- apply(x$ratio.pw, 2, sprintf, fmt = dig)
+    rownames(ratio.pw) <- rownames(x$ratio.pw)
+    class(ratio.pw) <- "numeric"
+    
+    if (max(ratio.pw, na.rm = TRUE) >= 1e4) {
+      print(format(x$ratio.pw, digits = digits, scientific = TRUE, trim = TRUE), 
+            print.gap = 2, quote = FALSE, right = FALSE)
+    } else {
+      print(format(ratio.pw, digits = digits, scientific = FALSE, trim = TRUE), 
+            print.gap = 2, quote = FALSE, right = FALSE)
+    }
+    cat("---\n")
+  }
+  
   if (!brief) {
     cat("\n\nOrder-restricted coefficients:\n")
     coefs <- trimws(apply(x$ormle$b.restr, 2, sprintf, fmt = dig))

@@ -11,6 +11,8 @@
 # is stronger than as if the data were combined (as if that was possible).
 
 # TODO
+# add LL weights and ratio to summary
+
 
 #evSyn <- function(object, ...) { UseMethod("evSyn") }
 

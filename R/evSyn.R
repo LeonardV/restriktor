@@ -11,9 +11,19 @@
 # is stronger than as if the data were combined (as if that was possible).
 
 # TODO
-# add LL weights and ratio to summary
+#1. de ratio matrix met de LL-weights toevoegen. 
+
+#2. hypo namen willen meegeven, kan nl ook lastig zijn voor gebruiker (adhv vb in Rmd hierboven genoemd):
+  
+  # results_Set1 <- evSyn(object = estimates, VCOV = covmats,
+  #                       hypotheses = list(H1.1, H1.2),
+  #                       comparison = "unconstrained",
+  #                       hypo_names = c("H1.1", "H1.2", "Hu")) 
 
 
+#3. meerdere fit objecten in evSyn toevoegen? Of wellicht meerdere goric() objecten?
+
+  
 #evSyn <- function(object, ...) { UseMethod("evSyn") }
 
 evSyn_est       <- function(object, ...) UseMethod("evSyn_est")
@@ -154,8 +164,10 @@ evSyn_est.list <- function(object, ..., VCOV = list(), hypotheses = list(),
     stop("Restriktor ERROR: hypotheses must be a list.", call. = FALSE)  
   } 
   
+  VCOV[[1]]
+  
   # check if the matrices are all symmetrical
-  VCOV_isSym <- sapply(VCOV, isSymmetric)
+  VCOV_isSym <- sapply(VCOV, isSymmetric, check.attributes = FALSE)
   if (!all(VCOV_isSym)) {
     stop(sprintf("Restriktor ERROR: the %sth covariance matrix in VCOV is not symmetric.", which(!VCOV_isSym)), call. = FALSE)  
   }

@@ -111,12 +111,6 @@ h2 <- '(x1, x3) > 0; x2 = 0'
 h3 <- 'x1 > 0; x2 < 0; x3 = 0'
 hypotheses = list(hypo1 = h1, hypo2 = h2, hypo3 = h3)
 
-# define constraints matrix directly (note that the constraints have to be specified pairwise).
-# the element names (i.e., constraints, rhs, neq) must be used. 
-h1 <- list(constraints = c(0,1,0)) 
-h2 <- list(constraints = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0) 
-hypotheses = list(H1 = h1, H2 = h2)
-
 # mixed syntax:  
 hypotheses = list(Ha = h1, Hb = 'x1 = x2 > x3')
 

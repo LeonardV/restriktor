@@ -11,17 +11,15 @@
 # is stronger than as if the data were combined (as if that was possible).
 
 # TODO
-#1. de ratio matrix met de LL-weights toevoegen. 
-
-#2. hypo namen willen meegeven, kan nl ook lastig zijn voor gebruiker (adhv vb in Rmd hierboven genoemd):
+#1. hypo namen willen meegeven, kan nl ook lastig zijn voor gebruiker 
   
   # results_Set1 <- evSyn(object = estimates, VCOV = covmats,
-  #                       hypotheses = list(H1.1, H1.2),
+  #                       hypotheses = list(H1, H2),
   #                       comparison = "unconstrained",
   #                       hypo_names = c("H1.1", "H1.2", "Hu")) 
 
 
-#3. meerdere fit objecten in evSyn toevoegen? Of wellicht meerdere goric() objecten?
+#2. meerdere fit objecten en meerdere goric() objecten
 
   
 #evSyn <- function(object, ...) { UseMethod("evSyn") }

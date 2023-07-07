@@ -149,18 +149,17 @@ goric.default <- function(object, ..., hypotheses = NULL,
                                                      type        = type,
                                                      sample.nobs = sample.nobs)) 
     } else if ("numeric" %in% object_class & !isConChar) {
-    # tolower names Amat and rhs
-    for (i in seq_along(constraints)) { 
-      names(constraints[[i]]) <- tolower(names(constraints[[i]]))
-      if (any(!names(constraints[[i]]) %in% c("constraints", "rhs", "neq"))) {
-        stop("Restriktor ERROR: The list objects must be named 'constraints', 'rhs' and 'neq', e.g.:
-              h1 <- list(constraints = c(0,1,0))
-              h2 <- list(constraints = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0)
-              hypotheses = list(H1 = h1, H2 = h2).", 
-             call. = FALSE)
+      # tolower names Amat and rhs
+      for (i in seq_along(constraints)) { 
+        names(constraints[[i]]) <- tolower(names(constraints[[i]]))
+        if (any(!names(constraints[[i]]) %in% c("constraints", "rhs", "neq"))) {
+          stop("Restriktor ERROR: The list objects must be named 'constraints', 'rhs' and 'neq', e.g.:
+                h1 <- list(constraints = c(0,1,0))
+                h2 <- list(constraints = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0)
+                hypotheses = list(H1 = h1, H2 = h2).", 
+               call. = FALSE)
+        }
       }
-    }
-    
       conList <- list()
       for (con in 1:length(constraints)) {
         CALL.restr <- append(list(object      = object$object,
@@ -186,7 +185,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
     constraints <- list(constraints)
   }
   
-  
   objectnames <- names(constraints) 
   # constraints are inherited
   if ("restriktor" %in% object_class) {
@@ -195,14 +193,11 @@ goric.default <- function(object, ..., hypotheses = NULL,
     objectnames <- paste0("H", 1:length(constraints))
   } 
 
-  
   if (comparison == "complement" && length(conList) > 1L) {
     warning("Restriktor Warning: Only one hypothesis is allowed (for now) when comparison = 'complement'.",
             " Setting comparison to 'unconstrained' instead.", call. = FALSE)
     comparison <- "unconstrained"
   } 
-
-  
 
 # compute complement ------------------------------------------------------
   df.c <- NULL
@@ -246,83 +241,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
       auto.bound <- NULL
     } 
     
-# about equality auto.bounds ---------------------------------------------------
-#     if (!is.null(auto.bound)) {
-# 
-#       betasc <- NA
-#       
-#       if (auto.bound <= 0L) {
-#         stop("Restriktor ERROR: the auto.bounds must be positive!")
-#       }
-#       
-#       # upper-bound = rhs + bound
-#       ub <- bvec.ceq + bound
-#       # lower-bound = rhs - bound
-#       lb <- bvec.ceq - bound
-#       
-#       nr.meq <- 1:meq
-#       
-#       ## If no constraints are violated, then the complement is on the boundary
-#       ## of the bounds.
-#       
-#       Amatx <- rbind(Amat.ceq, -Amat.ceq, Amat.ciq)                  
-#       bvecx <- c(lb, -ub, bvec.ciq)                                  
-#       
-#       # constraints are in agreement with the unconstrained estimates
-#       if (all(Amatx %*% b.unrestr - bvecx >= 0)) {
-#         if (type == "goric") { 
-#           llm <- logLik(ans$model.org)
-#         } else if (type == "gorica") {
-#           llm <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE) 
-#         }
-#         # check all bounds
-#         
-#         llc <- list()
-#         for (i in 1:meq) {
-#          bvecx2 <- bvecx
-#          
-#          ## this is the same as specifying a range restriction, e.g., x1 < 0.05; x1 > -0.05
-#          bvecx2[i] <- ub[i]
-#          Hc.ub <- restriktor(ans$model.org, constraints = Amatx,
-#                              neq = i, rhs = bvecx2,
-#                              mix.weights = "none", se = "none")
-#          
-#          bvecx2[i] <- lb[i]
-#          Hc.lb <- restriktor(ans$model.org, constraints = Amatx,
-#                              neq = i, rhs = bvecx2,
-#                              mix.weights = "none", se = "none")
-#          
-#          bvecx2[i + meq] <- ub[i]
-#          Hc.ub2 <- restriktor(ans$model.org, constraints = Amatx,
-#                               neq = i, rhs = bvecx2,
-#                               mix.weights = "none", se = "none")
-#          
-#          bvecx2[i + meq] <- lb[i]
-#          Hc.lb2 <- restriktor(ans$model.org, constraints = Amatx,
-#                               neq = i, rhs = bvecx2,
-#                               mix.weights = "none", se = "none")
-#          
-#          
-#          llc[[i]] <- c(logLik(Hc.ub), logLik(Hc.lb), logLik(Hc.ub2), logLik(Hc.lb2))
-#          
-#          # hoe doet Muthen het met about equality
-#          # hoe zit het nu met de true hypothesis rate
-#         }
-#        
-#         llc <- max(unlist(llc))
-#       } else {
-#         ## If one constraint is violated, then the complement is equal to the 
-#         ## unconstrained model
-#         if (type == "goric") { 
-#           llc <- logLik(ans$model.org)
-#         } else if (type == "gorica") {
-#           llc <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE) 
-#         } 
-#       }
-# 
-# #################################### no bounds ################################    
-#     } else 
-#       
+
     if (is.null(auto.bound)) {
       # check if any equality constraint is violated
       check.ceq <- !(all(c(Amat.ceq %*% c(b.unrestr)) - bvec.ceq == 0))
@@ -365,7 +284,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
             betas[[l]] <- coef(Hc.restr)
             ll[[l]]    <- logLik(Hc.restr)
           } else if (type %in% c("gorica", "goricac")) {
-            #ldots4 <- ldots[m.restr > 0L]
             ldots$mix.weights <- "none"
             CALL.restr <- append(list(object      = b.unrestr,
                                       constraints = Amatx,
@@ -454,7 +372,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
       cat("penalty term value =", PTc, "\n")
     }
     
-    # correct PTc for gorica(c)
+    # correction for gorica(c)
     if (type %in% c("gorica", "goricac")) {
      PTc <- PTc - 1
     }
@@ -469,18 +387,10 @@ goric.default <- function(object, ..., hypotheses = NULL,
       # unrestricted
       llu <- logLik(ans$model.org)
     } else if (type %in% c("gorica", "goricac")) {
-      # model 
-      # if (inherits(object$object, "numeric")) {
-      #   llm <- unlist(lapply(conList, function(x) dmvnorm(c(x$b.unrestr - x$b.restr), 
-      #                                                       sigma = VCOV, log = TRUE) ))  
-      #   # unrestricted
-      #   llu <- dmvnorm(rep(0, ncol(VCOV)), sigma = VCOV, log = TRUE) 
-      # } else { 
         llm <- unlist(lapply(conList, function(x) dmvnorm(c(x$b.unrestr - x$b.restr), 
                                                             sigma = VCOV, log = TRUE) )) 
         # unrestricted
         llu <- dmvnorm(rep(0, ncol(VCOV)), sigma = VCOV, log = TRUE) 
-      # }
     }
     
     if (type %in% c("goric", "gorica")) {
@@ -745,13 +655,8 @@ goric.lm <- function(object, ..., hypotheses = NULL,
     if (missing == "two.stage") {
       res <- do.call(goric.numeric, objectList)
     } else {    
-      #res <- do.call(goric.default, c(objectList[object_idx], objectList[!object_idx]))
       res <- do.call(goric.default, objectList)
     }
-    # res <- do.call(goric.numeric, args = list(object = est, VCOV = vcov, sample.nobs = N,
-    #                                           constraints = constraints,
-    #                                           comparison = comparison, type = type))    
-  
   res
 }
 
@@ -1231,7 +1136,6 @@ summary.con_goric <- function(object, brief = TRUE,
   }
   
   cat("\nResults:\n")  
-  
   print(format(df, digits = digits, scientific = FALSE), 
         print.gap = 2, quote = FALSE, right = TRUE)
   cat("---\n")

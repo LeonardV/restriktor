@@ -11,15 +11,19 @@
 # is stronger than as if the data were combined (as if that was possible).
 
 # TODO
-#1. hypo namen willen meegeven, kan nl ook lastig zijn voor gebruiker 
-  
-  # results_Set1 <- evSyn(object = estimates, VCOV = covmats,
-  #                       hypotheses = list(H1, H2),
-  #                       comparison = "unconstrained",
-  #                       hypo_names = c("H1.1", "H1.2", "Hu")) 
 
+#0. benchmark functie
 
-#2. meerdere fit objecten en meerdere goric() objecten
+#1. geef een opmerking als bijvoorbeeld de loglik niet beschikbaar zijn, zoals bij gorica values
+
+#2. meerdere fit objecten
+
+#3. geef meer informatieve foutmelding als bv. est = data ipv vector
+
+#4. bereken de overlap tussen hypothesen en test het tov. het complement
+
+#5. multiple hyposthesen vs. complement
+
 
   
 #evSyn <- function(object, ...) { UseMethod("evSyn") }
@@ -53,53 +57,60 @@ evSyn <- function(object, ...) {
     }
   }
 
-  # object must be a list
-  if (!is.list(object)) {
-    stop("Restriktor ERROR: object must be a list of numeric vectors.", call. = FALSE)
-  }
-  # object must be a list with numeric vectors
-  obj_isnum <- sapply(object, is.numeric)
-  if ( !any(obj_isnum) ) {
-    stop("Restriktor ERROR: object must be a list of numeric vectors.", call. = FALSE)
-  }
-  
+  # if all vectors sum to 1, object contains IC weights
+  obj_isICweights <- FALSE
   VCOV <- arguments$VCOV
   PT   <- arguments$PT
   
-  if (!is.null(VCOV) && !is.list(VCOV)) {
-    stop("Restriktor ERROR: VCOV must be a list of matrices.", call. = FALSE)
-  } else if (!is.null(VCOV) ) {
-    # check if it is a list of matrices
-    VCOV_isMat <- sapply(VCOV, is.matrix)
-    if (!any(VCOV_isMat)) {
-      stop("Restriktor ERROR: VCOV must be a list of matrices.", call. = FALSE)  
-    }
-  }
-
-  if (!is.null(PT) && !is.list(PT)) {
-    stop("Restriktor ERROR: PT must be a list of numeric vectors.", call. = FALSE)
-  } else if ( !is.null(PT) ) {
-    # check if it is a list of numeric vectors
-    PT_isNum <- sapply(PT, is.numeric)
-    if (!any(PT_isNum)) {
-      stop("Restriktor ERROR: PT must be a list of numeric vectors.", call. = FALSE)  
-    }
-  }
-
-  if (!is.null(VCOV) & !is.null(PT)) {
-    stop("Restriktor ERROR: both VCOV and PT are found, which confuses me.")
-  }
+  # input is a list of gorica objects and everthing is inherited and passsed to 
+  # the evSyn_LL() function.
+  isGoric <- sapply(object, function(x) inherits(x, "con_goric"))
   
-  # if all vectors sum to 1, object contains IC weights
-  obj_isICweights <- FALSE
-  if ( all(abs(sapply(object, sum) - 1) <= sqrt(.Machine$double.eps)) ) {
-   obj_isICweights <- TRUE  
-  } 
+  if (!all(isGoric)) {
+    # object must be a list
+    if (!is.list(object)) {
+      stop("Restriktor ERROR: object must be a list of numeric vectors.", call. = FALSE)
+    }
+    # object must be a list with numeric vectors
+    obj_isnum <- sapply(object, is.numeric)
+    if ( !any(obj_isnum) ) {
+      stop("Restriktor ERROR: object must be a list of numeric vectors.", call. = FALSE)
+    }
+    
+    if (!is.null(VCOV) && !is.list(VCOV)) {
+      stop("Restriktor ERROR: VCOV must be a list of matrices.", call. = FALSE)
+    } else if (!is.null(VCOV) ) {
+      # check if it is a list of matrices
+      VCOV_isMat <- sapply(VCOV, is.matrix)
+      if (!any(VCOV_isMat)) {
+        stop("Restriktor ERROR: VCOV must be a list of matrices.", call. = FALSE)  
+      }
+    }
   
+    if (!is.null(PT) && !is.list(PT)) {
+      stop("Restriktor ERROR: PT must be a list of numeric vectors.", call. = FALSE)
+    } else if ( !is.null(PT) ) {
+      # check if it is a list of numeric vectors
+      PT_isNum <- sapply(PT, is.numeric)
+      if (!any(PT_isNum)) {
+        stop("Restriktor ERROR: PT must be a list of numeric vectors.", call. = FALSE)  
+      }
+    }
+  
+    if (!is.null(VCOV) & !is.null(PT)) {
+      stop("Restriktor ERROR: both VCOV and PT are found, which confuses me.")
+    }
+    
+    if ( all(abs(sapply(object, sum) - 1) <= sqrt(.Machine$double.eps)) ) {
+     obj_isICweights <- TRUE  
+    } 
+  }
   
   ## est (vector) + VCOV (matrix)
   ## check if list contains a vector/matrix with the the parameter estimates
-  if (!is.null(VCOV)) {
+  if (all(isGoric)) {
+    evSyn_gorica.list(object, ...)
+  } else if (!is.null(VCOV)) {
     evSyn_est(object, ...)
   } else if (!is.null(PT)) {
     # LL + PT
@@ -127,7 +138,8 @@ evSyn <- function(object, ...) {
 # GORIC(A) evidence synthesis based on the (standard) parameter estimates and the covariance matrix
 evSyn_est.list <- function(object, ..., VCOV = list(), hypotheses = list(),
                            type = c("equal", "added"), 
-                           comparison = c("unconstrained", "complement", "none")) {
+                           comparison = c("unconstrained", "complement", "none"),
+                           hypo_names = c()) {
   
   if (missing(comparison)) 
     comparison <- "unconstrained"
@@ -193,26 +205,30 @@ evSyn_est.list <- function(object, ..., VCOV = list(), hypotheses = list(),
     }
   }
 
-  list_hypo_names <- lapply(hypotheses, names)
-  # each study must have the same hypotheses namen
-  #element_hypo_names <- l_hnames[[1]]
-  element_hypo_names <- list_hypo_names[[1]]
-  # check if it is similar is the other lists, but also if the same order is used. 
-  # else try to fix the order if the same names are used, but in a different order.
-  check_name_in_list <- lapply(list_hypo_names, function(x) all(element_hypo_names == x))
-  
-  # this should trigger the WARNING: list(list(Ha = H11), list(Hb = H21))
-  if (!is.null(element_hypo_names) && !all(unlist(check_name_in_list))) {
-    l_hnames <- lapply(list_hypo_names, function(x) paste0("(",x,")", collapse = ', '))
-    l_hnames <- paste(l_hnames, collapse = ' and ')
-    warning(paste0("Restriktor WARNING: The hypothesis names ", l_hnames, " in each hypothesis set must be identical and in the same order. ",
-                   "For example, hypotheses = list(list(Ha = H11, Hb = H12), list(Ha = H21, Hb = H22)). ",
-                   "Hence, the hypotheses have been renamed to ", paste0("H", 1:NrHypos, collapse = " and "), " instead."),
-            call. = FALSE)
+  if (is.null(hypo_names)) {
+    list_hypo_names <- lapply(hypotheses, names)
+    # each study must have the same hypotheses namen
+    #element_hypo_names <- l_hnames[[1]]
+    element_hypo_names <- list_hypo_names[[1]]
+    # check if it is similar is the other lists, but also if the same order is used. 
+    # else try to fix the order if the same names are used, but in a different order.
+    check_name_in_list <- lapply(list_hypo_names, function(x) all(element_hypo_names == x))
     
-    element_hypo_names <- NULL
-    # just to be sure that all names are removed
-    #hypotheses <- lapply(hypotheses, function(x) { names(x) <- NULL; return(x) })
+    # this should trigger the WARNING: list(list(Ha = H11), list(Hb = H21))
+    if (!is.null(element_hypo_names) && !all(unlist(check_name_in_list))) {
+      l_hnames <- lapply(list_hypo_names, function(x) paste0("(",x,")", collapse = ', '))
+      l_hnames <- paste(l_hnames, collapse = ' and ')
+      warning(paste0("Restriktor WARNING: The hypothesis names ", l_hnames, " in each hypothesis set must be identical and in the same order. ",
+                     "For example, hypotheses = list(list(Ha = H11, Hb = H12), list(Ha = H21, Hb = H22)). ",
+                     "Hence, the hypotheses have been renamed to ", paste0("H", 1:NrHypos, collapse = " and "), " instead."),
+              call. = FALSE)
+      
+      element_hypo_names <- NULL
+      # just to be sure that all names are removed
+      #hypotheses <- lapply(hypotheses, function(x) { names(x) <- NULL; return(x) })
+    }
+  } else {
+    element_hypo_names <- hypo_names
   }
  
   NrHypos_incl <- NrHypos + 1
@@ -369,61 +385,12 @@ evSyn_est.list <- function(object, ..., VCOV = list(), hypotheses = list(),
   if (NrHypos == 1 & comparison == "complement") {
     colnames(ratio.weight_mu) <- c(paste0(hnames[1], " vs. ", "Complement"))
     colnames(Final.ratio.LL.weights) <- colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(CumulativeGorica)))
-    
-    # out <- list(type = type, 
-    #             hypotheses = hypotheses,
-    #             PT_m = PT,
-    #             GORICA_m = GORICA_m, 
-    #             GORICA_weight_m = GORICA_weight_m, 
-    #             ratio_GORICA_weight_mc = ratio.weight_mu, 
-    #             LL_m = LL_m, 
-    #             LL_weights_m = LL_weights_m,
-    #             Cumulative_LL = Cumulative_LL,
-    #             Final_ratio_LL_weights = Final.ratio.LL.weights,
-    #             Cumulative_GORICA = CumulativeGorica, 
-    #             Cumulative_GORICA_weights = CumulativeGoricaWeights,
-    #             Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
   } else if (comparison == "none") {
     colnames(Final.ratio.LL.weights) <- colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(CumulativeGorica)))
-    
-    # out <- list(type = type,
-    #             hypotheses = hypotheses,
-    #             PT_m = PT,
-    #             GORICA_weight_m = GORICA_weight_m, 
-    #             LL_weights_m = LL_weights_m,
-    #             GORICA_m = GORICA_m, 
-    #             LL_m = LL_m, 
-    #             Cumulative_GORICA = CumulativeGorica, 
-    #             Cumulative_LL = Cumulative_LL,
-    #             
-    #             Cumulative_GORICA_weights = CumulativeGoricaWeights,
-    #             Cumulative_LL_weights = CumulativeLLWeights,
-    #             
-    #             Final_ratio_GORICA_weights = Final.ratio.GORICA.weights,
-    #             Final_ratio_LL_weights = Final.ratio.LL.weights
-    #             )
   } else { 
     # unconstrained
     colnames(ratio.weight_mu) <- c(paste0(colnames(CumulativeGorica), " vs. ", "Unconstrained"))
     colnames(Final.ratio.LL.weights) <- colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(CumulativeGorica)))
-    
-    # out <- list(type = type,
-    #             hypotheses = hypotheses,
-    #             PT_m = PT,
-    #             GORICA_weight_m = GORICA_weight_m, 
-    #             LL_weights_m = LL_weights_m,
-    #             GORICA_m = GORICA_m, 
-    #             LL_m = LL_m, 
-    #             Cumulative_GORICA = CumulativeGorica, 
-    #             Cumulative_LL = Cumulative_LL,
-    #             
-    #             Cumulative_GORICA_weights = CumulativeGoricaWeights,
-    #             Cumulative_LL_weights = CumulativeLLWeights,                    
-    #             
-    #             ratio_GORICA_weight_mu = ratio.weight_mu, 
-    #             Final_ratio_GORICA_weights = Final.ratio.GORICA.weights,
-    #             Final_ratio_LL_weights = Final.ratio.LL.weights
-    #             )
   }
   
   out <- list(type = type,
@@ -435,15 +402,12 @@ evSyn_est.list <- function(object, ..., VCOV = list(), hypotheses = list(),
               LL_m = LL_m, 
               Cumulative_GORICA = CumulativeGorica, 
               Cumulative_LL = Cumulative_LL,
-              
               Cumulative_GORICA_weights = CumulativeGoricaWeights,
               Cumulative_LL_weights = CumulativeLLWeights,                  
-              
               ratio_GORICA_weight_mu = ratio.weight_mu, 
               Final_ratio_GORICA_weights = Final.ratio.GORICA.weights,
               Final_ratio_LL_weights = Final.ratio.LL.weights
               )
-  
   
   class(out) <- c("evSyn.est", "evSyn")
   
@@ -451,12 +415,10 @@ evSyn_est.list <- function(object, ..., VCOV = list(), hypotheses = list(),
 }
 
 
-
-
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on log likelihood and penalty values
 evSyn_LL.list <- function(object, ..., PT = list(), type = c("equal", "added"),
-                          hypo_names = NULL) {
+                          hypo_names = c()) {
   
   if (missing(type)) 
     type <- "added"
@@ -554,7 +516,6 @@ evSyn_LL.list <- function(object, ..., PT = list(), type = c("equal", "added"),
   CumulativeGorica[(S+1), ] <- CumulativeGorica[S, ]
   CumulativeGoricaWeights[(S+1), ] <- CumulativeGoricaWeights[S, ]
 
-  #CumulativeLL[(S+1), ] <- CumulativeLL[S, ]
   CumulativeLLWeights[(S+1), ] <- CumulativeLLWeights[S, ]
   
   Final.GORICA.weights <- CumulativeGoricaWeights[S, ]
@@ -586,7 +547,7 @@ evSyn_LL.list <- function(object, ..., PT = list(), type = c("equal", "added"),
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on AIC or ORIC or GORIC or GORICA values
-evSyn_ICvalues.list <- function(object, ..., hypo_names = NULL) {
+evSyn_ICvalues.list <- function(object, ..., hypo_names = c()) {
   
   IC <- object
   S  <- length(IC)
@@ -649,7 +610,7 @@ evSyn_ICvalues.list <- function(object, ..., hypo_names = NULL) {
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on AIC or ORIC or GORIC or GORICA weights or (Bayesian) posterior model probabilities
-evSyn_ICweights.list <- function(object, ..., priorWeights = NULL, hypo_names = NULL) {
+evSyn_ICweights.list <- function(object, ..., priorWeights = NULL, hypo_names = c()) {
   
   Weights <- object
   S <- length(Weights)
@@ -696,6 +657,26 @@ evSyn_ICweights.list <- function(object, ..., priorWeights = NULL, hypo_names = 
   
   return(out)
   
+}
+
+
+
+# list with goric objects
+evSyn_gorica.list <- function(object, ..., type = c("equal", "added"), hypo_names = c()) {
+  
+  isGoric <- sapply(object, function(x) inherits(x, "con_goric"))
+  
+  if (!all(isGoric)) {
+    stop("Restriktor ERROR: the object must be a list with fitted objects from the goric() function", call. = FALSE)
+  }
+  
+  PT_m <- lapply(object, function(x) x$result$penalty)
+  LL_m <- lapply(object, function(x) x$result$loglik)
+  
+  conList <- list(object = LL_m, PT = PT_m, type = type, hypo_names = hypo_names)
+  OUT <- do.call(evSyn_LL.list, conList)
+  
+  return(OUT)
 }
 
 

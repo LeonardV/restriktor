@@ -540,6 +540,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
   ans$neq  <- lapply(conList, FUN = function(x) { x$neq } )
     names(ans$neq) <- ans$objectNames
   
+  ans$Sigma <- VCOV
+  ans$b.unrestr <- conList[[1]]$b.unrestr
   ans$ormle$b.restr <- coefs  
   ans$comparison <- comparison
   ans$type <- type

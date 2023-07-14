@@ -89,7 +89,8 @@ export("restriktor",
        "coef.restriktor", "model.matrix.restriktor",
        "con_weights_boot", "coef.con_goric", 
        #"summary.con_goric", 
-       "evSyn", "plot.evSyn"#, 
+       "evSyn", "plot.evSyn",
+       "benchmarks_goric"
        #"print.evSyn", 
        #"summary.evSyn",
        #"print.summary.evSyn"

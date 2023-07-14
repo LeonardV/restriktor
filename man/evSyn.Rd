@@ -20,14 +20,15 @@ evSyn(object, \ldots)
 
 \method{evSyn_est}{list}(object, \ldots, VCOV = list(), hypotheses = list(),
       type = c("equal", "added"), 
-      comparison = c("unconstrained", "complement", "none"))
+      comparison = c("unconstrained", "complement", "none"),
+      hypo_names = c())
 
 \method{evSyn_LL}{list}(object, \ldots, PT = list(), type = c("equal", "added"),
-      hypo_names = NULL)
+      hypo_names = c())
 
-\method{evSyn_ICvalues}{list}(object, \ldots, hypo_names = NULL)
+\method{evSyn_ICvalues}{list}(object, \ldots, hypo_names = c())
 
-\method{evSyn_ICweights}{list}(object, \ldots, priorWeights = NULL, hypo_names = NULL)
+\method{evSyn_ICweights}{list}(object, \ldots, priorWeights = NULL, hypo_names = c())
 
 \method{print}{evSyn}(x, digits = max(3, getOption("digits") - 4), \dots)
 

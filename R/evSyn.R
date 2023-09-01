@@ -14,7 +14,7 @@
 
 #0. benchmark functie
 
-#1. geef een opmerking als bijvoorbeeld de loglik niet beschikbaar zijn, zoals bij gorica values
+#1. geef een opmerking als bijvoorbeeld de loglik niet beschikbaar zijn, zoals bij gorica values en weights
 
 #2. meerdere fit objecten
 
@@ -24,6 +24,7 @@
 
 #5. multiple hyposthesen vs. complement
 
+#6. add type = "average" (DONE)
 
   
 #evSyn <- function(object, ...) { UseMethod("evSyn") }
@@ -135,9 +136,10 @@ evSyn <- function(object, ...) {
 
 
 # -------------------------------------------------------------------------
-# GORIC(A) evidence synthesis based on the (standard) parameter estimates and the covariance matrix
+# GORIC(A) evidence synthesis based on the (standardized) parameter estimates and 
+# the covariance matrix
 evSyn_est.list <- function(object, ..., VCOV = list(), hypotheses = list(),
-                           type = c("equal", "added"), 
+                           type = c("equal", "added", "average"), 
                            comparison = c("unconstrained", "complement", "none"),
                            hypo_names = c()) {
   
@@ -337,7 +339,7 @@ evSyn_est.list <- function(object, ..., VCOV = list(), hypotheses = list(),
       CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / 
         sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
     }
-  } else { 
+  } else if (type == "equal") { 
     # equal-evidence approach
     for(s in 1:S) {
       sumLL <- sumLL + LL_m[s, ]
@@ -347,7 +349,17 @@ evSyn_est.list <- function(object, ..., VCOV = list(), hypotheses = list(),
       CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / 
         sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
     }
-  }
+  } else {
+    # average-evidence approach
+    for(s in 1:S) {
+      sumLL <- sumLL + LL_m[s, ]
+      sumPT <- sumPT + PT[s, ]
+      CumulativeGorica[s,] <- -2 * sumLL/s + 2 * sumPT/s
+      minGoric <- min(CumulativeGorica[s, ])
+      CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / 
+        sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
+    }
+  } 
   
   # cumulative log_likelihood weights
   sumLL <- 0
@@ -498,7 +510,7 @@ evSyn_LL.list <- function(object, ..., PT = list(), type = c("equal", "added"),
       CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / 
         sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
     }
-  } else { 
+  } else if (type == "equal") { 
     # equal-ev approach
     for (s in 1:S) {
       minIC <- min(IC[s, ])
@@ -510,6 +522,19 @@ evSyn_LL.list <- function(object, ..., PT = list(), type = c("equal", "added"),
       CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / 
         sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
     }
+  } else {
+    # average-ev approach
+    for (s in 1:S) {
+      minIC <- min(IC[s, ])
+      GORICA_weight_m[s, ] <- exp(-0.5*(IC[s, ]-minIC)) / sum(exp(-0.5*(IC[s, ]-minIC)))
+      sumLL <- sumLL + LL_m[s, ]
+      sumPT <- sumPT + PT[s, ]
+      CumulativeGorica[s, ] <- -2 * sumLL/s + 2 * sumPT/s
+      minGoric <- min(CumulativeGorica[s, ])
+      CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / 
+        sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
+    }
+    
   }
 
   # fill in the final row  
@@ -662,7 +687,7 @@ evSyn_ICweights.list <- function(object, ..., priorWeights = NULL, hypo_names = 
 
 
 # list with goric objects
-evSyn_gorica.list <- function(object, ..., type = c("equal", "added"), hypo_names = c()) {
+evSyn_gorica.list <- function(object, ..., type = c("equal", "added", "average"), hypo_names = c()) {
   
   isGoric <- sapply(object, function(x) inherits(x, "con_goric"))
   
@@ -740,7 +765,7 @@ summary.evSyn <- function(object, ...) {
     Cumulative_PT <- apply(x$PT_m[,, drop = FALSE], 2, cumsum)  
     Cumulative_PT <- matrix(Cumulative_PT, nrow = nrow(x$PT_m), 
                             dimnames = list(sequence, colnames(x$PT_m)))
-    if (x$type == "equal") {
+    if (x$type %in% c("equal", "average")) {
       Cumulative_PT <- Cumulative_PT / seq_len(ans$n_studies)
     } 
     ans$Cumulative_PT <- Cumulative_PT

@@ -19,11 +19,11 @@ same central theory.}
 evSyn(object, \ldots)
 
 \method{evSyn_est}{list}(object, \ldots, VCOV = list(), hypotheses = list(),
-      type = c("equal", "added"), 
+      type = c("equal", "added", "average"), 
       comparison = c("unconstrained", "complement", "none"),
       hypo_names = c())
 
-\method{evSyn_LL}{list}(object, \ldots, PT = list(), type = c("equal", "added"),
+\method{evSyn_LL}{list}(object, \ldots, PT = list(), type = c("equal", "added", "average"),
       hypo_names = c())
 
 \method{evSyn_ICvalues}{list}(object, \ldots, hypo_names = c())
@@ -56,12 +56,9 @@ evSyn(object, \ldots)
   \item{x}{an object of class \code{evSyn}}
 
   \item{type}{type of evidence-synthesis approach: Equal-evidence approach 
-  (\code{type = "equal"}) or Added-evidence approach (\code{type = "added"}).
-  In case of an equal-evidence approach, aggregating evidence from, say, 5 studies 
-  with n = 100 observations is the same as obtaining evidence from 1 study (as if it was
-  possible) with n = 500 observations (like meta-analysis does). In the added-evidence 
-  approach, the aggregated evidence from, says, 5 studies is stronger than as if 
-  the data were combined (as if that was possible).}
+  (\code{type = "equal"}), Added-evidence approach (\code{type = "added"}), or
+  Average-evidence approach (\code{type = "average"}). See details for more 
+  information.}
 
   \item{hypotheses}{When applying the same set of hypotheses to each study, 
   the syntax structure should be as follows: hypotheses = list(H1, H2, \ldots). 
@@ -88,6 +85,53 @@ evSyn(object, \ldots)
   \item{digits}{the number of significant digits to use when printing.}
 
   \item{\ldots}{This depends on the class of the object.}
+}
+
+
+\details{
+In the \strong{added-evidence} approach, evidence from each study or dataset is cumulatively 
+aggregated. This means that for every new study, the log-likelihood and the penalty 
+term are added to the cumulative totals. The strength of the aggregated evidence in 
+this approach depends on the nature of the evidence itself. Simply having more studies 
+doesn't necessarily mean stronger evidence if those studies provide weak or contradictory 
+evidence.\cr 
+Opt for this approach when you anticipate each new piece of evidence to 
+provide an incremental contribution to the overall evidence, without the need to 
+normalize or average across datasets. It's especially suitable when you believe 
+that the aggregated evidence from multiple studies is stronger than if the data 
+were combined into a single study.
+
+The \strong{equal-evidence} approach aggregates the cumulative evidence in the same manner 
+as the added-evidence approach. However, when calculating the GORICA, the cumulative 
+evidence is divided by the number of studies. This ensures that the contribution 
+from each study or dataset remains equal, regardless of the total count. 
+Conceptually, aggregating evidence from multiple studies in this approach can be 
+likened to obtaining evidence from a single larger study, similar to how a 
+meta-analysis treats combined evidence.\cr
+Choose this method when you want each study to contribute equally to the overall 
+evidence, irrespective of the size or scope of each individual dataset. It's ideal 
+for situations where you view the combined evidence from multiple studies as 
+equivalent to that from a single, larger study.
+
+The \strong{average-evidence} method can be conceptualized as a form of multiverse analysis. 
+When faced with a single dataset, there are often numerous analytical choices available, 
+such as handling missing data, selecting variables, or choosing statistical methods. 
+Each choice can lead to a different analysis or model, creating a "multiverse" of 
+possible outcomes.\cr
+For each of these analyses, an "evidence" score can be calculated, indicating how 
+well the model fits the data. Some models might offer a superior fit, while others 
+might not align as closely with the data. The average-evidence method aggregates 
+these scores, providing an average measure of fit across all considered models.
+This approach offers an overarching perspective on the general trend across all 
+analyses. If the average evidence suggests a good fit, it indicates that the 
+majority of the chosen analyses align well with the data. This method is invaluable 
+for assessing the robustness of results, ensuring that findings are not merely 
+artifacts of a specific analytical choice but are consistent across various model 
+specifications on the same dataset.\cr
+Opt for the average-evidence approach when you wish to gauge the central tendency 
+of evidence across multiple analytical choices. It's especially beneficial when 
+aiming to determine the robustness of results across various model specifications 
+applied to the same dataset.
 }
 
 

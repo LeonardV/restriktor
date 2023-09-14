@@ -23,7 +23,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   
   mc <- match.call()
   CALL <- as.list(mc[-1])
-  
+ 
   # some checks
   comparison <- tolower(comparison)
   comparison <- match.arg(comparison)
@@ -67,8 +67,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
     sample.nobs   <- nrow(model.frame(object[[1]]$model.org))
     # unrestricted VCOV
     VCOV <- vcov(ans$model.org)
-    
-    #constraints <- conList
   } else if (any(object_class %in% c("lm","rlm","glm","mlm")) && isConChar) { 
     # standard errors are not needed
     ldots$se <- "none"
@@ -379,104 +377,107 @@ goric.default <- function(object, ..., hypotheses = NULL,
   } 
     
   ## compute loglik-value, goric(a)-values, and PT-values if comparison = unconstrained
-  if (comparison == "unconstrained") { 
-    PTm <- unlist(lapply(isSummary, function(x) attr(x$goric, "penalty")))
-    if (type %in% c("goric", "goricc")) {
-      # model
-      llm <- unlist(lapply(isSummary, function(x) attr(x$goric, "loglik"))) 
-      # unrestricted
-      llu <- logLik(ans$model.org)
-    } else if (type %in% c("gorica", "goricac")) {
-        llm <- unlist(lapply(conList, function(x) dmvnorm(c(x$b.unrestr - x$b.restr), 
-                                                            sigma = VCOV, log = TRUE) )) 
-        # unrestricted
-        llu <- dmvnorm(rep(0, ncol(VCOV)), sigma = VCOV, log = TRUE) 
-    }
-    
-    if (type %in% c("goric", "gorica")) {
-      PTu <- 1 + ncol(VCOV)
-    } else if (type %in% c("goricc", "goricac")) {
-      if (is.null(sample.nobs)) {
-        stop("restriktor ERROR: if type = \'goric(a)c\' the argument \'sample.nobs\' needs to be provided.",
-             call. = FALSE)
-      }
-      N <- sample.nobs
-      # unconstrained penalty
-      PTu <- ( (N * (ncol(VCOV) + 1) / (N - ncol(VCOV) - 2) ) ) 
-    }
-    
-    ## correct PT for gorica(c)
-    if (type %in% c("gorica", "goricac")) {
-      PTu <- PTu - 1
-    }
-    
-    if (is.null(PTm)) {
-      stop("restriktor ERROR: no chi-bar-square weights are found. Use mix.weights = 'pmvnorm' (default) or 'boot'.", call. = FALSE)
-    }
-    
-    goric.Hm <- -2*(llm - PTm)
-    goric.Hu <- -2*(llu - PTu)
-    df.Hm <- data.frame(model = objectnames, loglik = llm, penalty = PTm, 
-                        goric = goric.Hm)
-    df.Hm$model <- as.character(df.Hm$model)
-    df.u <- data.frame(model = "unconstrained", loglik = llu, penalty = PTu, 
-                       goric = goric.Hu)
-    df <- rbind(df.Hm, df.u)
-    rownames(df) <- NULL
-    names(df)[4] <- type
-  } else if (comparison == "none") {
-    ## compute loglik-value, goric(a)-values, and PT-values if comparison = none
-    PT <- unlist(lapply(isSummary, function(x) attr(x$goric, "penalty")))
-    if (type %in% c("goric", "goricc")) {
-      ll <- unlist(lapply(isSummary, function(x) attr(x$goric, "loglik"))) 
-      goric.Hm <- unlist(lapply(isSummary, function(x) x$goric[1]))
-      df <- data.frame(model = objectnames, loglik = ll, penalty = PT, 
-                       goric = goric.Hm)
-      df$model <- as.character(df$model)
-    } else if (type %in% c("gorica", "goricac")) {
-      ll <- unlist(lapply(conList, function(x) dmvnorm(c(x$b.unrestr - x$b.restr), 
-                                                         sigma = VCOV, log = TRUE) )) 
-      goric.Hm <- -2*(ll - PT)
-      df <- data.frame(model = objectnames, loglik = ll, penalty = PT, 
-                       gorica = goric.Hm)
-      df$model <- as.character(df$model)
-    }
-  } else if (comparison == "complement") {
-    ## compute loglik-value, goric(a)-values, and PT-values if comparison = complement
-    PTm <- unlist(lapply(isSummary, function(x) attr(x$goric, "penalty")))
-    
-    if (debug) {
-     print(PTm)
-    }
-    
-    # The PTm should not be corrected here! The PTm is already corrected in the 
-    # restriktor.summary() function.
-    if (type %in% c("goric", "goricc")) {
-      # model
-      goric.Hm <- -2*(llm - PTm)
-      df.Hm  <- data.frame(model = objectnames, loglik = llm, penalty = PTm, 
-                           goric = goric.Hm)
-      df.Hm$model <- as.character(df.Hm$model)
-      # complement
-      goric.Hc <- -2*(llc - PTc)
-      df.c  <- data.frame(model = "complement", loglik = llc, penalty = PTc, 
-                          goric = goric.Hc)
-    } else if (type %in% c("gorica", "goricac")) {
-      # model
-      gorica.Hm <- -2*(llm - PTm)
-      df.Hm  <- data.frame(model = objectnames, loglik = llm, penalty = PTm, 
-                           gorica = gorica.Hm)
-      df.Hm$model <- as.character(df.Hm$model)
-      # complement
-      gorica.Hc <- -2*(llc - PTc)
-      df.c  <- data.frame(model = "complement", loglik = llc, penalty = PTc, 
-                          gorica = gorica.Hc)
-    }
-    df <- rbind(df.Hm, df.c)
-    names(df)[4] <- type
-  } else {
-    stop("restriktor ERROR: I don't know how to compute the goric-values.")
-  }
+  switch(comparison,
+           "unconstrained" = { 
+            PTm <- unlist(lapply(isSummary, function(x) attr(x$goric, "penalty")))
+            if (type %in% c("goric", "goricc")) {
+              # model
+              llm <- unlist(lapply(isSummary, function(x) attr(x$goric, "loglik"))) 
+              # unrestricted
+              llu <- logLik(ans$model.org)
+            } else if (type %in% c("gorica", "goricac")) {
+                llm <- unlist(lapply(conList, function(x) dmvnorm(c(x$b.unrestr - x$b.restr), 
+                                                                    sigma = VCOV, log = TRUE) )) 
+                # unrestricted
+                llu <- dmvnorm(rep(0, ncol(VCOV)), sigma = VCOV, log = TRUE) 
+            }
+            
+            if (type %in% c("goric", "gorica")) {
+              PTu <- 1 + ncol(VCOV)
+            } else if (type %in% c("goricc", "goricac")) {
+              if (is.null(sample.nobs)) {
+                stop("restriktor ERROR: if type = \'goric(a)c\' the argument \'sample.nobs\' needs to be provided.",
+                     call. = FALSE)
+              }
+              N <- sample.nobs
+              # unconstrained penalty
+              PTu <- ( (N * (ncol(VCOV) + 1) / (N - ncol(VCOV) - 2) ) ) 
+            }
+            
+            ## correct PT for gorica(c)
+            if (type %in% c("gorica", "goricac")) {
+              PTu <- PTu - 1
+            }
+            
+            if (is.null(PTm)) {
+              stop("restriktor ERROR: no chi-bar-square weights are found. Use mix.weights = 'pmvnorm' (default) or 'boot'.", call. = FALSE)
+            }
+            
+            goric.Hm <- -2*(llm - PTm)
+            goric.Hu <- -2*(llu - PTu)
+            df.Hm <- data.frame(model = objectnames, loglik = llm, penalty = PTm, 
+                                goric = goric.Hm)
+            df.Hm$model <- as.character(df.Hm$model)
+            df.u <- data.frame(model = "unconstrained", loglik = llu, penalty = PTu, 
+                               goric = goric.Hu)
+            df <- rbind(df.Hm, df.u)
+            rownames(df) <- NULL
+            names(df)[4] <- type
+           },
+         "complement" = {
+            ## compute loglik-value, goric(a)-values, and PT-values if comparison = complement
+            PTm <- unlist(lapply(isSummary, function(x) attr(x$goric, "penalty")))
+            
+            if (debug) {
+              print(PTm)
+            }
+            
+            # The PTm should not be corrected here! The PTm is already corrected in the 
+            # restriktor.summary() function.
+            if (type %in% c("goric", "goricc")) {
+              # model
+              goric.Hm <- -2*(llm - PTm)
+              df.Hm  <- data.frame(model = objectnames, loglik = llm, penalty = PTm, 
+                                   goric = goric.Hm)
+              df.Hm$model <- as.character(df.Hm$model)
+              # complement
+              goric.Hc <- -2*(llc - PTc)
+              df.c  <- data.frame(model = "complement", loglik = llc, penalty = PTc, 
+                                  goric = goric.Hc)
+            } else if (type %in% c("gorica", "goricac")) {
+              # model
+              gorica.Hm <- -2*(llm - PTm)
+              df.Hm  <- data.frame(model = objectnames, loglik = llm, penalty = PTm, 
+                                   gorica = gorica.Hm)
+              df.Hm$model <- as.character(df.Hm$model)
+              # complement
+              gorica.Hc <- -2*(llc - PTc)
+              df.c  <- data.frame(model = "complement", loglik = llc, penalty = PTc, 
+                                  gorica = gorica.Hc)
+            }
+            df <- rbind(df.Hm, df.c)
+            names(df)[4] <- type
+        },
+        "none" = {
+          ## compute loglik-value, goric(a)-values, and PT-values if comparison = none
+          PT <- unlist(lapply(isSummary, function(x) attr(x$goric, "penalty")))
+          if (type %in% c("goric", "goricc")) {
+            ll <- unlist(lapply(isSummary, function(x) attr(x$goric, "loglik"))) 
+            goric.Hm <- unlist(lapply(isSummary, function(x) x$goric[1]))
+            df <- data.frame(model = objectnames, loglik = ll, penalty = PT, 
+                             goric = goric.Hm)
+            df$model <- as.character(df$model)
+          } else if (type %in% c("gorica", "goricac")) {
+            ll <- unlist(lapply(conList, function(x) dmvnorm(c(x$b.unrestr - x$b.restr), 
+                                                               sigma = VCOV, log = TRUE) )) 
+            goric.Hm <- -2*(ll - PT)
+            df <- data.frame(model = objectnames, loglik = ll, penalty = PT, 
+                             gorica = goric.Hm)
+            df$model <- as.character(df$model)
+          }
+        },
+          stop("restriktor ERROR: I don't know how to compute the goric-values.")
+  )
 
   LL <- -2*df$loglik
   delta_LL <- LL - min(LL)
@@ -608,7 +609,7 @@ goric.lm <- function(object, ..., hypotheses = NULL,
     }
     tsm  <- two_stage_matrices(object, auxiliary = auxiliary, emControl = emControl)
     vcov <- two_stage_sandwich(tsm)
-    est <- coef(tsm$fitTarget)
+    est  <- coef(tsm$fitTarget)
     N <- tsm$N
     
     if (!type %in% c("gorica", "goricac")) {
@@ -618,7 +619,7 @@ goric.lm <- function(object, ..., hypotheses = NULL,
     objectList$VCOV   <- vcov
   } else {
     objectList$object <- object
-    objectList$VCOV        <- NULL
+    objectList$VCOV   <- NULL
   } 
     
     objectList$hypotheses  <- hypotheses
@@ -1014,286 +1015,5 @@ goric.rma <- function(object, ..., hypotheses = NULL,
   res
 }
 
-
-
-
-
-print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
-
-  type <- x$type
-  comparison <- x$comparison
-  dig <- paste0("%6.", digits, "f")
-  x2 <- lapply(x$result[-1], sprintf, fmt = dig)
-  df <- data.frame(model = x$result$model, x2)
-
-  cat(sprintf("restriktor (%s): ", packageDescription("restriktor", fields = "Version")))
-
-  if (type == "goric") {
-    cat("generalized order-restricted information criterion: \n")
-  } else if (type == "gorica") {
-    cat("generalized order-restricted information criterion approximation:\n")
-  } else if (type == "goricc") {
-    cat("small sample generalized order-restricted information criterion:\n")
-  } else if (type == "goricac") {
-    cat("small sample generalized order-restricted information criterion approximation:\n")
-  }
-
-  wt_bar <- sapply(x$objectList, function(x) attr(x$wt.bar, "method") == "boot")
-  # we need a check if the hypothesis is equalities only
-  ceq_only <- sapply(x$objectList, function(x) nrow(x$constraints) == x$neq)
-  wt_bar <- as.logical(wt_bar * !ceq_only)
-  
-  if (sum(wt_bar) > 0) {
-    wt_method_boot <- x$objectList[wt_bar]
-    wt_bootstrap_draws  <- sapply(wt_method_boot, function(x) attr(x$wt.bar, "mix.bootstrap"))
-    wt_bootstrap_errors <- lapply(wt_method_boot, function(x) attr(x$wt.bar, "error.idx"))
-    max_nchar <- max(nchar(names(wt_method_boot)))
-    
-    len <- length(wt_method_boot)
-    if (len > 0) { 
-      cat("\n")
-      cat("Level probabilities:\n")
-      cat("  Number of requested bootstrap draws", wt_bootstrap_draws[1], "\n")
-      for (i in 1:len) {
-        #cat("Number of successful bootstrap draws for", names(wt_method_boot)[i], ":", (wt_bootstrap_draws[1] - length(wt_bootstrap_errors[[i]])), "\n")
-        cat(paste0("  Number of successful bootstrap draws for ", sprintf(paste0("%", max_nchar, "s"), names(wt_method_boot)[i]), ": ", (wt_bootstrap_draws[1] - length(wt_bootstrap_errors[[i]])), "\n"))
-      }
-    }
-  }
-    
-  cat("\nResults:\n")
-  print(format(df, digits = digits, scientific = FALSE), 
-        print.gap = 2, quote = FALSE)
-  
-  if (comparison == "complement") {
-    objectnames <- as.character(df$model)
-    class(x$ratio.gw) <- "numeric"
-    cat("---", "\nThe order-restricted hypothesis", sQuote(objectnames[1]), "has", sprintf("%.3f", x$ratio.gw[1,2]), "times more support than its complement.\n\n")
-  } else {
-    cat("---\n")  
-  }
-  
-  message(x$messages$mix_weights)
-  
-  invisible(x)
-}
-
-
-
-
-summary.con_goric <- function(object, brief = TRUE, 
-                          digits = max(3, getOption("digits") - 4), ...) {
-  
-  x <- object
-  type <- x$type
-  comparison <- x$comparison
-  dig <- paste0("%6.", digits, "f")
-  
-  ratio.gw <- x$ratio.gw
-  rownames(ratio.gw) <- rownames(x$ratio.gw)
-  
-  x2 <- lapply(x$result[-1], sprintf, fmt = dig)
-  df <- data.frame(model = x$result$model, x2)
-  
-  objectnames <- as.character(df$model)
-  
-  Amat <- x$constraints
-  meq  <- x$neq
-  bvec <- x$rhs
-  iact <- lapply(x$objectList, FUN = function(x) { x$iact } )
-
-  cat(sprintf("restriktor (%s): ", packageDescription("restriktor", fields = "Version")))
-  
-  if (type == "goric") {
-    cat("generalized order-restricted information criterion: \n")
-  } else if (type == "gorica") {
-    cat("generalized order-restricted information criterion approximation:\n")
-  } else if (type == "goricc") {
-    cat("small sample generalized order-restricted information criterion:\n")
-  } else if (type == "goricac") {
-    cat("small sample generalized order-restricted information criterion approximation:\n")
-  }
-  
-  wt_bar <- sapply(x$objectList, function(x) attr(x$wt.bar, "method") == "boot")
-  # we need a check if the hypothesis is equalities only
-  ceq_only <- sapply(x$objectList, function(x) nrow(x$constraints) == x$neq)
-  wt_bar <- as.logical(wt_bar * !ceq_only)
-  
-  if (sum(wt_bar) > 0) {
-    wt_method_boot <- x$objectList[wt_bar]
-    wt_bootstrap_draws  <- sapply(wt_method_boot, function(x) attr(x$wt.bar, "mix.bootstrap"))
-    wt_bootstrap_errors <- lapply(wt_method_boot, function(x) attr(x$wt.bar, "error.idx"))
-    max_nchar <- max(nchar(names(wt_method_boot)))
-    
-    len <- length(wt_method_boot)
-    if (len > 0) { 
-      cat("\n")
-      cat("Level probabilities:\n")
-      cat("  Number of requested bootstrap draws", wt_bootstrap_draws[1], "\n")
-      for (i in 1:len) {
-        #cat("Number of successful bootstrap draws for", names(wt_method_boot)[i], ":", (wt_bootstrap_draws[1] - length(wt_bootstrap_errors[[i]])), "\n")
-        cat(paste0("  Number of successful bootstrap draws for ", sprintf(paste0("%", max_nchar, "s"), names(wt_method_boot)[i]), ": ", (wt_bootstrap_draws[1] - length(wt_bootstrap_errors[[i]])), "\n"))
-      }
-    }
-  }
-  
-  cat("\nResults:\n")  
-  print(format(df, digits = digits, scientific = FALSE), 
-        print.gap = 2, quote = FALSE, right = TRUE)
-  cat("---\n")
-  
-  
-  if (any(combn(as.numeric(df$loglik), 2, FUN = function(x) abs(diff(x))) <= 1e-5)) { 
-    cat("Note: If log-likelihood values are equal or close to each other, the goric ratio weights are determined", 
-        "only by the difference in penalty values. Please check the ratio penalty-weights.\n\n")
-  }
-  if (comparison == "complement") {
-    cat("The order-restricted hypothesis", sQuote(objectnames[1]), "has", 
-        sprintf("%.3f", as.numeric(ratio.gw[1,2])), "times more support than its complement.\n\n")
-  } 
-  
-  if (!is.null(x$ratio.gw)) {
-    if (type == "goric") {
-      cat("\nRatio GORIC-weights:\n")
-    } else if (type == "gorica") {
-      cat("\nRatio GORICA-weights:\n")
-    } else if (type == "goricc") {
-      cat("\nRatio GORICC-weights:\n")
-    } else if (type == "goricac") {
-      cat("\nRatio GORICAC-weights:\n") 
-    }
-
-    ratio.gw <- apply(x$ratio.gw, 2, sprintf, fmt = dig)
-    rownames(ratio.gw) <- rownames(x$ratio.gw)
-    class(ratio.gw) <- "numeric"
-    
-    if (max(ratio.gw, na.rm = TRUE) >= 1e4) {
-      print(format(ratio.gw, digits = digits, scientific = TRUE, trim = TRUE), 
-            print.gap = 2, quote = FALSE, right = FALSE) 
-    } else {
-      print(format(ratio.gw, digits = digits, scientific = FALSE, trim = TRUE), 
-            print.gap = 5, quote = FALSE, right = FALSE)
-    }
-    cat("---\n")
-  }
-  
-  if (!is.null(x$ratio.lw)) {
-    cat("\nRatio loglik-weights:\n")
-    ratio.lw <- apply(x$ratio.lw, 2, sprintf, fmt = dig)
-    rownames(ratio.lw) <- rownames(x$ratio.lw) 
-    class(ratio.lw) <- "numeric"
-    
-    if (max(ratio.lw, na.rm = TRUE) >= 1e4) {
-      print(format(ratio.lw, digits = digits, scientific = TRUE, trim = TRUE), 
-            print.gap = 2, quote = FALSE, right = FALSE)
-    } else {
-      print(format(ratio.lw, digits = digits, scientific = FALSE, trim = TRUE), 
-            print.gap = 2, quote = FALSE, right = FALSE)
-    }
-    cat("---\n")
-  }
-  
-  if (!is.null(x$ratio.pw)) {
-    cat("\nRatio penalty-weights:\n")
-    ratio.pw <- apply(x$ratio.pw, 2, sprintf, fmt = dig)
-    rownames(ratio.pw) <- rownames(x$ratio.pw)
-    class(ratio.pw) <- "numeric"
-    
-    if (max(ratio.pw, na.rm = TRUE) >= 1e4) {
-      print(format(x$ratio.pw, digits = digits, scientific = TRUE, trim = TRUE), 
-            print.gap = 2, quote = FALSE, right = FALSE)
-    } else {
-      print(format(ratio.pw, digits = digits, scientific = FALSE, trim = TRUE), 
-            print.gap = 2, quote = FALSE, right = FALSE)
-    }
-    cat("---\n")
-  }
-  
-  if (!brief) {
-    cat("\n\nOrder-restricted coefficients:\n")
-    coefs <- trimws(apply(x$ormle$b.restr, 2, sprintf, fmt = dig))
-    coefs[coefs == "NA"] <- ""
-    rownames(coefs) <- rownames(x$ormle$b.restr)
-    print(format(coefs, digits = digits, scientific = FALSE), print.gap = 2,
-          quote = FALSE)
-    cat("---\n")
-    
-    vnames <- names(x$ormle$b.restr)
-    vnames_len <- length(x$objectList)
-    first_na <- apply(x$ormle$b.restr[1:vnames_len, ], 1, function(x) { which(is.na(x))[1] }) -1
-    first_na[is.na(first_na)] <- 0
-    
-    selected_names <- list()
-    for (i in 1:length(first_na)) {
-      if (first_na[i] == 0) {
-        selected_names[[i]] <- vnames
-      } else {
-        selected_names[[i]] <- vnames[1:first_na[i]]
-      }
-    }
-    
-    fn <- function(Amat, bvec, meq, iact, vnames) {
-      colnames(Amat) <- vnames
-      out.rest <- cbind(round(Amat, 4), c(rep("   ==", meq), rep("   >=", nrow(Amat) - 
-                                                                   meq)), bvec, " ")
-      rownames(out.rest) <- paste(1:nrow(out.rest), ":", sep = "")
-      colnames(out.rest)[(ncol(Amat) + 1):ncol(out.rest)] <- c("op", "rhs", "active")
-      idx <- ncol(out.rest)
-      out.rest[, idx] <- "no"
-      out.rest[iact, idx] <- "yes"
-      if (nrow(Amat) == meq) {
-        out.rest[1:nrow(Amat), idx] <- "yes"
-      }  
-      out.rest <- as.data.frame(out.rest)
-      
-      out.rest
-    }
-    
-    conMat <- list()
-    for (i in 1:vnames_len) {
-      conMat[[i]] <- fn(Amat = Amat[[i]], bvec = bvec[[i]], meq = meq[[i]], 
-                        iact = iact[[i]], vnames = selected_names[[i]])  
-    }
-    names(conMat) <- x$objectNames
-    
-    if (comparison == "complement") {
-     conMat$complement <- paste("not", x$objectNames) 
-    }
-    
-    cat("\nRestriction matrices:\n")
-    print(conMat, quote = FALSE, scientific = FALSE)
-   
-    invisible(x)
-  } else {
-    if (!is.null(object$hypotheses_usr)) {
-      cat("\norder-restricted hypotheses:\n\n")
-      hypotheses_usr <- object$hypotheses_usr
-      #hypotheses_usr <- lapply(hypotheses_usr, function(x) unlist(strsplit(x, "\n")))
-      # remove user specified paramters
-      #hypotheses_usr <- lapply(hypotheses_usr, function(x) x[!grepl(":=", x)])
-      
-      for (i in 1:length(x$objectList)) {
-        text <- gsub("(\\n\\s+)+", "\n", hypotheses_usr[[i]])
-        cat(paste0(objectnames[i],":\n", trimws(gsub("\\h+", " ", text, perl = TRUE))), "\n\n")
-      }
-      
-      #calculate max length of vectors
-      #max_length <- max(sapply(hypotheses_usr, function(x) length(x)))
-      # for (j in 1:length(hypotheses_usr)) {
-      #   length(hypotheses_usr[[j]]) <- max_length
-      # }
-      # hypotheses_usr <- do.call(rbind, hypotheses_usr)
-      # row.names(hypotheses_usr) <- paste0(objectnames[1:length(x$objectList)], ":")
-      # hypotheses_usr[is.na(hypotheses_usr)] <- ""
-      # name.width <- max(sapply(hypotheses_usr, nchar))
-      # hypotheses_usr <- format(hypotheses_usr, width = name.width, justify = "left")
-      # hypotheses_usr <- as.data.frame(hypotheses_usr)
-      # names(hypotheses_usr) <- NULL
-      # print(hypotheses_usr)
-    }
-  }
-  cat("\n")
-  message(x$messages$mix_weights)
-}
 
 

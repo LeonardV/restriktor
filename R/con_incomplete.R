@@ -1,5 +1,5 @@
 ## Author: Leonard Vanbrabant
-## Last updated: 31 Janurary 2023
+## Last updated: 31 January 2023
 ## function to implement 2-stage EM
 
 
@@ -65,17 +65,32 @@ EM <- function(object, emControl = list(), auxiliary = c(), ...) {
     df_amp <- apply(df_amp, 2, as.numeric)
     
     # EM algorithm for incomplete multivariate normal data 
-    param <- norm2::emNorm(df_amp, 
-                           iter.max        = ifelse(is.null(emControl$iter.max), 1000, emControl$iter.max),
-                           estimate.worst  = ifelse(is.null(emControl$estimate.worst), TRUE, emControl$estimate.worst),
-                           prior           = ifelse(is.null(emControl$prior), "uniform", emControl$prior),
-                           criterion       = emControl$criterion,
-                           prior.df        = emControl$prior.df,
-                           prior.sscp      = emControl$prior.sscp,
-                           starting.values = emControl$starting.values)
+    # For some reason the norm2 package has been archived. Until further notice
+    # we switch temporarily to the norm package
     
+    # param <- norm2::emNorm(df_amp, 
+    #                        iter.max        = ifelse(is.null(emControl$iter.max), 1000, emControl$iter.max),
+    #                        estimate.worst  = ifelse(is.null(emControl$estimate.worst), TRUE, emControl$estimate.worst),
+    #                        prior           = ifelse(is.null(emControl$prior), "uniform", emControl$prior),
+    #                        criterion       = emControl$criterion,
+    #                        prior.df        = emControl$prior.df,
+    #                        prior.sscp      = emControl$prior.sscp,
+    #                        starting.values = emControl$starting.values)
+    
+    s <- prelim.norm(df_amp)
+    thetahat <- em.norm(s               = s,   
+                        #start           = if (!is.null(emControl$start)) emControl$start),
+                        showits         = ifelse(is.null(emControl$showits), FALSE, emControl$criterion),
+                        maxits          = ifelse(is.null(emControl$iter.max), 1000, emControl$iter.max),
+                        criterion       = ifelse(is.null(emControl$criterion), 0.0001, emControl$criterion)
+                        #prior           = if (!is.null(emControl$prior)) emControl$prior
+                        )
+    
+    seed <- ifelse(is.null(emControl$seed), 3013073, emControl$seed)
+    rngseed(seed)
+    df_imp <- imp.norm(s, thetahat, df_amp)
     # extract imputed data set
-    df_imp <- param$y.mean.imp
+    #df_imp <- param$y.mean.imp
     df_imp <- as.data.frame(df_imp)
     
     # round (ordered) factors. NB. order of variables changes here.

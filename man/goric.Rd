@@ -79,7 +79,7 @@ comparable to the Akaike weights.
   standardized or unstandardized vcov can be used, using setting \code{standardized = TRUE}. 
   See details for more information.}
   
-  \item{hypotheses}{list; Please note that the hypotheses argument in the given 
+  \item{hypotheses}{a named list; Please note that the hypotheses argument in the given 
   context serves the same purpose as the constraints argument utilized in the 
   restriktor function. The distinction between them is solely semantic.
   

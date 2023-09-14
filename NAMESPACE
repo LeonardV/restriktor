@@ -1,6 +1,5 @@
 # only when we have src code
 # useDynLib("restriktor")
-
 importFrom("lavaan",
            lavParseModelString,
            lav_constraints_parse,
@@ -25,7 +24,7 @@ importFrom("lavaan",
            )
 
 importFrom("mvtnorm",
-           rmvnorm)
+           rmvnorm, dmvnorm)
 
 importFrom("quadprog",
            solve.QP)
@@ -38,9 +37,6 @@ importFrom("MASS",
            psi.bisquare,
            psi.huber,
            ginv)
-
-importFrom("mvtnorm",
-           dmvnorm)
 
 importFrom("ic.infer",
            #nchoosek, NOT EXPORTED!
@@ -59,7 +55,7 @@ importFrom("stats", coef, df.residual, dnorm, fitted,
 
 importFrom("graphics", abline, axis, box, hist, par)
 
-importFrom("norm2", emNorm)
+importFrom("norm", em.norm, prelim.norm, imp.norm, rngseed)
 
 importFrom("ggplot2", ggplot, aes, .data, geom_point, geom_line, theme, unit, margin,
            element_blank, element_text, element_line, scale_y_continuous, 
@@ -89,8 +85,8 @@ export("restriktor",
        "coef.restriktor", "model.matrix.restriktor",
        "con_weights_boot", "coef.con_goric", 
        #"summary.con_goric", 
-       "evSyn", "plot.evSyn",
-       "benchmarks_goric"
+       "evSyn", "plot.evSyn"#,
+       #"benchmarks_goric"
        #"print.evSyn", 
        #"summary.evSyn",
        #"print.summary.evSyn"

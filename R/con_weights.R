@@ -34,12 +34,8 @@ con_weights_boot <- function(VCOV, Amat, meq,
       ncpus <- 1L  
     }
   
-  if (!is.null(seed))
-    set.seed(seed)
-  if (!exists(".Random.seed", envir = .GlobalEnv))
-    runif(1)
-  RNGstate <- .Random.seed
-  
+  if (!is.null(seed)) set.seed(seed)
+  if (!exists(".Random.seed", envir = .GlobalEnv)) runif(1)
   
   bvec <- rep(0L, nrow(Amat)) # weights do not depend on bvec.
   invW <- solve(VCOV) 
@@ -62,7 +58,6 @@ con_weights_boot <- function(VCOV, Amat, meq,
       if (verbose) {
         cat(" ...active inequality constraints =", QP$iact, "\n")
       }
-      
     }    
     
     if (QP$iact[1] == 0L) {
@@ -79,8 +74,7 @@ con_weights_boot <- function(VCOV, Amat, meq,
     }
     else if (have_snow) {
       if (is.null(cl)) {
-        cl <- parallel::makePSOCKcluster(rep("localhost",
-                                             ncpus))
+        cl <- parallel::makePSOCKcluster(rep("localhost", ncpus))
         if (RNGkind()[1L] == "L'Ecuyer-CMRG")
           parallel::clusterSetRNGStream(cl)
         
@@ -94,26 +88,31 @@ con_weights_boot <- function(VCOV, Amat, meq,
   }
   else lapply(seq_len(RR), fn) 
   
-  error.idx <- integer(0)
-  iact <- vector("numeric", ncol(Amat))
-  
-  for (b in seq_len(R)) {
-    if (!is.null(res[[b]])) {
-      iact[b] <- res[[b]]
-    }
-    else {
-      error.idx <- c(error.idx, b)
-    }
-  }
+  # error.idx <- integer(0)
+  # iact <- vector("numeric", ncol(Amat))
+  # 
+  # for (b in seq_len(R)) {
+  #   if (!is.null(res[[b]])) {
+  #     iact[b] <- res[[b]]
+  #   }
+  #   else {
+  #     error.idx <- c(error.idx, b)
+  #   }
+  # }
   
   # compute the number of positive components of VCOV.
   # ncol(VCOV) = maximum number of constraints
   # iact       = number of active inequality constraints
+  iact <- sapply(res, function(x) ifelse(is.null(x), NA, x))
+  error.idx <- which(is.na(iact))
+  
+  dimL <- ncol(VCOV) - iact
   if (length(error.idx) > 0) {
     dimL <- ncol(VCOV) - iact[-error.idx]
   } else {
     dimL <- ncol(VCOV) - iact
   }
+
   wt.bar <- sapply(0:ncol(VCOV), function(x) sum(x == dimL)) / length(dimL)
   attr(wt.bar, "error.idx") <- error.idx
   

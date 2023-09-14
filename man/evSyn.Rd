@@ -89,22 +89,22 @@ evSyn(object, \ldots)
 
 
 \details{
-In the \strong{added-evidence} approach, evidence from each study or dataset is cumulatively 
-aggregated. This means that for every new study, the log-likelihood and the penalty 
-term are added to the cumulative totals. The strength of the aggregated evidence in 
-this approach depends on the nature of the evidence itself. Simply having more studies 
-doesn't necessarily mean stronger evidence if those studies provide weak or contradictory 
-evidence.\cr 
-Opt for this approach when you anticipate each new piece of evidence to 
-provide an incremental contribution to the overall evidence, without the need to 
-normalize or average across datasets. It's especially suitable when you believe 
-that the aggregated evidence from multiple studies is stronger than if the data 
-were combined into a single study.
+In the \strong{added-evidence} approach, evidence from each study or dataset is 
+cumulatively aggregated. This means that for every new study, the log-likelihood 
+and the penalty term are added to the cumulative totals. The strength of the 
+aggregated evidence in this approach depends on the nature of the evidence itself. 
+Simply having more studies doesn't necessarily mean stronger evidence if those 
+studies provide weak or contradictory evidence.\cr 
+Opt for this approach when you anticipate each new piece of evidence to provide an 
+incremental contribution to the overall evidence, without the need to normalize or 
+average across datasets. It's especially suitable when you believe that the 
+aggregated evidence from multiple studies is stronger than if the data were combined 
+into a single study.
 
-The \strong{equal-evidence} approach aggregates the cumulative evidence in the same manner 
-as the added-evidence approach. However, when calculating the GORICA, the cumulative 
-evidence is divided by the number of studies. This ensures that the contribution 
-from each study or dataset remains equal, regardless of the total count. 
+The \strong{equal-evidence} approach aggregates the cumulative evidence in the same 
+manner as the added-evidence approach. However, when calculating the GORICA, the 
+cumulative evidence is divided by the number of studies. This ensures that the 
+contribution from each study or dataset remains equal, regardless of the total count. 
 Conceptually, aggregating evidence from multiple studies in this approach can be 
 likened to obtaining evidence from a single larger study, similar to how a 
 meta-analysis treats combined evidence.\cr
@@ -113,11 +113,11 @@ evidence, irrespective of the size or scope of each individual dataset. It's ide
 for situations where you view the combined evidence from multiple studies as 
 equivalent to that from a single, larger study.
 
-The \strong{average-evidence} method can be conceptualized as a form of multiverse analysis. 
-When faced with a single dataset, there are often numerous analytical choices available, 
-such as handling missing data, selecting variables, or choosing statistical methods. 
-Each choice can lead to a different analysis or model, creating a "multiverse" of 
-possible outcomes.\cr
+The \strong{average-evidence} method can be conceptualized as a form of multiverse 
+analysis. When faced with a single dataset, there are often numerous analytical 
+choices available, such as handling missing data, selecting variables, or choosing 
+statistical methods. Each choice can lead to a different analysis or model, creating 
+a "multiverse" of possible outcomes.\cr
 For each of these analyses, an "evidence" score can be calculated, indicating how 
 well the model fits the data. Some models might offer a superior fit, while others 
 might not align as closely with the data. The average-evidence method aggregates 

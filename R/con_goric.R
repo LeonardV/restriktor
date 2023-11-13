@@ -40,7 +40,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
 
   if (!"restriktor" %in% object_class) { 
     if (!is.list(constraints)) { 
-      stop("Restriktor ERROR: The 'hypotheses' argument must be a named list. 
+      stop("Restriktor ERROR: The 'hypotheses' argument must be a (named) list. 
            Please provide hypotheses in the following format: 'list(H1 = H1)' or 
            'list(S1 = list(H11, H12), S2 = list(H21, H22))'", call. = FALSE)
     }
@@ -94,7 +94,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   } else if (any(object_class %in% c("lm","rlm","glm","mlm")) && !isConChar) {
     # tolower names Amat and rhs
     for (i in seq_along(constraints)) { 
-      names(constraints[[i]]) <- tolower(names(constraints[[i]]))
+      names(constraints[[i]]) <- tolower(names(constraints[[i]])) 
       if (any(!names(constraints[[i]]) %in% c("constraints", "rhs", "neq"))) { 
         stop("Restriktor ERROR: The list objects must be named 'constraints', 'rhs' and 'neq', e.g.:
               h1 <- list(constraints = c(0,1,0))
@@ -227,7 +227,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
       Amat.ciq <- Amat[-c(1:meq), , drop = FALSE]
       bvec.ciq <- bvec[-c(1:meq)]
     } else {
-      Amat.ceq <- matrix( , nrow = 0, ncol = ncol(Amat))
+      Amat.ceq <- matrix(, nrow = 0, ncol = ncol(Amat))
       bvec.ceq <- rep(0, 0)
       Amat.ciq <- Amat[ , , drop = FALSE]
       bvec.ciq <- bvec
@@ -268,21 +268,22 @@ goric.default <- function(object, ..., hypotheses = NULL,
         # number of rows
         nr <- 1:nrow(Amat)
         # remove rows corresponding to equality constraints
-        if (meq > 0L) {
-          nr <- nr[-c(0:meq)]
-        }
+        if (meq > 0L) { nr <- nr[-c(0:meq)] }
         # treat each row of Amat as an equality constraint
+        # Pre-allocate lists to store results
+        betas <- vector("list", length(nr))
+        ll <- vector("list", length(nr))
         for (l in 1:length(nr)) {
           idx <- c(nr[l], nr[-l])
           Amatx <- Amat[idx, , drop = FALSE]
           if (type %in% c("goric", "goricc")) {          
             Hc.restr <- restriktor(ans$model.org, constraints = Amatx, 
                                    neq = 1, rhs = bvec[idx], 
-                                   mix.weights = "none", se = "none")
+                                   mix_weights = "none", se = "none")
             betas[[l]] <- coef(Hc.restr)
             ll[[l]]    <- logLik(Hc.restr)
           } else if (type %in% c("gorica", "goricac")) {
-            ldots$mix.weights <- "none"
+            ldots$mix_weights <- "none"
             CALL.restr <- append(list(object      = b.unrestr,
                                       constraints = Amatx,
                                       rhs         = bvec[idx],
@@ -300,7 +301,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
         }
         # take the highest log-likelihood value as a substitute for the complement
         ll.unlist <- unlist(ll)
-        ll.idx <- which(ll.unlist == max(ll.unlist))
+        #ll.idx <- which(ll.unlist == max(ll.unlist))
+        ll.idx <- which.max(ll.unlist)
         llc <- max(ll.unlist)
         betasc <- betas[[ll.idx]]
       } else if (nrow(Amat) == meq) { 
@@ -410,7 +412,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
             }
             
             if (is.null(PTm)) {
-              stop("restriktor ERROR: no chi-bar-square weights are found. Use mix.weights = 'pmvnorm' (default) or 'boot'.", call. = FALSE)
+              stop("restriktor ERROR: no chi-bar-square weights (a.k.a. level probabilities) are found. Use mix_weights = 'pmvnorm' (default) or 'boot'.", call. = FALSE)
             }
             
             goric.Hm <- -2*(llm - PTm)
@@ -574,13 +576,11 @@ goric.lm <- function(object, ..., hypotheses = NULL,
   }
   
   if (is.null(hypotheses)) {
-   stop("restriktor ERROR: The 'hypotheses' argument is missing. Please make sure 
-        to provide a valid set of hypotheses, for example, hypotheses = list(h1 = 'x1 > x2 > x3').", call. = FALSE) 
+   stop("restriktor ERROR: The 'hypotheses' argument is missing. Please make sure to provide a valid set of hypotheses, for example, hypotheses = list(h1 = 'x1 > x2 > x3').", call. = FALSE) 
   }
   
   if (!is.list(hypotheses)) {
-    stop("restriktor ERROR: the hypotheses must be specified as a list. 
-         For example, hypotheses = list(h1 = 'x1 > x2 > x3')", call. = FALSE)
+    stop("restriktor ERROR: the hypotheses must be specified as a list. For example, hypotheses = list(h1 = 'x1 > x2 > x3')", call. = FALSE)
   }
   
   if (missing %in% c("em", "EM", "two.stage", "twostage")) {
@@ -643,7 +643,7 @@ goric.lm <- function(object, ..., hypotheses = NULL,
     }
     
     # which arguments are allowed
-    arguments <- c("B", "mix.weights", "mix.bootstrap", "parallel", "ncpus", 
+    arguments <- c("B", "mix_weights", "mix_weights_bootstrap_limit", "parallel", "ncpus", 
                    "cl", "seed", "control", "verbose", "debug", "comparison",
                    "type", "auto.bound", "hypotheses", "missing", "auxiliary",
                    "VCOV", "sample.nobs", "object")
@@ -707,7 +707,7 @@ goric.restriktor <- function(object, ..., hypotheses = NULL,
   objectList <- append(list(object = objectList[isRestr]), objectList[!isRestr])
   
   # which arguments are allowed
-  arguments <- c("B", "mix.weights", "mix.bootstrap", "parallel", "ncpus", 
+  arguments <- c("B", "mix_weights", "mix_weights_bootstrap_limit", "parallel", "ncpus", 
                  "cl", "seed", "control", "verbose", "debug", "comparison",
                  "type", "auto.bound", "hypotheses", "missing", "auxiliary",
                  "VCOV", "sample.nobs", "object")
@@ -789,7 +789,7 @@ goric.numeric <- function(object, ..., hypotheses = NULL,
   objectList <- append(list(object = objectList[object_idx]), objectList[!object_idx])
   
   # which arguments are allowed
-  arguments <- c("B", "mix.weights", "mix.bootstrap", "parallel", "ncpus", 
+  arguments <- c("B", "mix_weights", "mix_weights_bootstrap_limit", "parallel", "ncpus", 
                  "cl", "seed", "control", "verbose", "debug", "comparison",
                  "type", "auto.bound", "hypotheses", "missing", "auxiliary",
                  "VCOV", "sample.nobs", "object")
@@ -862,7 +862,7 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
   
   
   # which arguments are allowed
-  arguments <- c("B", "mix.weights", "mix.bootstrap", "parallel", "ncpus", 
+  arguments <- c("B", "mix_weights", "mix_weights_bootstrap_limit", "parallel", "ncpus", 
                  "cl", "seed", "control", "verbose", "debug", "comparison",
                  "type", "auto.bound", "hypotheses", "missing", "auxiliary",
                  "VCOV", "sample.nobs", "object")
@@ -931,7 +931,7 @@ goric.CTmeta <- function(object, ..., hypotheses = NULL,
   objectList <- append(list(object = objectList[object_idx]), objectList[!object_idx])  
   
   # which arguments are allowed
-  arguments <- c("B", "mix.weights", "mix.bootstrap", "parallel", "ncpus", 
+  arguments <- c("B", "mix_weights", "mix_weights_bootstrap_limit", "parallel", "ncpus", 
                  "cl", "seed", "control", "verbose", "debug", "comparison",
                  "type", "auto.bound", "hypotheses", "missing", "auxiliary",
                  "VCOV", "sample.nobs", "object")
@@ -999,7 +999,7 @@ goric.rma <- function(object, ..., hypotheses = NULL,
   objectList <- append(list(object = objectList[object_idx]), objectList[!object_idx])  
   
   # which arguments are allowed
-  arguments <- c("B", "mix.weights", "mix.bootstrap", "parallel", "ncpus", 
+  arguments <- c("B", "mix_weights", "mix_weights_bootstrap_limit", "parallel", "ncpus", 
                  "cl", "seed", "control", "verbose", "debug", "comparison",
                  "type", "auto.auto.bound", "hypotheses", "missing", "auxiliary",
                  "VCOV", "sample.nobs", "object")

@@ -27,9 +27,6 @@ two_stage_sandwich <- function(object, ...) {
 ## (ordered) factors need to be specified in the data, not in the model
 EM <- function(object, emControl = list(), auxiliary = c(), ...) {
 
-    #warn <- getOption("warn")
-    #options(warn = -1)
-    
     # arguments for emNorm()
     emControl <- as.list(emControl)
     

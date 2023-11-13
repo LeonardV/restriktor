@@ -19,8 +19,11 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, type = "A",
   if (h1@Model@conditional.x) {
     stop("lavaan ERROR: this function is not (yet) available if conditional.x = TRUE")
   }
+  
   old_options <- options()
+  on.exit(options(old_options))
   options(warn = warn)
+  
   D <- rep(as.numeric(NA), R)
   
   if (double.bootstrap == "FDB") {
@@ -194,7 +197,6 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, type = "A",
     if (inherits(bootSampleStats, "try-error")) {
       if (verbose) 
         cat("     FAILED: creating h0@SampleStats statistics\n")
-      options(old_options)
       return(NULL)
     }
 
@@ -208,13 +210,14 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, type = "A",
     h0@Options$h1 <- FALSE
     
     
-    fit.boot.h0 <- lavaan(slotOptions = h0@Options, slotParTable = h0@ParTable, 
-                                  slotSampleStats = bootSampleStats, slotData = data)
+    fit.boot.h0 <- suppressWarnings(lavaan(slotOptions     = h0@Options, 
+                                           slotParTable    = h0@ParTable, 
+                                           slotSampleStats = bootSampleStats, 
+                                           slotData        = data))
     
     if (!fit.boot.h0@optim$converged) {
       if (verbose) 
         cat("     FAILED: no convergence\n")
-      options(old_options)
       return(NULL)
     }
     if (verbose) 
@@ -231,13 +234,14 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, type = "A",
     h1@Options$h1 <- FALSE
     
     
-    fit.boot.h1 <- lavaan(slotOptions = h1@Options, slotParTable = h1@ParTable, 
-                                  slotSampleStats = bootSampleStats, slotData = data)
+    fit.boot.h1 <- suppressWarnings(lavaan(slotOptions     = h1@Options, 
+                                           slotParTable    = h1@ParTable, 
+                                           slotSampleStats = bootSampleStats, 
+                                           slotData        = data))
     
     if (!fit.boot.h1@optim$converged) {
       if (verbose) 
         cat("     FAILED: no convergence\n")
-      options(old_options)
       return(NULL)
     }
     if (verbose) 
@@ -382,7 +386,6 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, type = "A",
     attr(pvalue, "plugin.pvalues") <- plugin.pvalues
     attr(pvalue, "adj.pvalue") <- adj.pvalue
   }
-  options(old_options)
   
   attr(pvalue, "Amat") <- Amat
   pvalue

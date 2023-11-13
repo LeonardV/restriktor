@@ -25,6 +25,9 @@ plot.conTestLavaan <- function(x, ...,
   double.bootstrap.alpha <- object$double.bootstrap.alpha
   pvalue <- c(object$bootA[1], object$bootB[1])
   
+  oldpar <- par(no.readonly = TRUE)
+  on.exit(par(oldpar)) 
+  
   par(mfrow = c(1, 2))
   if (length(type) == 2) {
     par(mfrow = c(2, 2))

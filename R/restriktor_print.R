@@ -28,7 +28,7 @@ print.restriktor <- function(x, digits = max(3, getOption("digits") - 2), ...) {
   
   wt_method_boot <- attr(x$wt.bar, "method")
   if (wt_method_boot == "boot") {
-    wt_bootstrap_draws <- attr(x$wt.bar, "mix.bootstrap")
+    wt_bootstrap_draws <- attr(x$wt.bar, "mix_weights_bootstrap_limit")
     wt_boostrap_errors <- attr(x$wt.bar, "error.idx")
     cat("Level probabilities:\n")
     cat("  Number of requested bootstrap draws ", wt_bootstrap_draws, "\n")

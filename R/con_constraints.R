@@ -179,7 +179,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
   #H1 <- 'x1 > 3; x1 > 4' # 
   #H1 <- 'x1 > -1; x1 > 4'#
   
-  # if (mix.weights == "pmvnorm") {
+  # if (mix_weights == "pmvnorm") {
   #   if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
   #     ## check for inconsistent constraints: quadprog gives an error if constraints
   #     ## are inconsistent

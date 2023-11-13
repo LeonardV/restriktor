@@ -1,5 +1,6 @@
 summary.con_goric <- function(object, brief = TRUE, 
-                              digits = max(3, getOption("digits") - 4), ...) {
+                              digits = max(3, getOption("digits") - 4), 
+                              threshold = 3, ...) {
   
   x <- object
   type <- x$type
@@ -38,17 +39,16 @@ summary.con_goric <- function(object, brief = TRUE,
   
   if (sum(wt_bar) > 0) {
     wt_method_boot <- x$objectList[wt_bar]
-    wt_bootstrap_draws  <- sapply(wt_method_boot, function(x) attr(x$wt.bar, "mix.bootstrap"))
+    wt_bootstrap_draws  <- sapply(wt_method_boot, function(x) attr(x$wt.bar, "total_bootstrap_draws"))
     wt_bootstrap_errors <- lapply(wt_method_boot, function(x) attr(x$wt.bar, "error.idx"))
     max_nchar <- max(nchar(names(wt_method_boot)))
     
     len <- length(wt_method_boot)
     if (len > 0) { 
       cat("\n")
-      cat("Level probabilities:\n")
-      cat("  Number of requested bootstrap draws", wt_bootstrap_draws[1], "\n")
+      cat("Bootstrap-based penalty term calculation:\n")
+      cat("  Number of bootstrap draws", wt_bootstrap_draws[1], "\n")
       for (i in 1:len) {
-        #cat("Number of successful bootstrap draws for", names(wt_method_boot)[i], ":", (wt_bootstrap_draws[1] - length(wt_bootstrap_errors[[i]])), "\n")
         cat(paste0("  Number of successful bootstrap draws for ", sprintf(paste0("%", max_nchar, "s"), names(wt_method_boot)[i]), ": ", (wt_bootstrap_draws[1] - length(wt_bootstrap_errors[[i]])), "\n"))
       }
     }
@@ -59,15 +59,17 @@ summary.con_goric <- function(object, brief = TRUE,
         print.gap = 2, quote = FALSE, right = TRUE)
   cat("---\n")
   
-  # Hoe groot mag het verschil zijn. Gebruik ratio en refeer naar par. estimates
-  if (any(combn(as.numeric(df$loglik), 2, FUN = function(x) abs(diff(x))) <= 1e-5)) { 
-    cat("Note: If log-likelihood values are equal or close to each other, the goric ratio weights are determined", 
-        "only by the difference in penalty values. Please check the ratio penalty-weights.\n\n")
-  }
-  if (comparison == "complement") {
+  if (comparison == "complement") {# && length(unique_combinations) == 0) {
     cat("The order-restricted hypothesis", sQuote(objectnames[1]), "has", 
         sprintf("%.3f", as.numeric(ratio.gw[1,2])), "times more support than its complement.\n\n")
   } 
+  
+  # if (!is.null(x$messages$mix_weights)) {
+  #   text1 <- paste("Note: Since the constraint matrix for hypotheses", paste0(sQuote(names(wt_method_boot)), collapse = ", "), 
+  #                  "is not full row-rank, we used the 'boot' method for calculating", 
+  #                  "the penalty term value. For additional details, see '?goric' or the Vignette.\n")
+  #   message(text)
+  # }
   
   if (!is.null(x$ratio.gw)) {
     if (type == "goric") {
@@ -86,10 +88,10 @@ summary.con_goric <- function(object, brief = TRUE,
     
     if (max(ratio.gw, na.rm = TRUE) >= 1e4) {
       print(format(ratio.gw, digits = digits, scientific = TRUE, trim = TRUE), 
-            print.gap = 2, quote = FALSE, right = FALSE) 
+            print.gap = 2, quote = FALSE, right = TRUE) 
     } else {
       print(format(ratio.gw, digits = digits, scientific = FALSE, trim = TRUE), 
-            print.gap = 5, quote = FALSE, right = FALSE)
+            print.gap = 2, quote = FALSE, right = TRUE)
     }
     cat("---\n")
   }
@@ -102,10 +104,10 @@ summary.con_goric <- function(object, brief = TRUE,
     
     if (max(ratio.lw, na.rm = TRUE) >= 1e4) {
       print(format(ratio.lw, digits = digits, scientific = TRUE, trim = TRUE), 
-            print.gap = 2, quote = FALSE, right = FALSE)
+            print.gap = 2, quote = FALSE, right = TRUE)
     } else {
       print(format(ratio.lw, digits = digits, scientific = FALSE, trim = TRUE), 
-            print.gap = 2, quote = FALSE, right = FALSE)
+            print.gap = 2, quote = FALSE, right = TRUE)
     }
     cat("---\n")
   }
@@ -118,10 +120,10 @@ summary.con_goric <- function(object, brief = TRUE,
     
     if (max(ratio.pw, na.rm = TRUE) >= 1e4) {
       print(format(x$ratio.pw, digits = digits, scientific = TRUE, trim = TRUE), 
-            print.gap = 2, quote = FALSE, right = FALSE)
+            print.gap = 2, quote = FALSE, right = TRUE)
     } else {
       print(format(ratio.pw, digits = digits, scientific = FALSE, trim = TRUE), 
-            print.gap = 2, quote = FALSE, right = FALSE)
+            print.gap = 2, quote = FALSE, right = TRUE)
     }
     cat("---\n")
   }
@@ -131,8 +133,10 @@ summary.con_goric <- function(object, brief = TRUE,
     coefs <- trimws(apply(x$ormle$b.restr, 2, sprintf, fmt = dig))
     coefs[coefs == "NA"] <- ""
     rownames(coefs) <- rownames(x$ormle$b.restr)
-    print(format(coefs, digits = digits, scientific = FALSE), print.gap = 2,
-          quote = FALSE)
+    # print(format(coefs, digits = digits, scientific = TRUE, trim = TRUE), 
+    #       print.gap = 2, quote = FALSE, right = TRUE) 
+    # 
+    print(coefs, scientific = TRUE, right = TRUE, quote = FALSE, print.gap = 2)
     cat("---\n")
     
     vnames <- names(x$ormle$b.restr)
@@ -180,35 +184,17 @@ summary.con_goric <- function(object, brief = TRUE,
     cat("\nRestriction matrices:\n")
     print(conMat, quote = FALSE, scientific = FALSE)
     
-    invisible(x)
+    #invisible(x)
   } else {
     if (!is.null(object$hypotheses_usr)) {
       cat("\norder-restricted hypotheses:\n\n")
       hypotheses_usr <- object$hypotheses_usr
-      #hypotheses_usr <- lapply(hypotheses_usr, function(x) unlist(strsplit(x, "\n")))
-      # remove user specified paramters
-      #hypotheses_usr <- lapply(hypotheses_usr, function(x) x[!grepl(":=", x)])
-      
       for (i in 1:length(x$objectList)) {
         text <- gsub("(\\n\\s+)+", "\n", hypotheses_usr[[i]])
         cat(paste0(objectnames[i],":\n", trimws(gsub("\\h+", " ", text, perl = TRUE))), "\n\n")
       }
-      
-      #calculate max length of vectors
-      #max_length <- max(sapply(hypotheses_usr, function(x) length(x)))
-      # for (j in 1:length(hypotheses_usr)) {
-      #   length(hypotheses_usr[[j]]) <- max_length
-      # }
-      # hypotheses_usr <- do.call(rbind, hypotheses_usr)
-      # row.names(hypotheses_usr) <- paste0(objectnames[1:length(x$objectList)], ":")
-      # hypotheses_usr[is.na(hypotheses_usr)] <- ""
-      # name.width <- max(sapply(hypotheses_usr, nchar))
-      # hypotheses_usr <- format(hypotheses_usr, width = name.width, justify = "left")
-      # hypotheses_usr <- as.data.frame(hypotheses_usr)
-      # names(hypotheses_usr) <- NULL
-      # print(hypotheses_usr)
     }
   }
-  cat("\n")
-  message(x$messages$mix_weights)
+  #cat("\n")
+  #message(x$messages$mix_weights)
 }

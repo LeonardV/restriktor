@@ -8,21 +8,21 @@
 }
 
 \usage{
-
 \method{print}{conTest}(x, digits = max(3, getOption("digits") - 2), \dots)
-
 }
 
 \arguments{
   \item{x}{an object of class \code{conTest}.} 
-  
   \item{digits}{the number of significant digits to use when printing.}
-  
   \item{\dots}{no additional arguments for now.}
 }
   
+
+\value{
+No return value, just the result of the print function
+}
   
-  \examples{
+\examples{
   # unrestricted linear model for ages (in months) at which an 
   # infant starts to walk alone.
   

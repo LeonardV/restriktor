@@ -152,15 +152,14 @@ fit_restr1 <- restriktor(fit1.lm, constraints = myConstraints1)
 
 iht(fit_restr1)
 
-\dontrun{ 
-  # Or in matrix notation.
-  Amat1 <- rbind(c(-1, 0,  1),
-                 c( 0, 1, -1))
-  myRhs1 <- rep(0L, nrow(Amat1)) 
-  myNeq1 <- 2
-  
-  iht(fit1.lm, constraints = Amat1,
-      rhs = myRhs1, neq = myNeq1)
-}            
+ 
+# Or in matrix notation.
+Amat1 <- rbind(c(-1, 0,  1),
+               c( 0, 1, -1))
+myRhs1 <- rep(0L, nrow(Amat1)) 
+myNeq1 <- 2
+
+iht(fit1.lm, constraints = Amat1,
+    rhs = myRhs1, neq = myNeq1)
 
 }

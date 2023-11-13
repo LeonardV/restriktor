@@ -50,8 +50,8 @@ used directly and is called by the \code{conTest} function if \code{test = "F"}.
     Instead of computing the p-value via simulation, the p-value
     can also be computed using the chi-bar-square weights. If 
     \code{"no"}, the p-value is computed based on the weights 
-    obtained via simulation (\code{mix.weights = "boot"}) or using the 
-    multivariate normal distribution function (\code{mix.weights = "pmvnorm"}).
+    obtained via simulation (\code{mix_weights = "boot"}) or using the 
+    multivariate normal distribution function (\code{mix_weights = "pmvnorm"}).
     Note that, these weights are already available in the restriktor objected and
     do not need to be estimated again. However, there are two exception for objects 
     of class \code{conRLM}, namely for computing the p-value for the robust 
@@ -231,7 +231,7 @@ fit.restr1 <- restriktor(fit1.lm, constraints = myConstraints1)
 
 iht(fit.restr1)
 
-\dontrun{ 
+\donttest{ 
   # Or in matrix notation.
   Amat1 <- rbind(c(-1, 0,  1),
                  c( 0, 1, -1))
@@ -273,17 +273,15 @@ fit2.con <- restriktor(fit2.lm, constraints = myConstraints2)
 
 iht(fit2.con)
 
-\dontrun{ 
-  # increasing means in matrix notation.
-  Amat2 <- rbind(c(-1, 1, 0, 0),
-                 c( 0,-1, 1, 0),
-                 c( 0, 0,-1, 1))
-  myRhs2 <- rep(0L, nrow(Amat2)) 
-  myNeq2 <- 0
+# increasing means in matrix notation.
+Amat2 <- rbind(c(-1, 1, 0, 0),
+               c( 0,-1, 1, 0),
+               c( 0, 0,-1, 1))
+myRhs2 <- rep(0L, nrow(Amat2)) 
+myNeq2 <- 0
 
-  iht(fit2.con, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
-      type = "A", boot = "parametric", R = 9)
-}            
+iht(fit2.con, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
+    type = "A", boot = "parametric", R = 9)
 
 ## example 3:
 # combination of equality and inequality constraints.

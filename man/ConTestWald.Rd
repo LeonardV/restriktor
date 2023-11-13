@@ -38,8 +38,8 @@ if \code{test = "Wald"}.
   Instead of computing the p-value via simulation, the p-value
   can also be computed using the chi-bar-square weights. If 
   \code{"no"}, the p-value is computed based on the weights 
-  obtained via simulation (\code{mix.weights = "boot"}) or using the 
-  multivariate normal distribution function (\code{mix.weights = "pmvnorm"}).
+  obtained via simulation (\code{mix_weights = "boot"}) or using the 
+  multivariate normal distribution function (\code{mix_weights = "pmvnorm"}).
   Note that, these weights are already available in the restriktor objected and
   do not need to be estimated again. However, there are two exception for objects 
   of class \code{conRLM}, namely for computing the p-value for the robust 
@@ -207,16 +207,15 @@ fit.restr1 <- restriktor(fit1.rlm, constraints = myConstraints1)
 
 iht(fit.restr1, test = "Wald")
 
-\dontrun{ 
-  # Or in matrix notation.
-  Amat1 <- rbind(c(-1, 0,  1),
-                 c( 0, 1, -1))
-  myRhs1 <- rep(0L, nrow(Amat1)) 
-  myNeq1 <- 0
-  
-  iht(fit1.rlm, constraints = Amat1, test = "Wald",
-      rhs = myRhs1, neq = myNeq1)
-}            
+
+# Or in matrix notation.
+Amat1 <- rbind(c(-1, 0,  1),
+               c( 0, 1, -1))
+myRhs1 <- rep(0L, nrow(Amat1)) 
+myNeq1 <- 0
+
+iht(fit1.rlm, constraints = Amat1, test = "Wald", rhs = myRhs1, neq = myNeq1)
+
 
 #########################
 ## Artificial examples ##
@@ -249,17 +248,16 @@ fit2.con <- restriktor(fit2.rlm, constraints = myConstraints2)
 
 iht(fit2.con, test = "Wald")
 
-\dontrun{ 
-  # increasing means in matrix notation.
-  Amat2 <- rbind(c(-1, 1, 0, 0),
-                 c( 0,-1, 1, 0),
-                 c( 0, 0,-1, 1))
-  myRhs2 <- rep(0L, nrow(Amat2)) 
-  myNeq2 <- 0
+# increasing means in matrix notation.
+Amat2 <- rbind(c(-1, 1, 0, 0),
+               c( 0,-1, 1, 0),
+               c( 0, 0,-1, 1))
+myRhs2 <- rep(0L, nrow(Amat2)) 
+myNeq2 <- 0
 
-  iht(fit2.con, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
-      type = "A", test = "Wald", boot = "parametric", R = 9)
-}            
+iht(fit2.con, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
+    type = "A", test = "Wald", boot = "parametric", R = 9)
+            
 
 ## example 3:
 # combination of equality and inequality constraints.

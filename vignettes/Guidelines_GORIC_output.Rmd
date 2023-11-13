@@ -1151,7 +1151,6 @@ fit <- lm(y ~ 0 + D, data=sample)
 
 
 ```{r, echo = F, message = FALSE, warning = FALSE}
-if (!require("bain")) install.packages("bain") # install this package first (once)
 library(bain)
 ```
 
@@ -1193,10 +1192,6 @@ sample <- NULL
 D_ <- matrix(rep(1:n.coef), nrow = samplesize)
 D <- as.factor(D_)
 sample$D <- D
-#install.packages('fastDummies')
-#library(fastDummies)
-#sample <- dummy_cols(sample, select_columns = 'D')
-
 sample <- model.matrix(~sample$D-1)
 colnames(sample) <- paste0("D_", 1:ncol(sample))
 
@@ -1275,9 +1270,6 @@ sample <- NULL
 D_ <- matrix(rep(1:n.coef), nrow = samplesize)
 D <- as.factor(D_)
 sample$D <- D
-#install.packages('fastDummies')
-#library(fastDummies)
-#sample <- dummy_cols(sample, select_columns = 'D')
 
 sample <- model.matrix(~sample$D-1)
 colnames(sample) <- paste0("D_", 1:ncol(sample))
@@ -1350,9 +1342,6 @@ sample <- NULL
 D_ <- matrix(rep(1:n.coef), nrow = samplesize)
 D <- as.factor(D_)
 sample$D <- D
-#install.packages('fastDummies')
-#library(fastDummies)
-#sample <- dummy_cols(sample, select_columns = 'D')
 
 sample <- model.matrix(~sample$D-1)
 colnames(sample) <- paste0("D_", 1:ncol(sample))

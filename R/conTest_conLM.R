@@ -22,7 +22,7 @@ conTestF.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 999
   if(!(type %in% c("A","B","global"))) {
     stop("Restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
   }
-  if(!(boot %in% c("no","residual","model.based","parametric","mix.weights"))) {
+  if(!(boot %in% c("no","residual","model.based","parametric"))) {
     stop("Restriktor ERROR: boot method unknown.")
   }
   if (boot == "residual") {
@@ -273,7 +273,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
   if(!(type %in% c("A","B","global"))) {
     stop("Restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
   }
-  if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix.weights"))) {
+  if(!(boot %in% c("no", "residual", "model.based", "parametric"))) {
     stop("Restriktor ERROR: boot method unknown.")
   }
   if (boot == "residual") {
@@ -542,7 +542,7 @@ conTestScore.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   if(!(type %in% c("A","B","global"))) {
     stop("Restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
   }
-  if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix.weights"))) {
+  if(!(boot %in% c("no", "residual", "model.based", "parametric"))) {
     stop("Restriktor ERROR: boot method unknown.")
   }
   if (boot == "residual") {

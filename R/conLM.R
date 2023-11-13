@@ -1,8 +1,8 @@
 conLM.lm <- function(object, constraints = NULL, se = "standard", 
-                     B = 999, rhs = NULL, neq = 0L, mix.weights = "pmvnorm", 
-                     mix.bootstrap = 99999L, parallel = "no", ncpus = 1L, cl = NULL, 
-                     seed = NULL, control = list(), verbose = FALSE, 
-                     debug = FALSE, ...) {
+                     B = 999L, rhs = NULL, neq = 0L, mix_weights = "pmvnorm", 
+                     mix_weights_bootstrap_limit = 99999L, parallel = "no", 
+                     ncpus = 1L, cl = NULL, seed = NULL, control = list(), 
+                     verbose = FALSE, debug = FALSE, ...) {
   
   # check class
   if (!(class(object)[1] == "lm")) {
@@ -19,8 +19,8 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
     stop("Restriktor ERROR: standard error method ", sQuote(se), " unknown.", call. = FALSE)
   }
   # check method to compute chi-square-bar weights
-  if (!(mix.weights %in% c("pmvnorm", "boot", "none"))) {
-    stop("Restriktor ERROR: ", sQuote(mix.weights), " method unknown. Choose from \"pmvnorm\", \"boot\", or \"none\".", call. = FALSE)
+  if (!(mix_weights %in% c("pmvnorm", "boot", "none"))) {
+    stop("Restriktor ERROR: ", sQuote(mix_weights), " method unknown. Choose from \"pmvnorm\", \"boot\", or \"none\".", call. = FALSE)
   }
   
   # timing
@@ -106,14 +106,14 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   
   ## check if constraint matrix is of full-row rank. 
   rAmat <- GaussianElimination(t(Amat))
-  if (mix.weights == "pmvnorm") {
+  if (mix_weights == "pmvnorm") {
     if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
       messages$mix_weights <- paste(
         "Restriktor message: Since the constraint matrix is not full row-rank, the level probabilities 
- are calculated using mix.weights = \"boot\" (the default is mix.weights = \"pmvnorm\").
+ are calculated using mix_weights = \"boot\" (the default is mix_weights = \"pmvnorm\").
  For more information see ?restriktor.\n"
         )
-      mix.weights <- "boot"
+      mix_weights <- "boot"
     }
   } else if (rAmat$rank < nrow(Amat) &&
              !(se %in% c("none", "boot.model.based", "boot.standard")) &&
@@ -302,7 +302,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                                  bvec        = bvec, 
                                  meq         = meq, 
                                  se          = "none",
-                                 mix.weights = "none",
+                                 mix_weights = "none",
                                  parallel    = parallel, 
                                  ncpus       = ncpus, 
                                  cl          = cl)
@@ -317,7 +317,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                                  bvec        = bvec, 
                                  meq         = meq, 
                                  se          = "none",
-                                 mix.weights = "none",
+                                 mix_weights = "none",
                                  parallel    = parallel, 
                                  ncpus       = ncpus, 
                                  cl          = cl)
@@ -334,7 +334,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   # start timing
   start.time <- proc.time()[3]
   # compute chi-square-bar weights
-  if (mix.weights != "none") {
+  if (mix_weights != "none") {
     if (nrow(Amat) == meq) {
       # equality constraints only
       wt.bar <- rep(0L, ncol(Sigma) + 1) 
@@ -343,33 +343,37 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
     } else if (all(c(Amat) == 0)) { 
       # unrestricted case
       wt.bar <- c(rep(0L, p), 1)
-    } else if (mix.weights == "boot") { 
+    } else if (mix_weights == "boot") { 
       # compute chi-square-bar weights based on Monte Carlo simulation
-      wt.bar <- con_weights_boot(VCOV     = Sigma,
-                                 Amat     = Amat, 
-                                 meq      = meq, 
-                                 R        = mix.bootstrap,
-                                 parallel = parallel, 
-                                 ncpus    = ncpus, 
-                                 cl       = cl,
-                                 seed     = seed,
-                                 verbose  = verbose)
-      attr(wt.bar, "mix.bootstrap") <- mix.bootstrap
-    } else if (mix.weights == "pmvnorm" && (meq < nrow(Amat))) {
+      wt.bar <- con_weights_boot(VCOV             = Sigma,
+                                 Amat             = Amat, 
+                                 meq              = meq, 
+                                 R                = mix_weights_bootstrap_limit,
+                                 #parallel         = parallel, 
+                                 #ncpus            = ncpus, 
+                                 #cl               = cl,
+                                 seed             = seed,
+                                 convergence_crit = ifelse(is.null(control$convergence_crit), 
+                                                           1e-04, control$convergence_crit),
+                                 chunk_size = ifelse(is.null(control$chunk_size), 
+                                                           5000L, control$chunk_size),
+                                 verbose          = verbose)
+      attr(wt.bar, "mix_weights_bootstrap_limit") <- mix_weights_bootstrap_limit
+    } else if (mix_weights == "pmvnorm" && (meq < nrow(Amat))) {
       # compute chi-square-bar weights based on pmvnorm
       wt.bar <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
     } 
   } else {
     wt.bar <- NA
   }
-  attr(wt.bar, "method") <- mix.weights
+  attr(wt.bar, "method") <- mix_weights
   OUT$wt.bar <- wt.bar
   
   if (debug) {
-    print(list(mix.weights = wt.bar))
+    print(list(mix_weights = wt.bar))
   }
   
-  timing$mix.weights <- (proc.time()[3] - start.time)
+  timing$mix_weights <- (proc.time()[3] - start.time)
   OUT$messages <- messages
   OUT$timing$total <- (proc.time()[3] - start.time0)
   

@@ -18,7 +18,7 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   if(!(type %in% c("A","B","global"))) {
     stop("Restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
   }
-  if(!(boot %in% c("no","residual","model.based","parametric","mix.weights"))) {
+  if(!(boot %in% c("no","residual","model.based","parametric"))) {
     stop("Restriktor ERROR: boot method unknown.")
   }
   if (boot == "residual") {
@@ -95,7 +95,7 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   
   if (type == "global") {
     CALL <- list(object = model.org, constraints = AmatG, rhs = bvecG, 
-                 neq = nrow(AmatG), se = "none", mix.weights = "none")
+                 neq = nrow(AmatG), se = "none", mix_weights = "none")
     glm.fit <- do.call("restriktor", CALL)
     
     b.eqrestr <- coef(glm.fit)
@@ -103,7 +103,7 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     Ts <- c( t(b.restr - b.eqrestr) %*% solve(Sigma, b.restr - b.eqrestr) ) 
   } else if (type == "A") {
     CALL <- list(object = model.org, constraints = Amat, rhs = bvec, 
-                 neq = nrow(Amat), se = "none", mix.weights = "none")
+                 neq = nrow(Amat), se = "none", mix_weights = "none")
     glm.fit <- do.call("restriktor", CALL)
     
     b.eqrestr <- coef(glm.fit)
@@ -120,7 +120,7 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
         # be preserved in the alternative hypothesis.
         CALL <- list(object = model.org, constraints = Amat[1:meq.alt,,drop = FALSE], 
                      rhs = bvec[1:meq.alt], neq = meq.alt, 
-                     se = "none", mix.weights = "none")
+                     se = "none", mix_weights = "none")
         glm.fit <- do.call("restriktor", CALL)
         
         b.restr.alt <- coef(glm.fit)
@@ -243,7 +243,7 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
   if(!(type %in% c("A","B","global"))) {
     stop("Restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
   }
-  if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix.weights"))) {
+  if(!(boot %in% c("no", "residual", "model.based", "parametric"))) {
     stop("Restriktor ERROR: boot method unknown.")
   }
   if (boot == "residual") {
@@ -318,7 +318,7 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
   
   if (type == "global") {  
     CALL <- list(object = model.org, constraints = AmatG, 
-                 rhs = bvecG, neq = nrow(AmatG), se = "none", mix.weights = "none")
+                 rhs = bvecG, neq = nrow(AmatG), se = "none", mix_weights = "none")
     glm.fit <- do.call("restriktor", CALL)
     
     ll0 <- glm.fit$loglik
@@ -327,7 +327,7 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
     Ts <- -2*(ll0 - ll1)
   } else if (type == "A") {
     CALL <- list(object = model.org, constraints = Amat, 
-                 rhs = bvec, neq = nrow(Amat), se = "none", mix.weights = "none")
+                 rhs = bvec, neq = nrow(Amat), se = "none", mix_weights = "none")
     glm.fit <- do.call("restriktor", CALL)
     
     ll0 <- glm.fit$loglik
@@ -345,7 +345,8 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt > 0L && meq.alt <= meq) {
         CALL <- list(object = model.org, constraints = Amat[1:meq.alt,,drop=FALSE], 
-                     rhs = bvec[1:meq.alt], neq = meq.alt, se = "none", mix.weights = "none")
+                     rhs = bvec[1:meq.alt], neq = meq.alt, se = "none", 
+                     mix_weights = "none")
         glm.fit <- do.call("restriktor", CALL)
         
         ll0 <- glm.fit$loglik
@@ -462,7 +463,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   if(!(type %in% c("A","B","global"))) {
     stop("Restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
   }
-  if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix.weights"))) {
+  if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix_weights"))) {
     stop("Restriktor ERROR: boot method unknown.")
   }
   if (boot == "residual") {
@@ -547,7 +548,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
 
   if (type == "global") {
     CALL <- list(object = model.org, constraints = AmatG, 
-                 rhs = bvecG, neq = nrow(AmatG), se = "none", mix.weights = "none")
+                 rhs = bvecG, neq = nrow(AmatG), se = "none", mix_weights = "none")
     glm.fit <- do.call("restriktor", CALL)
     
     b.eqrestr <- coef(glm.fit)
@@ -578,7 +579,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     ###############################################
   } else if (type == "A") {
     CALL <- list(object = model.org, constraints = Amat, 
-                 rhs = bvec, neq = nrow(Amat), se = "none", mix.weights = "none")
+                 rhs = bvec, neq = nrow(Amat), se = "none", mix_weights = "none")
     glm.fit <- do.call("restriktor", CALL)
     
     b.eqrestr <- coef(glm.fit)
@@ -638,7 +639,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
       # some equality may be preserved in the alternative hypothesis.
       if (meq.alt > 0L && meq.alt <= meq) {
         CALL <- list(object = model.org, constraints = Amat[1:meq.alt,,drop=FALSE], 
-                     rhs = bvec[1:meq.alt], neq = meq.alt, se = "none", mix.weights = "none")
+                     rhs = bvec[1:meq.alt], neq = meq.alt, se = "none", mix_weights = "none")
         glm.fit <- do.call("restriktor", CALL)
         
         b.restr.alt <- coef(glm.fit)

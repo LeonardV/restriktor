@@ -61,7 +61,7 @@ evSyn(object, \ldots)
   information.}
 
   \item{hypotheses}{When applying the same set of hypotheses to each study, 
-  the syntax structure should be as follows: hypotheses = list(H1, H2, \ldots). 
+  the syntax structure should be as follows: "hypotheses = list(H1, H2, \ldots)". 
   However, if a different set of hypotheses is applied to each study, the syntax 
   structure should be as follows: hypotheses = list(set1 = list(H11, H12), set2 = list(H21, H22)).
   See \code{\link{goric}} how to specify the hypotheses syntax or see the example 
@@ -143,7 +143,6 @@ for the theory-based hypotheses.}
 \author{Leonard Vanbrabant and Rebecca Kuiper}
 
 \examples{
-\dontrun{
 ## By following these examples, you can appropriately specify hypotheses based on 
 ## your research questions and analytical framework.
 
@@ -160,7 +159,7 @@ hypotheses = list(hypo1 = h1, hypo2 = h2, hypo3 = h3)
 hypotheses = list(Ha = h1, Hb = 'x1 = x2 > x3')
 
 # the same set of hypotheses for each study:
-hypotheses = list(H1, H2, \ldots)
+# hypotheses = list(H1, H2, \ldots)
 
 # a different set of hypotheses for each study: 
 # note that the list names set1 and set2 are redundant and can be left out. 
@@ -177,7 +176,6 @@ hypotheses = list(set1 = list(H11, H12), set2 = list(H21, H22))
 
 # NOT correct
 hypotheses = list(set1 = list(H12, H11), set2 = list(H21, H22))
-}
 
 ## Example 1 - 4 studies
 est_1 <- c(beta1 = 0.09)
@@ -209,9 +207,9 @@ evS4_added <- evSyn(object = Param_studies, VCOV = CovMx_studies,
                     comparison = "none")
 evS4_added
 summary(evS4_added)
-\dontrun{
+
 plot(evS4_added)
-}
+
 evS4_equal <- evSyn(object = Param_studies, VCOV = CovMx_studies, 
                     hypotheses = hypotheses,
                     type = "equal", 
@@ -219,9 +217,7 @@ evS4_equal <- evSyn(object = Param_studies, VCOV = CovMx_studies,
 
 evS4_equal
 summary(evS4_equal)
-\dontrun{
 plot(evS4_equal)
-}
 
 ## Example 2 - 2 studies
 est_1 <- c(1.88, 2.54, 0.02)
@@ -251,9 +247,7 @@ hypotheses <- list(H1 = list(H11, H12), H2 = list(H21, H22))
 evS2_added <- evSyn(object, VCOV = VCOV, hypotheses = hypotheses,
                     type = "added", comparison = "unconstrained") 
 evS2_added
-\dontrun{
 plot(evS2_added)
-}
 
 ## Example 3 - 3 studies
 
@@ -326,9 +320,7 @@ evS3 <- evSyn(object = Param_studies, VCOV = CovMx_studies,
               type = "added", 
               comparison = "complement") 
 evS3
-\dontrun{
 plot(evS3)
-}
 
 ## Example 4 - loglikelihood values and penalty values
 # make it a list

@@ -30,7 +30,7 @@ con_pvalue_Fbar <- function(wt.bar, Ts.org, df.residual, type = "A",
     #   pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
     #                       wt.bar = wt.bar)
     # } else {
-    #   stop("Restriktor ERROR: mix.weights method ", sQuote(wt.method), " unknown.")
+    #   stop("Restriktor ERROR: mix_weights method ", sQuote(wt.method), " unknown.")
     # }
   } else if(type == "A") {
     # compute df
@@ -46,7 +46,7 @@ con_pvalue_Fbar <- function(wt.bar, Ts.org, df.residual, type = "A",
     #   pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
     #                       wt.bar = wt.bar)
     # } else {
-    #   stop("Restriktor ERROR: mix.weights method ", sQuote(wt.method), " unknown.")
+    #   stop("Restriktor ERROR: mix_weights method ", sQuote(wt.method), " unknown.")
     # }
   } else if (type == "B") {
     # compute df
@@ -62,7 +62,7 @@ con_pvalue_Fbar <- function(wt.bar, Ts.org, df.residual, type = "A",
     #   pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
     #                       wt.bar = rev(wt.bar))
     # } else {
-    #   stop("Restriktor ERROR: mix.weights method ", sQuote(wt.method), " unknown.")
+    #   stop("Restriktor ERROR: mix_weights method ", sQuote(wt.method), " unknown.")
     # }
   } else  {
     stop("hypothesis test type ", sQuote(type), " unknown.")
@@ -130,7 +130,9 @@ con_pvalue_boot_parametric <- function(model, Ts.org,
                                        control  = NULL,
                                        verbose  = FALSE, ...) {
 
-  old.options <- options(); options(warn = warn)
+  old_options <- options()
+  on.exit(options(old_options))
+  options(warn = warn)
   
   model.org <- model$model.org
   fam <- family(model.org)
@@ -201,7 +203,7 @@ con_pvalue_boot_parametric <- function(model, Ts.org,
     
     CALL <- list(object = boot.model, constraints = Amat, 
                  rhs = bvec, neq = meq, se = "none", 
-                 mix.weights = "none", control = control)
+                 mix_weights = "none", control = control)
     
     restr.boot <- do.call("restriktor", CALL)
     
@@ -213,7 +215,6 @@ con_pvalue_boot_parametric <- function(model, Ts.org,
                                 control = control))
     if (inherits(boot.conTest, "try-error")) {
       if (verbose) cat("FAILED: creating test statistic\n")
-      options(old.options)
       return(NULL)
     }
     OUT <- boot.conTest$Ts
@@ -224,7 +225,6 @@ con_pvalue_boot_parametric <- function(model, Ts.org,
       OUT
    }
 
-   options(old.options)
    RR <- sum(R)
      res <- if (ncpus > 1L && (have_mc || have_snow)) {
        if (have_mc) {
@@ -289,7 +289,9 @@ con_pvalue_boot_model_based <- function(model, Ts.org,
                                         control  = NULL,
                                         verbose  = FALSE, ...) {
 
-  old.options <- options(); options(warn = warn)
+  old_options <- options()
+  on.exit(options(old_options))
+  options(warn = warn)
   
   model.org <- model$model.org
   y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
@@ -322,13 +324,13 @@ con_pvalue_boot_model_based <- function(model, Ts.org,
   if (type == "A") {
     CALL <- list(object = model.org, constraints = Amat, 
                  rhs = bvec, neq = nrow(Amat), 
-                 control = control, se = "none", mix.weights = "none")
+                 control = control, se = "none", mix_weights = "none")
     
     fit <- do.call("restriktor", CALL)
   } else if (type == "B") {
     CALL <- list(object = model.org, constraints = Amat, 
                  rhs = bvec, neq = meq, 
-                 control = control, se = "none", mix.weights = "none")
+                 control = control, se = "none", mix_weights = "none")
                     
     fit <- do.call("restriktor", CALL)
   } 
@@ -370,7 +372,7 @@ con_pvalue_boot_model_based <- function(model, Ts.org,
     boot.model <- update(model.org, formula = form, data = DATA)
     CALL <- list(object = boot.model, constraints = Amat, rhs = bvec, 
                  neq = meq, control = control, se = "none",
-                 mix.weights = "none")
+                 mix_weights = "none")
     
     restr.boot <- do.call("restriktor", CALL)  
     
@@ -382,7 +384,6 @@ con_pvalue_boot_model_based <- function(model, Ts.org,
                                 control = control))
     if (inherits(boot.conTest, "try-error")) {
       if (verbose) cat("FAILED: creating test statistic\n")
-      options(old.options)
       return(NULL)
     }
     OUT <- boot.conTest$Ts
@@ -393,7 +394,6 @@ con_pvalue_boot_model_based <- function(model, Ts.org,
       OUT
   }
     
-  options(old.options)
   RR <- sum(R)
   res <- if (ncpus > 1L && (have_mc || have_snow)) {
     if (have_mc) {

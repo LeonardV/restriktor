@@ -273,16 +273,14 @@ fit.restr1 <- restriktor(fit1.lm, constraints = myConstraints1)
 
 iht(fit.restr1)
 
-\dontrun{ 
-  # Or in matrix notation.
-  Amat1 <- rbind(c(-1, 0,  1),
-                 c( 0, 1, -1))
-  myRhs1 <- rep(0L, nrow(Amat1)) 
-  myNeq1 <- 0
-  
-  iht(fit1.lm, constraints = Amat1,
-      rhs = myRhs1, neq = myNeq1)
-}            
+
+# Or in matrix notation.
+Amat1 <- rbind(c(-1, 0,  1),
+               c( 0, 1, -1))
+myRhs1 <- rep(0L, nrow(Amat1)) 
+myNeq1 <- 0
+
+iht(fit1.lm, constraints = Amat1, rhs = myRhs1, neq = myNeq1)
 
 #########################
 ## Artificial examples ##
@@ -315,17 +313,15 @@ fit2.con <- restriktor(fit2.lm, constraints = myConstraints2)
 
 iht(fit2.con)
 
-\dontrun{ 
-  # increasing means in matrix notation.
-  Amat2 <- rbind(c(-1, 1, 0, 0),
-                 c( 0,-1, 1, 0),
-                 c( 0, 0,-1, 1))
-  myRhs2 <- rep(0L, nrow(Amat2)) 
-  myNeq2 <- 0
+# increasing means in matrix notation.
+Amat2 <- rbind(c(-1, 1, 0, 0),
+               c( 0,-1, 1, 0),
+               c( 0, 0,-1, 1))
+myRhs2 <- rep(0L, nrow(Amat2)) 
+myNeq2 <- 0
 
-  iht(fit2.con, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
-      type = "A", boot = "parametric", R = 9)
-}            
+iht(fit2.con, constraints = Amat2, rhs = myRhs2, neq = myNeq2, 
+    type = "A", boot = "parametric", R = 9)
 
 ## example 3: equality constraints only.
 myConstraints3 <- ' group1 = group2 = group3 = group4 '
@@ -382,72 +378,71 @@ fit5.con <- restriktor(fit5.lm, constraints = ' AVE := X + 16.86137*X.Z;
 iht(fit5.con)
 
 
-\dontrun{
-  # testing equality and/or inequality restrictions in SEM:
-  
-  #########################
-  ### real data example ###
-  #########################
-  # Multiple group path model for facial burns example.
-  
-  # model syntax with starting values.
-  burns.model <- 'Selfesteem ~ Age + c(m1, f1)*TBSA + HADS +
-                             start(-.10, -.20)*TBSA  
-               HADS ~ Age + c(m2, f2)*TBSA + RUM +
-                      start(.10, .20)*TBSA '
-  
-  
-  # constraints syntax
-  burns.constraints <- 'f2 > 0  ; m1 < 0
-                        m2 > 0  ; f1 < 0
-                        f2 > m2 ; f1 < m1'
-  
-  # we only generate 2 bootstrap samples in this example; in practice
-  # you may wish to use a much higher number. 
-  # the double bootstrap was switched off; in practice you probably 
-  # want to set it to "standard".
-  example6 <- iht(model = burns.model, data = FacialBurns,
-                  R = 2, constraints = burns.constraints,
-                  double.bootstrap = "no", group = "Sex")
-  
-  example6
-  
-  ##########################
-  ### artificial example ###
-  ##########################
-  # Simple ANOVA model with 3 groups (N = 20 per group)
-  set.seed(1234)
-  Y <- cbind(c(rnorm(20,0,1), rnorm(20,0.5,1), rnorm(20,1,1)))
-  grp <- c(rep("1", 20), rep("2", 20), rep("3", 20))
-  Data <- data.frame(Y, grp)
-  
-  #create model matrix
-  fit.lm <- lm(Y ~ grp, data = Data)
-  mfit <- fit.lm$model
-  mm <- model.matrix(mfit)
-  
-  Y <- model.response(mfit)
-  X <- data.frame(mm[,2:3])
-  names(X) <- c("d1", "d2")
-  Data.new <- data.frame(Y, X)
-  
-  # model
-  model <- 'Y ~ 1 + a1*d1 + a2*d2'
-  
-  # fit without constraints
-  fit <- lavaan::sem(model, data = Data.new)
-  
-  # constraints syntax: mu1 < mu2 < mu3
-  constraints <- ' a1 > 0
-                   a1 < a2 '
-  
-  # we only generate 10 bootstrap samples in this example; in practice
-  # you may wish to use a much higher number, say > 1000. The double 
-  # bootstrap is not necessary in case of an univariate ANOVA model.
-  example7 <- iht(model = model, data = Data.new, 
-                  start = lavaan::parTable(fit),
-                  R = 10L, double.bootstrap = "no",
-                  constraints = constraints)
-  example7
-  }
+# testing equality and/or inequality restrictions in SEM:
+
+#########################
+### real data example ###
+#########################
+# Multiple group path model for facial burns example.
+
+# model syntax with starting values.
+burns.model <- 'Selfesteem ~ Age + c(m1, f1)*TBSA + HADS +
+                           start(-.10, -.20)*TBSA  
+             HADS ~ Age + c(m2, f2)*TBSA + RUM +
+                    start(.10, .20)*TBSA '
+
+
+# constraints syntax
+burns.constraints <- 'f2 > 0  ; m1 < 0
+                      m2 > 0  ; f1 < 0
+                      f2 > m2 ; f1 < m1'
+
+# we only generate 2 bootstrap samples in this example; in practice
+# you may wish to use a much higher number. 
+# the double bootstrap was switched off; in practice you probably 
+# want to set it to "standard".
+example6 <- iht(model = burns.model, data = FacialBurns,
+                R = 2, constraints = burns.constraints,
+                double.bootstrap = "no", group = "Sex")
+
+example6
+
+##########################
+### artificial example ###
+##########################
+# Simple ANOVA model with 3 groups (N = 20 per group)
+set.seed(1234)
+Y <- cbind(c(rnorm(20,0,1), rnorm(20,0.5,1), rnorm(20,1,1)))
+grp <- c(rep("1", 20), rep("2", 20), rep("3", 20))
+Data <- data.frame(Y, grp)
+
+#create model matrix
+fit.lm <- lm(Y ~ grp, data = Data)
+mfit <- fit.lm$model
+mm <- model.matrix(mfit)
+
+Y <- model.response(mfit)
+X <- data.frame(mm[,2:3])
+names(X) <- c("d1", "d2")
+Data.new <- data.frame(Y, X)
+
+# model
+model <- 'Y ~ 1 + a1*d1 + a2*d2'
+
+# fit without constraints
+fit <- lavaan::sem(model, data = Data.new)
+
+# constraints syntax: mu1 < mu2 < mu3
+constraints <- ' a1 > 0
+                 a1 < a2 '
+
+# we only generate 10 bootstrap samples in this example; in practice
+# you may wish to use a much higher number, say > 1000. The double 
+# bootstrap is not necessary in case of an univariate ANOVA model.
+example7 <- iht(model = model, data = Data.new, 
+                start = lavaan::parTable(fit),
+                R = 10L, double.bootstrap = "no",
+                constraints = constraints)
+example7
+
 }

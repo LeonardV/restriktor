@@ -17,7 +17,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   if(!(type %in% c("A","B","global"))) {
     stop("Restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
   }
-  if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix.weights"))) {
+  if(!(boot %in% c("no", "residual", "model.based", "parametric"))) {
     stop("Restriktor ERROR: boot method unknown.")
   }
   if (boot == "residual") {
@@ -268,7 +268,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   if(!(type %in% c("A","B","global"))) {
     stop("Restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
   }
-  if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix.weights"))) {
+  if(!(boot %in% c("no", "residual", "model.based", "parametric"))) {
     stop("Restriktor ERROR: boot method unknown.")
   }
   if (boot == "residual") {
@@ -518,7 +518,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   if(!(type %in% c("A","B","global"))) {
     stop("Restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
   }  
-  if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix.weights"))) {
+  if(!(boot %in% c("no", "residual", "model.based", "parametric"))) {
     stop("Restriktor ERROR: boot method unknown.")
   }  
   if (boot == "residual") {
@@ -694,13 +694,17 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
       wt.bar <- con_weights_boot(VCOV     = V,
                                  Amat     = Amat, 
                                  meq      = meq, 
-                                 R        = attr(object$wt.bar, "mix.bootstrap"),
-                                 parallel = parallel, 
-                                 ncpus    = ncpus, 
-                                 cl       = cl,
+                                 R        = attr(object$wt.bar, "mix_weights_bootstrap_limit"),
+                                 #parallel = parallel, 
+                                 #ncpus    = ncpus, 
+                                 #cl       = cl,
                                  seed     = seed,
-                                 verbose  = verbose)
-      attr(wt.bar, "mix.bootstrap") <- attr(object$wt.bar, "mix.bootstrap")
+                                 convergence_crit = ifelse(is.null(control$convergence_crit), 
+                                                           1e-04, control$convergence_crit),
+                                 chunk_size = ifelse(is.null(control$chunk_size), 
+                                                           5000L, control$chunk_size),
+                                 verbose = verbose)
+      attr(wt.bar, "mix_weights_bootstrap_limit") <- attr(object$wt.bar, "mix_weights_bootstrap_limit")
     } else if (attr(object$wt.bar, "method") == "pmvnorm" && (meq < nrow(Amat))) {
       # compute chi-square-bar weights based on pmvnorm
       wt.bar <- rev(con_weights(Amat %*% V %*% t(Amat), meq = meq))

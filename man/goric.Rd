@@ -52,7 +52,8 @@ comparable to the Akaike weights.
 
 \method{print}{con_goric}(x, digits = max(3, getOption("digits") - 4), \dots)
 
-\method{summary}{con_goric}(object, brief = TRUE, digits = max(3, getOption("digits") - 4), \dots)
+\method{summary}{con_goric}(object, brief = TRUE, digits = max(3, getOption("digits") - 4), 
+      threshold = 3, \dots)
 
 \method{coef}{con_goric}(object, \dots)
 }
@@ -130,9 +131,16 @@ comparable to the Akaike weights.
   imputation model. These auxiliary variables are not part of the target model.}
   
   \item{emControl}{a list of control arguments for the \code{emnorm} function
-  from the \pkg{norm2} package.}
+  from the \pkg{norm} package.}
   
   \item{standardized}{if TRUE, standardized parameter estimates are used.}
+  
+  \item{threshold}{integer, The threshold determines the sensitivity in identifying 
+  hypotheses with similar log-likilihood values. A smaller threshold will identify 
+  only the most similar hypotheses, while a larger threshold will include more 
+  hypotheses with a broader range of similarity. Be cautious with equal or nearly 
+  equal log-likelihood values as they might indicate support for the boundary of 
+  hypotheses or overlap between hypotheses. More details can be found in the Vignette.}
   
   \item{auto.bound}{not used yet.}
   
@@ -168,13 +176,14 @@ comparable to the Akaike weights.
   specified in two ways, see \code{\link{restriktor}}. For examples, see below.
   
   To determine the penalty term values, the chi-bar-square weights (a.k.a. level
-  probabilities) must be computed. If \code{"mix.weights = "pmvnorm" "} (default), 
+  probabilities) must be computed. If \code{"mix_weights = "pmvnorm" "} (default), 
   the chi-bar-square weights are computed based on the multivariate normal distribution 
-  function with additional Monte Carlo steps. If \code{"mix.weights = "boot" "}, the 
+  function with additional Monte Carlo steps. If \code{"mix_weights = "boot" "}, the 
   chi-bar-square weights are computed using parametric bootstrapping (see \code{\link{restriktor}}).
   
+  
   The "two.stage" approach for missing data uses the EM algorithm from the 
-  \code{norm2} package. The response variables are assumed to be jointly 
+  \code{norm} package. The response variables are assumed to be jointly 
   normal. In practice, missing-data procedures designed for variables that are 
   normal are sometimes applied to variables that are not. Binary and ordinal 
   variables are sometimes imputed under a normal model, and the imputed values 
@@ -187,7 +196,6 @@ comparable to the Akaike weights.
   have to decide how to convert the continuously distributed imputed values for 
   these dummy codes back into categories. 
   
-
   ### Note on not full row-rank ###
   
   If the restriction matrix is not of full row-rank, this means one of the following:
@@ -232,12 +240,12 @@ Modeling: A Multidisciplinary Journal, 16:3, 477-497, DOI: 10.1080/1070551090300
 
 
 \examples{
-\dontrun{
 ## By following these examples, you can appropriately specify hypotheses based on 
 ## your research questions and analytical framework.
 
 # The hypotheses (i.e., constraints) have to be in a list. It is recommended to name
-# each hypothesis in the list. Otherwise the hypotheses are named accordingly 'H1', 'H2', \ldots
+# each hypothesis in the list. Otherwise the hypotheses are named accordingly 'H1', 'H2', \ldots.
+# Another option is to use the \code{llist()} function from the \pkg{Hmisc} package, where.
 
 # text-based syntax (the labels x1, x2, and x2 are the names of coef(model) or names(vector))
 h1 <- '(x1, x2, x3) > 0'
@@ -258,10 +266,11 @@ hypotheses = list(Ha = h1, Hb = 'x1 = x2 > x3')
 # we need labels (here a, b and c) to define our hypothesis.
 model.lav <- "y ~  1 + a*x1 + b*x2 + c*x3 + x4"
 # fit lavaan model, for example
-fit.lav <- sem(model, data = DATA)
+# library(lavaan)
+# fit.lav <- sem(model, data = DATA)
 # define hypothesis syntax
 hypotheses = list(h1 = 'a > b > c')
-}
+
 
 library(MASS)
 ## lm
@@ -330,7 +339,7 @@ goric(est, VCOV = VCOV, hypotheses = list(h1 = h1, h2 = h2), type = "gorica")
 
 ## use parallel processing for computing the level probabilities (i.e., mixing weights)
 \dontrun{
-goric(fit.lm, hypotheses = list(H1 = H1), comparison = "complement",
-      mix.weights = "boot", parallel = "snow", ncpus = 8, mix.bootstrap = 99999)
+goric(fit.lm, hypotheses = list(h1), comparison = "complement",
+      mix_weights = "boot", parallel = "snow", ncpus = 8, mix_weights_bootstrap_limit = 99999)
 }
 }

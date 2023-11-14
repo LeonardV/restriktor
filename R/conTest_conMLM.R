@@ -187,7 +187,14 @@ conTestLRT.conMLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
                               bvec        = bvec, 
                               meq         = meq, 
                               meq.alt     = meq.alt)
-    attr(pvalue, "wt.bar") <- wt.bar
+    
+    attr(pvalue, "wt.bar")           <- as.numeric(wt.bar)
+    attr(pvalue, "wt.bar.method")    <- attr(wt.bar, "method")
+    attr(pvalue, "converged")        <- attr(wt.bar, "converged")
+    attr(pvalue, "error.idx")        <- attr(wt.bar, "error.idx")
+    attr(pvalue, "convergence_crit") <- attr(wt.bar, "convergence_crit")
+    attr(pvalue, "total_bootstrap_draws")       <- attr(wt.bar, "total_bootstrap_draws")
+    attr(pvalue, "mix_weights_bootstrap_limit") <- attr(wt.bar, "mix_weights_bootstrap_limit")
   } else if (boot == "parametric") {
     if (!is.function(p.distr)) {
       p.distr <- get(p.distr, mode = "function")

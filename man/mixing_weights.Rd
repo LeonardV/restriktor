@@ -9,7 +9,7 @@ This function computes these mixing weights (a.k.a chi-bar-square weights
 and level probabilities). It can be used directly and is called by 
 the \code{conTest} function.
 }
-\usage{con_weights_boot(VCOV, Amat, meq, R = 99999L, seed = NULL, 
+\usage{con_weights_boot(VCOV, Amat, meq, R = 1e5L, seed = NULL, 
                  chunk_size = 5000L, convergence_crit = 1e-04, 
                  verbose = FALSE, ...)
 }
@@ -34,7 +34,7 @@ the \code{conTest} function.
   equality constraints. }
   
   \item{R}{integer; number of bootstrap draws for \code{mix_weights_bootstrap_limit}. 
-  The default value is set to 99999L. See details for more information.}
+  The default value is set to 1e5. See details for more information.}
   
   \item{seed}{seed value.}
 
@@ -44,7 +44,7 @@ the \code{conTest} function.
   mix_weights_bootstrap_limit.}
   
   \item{convergence_crit}{the convergence criterion for the iterative process. 
-  The default is 1e-03. See details for more information.}
+  The default is 1e-04. See details for more information.}
 
   \item{verbose}{logical; if TRUE, information is shown at each 
   bootstrap draw.}

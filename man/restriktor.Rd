@@ -19,25 +19,25 @@ restriktor(object, constraints = NULL, \dots)
 
 \method{conLM}{lm}(object, constraints = NULL, se = "standard", 
       B = 999, rhs = NULL, neq = 0L, mix_weights = "pmvnorm", 
-      mix_weights_bootstrap_limit = 99999L, parallel = "no", ncpus = 1L, 
+      mix_weights_bootstrap_limit = 1e5L, parallel = "no", ncpus = 1L, 
       cl = NULL, seed = NULL, control = list(), 
       verbose = FALSE, debug = FALSE, \dots)
       
 \method{conRLM}{rlm}(object, constraints = NULL, se = "standard", 
        B = 999, rhs = NULL, neq = 0L, mix_weights = "pmvnorm", 
-       mix_weights_bootstrap_limit = 99999L, parallel = "no", ncpus = 1L, 
+       mix_weights_bootstrap_limit = 1e5L, parallel = "no", ncpus = 1L, 
        cl = NULL, seed = NULL, control = list(), 
        verbose = FALSE, debug = FALSE, \dots)
        
 \method{conGLM}{glm}(object, constraints = NULL, se = "standard", 
        B = 999, rhs = NULL, neq = 0L, mix_weights = "pmvnorm", 
-       mix_weights_bootstrap_limit = 99999L, parallel = "no", ncpus = 1L, 
+       mix_weights_bootstrap_limit = 1e5L, parallel = "no", ncpus = 1L, 
        cl = NULL, seed = NULL, control = list(), 
        verbose = FALSE, debug = FALSE, \dots)
 
 \method{conMLM}{mlm}(object, constraints = NULL, se = "none", 
        B = 999, rhs = NULL, neq = 0L, mix_weights = "pmvnorm", 
-       mix_weights_bootstrap_limit = 99999L, parallel = "no", ncpus = 1L, 
+       mix_weights_bootstrap_limit = 1e5L, parallel = "no", ncpus = 1L, 
        cl = NULL, seed = NULL, control = list(), 
        verbose = FALSE, debug = FALSE, \dots)
 }

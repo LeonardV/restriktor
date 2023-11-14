@@ -233,7 +233,7 @@ con_weights <- function(cov, meq) {
 
 
 
-con_weights_boot <- function(VCOV, Amat, meq, R = 99999L, seed = NULL, 
+con_weights_boot <- function(VCOV, Amat, meq, R = 1e5L, seed = NULL, 
                              chunk_size = 5000L, convergence_crit = 1e-03, 
                              verbose = FALSE, ...) {
   

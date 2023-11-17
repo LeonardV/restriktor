@@ -101,7 +101,7 @@ used directly and is called by the \code{conTest} function if \code{test = "LRT"
       until the weights converges (see \code{convergenge_crit}) or the maximum 
       is reached, i.e., mix_weights_bootstrap_limit.
       \item \code{convergence_crit} the convergence criterion for the iterative 
-     process. The default is 1e-04.}
+     process. The default is 1e-03.}
     }
   
   \item{\dots}{Additional arguments that can be passed to the p.distr function, 

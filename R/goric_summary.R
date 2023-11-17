@@ -23,13 +23,13 @@ summary.con_goric <- function(object, brief = TRUE,
   cat(sprintf("restriktor (%s): ", packageDescription("restriktor", fields = "Version")))
   
   if (type == "goric") {
-    cat("generalized order-restricted information criterion: \n")
+    cat("generalized order-restricted information criterion: \n\n")
   } else if (type == "gorica") {
-    cat("generalized order-restricted information criterion approximation:\n")
+    cat("generalized order-restricted information criterion approximation:\n\n")
   } else if (type == "goricc") {
-    cat("small sample generalized order-restricted information criterion:\n")
+    cat("small sample generalized order-restricted information criterion:\n\n")
   } else if (type == "goricac") {
-    cat("small sample generalized order-restricted information criterion approximation:\n")
+    cat("small sample generalized order-restricted information criterion approximation:\n\n")
   }
   
   # wt_bar <- sapply(x$objectList, function(x) attr(x$wt.bar, "method") == "boot")
@@ -71,11 +71,10 @@ summary.con_goric <- function(object, brief = TRUE,
   if (any(wt_bar)) {
     wt_bar_attributes <- wt_bar_attributes[wt_bar]
     wt_method_boot <- x$objectList[wt_bar]
-    wt_attributes <- wt_bar_attributes[wt_bar]
     max_nchar <- max(nchar(names(wt_method_boot)))
     
     # Summarize bootstrap information
-    bootstrap_summary <- vapply(wt_attributes, function(attr) {
+    bootstrap_summary <- vapply(wt_bar_attributes, function(attr) {
       successful_draws <- attr$total_draws - length(attr$errors)
       paste0(successful_draws, ifelse(attr$converged, " (Converged)", " (Not converged)"))
     }, character(1))
@@ -85,7 +84,7 @@ summary.con_goric <- function(object, brief = TRUE,
     wt_bootstrap_errors <- sapply(wt_bar_attributes, function(attr) attr$errors)
     
     if (length(wt_method_boot) > 0) {
-      cat("\n")
+      #cat("\n")
       successful_draws <- total_bootstrap_draws - sapply(wt_bootstrap_errors, length)
       has_errors <- vapply(wt_bootstrap_errors, function(errors) length(errors) > 0, logical(1))
       not_all_converged <- !all(converged)
@@ -94,7 +93,7 @@ summary.con_goric <- function(object, brief = TRUE,
       if (any(has_errors) || not_all_converged) { 
         if (not_all_draws_successful || not_all_converged) {
           cat("Bootstrap-based penalty term calculation:\n")
-          cat("  Number of bootstrap draws:", sapply(wt_attributes, `[[`, "total_draws"), "\n")
+          cat("  Number of bootstrap draws:", sapply(wt_bar_attributes, `[[`, "total_draws"), "\n")
           for (i in seq_along(bootstrap_summary)) {
             cat(sprintf("  Number of successful bootstrap draws for %*s: %s\n", 
                         max_nchar, names(wt_method_boot)[i], bootstrap_summary[i]))

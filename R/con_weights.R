@@ -118,121 +118,6 @@ con_weights <- function(cov, meq) {
 
 
 
-## IS PARALLEL NODIG !!!!
-
-# con_weights_boot <- function(VCOV, Amat, meq,
-#                              R = 999L, parallel = c("no", "multicore", "snow"),
-#                              ncpus = 1L, cl = NULL, seed = NULL,
-#                              verbose = FALSE, convergence_crit = 1e-04,
-#                              max_iterations = 100, ...) {
-# 
-#   parallel <- match.arg(parallel)
-#   have_mc <- have_snow <- FALSE
-#   if (parallel != "no" && ncpus > 1L) {
-#     if (parallel == "multicore")
-#       have_mc <- .Platform$OS.type != "windows"
-#     else if (parallel == "snow")
-#       have_snow <- TRUE
-#     if (!have_mc && !have_snow)
-#       ncpus <- 1L
-#   }
-# 
-#   if (!is.null(seed)) set.seed(seed)
-#   if (!exists(".Random.seed", envir = .GlobalEnv)) runif(1)
-# 
-# 
-#   fn <- function(b, verbose) {
-#     QP <- try(quadprog::solve.QP(Dmat = Dmat,
-#                                  dvec = dvec[b, ],
-#                                  Amat = t(Amat),
-#                                  bvec = bvec,
-#                                  meq  = meq), silent = TRUE)
-# 
-#     if (inherits(QP, "try-error")) {
-#       if (verbose) cat("quadprog FAILED\n")
-#       return(NULL)
-#     } else {
-#       if (verbose) {
-#         cat(" ...active inequality constraints =", QP$iact, "\n")
-#       }
-#     }
-# 
-#     if (QP$iact[1] == 0L) {
-#       return(0L)
-#     } else {
-#       return(length(QP$iact))
-#     }
-#   }
-# 
-#   if (ncpus > 1L && (have_mc || have_snow)) {
-#     if (have_snow) {
-#       if (is.null(cl)) {
-#         cl <- parallel::makePSOCKcluster(rep("localhost", ncpus))
-#         on.exit(parallel::stopCluster(cl))
-#         parallel::clusterExport(cl, varlist = c("verbose", "Dmat", "dvec", "Amat", "bvec", "meq", "fn"))
-#         if (RNGkind()[1L] == "L'Ecuyer-CMRG") {
-#           parallel::clusterSetRNGStream(cl)
-#         }
-#       }
-#     }
-#   }
-# 
-#   prev_wt_bar <- NULL
-#   prev_res <- NULL
-#   has_converged <- FALSE
-#   iteration_count <- 0
-# 
-#   while (iteration_count < max_iterations) {
-# 
-#     bvec <- rep(0L, nrow(Amat)) # weights do not depend on bvec.
-#     invW <- solve(VCOV)
-#     Dmat <- 2*invW
-#     Z <- mvtnorm::rmvnorm(n = R, mean = rep(0, ncol(VCOV)), sigma = VCOV)
-#     dvec <- 2*(Z %*% invW)
-# 
-#     RR <- sum(R)
-# 
-#     res <-
-#       if (ncpus > 1L && (have_mc || have_snow)) {
-#         if (have_mc) {
-#           parallel::mclapply(seq_len(RR), fn, mc.cores = ncpus, verbose = verbose)
-#         } else if (have_snow) {
-#           parallel::parLapply(cl, seq_len(RR), fn, verbose = verbose)
-#         }
-#       } else {
-#         lapply(seq_len(RR), fn, verbose = verbose)
-#       }
-# 
-#     # Calculate wt_bar
-#     prev_res <- append(prev_res, res)
-#     iact <- sapply(prev_res, function(x) ifelse(is.null(x), NA, x))
-#     error.idx <- which(is.na(iact))
-#     dimL <- ncol(VCOV) - iact
-#     wt_bar <- sapply(0:ncol(VCOV), function(x) sum(x == dimL)) / length(dimL)
-# 
-#     # Check for convergence
-#     if (!is.null(prev_wt_bar)) {
-#       if (all(abs(wt_bar - prev_wt_bar) < convergence_crit)) {
-#         has_converged <- TRUE
-#         break
-#       }
-#     }
-# 
-#     prev_wt_bar <- wt_bar
-#     iteration_count <- iteration_count + 1
-#   }
-# 
-#   attr(wt_bar, "converged") <- has_converged
-#   attr(wt_bar, "convergence_crit") <- convergence_crit
-#   attr(wt_bar, "iteration_count") <- iteration_count
-#   attr(wt_bar, "max_iterations") <- max_iterations
-#   attr(wt_bar, "error.idx") <- error.idx
-# 
-#   return(wt_bar)
-# }
-
-
-
 con_weights_boot <- function(VCOV, Amat, meq, R = 1e5L, seed = NULL, 
                              chunk_size = 5000L, convergence_crit = 1e-03, 
                              verbose = FALSE, ...) {
@@ -263,10 +148,11 @@ con_weights_boot <- function(VCOV, Amat, meq, R = 1e5L, seed = NULL,
     }
   }
   
-  prev_wt_bar <- NULL
-  prev_res <- NULL
+  prev_wt_bar    <- NULL
+  chunk_wt_bar   <- NULL
+  prev_res       <- NULL
   prev_error_idx <- NULL
-  has_converged <- FALSE
+  has_converged  <- FALSE
   chunk_size_org <- chunk_size
   
   bvec <- rep(0L, nrow(Amat)) # weights do not depend on bvec.
@@ -278,11 +164,11 @@ con_weights_boot <- function(VCOV, Amat, meq, R = 1e5L, seed = NULL,
   
   wt_bar <- numeric(ncol(VCOV) + 1)
   total_chunks <- ceiling(RR / chunk_size_org)
-  chunk_index <- 1
+  chunk_iter <- 1
   
-  while (chunk_index <= total_chunks) { 
-    start <- 1 + chunk_size_org * (chunk_index - 1)
-    end <- min(chunk_size_org * chunk_index, RR)
+  while (chunk_iter <= total_chunks) { 
+    start <- 1 + chunk_size_org * (chunk_iter - 1)
+    end <- min(chunk_size_org * chunk_iter, RR)
     res <- lapply(start:end, fn, verbose = verbose)
     
     # Calculate wt_bar
@@ -295,28 +181,34 @@ con_weights_boot <- function(VCOV, Amat, meq, R = 1e5L, seed = NULL,
       dimL <- ncol(VCOV) - iact
     }
     wt_bar <- sapply(0:ncol(VCOV), function(x) sum(x == dimL)) / length(dimL)
-    
+  
     # Check for convergence
     if (!is.null(prev_wt_bar)) { 
       if (all(abs(wt_bar - prev_wt_bar) < convergence_crit)) {
-        has_converged <- TRUE
+        has_converged  <- TRUE
+        chunk_wt_bar   <- rbind(chunk_wt_bar, wt_bar)
+        prev_error_idx <- c(error_idx, prev_error_idx)
+        
         break
       }
     }
     
-    prev_wt_bar <- wt_bar
+    # aanpassen argumenten namen in handleidingen
+    prev_wt_bar    <- wt_bar
+    chunk_wt_bar   <- rbind(chunk_wt_bar, wt_bar)
     prev_error_idx <- c(error_idx, prev_error_idx)
-    chunk_index <- chunk_index + 1L
-    chunk_size <- chunk_size + chunk_size_org
+    chunk_iter     <- chunk_iter + 1L
+    chunk_size     <- chunk_size + chunk_size_org
   }
   
-  attr(wt_bar, "converged")        <- has_converged
-  attr(wt_bar, "convergence_crit") <- convergence_crit
-  attr(wt_bar, "chunk_size")       <- chunk_size_org
-  attr(wt_bar, "total_chunks")     <- total_chunks
-  attr(wt_bar, "chunk_index")      <- chunk_index
-  attr(wt_bar, "error.idx")        <- prev_error_idx
   attr(wt_bar, "total_bootstrap_draws") <- length(iact)
+  attr(wt_bar, "converged"            ) <- has_converged
+  attr(wt_bar, "convergence_crit"     ) <- convergence_crit
+  attr(wt_bar, "wt_bar_chunk"         ) <- chunk_wt_bar
+  attr(wt_bar, "chunk_size"           ) <- chunk_size_org
+  attr(wt_bar, "total_chunks"         ) <- total_chunks
+  attr(wt_bar, "chunk_iter"           ) <- chunk_iter
+  attr(wt_bar, "error.idx"            ) <- prev_error_idx
   
   return(wt_bar)
 }

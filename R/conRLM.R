@@ -386,7 +386,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                                  #cl               = cl,
                                  seed             = seed,
                                  convergence_crit = ifelse(is.null(control$convergence_crit), 
-                                                           1e-04, control$convergence_crit),
+                                                           1e-03, control$convergence_crit),
                                  chunk_size = ifelse(is.null(control$chunk_size), 
                                                            5000L, control$chunk_size),
                                  verbose          = verbose)

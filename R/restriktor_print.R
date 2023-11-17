@@ -26,13 +26,14 @@ print.restriktor <- function(x, digits = max(3, getOption("digits") - 2), ...) {
     cat("restricted multivariate linear model:\n\n")
   }
   
-  wt_method_boot <- attr(x$wt.bar, "method")
-  if (wt_method_boot == "boot") {
-    wt_bootstrap_draws <- attr(x$wt.bar, "mix_weights_bootstrap_limit")
+  if (attr(x$wt.bar, "method") == "boot") {
+    total_bootstrap_draws <- attr(x$wt.bar, "total_bootstrap_draws")
     wt_boostrap_errors <- attr(x$wt.bar, "error.idx")
-    cat("Level probabilities:\n")
-    cat("  Number of requested bootstrap draws ", wt_bootstrap_draws, "\n")
-    cat("  Number of successful bootstrap draws", (wt_bootstrap_draws - length(wt_boostrap_errors)), "\n\n")
+    converged <- attr(x$wt.bar, "converged")
+    successful_draws <- total_bootstrap_draws - length(wt_boostrap_errors)
+    cat("Bootstrap-based penalty term calculation:\n")
+    cat("  Number of bootstrap draws:", total_bootstrap_draws, "\n")
+    cat("  Number of successful bootstrap draws:", paste0(successful_draws, ifelse(converged, " (Converged)", " (Not converged)")), "\n\n")
   }
   
   coef <- coef(x)

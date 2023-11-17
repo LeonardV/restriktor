@@ -32,29 +32,80 @@ summary.con_goric <- function(object, brief = TRUE,
     cat("small sample generalized order-restricted information criterion approximation:\n")
   }
   
-  wt_bar <- sapply(x$objectList, function(x) attr(x$wt.bar, "method") == "boot")
-  # we need a check if the hypothesis is equalities only
-  ceq_only <- sapply(x$objectList, function(x) nrow(x$constraints) == x$neq)
-  wt_bar <- as.logical(wt_bar * !ceq_only)
+  # wt_bar <- sapply(x$objectList, function(x) attr(x$wt.bar, "method") == "boot")
+  # # we need a check if the hypothesis is equalities only
+  # ceq_only <- sapply(x$objectList, function(x) nrow(x$constraints) == x$neq)
+  # wt_bar <- as.logical(wt_bar * !ceq_only)
+  # 
+  # if (sum(wt_bar) > 0) {
+  #   wt_method_boot <- x$objectList[wt_bar]
+  #   wt_bootstrap_draws  <- sapply(wt_method_boot, function(x) attr(x$wt.bar, "total_bootstrap_draws"))
+  #   wt_bootstrap_errors <- lapply(wt_method_boot, function(x) attr(x$wt.bar, "error.idx"))
+  #   max_nchar <- max(nchar(names(wt_method_boot)))
+  #   
+  #   len <- length(wt_method_boot)
+  #   if (len > 0) { 
+  #     cat("\n")
+  #     cat("Bootstrap-based penalty term calculation:\n")
+  #     cat("  Number of bootstrap draws", wt_bootstrap_draws[1], "\n")
+  #     for (i in 1:len) {
+  #       cat(paste0("  Number of successful bootstrap draws for ", sprintf(paste0("%", max_nchar, "s"), names(wt_method_boot)[i]), ": ", (wt_bootstrap_draws[1] - length(wt_bootstrap_errors[[i]])), "\n"))
+  #     }
+  #   }
+  # }
   
-  if (sum(wt_bar) > 0) {
+  wt_bar_attributes <- lapply(x$objectList, function(obj) {
+    list(
+      method = attr(obj$wt.bar, "method"),
+      converged = attr(obj$wt.bar, "converged"),
+      total_draws = attr(obj$wt.bar, "total_bootstrap_draws"),
+      errors = attr(obj$wt.bar, "error.idx")
+    )
+  })
+  
+  # Compute indicators
+  wt_bar <- vapply(wt_bar_attributes, function(attr) attr$method == "boot", logical(1))
+  ceq_only <- vapply(x$objectList, function(obj) nrow(obj$constraints) == obj$neq, logical(1))
+  wt_bar <- wt_bar & !ceq_only
+  
+  if (any(wt_bar)) {
+    wt_bar_attributes <- wt_bar_attributes[wt_bar]
     wt_method_boot <- x$objectList[wt_bar]
-    wt_bootstrap_draws  <- sapply(wt_method_boot, function(x) attr(x$wt.bar, "total_bootstrap_draws"))
-    wt_bootstrap_errors <- lapply(wt_method_boot, function(x) attr(x$wt.bar, "error.idx"))
+    wt_attributes <- wt_bar_attributes[wt_bar]
     max_nchar <- max(nchar(names(wt_method_boot)))
     
-    len <- length(wt_method_boot)
-    if (len > 0) { 
+    # Summarize bootstrap information
+    bootstrap_summary <- vapply(wt_attributes, function(attr) {
+      successful_draws <- attr$total_draws - length(attr$errors)
+      paste0(successful_draws, ifelse(attr$converged, " (Converged)", " (Not converged)"))
+    }, character(1))
+    
+    converged <- vapply(wt_bar_attributes, function(attr) attr$converged, logical(1))
+    total_bootstrap_draws <- vapply(wt_bar_attributes, function(attr) attr$total_draws, integer(1))
+    wt_bootstrap_errors <- sapply(wt_bar_attributes, function(attr) attr$errors)
+    
+    if (length(wt_method_boot) > 0) {
       cat("\n")
-      cat("Bootstrap-based penalty term calculation:\n")
-      cat("  Number of bootstrap draws", wt_bootstrap_draws[1], "\n")
-      for (i in 1:len) {
-        cat(paste0("  Number of successful bootstrap draws for ", sprintf(paste0("%", max_nchar, "s"), names(wt_method_boot)[i]), ": ", (wt_bootstrap_draws[1] - length(wt_bootstrap_errors[[i]])), "\n"))
+      successful_draws <- total_bootstrap_draws - sapply(wt_bootstrap_errors, length)
+      has_errors <- vapply(wt_bootstrap_errors, function(errors) length(errors) > 0, logical(1))
+      not_all_converged <- !all(converged)
+      not_all_draws_successful <- !all(successful_draws == total_bootstrap_draws)
+      
+      if (any(has_errors) || not_all_converged) { 
+        if (not_all_draws_successful || not_all_converged) {
+          cat("Bootstrap-based penalty term calculation:\n")
+          cat("  Number of bootstrap draws:", sapply(wt_attributes, `[[`, "total_draws"), "\n")
+          for (i in seq_along(bootstrap_summary)) {
+            cat(sprintf("  Number of successful bootstrap draws for %*s: %s\n", 
+                        max_nchar, names(wt_method_boot)[i], bootstrap_summary[i]))
+          }
+          cat("\n")
+        } 
       }
     }
   }
   
-  cat("\nResults:\n")  
+  cat("Results:\n")  
   print(format(df, digits = digits, scientific = FALSE), 
         print.gap = 2, quote = FALSE, right = TRUE)
   cat("---\n")

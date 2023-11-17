@@ -148,13 +148,20 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                               bvec        = bvec, 
                               meq         = meq, 
                               meq.alt     = meq.alt)
-    attr(pvalue, "wt.bar")           <- as.numeric(wt.bar)
-    attr(pvalue, "wt.bar.method")    <- attr(wt.bar, "method")
-    attr(pvalue, "converged")        <- attr(wt.bar, "converged")
-    attr(pvalue, "error.idx")        <- attr(wt.bar, "error.idx")
-    attr(pvalue, "convergence_crit") <- attr(wt.bar, "convergence_crit")
-    attr(pvalue, "total_bootstrap_draws")       <- attr(wt.bar, "total_bootstrap_draws")
+    
+    attr(pvalue, "wt.bar"                     ) <- as.numeric(wt.bar)
+    attr(pvalue, "wt.bar.method"              ) <- attr(wt.bar, "method")
+    attr(pvalue, "converged"                  ) <- attr(wt.bar, "converged")
+    attr(pvalue, "convergence_crit"           ) <- attr(wt.bar, "convergence_crit")
+    attr(pvalue, "total_bootstrap_draws"      ) <- attr(wt.bar, "total_bootstrap_draws")
+    attr(pvalue, "error.idx"                  ) <- attr(wt.bar, "error.idx")
     attr(pvalue, "mix_weights_bootstrap_limit") <- attr(wt.bar, "mix_weights_bootstrap_limit")
+    
+    attr(pvalue, "wt_bar_chunk") <- attr(wt.bar, "wt_bar_chunk")
+    attr(pvalue, "chunk_size"  ) <- attr(wt.bar, "chunk_size_org")
+    attr(pvalue, "total_chunks") <- attr(wt.bar, "total_chunks")
+    attr(pvalue, "chunk_iter"  ) <- attr(wt.bar, "chunk_iter")
+    
   } else if (boot == "parametric") {
     if (!is.function(p.distr)) {
       p.distr <- get(p.distr, mode = "function")
@@ -374,13 +381,19 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
                               meq         = meq, 
                               meq.alt     = meq.alt)
     
-    attr(pvalue, "wt.bar")           <- as.numeric(wt.bar)
-    attr(pvalue, "wt.bar.method")    <- attr(wt.bar, "method")
-    attr(pvalue, "converged")        <- attr(wt.bar, "converged")
-    attr(pvalue, "error.idx")        <- attr(wt.bar, "error.idx")
-    attr(pvalue, "convergence_crit") <- attr(wt.bar, "convergence_crit")
-    attr(pvalue, "total_bootstrap_draws")       <- attr(wt.bar, "total_bootstrap_draws")
+    attr(pvalue, "wt.bar"                     ) <- as.numeric(wt.bar)
+    attr(pvalue, "wt.bar.method"              ) <- attr(wt.bar, "method")
+    attr(pvalue, "converged"                  ) <- attr(wt.bar, "converged")
+    attr(pvalue, "convergence_crit"           ) <- attr(wt.bar, "convergence_crit")
+    attr(pvalue, "total_bootstrap_draws"      ) <- attr(wt.bar, "total_bootstrap_draws")
+    attr(pvalue, "error.idx"                  ) <- attr(wt.bar, "error.idx")
     attr(pvalue, "mix_weights_bootstrap_limit") <- attr(wt.bar, "mix_weights_bootstrap_limit")
+    
+    attr(pvalue, "wt_bar_chunk") <- attr(wt.bar, "wt_bar_chunk")
+    attr(pvalue, "chunk_size"  ) <- attr(wt.bar, "chunk_size_org")
+    attr(pvalue, "total_chunks") <- attr(wt.bar, "total_chunks")
+    attr(pvalue, "chunk_iter"  ) <- attr(wt.bar, "chunk_iter")
+    
   } else if (boot == "parametric") {
     if (!is.function(p.distr)) {
       p.distr <- get(p.distr, mode = "function")
@@ -695,13 +708,19 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                               meq         = meq,
                               meq.alt     = meq.alt)
     
-    attr(pvalue, "wt.bar")           <- as.numeric(wt.bar)
-    attr(pvalue, "wt.bar.method")    <- attr(wt.bar, "method")
-    attr(pvalue, "converged")        <- attr(wt.bar, "converged")
-    attr(pvalue, "error.idx")        <- attr(wt.bar, "error.idx")
-    attr(pvalue, "convergence_crit") <- attr(wt.bar, "convergence_crit")
-    attr(pvalue, "total_bootstrap_draws")       <- attr(wt.bar, "total_bootstrap_draws")
+    attr(pvalue, "wt.bar"                     ) <- as.numeric(wt.bar)
+    attr(pvalue, "wt.bar.method"              ) <- attr(wt.bar, "method")
+    attr(pvalue, "converged"                  ) <- attr(wt.bar, "converged")
+    attr(pvalue, "convergence_crit"           ) <- attr(wt.bar, "convergence_crit")
+    attr(pvalue, "total_bootstrap_draws"      ) <- attr(wt.bar, "total_bootstrap_draws")
+    attr(pvalue, "error.idx"                  ) <- attr(wt.bar, "error.idx")
     attr(pvalue, "mix_weights_bootstrap_limit") <- attr(wt.bar, "mix_weights_bootstrap_limit")
+    
+    attr(pvalue, "wt_bar_chunk") <- attr(wt.bar, "wt_bar_chunk")
+    attr(pvalue, "chunk_size"  ) <- attr(wt.bar, "chunk_size_org")
+    attr(pvalue, "total_chunks") <- attr(wt.bar, "total_chunks")
+    attr(pvalue, "chunk_iter"  ) <- attr(wt.bar, "chunk_iter")
+
   } else if (boot == "parametric") {
     if (!is.function(p.distr)) {
       p.distr <- get(p.distr, mode = "function")

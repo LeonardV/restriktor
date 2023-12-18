@@ -370,7 +370,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
                                                  control$maxit))$qp$solution
     b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
-    b.eqrestr <- as.vector(b.eqrestr)
+    #b.eqrestr <- as.vector(b.eqrestr)
     
     fitted0 <- X %*% b.eqrestr
     residuals0 <- y - fitted0
@@ -395,7 +395,7 @@ conTestLRT.conLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 9
                                                   control$maxit))$qp$solution
     b.eqrestr[abs(b.eqrestr) < tol] <- 0L
     names(b.eqrestr) <- vnames
-    b.eqrestr <- as.vector(b.eqrestr)
+    #b.eqrestr <- as.vector(b.eqrestr)
     
     fitted0 <- X %*% b.eqrestr
     residuals0 <- y - fitted0

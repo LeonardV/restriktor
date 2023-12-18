@@ -173,7 +173,7 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   
   if (comparison == "unconstrained" && length(df$model) == 2) {
     message("---\nAdvise: Are you certain you wish to assess the order-restricted hypothesis", 
-            "in comparison to the unconstrained one, rather than its complement?")
+            " in comparison to the unconstrained one, rather than its complement?")
   }
   
   if (comparison == "complement" && length(overlap_unique_combinations) == 0) {# && length(bound_unique_combinations) == 0) { 

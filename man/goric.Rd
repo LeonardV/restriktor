@@ -52,8 +52,8 @@ comparable to the Akaike weights.
 
 \method{print}{con_goric}(x, digits = max(3, getOption("digits") - 4), \dots)
 
-\method{summary}{con_goric}(object, brief = TRUE, digits = max(3, getOption("digits") - 4), 
-      threshold = 3, \dots)
+\method{summary}{con_goric}(object, brief = TRUE, digits = max(3, getOption("digits") - 4), \dots)
+      %threshold = 3, \dots)
 
 \method{coef}{con_goric}(object, \dots)
 }
@@ -135,12 +135,12 @@ comparable to the Akaike weights.
   
   \item{standardized}{if TRUE, standardized parameter estimates are used.}
   
-  \item{threshold}{integer, The threshold determines the sensitivity in identifying 
-  hypotheses with similar log-likilihood values. A smaller threshold will identify 
-  only the most similar hypotheses, while a larger threshold will include more 
-  hypotheses with a broader range of similarity. Be cautious with equal or nearly 
-  equal log-likelihood values as they might indicate support for the boundary of 
-  hypotheses or overlap between hypotheses. More details can be found in the Vignette.}
+%  \item{threshold}{integer, The threshold determines the sensitivity in identifying 
+%  hypotheses with similar log-likilihood values. A smaller threshold will identify 
+%  only the most similar hypotheses, while a larger threshold will include more 
+%  hypotheses with a broader range of similarity. Be cautious with equal or nearly 
+%  equal log-likelihood values as they might indicate support for the boundary of 
+%  hypotheses or overlap between hypotheses. More details can be found in the Vignette.}
   
   \item{auto.bound}{not used yet.}
   

@@ -3,26 +3,34 @@
 \name{calculate_IC_weights}
 \alias{calculate_IC_weights}
 \alias{IC_weights}
+\alias{print.ICw}
 \title{Calculating IC weights based on IC values (AIC, ORIC, GORIC(A), BIC, SIC, ...)}
 
 \usage{
 calculate_IC_weights(IC, hypo_names = NULL)
+
+\method{print}{ICw}(x, digits = max(3, getOption("digits") - 4), \dots)
+
 }
 \arguments{
-\item{IC}{A vector or one-column matrix with information criteria (AIC, ORIC, GORIC(A), BIC, SIC, \ldots) values of length 'NrHypos', where 'NrHypos' stands for the number of hypotheses/models.}
-
-\item{hypo_names}{Optional. Vector containing 'NrHypos' characters which will be used for labeling the hypothesis. Default: H1, H2, \ldots}
+  \item{IC}{A vector or one-column matrix with information criteria (AIC, ORIC, GORIC(A), BIC, SIC,
+            \ldots) values of length 'NrHypos', where 'NrHypos' stands for the number of hypotheses/
+            models.}
+  \item{x}{an object of class \code{con_goric}.}
+  \item{hypo_names}{Optional. Vector containing 'NrHypos' characters which will be used for labeling the
+                    hypothesis. Default: H1, H2, \ldots}
+  \item{digits}{the number of significant digits to use when printing.}
+  \item{\ldots}{not used for now.}
 }
 \value{
 IC weights, which quantify the relative strength of hypotheses/models.
 }
 \description{
-This function transforms IC values into IC weights: IC values denote the ordering of hypotheses/models, while IC weights quantify the relative strength of hypotheses/models.
+This function transforms IC values into IC weights: IC values denote the ordering 
+of hypotheses/models, while IC weights quantify the relative strength of hypotheses/models.
 }
+
 \examples{
-
-# library(ICweights)
-
 IC <- c(1,2,3)
 calculate_IC_weights(IC)
 

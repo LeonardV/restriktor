@@ -85,7 +85,9 @@ export("restriktor",
        "coef.restriktor", "model.matrix.restriktor",
        "con_weights_boot", "coef.con_goric", 
        #"summary.con_goric", 
-       "evSyn", "plot.evSyn"#,
+       "evSyn", "plot.evSyn",
+       "calculate_IC_weights",
+       "print.ICw"
        #"benchmarks_goric"
        #"print.evSyn", 
        #"summary.evSyn",
@@ -143,3 +145,5 @@ S3method(plot, evSyn)
 S3method(print, evSyn)
 S3method(summary, evSyn)
 S3method(print, summary.evSyn)
+
+S3method(print, ICw)

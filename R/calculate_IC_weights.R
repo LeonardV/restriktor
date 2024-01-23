@@ -42,3 +42,29 @@ calculate_IC_weights <- function(IC, hypo_names = NULL) {
   
   return(out)
 }
+
+
+print.ICw <- function(x, digits = max(3, getOption("digits") - 4), ...) {
+  x <- as.list(x)
+  model_names <- attr(x$IC, "names")
+  rownames(x$ratio_IC_weights) <- NULL
+  
+  # Create the dataframe
+  df <- data.frame(model = model_names,
+                   IC.values = x$IC,
+                   IC.weights = x$IC_weights,
+                   ratio.IC.weights = x$ratio_IC_weights)
+  rownames(df) <- NULL
+  
+  # Correcting the column names
+  names(df)[4:ncol(df)] <- gsub("vs..", "vs.", names(df)[4:ncol(df)])
+  
+  # Format and print the dataframe
+  formatted_df <- format(df, digits = digits, nsmall = digits, scientific = FALSE)
+  print(formatted_df, print.gap = 2, quote = FALSE)
+  
+  return(df)
+}
+
+
+

@@ -646,7 +646,10 @@ goric.lm <- function(object, ..., hypotheses = NULL,
     arguments <- c("B", "mix_weights", "mix_weights_bootstrap_limit", "parallel", "ncpus", 
                    "cl", "seed", "control", "verbose", "debug", "comparison",
                    "type", "auto.bound", "hypotheses", "missing", "auxiliary",
-                   "VCOV", "sample.nobs", "object")
+                   "VCOV", "sample.nobs", "object",
+                   # for rtmvnorm() function
+                   "lower", "upper", "algorithm",
+                   "burn.in.samples", "start.values", "thinning")
     
     # check for unkown arguments
     pm <- pmatch(names(objectList), arguments, 0L)
@@ -710,7 +713,10 @@ goric.restriktor <- function(object, ..., hypotheses = NULL,
   arguments <- c("B", "mix_weights", "mix_weights_bootstrap_limit", "parallel", "ncpus", 
                  "cl", "seed", "control", "verbose", "debug", "comparison",
                  "type", "auto.bound", "hypotheses", "missing", "auxiliary",
-                 "VCOV", "sample.nobs", "object")
+                 "VCOV", "sample.nobs", "object",
+                 # for rtmvnorm() function
+                 "lower", "upper", "algorithm",
+                 "burn.in.samples", "start.values", "thinning")
   
   # check for unkown arguments
   pm <- pmatch(names(objectList), arguments, 0L)
@@ -792,7 +798,10 @@ goric.numeric <- function(object, ..., hypotheses = NULL,
   arguments <- c("B", "mix_weights", "mix_weights_bootstrap_limit", "parallel", "ncpus", 
                  "cl", "seed", "control", "verbose", "debug", "comparison",
                  "type", "auto.bound", "hypotheses", "missing", "auxiliary",
-                 "VCOV", "sample.nobs", "object")
+                 "VCOV", "sample.nobs", "object", 
+                 # for rtmvnorm() function
+                 "lower", "upper", "algorithm",
+                 "burn.in.samples", "start.values", "thinning")
   
   # check for unkown arguments
   pm <- pmatch(names(objectList), arguments, 0L)
@@ -801,7 +810,6 @@ goric.numeric <- function(object, ..., hypotheses = NULL,
   }
   
   res <- do.call(goric.default, c(objectList[object_idx], objectList[!object_idx]))
-  
   
   res
 }
@@ -865,7 +873,10 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
   arguments <- c("B", "mix_weights", "mix_weights_bootstrap_limit", "parallel", "ncpus", 
                  "cl", "seed", "control", "verbose", "debug", "comparison",
                  "type", "auto.bound", "hypotheses", "missing", "auxiliary",
-                 "VCOV", "sample.nobs", "object")
+                 "VCOV", "sample.nobs", "object",
+                 # for rtmvnorm() function
+                 "lower", "upper", "algorithm",
+                 "burn.in.samples", "start.values", "thinning")
   
   # check for unkown arguments
   pm <- pmatch(names(objectList), arguments, 0L)
@@ -934,7 +945,10 @@ goric.CTmeta <- function(object, ..., hypotheses = NULL,
   arguments <- c("B", "mix_weights", "mix_weights_bootstrap_limit", "parallel", "ncpus", 
                  "cl", "seed", "control", "verbose", "debug", "comparison",
                  "type", "auto.bound", "hypotheses", "missing", "auxiliary",
-                 "VCOV", "sample.nobs", "object")
+                 "VCOV", "sample.nobs", "object",
+                 # for rtmvnorm() function
+                 "lower", "upper", "algorithm",
+                 "burn.in.samples", "start.values", "thinning")
   
   # check for unkown arguments
   pm <- pmatch(names(objectList), arguments, 0L)
@@ -1002,7 +1016,10 @@ goric.rma <- function(object, ..., hypotheses = NULL,
   arguments <- c("B", "mix_weights", "mix_weights_bootstrap_limit", "parallel", "ncpus", 
                  "cl", "seed", "control", "verbose", "debug", "comparison",
                  "type", "auto.auto.bound", "hypotheses", "missing", "auxiliary",
-                 "VCOV", "sample.nobs", "object")
+                 "VCOV", "sample.nobs", "object",
+                 # for rtmvnorm() function
+                 "lower", "upper", "algorithm",
+                 "burn.in.samples", "start.values", "thinning")
   
   # check for unkown arguments
   pm <- pmatch(names(objectList), arguments, 0L)

@@ -20,7 +20,7 @@ calculate_IC_weights(IC, hypo_names = NULL)
   \item{hypo_names}{Optional. Vector containing 'NrHypos' characters which will be used for labeling the
                     hypothesis. Default: H1, H2, \ldots}
   \item{digits}{the number of significant digits to use when printing.}
-  \item{\ldots}{not used for now.}
+  \item{\ldots}{no additional arguments for now.}
 }
 \value{
 IC weights, which quantify the relative strength of hypotheses/models.

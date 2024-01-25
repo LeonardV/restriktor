@@ -334,7 +334,7 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
                                                            1e-03, control$convergence_crit),
                                  chunk_size = ifelse(is.null(control$chunk_size), 
                                                            5000L, control$chunk_size),
-                                 verbose          = verbose)
+                                 verbose          = verbose, ...)
       attr(wt.bar, "mix_weights_bootstrap_limit") <- mix_weights_bootstrap_limit 
     } else if (mix_weights == "pmvnorm" && (meq < nrow(Amat))) {
       # compute chi-square-bar weights based on pmvnorm

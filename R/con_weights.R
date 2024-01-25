@@ -118,10 +118,12 @@ con_weights <- function(cov, meq) {
 # }
 
 
-
-con_weights_boot <- function(VCOV, Amat, meq, R = 1e5L, seed = NULL, 
+## to avoid unnecessary runs we add samples of 'chunk_size' until 
+## convergence is reached or the maximum number of bootstrap draws (R) is reached. 
+## By default the rtmvnorm function is equal to the rmvnorm function (lower = -Inf, upper = Inf)
+con_weights_boot <- function(VCOV, Amat, meq, R = 1e5L, 
                              chunk_size = 5000L, convergence_crit = 1e-03, 
-                             verbose = FALSE, ...) {
+                             seed = NULL, verbose = FALSE, ...) {
   
   if (!is.null(seed)) set.seed(seed)
   if (!exists(".Random.seed", envir = .GlobalEnv)) runif(1)
@@ -159,7 +161,8 @@ con_weights_boot <- function(VCOV, Amat, meq, R = 1e5L, seed = NULL,
   bvec <- rep(0L, nrow(Amat)) # weights do not depend on bvec.
   invW <- solve(VCOV)
   Dmat <- 2*invW
-  Z <- mvtnorm::rmvnorm(n = R, mean = rep(0, ncol(VCOV)), sigma = VCOV)
+  #Z <- mvtnorm::rmvnorm(n = R, mean = rep(0, ncol(VCOV)), sigma = VCOV)
+  Z <- tmvtnorm::rtmvnorm(n = R, mean = rep(0, ncol(VCOV)), sigma = VCOV, ...)
   dvec <- 2*(Z %*% invW)
   RR <- sum(R)
   
@@ -213,3 +216,5 @@ con_weights_boot <- function(VCOV, Amat, meq, R = 1e5L, seed = NULL,
   
   return(wt_bar)
 }
+
+

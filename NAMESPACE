@@ -24,7 +24,12 @@ importFrom("lavaan",
            )
 
 importFrom("mvtnorm",
-           rmvnorm, dmvnorm)
+           #rmvnorm, 
+           dmvnorm)
+
+# truncated multivariate normal
+importFrom("tmvtnorm",
+           rtmvnorm)
 
 importFrom("quadprog",
            solve.QP)

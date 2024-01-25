@@ -9,9 +9,9 @@ This function computes these mixing weights (a.k.a chi-bar-square weights
 and level probabilities). It can be used directly and is called by 
 the \code{conTest} function.
 }
-\usage{con_weights_boot(VCOV, Amat, meq, R = 1e5L, seed = NULL, 
+\usage{con_weights_boot(VCOV, Amat, meq, R = 1e5L, 
                  chunk_size = 5000L, convergence_crit = 1e-03, 
-                 verbose = FALSE, ...)
+                 seed = NULL, verbose = FALSE, ...)
 }
 
 \arguments{
@@ -36,8 +36,6 @@ the \code{conTest} function.
   \item{R}{integer; number of bootstrap draws for \code{mix_weights_bootstrap_limit}. 
   The default value is set to 1e5. See details for more information.}
   
-  \item{seed}{seed value.}
-
   \item{chunk_size}{integer; the chi-bar-square weights are computed for samples of
   size \code{chunk_size = 5000L}. This process is repeated iteratively until the 
   weights converges (see \code{convergenge_crit}) or the maximum is reached, i.e.,
@@ -46,10 +44,12 @@ the \code{conTest} function.
   \item{convergence_crit}{the convergence criterion for the iterative process. 
   The default is 1e-03. See details for more information.}
 
+  \item{seed}{seed value.}
+
   \item{verbose}{logical; if TRUE, information is shown at each 
   bootstrap draw.}
   
-  \item{\ldots}{no additional arguments for now.}
+  \item{\ldots}{additional parameters for the \code{rtmvnorm} function. }
 }
 
 \details{

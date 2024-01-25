@@ -15,7 +15,11 @@ restriktor <- function(object, constraints = NULL, ...) {
   if (length(arguments)) {
     pnames <- c("se", "B", "rhs", "neq", "mix_weights", "mix_weights_bootstrap_limit", 
                 "auxilliary", "emControl", "parallel", "ncpus", "cl", "seed", 
-                "control", "verbose", "debug", "auto_bound")
+                "control", "verbose", "debug", "auto_bound",
+                # for rtmvnorm() function
+                "lower", "upper", "algorithm",
+                "burn.in.samples", "start.values", "thinning")
+    
     pm <- pmatch(names(arguments), pnames, nomatch = 0L)
     if (any(pm == 0L)) { 
       pm.idx <- which(pm == 0L)

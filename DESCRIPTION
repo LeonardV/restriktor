@@ -21,7 +21,7 @@ License: GPL (>= 2)
 LazyData: yes
 URL: https://restriktor.org
 NeedsCompilation: no
-Packaged: 2023-10-03 16:11:11 UTC; leonardv
+Packaged: 2024-01-25 13:48:11 UTC; leonardv
 Author: Leonard Vanbrabant [aut, cre], Rebecca Kuiper [aut], Yves Rosseel [ctb], Aleksandra Dacko [ctb]
 Maintainer: Leonard Vanbrabant <info@restriktor.org>
 Suggests: knitr, rmarkdown, bain

@@ -336,10 +336,4 @@ h2 <- list(constraints = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0)
 goric(fit.lm, hypotheses = list(h1 = h1, h2 = h2), type = "gorica")
 goric(est, VCOV = VCOV, hypotheses = list(h1 = h1, h2 = h2), type = "gorica")
 
-
-## use parallel processing for computing the level probabilities (i.e., mixing weights)
-\dontrun{
-goric(fit.lm, hypotheses = list(h1), comparison = "complement",
-      mix_weights = "boot", parallel = "snow", ncpus = 8, mix_weights_bootstrap_limit = 99999)
-}
 }

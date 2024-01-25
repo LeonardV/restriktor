@@ -151,6 +151,7 @@ con_weights_boot <- function(VCOV, Amat, meq, R = 1e5L,
     }
   }
   
+  ldots <- list(...)
   prev_wt_bar    <- NULL
   chunk_wt_bar   <- NULL
   prev_res       <- NULL
@@ -213,6 +214,7 @@ con_weights_boot <- function(VCOV, Amat, meq, R = 1e5L,
   attr(wt_bar, "total_chunks"         ) <- total_chunks
   attr(wt_bar, "chunk_iter"           ) <- chunk_iter
   attr(wt_bar, "error.idx"            ) <- prev_error_idx
+  attr(wt_bar, "mvtnorm"              ) <- ldots
   
   return(wt_bar)
 }

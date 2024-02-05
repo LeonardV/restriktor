@@ -100,8 +100,8 @@ restriktor(object, constraints = NULL, \dots)
   \code{\link{iht}} function for computing the p-value for the 
   test-statistic, unless the p-value is computed directly via bootstrapping.}
   \item{mix_weights_bootstrap_limit}{integer; number of bootstrap draws for 
-  \code{mix_weights = "boot"}. The default value is set to 99999. 
-  Parallel support is available.}
+  \code{mix_weights = "boot"}. The default value is set to 1e5.  
+  }
   \item{parallel}{the type of parallel operation to be used (if any). 
   If missing, the default is set "no".}
   \item{ncpus}{integer: number of processes to be used in parallel 

@@ -68,7 +68,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       LIST <- lapply(constraint.syntax, function(x) { sapply(x, expand_parentheses) })
       LIST <- lapply(LIST, function(x) { sapply(x, expand_compound_constraints) })
       
-      unLIST <- unlist(LIST)
+      unLIST <- unique(unlist(LIST))
       def.idx  <- grepl(":=", unLIST)
       unLIST[!def.idx] <- gsub("=", "==", unLIST[!def.idx])
       OUT[[i]] <- paste(unLIST, collapse = '\n')

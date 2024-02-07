@@ -454,6 +454,7 @@ evSyn_est.list <- function(object, ..., VCOV = list(), hypotheses = list(),
     colnames(ratio.weight_mu) <- c(paste0(hnames[1], " vs. ", "Complement"))
     colnames(Final.ratio.LL.weights) <- colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(CumulativeGorica)))
   } else if (comparison == "none") {
+    #colnames(ratio.weight_mu) <- c(paste0(hnames[1], " vs. ", "Complement"))
     colnames(Final.ratio.LL.weights) <- colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(CumulativeGorica)))
   } else { 
     # unconstrained

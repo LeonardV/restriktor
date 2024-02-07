@@ -4,9 +4,28 @@ goric <- function(object, ...) { UseMethod("goric") }
 goric.default <- function(object, ..., hypotheses = NULL,
                           comparison = c("unconstrained", "complement", "none"), 
                           VCOV = NULL, sample.nobs = NULL,
-                          type = "goric", 
-                          auto.bound = FALSE, debug = FALSE) {
+                          type = "goric", control = list(),
+                          debug = FALSE) {
 
+  ldots <- list(...)
+  ldots$missing <- NULL
+  ldots$control <- control
+  
+  # which arguments are allowed
+  goric_arguments <- c("B", "mix_weights", "mix_weights_bootstrap_limit", "parallel", 
+                       "ncpus", "cl", "seed", "control", "verbose", "debug", "comparison",
+                       "type", "hypotheses", "auxiliary",
+                       "VCOV", "sample.nobs", "object",
+                       # for rtmvnorm() function
+                       "lower", "upper", "algorithm",
+                       "burn.in.samples", "start.values", "thinning")
+  
+  # check for unkown arguments
+  pm <- pmatch(names(ldots), goric_arguments, 0L)
+  if (any(pm == 0)) {
+    stop("restriktor ERROR: argument ", sQuote(names(ldots)[pm == 0]), " unknown.", call. = FALSE)
+  }
+  
   constraints <- hypotheses
   # class objects
   object_class <- unlist(lapply(object, class))
@@ -17,9 +36,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
             call. = FALSE)
     constraints <- NULL
   }
-  
-  # auto.bounds are ignored (for now)
-  auto.bound <- NULL
   
   mc <- match.call()
   CALL <- as.list(mc[-1])
@@ -32,9 +48,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
   type <- tolower(type)
   stopifnot(type %in% c("goric", "goricc", "gorica", "goricac"))
   
-  ldots <- list(...)
-  ldots$missing <- NULL
-
   conChar <- sapply(constraints, function(x) inherits(x, "character"))
   isConChar <- all(conChar)
 
@@ -233,103 +246,95 @@ goric.default <- function(object, ..., hypotheses = NULL,
       bvec.ciq <- bvec
     }
     
-    if (!is.null(auto.bound) && meq == 0L) {
-      warning("restriktor Warning: auto.bounds are only available for equality restrictions \n",
-              " and are therefore ignored.", call. = FALSE)
-      auto.bound <- NULL
-    } 
-    
-
-    if (is.null(auto.bound)) {
-      # check if any equality constraint is violated
-      check.ceq <- !(all(c(Amat.ceq %*% c(b.unrestr)) - bvec.ceq == 0))
-      if (nrow(Amat) > meq) {
-        # check if any inequality constraint is violated
-        check.ciq <- !(all(c(Amat.ciq %*% c(b.unrestr)) - bvec.ciq >= 0))
-      } else {
-        check.ciq <- FALSE
-      }
-      # compute log-likelihood for complement
-      if (check.ciq || check.ceq) {    
-        if (type %in% c("goric", "goricc")) { 
-          llc <- logLik(ans$model.org)
-          betasc <- b.unrestr
-        } else if (type %in% c("gorica", "goricac")) {
-          llc <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE)
-          betasc <- b.unrestr
-        }
-        if (debug) {
-          cat("log-likelihood_c value =", llc, "\n")
-        }
-        # if any constraints is violated LL_c = LL_u
-      } else if (nrow(Amat) > meq && !(all(c(Amat) == 0L))) {
-        ll <- list()
-        betas <- list()
-        # number of rows
-        nr <- 1:nrow(Amat)
-        # remove rows corresponding to equality constraints
-        if (meq > 0L) { nr <- nr[-c(0:meq)] }
-        # treat each row of Amat as an equality constraint
-        # Pre-allocate lists to store results
-        betas <- vector("list", length(nr))
-        ll <- vector("list", length(nr))
-        for (l in 1:length(nr)) {
-          idx <- c(nr[l], nr[-l])
-          Amatx <- Amat[idx, , drop = FALSE]
-          if (type %in% c("goric", "goricc")) {          
-            Hc.restr <- restriktor(ans$model.org, constraints = Amatx, 
-                                   neq = 1, rhs = bvec[idx], 
-                                   mix_weights = "none", se = "none")
-            betas[[l]] <- coef(Hc.restr)
-            ll[[l]]    <- logLik(Hc.restr)
-          } else if (type %in% c("gorica", "goricac")) {
-            ldots$mix_weights <- "none"
-            CALL.restr <- append(list(object      = b.unrestr,
-                                      constraints = Amatx,
-                                      rhs         = bvec[idx],
-                                      neq         = 1,
-                                      VCOV        = VCOV),
-                                 ldots)
-            Hc.restr   <- do.call("con_gorica_est", CALL.restr) 
-            betas[[l]] <- Hc.restr$b.restr
-            ll[[l]]    <- dmvnorm(c(b.unrestr - Hc.restr$b.restr), 
-                                  sigma = VCOV, log = TRUE)            
-          }
-        }
-        if (debug) {
-          cat("log-likelihood value =", ll[[l]], "\n")
-        }
-        # take the highest log-likelihood value as a substitute for the complement
-        ll.unlist <- unlist(ll)
-        #ll.idx <- which(ll.unlist == max(ll.unlist))
-        ll.idx <- which.max(ll.unlist)
-        llc <- max(ll.unlist)
-        betasc <- betas[[ll.idx]]
-      } else if (nrow(Amat) == meq) { 
-        # redundant, this will be catched by the first statement. In case of equality 
-        # constraints only, the complement is equal to the unconstrained log-likelihood
-        if (type %in% c("goric", "goricc")) {
-          llc <- logLik(ans$model.org)
-          betasc <- b.unrestr
-        } else if (type %in% c("gorica", "goricac")) {
-          llc <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE)
-          betasc <- b.unrestr
-        }
-        if (debug) {
-          cat("log-likelihood_c value =", llc, "\n")
-        }
-      } else if (all(c(Amat) == 0L)) {
-        # unconstrained setting
-        stop("restriktor ERROR: no complement exists for an unconstrained hypothesis.")
-      } else {
-        stop("restriktor ERROR: you might have found a bug, please contact me at: info@restriktor.org!")
-      }
-      if (type %in% c("goric", "goricc")) {
-        llm <- logLik(conList[[1]])
+    # check if any equality constraint is violated
+    check.ceq <- !(all(c(Amat.ceq %*% c(b.unrestr)) - bvec.ceq == 0))
+    if (nrow(Amat) > meq) {
+      # check if any inequality constraint is violated
+      check.ciq <- !(all(c(Amat.ciq %*% c(b.unrestr)) - bvec.ciq >= 0))
+    } else {
+      check.ciq <- FALSE
+    }
+    # compute log-likelihood for complement
+    if (check.ciq || check.ceq) {    
+      if (type %in% c("goric", "goricc")) { 
+        llc <- logLik(ans$model.org)
+        betasc <- b.unrestr
       } else if (type %in% c("gorica", "goricac")) {
-        llm <- dmvnorm(c(b.unrestr - b.restr), sigma = VCOV, log = TRUE)
+        llc <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE)
+        betasc <- b.unrestr
       }
-    } 
+      if (debug) {
+        cat("log-likelihood_c value =", llc, "\n")
+      }
+      # if any constraints is violated LL_c = LL_u
+    } else if (nrow(Amat) > meq && !(all(c(Amat) == 0L))) {
+      ll <- list()
+      betas <- list()
+      # number of rows
+      nr <- 1:nrow(Amat)
+      # remove rows corresponding to equality constraints
+      if (meq > 0L) { nr <- nr[-c(0:meq)] }
+      # treat each row of Amat as an equality constraint
+      # Pre-allocate lists to store results
+      betas <- vector("list", length(nr))
+      ll <- vector("list", length(nr))
+      for (l in 1:length(nr)) {
+        idx <- c(nr[l], nr[-l])
+        Amatx <- Amat[idx, , drop = FALSE]
+        if (type %in% c("goric", "goricc")) {          
+          Hc.restr <- restriktor(ans$model.org, constraints = Amatx, 
+                                 neq = 1, rhs = bvec[idx], 
+                                 mix_weights = "none", se = "none")
+          betas[[l]] <- coef(Hc.restr)
+          ll[[l]]    <- logLik(Hc.restr)
+        } else if (type %in% c("gorica", "goricac")) {
+          ldots$mix_weights <- "none"
+          CALL.restr <- append(list(object      = b.unrestr,
+                                    constraints = Amatx,
+                                    rhs         = bvec[idx],
+                                    neq         = 1,
+                                    VCOV        = VCOV),
+                               ldots)
+          Hc.restr   <- do.call("con_gorica_est", CALL.restr) 
+          betas[[l]] <- Hc.restr$b.restr
+          ll[[l]]    <- dmvnorm(c(b.unrestr - Hc.restr$b.restr), 
+                                sigma = VCOV, log = TRUE)            
+        }
+      }
+      if (debug) {
+        cat("log-likelihood value =", ll[[l]], "\n")
+      }
+      # take the highest log-likelihood value as a substitute for the complement
+      ll.unlist <- unlist(ll)
+      #ll.idx <- which(ll.unlist == max(ll.unlist))
+      ll.idx <- which.max(ll.unlist)
+      llc <- max(ll.unlist)
+      betasc <- betas[[ll.idx]]
+    } else if (nrow(Amat) == meq) { 
+      # redundant, this will be catched by the first statement. In case of equality 
+      # constraints only, the complement is equal to the unconstrained log-likelihood
+      if (type %in% c("goric", "goricc")) {
+        llc <- logLik(ans$model.org)
+        betasc <- b.unrestr
+      } else if (type %in% c("gorica", "goricac")) {
+        llc <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE)
+        betasc <- b.unrestr
+      }
+      if (debug) {
+        cat("log-likelihood_c value =", llc, "\n")
+      }
+    } else if (all(c(Amat) == 0L)) {
+      # unconstrained setting
+      stop("restriktor ERROR: no complement exists for an unconstrained hypothesis.")
+    } else {
+      stop("restriktor ERROR: you might have found a bug, please contact me at: info@restriktor.org!")
+    }
+    if (type %in% c("goric", "goricc")) {
+      llm <- logLik(conList[[1]])
+    } else if (type %in% c("gorica", "goricac")) {
+      llm <- dmvnorm(c(b.unrestr - b.restr), sigma = VCOV, log = TRUE)
+    }
+  
     
     # compute the number of free parameters f in the complement
     p <- ncol(VCOV)
@@ -338,7 +343,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     # rank q2
     lq2 <- qr(Amat.ceq)$rank
     # free parameters. Note that Amat includes q1 and q2 constraints
-    f   <- p - qr(Amat)$rank # p - q1 - q2
+    f <- p - qr(Amat)$rank # p - q1 - q2
     if (debug) { cat("number of free parameters =", (f + lq2), "\n") }
     
     # compute penalty term value PTc
@@ -500,7 +505,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
 
   # compute ratio weights
   modelnames <- as.character(df$model)
-  if (length(modelnames) > 1) {
+  #if (length(modelnames) > 1) {
     goric_rw   <- goric.weights %*% t(1/goric.weights)
     penalty_rw <- penalty.weights %*% t(1/penalty.weights)
     loglik_rw  <- loglik.weights %*% t(1/loglik.weights)
@@ -517,7 +522,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     ans$ratio.gw <- goric_rw
     ans$ratio.pw <- penalty_rw
     ans$ratio.lw <- loglik_rw
-  }
+  #}
   
   
   # list all object estimates
@@ -569,7 +574,7 @@ goric.lm <- function(object, ..., hypotheses = NULL,
                      comparison = "unconstrained",
                      type = "goric",
                      missing = "none", auxiliary = c(), emControl = list(),
-                     auto.bound = NULL, debug = FALSE) {
+                     debug = FALSE) {
   
   if (!inherits(object, "lm")) {
     stop("restriktor ERROR: the object must be of class lm, glm, mlm, rlm.")
@@ -625,7 +630,6 @@ goric.lm <- function(object, ..., hypotheses = NULL,
     objectList$hypotheses  <- hypotheses
     objectList$comparison  <- comparison
     objectList$type        <- type
-    objectList$auto.bound  <- auto.bound
     objectList$debug       <- debug
     objectList$missing     <- NULL
     objectList$auxiliary   <- NULL
@@ -642,22 +646,6 @@ goric.lm <- function(object, ..., hypotheses = NULL,
       objectList <- append(list(object = objectList[object_idx]), objectList[!object_idx])
     }
     
-    # which arguments are allowed
-    arguments <- c("B", "mix_weights", "mix_weights_bootstrap_limit", "parallel", "ncpus", 
-                   "cl", "seed", "control", "verbose", "debug", "comparison",
-                   "type", "auto.bound", "hypotheses", "missing", "auxiliary",
-                   "VCOV", "sample.nobs", "object",
-                   # for rtmvnorm() function
-                   "lower", "upper", "algorithm",
-                   "burn.in.samples", "start.values", "thinning")
-    
-    # check for unkown arguments
-    pm <- pmatch(names(objectList), arguments, 0L)
-    
-    if (any(pm == 0)) {
-      stop("restriktor ERROR: argument ", sQuote(names(objectList)[pm == 0]), " unknown.", call. = FALSE)
-    }
-    
     if (missing == "two.stage") {
       res <- do.call(goric.numeric, objectList)
     } else {    
@@ -672,7 +660,7 @@ goric.lm <- function(object, ..., hypotheses = NULL,
 goric.restriktor <- function(object, ..., hypotheses = NULL,
                              comparison = "unconstrained",
                              type = "goric",
-                             auto.bound = NULL, debug = FALSE) {
+                             debug = FALSE) {
   
   # hypotheses are inherited from the restriktor object
   
@@ -693,7 +681,6 @@ goric.restriktor <- function(object, ..., hypotheses = NULL,
   objectList$hypotheses  <- hypotheses
   objectList$comparison  <- comparison
   objectList$type        <- type
-  objectList$auto.bound  <- auto.bound
   objectList$debug       <- debug
   objectList$VCOV        <- NULL
   
@@ -706,25 +693,13 @@ goric.restriktor <- function(object, ..., hypotheses = NULL,
   # multiple objects of class restriktor are allowed
   isRestr <- unlist(lapply(objectList, function(x) class(x)[1] == "restriktor"))
 
+  restr_objectList <- list(object = objectList[isRestr])
+  arguments_objectList <- objectList[!isRestr]
+  
   # put all objects of class restriktor in one list
-  objectList <- append(list(object = objectList[isRestr]), objectList[!isRestr])
+  #objectList <- append(list(object = objectList[isRestr]), objectList[!isRestr])
   
-  # which arguments are allowed
-  arguments <- c("B", "mix_weights", "mix_weights_bootstrap_limit", "parallel", "ncpus", 
-                 "cl", "seed", "control", "verbose", "debug", "comparison",
-                 "type", "auto.bound", "hypotheses", "missing", "auxiliary",
-                 "VCOV", "sample.nobs", "object",
-                 # for rtmvnorm() function
-                 "lower", "upper", "algorithm",
-                 "burn.in.samples", "start.values", "thinning")
-  
-  # check for unkown arguments
-  pm <- pmatch(names(objectList), arguments, 0L)
-  if (any(pm == 0)) {
-    stop("restriktor ERROR: argument ", sQuote(names(objectList)[pm == 0]), " unknown.", call. = FALSE)
-  }
-  
-  res <- do.call(goric.default, c(objectList[isRestr], objectList[!isRestr]))
+  res <- do.call(goric.default, c(restr_objectList, arguments_objectList)) 
   
   res
 }
@@ -736,7 +711,7 @@ goric.numeric <- function(object, ..., hypotheses = NULL,
                           VCOV = NULL,
                           comparison = "unconstrained",
                           type = "gorica", sample.nobs = NULL,
-                          auto.bound = NULL, debug = FALSE) {
+                          debug = FALSE) {
   
   if (!inherits(object, "numeric")) {
     stop("restriktor ERROR: the object must be of class numeric.")
@@ -786,28 +761,12 @@ goric.numeric <- function(object, ..., hypotheses = NULL,
   objectList$hypotheses  <- hypotheses
   objectList$comparison  <- comparison
   objectList$type        <- type
-  objectList$auto.bound  <- auto.bound
   objectList$debug       <- debug
   objectList$VCOV        <- VCOV
   objectList$sample.nobs <- sample.nobs
   
   object_idx <- grepl("object", names(objectList))
   objectList <- append(list(object = objectList[object_idx]), objectList[!object_idx])
-  
-  # which arguments are allowed
-  arguments <- c("B", "mix_weights", "mix_weights_bootstrap_limit", "parallel", "ncpus", 
-                 "cl", "seed", "control", "verbose", "debug", "comparison",
-                 "type", "auto.bound", "hypotheses", "missing", "auxiliary",
-                 "VCOV", "sample.nobs", "object", 
-                 # for rtmvnorm() function
-                 "lower", "upper", "algorithm",
-                 "burn.in.samples", "start.values", "thinning")
-  
-  # check for unkown arguments
-  pm <- pmatch(names(objectList), arguments, 0L)
-  if (any(pm == 0)) {
-    stop("restriktor ERROR: argument ", sQuote(names(objectList)[pm == 0]), " unknown.", call. = FALSE)
-  }
   
   res <- do.call(goric.default, c(objectList[object_idx], objectList[!object_idx]))
   
@@ -820,7 +779,7 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
                          comparison = "unconstrained",
                          type = "gorica",
                          standardized = FALSE,
-                         auto.bound = NULL, debug = FALSE) {
+                         debug = FALSE) {
   
   if (!inherits(object, "lavaan")) {
     stop("restriktor ERROR: the object must be of class lavaan.")
@@ -857,7 +816,6 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
   objectList$VCOV       <- est$VCOV
   objectList$comparison <- comparison
   objectList$type       <- type
-  objectList$auto.bound <- auto.bound
   objectList$debug      <- debug
   
   
@@ -867,22 +825,6 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
   
   object_idx <- grepl("object", names(objectList))
   objectList <- append(list(object = objectList[object_idx]), objectList[!object_idx])
-  
-  
-  # which arguments are allowed
-  arguments <- c("B", "mix_weights", "mix_weights_bootstrap_limit", "parallel", "ncpus", 
-                 "cl", "seed", "control", "verbose", "debug", "comparison",
-                 "type", "auto.bound", "hypotheses", "missing", "auxiliary",
-                 "VCOV", "sample.nobs", "object",
-                 # for rtmvnorm() function
-                 "lower", "upper", "algorithm",
-                 "burn.in.samples", "start.values", "thinning")
-  
-  # check for unkown arguments
-  pm <- pmatch(names(objectList), arguments, 0L)
-  if (any(pm == 0)) {
-    stop("restriktor ERROR: argument ", sQuote(names(objectList)[pm == 0]), " unknown.", call. = FALSE)
-  }
   
   res <- do.call(goric.default, c(objectList[object_idx], objectList[!object_idx]))
   
@@ -894,7 +836,7 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
 goric.CTmeta <- function(object, ..., hypotheses = NULL,
                          comparison = "unconstrained",
                          type = "gorica", sample.nobs = NULL,
-                         auto.bound = NULL, debug = FALSE) {
+                         debug = FALSE) {
   
   if (!inherits(object, "CTmeta")) {
     stop("restriktor ERROR: the object must be of class CTmeta.")
@@ -930,7 +872,6 @@ goric.CTmeta <- function(object, ..., hypotheses = NULL,
   objectList$hypotheses  <- hypotheses
   objectList$comparison  <- comparison
   objectList$type        <- type
-  objectList$auto.bound  <- auto.bound
   objectList$debug       <- debug
   
   
@@ -940,21 +881,6 @@ goric.CTmeta <- function(object, ..., hypotheses = NULL,
   
   object_idx <- grepl("object", names(objectList))
   objectList <- append(list(object = objectList[object_idx]), objectList[!object_idx])  
-  
-  # which arguments are allowed
-  arguments <- c("B", "mix_weights", "mix_weights_bootstrap_limit", "parallel", "ncpus", 
-                 "cl", "seed", "control", "verbose", "debug", "comparison",
-                 "type", "auto.bound", "hypotheses", "missing", "auxiliary",
-                 "VCOV", "sample.nobs", "object",
-                 # for rtmvnorm() function
-                 "lower", "upper", "algorithm",
-                 "burn.in.samples", "start.values", "thinning")
-  
-  # check for unkown arguments
-  pm <- pmatch(names(objectList), arguments, 0L)
-  if (any(pm == 0)) {
-    stop("restriktor ERROR: argument ", sQuote(names(objectList)[pm == 0]), " unknown.", call. = FALSE)
-  }
   
   res <- do.call(goric.default, c(objectList[object_idx], objectList[!object_idx]))
   
@@ -969,7 +895,7 @@ goric.rma <- function(object, ..., hypotheses = NULL,
                       VCOV = NULL,
                       comparison = "unconstrained",
                       type = "gorica", sample.nobs = NULL,
-                      auto.bound = NULL, debug = FALSE) {
+                      debug = FALSE) {
   
   if (!inherits(object, c("rma"))) {
     stop("restriktor ERROR: the object must be of class lm, glm, mlm, rlm, rma (only 'rma.uni').")
@@ -1002,7 +928,6 @@ goric.rma <- function(object, ..., hypotheses = NULL,
   objectList$VCOV   <- vcov(object)
   objectList$comparison   <- comparison
   objectList$type         <- type
-  objectList$auto.bound   <- auto.bound
   objectList$debug        <- debug
   
   if (type == "goricac") {
@@ -1012,25 +937,13 @@ goric.rma <- function(object, ..., hypotheses = NULL,
   object_idx <- grepl("object", names(objectList))
   objectList <- append(list(object = objectList[object_idx]), objectList[!object_idx])  
   
-  # which arguments are allowed
-  arguments <- c("B", "mix_weights", "mix_weights_bootstrap_limit", "parallel", "ncpus", 
-                 "cl", "seed", "control", "verbose", "debug", "comparison",
-                 "type", "auto.auto.bound", "hypotheses", "missing", "auxiliary",
-                 "VCOV", "sample.nobs", "object",
-                 # for rtmvnorm() function
-                 "lower", "upper", "algorithm",
-                 "burn.in.samples", "start.values", "thinning")
-  
-  # check for unkown arguments
-  pm <- pmatch(names(objectList), arguments, 0L)
-  if (any(pm == 0)) {
-    stop("restriktor ERROR: argument ", sQuote(names(objectList)[pm == 0]), " unknown.", call. = FALSE)
-  }
+  # # check for unkown arguments
+  # pm <- pmatch(names(objectList), goric_arguments, 0L)
+  # if (any(pm == 0)) {
+  #   stop("restriktor ERROR: argument ", sQuote(names(objectList)[pm == 0]), " unknown.", call. = FALSE)
+  # }
   
   res <- do.call(goric.default, c(objectList[object_idx], objectList[!object_idx]))
   
   res
 }
-
-
-

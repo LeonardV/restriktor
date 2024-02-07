@@ -43,6 +43,11 @@ importFrom("MASS",
            psi.huber,
            ginv)
 
+importFrom("pbapply", 
+           pblapply,
+           pboptions)
+
+
 importFrom("ic.infer",
            #nchoosek, NOT EXPORTED!
            ic.weights)
@@ -56,7 +61,7 @@ importFrom("stats", coef, df.residual, dnorm, fitted,
            sd, start, terms, update, var, vcov,
            weighted.residuals, weights, gaussian, lm.fit,
            lm.wfit, mad, coefficients, family, logLik,
-           model.frame, anova, optimize, sigma, cov, dist) 
+           model.frame, anova, optimize, sigma, cov, dist, lm, uniroot) 
 
 importFrom("graphics", abline, axis, box, hist, par)
 
@@ -92,7 +97,8 @@ export("restriktor",
        #"summary.con_goric", 
        "evSyn", "plot.evSyn",
        "calculate_IC_weights",
-       "print.ICw"
+       "print.ICw"#,
+       #"benchmarks_ANOVA"
        #"benchmarks_goric"
        #"print.evSyn", 
        #"summary.evSyn",

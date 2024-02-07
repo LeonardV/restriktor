@@ -120,6 +120,25 @@ restriktor(object, constraints = NULL, \dots)
       \item \code{tol} numerical tolerance value. Estimates smaller 
       than \code{tol} are set to 0.
     }
+    Control options for calculating the chi-bar-square weights:
+    \itemize{
+      \item control parameters passed to the truncated multivariate normal distribution.
+      By default, restriktor uses no truncation points for calculating the chi-bar-square 
+      weights, which renders to the multivariate normal distribution. See the 
+      manual page of the \code{tmvtnorm} function to see how to specify a truncated 
+      mvnorm distribution and the possible arguments.
+      
+      \item \code{chunk_size} integer; the chi-bar-square weights are computed for samples
+      of size \code{chunk_size = 5000L}. This process is repeated iteratively until the 
+      weights converges (see \code{convergenge_crit}) or the maximum is reached, i.e., 
+      \code{mix_weights_bootstrap_limit}.
+      
+      \item \code{mix_weights_bootstrap_limit} integer; maximum number of bootstrap draws.
+      The default value is set to 1e5.
+      
+      \item \code{convergence_crit} the convergence criterion for the iterative bootstrap
+      process. Default is 1e-03.
+    }
   }
   \item{verbose}{logical; if TRUE, information is shown at each bootstrap draw.}
   \item{debug}{if TRUE, debugging information about the constraints

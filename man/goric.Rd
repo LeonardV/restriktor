@@ -21,7 +21,7 @@ comparable to the Akaike weights.
 \method{goric}{default}(object, ..., hypotheses = NULL,
       comparison = c("unconstrained", "complement", "none"), 
       VCOV = NULL, sample.nobs = NULL, type = "goric", 
-      debug = FALSE)
+      control = list(), debug = FALSE)
 
 \method{goric}{restriktor}(object, ..., hypotheses = NULL,
       comparison = "unconstrained", type = "goric", 
@@ -135,16 +135,31 @@ comparable to the Akaike weights.
   
   \item{standardized}{if TRUE, standardized parameter estimates are used.}
   
-%  \item{threshold}{integer, The threshold determines the sensitivity in identifying 
-%  hypotheses with similar log-likilihood values. A smaller threshold will identify 
-%  only the most similar hypotheses, while a larger threshold will include more 
-%  hypotheses with a broader range of similarity. Be cautious with equal or nearly 
-%  equal log-likelihood values as they might indicate support for the boundary of 
-  
   \item{digits}{the number of significant digits to use when printing.}
   
   \item{debug}{if TRUE, debugging information is printed out.}
   
+  Control options for calculating the chi-bar-square weights:
+  \item{control}{
+    \itemize{
+      \item control parameters passed to the truncated multivariate normal distribution.
+      By default, restriktor uses no truncation points for calculating the chi-bar-square 
+      weights, which renders to the multivariate normal distribution. See the 
+      manual page of the \code{tmvtnorm} function to see how to specify a truncated 
+      mvnorm distribution and the possible arguments.
+      
+      \item \code{chunk_size} integer; the chi-bar-square weights are computed for samples
+      of size \code{chunk_size = 5000L}. This process is repeated iteratively until the 
+      weights converges (see \code{convergenge_crit}) or the maximum is reached, i.e., 
+      \code{mix_weights_bootstrap_limit}.
+      
+      \item \code{mix_weights_bootstrap_limit} integer; maximum number of bootstrap draws.
+      The default value is set to 1e5.
+      
+      \item \code{convergence_crit} the convergence criterion for the iterative bootstrap
+      process. Default is 1e-03.
+    }
+  }
   \item{brief}{if TRUE, a short overview is printed.}
 }
 

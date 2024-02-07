@@ -6,8 +6,7 @@ Monte Carlo simulation.}
 \description{The null-distribution of the test statistics under 
 inequality constraints takes the form of mixtures of F-distributions. 
 This function computes these mixing weights (a.k.a chi-bar-square weights
-and level probabilities). It can be used directly and is called by 
-the \code{conTest} function.
+and level probabilities). 
 }
 \usage{con_weights_boot(VCOV, Amat, meq, R = 1e5L, 
                  chunk_size = 5000L, convergence_crit = 1e-03, 
@@ -33,7 +32,8 @@ the \code{conTest} function.
   first two rows of the constraints matrix \eqn{R} are treated as 
   equality constraints. }
   
-  \item{R}{integer; number of bootstrap draws for \code{mix_weights_bootstrap_limit}. 
+  \item{R}{integer; the maximum number of bootstrap draws for 
+  \code{mix_weights_bootstrap_limit}. 
   The default value is set to 1e5. See details for more information.}
   
   \item{chunk_size}{integer; the chi-bar-square weights are computed for samples of

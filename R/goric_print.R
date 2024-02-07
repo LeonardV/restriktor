@@ -137,24 +137,31 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   overlap_sorted_vector <- sapply(overlap_unique_combinations, sort_combination)
   overlap_unique_combinations <- unique(overlap_sorted_vector)
   
-  #bound_sorted_vector <- sapply(bound_unique_combinations, sort_combination)
-  #bound_unique_combinations <- unique(bound_sorted_vector)
+  combined_string <- gsub("vs\\.", "", overlap_unique_combinations)
+  combined_string <- strsplit(combined_string, " ")
+  combined_string <- unique(unlist(combined_string))
+  combined_string <- combined_string[combined_string != ""]
   
   # check if the likelihood of models are equal, this means that the hypotheses overlap (i.e., subset)
-  if (length(overlap_unique_combinations) > 0) {
-    # message("Note: The hypotheses ", paste(sQuote(overlap_unique_combinations), collapse = ", "), 
-    #         " overlap with one another (i.e., they have equal likelihood values).", 
-    #         " Consequently, the GORIC(A) (ratio) weights are solely influenced by fluctuations in penalty values",
-    #         " and therefore have an upper limit. If any of the overlapping hypotheses proves to be the most", 
-    #         " convincing (i.e., has the lowest GORIC(A) value) in the full set,",
-    #         " we recommend further evaluation by comparing it to its complement.\n"
-    # )
-    message("---\nNote: Hypotheses ", paste(sQuote(overlap_unique_combinations), collapse = ", "), 
-            " overlap (equal likelihood values). GORIC(A) weights, influenced solely by penalty value fluctuations,",
+  if (length(combined_string) > 0) {
+    message("---\nNote: Hypotheses ", paste0(sQuote(combined_string), collapse = " and "), 
+            " overlap (equal likelihood values). The GORIC(A) weights, are influenced solely by penalty value fluctuations,",
             " have an upper limit. If any overlap is most convincing (lowest GORIC(A) value in the full set),",
             " further evaluation against its complement is recommended.")
   }
 
+  
+  # message(
+  #   "---\nNote: The hypotheses ", 
+  #   paste(sQuote(overlap_unique_combinations), collapse = " and "), 
+  #   " exhibit overlapping characteristics (identical likelihood values). 
+  #   The GORIC(A) weights are primarily affected by variations in penalty values 
+  #   and possess a maximum threshold. In cases where overlapping hypotheses 
+  #   distinctly stand out (exhibiting the lowest GORIC(A) value among all 
+  #   considered hypotheses), it is advisable to conduct a more detailed comparison 
+  #   against their respective complements."
+  # )
+  
 
   # # check if loglik are nearly equal, 
   # if (length(bound_unique_combinations) > 0) {

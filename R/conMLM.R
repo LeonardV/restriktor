@@ -326,14 +326,11 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
                                  Amat             = Amat, 
                                  meq              = meq, 
                                  R                = mix_weights_bootstrap_limit,
-                                 #parallel         = parallel, 
-                                 #ncpus            = ncpus, 
-                                 #cl               = cl,
                                  seed             = seed,
                                  convergence_crit = ifelse(is.null(control$convergence_crit), 
                                                            1e-03, control$convergence_crit),
                                  chunk_size = ifelse(is.null(control$chunk_size), 
-                                                           5000L, control$chunk_size),
+                                                           1e4, control$chunk_size),
                                  verbose          = verbose, ...)
       attr(wt.bar, "mix_weights_bootstrap_limit") <- mix_weights_bootstrap_limit 
     } else if (mix_weights == "pmvnorm" && (meq < nrow(Amat))) {

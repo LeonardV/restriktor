@@ -345,18 +345,15 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
       wt.bar <- c(rep(0L, p), 1)
     } else if (mix_weights == "boot") { 
       # compute chi-square-bar weights based on Monte Carlo simulation
-      wt.bar <- con_weights_boot(VCOV             = Sigma,
-                                 Amat             = Amat, 
-                                 meq              = meq, 
-                                 R                = mix_weights_bootstrap_limit,
-                                 #parallel         = parallel, 
-                                 #ncpus            = ncpus, 
-                                 #cl               = cl,
-                                 seed             = seed,
-                                 convergence_crit = ifelse(is.null(control$convergence_crit), 
+      wt.bar <- con_weights_boot(VCOV    = Sigma,
+                                 Amat    = Amat, 
+                                 meq     = meq, 
+                                 R       = mix_weights_bootstrap_limit,
+                                 seed    = seed,
+                                 convergence_crit = ifelse(is.null(control$convergence_crit),
                                                            1e-03, control$convergence_crit),
-                                 chunk_size = ifelse(is.null(control$chunk_size), 
-                                                           5000L, control$chunk_size),
+                                 chunk_size       = ifelse(is.null(control$chunk_size),
+                                                           1e4L, control$chunk_size),
                                  verbose          = verbose, ...)
       
       attr(wt.bar, "mix_weights_bootstrap_limit") <- mix_weights_bootstrap_limit

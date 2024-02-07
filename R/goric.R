@@ -13,8 +13,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
   
   # which arguments are allowed
   goric_arguments <- c("B", "mix_weights", "mix_weights_bootstrap_limit", "parallel", 
-                       "ncpus", "cl", "seed", "control", "verbose", "debug", "comparison",
-                       "type", "hypotheses", "auxiliary",
+                       "ncpus", "cl", "seed", "control", "verbose", "debug", 
+                       "comparison", "type", "hypotheses", "auxiliary",
                        "VCOV", "sample.nobs", "object",
                        # for rtmvnorm() function
                        "lower", "upper", "algorithm",

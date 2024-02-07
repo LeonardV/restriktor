@@ -21,33 +21,33 @@ comparable to the Akaike weights.
 \method{goric}{default}(object, ..., hypotheses = NULL,
       comparison = c("unconstrained", "complement", "none"), 
       VCOV = NULL, sample.nobs = NULL, type = "goric", 
-      auto.bound = FALSE, debug = FALSE)
+      debug = FALSE)
 
 \method{goric}{restriktor}(object, ..., hypotheses = NULL,
       comparison = "unconstrained", type = "goric", 
-      auto.bound = NULL, debug = FALSE)
+      debug = FALSE)
 
 \method{goric}{lm}(object, ..., hypotheses = NULL,
       comparison = "unconstrained", type = "goric",
       missing = "none", auxiliary = c(), emControl = list(),
-      auto.bound = NULL, debug = FALSE)
+      debug = FALSE)
 
 \method{goric}{numeric}(object, ..., hypotheses = NULL,
       VCOV = NULL, comparison = "unconstrained",
       type = "gorica", sample.nobs = NULL,
-      auto.bound = NULL, debug = FALSE)
+      debug = FALSE)
 
 \method{goric}{lavaan}(object, ..., hypotheses = NULL,
       comparison = "unconstrained", type = "gorica",
-      standardized = FALSE, auto.bound = NULL, debug = FALSE)
+      standardized = FALSE, debug = FALSE)
 
 \method{goric}{CTmeta}(object, ..., hypotheses = NULL,
       comparison = "unconstrained", type = "gorica", 
-      sample.nobs = NULL, auto.bound = NULL, debug = FALSE)
+      sample.nobs = NULL, debug = FALSE)
 
 \method{goric}{rma}(object, ..., hypotheses = NULL,
       VCOV = NULL, comparison = "unconstrained", type = "gorica", 
-      sample.nobs = NULL, auto.bound = NULL, debug = FALSE)
+      sample.nobs = NULL, debug = FALSE)
 
 
 \method{print}{con_goric}(x, digits = max(3, getOption("digits") - 4), \dots)
@@ -140,9 +140,6 @@ comparable to the Akaike weights.
 %  only the most similar hypotheses, while a larger threshold will include more 
 %  hypotheses with a broader range of similarity. Be cautious with equal or nearly 
 %  equal log-likelihood values as they might indicate support for the boundary of 
-%  hypotheses or overlap between hypotheses. More details can be found in the Vignette.}
-  
-  \item{auto.bound}{not used yet.}
   
   \item{digits}{the number of significant digits to use when printing.}
   

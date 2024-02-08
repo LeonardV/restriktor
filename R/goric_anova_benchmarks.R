@@ -1,7 +1,8 @@
-goric_benchmark_anova <- function(object, pop.es = 0, ratio.pop.means = NULL, 
-                                  N = NULL, other.N = NULL, iter = 1000, 
-                                  convergence_crit = 1e-03, chunk_size = 1e4, 
-                                  ncpus = 1, seed.value = NULL) {
+goric_benchmark_anova <- function(object, pop_es = 0, ratio_pop_means = NULL, 
+                                  N = NULL, other_N = NULL, iter = 1000, 
+                                  control = list(convergence_crit = 1e-03, 
+                                                 chunk_size = 1e4), 
+                                  ncpus = 1, seed.value = NULL, ...) {
   
   # Check:
   if (!inherits(object, "con_goric")) {# any(class(object) == "con_goric")){
@@ -15,7 +16,7 @@ goric_benchmark_anova <- function(object, pop.es = 0, ratio.pop.means = NULL,
   if (is.null(object$model.org)) {
     # Number of subjects per group
     if (is.null(N)) {
-      other.N <- NULL
+      other_N <- NULL
       stop("Restriktor Error: please specify the sample-size, e.g. N = 100.")
       # TO DO MAAK ERROR
     } else if (length(N) == 1) {
@@ -59,17 +60,17 @@ goric_benchmark_anova <- function(object, pop.es = 0, ratio.pop.means = NULL,
   }
   
   # effect size population
-  es <- pop.es
-  nr.es <- length(pop.es)
+  es <- pop_es
+  nr.es <- length(es)
   
   # ratio population means
-  if (is.null(ratio.pop.means)) {
+  if (is.null(ratio_pop_means)) {
     # Then same as in data
-    ratio.pop.means <- ratio_data #coef(object$model.org)
+    ratio_pop_means <- ratio_data #coef(object$model.org)
   } else {
-    if (length(ratio.pop.means) != n.coef) { 
-      return(paste0("The argument ratio.pop.means should be of length ", 
-                    n.coef, " (or NULL) but not of length ", length(ratio.pop.means)))
+    if (length(ratio_pop_means) != n.coef) { 
+      return(paste0("The argument ratio_pop_means should be of length ", 
+                    n.coef, " (or NULL) but not of length ", length(ratio_pop_means)))
     }
   }
   
@@ -88,17 +89,17 @@ goric_benchmark_anova <- function(object, pop.es = 0, ratio.pop.means = NULL,
   # choose first or last, then pop. means comparable to sample estimates
   
   # Possibly adjust var.e based on other sample size
-  if (!is.null(other.N)) {
-    if (length(other.N) == 1) {
+  if (!is.null(other_N)) {
+    if (length(other_N) == 1) {
       var.e <- var.e * (sum(samplesize) - n.coef)
-      samplesize <- rep(other.N, n.coef)
+      samplesize <- rep(other_N, n.coef)
       var.e <- var.e / (sum(samplesize) - n.coef)
-    } else if (length(other.N) == n.coef) {
+    } else if (length(other_N) == n.coef) {
       var.e <- var.e * (sum(samplesize) - n.coef)
-      samplesize <- other.N
+      samplesize <- other_N
       var.e <- var.e / (sum(samplesize) - n.coef)
     } else {
-      return(paste0("The argument other.N should be of length 1 or ", n.coef, " (or NULL) but not of length ", length(other.N)))
+      return(paste0("The argument other_N should be of length 1 or ", n.coef, " (or NULL) but not of length ", length(other_N)))
     }
   }
   
@@ -110,22 +111,22 @@ goric_benchmark_anova <- function(object, pop.es = 0, ratio.pop.means = NULL,
     # Solve for x here
     #
     #If all equal, then set population means to all 0
-    if (length(unique(ratio.pop.means)) == 1) {
+    if (length(unique(ratio_pop_means)) == 1) {
       means_pop <- rep(0, n.coef)
     } else {
       fun <- function (d) {
-        means_pop = ratio.pop.means*d
+        means_pop = ratio_pop_means*d
         (1/sqrt(var.e)) * sqrt((1/n.coef) * sum((means_pop - mean(means_pop))^2)) - es[teller.es]
       }
       d <- uniroot(fun, lower = 0, upper = 100)$root
       # Construct means_pop
-      means_pop <- ratio.pop.means*d
+      means_pop <- ratio_pop_means*d
     }
     
     means_pop_all[teller.es, ] <- means_pop
   }
   colnames(means_pop_all) <- colnames(coef(object))
-  rownames(means_pop_all) <- paste0("pop.es = ", pop.es)
+  rownames(means_pop_all) <- paste0("pop_es = ", pop_es)
 
   # Create dummies
   sample <- NULL
@@ -158,7 +159,7 @@ goric_benchmark_anova <- function(object, pop.es = 0, ratio.pop.means = NULL,
     # Export required variables to cluster nodes
     parallel::clusterExport(cl, c("samplesize", "var.e", "nr.iter", "means_pop", 
                                   "hypos", "PrefHypo", "object", "n.coef", "sample",
-                                  "chunk_size", "convergence_crit"), 
+                                  "control"), 
                             envir = environment())
 
     parallel::clusterEvalQ(cl, {
@@ -169,8 +170,8 @@ goric_benchmark_anova <- function(object, pop.es = 0, ratio.pop.means = NULL,
     wrapper_function <- function(i) {
       parallel_function(i, samplesize = samplesize, var.e = var.e, nr.iter = nr.iter, 
                         means_pop = means_pop, hypos = hypos, PrefHypo = PrefHypo, 
-                        object = object, n.coef = n.coef, sample = sample, 
-                        chunk_size = chunk_size, convergence_crit = convergence_crit)
+                        object = object, n.coef = n.coef, sample = sample,
+                        control = control, ...)
     }
     
     
@@ -183,6 +184,8 @@ goric_benchmark_anova <- function(object, pop.es = 0, ratio.pop.means = NULL,
     
     # Stop the parallel backend
     parallel::stopCluster(cl)
+    
+    #sapply(results, function(result) result$test)
     
     # combine results from parallel process
     goric <- sapply(results, function(result) result$goric)
@@ -230,7 +233,7 @@ goric_benchmark_anova <- function(object, pop.es = 0, ratio.pop.means = NULL,
     #
     rownames(CI.benchmarks_gw) <- rownames(CI.benchmarks_lw) <- rownames(CI.benchmarks_lw_ge1) <- rownames(CI.benchmarks_ld) <- rownames(CI.benchmarks_ld_ge0) <- paste(pref.hypo, names(object$ratio.gw[PrefHypo,]))
 
-    name <- paste0("pop.es = ", pop.es[teller.es])
+    name <- paste0("pop.es = ", pop_es[teller.es])
     CI.benchmarks_all[[name]] <- CI.benchmarks_goric
     CI.benchmarks_gw_all[[name]] <- CI.benchmarks_gw
     CI.benchmarks_lw_all[[name]] <- CI.benchmarks_lw
@@ -255,13 +258,17 @@ goric_benchmark_anova <- function(object, pop.es = 0, ratio.pop.means = NULL,
         results.goric_pref <- goric(means, VCOV = VCOV,
                                     hypotheses = list(H_pref = H_pref),
                                     comparison = "complement",
-                                    type = object$type)
+                                    type = object$type, 
+                                    control = control, 
+                                    ...)
       } else {
         fit_data <- object$model.org
         results.goric_pref <- goric(fit_data,
                                     hypotheses = list(H_pref = H_pref),
                                     comparison = "complement",
-                                    type = object$type)
+                                    type = object$type,
+                                    control = control, 
+                                    ...)
       }
       if (object$type == 'goric') {
         error.prob <- results.goric_pref$result$goric.weights[2]
@@ -281,8 +288,8 @@ goric_benchmark_anova <- function(object, pop.es = 0, ratio.pop.means = NULL,
     group.size = samplesize,
     means.data = means, ratio.means.data = ratio_data, ES.data = ES_data,
     res.var.data = var.e_data,
-    pop.es = pop.es, pop.means = means_pop_all,
-    ratio.pop.means = ratio.pop.means,
+    pop_es = pop_es, pop.means = means_pop_all,
+    ratio_pop_means = ratio_pop_means,
     res.var.pop = var.e,
     pref.hypo = pref.hypo, error.prob.pref.hypo = error.prob,
     benchmarks.weight = CI.benchmarks_all,

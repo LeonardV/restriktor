@@ -148,15 +148,15 @@ evSyn <- function(object, ...) {
   
   arguments <- list(...)
   
-  checkArguments <- function(args) {
-    pnames <- c("VCOV", "PT", "hypotheses", "type", "comparison", "hypo_names")
-    pm <- pmatch(names(args), pnames, nomatch = 0L)
-    if (any(pm == 0L)) { 
-      stop("Restriktor Error: ", names(args[which(pm == 0L)]), " invalid argument(s).")
-    }
-  }
-  
-  if (length(arguments)) checkArguments(arguments)
+  # checkArguments <- function(args) {
+  #   pnames <- c("VCOV", "PT", "hypotheses", "type", "comparison", "hypo_names")
+  #   pm <- pmatch(names(args), pnames, nomatch = 0L)
+  #   if (any(pm == 0L)) { 
+  #     stop("Restriktor Error: ", names(args[which(pm == 0L)]), " invalid argument(s).")
+  #   }
+  # }
+  # 
+  # if (length(arguments)) checkArguments(arguments)
   
   VCOV <- arguments$VCOV
   PT   <- arguments$PT
@@ -369,7 +369,8 @@ evSyn_est.list <- function(object, ..., VCOV = list(), hypotheses = list(),
   for (s in 1:S) {
     res_goric <- goric(object[[s]], VCOV = VCOV[[s]],
                        hypotheses = hypotheses[[s]],
-                       type = 'gorica', comparison = comparison)
+                       type = 'gorica', comparison = comparison,
+                       ...)
 
     if (comparison == "unconstrained") {
       ratio.weight_mu[s, ] <- res_goric$ratio.gw[, NrHypos_incl]

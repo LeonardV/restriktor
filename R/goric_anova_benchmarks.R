@@ -132,7 +132,7 @@ goric_benchmark_anova <- function(object, pop_es = 0, ratio_pop_means = NULL,
   sample <- NULL
   D <- as.factor(rep(1:n.coef, times = samplesize))
   sample$D <- D
-  sample <- cbind(D, model.matrix(~ D - 1, data = sample))
+  sample <- data.frame(D, model.matrix(~ D - 1, data = sample))
   #sample <- dummy_cols(sample, select_columns = 'D')
   colnames(sample)[-1] <- names(coef(object))
   

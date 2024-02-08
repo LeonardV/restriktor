@@ -122,12 +122,6 @@ restriktor(object, constraints = NULL, \dots)
     }
     Control options for calculating the chi-bar-square weights:
     \itemize{
-      \item control parameters passed to the truncated multivariate normal distribution.
-      By default, restriktor uses no truncation points for calculating the chi-bar-square 
-      weights, which renders to the multivariate normal distribution. See the 
-      manual page of the \code{tmvtnorm} function to see how to specify a truncated 
-      mvnorm distribution and the possible arguments.
-      
       \item \code{chunk_size} integer; the chi-bar-square weights are computed for samples
       of size \code{chunk_size = 5000L}. This process is repeated iteratively until the 
       weights converges (see \code{convergenge_crit}) or the maximum is reached, i.e., 
@@ -142,9 +136,15 @@ restriktor(object, constraints = NULL, \dots)
   }
   \item{verbose}{logical; if TRUE, information is shown at each bootstrap draw.}
   \item{debug}{if TRUE, debugging information about the constraints
-  is printed out.
-  }
-  \item{\ldots}{no additional arguments for now.}
+  is printed out.}
+  
+  \emph{Options for calculating the chi-bar-square weights}:
+  \item{\ldots}{parameters passed to the truncated multivariate normal distribution.
+      By default, restriktor (i.e. \code{con_weights_boot} function) uses no 
+      truncation points for calculating the chi-bar-square weights, which renders 
+      to the multivariate normal distribution. See the manual page of the 
+      \code{rtmvnorm} function from the \pkg{rtmvnorm} to see how to specify a 
+      truncated mvnorm distribution and the possible arguments.}
 }
 
 \details{

@@ -78,7 +78,16 @@ comparable to the Akaike weights.
   restriktor, further objects of class restriktor can be passed. Note that, the 
   objects have to be of the same class. If object is of class \code{lavaan}, the 
   standardized or unstandardized vcov can be used, using setting \code{standardized = TRUE}. 
-  See details for more information.}
+  See details for more information.
+  
+  \emph{Options for calculating the chi-bar-square weights:}
+
+  Parameters passed to the truncated multivariate normal distribution. By default, 
+  restriktor (i.e. \code{con_weights_boot} function) uses no truncation points 
+  for calculating the chi-bar-square weights, which renders to the multivariate 
+  normal distribution. See the manual page of the \code{rtmvnorm} function from 
+  the \pkg{rtmvnorm} to see how to specify a truncated mvnorm distribution and 
+  the possible arguments.}
   
   \item{hypotheses}{a named list; Please note that the hypotheses argument in the given 
   context serves the same purpose as the constraints argument utilized in the 
@@ -142,12 +151,6 @@ comparable to the Akaike weights.
   Control options for calculating the chi-bar-square weights:
   \item{control}{
     \itemize{
-      \item control parameters passed to the truncated multivariate normal distribution.
-      By default, restriktor uses no truncation points for calculating the chi-bar-square 
-      weights, which renders to the multivariate normal distribution. See the 
-      manual page of the \code{tmvtnorm} function to see how to specify a truncated 
-      mvnorm distribution and the possible arguments.
-      
       \item \code{chunk_size} integer; the chi-bar-square weights are computed for samples
       of size \code{chunk_size = 5000L}. This process is repeated iteratively until the 
       weights converges (see \code{convergenge_crit}) or the maximum is reached, i.e., 

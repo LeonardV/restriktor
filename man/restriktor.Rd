@@ -19,27 +19,23 @@ restriktor(object, constraints = NULL, \dots)
 
 \method{conLM}{lm}(object, constraints = NULL, se = "standard", 
       B = 999, rhs = NULL, neq = 0L, mix_weights = "pmvnorm", 
-      mix_weights_bootstrap_limit = 1e5L, parallel = "no", ncpus = 1L, 
-      cl = NULL, seed = NULL, control = list(), 
-      verbose = FALSE, debug = FALSE, \dots)
+      parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
+      control = list(), verbose = FALSE, debug = FALSE, \dots)
       
 \method{conRLM}{rlm}(object, constraints = NULL, se = "standard", 
        B = 999, rhs = NULL, neq = 0L, mix_weights = "pmvnorm", 
-       mix_weights_bootstrap_limit = 1e5L, parallel = "no", ncpus = 1L, 
-       cl = NULL, seed = NULL, control = list(), 
-       verbose = FALSE, debug = FALSE, \dots)
+       parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
+       control = list(), verbose = FALSE, debug = FALSE, \dots)
        
 \method{conGLM}{glm}(object, constraints = NULL, se = "standard", 
        B = 999, rhs = NULL, neq = 0L, mix_weights = "pmvnorm", 
-       mix_weights_bootstrap_limit = 1e5L, parallel = "no", ncpus = 1L, 
-       cl = NULL, seed = NULL, control = list(), 
-       verbose = FALSE, debug = FALSE, \dots)
+       parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
+       control = list(), verbose = FALSE, debug = FALSE, \dots)
 
 \method{conMLM}{mlm}(object, constraints = NULL, se = "none", 
        B = 999, rhs = NULL, neq = 0L, mix_weights = "pmvnorm", 
-       mix_weights_bootstrap_limit = 1e5L, parallel = "no", ncpus = 1L, 
-       cl = NULL, seed = NULL, control = list(), 
-       verbose = FALSE, debug = FALSE, \dots)
+       parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
+       control = list(), verbose = FALSE, debug = FALSE, \dots)
 }
 
 \arguments{
@@ -99,9 +95,6 @@ restriktor(object, constraints = NULL, \dots)
   for computing the GORIC. Moreover, the weights are re-used in the 
   \code{\link{iht}} function for computing the p-value for the 
   test-statistic, unless the p-value is computed directly via bootstrapping.}
-  \item{mix_weights_bootstrap_limit}{integer; number of bootstrap draws for 
-  \code{mix_weights = "boot"}. The default value is set to 1e5.  
-  }
   \item{parallel}{the type of parallel operation to be used (if any). 
   If missing, the default is set "no".}
   \item{ncpus}{integer: number of processes to be used in parallel 

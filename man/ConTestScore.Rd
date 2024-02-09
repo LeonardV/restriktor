@@ -110,9 +110,9 @@ used directly and is called by the \code{conTest} function if \code{test = "scor
   or arguments for the restriktor or iht function. Consider, for example, the 
   mix_weights_bootstrap_limit argument, which specifies the maximum number of 
   bootstrap draws (default is 100.000) used to compute the chi-bar-square weights. 
-  If mix_weights_bootstrap_limit is set to 100.000 (\code{mix_weights_bootstrap_limit = 1e5}), 
-  then in each iteration, a sample of size 5000 (\code{chunk_size = 5000}) is 
-  added until the weights converge, or the maximum limit is reached.}
+  If mix_weights_bootstrap_limit is set to 100.000, then in each iteration, a 
+  sample of size 5000 is added until the weights converge, or the maximum limit 
+  is reached.}
 }
 
 \details{The following hypothesis tests are available:

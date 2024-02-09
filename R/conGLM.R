@@ -1,8 +1,7 @@
 conGLM.glm <- function(object, constraints = NULL, se = "standard", 
                        B = 999L, rhs = NULL, neq = 0L, mix_weights = "pmvnorm", 
-                       mix_weights_bootstrap_limit = 1e5L, parallel = "no", 
-                       ncpus = 1L, cl = NULL, seed = NULL, control = list(), 
-                       verbose = FALSE, debug = FALSE, ...) {
+                       parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
+                       control = list(), verbose = FALSE, debug = FALSE, ...) {
     
   # check class
   if (!(class(object)[1] == "glm")) {
@@ -347,14 +346,15 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
       wt.bar <- con_weights_boot(VCOV             = Sigma,
                                  Amat             = Amat, 
                                  meq              = meq, 
-                                 R                = mix_weights_bootstrap_limit,
+                                 R                = ifelse(is.null(control$mix_weights_bootstrap_limit),
+                                                            1e5L, control$mix_weights_bootstrap_limit),
                                  seed             = seed,
                                  convergence_crit = ifelse(is.null(control$convergence_crit), 
                                                            1e-03, control$convergence_crit),
                                  chunk_size = ifelse(is.null(control$chunk_size), 
                                                            1e4, control$chunk_size),
                                  verbose          = verbose, ...)
-      attr(wt.bar, "mix_weights_bootstrap_limit") <- mix_weights_bootstrap_limit 
+      attr(wt.bar, "mix_weights_bootstrap_limit") <- control$mix_weights_bootstrap_limit 
     } else if (mix_weights == "pmvnorm" && (meq < nrow(Amat))) {
       # compute chi-square-bar weights based on pmvnorm
       wt.bar <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))

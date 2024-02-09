@@ -13,7 +13,7 @@ restriktor <- function(object, constraints = NULL, ...) {
   
   arguments <- list(...)
   if (length(arguments)) {
-    pnames <- c("se", "B", "rhs", "neq", "mix_weights", "mix_weights_bootstrap_limit", 
+    pnames <- c("se", "B", "rhs", "neq", "mix_weights",  
                 "auxilliary", "emControl", "parallel", "ncpus", "cl", "seed", 
                 "control", "verbose", "debug", "auto_bound",
                 #"chunk_size", "convergence_crit",

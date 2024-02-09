@@ -12,7 +12,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   ldots$control <- control
   
   # which arguments are allowed
-  goric_arguments <- c("B", "mix_weights", "mix_weights_bootstrap_limit", "parallel", 
+  goric_arguments <- c("B", "mix_weights", "parallel", 
                        "ncpus", "cl", "seed", "control", "verbose", "debug", 
                        "comparison", "type", "hypotheses", "auxiliary",
                        "VCOV", "sample.nobs", "object",

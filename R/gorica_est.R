@@ -1,8 +1,7 @@
 con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
                            rhs = NULL, neq = 0L, mix_weights = "pmvnorm", 
-                           mix_weights_bootstrap_limit = 1e5L, #parallel = "no", 
-                           ncpus = 1L, cl = NULL, seed = NULL, 
-                           control = list(), verbose = FALSE, debug = FALSE, ...) {
+                           seed = NULL, control = list(), verbose = FALSE, 
+                           debug = FALSE, ...) {
   
   # check class
   # if (!(class(object)[1] %in% c("numeric", "CTmeta"))) { 
@@ -85,11 +84,11 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
   
   ## check if constraint matrix is of full-row rank. 
   rAmat <- GaussianElimination(t(Amat)) # qr()$rank
-  if (mix_weights_bootstrap_limit == "pmvnorm") {
+  if (mix_weights == "pmvnorm") {
     if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
       messages$mix_weights <- paste(
         "Restriktor message: Since the constraint matrix is not full row-rank, the level probabilities 
- are calculated using mix_weights_bootstrap_limit = \"boot\" (the default is mix_weights_bootstrap_limit = \"pmvnorm\").
+ are calculated using mix_weights = \"boot\" (the default is mix_weights = \"pmvnorm\").
  For more information see ?restriktor.\n"
       )
       mix_weights <- "boot"
@@ -201,10 +200,8 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
       wt.bar <- con_weights_boot(VCOV             = Sigma,
                                  Amat             = Amat, 
                                  meq              = meq, 
-                                 R                = mix_weights_bootstrap_limit,
-                                 #parallel         = parallel, 
-                                 #ncpus            = ncpus, 
-                                 #cl               = cl,
+                                 R                = ifelse(is.null(control$mix_weights_bootstrap_limit),
+                                                           1e5L, control$mix_weights_bootstrap_limit),
                                  seed             = seed,
                                  convergence_crit = ifelse(is.null(control$convergence_crit), 
                                                            1e-03, control$convergence_crit),
@@ -212,7 +209,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
                                                            5000L, control$chunk_size),
                                  verbose          = verbose, 
                                  ...)
-      attr(wt.bar, "mix_weights_bootstrap_limit") <- mix_weights_bootstrap_limit 
+      attr(wt.bar, "mix_weights_bootstrap_limit") <- control$mix_weights_bootstrap_limit 
     } else if (mix_weights == "pmvnorm" && (meq < nrow(Amat))) {
       # compute chi-square-bar weights based on pmvnorm
       wt.bar <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))

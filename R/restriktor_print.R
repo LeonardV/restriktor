@@ -31,9 +31,9 @@ print.restriktor <- function(x, digits = max(3, getOption("digits") - 2), ...) {
     wt_boostrap_errors <- attr(x$wt.bar, "error.idx")
     converged <- attr(x$wt.bar, "converged")
     successful_draws <- total_bootstrap_draws - length(wt_boostrap_errors)
-    cat("Bootstrap-based penalty term calculation:\n")
+    cat("Bootstrap-based penalty term calculation:", paste0(ifelse(converged, "(Converged)", "(Not converged)")), "\n")
     cat("  Number of bootstrap draws:", total_bootstrap_draws, "\n")
-    cat("  Number of successful bootstrap draws:", paste0(successful_draws, ifelse(converged, " (Converged)", " (Not converged)")), "\n\n")
+    cat("  Number of successful bootstrap draws:", paste0(successful_draws), "\n\n")
   }
   
   coef <- coef(x)

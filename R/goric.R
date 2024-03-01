@@ -37,8 +37,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
     constraints <- NULL
   }
   
-  mc <- match.call()
-  CALL <- as.list(mc[-1])
+  #mc <- match.call()
+  #CALL <- as.list(mc[-1])
  
   # some checks
   comparison <- tolower(comparison)
@@ -84,12 +84,11 @@ goric.default <- function(object, ..., hypotheses = NULL,
     # standard errors are not needed
     ldots$se <- "none"
     # fit restriktor object for each hypothesis
-    conList <- list()
-    for (con in 1:length(constraints)) {
-      CALL.restr <- c(list(object      = object$object,
-                           constraints = constraints[[con]]), ldots)
-      conList[[con]] <- do.call("restriktor", CALL.restr)
-    }
+    conList <- lapply(constraints, function(constraint) {
+      CALL.restr <- append(list(object      = object$object, 
+                                constraints = constraint), ldots)
+      do.call("restriktor", CALL.restr)
+    })
     names(conList) <- names(constraints)
     # compute summary for each restriktor object. 
     isSummary <- lapply(conList, function(x) summary(x, 
@@ -103,7 +102,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     sample.nobs <- nrow(model.frame(object[[1]]))
     idx <- length(conList) 
     objectnames <- vector("character", idx)
-    CALL$object <- NULL
+    #CALL$object <- NULL
   } else if (any(object_class %in% c("lm","rlm","glm","mlm")) && !isConChar) {
     # tolower names Amat and rhs
     for (i in seq_along(constraints)) { 
@@ -120,15 +119,14 @@ goric.default <- function(object, ..., hypotheses = NULL,
     # standard errors are not needed
     ldots$se <- "none"
     # fit restriktor object for each hypothesis
-    conList <- list()
-    for (con in 1:length(constraints)) {
+    conList <- lapply(constraints, function(constraint) {
       CALL.restr <- append(list(object      = object$object,
-                                constraints = constraints[[con]]$constraints,
-                                rhs         = constraints[[con]]$rhs,
-                                neq         = constraints[[con]]$neq), ldots)
-      
-      conList[[con]] <- do.call("restriktor", CALL.restr) 
-    }
+                                constraints = constraint$constraints,
+                                rhs         = constraint$rhs,
+                                neq         = constraint$neq), ldots)
+      do.call("restriktor", CALL.restr)
+    })
+    
     names(conList) <- names(constraints)
     # compute symmary for each restriktor object. Here is the goric value 
     # computed. Note: not the gorica value
@@ -142,16 +140,16 @@ goric.default <- function(object, ..., hypotheses = NULL,
     sample.nobs <- nrow(model.frame(object[[1]]))
     idx <- length(conList) 
     objectnames <- vector("character", idx)
-    CALL$object <- NULL
+    #CALL$object <- NULL
   } else if ("numeric" %in% object_class & isConChar) {
     # fit restriktor object for each hypothesis
-    conList <- list()
-    for (con in 1:length(constraints)) {
+    conList <- lapply(constraints, function(constraint) {
       CALL.restr <- append(list(object      = object$object, 
-                                constraints = constraints[[con]],
+                                constraints = constraint,
                                 VCOV        = as.matrix(VCOV)), ldots)
-      conList[[con]] <- do.call("con_gorica_est", CALL.restr)  
-    }
+      do.call("con_gorica_est", CALL.restr)
+    })
+    
     names(conList) <- names(constraints)
     
     ans$hypotheses_usr <- lapply(conList, function(x) x$CON$constraints)
@@ -171,15 +169,14 @@ goric.default <- function(object, ..., hypotheses = NULL,
                call. = FALSE)
         }
       }
-      conList <- list()
-      for (con in 1:length(constraints)) {
+      conList <- lapply(constraints, function(constraint) {
         CALL.restr <- append(list(object      = object$object,
                                   VCOV        = as.matrix(VCOV),
-                                  constraints = constraints[[con]]$constraints,
-                                  rhs         = constraints[[con]]$rhs,
-                                  neq         = constraints[[con]]$neq), ldots)
-        conList[[con]] <- do.call("con_gorica_est", CALL.restr) 
-      }
+                                  constraints = constraint$constraints,
+                                  rhs         = constraint$rhs,
+                                  neq         = constraint$neq), ldots)
+        do.call("con_gorica_est", CALL.restr)
+      })
       names(conList) <- names(constraints)
       
       isSummary <- lapply(conList, function(x) summary(x, 
@@ -242,7 +239,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     } else {
       Amat.ceq <- matrix(, nrow = 0, ncol = ncol(Amat))
       bvec.ceq <- rep(0, 0)
-      Amat.ciq <- Amat[ , , drop = FALSE]
+      Amat.ciq <- Amat[, , drop = FALSE]
       bvec.ciq <- bvec
     }
     
@@ -335,7 +332,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
       llm <- dmvnorm(c(b.unrestr - b.restr), sigma = VCOV, log = TRUE)
     }
   
-    
     # compute the number of free parameters f in the complement
     p <- ncol(VCOV)
     # rank q1

@@ -43,7 +43,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   # some checks
   comparison <- tolower(comparison)
   comparison <- match.arg(comparison)
-  stopifnot(comparison %in% c("unconstrained", "complement", "none"))
+  #stopifnot(comparison %in% c("unconstrained", "complement", "none"))
   
   type <- tolower(type)
   stopifnot(type %in% c("goric", "goricc", "gorica", "goricac"))

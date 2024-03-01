@@ -61,6 +61,10 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       not_all_converged <- !all(converged)
       not_all_draws_successful <- !all(successful_draws == total_bootstrap_draws)
       
+      # for testing purposes only
+      # has_errors <- TRUE
+      # not_all_draws_successful <- TRUE
+      
       if (any(has_errors) || not_all_converged) { 
         if (not_all_draws_successful || not_all_converged) {
           cat("Bootstrap-based penalty term calculation:\n")
@@ -73,7 +77,7 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
         } 
         text2 <- paste("Advise: If a substantial number of bootstrap draws fail to converge,", 
                 "the resulting penalty term may become unreliable. In such cases, it is advisable", 
-                "to increase the number of bootstrap draws.")
+                "to increase the number of bootstrap draws, i.e., control = list(mix_weights_bootstrap_limit = 1e5)")
       }
     }
   }

@@ -6,7 +6,7 @@ goric_benchmark_anova <- function(object, pop_es = 0, ratio_pop_means = NULL,
   
   # Check:
   if (!inherits(object, "con_goric")) {# any(class(object) == "con_goric")){
-    return(paste0("The argument object should be of class con_goric (a goric object from restriktor); it belongs to ", class(object)))
+    return(paste0("The object should be of class con_goric (a goric object from restriktor); it belongs to ", class(object)))
   }
 
   # number of groups
@@ -193,7 +193,8 @@ goric_benchmark_anova <- function(object, pop_es = 0, ratio_pop_means = NULL,
     lw    <- do.call(cbind, lapply(results, function(result) result$lw))
     ld    <- do.call(cbind, lapply(results, function(result) result$ld))
     
-    CI.benchmarks_goric <- matrix(c(object$result[PrefHypo,7], quantile(goric, quant)), nrow = 1) # sample weight with calculated quantiles/percentiles
+    CI.benchmarks_goric <- matrix(c(object$result[PrefHypo,7], quantile(goric, quant)), 
+                                  nrow = 1) # sample weight with calculated quantiles/percentiles
     colnames(CI.benchmarks_goric) <- names_quant
     rownames(CI.benchmarks_goric) <- pref.hypo
     #
@@ -229,9 +230,13 @@ goric_benchmark_anova <- function(object, pop_es = 0, ratio_pop_means = NULL,
       CI.benchmarks_ld_ge0[j,2:(1+length(quant))] <- quantile(ld_ge0[j,], quant)
     }
     #
-    colnames(CI.benchmarks_gw) <- colnames(CI.benchmarks_lw) <- colnames(CI.benchmarks_lw_ge1) <- colnames(CI.benchmarks_ld) <- colnames(CI.benchmarks_ld_ge0) <- names_quant
+    colnames(CI.benchmarks_gw) <- colnames(CI.benchmarks_lw) <- 
+      colnames(CI.benchmarks_lw_ge1) <- colnames(CI.benchmarks_ld) <- 
+      colnames(CI.benchmarks_ld_ge0) <- names_quant
     #
-    rownames(CI.benchmarks_gw) <- rownames(CI.benchmarks_lw) <- rownames(CI.benchmarks_lw_ge1) <- rownames(CI.benchmarks_ld) <- rownames(CI.benchmarks_ld_ge0) <- paste(pref.hypo, names(object$ratio.gw[PrefHypo,]))
+    rownames(CI.benchmarks_gw) <- rownames(CI.benchmarks_lw) <- 
+      rownames(CI.benchmarks_lw_ge1) <- rownames(CI.benchmarks_ld) <- 
+      rownames(CI.benchmarks_ld_ge0) <- paste(pref.hypo, names(object$ratio.gw[PrefHypo,]))
 
     name <- paste0("pop.es = ", pop_es[teller.es])
     CI.benchmarks_all[[name]] <- CI.benchmarks_goric
@@ -281,9 +286,7 @@ goric_benchmark_anova <- function(object, pop_es = 0, ratio_pop_means = NULL,
   # TO DO bepaal ook quantiles voor error prob. Ws verwerken in bovenstaande!
   # Is het zinnig? Op zich zou error prob al zinnig moeten zijn immers....
   
-  
-  
-  final <- list(#message = message,
+  final <- list(
     n.coef = n.coef,
     group.size = samplesize,
     means.data = means, ratio.means.data = ratio_data, ES.data = ES_data,
@@ -302,4 +305,4 @@ goric_benchmark_anova <- function(object, pop_es = 0, ratio_pop_means = NULL,
   class(final) <- c("benchmarks", "list")
   final
   
-} # end of function
+} 

@@ -111,7 +111,7 @@ summary.con_goric <- function(object, brief = TRUE,
   
   if (comparison == "complement") {# && length(unique_combinations) == 0) {
     cat("The order-restricted hypothesis", sQuote(objectnames[1]), "has", 
-        sprintf("%.3f", as.numeric(ratio.gw[1,2])), "times more support than its complement.\n\n")
+        sprintf("%.2f", as.numeric(ratio.gw[1,2])), "times more support than its complement.\n\n")
   } 
   
   # if (!is.null(x$messages$mix_weights)) {

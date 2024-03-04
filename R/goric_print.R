@@ -190,7 +190,7 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   if (comparison == "complement" && length(overlap_unique_combinations) == 0) {# && length(bound_unique_combinations) == 0) { 
     objectnames <- as.character(df$model)
     class(x$ratio.gw) <- "numeric"
-    cat("---\nThe order-restricted hypothesis", sQuote(objectnames[1]), "has", sprintf("%.3f", x$ratio.gw[1,2]), "times more support than its complement.\n\n")
+    cat("---\nThe order-restricted hypothesis", sQuote(objectnames[1]), "has", sprintf("%.2f", x$ratio.gw[1,2]), "times more support than its complement.\n\n")
   } else if (comparison == "unconstrained" && length(overlap_unique_combinations) == 0 && length(df$model) == 2) { #&& length(bound_unique_combinations) == 0) {
     objectnames <- as.character(df$model)
     formatted_numbers <- sprintf("%.3f %.3f", x$result[[7]][1], x$result[[7]][2])

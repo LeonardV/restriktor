@@ -6,7 +6,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
                           VCOV = NULL, sample.nobs = NULL,
                           type = "goric", control = list(),
                           debug = FALSE) {
-
   ldots <- list(...)
   ldots$missing <- NULL
   ldots$control <- control
@@ -37,9 +36,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
     constraints <- NULL
   }
   
-  #mc <- match.call()
-  #CALL <- as.list(mc[-1])
- 
   # some checks
   comparison <- tolower(comparison)
   comparison <- match.arg(comparison)

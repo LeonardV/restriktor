@@ -200,11 +200,13 @@ con_weights_boot <- function(VCOV, Amat, meq, R = 1e5L,
     
     # aanpassen argumenten namen in handleidingen
     prev_wt_bar    <- wt_bar
-    chunk_wt_bar   <- rbind(chunk_wt_bar, wt_bar)
+    chunk_wt_bar <- rbind(chunk_wt_bar, wt_bar)
     prev_error_idx <- c(error_idx, prev_error_idx)
     chunk_iter     <- chunk_iter + 1L
     chunk_size     <- chunk_size + chunk_size_org
   }
+
+  rownames(chunk_wt_bar) <- paste0("chunk_iter_", 1:nrow(chunk_wt_bar))
   
   attr(wt_bar, "total_bootstrap_draws") <- length(iact)
   attr(wt_bar, "converged"            ) <- has_converged
@@ -212,7 +214,7 @@ con_weights_boot <- function(VCOV, Amat, meq, R = 1e5L,
   attr(wt_bar, "wt_bar_chunk"         ) <- chunk_wt_bar
   attr(wt_bar, "chunk_size"           ) <- chunk_size_org
   attr(wt_bar, "total_chunks"         ) <- total_chunks
-  attr(wt_bar, "chunk_iter"           ) <- chunk_iter
+  attr(wt_bar, "chunk_iter"           ) <- chunk_iter 
   attr(wt_bar, "error.idx"            ) <- prev_error_idx
   attr(wt_bar, "mvtnorm"              ) <- ldots
   

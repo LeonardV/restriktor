@@ -369,7 +369,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
       cat("penalty term value =", PTc, "\n")
     }
     
-    # correction for gorica(c)
+    # correction for gorica(c): -1 because no 
     if (type %in% c("gorica", "goricac")) {
      PTc <- PTc - 1
     }
@@ -377,7 +377,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     
   ## compute loglik-value, goric(a)-values, and PT-values if comparison = unconstrained
   switch(comparison,
-           "unconstrained" = { 
+          "unconstrained" = { 
             PTm <- unlist(lapply(isSummary, function(x) attr(x$goric, "penalty")))
             if (type %in% c("goric", "goricc")) {
               # model
@@ -423,7 +423,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
             rownames(df) <- NULL
             names(df)[4] <- type
            },
-         "complement" = {
+          "complement" = {
             ## compute loglik-value, goric(a)-values, and PT-values if comparison = complement
             PTm <- unlist(lapply(isSummary, function(x) attr(x$goric, "penalty")))
             
@@ -456,8 +456,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
             }
             df <- rbind(df.Hm, df.c)
             names(df)[4] <- type
-        },
-        "none" = {
+            },
+         "none" = {
           ## compute loglik-value, goric(a)-values, and PT-values if comparison = none
           PT <- unlist(lapply(isSummary, function(x) attr(x$goric, "penalty")))
           if (type %in% c("goric", "goricc")) {
@@ -478,44 +478,23 @@ goric.default <- function(object, ..., hypotheses = NULL,
           stop("restriktor ERROR: I don't know how to compute the goric-values.")
   )
 
-  LL <- -2*df$loglik
-  delta_LL <- LL - min(LL)
-  loglik.weights <- exp(0.5 * -delta_LL) / sum(exp(0.5 * -delta_LL))
-  penalty.weights <- exp(-df$penalty) / sum(exp(-df$penalty))
-  df$loglik.weights <- loglik.weights
-  df$penalty.weights <- penalty.weights
-  
   ans$objectList  <- conList
   ans$objectNames <- objectnames
-  # compute goric weights and ratio weights
-  delta <- df$goric - min(df$goric)
-  goric.weights <- exp(0.5 * -delta) / sum(exp(0.5 * -delta))
-  df$goric.weights <- goric.weights
+  
+  # calculate LL, PT, goric weights and ratios
+  model_comparison_metrics <- calculate_model_comparison_metrics(df)
+  
+  df$loglik.weights  <- model_comparison_metrics$loglik_weights
+  df$penalty.weights <- model_comparison_metrics$penalty_weights
+  df$goric.weights   <- model_comparison_metrics$goric_weights
   names(df)[7] <- paste0(type, ".weights")
   rownames(df) <- NULL
-  ans$result <- df
 
-  # compute ratio weights
-  modelnames <- as.character(df$model)
-  #if (length(modelnames) > 1) {
-    goric_rw   <- goric.weights %*% t(1/goric.weights)
-    penalty_rw <- penalty.weights %*% t(1/penalty.weights)
-    loglik_rw  <- loglik.weights %*% t(1/loglik.weights)
-    # it might happen that a diagonal value results in NaN.
-    diag(goric_rw) <- 1
-    diag(penalty_rw) <- 1
-    diag(loglik_rw) <- 1
-    rownames(goric_rw) <- modelnames
-    rownames(penalty_rw) <- modelnames
-    rownames(loglik_rw) <- modelnames
-    colnames(goric_rw) <- paste0("vs. ", modelnames)
-    colnames(penalty_rw) <- paste0("vs. ", modelnames)
-    colnames(loglik_rw) <- paste0("vs. ", modelnames)
-    ans$ratio.gw <- goric_rw
-    ans$ratio.pw <- penalty_rw
-    ans$ratio.lw <- loglik_rw
-  #}
-  
+  ans$result <- df
+  ans$ratio.gw <- model_comparison_metrics$goric_rw
+  ans$ratio.pw <- model_comparison_metrics$penalty_rw
+  ans$ratio.lw <- model_comparison_metrics$loglik_rw
+
   
   # list all object estimates
   coefs <- lapply(conList, FUN = function(x) { coef(x) } )

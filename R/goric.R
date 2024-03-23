@@ -511,13 +511,21 @@ goric.default <- function(object, ..., hypotheses = NULL,
     rownames(coefs) <- objectnames    
   }
   
-  # list of constraints
-  ans$constraints <- lapply(conList, FUN = function(x) { x$constraints } )
-    names(ans$constraints) <- ans$objectNames
-  ans$rhs <- lapply(conList, FUN = function(x) { x$rhs } )
-    names(ans$rhs) <- ans$objectNames
-  ans$neq  <- lapply(conList, FUN = function(x) { x$neq } )
-    names(ans$neq) <- ans$objectNames
+  # Extracting and naming in one step for each attribute
+  attributes <- c("constraints", "rhs", "neq")
+  for (attr in attributes) {
+    extracted <- lapply(conList, function(x) x[[attr]])
+    names(extracted) <- ans$objectNames
+    ans[[attr]] <- extracted
+  }
+  
+  # # list of constraint matrices (Amat)
+  # ans$constraints <- lapply(conList, FUN = function(x) { x$constraints } )
+  #   names(ans$constraints) <- ans$objectNames
+  # ans$rhs <- lapply(conList, FUN = function(x) { x$rhs } )
+  #   names(ans$rhs) <- ans$objectNames
+  # ans$neq  <- lapply(conList, FUN = function(x) { x$neq } )
+  #   names(ans$neq) <- ans$objectNames
   
   ans$Sigma <- VCOV
   ans$b.unrestr <- conList[[1]]$b.unrestr
@@ -526,14 +534,18 @@ goric.default <- function(object, ..., hypotheses = NULL,
   ans$type <- type
   ans$messages$mix_weights <- do.call("rbind", lapply(isSummary, FUN = function(x) { x$messages$mix_weights }))
   ans$messages$mix_weights <- ans$messages$mix_weights [!duplicated(ans$messages$mix_weights )]
+
+  # Assign class based on type\
+  classMappings <- list(
+    "goric"  = "con_goric",
+    "goricc" = "con_goric",
+    "gorica" = c("con_gorica", "con_goric"),
+    "goricac" = c("con_gorica", "con_goric")
+  )
   
-  if (type %in% c("goric", "goricc")) {
-    class(ans) <- "con_goric"
-  } else if (type %in% c("gorica", "goricac")) {
-    class(ans) <- c("con_gorica", "con_goric")
-  }
+  class(ans) <- classMappings[[type]]
   
-  ans
+  return(ans)
 }
 
 # -------------------------------------------------------------------------

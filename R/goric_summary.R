@@ -1,6 +1,5 @@
 summary.con_goric <- function(object, brief = TRUE, 
                               digits = max(3, getOption("digits") - 4), ...) {
-                              #threshold = 3, ...) {
   
   x <- object
   type <- x$type

@@ -163,6 +163,7 @@ con_weights_boot <- function(VCOV, Amat, meq, R = 1e5L,
   invW <- solve(VCOV)
   Dmat <- 2*invW
   #Z <- mvtnorm::rmvnorm(n = R, mean = rep(0, ncol(VCOV)), sigma = VCOV)
+  # truncated, the default (lower = -Inf and upper = Inf) is not truncated.
   Z <- tmvtnorm::rtmvnorm(n = R, mean = rep(0, ncol(VCOV)), sigma = VCOV, ...)
   dvec <- 2*(Z %*% invW)
   RR <- sum(R)
@@ -200,7 +201,7 @@ con_weights_boot <- function(VCOV, Amat, meq, R = 1e5L,
     
     # aanpassen argumenten namen in handleidingen
     prev_wt_bar    <- wt_bar
-    chunk_wt_bar <- rbind(chunk_wt_bar, wt_bar)
+    chunk_wt_bar   <- rbind(chunk_wt_bar, wt_bar)
     prev_error_idx <- c(error_idx, prev_error_idx)
     chunk_iter     <- chunk_iter + 1L
     chunk_size     <- chunk_size + chunk_size_org

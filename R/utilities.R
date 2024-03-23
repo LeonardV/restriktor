@@ -153,6 +153,43 @@ format_numeric <- function(x, digits = 3) {
 }
 
 
+calculate_model_comparison_metrics <- function(x) {
+  modelnames <- as.character(x$model)
+  ## Log-likelihood
+  LL = -2 * x$loglik
+  delta_LL = LL - min(LL)
+  loglik_weights = exp(0.5 * -delta_LL) / sum(exp(0.5 * -delta_LL))
+  loglik_rw  <- loglik_weights %*% t(1/loglik_weights)
+  diag(loglik_rw) = 1
+  
+  ## penalty
+  penalty_weights = exp(-x$penalty) / sum(exp(-x$penalty))
+  penalty_rw = penalty_weights %*% t(1/penalty_weights)
+  diag(penalty_rw) = 1
+  
+  ## goric
+  delta_goric = x$goric - min(x$goric)
+  goric_weights = exp(0.5 * -delta_goric) / sum(exp(0.5 * -delta_goric))
+  goric_rw = goric_weights %*% t(1/goric_weights)
+  diag(goric_rw) = 1
+  
+  rownames(goric_rw)   = modelnames
+  rownames(penalty_rw) = modelnames
+  rownames(loglik_rw)  = modelnames
+  colnames(goric_rw)   = paste0("vs. ", modelnames)
+  colnames(penalty_rw) = paste0("vs. ", modelnames)
+  colnames(loglik_rw)  = paste0("vs. ", modelnames)
+  
+  out <- list(loglik_weights  = loglik_weights, 
+              penalty_weights = penalty_weights,
+              goric_weights   = goric_weights,
+              loglik_rw       = loglik_rw,
+              penalty_rw      = penalty_rw,
+              goric_rw        = goric_rw)
+  
+  return(out)
+}
+
 # this function is called from the goric_benchmark_anova() function
 parallel_function <- function(i, samplesize, var.e, nr.iter, means_pop, 
                               hypos, PrefHypo, object, n.coef, sample, 

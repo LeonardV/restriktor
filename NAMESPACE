@@ -96,7 +96,7 @@ export("restriktor",
        "con_weights_boot", "coef.con_goric", 
        #"summary.con_goric", 
        "evSyn", "plot.evSyn",
-       "calculate_IC_weights",
+       "calculate_IC_weights", "calc_ICweights",
        "print.goric_ICw"#,
        #"benchmarks_ANOVA"
        #"benchmarks_goric"

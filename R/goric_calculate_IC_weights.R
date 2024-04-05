@@ -2,7 +2,7 @@
 # This function transforms IC values into IC weights: IC values denote the ordering 
 # of hypotheses/models, while IC weights quantify the relative strength of 
 # hypotheses/models.
-calculate_IC_weights <- function(IC, hypo_names = NULL) {
+calc_ICweights <- calculate_IC_weights <- function(IC, hypo_names = NULL) {
   
   # Check if IC is a vector or a matrix with one column
   if (!is.vector(IC) && !(is.matrix(IC) && ncol(IC) == 1)) {

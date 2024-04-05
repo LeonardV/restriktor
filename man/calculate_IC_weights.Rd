@@ -2,12 +2,14 @@
 % Please edit documentation in R/ICweights.r
 \name{calculate_IC_weights}
 \alias{calculate_IC_weights}
+\alias{calc_ICweights}
 \alias{IC_weights}
 \alias{print.goric_ICw}
 \title{Calculating IC weights based on IC values (AIC, ORIC, GORIC(A), BIC, SIC, ...)}
 
 \usage{
 calculate_IC_weights(IC, hypo_names = NULL)
+calc_ICweights(IC, hypo_names = NULL)
 
 \method{print}{goric_ICw}(x, digits = max(3, getOption("digits") - 4), \dots)
 

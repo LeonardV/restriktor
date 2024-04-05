@@ -2,7 +2,6 @@
 # This function transforms IC values into IC weights: IC values denote the ordering 
 # of hypotheses/models, while IC weights quantify the relative strength of 
 # hypotheses/models.
-
 calculate_IC_weights <- function(IC, hypo_names = NULL) {
   
   # Check if IC is a vector or a matrix with one column
@@ -38,13 +37,13 @@ calculate_IC_weights <- function(IC, hypo_names = NULL) {
     colnames(ratio_IC_weights) <- paste0("vs. ", hypo_names)
   
   out <- list(IC = IC, IC_weights = weight_m, ratio_IC_weights = ratio_IC_weights)
-  class(out) <- c("ICw", "list")
+  class(out) <- c("goric_ICw", "list")
   
   return(out)
 }
 
 
-print.ICw <- function(x, digits = max(3, getOption("digits") - 4), ...) {
+print.goric_ICw <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   x <- as.list(x)
   model_names <- attr(x$IC, "names")
   rownames(x$ratio_IC_weights) <- NULL
@@ -57,13 +56,11 @@ print.ICw <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   rownames(df) <- NULL
   
   # Correcting the column names
-  names(df)[4:ncol(df)] <- gsub("vs..", "vs.", names(df)[4:ncol(df)])
+  names(df)[4:ncol(df)] <- gsub("vs..", "vs.", names(df)[4:ncol(df)]) 
   
   # Format and print the dataframe
   formatted_df <- format(df, digits = digits, nsmall = digits, scientific = FALSE)
   print(formatted_df, print.gap = 2, quote = FALSE)
-  
-  return(df)
 }
 
 

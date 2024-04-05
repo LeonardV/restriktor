@@ -97,7 +97,7 @@ export("restriktor",
        #"summary.con_goric", 
        "evSyn", "plot.evSyn",
        "calculate_IC_weights",
-       "print.ICw"#,
+       "print.goric_ICw"#,
        #"benchmarks_ANOVA"
        #"benchmarks_goric"
        #"print.evSyn", 
@@ -157,4 +157,4 @@ S3method(print, evSyn)
 S3method(summary, evSyn)
 S3method(print, summary.evSyn)
 
-S3method(print, ICw)
+S3method(print, goric_ICw)

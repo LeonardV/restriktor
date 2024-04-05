@@ -14,7 +14,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
   # timing
   start.time0 <- start.time <- proc.time()[3]; timing <- list()
   # store call
-  mc <- match.call()
+  #mc <- match.call()
   # rename for internal use
   Amat <- constraints
   bvec <- rhs 
@@ -82,36 +82,14 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
   rAmat <- GaussianElimination(t(Amat)) # qr()$rank
   if (mix_weights == "pmvnorm") {
     if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
-      messages$mix_weights <- paste(
-        "Restriktor message: Since the constraint matrix is not full row-rank, the level probabilities 
- are calculated using mix_weights = \"boot\" (the default is mix_weights = \"pmvnorm\").
- For more information see ?restriktor.\n"
+      messages$mix_weights_rank <- paste(
+        "Restriktor message: Since the constraint matrix is not full row-rank, the level probabilities", 
+         "are calculated using mix_weights = \"boot\" (the default is mix_weights = \"pmvnorm\").",
+         "For more information see ?restriktor.\n"
       )
       mix_weights <- "boot"
     }
   } 
-  
-  # ## remove any linear dependent rows from the constraint matrix
-  # # determine the rank of the constraint matrix/
-  # if (!all(Amat == 0)) {
-  #   # remove any zero vectors
-  #   allZero.idx <- rowSums(abs(Amat)) == 0
-  #   Amat <- Amat[!allZero.idx, , drop = FALSE]
-  #   bvec <- bvec[!allZero.idx]
-  #   rank <- qr(Amat)$rank
-  #   s <- svd(Amat)
-  #   while (rank != length(s$d)) {
-  #     # check which singular values are zero
-  #     zero.idx <- which(zapsmall(s$d) <= 1e-16)
-  #     # remove linear dependent rows and reconstruct the constraint matrix
-  #     Amat <- s$u[-zero.idx, ] %*% diag(s$d) %*% t(s$v)
-  #     Amat <- zapsmall(Amat)
-  #     bvec <- bvec[-zero.idx]
-  #     s <- svd(Amat)
-  #     #cat("rank = ", rank, " ... non-zero det = ", length(s$d), "\n")
-  #   }
-  # }  
-  
   
   timing$constraints <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
@@ -125,7 +103,6 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
     stop("nrow(Amat) != length(bvec)")
   }
   
-
   start.time <- proc.time()[3]
   
   # check if the constraints are not in line with the data, else skip optimization
@@ -133,7 +110,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
     b.restr  <- b.unrestr
     
     OUT <- list(CON         = CON,
-                call        = mc,
+                #call        = mc,
                 timing      = timing,
                 parTable    = parTable,
                 b.unrestr   = b.unrestr,
@@ -155,8 +132,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
                                     meq  = meq)
     b.restr <- out.solver$solution
     names(b.restr) <- names(b.unrestr)
-    b.restr[abs(b.restr) < ifelse(is.null(control$tol), 
-                                  sqrt(.Machine$double.eps), 
+    b.restr[abs(b.restr) < ifelse(is.null(control$tol), sqrt(.Machine$double.eps), 
                                   control$tol)] <- 0L
     
     timing$optim <- (proc.time()[3] - start.time)
@@ -165,7 +141,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
     ll.restr <- dmvnorm(c(b.unrestr - b.restr), sigma = Sigma, log = TRUE)
     
     OUT <- list(CON         = CON,
-                call        = mc,
+                #call        = mc,
                 timing      = timing,
                 parTable    = parTable,
                 b.unrestr   = b.unrestr,
@@ -209,7 +185,28 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
     } else if (mix_weights == "pmvnorm" && (meq < nrow(Amat))) {
       # compute chi-square-bar weights based on pmvnorm
       wt.bar <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
-    } 
+      
+      # Check if wt.bar contains NaN values
+      if (any(is.nan(wt.bar))) {
+        mix_weights <- "boot"
+        wt.bar <- con_weights_boot(VCOV             = Sigma,
+                                   Amat             = Amat, 
+                                   meq              = meq, 
+                                   R                = ifelse(is.null(control$mix_weights_bootstrap_limit),
+                                                             1e5L, control$mix_weights_bootstrap_limit),
+                                   seed             = seed,
+                                   convergence_crit = ifelse(is.null(control$convergence_crit), 
+                                                             1e-03, control$convergence_crit),
+                                   chunk_size = ifelse(is.null(control$chunk_size), 
+                                                       5000L, control$chunk_size),
+                                   verbose          = verbose, 
+                                   ...)
+        attr(wt.bar, "mix_weights_bootstrap_limit") <- control$mix_weights_bootstrap_limit   
+        
+        messages$mix_weights_NaN <- paste(
+          "Restriktor message: Some returned mixing weights are NaN. Switching mix_weights method to 'boot'.\n")
+      } 
+    }
   } else {
     wt.bar <- NA
   }

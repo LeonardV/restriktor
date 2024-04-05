@@ -221,6 +221,33 @@ parallel_function <- function(i, samplesize, var.e, nr.iter, means_pop,
   )
 }
 
+
+# Function to extract messages
+# extract_messages_for_objects <- function(x) {
+#   messages_list <- list()
+#   hypo_messages <- names(x$objectList)
+#   for (object_name in hypo_messages) {
+#     messages_list[[object_name]] <- x$objectList[[object_name]]$messages
+#   }
+#   return(messages_list)
+# }
+
+# Function to identify list and corresponding messages
+identify_messages <- function(x) {
+  messages_info <- list()
+  hypo_messages <- names(x$objectList)
+  for (object_name in hypo_messages) {
+    if (length(x$objectList[[object_name]]$messages) > 0) {
+      messages <- names(x$objectList[[object_name]]$messages)
+      messages_info[[object_name]] <- messages
+    } else {
+      messages_info[[object_name]] <- "No messages"
+    }
+  }
+  return(messages_info)
+}
+
+
 # compute_weights_ratioWeights <- function(x) {
 #   IC <- 2*x
 #   minIC <- min(IC)

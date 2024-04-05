@@ -93,9 +93,9 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     LIST$op  <- op
     LIST$rhs <- c(LIST$rhs, rhs) 
     
-    parTable$lhs <- c(parTable$lhs, LIST$lhs)
-    parTable$op <- c(parTable$op, LIST$op)
-    parTable$rhs <- c(parTable$rhs, LIST$rhs)
+    parTable$lhs   <- c(parTable$lhs, LIST$lhs)
+    parTable$op    <- c(parTable$op, LIST$op)
+    parTable$rhs   <- c(parTable$rhs, LIST$rhs)
     parTable$label <- c(parTable$label, rep("", length(lhs)))
     
     # equality constraints
@@ -116,7 +116,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       )
     }
     
-    ## In case of abs() the contraints may incorretly be considered as non-linear. 
+    ## In case of abs() the constraints may incorrectly be considered as non-linear. 
     ## Here, we remove the abs() from the constraint function which is redundant 
     ## for determining if the constraints are linear. 
     

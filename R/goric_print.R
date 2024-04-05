@@ -49,12 +49,27 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     wt_bootstrap_errors <- sapply(wt_bar_attributes, function(attr) attr$errors)
     
     if (length(wt_method_boot) > 0) {
-      #cat("\n")
       successful_draws <- total_bootstrap_draws - sapply(wt_bootstrap_errors, length)
-      if (!is.null(x$messages$mix_weights)) {
-        text1 <- paste("Note: Since the constraint matrix for hypotheses", paste0(sQuote(names(wt_method_boot)), collapse = " and "), 
-                "is not full row-rank, we used the 'boot' method for calculating", 
-                "the penalty term value. For additional details, see '?goric' or the Vignette.")
+      
+      hypo_messages <- names(x$objectList)
+      
+      if (length(hypo_messages) > 0) {
+        #messages_for_objects <- extract_messages_for_objects(x)
+        messages_info <- identify_messages(x)
+        
+        rank_messages <- sapply(messages_info, function(x) x == "mix_weights_rank")
+        NaN_messages  <- sapply(messages_info, function(x) x == "mix_weights_NaN")
+      
+        if (any(rank_messages)) {
+          text_msg_1 <- paste("Note: Since the constraint matrix for hypotheses", paste0(sQuote(names(rank_messages)[rank_messages]), collapse = " and "), 
+                              "is not full row-rank, we used the 'boot' method for calculating", 
+                              "the penalty term value. For additional details, see '?goric' or the Vignette.")
+        }
+      
+        if (any(NaN_messages)) {
+          text_msg_2 <- paste("Note: Some returned mixing weights for hypotheses", paste0(sQuote(names(NaN_messages)[NaN_messages]), collapse = " and "), 
+                              "are NaN (not a number). Continued the analysis with mix_weights = 'boot' method.")
+        }
       }
       
       has_errors <- vapply(wt_bootstrap_errors, function(errors) length(errors) > 0, logical(1))
@@ -75,9 +90,9 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
           }
           cat("\n")
         } 
-        text2 <- paste("Advise: If a substantial number of bootstrap draws fail to converge,", 
-                "the resulting penalty term may become unreliable. In such cases, it is advisable", 
-                "to increase the number of bootstrap draws, i.e., control = list(mix_weights_bootstrap_limit = 1e5)")
+        text_msg_3 <- paste("Advise: If a substantial number of bootstrap draws fail to converge,", 
+                            "the resulting penalty term may become unreliable. In such cases, it is advisable", 
+                            "to increase the number of bootstrap draws, i.e., control = list(mix_weights_bootstrap_limit = 1e5)")
       }
     }
   }
@@ -87,8 +102,9 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
         print.gap = 2, quote = FALSE)
   #cat("---\n")
   
-  if (exists("text1")) message("---\n", text1)
-  if (exists("text2")) message("---\n", text2)
+  if (exists("text_msg_1")) message("---\n", text_msg_1)
+  if (exists("text_msg_2")) message("---\n", text_msg_2)
+  if (exists("text_msg_3")) message("---\n", text_msg_3)
   
   # Calculate the absolute difference between the logliks
   loglik <- x$result$loglik

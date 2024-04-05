@@ -39,10 +39,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
   # some checks
   comparison <- tolower(comparison)
   comparison <- match.arg(comparison)
-  #stopifnot(comparison %in% c("unconstrained", "complement", "none"))
-  
   type <- tolower(type)
-  stopifnot(type %in% c("goric", "goricc", "gorica", "goricac"))
+  type <- match.arg(type, c("goric", "goricc", "gorica", "goricac"))
   
   conChar <- sapply(constraints, function(x) inherits(x, "character"))
   isConChar <- all(conChar)
@@ -532,14 +530,15 @@ goric.default <- function(object, ..., hypotheses = NULL,
   ans$ormle$b.restr <- coefs  
   ans$comparison <- comparison
   ans$type <- type
-  ans$messages$mix_weights <- do.call("rbind", lapply(isSummary, FUN = function(x) { x$messages$mix_weights }))
-  ans$messages$mix_weights <- ans$messages$mix_weights [!duplicated(ans$messages$mix_weights )]
+  #ans$messages$mix_weights <- do.call("rbind", lapply(isSummary, FUN = function(x) { x$messages$mix_weights }))
+  #ans$messages$mix_weights <- extract_messages(conList)
+  #ans$messages$mix_weights <- ans$messages$mix_weights[!duplicated(ans$messages$mix_weights)]
 
   # Assign class based on type\
   classMappings <- list(
-    "goric"  = "con_goric",
-    "goricc" = "con_goric",
-    "gorica" = c("con_gorica", "con_goric"),
+    "goric"   = "con_goric",
+    "goricc"  = "con_goric",
+    "gorica"  = c("con_gorica", "con_goric"),
     "goricac" = c("con_gorica", "con_goric")
   )
   
@@ -549,7 +548,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
 }
 
 # -------------------------------------------------------------------------
-
 
 
 # object of class lm ------------------------------------------------------

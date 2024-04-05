@@ -3,13 +3,13 @@
 \name{calculate_IC_weights}
 \alias{calculate_IC_weights}
 \alias{IC_weights}
-\alias{print.ICw}
+\alias{print.goric_ICw}
 \title{Calculating IC weights based on IC values (AIC, ORIC, GORIC(A), BIC, SIC, ...)}
 
 \usage{
 calculate_IC_weights(IC, hypo_names = NULL)
 
-\method{print}{ICw}(x, digits = max(3, getOption("digits") - 4), \dots)
+\method{print}{goric_ICw}(x, digits = max(3, getOption("digits") - 4), \dots)
 
 }
 \arguments{

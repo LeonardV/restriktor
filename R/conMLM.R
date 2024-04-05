@@ -19,7 +19,7 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
   # timing
   start.time0 <- start.time <- proc.time()[3]; timing <- list()
   # store call
-  mc <- match.call()
+  #mc <- match.call()
   # rename for internal use
   Amat <- constraints
   bvec <- rhs 
@@ -138,7 +138,7 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
     b.restr  <- b.unrestr
     
     OUT <- list(CON         = CON,
-                call        = mc,
+                #call        = mc,
                 timing      = timing,
                 parTable    = parTable,
                 b.unrestr   = b.unrestr,
@@ -207,7 +207,7 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
     df.residual <- df.residual + qr(Amat[0:meq,])$rank
    
     OUT <- list(CON         = CON,
-                call        = mc,
+                #call        = mc,
                 timing      = timing,
                 parTable    = parTable,
                 b.unrestr   = b.unrestr,

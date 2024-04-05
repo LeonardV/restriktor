@@ -47,7 +47,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   start.time0 <- start.time <- proc.time()[3]; timing <- list()
   
   # store call
-  mc <- match.call()
+  #mc <- match.call()
   # rename for internal use
   Amat <- constraints
   bvec <- rhs
@@ -188,7 +188,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     #scale.restr <- scale
     
     OUT <- list(CON         = CON,
-                call        = mc,
+                #call        = mc,
                 timing      = timing,
                 parTable    = parTable,
                 b.unrestr   = b.unrestr,
@@ -269,7 +269,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     R2.reduced <- (yMy - rMr) / (yMy + rMr * (correc - 1))
     
     OUT <- list(CON         = CON,
-                call        = mc,
+                #call        = mc,
                 timing      = timing,
                 parTable    = parTable,
                 b.unrestr   = b.unrestr,

@@ -26,7 +26,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   start.time0 <- start.time <- proc.time()[3]; timing <- list()
   
   # store call
-  mc <- match.call()
+  #mc <- match.call()
   # rename for internal use
   Amat <- constraints
   bvec <- rhs 
@@ -145,7 +145,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
     b.restr <- b.unrestr
     
     OUT <- list(CON               = CON,
-                call              = mc,
+                #call              = mc,
                 timing            = timing,
                 parTable          = parTable,
                 family            = object$family,
@@ -223,7 +223,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
     }
     
     OUT <- list(CON               = CON,
-                call              = mc,
+                #call              = mc,
                 timing            = timing,
                 parTable          = parTable,
                 family            = fit.glmc$family,

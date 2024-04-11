@@ -248,6 +248,22 @@ identify_messages <- function(x) {
 }
 
 
+detect_range_restrictions <- function(Amat) {
+  n <- nrow(Amat)
+  range_restrictions <- matrix(0, ncol = 2, nrow = n)
+  
+  for (i in 1:(n - 1)) {
+    for (j in (i + 1):n) {
+      if (all(Amat[i, ] == -Amat[j, ])) {
+        range_restrictions[i, ] <- c(i, j)
+      }
+    }
+  }
+  
+  range_restrictions <- range_restrictions[range_restrictions[, 1] != 0, , drop = FALSE]
+  return(range_restrictions)
+}
+
 # compute_weights_ratioWeights <- function(x) {
 #   IC <- 2*x
 #   minIC <- min(IC)

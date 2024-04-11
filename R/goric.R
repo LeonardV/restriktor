@@ -328,19 +328,29 @@ goric.default <- function(object, ..., hypotheses = NULL,
   
     # compute the number of free parameters f in the complement
     p <- ncol(VCOV)
+    # for PTc range restrictions are (for) now treated as equalities
+    # range_restrictions are not full row-rank, thus boot method is used
+    if (nrow(Amat) > 1) {
+      n_range_restrictions <- nrow(detect_range_restrictions(Amat))
+    } else {
+      n_range_restrictions <- 0L
+    }
+    meq <- meq + n_range_restrictions
     # rank q1
-    lq1 <- qr(Amat.ciq)$rank
+    lq1 <- qr(Amat.ciq)$rank - n_range_restrictions
     # rank q2
-    lq2 <- qr(Amat.ceq)$rank
+    #lq2 <- qr(Amat.ceq)$rank + n_range_restrictions
     # free parameters. Note that Amat includes q1 and q2 constraints
-    f <- p - qr(Amat)$rank # p - q1 - q2
-    if (debug) { cat("number of free parameters =", (f + lq2), "\n") }
+    #f <- p - qr(Amat)$rank # p - q1 - q2
+    
+    # this is not correct in case of range restrictions
+    #if (debug) { cat("number of free parameters =", (f + lq2), "\n") }
     
     # compute penalty term value PTc
     if (type %in% c("goric", "gorica")) {
       idx <- length(wt.bar)
       if (attr(wt.bar, "method") == "boot") {
-        PTc <- as.numeric(1 + p - wt.bar[idx-meq] * lq1)
+        PTc <- as.numeric(1 + p - wt.bar[idx-meq] * lq1)  
       } else if (attr(wt.bar, "method") == "pmvnorm") {
         # here, the q2 equalities are not included in wt.bar. Hence, they do not 
         # have to be subtracted.

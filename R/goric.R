@@ -25,6 +25,11 @@ goric.default <- function(object, ..., hypotheses = NULL,
     stop("restriktor ERROR: argument ", sQuote(names(ldots)[pm == 0]), " unknown.", call. = FALSE)
   }
   
+  if (any(c("lower", "upper", "algorithm", "burn.in.samples", "start.values", 
+            "thinning") %in% names(ldots))) {
+    ldots$mix_weights <- "boot"
+  }
+  
   constraints <- hypotheses
   # class objects
   object_class <- unlist(lapply(object, class))
@@ -63,20 +68,35 @@ goric.default <- function(object, ..., hypotheses = NULL,
   ans <- list()
   
   ## deal with objects of different classes
-  if ("restriktor" %in% object_class) {   
-    # if all objects are of class restriktor
-    conList   <- object
-    isSummary <- lapply(conList, function(x) summary(x, 
-                                                     goric       = type,
-                                                     sample.nobs = sample.nobs))
-    ans$hypotheses_usr <- lapply(conList, function(x) x$CON$constraints)
-    ans$model.org <- object[[1]]$model.org
-    sample.nobs   <- nrow(model.frame(object[[1]]$model.org))
-    # unrestricted VCOV
-    VCOV <- vcov(ans$model.org)
-  } else if (any(object_class %in% c("lm","rlm","glm","mlm")) && isConChar) { 
+  # if ("restriktor" %in% object_class) {   
+  #   # if all objects are of class restriktor
+  #   conList   <- object
+  #   isSummary <- lapply(conList, function(x) summary(x, 
+  #                                                    goric       = type,
+  #                                                    sample.nobs = sample.nobs))
+  #   
+  #   PT_Amat <- lapply(isSummary, function(x) x$PT_Amat)
+  #   PT_meq  <- lapply(isSummary, function(x) x$PT_meq)
+  #   
+  #   for (lnames in names(conList)) {
+  #     conList[[lnames]]$PT_Amat <- PT_Amat[[lnames]]
+  #     conList[[lnames]]$PT_meq <- PT_meq[[lnames]]
+  #   }
+  #   
+  #   ans$hypotheses_usr <- lapply(conList, function(x) x$CON$constraints)
+  #   ans$model.org <- object[[1]]$model.org
+  #   sample.nobs   <- nrow(model.frame(object[[1]]$model.org))
+  #   # unrestricted VCOV
+  #   VCOV <- vcov(ans$model.org)
+  # } else 
+  if (any(object_class %in% c("lm","rlm","glm","mlm")) && isConChar) { 
     # standard errors are not needed
     ldots$se <- "none"
+    
+    # the mixing-weights (LPs) are computed differently for object with class goric,
+    # then for objects of class restriktor. 
+    class(object$object) <- append(class(object$object), "goric")
+    
     # fit restriktor object for each hypothesis
     conList <- lapply(constraints, function(constraint) {
       CALL.restr <- append(list(object      = object$object, 
@@ -88,6 +108,15 @@ goric.default <- function(object, ..., hypotheses = NULL,
     isSummary <- lapply(conList, function(x) summary(x, 
                                                      goric       = type,
                                                      sample.nobs = sample.nobs))
+    
+    PT_Amat <- lapply(isSummary, function(x) x$PT_Amat)
+    PT_meq  <- lapply(isSummary, function(x) x$PT_meq)
+    
+    for (lnames in names(conList)) {
+      conList[[lnames]]$PT_Amat <- PT_Amat[[lnames]]
+      conList[[lnames]]$PT_meq <- PT_meq[[lnames]]
+    }
+    
     ans$hypotheses_usr <- lapply(conList, function(x) x$CON$constraints)
     # add unrestricted object to output
     ans$model.org <- object[[1]]
@@ -112,6 +141,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
 
     # standard errors are not needed
     ldots$se <- "none"
+    class(object$object) <- append(class(object$object), "goric")
     # fit restriktor object for each hypothesis
     conList <- lapply(constraints, function(constraint) {
       CALL.restr <- append(list(object      = object$object,
@@ -127,6 +157,15 @@ goric.default <- function(object, ..., hypotheses = NULL,
     isSummary <- lapply(conList, function(x) summary(x, 
                                                      goric       = type,
                                                      sample.nobs = sample.nobs))
+    
+    PT_Amat <- lapply(isSummary, function(x) x$PT_Amat)
+    PT_meq  <- lapply(isSummary, function(x) x$PT_meq)
+    
+    for (lnames in names(conList)) {
+      conList[[lnames]]$PT_Amat <- PT_Amat[[lnames]]
+      conList[[lnames]]$PT_meq <- PT_meq[[lnames]]
+    }
+    
     # add unrestricted object to output
     ans$model.org <- object[[1]]
     # unrestricted VCOV
@@ -212,8 +251,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
       }
       # restricted estimates
       b.restr <- conList[[1]]$b.restr
-      # number of parameters
-      p <- length(b.unrestr)
       # level probabilities
       wt.bar <- conList[[1]]$wt.bar
       # constraints matrix
@@ -237,153 +274,33 @@ goric.default <- function(object, ..., hypotheses = NULL,
       bvec.ciq <- bvec
     }
     
-    # check if any equality constraint is violated
-    check.ceq <- !(all(c(Amat.ceq %*% c(b.unrestr)) - bvec.ceq == 0))
-    if (nrow(Amat) > meq) {
-      # check if any inequality constraint is violated
-      check.ciq <- !(all(c(Amat.ciq %*% c(b.unrestr)) - bvec.ciq >= 0))
-    } else {
-      check.ciq <- FALSE
-    }
     # compute log-likelihood for complement
-    if (check.ciq || check.ceq) {    
-      if (type %in% c("goric", "goricc")) { 
-        llc <- logLik(ans$model.org)
-        betasc <- b.unrestr
-      } else if (type %in% c("gorica", "goricac")) {
-        llc <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE)
-        betasc <- b.unrestr
-      }
-      if (debug) {
-        cat("log-likelihood_c value =", llc, "\n")
-      }
-      # if any constraints is violated LL_c = LL_u
-    } else if (nrow(Amat) > meq && !(all(c(Amat) == 0L))) {
-      ll <- list()
-      betas <- list()
-      # number of rows
-      nr <- 1:nrow(Amat)
-      # remove rows corresponding to equality constraints
-      if (meq > 0L) { nr <- nr[-c(0:meq)] }
-      # treat each row of Amat as an equality constraint
-      # Pre-allocate lists to store results
-      betas <- vector("list", length(nr))
-      ll <- vector("list", length(nr))
-      for (l in 1:length(nr)) {
-        idx <- c(nr[l], nr[-l])
-        Amatx <- Amat[idx, , drop = FALSE]
-        if (type %in% c("goric", "goricc")) {          
-          Hc.restr <- restriktor(ans$model.org, constraints = Amatx, 
-                                 neq = 1, rhs = bvec[idx], 
-                                 mix_weights = "none", se = "none")
-          betas[[l]] <- coef(Hc.restr)
-          ll[[l]]    <- logLik(Hc.restr)
-        } else if (type %in% c("gorica", "goricac")) {
-          ldots$mix_weights <- "none"
-          CALL.restr <- append(list(object      = b.unrestr,
-                                    constraints = Amatx,
-                                    rhs         = bvec[idx],
-                                    neq         = 1,
-                                    VCOV        = VCOV),
-                               ldots)
-          Hc.restr   <- do.call("con_gorica_est", CALL.restr) 
-          betas[[l]] <- Hc.restr$b.restr
-          ll[[l]]    <- dmvnorm(c(b.unrestr - Hc.restr$b.restr), 
-                                sigma = VCOV, log = TRUE)            
-        }
-      }
-      if (debug) {
-        cat("log-likelihood value =", ll[[l]], "\n")
-      }
-      # take the highest log-likelihood value as a substitute for the complement
-      ll.unlist <- unlist(ll)
-      #ll.idx <- which(ll.unlist == max(ll.unlist))
-      ll.idx <- which.max(ll.unlist)
-      llc <- max(ll.unlist)
-      betasc <- betas[[ll.idx]]
-    } else if (nrow(Amat) == meq) { 
-      # redundant, this will be catched by the first statement. In case of equality 
-      # constraints only, the complement is equal to the unconstrained log-likelihood
-      if (type %in% c("goric", "goricc")) {
-        llc <- logLik(ans$model.org)
-        betasc <- b.unrestr
-      } else if (type %in% c("gorica", "goricac")) {
-        llc <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE)
-        betasc <- b.unrestr
-      }
-      if (debug) {
-        cat("log-likelihood_c value =", llc, "\n")
-      }
-    } else if (all(c(Amat) == 0L)) {
-      # unconstrained setting
-      stop("restriktor ERROR: no complement exists for an unconstrained hypothesis.")
-    } else {
-      stop("restriktor ERROR: you might have found a bug, please contact me at: info@restriktor.org!")
-    }
+    # moet dit obv PT_Amat en PT_meq?
+    LL_c <- compute_complement_likelihood(ans$model.org, VCOV, 
+                                          Amat, Amat.ciq, Amat.ceq, 
+                                          bvec, bvec.ciq, bvec.ceq, 
+                                          meq, b.unrestr, type, ldots,
+                                          debug = debug)
+    llc <- LL_c$llc
+    betasc <- LL_c$betasc
+    
+    # compute log-likelihood model
     if (type %in% c("goric", "goricc")) {
       llm <- logLik(conList[[1]])
     } else if (type %in% c("gorica", "goricac")) {
       llm <- dmvnorm(c(b.unrestr - b.restr), sigma = VCOV, log = TRUE)
     }
-  
-    # compute the number of free parameters f in the complement
-    p <- ncol(VCOV)
-    # for PTc range restrictions are (for) now treated as equalities
-    # range_restrictions are not full row-rank, thus boot method is used
-    if (nrow(Amat) > 1) {
-      n_range_restrictions <- nrow(detect_range_restrictions(Amat))
-    } else {
-      n_range_restrictions <- 0L
-    }
-    meq <- meq + n_range_restrictions
-    # rank q1
-    lq1 <- qr(Amat.ciq)$rank - n_range_restrictions
-    # rank q2
-    #lq2 <- qr(Amat.ceq)$rank + n_range_restrictions
-    # free parameters. Note that Amat includes q1 and q2 constraints
-    #f <- p - qr(Amat)$rank # p - q1 - q2
-    
-    # this is not correct in case of range restrictions
-    #if (debug) { cat("number of free parameters =", (f + lq2), "\n") }
-    
-    # compute penalty term value PTc
-    if (type %in% c("goric", "gorica")) {
-      idx <- length(wt.bar)
-      if (attr(wt.bar, "method") == "boot") {
-        PTc <- as.numeric(1 + p - wt.bar[idx-meq] * lq1)  
-      } else if (attr(wt.bar, "method") == "pmvnorm") {
-        # here, the q2 equalities are not included in wt.bar. Hence, they do not 
-        # have to be subtracted.
-        PTc <- as.numeric(1 + p - wt.bar[idx] * lq1) 
-      } else {
-        stop("restriktor ERROR: no level probabilities (chi-bar-square weights) found.")
-      }
-    } else if (type %in% c("goricc", "goricac")) {
-      idx <- length(wt.bar) 
-      if (is.null(sample.nobs)) {
-        stop("restriktor ERROR: the argument sample.nobs is not found.")
-      }
-      N <- sample.nobs
-      # small sample correction
-     if (attr(wt.bar, "method") == "boot") {
-       PTc <- 1 + wt.bar[idx-meq] * (N * (p - lq1) + (p - lq1) + 2) / (N - (p - lq1) - 2) + 
-         (1 - wt.bar[idx-meq]) * (N * p + p + 2) / (N - p - 2)
-     } else if (attr(wt.bar, "method") == "pmvnorm") {
-       PTc <- 1 + wt.bar[idx] * (N * (p - lq1) + (p - lq1) + 2) / (N - (p - lq1) - 2) + 
-         (1 - wt.bar[idx]) * (N * p + p + 2) / (N - p - 2) 
-     }
-    }
-    if (debug) {
-      cat("penalty term value =", PTc, "\n")
-    }
-    
-    # correction for gorica(c): -1 because no 
-    if (type %in% c("gorica", "goricac")) {
-     PTc <- PTc - 1
-    }
+
+    # compute complement penalty term value 
+    PTc <- penalty_complement_goric(VCOV, 
+                                    Amat = conList[[1]]$PT_Amat, 
+                                    meq  = conList[[1]]$PT_meq, 
+                                    type, wt.bar, 
+                                    debug = debug, 
+                                    sample.nobs = sample.nobs)   
   } 
-    
-  ## compute loglik-value, goric(a)-values, and PT-values if comparison = unconstrained
+   
+  ## for complement compute loglik-value, goric(a)-values, and PT-values if comparison = unconstrained
   switch(comparison,
           "unconstrained" = { 
             PTm <- unlist(lapply(isSummary, function(x) attr(x$goric, "penalty")))
@@ -527,22 +444,12 @@ goric.default <- function(object, ..., hypotheses = NULL,
     ans[[attr]] <- extracted
   }
   
-  # # list of constraint matrices (Amat)
-  # ans$constraints <- lapply(conList, FUN = function(x) { x$constraints } )
-  #   names(ans$constraints) <- ans$objectNames
-  # ans$rhs <- lapply(conList, FUN = function(x) { x$rhs } )
-  #   names(ans$rhs) <- ans$objectNames
-  # ans$neq  <- lapply(conList, FUN = function(x) { x$neq } )
-  #   names(ans$neq) <- ans$objectNames
-  
+
   ans$Sigma <- VCOV
   ans$b.unrestr <- conList[[1]]$b.unrestr
   ans$ormle$b.restr <- coefs  
   ans$comparison <- comparison
   ans$type <- type
-  #ans$messages$mix_weights <- do.call("rbind", lapply(isSummary, FUN = function(x) { x$messages$mix_weights }))
-  #ans$messages$mix_weights <- extract_messages(conList)
-  #ans$messages$mix_weights <- ans$messages$mix_weights[!duplicated(ans$messages$mix_weights)]
 
   # Assign class based on type\
   classMappings <- list(
@@ -556,8 +463,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
   
   return(ans)
 }
-
-# -------------------------------------------------------------------------
 
 
 # object of class lm ------------------------------------------------------

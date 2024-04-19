@@ -29,7 +29,8 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   
   # Compute indicators
   wt_bar <- vapply(wt_bar_attributes, function(attr) attr$method == "boot", logical(1))
-  ceq_only <- vapply(x$objectList, function(obj) nrow(obj$constraints) == obj$neq, logical(1))
+  #ceq_only <- vapply(x$objectList, function(obj) nrow(obj$constraints) == obj$neq, logical(1))
+  ceq_only <- vapply(x$objectList, function(obj) nrow(obj$PT_Amat) == obj$PT_meq, logical(1))
   wt_bar <- wt_bar & !ceq_only
   
   if (any(wt_bar)) {

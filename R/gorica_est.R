@@ -24,10 +24,10 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
   b.unrestr[abs(b.unrestr) < ifelse(is.null(control$tol), 
                                     sqrt(.Machine$double.eps), 
                                     control$tol)] <- 0L
-  # ML unconstrained MSE
   Sigma <- VCOV
   # number of parameters
   p <- length(b.unrestr)
+  # unrestricted log-likelihood
   ll.unrestr <- dmvnorm(rep(0, p), sigma = Sigma, log = TRUE)
   
   if (debug) {
@@ -77,19 +77,6 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
   
   ## create list for warning messages
   messages <- list()
-  
-  ## check if constraint matrix is of full-row rank. 
-  rAmat <- GaussianElimination(t(Amat)) # qr()$rank
-  if (mix_weights == "pmvnorm") {
-    if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
-      messages$mix_weights_rank <- paste(
-        "Restriktor message: Since the constraint matrix is not full row-rank, the level probabilities", 
-         "are calculated using mix_weights = \"boot\" (the default is mix_weights = \"pmvnorm\").",
-         "For more information see ?restriktor.\n"
-      )
-      mix_weights <- "boot"
-    }
-  } 
   
   timing$constraints <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
@@ -155,63 +142,31 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
                 iact        = out.solver$iact, 
                 control     = control)
   }
+
   
+  Amat_meq_PT <- PT_Amat_meq(Amat, meq)
+  RREF <- Amat_meq_PT$RREF
+  PT_Amat <- Amat_meq_PT$PT_Amat
+  PT_meq  <- Amat_meq_PT$PT_meq
+  OUT$PT_meq  <- PT_meq
+  OUT$PT_Amat <- PT_Amat
   
-  ## determine level probabilities
-  if (mix_weights != "none") {
-    if (nrow(Amat) == meq) {
-      # equality constraints only
-      wt.bar <- rep(0L, ncol(Sigma) + 1)
-      wt.bar.idx <- ncol(Sigma) - qr(Amat)$rank + 1
-      wt.bar[wt.bar.idx] <- 1
-    } else if (all(c(Amat) == 0)) { 
-      # unrestricted case
-      wt.bar <- c(rep(0L, p), 1)
-    } else if (mix_weights == "boot") { 
-      # compute chi-square-bar weights based on Monte Carlo simulation
-      wt.bar <- con_weights_boot(VCOV             = Sigma,
-                                 Amat             = Amat, 
-                                 meq              = meq, 
-                                 R                = ifelse(is.null(control$mix_weights_bootstrap_limit),
-                                                           1e5L, control$mix_weights_bootstrap_limit),
-                                 seed             = seed,
-                                 convergence_crit = ifelse(is.null(control$convergence_crit), 
-                                                           1e-03, control$convergence_crit),
-                                 chunk_size = ifelse(is.null(control$chunk_size), 
-                                                           5000L, control$chunk_size),
-                                 verbose          = verbose, 
-                                 ...)
-      attr(wt.bar, "mix_weights_bootstrap_limit") <- control$mix_weights_bootstrap_limit 
-    } else if (mix_weights == "pmvnorm" && (meq < nrow(Amat))) {
-      # compute chi-square-bar weights based on pmvnorm
-      wt.bar <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
-      
-      # Check if wt.bar contains NaN values
-      if (any(is.nan(wt.bar))) {
-        mix_weights <- "boot"
-        wt.bar <- con_weights_boot(VCOV             = Sigma,
-                                   Amat             = Amat, 
-                                   meq              = meq, 
-                                   R                = ifelse(is.null(control$mix_weights_bootstrap_limit),
-                                                             1e5L, control$mix_weights_bootstrap_limit),
-                                   seed             = seed,
-                                   convergence_crit = ifelse(is.null(control$convergence_crit), 
-                                                             1e-03, control$convergence_crit),
-                                   chunk_size = ifelse(is.null(control$chunk_size), 
-                                                       5000L, control$chunk_size),
-                                   verbose          = verbose, 
-                                   ...)
-        attr(wt.bar, "mix_weights_bootstrap_limit") <- control$mix_weights_bootstrap_limit   
-        
-        messages$mix_weights_NaN <- paste(
-          "Restriktor message: Some returned mixing weights are NaN. Switching mix_weights method to 'boot'.\n")
-      } 
+  if (mix_weights == "pmvnorm") {
+    if (RREF$rank < nrow(PT_Amat) && RREF$rank != 0L) {
+      messages$mix_weights_rank <- paste(
+        "Restriktor message: Since the constraint matrix is not full row-rank, the level probabilities", 
+        "are calculated using mix_weights = \"boot\" (the default is mix_weights = \"pmvnorm\").",
+        "For more information see ?restriktor.\n"
+      )
+      mix_weights <- "boot"
     }
-  } else {
-    wt.bar <- NA
-  }
+  } 
+
+  ## determine level probabilities
+  wt.bar <- calculate_weight_bar(Amat = PT_Amat, meq = PT_meq, VCOV = Sigma, 
+                                   mix_weights = mix_weights, seed = seed, 
+                                   control = control, verbose = verbose, ...)
   attr(wt.bar, "method") <- mix_weights
-  
   OUT$wt.bar <- wt.bar
   
   if (debug) {

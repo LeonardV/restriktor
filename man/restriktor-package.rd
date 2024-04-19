@@ -92,7 +92,7 @@ DATA <- subset(DATA, Group != "Control")
 fit.lm <- lm(Age ~ -1 + Group, data = DATA)
 summary(fit.lm)
 
-## restricted linear model with restriktions that the walking 
+## restricted linear model with restrictions that the walking 
 ## exercises would not have a negative effect of increasing the 
 ## mean age at which a child starts to walk. 
 

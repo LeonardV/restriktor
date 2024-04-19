@@ -1,7 +1,6 @@
 \name{goric}
 \alias{goric}
 \alias{goric.default}
-\alias{goric.restriktor}
 \alias{goric.lm}
 \alias{goric.numeric}
 \alias{goric.lavaan}
@@ -22,10 +21,6 @@ comparable to the Akaike weights.
       comparison = c("unconstrained", "complement", "none"), 
       VCOV = NULL, sample.nobs = NULL, type = "goric", 
       control = list(), debug = FALSE)
-
-\method{goric}{restriktor}(object, ..., hypotheses = NULL,
-      comparison = "unconstrained", type = "goric", 
-      debug = FALSE)
 
 \method{goric}{lm}(object, ..., hypotheses = NULL,
       comparison = "unconstrained", type = "goric",
@@ -62,7 +57,6 @@ comparable to the Akaike weights.
   \item{object}{an object containing the outcome of an unconstrained statistical analysis.
   Currently, the following objects can be processed:
   \itemize{
-    \item a fitted object of class restriktor. 
     \item a fitted unconstrained object of class \code{lm}, \code{rlm} or \code{glm}. 
     \item a numeric vector containing the unconstrained estimates resulting from any 
     statistical analysis.
@@ -74,8 +68,7 @@ comparable to the Akaike weights.
   
   \item{x}{an object of class \code{con_goric}.}
 
-  \item{\ldots}{this depends on the class of the object. If object is of class 
-  restriktor, further objects of class restriktor can be passed. Note that, the 
+  \item{\ldots}{this depends on the class of the object. Note that, the 
   objects have to be of the same class. If object is of class \code{lavaan}, the 
   standardized or unstandardized vcov can be used, using setting \code{standardized = TRUE}. 
   See details for more information.
@@ -178,8 +171,7 @@ comparable to the Akaike weights.
   Hc can be computed as competing hypothesis. The complement is defined 
   as Hc = not H1.
   
-  If the object(s) is of class restriktor the hypotheses (constraints) are 
-  inherited. Otherwise, the hypothesis syntax can be parsed via the hypotheses argument. 
+  The hypothesis syntax can be parsed via the hypotheses argument. 
   If the object is an unconstrained model of class \code{lm}, \code{rlm} or \code{glm}, 
   then the hypotheses can be specified in two ways, see \code{\link{restriktor}}. Note 
   that if the hypotheses are written in matrix notation, then the hypotheses
@@ -306,13 +298,6 @@ H3 <- "GroupPassive = 0; GroupPassive < GroupNo"
 
 # object is of class lm
 goric(fit1.lm, hypotheses = list(H1 = H1, H2 = H2, H3 = H3))
-
-# same result, but using objects of class restriktor
-fit1.con <- restriktor(fit1.lm, constraints = H1)
-fit2.con <- restriktor(fit1.lm, constraints = H2)
-fit3.con <- restriktor(fit1.lm, constraints = H3)
-
-goric(fit1.con, fit2.con, fit3.con)
 
 # same result, but using the parameter estimates and covariance matrix as input
 # Note, that in case of a numeric input only the gorica(c) can be computed. 

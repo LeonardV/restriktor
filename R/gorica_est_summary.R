@@ -7,8 +7,8 @@ summary.gorica_est <- function(object, type, ...) {
     stop("object of class ", sQuote(class(z)), " is not supported.")
   }
   
-  Amat    <- z$constraints
-  meq     <- z$neq
+  Amat    <- z$PT_Amat
+  meq     <- z$PT_meq
   wt.bar  <- z$wt.bar
   
   ans     <- z$model.org

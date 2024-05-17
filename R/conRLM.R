@@ -152,16 +152,16 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
              !(se %in% c("none", "boot.model.based", "boot.standard")) &&
              rAmat$rank != 0L) {
     se <- "none"
-    warning(paste("\nRestriktor Warning: No standard errors could be computed.
-                    The constraint matrix must be full row-rank.
-                    Try se = \"boot.model.based\" or \"boot.standard\"."))
+    warning(paste("Restriktor Warning: No standard errors could be computed, because",
+                  "the constraint matrix must be full row-rank.",
+                  "Try se = \"boot.model.based\" or \"boot.standard\"."))
   }
   
 
   ## some checks
   if(ncol(Amat) != length(b.unrestr)) {
-    stop("Restriktor ERROR: the columns of constraints does not", 
-         "\n       match with the number of parameters.")
+    stop(paste("Restriktor ERROR: the columns of constraints does not", 
+         "match with the number of parameters."))
   }
   
   if (!(nrow(Amat) == length(bvec))) {
@@ -322,8 +322,8 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                                                        meq          = meq), silent = TRUE)
       
       if (inherits(information.inv, "try-error")) {
-        stop(paste("Restriktor Warning: No standard errors could be computed.
-                      Try to set se = \"none\", \"boot.model.based\" or \"boot.standard\"."))
+        stop(paste("Restriktor Warning: No standard errors could be computed.",
+                   "Try to set se = \"none\", \"boot.model.based\" or \"boot.standard\"."))
       }
       
           

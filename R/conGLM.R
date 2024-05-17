@@ -109,31 +109,21 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
   # rAmat <- GaussianElimination(t(Amat))
   Amat_meq_PT <- PT_Amat_meq(Amat, meq)
   rAmat <- Amat_meq_PT$RREF
- #  if (mix_weights == "pmvnorm") {
- #    if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
- #      messages$mix_weights <- paste(
- #        "Restriktor message: Since the constraint matrix is not full row-rank, the level probabilities 
- # are calculated using mix_weights = \"boot\" (the default is mix_weights = \"pmvnorm\").
- # For more information see ?restriktor.\n"
- #      )
- #      mix_weights <- "boot"
- #    }
- #  } else 
- #    
+
   if (rAmat$rank < nrow(Amat) &&
              !(se %in% c("none", "boot.model.based", "boot.standard")) &&
              rAmat$rank != 0L) {
     se <- "none"
-    warning(paste("\nRestriktor Warning: No standard errors could be computed.
-                    The constraint matrix must be full row-rank.
-                    Try se = \"boot.model.based\" or \"boot.standard\"."))
+    warning(paste("\nRestriktor Warning: No standard errors could be computed, because",
+                  "the constraint matrix must be full row-rank.",
+                  "Try se = \"boot.model.based\" or \"boot.standard\"."))
   }
   
   
   ## some checks
   if(ncol(Amat) != length(b.unrestr)) {
-    stop("Restriktor ERROR: length coefficients and the number of",
-         "\n       columns constraints-matrix must be identical")
+    stop(paste("Restriktor ERROR: length coefficients and the number of",
+         "columns constraints-matrix must be identical"))
   }
   
   if (!(nrow(Amat) == length(bvec))) {
@@ -283,8 +273,8 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                                                        meq          = meq), silent = TRUE)
       
       if (inherits(information.inv, "try-error")) {
-        stop(paste("Restriktor Warning: No standard errors could be computed.
-                      Try to set se = \"none\", \"boot.model.based\" or \"boot.standard\"."))
+        stop(paste("Restriktor Warning: No standard errors could be computed.",
+                   "Try to set se = \"none\", \"boot.model.based\" or \"boot.standard\"."))
       }
       
       
@@ -296,8 +286,8 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
       }
     } else if (se == "boot.model.based") {
       if (attr(object$terms, "intercept") && any(Amat[,1] == 1)) {
-          stop("Restriktor ERROR: no restrictions on intercept possible",
-               "\n       for 'se = boot.model.based' bootstrap method.")
+          stop(paste("Restriktor ERROR: no restrictions on intercept possible",
+               "for 'se = boot.model.based' bootstrap method."))
       }
       OUT$bootout <- con_boot_lm(object      = object, 
                                  B           = B, 

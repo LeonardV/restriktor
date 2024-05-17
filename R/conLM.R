@@ -56,7 +56,6 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   object.restr <- list(residuals = residuals, weights = weights)
   ll.unrestr   <- con_loglik_lm(object.restr)
   
-  
   if (debug) {
     print(list(loglik.unc = ll.unrestr))
   }
@@ -104,34 +103,23 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   messages <- list()
   
   ## check if constraint matrix is of full-row rank. 
-  #rAmat <- GaussianElimination(t(Amat))
   Amat_meq_PT <- PT_Amat_meq(Amat, meq)
   rAmat <- Amat_meq_PT$RREF
- #  if (mix_weights == "pmvnorm") {
- #    if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
- #      messages$mix_weights <- paste(
- #        "Restriktor message: Since the constraint matrix is not full row-rank, the level probabilities 
- # are calculated using mix_weights = \"boot\" (the default is mix_weights = \"pmvnorm\").
- # For more information see ?restriktor.\n"
- #        )
- #      mix_weights <- "boot"
- #    }
- #  } else 
   
   if (rAmat$rank < nrow(Amat) &&
              !(se %in% c("none", "boot.model.based", "boot.standard")) &&
              rAmat$rank != 0L) {
     se <- "none"
-    warning(paste("\nRestriktor Warning: No standard errors could be computed.
-                    The constraint matrix must be full row-rank.
-                    Try se = \"boot.model.based\" or \"boot.standard\"."), call. = FALSE)
+    warning(paste("Restriktor Warning: No standard errors could be computed, because",
+                  "the constraint matrix must be full row-rank. Try", 
+                  "se = \"boot.model.based\" or \"boot.standard\"."), call. = FALSE)
   }
   
   
   ## some checks
   if (ncol(Amat) != length(b.unrestr)) {
-    stop("Restriktor ERROR: length coefficients and the number of",
-         "\n       columns constraints-matrix must be identical", call. = FALSE)
+    stop(paste("Restriktor ERROR: length coefficients and the number of",
+         "columns constraints-matrix must be identical"), call. = FALSE)
   }
   
   if (!(nrow(Amat) == length(bvec))) {
@@ -282,8 +270,8 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                                                        meq          = meq), silent = TRUE)
 
       if (inherits(information.inv, "try-error")) {
-        stop(paste("Restriktor Warning: No standard errors could be computed.
-                      Try to set se = \"none\", \"boot.model.based\" or \"boot.standard\"."), 
+        stop(paste("Restriktor Warning: No standard errors could be computed.",
+                   "Try to set se = \"none\", \"boot.model.based\" or \"boot.standard\"."), 
              call. = FALSE)
       }
         
@@ -295,7 +283,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
     } else if (se == "boot.model.based") {
       if (attr(object$terms, "intercept") && any(Amat[, 1] == 1)) {
           stop("Restriktor ERROR: no restrictions on intercept possible",
-               "\n       for 'se = boot.model.based' bootstrap method.", call. = FALSE)
+               " for 'se = boot.model.based' bootstrap method.", call. = FALSE)
       }
       
       OUT$bootout <- con_boot_lm(object      = object, 
@@ -371,38 +359,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                                    mix_weights = mix_weights, seed = seed, 
                                    control = control, verbose = verbose, ...) 
   }
-  
-  # if (mix_weights != "none" && !inherits(object, "goric")) {
-  #   if (nrow(Amat) == meq) {
-  #     # equality constraints only
-  #     wt.bar <- rep(0L, ncol(Sigma) + 1) 
-  #     wt.bar.idx <- ncol(Sigma) - qr(Amat)$rank + 1 
-  #     wt.bar[wt.bar.idx] <- 1
-  #   } else if (all(c(Amat) == 0)) { 
-  #     # unrestricted case
-  #     wt.bar <- c(rep(0L, p), 1)
-  #   } else if (mix_weights == "boot") { 
-  #     # compute chi-square-bar weights based on Monte Carlo simulation
-  #     wt.bar <- con_weights_boot(VCOV    = Sigma,
-  #                                Amat    = Amat, 
-  #                                meq     = meq, 
-  #                                R       = ifelse(is.null(control$mix_weights_bootstrap_limit),
-  #                                                 1e5L, control$mix_weights_bootstrap_limit),
-  #                                seed    = seed,
-  #                                convergence_crit = ifelse(is.null(control$convergence_crit),
-  #                                                          1e-03, control$convergence_crit),
-  #                                chunk_size       = ifelse(is.null(control$chunk_size),
-  #                                                          1e4L, control$chunk_size),
-  #                                verbose          = verbose, ...)
-  #     
-  #     attr(wt.bar, "mix_weights_bootstrap_limit") <- control$mix_weights_bootstrap_limit
-  #   } else if (mix_weights == "pmvnorm" && (meq < nrow(Amat))) {
-  #     # compute chi-square-bar weights based on pmvnorm
-  #     wt.bar <- rev(con_weights(Amat %*% Sigma %*% t(Amat), meq = meq))
-  #   } 
-  # } else {
-  #   wt.bar <- NA
-  # }
+
   attr(wt.bar, "method") <- mix_weights
   OUT$wt.bar <- wt.bar
   

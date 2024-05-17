@@ -118,16 +118,16 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
              !(se %in% c("none", "boot.model.based", "boot.standard")) &&
              rAmat$rank != 0L) {
     se <- "none"
-    warning(paste("\nRestriktor Warning: No standard errors could be computed.
-                    The constraint matrix must be full row-rank.
-                    Try se = \"boot.model.based\" or \"boot.standard\"."))
+    warning(paste("Restriktor Warning: No standard errors could be computed, because",
+                  "the constraint matrix must be full row-rank.",
+                  "Try se = \"boot.model.based\" or \"boot.standard\"."))
   }
   
 
   ## some checks
   if (ncol(Amat) != length(b.unrestr)) {
-    stop("Restriktor ERROR: length coefficients and the number of",
-         "\n       columns constraints-matrix must be identical")
+    stop(paste("Restriktor ERROR: length coefficients and the number of",
+         "columns constraints-matrix must be identical"))
   }
   
   if (!(nrow(Amat) == length(bvec))) {
@@ -260,8 +260,8 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
                                                        meq          = meq), silent = TRUE)
       
       if (inherits(information.inv, "try-error")) {
-        stop(paste("Restriktor Warning: No standard errors could be computed.
-                      Try to set se = \"none\", \"boot.model.based\" or \"boot.standard\"."))
+        stop(paste("Restriktor Warning: No standard errors could be computed.",
+                   "Try to set se = \"none\", \"boot.model.based\" or \"boot.standard\"."))
       }
 
       attr(OUT$information, "inverted")  <- information.inv$information
@@ -272,8 +272,8 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
     } else if (se == "boot.model.based") {
 
       if (attr(object$terms, "intercept") && any(Amat[,1] == 1)) {
-        stop("Restriktor ERROR: no restrictions on intercept possible",
-             "\n       for 'se = boot.model.based' bootstrap method.")
+        stop(paste("Restriktor ERROR: no restrictions on intercept possible",
+             "for 'se = boot.model.based' bootstrap method."))
       }
 
       OUT$bootout <- con_boot_lm(object      = object,

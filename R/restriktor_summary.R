@@ -29,7 +29,8 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
   b.restr <- z$b.restr
   r <- weighted.residuals(z)
   
-  ans <- list() #z[c("call", if (!is.null(z$weights)) "weights")]
+  ans <- z[c("call", if (!is.null(z$weights)) "weights")]
+  #ans <- list()
   ans$model.org <- z$model.org
   
   se.type <- z$se

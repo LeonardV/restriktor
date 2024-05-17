@@ -2,8 +2,10 @@
 # useDynLib("restriktor")
 importFrom("lavaan",
            lavParseModelString,
-           lav_constraints_parse,
+           #lav_constraints_parse,
+           lav_partable_constraints_def,
            lav_func_jacobian_complex,
+           lav_func_jacobian_simple,
            lav_partable_constraints_ciq,
            lav_partable_constraints_ceq,
            lav_matrix_vech_idx,
@@ -22,6 +24,10 @@ importFrom("lavaan",
            sem,   # conTestD
            lavaan # conTestD
            )
+
+importFrom("glue",
+           glue)
+
 
 importFrom("mvtnorm",
            #rmvnorm, 
@@ -141,7 +147,7 @@ S3method(conGLM, glm)
 S3method(conMLM, mlm)
 
 S3method(goric, default)
-S3method(goric, restriktor)
+#S3method(goric, restriktor)
 S3method(goric, lm)
 S3method(goric, lavaan)
 S3method(goric, numeric)

@@ -68,10 +68,10 @@ penalty_goric <- function(Amat, meq, LP, correction = FALSE,
 }
 
 
-penalty_complement_goric <- function(VCOV, Amat, meq, type, wt.bar, 
+penalty_complement_goric <- function(Amat, meq, type, wt.bar, 
                                      sample.nobs = NULL, debug = FALSE) {
   # compute the number of free parameters f in the complement
-  p <- ncol(VCOV)
+  p <- ncol(Amat)
   # rank q1
   #lq1 <- qr(Amat.ciq)$rank
   lq1 <- qr(Amat)$rank - meq

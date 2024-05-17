@@ -269,7 +269,7 @@ PT_Amat_meq <- function(Amat, meq) {
     # check for range restrictions, e.g., -1 < beta < 1
     idx_range_restrictions <- detect_range_restrictions(Amat)
     # range restrictions are treated as equalities for computing PT (goric)
-    n_range_restrictions <- nrow(detect_range_restrictions(Amat))
+    n_range_restrictions <- nrow(idx_range_restrictions)
     PT_meq <- meq + n_range_restrictions
     # reorder PT_Amat: ceq first, ciq second, needed for QP.solve()
     meq_order_idx <- RREF$pivot %in% c(idx_range_restrictions)
@@ -277,6 +277,21 @@ PT_Amat_meq <- function(Amat, meq) {
   }
   
   return(list(PT_meq = PT_meq, PT_Amat = PT_Amat, RREF = RREF))
+}
+
+
+# correct misspecified constraints of format e.g., x1 < 1 & x1 < 2.
+# x1 < 2 is removed since it is redundant. It has no impact on the LPs, but
+# since the redundant matrix is not full row-rank the slower boot method is used. 
+remove_redundant_constraints <- function(constraints, rhs) {
+  df <- data.frame(constraints, rhs)
+  df <- df[order(df$rhs, decreasing = TRUE),]  
+  unique_constraints <- !duplicated(df[, -ncol(df)])
+  df_reduced <- df[unique_constraints,]
+  rhs <- df_reduced$rhs
+  row.names(df_reduced) <- NULL
+  colnames(df_reduced) <- NULL
+  list(constraints = as.matrix(df_reduced[, -ncol(df_reduced)]), rhs = rhs) 
 }
 
 

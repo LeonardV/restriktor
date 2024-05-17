@@ -6,6 +6,19 @@ goric.default <- function(object, ..., hypotheses = NULL,
                           VCOV = NULL, sample.nobs = NULL,
                           type = "goric", control = list(),
                           debug = FALSE) {
+  
+  # the following classes are allowed (for now)
+  if (inherits(object, "list")) {
+    obj_class <- class(object$object)[1]  
+  } else {
+    obj_class <- class(object)[1]
+  }
+  classes <- c("lm", "glm", "mlm", "rlm", "numeric", "lavaan", "CTmeta", "rma")
+  check_class <- obj_class %in% classes
+  if (!any(check_class)) {
+    stop(paste("Objects of class", paste(obj_class, collapse = ", "), "are not supported. Supported classes are:", paste(classes, collapse = ", "), "."))
+  }
+  
   ldots <- list(...)
   ldots$missing <- NULL
   ldots$control <- control
@@ -35,11 +48,11 @@ goric.default <- function(object, ..., hypotheses = NULL,
   object_class <- unlist(lapply(object, class))
   
   # is object class restriktor
-  if ("restriktor" %in% object_class && !is.null(constraints)) {
-    warning("restriktor Warning: hypotheses are inherited from the restriktor object and are therefore ignored.", 
-            call. = FALSE)
-    constraints <- NULL
-  }
+  # if ("restriktor" %in% object_class && !is.null(constraints)) {
+  #   warning("restriktor Warning: hypotheses are inherited from the restriktor object and are therefore ignored.", 
+  #           call. = FALSE)
+  #   constraints <- NULL
+  # }
   
   # some checks
   comparison <- tolower(comparison)
@@ -94,7 +107,10 @@ goric.default <- function(object, ..., hypotheses = NULL,
     ldots$se <- "none"
     
     # the mixing-weights (LPs) are computed differently for object with class goric,
-    # then for objects of class restriktor. 
+    # then for objects of class restriktor. In case of range restrictions 
+    # (e.g., 0 < x < 1), the restrictions are treated as equality constraints for
+    # computing PT. 
+    # 
     class(object$object) <- append(class(object$object), "goric")
     
     # fit restriktor object for each hypothesis
@@ -125,7 +141,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
     sample.nobs <- nrow(model.frame(object[[1]]))
     idx <- length(conList) 
     objectnames <- vector("character", idx)
-    #CALL$object <- NULL
   } else if (any(object_class %in% c("lm","rlm","glm","mlm")) && !isConChar) {
     # tolower names Amat and rhs
     for (i in seq_along(constraints)) { 
@@ -138,7 +153,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
              call. = FALSE)
       }
     }
-
     # standard errors are not needed
     ldots$se <- "none"
     class(object$object) <- append(class(object$object), "goric")
@@ -268,7 +282,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
       Amat.ciq <- Amat[-c(1:meq), , drop = FALSE]
       bvec.ciq <- bvec[-c(1:meq)]
     } else {
-      Amat.ceq <- matrix(, nrow = 0, ncol = ncol(Amat))
+      Amat.ceq <- matrix(numeric(0), nrow = 0, ncol = ncol(Amat))
       bvec.ceq <- rep(0, 0)
       Amat.ciq <- Amat[, , drop = FALSE]
       bvec.ciq <- bvec
@@ -292,8 +306,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     }
 
     # compute complement penalty term value 
-    PTc <- penalty_complement_goric(VCOV, 
-                                    Amat = conList[[1]]$PT_Amat, 
+    PTc <- penalty_complement_goric(Amat = conList[[1]]$PT_Amat, 
                                     meq  = conList[[1]]$PT_meq, 
                                     type, wt.bar, 
                                     debug = debug, 
@@ -553,52 +566,52 @@ goric.lm <- function(object, ..., hypotheses = NULL,
 
 
 # object of class restriktor ----------------------------------------------
-goric.restriktor <- function(object, ..., hypotheses = NULL,
-                             comparison = "unconstrained",
-                             type = "goric",
-                             debug = FALSE) {
-  
-  # hypotheses are inherited from the restriktor object
-  
-  if (!inherits(object, "restriktor")) {
-    stop("restriktor ERROR: the object must be of class restriktor.")
-  }
-  
-  objectList <- list(...)
-  
-  mcList <- as.list(match.call())
-  mcList <- mcList[-c(1)]
-  
-  mcnames <- names(mcList) == ""
-  lnames <- as.character(mcList[mcnames])
-  names(mcList)[mcnames] <- lnames
-  objectList <- mcList  
-  
-  objectList$hypotheses  <- hypotheses
-  objectList$comparison  <- comparison
-  objectList$type        <- type
-  objectList$debug       <- debug
-  objectList$VCOV        <- NULL
-  
-  if (type == "goricac") {
-    objectList$sample.nobs <- length(residuals(object))
-  }
-  
-  objectList <- sapply(objectList, function(x) eval(x))
-  
-  # multiple objects of class restriktor are allowed
-  isRestr <- unlist(lapply(objectList, function(x) class(x)[1] == "restriktor"))
-
-  restr_objectList <- list(object = objectList[isRestr])
-  arguments_objectList <- objectList[!isRestr]
-  
-  # put all objects of class restriktor in one list
-  #objectList <- append(list(object = objectList[isRestr]), objectList[!isRestr])
-  
-  res <- do.call(goric.default, c(restr_objectList, arguments_objectList)) 
-  
-  res
-}
+# goric.restriktor <- function(object, ..., hypotheses = NULL,
+#                              comparison = "unconstrained",
+#                              type = "goric",
+#                              debug = FALSE) {
+#   
+#   # hypotheses are inherited from the restriktor object
+#   
+#   if (!inherits(object, "restriktor")) {
+#     stop("restriktor ERROR: the object must be of class restriktor.")
+#   }
+#   
+#   objectList <- list(...)
+#   
+#   mcList <- as.list(match.call())
+#   mcList <- mcList[-c(1)]
+#   
+#   mcnames <- names(mcList) == ""
+#   lnames <- as.character(mcList[mcnames])
+#   names(mcList)[mcnames] <- lnames
+#   objectList <- mcList  
+#   
+#   objectList$hypotheses  <- hypotheses
+#   objectList$comparison  <- comparison
+#   objectList$type        <- type
+#   objectList$debug       <- debug
+#   objectList$VCOV        <- NULL
+#   
+#   if (type == "goricac") {
+#     objectList$sample.nobs <- length(residuals(object))
+#   }
+#   
+#   objectList <- sapply(objectList, function(x) eval(x))
+#   
+#   # multiple objects of class restriktor are allowed
+#   isRestr <- unlist(lapply(objectList, function(x) class(x)[1] == "restriktor"))
+# 
+#   restr_objectList <- list(object = objectList[isRestr])
+#   arguments_objectList <- objectList[!isRestr]
+#   
+#   # put all objects of class restriktor in one list
+#   #objectList <- append(list(object = objectList[isRestr]), objectList[!isRestr])
+#   
+#   res <- do.call(goric.default, c(restr_objectList, arguments_objectList)) 
+#   
+#   res
+# }
 
 
 

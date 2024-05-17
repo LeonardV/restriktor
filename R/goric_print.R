@@ -5,6 +5,7 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   dig <- paste0("%6.", digits, "f")
   x2 <- lapply(x$result[-1], sprintf, fmt = dig)
   df <- data.frame(model = x$result$model, x2)
+  objectnames <- as.character(df$model)
   
   cat(sprintf("restriktor (%s): ", packageDescription("restriktor", fields = "Version")))
   
@@ -55,7 +56,6 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       hypo_messages <- names(x$objectList)
       
       if (length(hypo_messages) > 0) {
-        #messages_for_objects <- extract_messages_for_objects(x)
         messages_info <- identify_messages(x)
         
         rank_messages <- sapply(messages_info, function(x) x == "mix_weights_rank")
@@ -125,17 +125,6 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     paste(get_names, collapse = " vs. ")
   })
   
-  # # which hypotheses have nearly equal likelihood values
-  # # Create a logical vector based on the threshold
-  # loglik_diff_bound <- loglik_diff_mat > 0 & loglik_diff_mat < threshold
-  # # which indices are TRUE
-  # true_indices <- which(loglik_diff_bound == TRUE, arr.ind = TRUE)
-  # # get unique combination from row- and columnnames
-  # bound_unique_combinations <- apply(true_indices, 1, function(x) {
-  #   get_names <- c(rownames(loglik_diff_mat)[x[1]], gsub("vs. ", "", colnames(loglik_diff_mat)[x[2]]))
-  #   paste(get_names, collapse = " vs. ")
-  # })
-  
   # Create a function to sort the elements in each string
   sort_combination <- function(combination) {
     split_combination <- strsplit(combination, " vs. ")[[1]]
@@ -166,50 +155,29 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   # check if the likelihood of models are equal, this means that the hypotheses overlap (i.e., subset)
   if (length(combined_string) > 0) {
     message("---\nNote: Hypotheses ", paste0(sQuote(combined_string), collapse = " and "), 
-            " overlap (equal likelihood values). The GORIC(A) weights, are influenced solely by penalty value fluctuations,",
-            " have an upper limit. If any overlap is most convincing (lowest GORIC(A) value in the full set),",
-            " further evaluation against its complement is recommended.")
+            " have equal likelihood values (i.e., the hypotheses overlap). The GORIC(A) weights,", 
+            " are influenced only by changes in penalty values and have a maximum limit.",
+            " If any overlapping hypothesis has the lowest GORIC(A) value in the entire set,",
+            " it is recommended to further evaluate it against its complement.")
   }
 
-  
-  # message(
-  #   "---\nNote: The hypotheses ", 
-  #   paste(sQuote(overlap_unique_combinations), collapse = " and "), 
-  #   " exhibit overlapping characteristics (identical likelihood values). 
-  #   The GORIC(A) weights are primarily affected by variations in penalty values 
-  #   and possess a maximum threshold. In cases where overlapping hypotheses 
-  #   distinctly stand out (exhibiting the lowest GORIC(A) value among all 
-  #   considered hypotheses), it is advisable to conduct a more detailed comparison 
-  #   against their respective complements."
-  # )
-  
-
-  # # check if loglik are nearly equal, 
-  # if (length(bound_unique_combinations) > 0) {
-  #   text4 <- paste("Note: Some hypotheses yield nearly identical log-likelihoods, making GORIC(A)", 
-  #           "weights sensitive to penalty fluctuations. For a more robust comparison, examine", 
-  #           "how hypothesized and unconstrained model parameters differ:")
-  #   message(text4)
-  #   cat(paste("  -", bound_unique_combinations, collapse = "\n"), "\n\n")
-  #   cat("Hypothesized model parameters:\n")
-  #   print(coef(x))
-  #   cat("\n")
-  #   
-  #   # haal penalty weg.
-  #   # voeg toe: dat ze de model par kunnen gebruiken voor niuwe hypo op te stellen.
-  # }
-  
   if (comparison == "unconstrained" && length(df$model) == 2) {
     message("---\nAdvise: Are you certain you wish to assess the order-restricted hypothesis", 
             " in comparison to the unconstrained one, rather than its complement?")
   }
   
-  if (comparison == "complement" && length(overlap_unique_combinations) == 0) {# && length(bound_unique_combinations) == 0) { 
-    objectnames <- as.character(df$model)
+  if (comparison == "complement" && length(overlap_unique_combinations) == 0) {
     class(x$ratio.gw) <- "numeric"
-    cat("---\nThe order-restricted hypothesis", sQuote(objectnames[1]), "has", sprintf("%.2f", x$ratio.gw[1,2]), "times more support than its complement.\n\n")
-  } else if (comparison == "unconstrained" && length(overlap_unique_combinations) == 0 && length(df$model) == 2) { #&& length(bound_unique_combinations) == 0) {
-    objectnames <- as.character(df$model)
+    objectname1 <- sQuote(objectnames[1])
+    support_ratio <- sprintf("%.2f", x$ratio.gw[1, 2])
+    cat(glue("---\nThe order-restricted hypothesis {objectname1} has {support_ratio} times more support than its complement.\n\n"))
+  } else if (comparison == "none" && length(overlap_unique_combinations) == 0 && length(df$model) == 2) {
+    class(x$ratio.gw) <- "numeric"
+    support_ratio <- sprintf("%.2f", x$ratio.gw[1, 2])
+    objectname1 <- sQuote(objectnames[1])
+    objectname2 <- sQuote(objectnames[2])
+    cat(glue("---\nThe order-restricted hypothesis {objectname1} has {support_ratio} times more support than {objectname2}.\n\n"))
+  } else if (comparison == "unconstrained" && length(overlap_unique_combinations) == 0 && length(df$model) == 2) { 
     formatted_numbers <- sprintf("%.3f %.3f", x$result[[7]][1], x$result[[7]][2])
     numbers <- strsplit(formatted_numbers, " ")[[1]]
     if (as.numeric(numbers[1]) / as.numeric(numbers[2]) > 1) {
@@ -222,6 +190,29 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       result <- paste(numbers[1], "/", numbers[2], "= 1", sep = " ")
       cat("---\nThe order-restricted hypothesis", sQuote(objectnames[1]), "and the unconstrained have equal support:", result, "\n\n")      
     }
-  }
-  #invisible(x)
+  } else if (length(overlap_unique_combinations) == 0 && length(df$model) > 2) {
+    if (!is.null(x$ratio.gw)) {
+      if (type == "goric") {
+        cat("---\n\nRatio GORIC-weights:\n")
+      } else if (type == "gorica") {
+        cat("---\n\nRatio GORICA-weights:\n")
+      } else if (type == "goricc") {
+        cat("---\n\nRatio GORICC-weights:\n")
+      } else if (type == "goricac") {
+        cat("---\n\nRatio GORICAC-weights:\n") 
+      }
+      
+      ratio.gw <- apply(x$ratio.gw, 2, sprintf, fmt = dig)
+      rownames(ratio.gw) <- rownames(x$ratio.gw)
+      class(ratio.gw) <- "numeric"
+      
+      if (max(ratio.gw, na.rm = TRUE) >= 1e4) {
+        print(format(ratio.gw, digits = digits, scientific = TRUE, trim = TRUE), 
+              print.gap = 2, quote = FALSE, right = TRUE) 
+      } else {
+        print(format(ratio.gw, digits = digits, scientific = FALSE, trim = TRUE), 
+              print.gap = 2, quote = FALSE, right = TRUE)
+      }
+    }
+  } 
 }

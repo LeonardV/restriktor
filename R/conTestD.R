@@ -15,7 +15,7 @@ conTestD <- function(model = NULL, data = NULL, constraints = NULL,
   # add constraints to parameter table
   CON <- attr(lavParseModelString(constraints), "constraints")
   parTable <- fit.h2@ParTable
-  for(con in 1:length(CON)) {
+  for (con in 1:length(CON)) {
     parTable <- lav_partable_add(parTable, CON[[con]])
   }
   

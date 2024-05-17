@@ -25,9 +25,9 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     
     # check for user input error
     if (grepl(paste(operators, collapse = "|"), constraints) | all(grepl("[><]{2,}", constraints))) {
-      stop("Restriktor ERROR: error in constraint syntax. Only the operators \'<, >, ==, =, :=\' are allowed.",
-           "\n", "See ?restriktor for details on how to specify the constraint syntax or check the website:",
-           "\n", "https://restriktor.org/tutorial/syntax.html.", call. = FALSE) 
+      stop(paste("Restriktor ERROR: error in constraint syntax. Only the operators \'<, >, ==, =, :=\' are allowed.",
+           "See ?restriktor for details on how to specify the constraint syntax or check the website:",
+           "https://restriktor.org/tutorial/syntax.html."), call. = FALSE) 
     }
     
     # deal with constraints of format x1 < x2 < x3
@@ -54,16 +54,6 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       constraint.syntax[[i]] <- gsub("<=","<", constraint.syntax[[i]], perl = TRUE)
       constraint.syntax[[i]] <- gsub(">=",">", constraint.syntax[[i]], perl = TRUE)
       constraint.syntax <- unlist(constraint.syntax[i])
-      
-      # LIST <- list()
-      # this is where the constraints are transformed back to pairwise constraints
-      # x1 < x2 < x3 becomes x1 < x2; x2 < x3. This is needed for computing the
-      # constraint matrix. 
-      # for (k in 1:length(constraint.syntax)) {
-      #   LIST[[k]] <- expand_compound_constraints(constraint.syntax[k])
-      # }
-      
-      #if (grepl("abs\\(.*\\)", constraint.syntax))
       
       LIST <- lapply(constraint.syntax, function(x) { sapply(x, expand_parentheses) })
       LIST <- lapply(LIST, function(x) { sapply(x, expand_compound_constraints) })
@@ -110,9 +100,9 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     nsc_rhs.idx <- sum(grepl("<|>|=", parTable$rhs))
     
     if (all(Amat == 0) | nsc_lhs.idx > 0 | nsc_rhs.idx > 0) {
-      stop("Restriktor ERROR: I have no idea how to deal with this constraint syntax. \n",
-           "See ?restriktor for details on how to specify the constraint syntax or check the website \n", 
-            "https://restriktor.org/tutorial/syntax.html. \n", sep = "", call. = FALSE
+      stop(paste("Restriktor ERROR: I have no idea how to deal with this constraint syntax.",
+           "See ?restriktor for details on how to specify the constraint syntax or check the website", 
+            "https://restriktor.org/tutorial/syntax.html."), sep = "", call. = FALSE
       )
     }
     
@@ -132,14 +122,11 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       cin.function <- lav_partable_constraints_ciq(partable = parTable_org, con = LIST2)
       ceq.function <- lav_partable_constraints_ceq(partable = parTable_org, con = LIST2)
       
-      CON$cin.nonlinear.idx <- con_constraints_nonlinear_idx(func = cin.function, 
+      CON$cin.nonlinear.idx <- lav_constraints_nonlinear_idx(func = cin.function, 
                                                              npar = length(parTable_org$est))
-      CON$ceq.nonlinear.idx <- con_constraints_nonlinear_idx(func = ceq.function, 
+      CON$ceq.nonlinear.idx <- lav_constraints_nonlinear_idx(func = ceq.function, 
                                                              npar = length(parTable_org$est))
     }
-    
-    
-    #CON$constraints <- constraints
   } else if (!is.character(constraints) && !is.null(constraints)) {
     if (is.vector(constraints) ) {
       constraints <- rbind(constraints)
@@ -152,9 +139,15 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     stop("no restrictions were specified.") 
   }
   
+  # correct user errors, like x1 < 2 & x1 < 1, x1 < 2 is removed to get a 
+  # full row-rank matrix.
+  rrc <- remove_redundant_constraints(Amat, bvec)
+  Amat <- rrc$constraints
+  bvec <- rrc$rhs
+  
   if (!(nrow(Amat) == length(bvec))) {
-    warning("restriktor WARNING: The number of constraints does not match 
-                    the \'rhs\' (nrow(Amat) != length(rhs)).")
+    warning(paste("restriktor WARNING: The number of constraints does not match", 
+                  "the \'rhs\' (nrow(Amat) != length(rhs))."))
   }
   
   if (meq > nrow(Amat)) { 
@@ -162,7 +155,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
   }
   
   if (length(CON$ceq.nonlinear.idx) > 0L || length(CON$cin.nonlinear.idx) > 0L) {
-    stop("restriktor ERROR: can not handle (yet) nonlinear (in)equality restriktions")
+    stop(paste("restriktor ERROR: can not handle (yet) nonlinear (in)equality restriktions"))
   }
   
   if (debug && is.character(constraints)) {

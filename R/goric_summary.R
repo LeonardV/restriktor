@@ -108,17 +108,11 @@ summary.con_goric <- function(object, brief = TRUE,
         print.gap = 2, quote = FALSE, right = TRUE)
   cat("---\n")
   
-  if (comparison == "complement") {# && length(unique_combinations) == 0) {
+  if (comparison == "complement") {
     cat("The order-restricted hypothesis", sQuote(objectnames[1]), "has", 
         sprintf("%.2f", as.numeric(ratio.gw[1,2])), "times more support than its complement.\n\n")
   } 
   
-  # if (!is.null(x$messages$mix_weights)) {
-  #   text1 <- paste("Note: Since the constraint matrix for hypotheses", paste0(sQuote(names(wt_method_boot)), collapse = ", "), 
-  #                  "is not full row-rank, we used the 'boot' method for calculating", 
-  #                  "the penalty term value. For additional details, see '?goric' or the Vignette.\n")
-  #   message(text)
-  # }
   
   if (!is.null(x$ratio.gw)) {
     if (type == "goric") {
@@ -190,7 +184,7 @@ summary.con_goric <- function(object, brief = TRUE,
     
     vnames <- names(x$ormle$b.restr)
     vnames_len <- length(x$objectList)
-    first_na <- apply(x$ormle$b.restr[1:vnames_len, ], 1, function(x) { which(is.na(x))[1] }) -1
+    first_na <- apply(x$ormle$b.restr[1:vnames_len, , drop = FALSE], 1, function(x) { which(is.na(x))[1] }) -1 
     first_na[is.na(first_na)] <- 0
     
     selected_names <- list()

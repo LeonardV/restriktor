@@ -187,7 +187,7 @@ H1 <- "D1 > D2 > D3" # Denoting mu1 > mu2 > mu3
 
 # Apply GORIC #
 set.seed(123) 
-results_1c <- goric(fit, hypotheses = list(H1), comparison = "complement")
+results_1c <- goric(fit, hypotheses = list(H1 = H1), comparison = "complement")
 results_1c
 ```
 From this, you can conclude that $H_1: \mu_1 > \mu_2 > \mu_3$ is $.83/.17 \approx 4.88$ time more supported than its complement.  
@@ -220,7 +220,7 @@ H1 <- "D1 > D2 > D3" # mu1 > mu2 > mu3
 
 # Apply GORIC #
 set.seed(123) 
-results_1u <- goric(fit, hypotheses = list(H1))
+results_1u <- goric(fit, hypotheses = list(H1 = H1))
 results_1u
 ```
 From this, you can conclude that $H_1: \mu_1 > \mu_2 > \mu_3$ is more supported than the unconstrained (since $.763/.237 > 1$) and is, therefore, not a weak hypothesis.
@@ -281,7 +281,7 @@ H2 <- "D1 < D2 < D3" # mu1 < mu2 < mu3
 
 # Apply GORIC #
 set.seed(123) 
-results_12u <- goric(fit, hypotheses = list(H1, H2))
+results_12u <- goric(fit, hypotheses = list(H1 = H1, H2 = H2))
 results_12u
 round(results_12u$ratio.gw, 3)
 ```

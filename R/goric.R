@@ -478,6 +478,57 @@ goric.default <- function(object, ..., hypotheses = NULL,
 }
 
 
+
+# object of class restriktor ----------------------------------------------
+# goric.restriktor <- function(object, ..., hypotheses = NULL,
+#                              comparison = "unconstrained",
+#                              type = "goric",
+#                              debug = FALSE) {
+#   
+#   # hypotheses are inherited from the restriktor object
+#   
+#   if (!inherits(object, "restriktor")) {
+#     stop("restriktor ERROR: the object must be of class restriktor.")
+#   }
+#   
+#   objectList <- list(...)
+#   
+#   mcList <- as.list(match.call())
+#   mcList <- mcList[-c(1)]
+#   
+#   mcnames <- names(mcList) == ""
+#   lnames <- as.character(mcList[mcnames])
+#   names(mcList)[mcnames] <- lnames
+#   objectList <- mcList  
+#   
+#   objectList$hypotheses  <- hypotheses
+#   objectList$comparison  <- comparison
+#   objectList$type        <- type
+#   objectList$debug       <- debug
+#   objectList$VCOV        <- NULL
+#   
+#   if (type == "goricac") {
+#     objectList$sample.nobs <- length(residuals(object))
+#   }
+#   
+#   objectList <- sapply(objectList, function(x) eval(x))
+#   
+#   # multiple objects of class restriktor are allowed
+#   isRestr <- unlist(lapply(objectList, function(x) class(x)[1] == "restriktor"))
+# 
+#   restr_objectList <- list(object = objectList[isRestr])
+#   arguments_objectList <- objectList[!isRestr]
+#   
+#   # put all objects of class restriktor in one list
+#   #objectList <- append(list(object = objectList[isRestr]), objectList[!isRestr])
+#   
+#   res <- do.call(goric.default, c(restr_objectList, arguments_objectList)) 
+#   
+#   res
+# }
+
+
+
 # object of class lm ------------------------------------------------------
 goric.lm <- function(object, ..., hypotheses = NULL,
                      comparison = "unconstrained",
@@ -562,57 +613,6 @@ goric.lm <- function(object, ..., hypotheses = NULL,
     }
   res
 }
-
-
-
-# object of class restriktor ----------------------------------------------
-# goric.restriktor <- function(object, ..., hypotheses = NULL,
-#                              comparison = "unconstrained",
-#                              type = "goric",
-#                              debug = FALSE) {
-#   
-#   # hypotheses are inherited from the restriktor object
-#   
-#   if (!inherits(object, "restriktor")) {
-#     stop("restriktor ERROR: the object must be of class restriktor.")
-#   }
-#   
-#   objectList <- list(...)
-#   
-#   mcList <- as.list(match.call())
-#   mcList <- mcList[-c(1)]
-#   
-#   mcnames <- names(mcList) == ""
-#   lnames <- as.character(mcList[mcnames])
-#   names(mcList)[mcnames] <- lnames
-#   objectList <- mcList  
-#   
-#   objectList$hypotheses  <- hypotheses
-#   objectList$comparison  <- comparison
-#   objectList$type        <- type
-#   objectList$debug       <- debug
-#   objectList$VCOV        <- NULL
-#   
-#   if (type == "goricac") {
-#     objectList$sample.nobs <- length(residuals(object))
-#   }
-#   
-#   objectList <- sapply(objectList, function(x) eval(x))
-#   
-#   # multiple objects of class restriktor are allowed
-#   isRestr <- unlist(lapply(objectList, function(x) class(x)[1] == "restriktor"))
-# 
-#   restr_objectList <- list(object = objectList[isRestr])
-#   arguments_objectList <- objectList[!isRestr]
-#   
-#   # put all objects of class restriktor in one list
-#   #objectList <- append(list(object = objectList[isRestr]), objectList[!isRestr])
-#   
-#   res <- do.call(goric.default, c(restr_objectList, arguments_objectList)) 
-#   
-#   res
-# }
-
 
 
 # object of class numeric -------------------------------------------------
@@ -806,7 +806,7 @@ goric.rma <- function(object, ..., hypotheses = NULL,
                       type = "gorica", sample.nobs = NULL,
                       debug = FALSE) {
   
-  if (!inherits(object, c("rma"))) {
+  if (!inherits(object, c("rma.uni"))) {
     stop("restriktor ERROR: the object must be of class lm, glm, mlm, rlm, rma (only 'rma.uni').")
   }
   
@@ -845,12 +845,6 @@ goric.rma <- function(object, ..., hypotheses = NULL,
   
   object_idx <- grepl("object", names(objectList))
   objectList <- append(list(object = objectList[object_idx]), objectList[!object_idx])  
-  
-  # # check for unkown arguments
-  # pm <- pmatch(names(objectList), goric_arguments, 0L)
-  # if (any(pm == 0)) {
-  #   stop("restriktor ERROR: argument ", sQuote(names(objectList)[pm == 0]), " unknown.", call. = FALSE)
-  # }
   
   res <- do.call(goric.default, c(objectList[object_idx], objectList[!object_idx]))
   

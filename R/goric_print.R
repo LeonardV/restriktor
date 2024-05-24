@@ -166,7 +166,7 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
             " in comparison to the unconstrained one, rather than its complement?")
   }
   
-  if (comparison == "complement" && length(overlap_unique_combinations) == 0) {
+  if (comparison == "complement" && length(overlap_unique_combinations) == 0) { 
     class(x$ratio.gw) <- "numeric"
     objectname1 <- sQuote(objectnames[1])
     support_ratio <- sprintf("%.2f", x$ratio.gw[1, 2])

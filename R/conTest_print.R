@@ -13,7 +13,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
   Amat <- x[[1]]$Amat
   meq  <- x[[1]]$meq
   bvec <- x[[1]]$bvec
-  rdf  <- x[[1]]$df.residual
+  #rdf  <- x[[1]]$df.residual
   boot <- x[[1]]$boot
   model.org  <- x[[1]]$model.org
   b.unrestr  <- x[[1]]$b.unrestr
@@ -46,7 +46,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
   out.rest <- cbind(round(Amat, 4), c(rep("   ==", meq), rep("   >=", nrow(Amat) - 
                                                      meq)), bvec, " ")
   
-  rownames(out.rest) <- paste(1:nrow(out.rest), ":", sep = "")
+  rownames(out.rest) <- paste(seq_len(nrow(out.rest)), ":", sep = "")
   
   colnames(out.rest)[(ncol(Amat) + 1):ncol(out.rest)] <- c("op", "rhs", "active")
   idx <- ncol(out.rest)
@@ -54,7 +54,7 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
   out.rest[iact, idx] <- "yes"
   # in case of equality constraints only all constraints are active (==)
   if (nrow(Amat) == meq) {
-    out.rest[1:nrow(Amat), idx] <- "yes"
+    out.rest[seq_len(nrow(Amat)), idx] <- "yes"
   }  
   out.rest <- as.data.frame(out.rest)
   

@@ -165,7 +165,7 @@ con_weights_boot <- function(VCOV, Amat, meq, R = 1e5L,
   #Z <- mvtnorm::rmvnorm(n = R, mean = rep(0, ncol(VCOV)), sigma = VCOV)
   # truncated, the default (lower = -Inf and upper = Inf) is not truncated.
   Z <- tmvtnorm::rtmvnorm(n = R, mean = rep(0, ncol(VCOV)), sigma = VCOV, ...)
-  dvec <- 2*(Z %*% invW)
+  dvec <- 2 * (Z %*% invW)
   RR <- sum(R)
   
   wt_bar <- numeric(ncol(VCOV) + 1)
@@ -207,7 +207,7 @@ con_weights_boot <- function(VCOV, Amat, meq, R = 1e5L,
     chunk_size     <- chunk_size + chunk_size_org
   }
 
-  rownames(chunk_wt_bar) <- paste0("chunk_iter_", 1:nrow(chunk_wt_bar))
+  rownames(chunk_wt_bar) <- paste0("chunk_iter_", seq_len(nrow(chunk_wt_bar)))
   
   attr(wt_bar, "total_bootstrap_draws") <- length(iact)
   attr(wt_bar, "converged"            ) <- has_converged

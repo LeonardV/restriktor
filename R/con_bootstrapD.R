@@ -65,11 +65,11 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, type = "A",
   
   lavdata <- h0@Data
   lavoptions <- h0@Options
-  dataeXo <- lavdata@eXo
-  dataWT <- lavdata@weights
-  dataMp <- lavdata@Mp
-  dataRp <- lavdata@Rp
-  dataLp <- lavdata@Lp
+  # dataeXo <- lavdata@eXo
+  # dataWT <- lavdata@weights
+  # dataMp <- lavdata@Mp
+  # dataRp <- lavdata@Rp
+  # dataLp <- lavdata@Lp
   
   if (bootstrap.type == "bollen.stine") {
     for (g in 1:h0@Data@ngroups) {
@@ -288,8 +288,7 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, type = "A",
       if (verbose)
         cat(sprintf("%5.3f", plugin.pvalue), "\n")
       attr(D.boot, "plugin.pvalue") <- plugin.pvalue
-    }
-    else if (double.bootstrap == "FDB") {
+    } else if (double.bootstrap == "FDB") {
       plugin.pvalue <- bootstrapD(h0 = fit.boot.h0, h1 = fit.boot.h1,
                                   constraints = constraints,
                                   R = 1L, bootstrap.type = bootstrap.type, 
@@ -310,8 +309,7 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, type = "A",
   res <- if (ncpus > 1L && (have_mc || have_snow)) {
     if (have_mc) {
       parallel::mclapply(seq_len(RR), fn, mc.cores = ncpus)
-    }
-    else if (have_snow) {
+    } else if (have_snow) {
       if (is.null(cl)) {
         cl <- parallel::makePSOCKcluster(rep("localhost", 
                                              ncpus))
@@ -321,23 +319,23 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, type = "A",
         res <- parallel::parLapply(cl, seq_len(RR), fn)
         parallel::stopCluster(cl)
         res
+      } else {
+        parallel::parLapply(cl, seq_len(RR), fn)
       }
-      else parallel::parLapply(cl, seq_len(RR), fn)
     }
+  } else { 
+    lapply(seq_len(RR), fn)
   }
-  else lapply(seq_len(RR), fn)
   error.idx <- integer(0)
   for (b in seq_len(RR)) {
     if (!is.null(res[[b]])) {
       D[b] <- res[[b]]
       if (double.bootstrap == "standard") {
         plugin.pvalues[b] <- attr(res[[b]], "plugin.pvalue")
-      }
-      else if (double.bootstrap == "FDB") {
+      } else if (double.bootstrap == "FDB") {
         D.2[b] <- attr(res[[b]], "D.2")
       }
-    }
-    else {
+    } else {
       error.idx <- c(error.idx, b)
     }
   }
@@ -357,9 +355,10 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, type = "A",
     }
   }
   else {
-    if (verbose) 
+    if (verbose) {
       cat("Number of successful bootstrap draws:", 
           (R - length(error.idx)), "\n")
+    }
   }
   pvalue <- sum(D > D.original) / length(D)
   if (return.D) {
@@ -377,8 +376,7 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, type = "A",
       attr(pvalue, "D") <- D
       attr(pvalue, "D2") <- D.2
     }
-  }
-  else if (double.bootstrap == "standard") {
+  } else if (double.bootstrap == "standard") {
     adj.alpha <- quantile(plugin.pvalues, double.bootstrap.alpha, 
                           na.rm = TRUE)
     attr(pvalue, "adj.alpha") <- adj.alpha

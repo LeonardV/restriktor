@@ -93,7 +93,7 @@ lav_constraints_parse <- function(partable = NULL, constraints = NULL, theta = N
   cin.linear.flag <- length(cin.linear.idx) > 0L
   cin.nonlinear.flag <- length(cin.nonlinear.idx) > 0L
   cin.flag <- cin.linear.flag || cin.nonlinear.flag
-  ceq.only.flag <- ceq.flag && !cin.flag
+  #ceq.only.flag <- ceq.flag && !cin.flag
   cin.only.flag <- cin.flag && !ceq.flag
   ceq.linear.only.flag <- (ceq.linear.flag && !ceq.nonlinear.flag && 
                              !cin.flag)

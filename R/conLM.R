@@ -134,7 +134,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   df.residual <- n - (p - qr(Amat[0:meq, ])$rank)
   
   # check if the constraints are not in line with the data, else skip optimization
-  if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) & meq == 0) {
+  if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) && meq == 0) {
     b.restr  <- b.unrestr
     
     OUT <- list(CON         = CON,

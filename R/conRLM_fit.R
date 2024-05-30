@@ -32,7 +32,7 @@ conRLM_fit <- function (x, y, weights, ..., w = rep(1, nrow(x)), init = "ls",
   }
   else x <- as.matrix(x)
   if (is.null(colnames(x))) 
-    colnames(x) <- paste("X", seq(ncol(x)), sep = "")
+    colnames(x) <- paste("X", seq_len(ncol(x)), sep = "")
   if (qr(x)$rank < ncol(x)) 
     stop("'x' is singular: singular fits are not implemented in 'rlm'")
   if (!(any(test.vec == c("resid", "coef", "w", "NULL")) || 

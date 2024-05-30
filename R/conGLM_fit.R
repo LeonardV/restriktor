@@ -198,10 +198,10 @@ conGLM_fit <- function(x, y, weights = rep(1, nobs), start = NULL,
     }
     # if (fit$rank < nvars) 
     # coef[fit$pivot][seq.int(fit$rank + 1, nvars)] <- NA
-    xxnames <- xnames#[fit$pivot]
+    #xxnames <- xnames#[fit$pivot]
     residuals <- (y - mu)/mu.eta(eta)
     # fit$qr <- as.matrix(fit$qr)
-    nr <- min(sum(good), nvars)
+    #nr <- min(sum(good), nvars)
     # if (nr < nvars) {
     #   Rmat <- diag(nvars)
     #   Rmat[1L:nr, 1L:nvars] <- fit$qr[1L:nr, 1L:nvars]

@@ -11,14 +11,14 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
   stopifnot(goric %in% c("goric", "goricc", "gorica", "goricac", "none"))
   
   # bty = "stud" needs bootstrap variances
-  if (bootCIs & !(bty %in% c("norm", "basic", "perc", "bca"))) {
+  if (bootCIs && !(bty %in% c("norm", "basic", "perc", "bca"))) {
     if (bty == "stud") {
       stop("Restriktor ERROR: studentized intervals not implemented.")
     } else {
       stop("bty is invalid.")
     }
   }
-  if (bootCIs & (level < 0.5 | level > 1)) {
+  if (bootCIs && (level < 0.5 || level > 1)) {
     stop("invalid confidence level")
   }
   
@@ -72,7 +72,7 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
   } else if (bootCIs && (ans$se.type %in% c("boot.model.based", "boot.standard"))) {
       cis <- matrix(0, length(z$b.restr), 2)
       colnames(cis) <- c("lower", "upper")
-      for (i in 1:length(z$b.restr)) {
+      for (i in seq_len(length(z$b.restr))) {
         if (!bty %in% c("norm", "perc")) { # basic and adjusted percentile
           cis[i, ] <- boot.ci(z$bootout, conf = level,
                               type = bty, index = i)[[bty]][4:5]
@@ -96,7 +96,7 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
         se.def <- apply(bootout.def, 1, function(x) sd(x))
         cis.def <- matrix(0, length(b.def), 2)
         colnames(cis) <- c("lower", "upper")
-        for (i in 1:length(b.def)) {
+        for (i in seq_len(length(b.def))) {
           if (!bty %in% c("norm", "perc")) { 
             cis.def[i, ] <- boot.ci(z$bootout, conf = level, type = bty, 
                                     t0 = b.def[i], t = bootout.def[i,])[[bty]][4:5]

@@ -56,7 +56,7 @@ conTest_ceq.conLM <- function(object, test = "F", boot = "no",
       # model matrix
       X <- model.matrix(object)[,,drop = FALSE]
       n <- dim(X)[1]
-      p <- dim(X)[2]
+      #p <- dim(X)[2]
       
       # weights
       if (is.null(weights(object))) {

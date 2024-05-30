@@ -43,7 +43,7 @@ con_solver_lm <- function(X, y, w = NULL, Amat, bvec, meq,
       val <- out.qp$value
     }
     
-    if (i == maxit & abs(out.qp$value - val) > absval) {
+    if (i == maxit && abs(out.qp$value - val) > absval) {
       warning(gettextf("'quadprog' failed to converge in %d steps", maxit), 
               domain = NA)
     }  
@@ -82,7 +82,7 @@ con_solver_rlm <- function(X, y, Amat, bvec, meq,
     
     b.restr <- out.qp$solution
     
-    if (i == maxit & abs(out.qp$value - val) > absval) {
+    if (i == maxit && abs(out.qp$value - val) > absval) {
       warning(gettextf("'quadprog' failed to converge in %d steps", maxit), 
               domain = NA)
     }  
@@ -130,7 +130,7 @@ con_solver_glm <- function(X, y, Amat, bvec, meq,
       val <- out.qp$value
     }
     
-    if (i == maxit & abs(out.qp$value - val) > epsilon) {
+    if (i == maxit && abs(out.qp$value - val) > epsilon) {
       warning(gettextf("'quadprog' failed to converge in %d steps", maxit), 
               domain = NA)
     }

@@ -80,7 +80,7 @@ con_partable_est <- function(object, label = FALSE, est = FALSE,
   if (!is.null(names(object))) {
     predNames <- names(predCoef)
   } else {
-    predNames <- paste0("V", 1:length(est))
+    predNames <- paste0("V", seq_len(length(est)))
   }
   
   lhs <- rep(responseName, length(predNames))

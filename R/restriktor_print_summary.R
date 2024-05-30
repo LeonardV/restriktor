@@ -38,7 +38,7 @@ print.summary.restriktor <- function(x, digits = max(3, getOption("digits") - 2)
   }
   
   coefs <- x$coefficients
-  if (se.type %in% c("boot.model.based", "boot.standard") & bootCIs) {
+  if (se.type %in% c("boot.model.based", "boot.standard") && bootCIs) {
     cat("\nCoefficients from restricted model\nwith",
       100 * level, "pct bootstrap confidence intervals (",bty,"):\n ")  
   } else {

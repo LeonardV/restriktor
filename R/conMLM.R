@@ -30,7 +30,7 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
   ## model matrix
   X <- model.matrix(object)[,,drop = FALSE]
   # sample size
-  n <- dim(X)[1]
+  #n <- dim(X)[1]
   # number of parameters
   p <- length(coef(object))
   # unconstrained estimates

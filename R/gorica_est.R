@@ -93,7 +93,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
   start.time <- proc.time()[3]
   
   # check if the constraints are not in line with the data, else skip optimization
-  if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) & meq == 0) {
+  if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) && meq == 0) {
     b.restr  <- b.unrestr
     
     OUT <- list(CON         = CON,

@@ -263,15 +263,15 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
   # original model
   model.org <- object$model.org
   # model matrix
-  X <- model.matrix(object)[,,drop=FALSE]
+  #X <- model.matrix(object)[,,drop=FALSE]
   # response variable
-  y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
+  #y <- as.matrix(model.org$model[, attr(model.org$terms, "response")])
   # weights
   #w <- weights(model.org)
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
-  Sigma <- vcov(model.org) 
+  #Sigma <- vcov(model.org) 
   # parameter estimates
   b.unrestr <- object$b.unrestr
   b.restr <- object$b.restr
@@ -504,7 +504,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   # unconstrained df
   df.residual <- object$df.residual
   # unconstrained covariance matrix
-  Sigma <- vcov(model.org)
+  #Sigma <- vcov(model.org)
   # sample size
   n <- dim(X)[1]
   # number of parameters

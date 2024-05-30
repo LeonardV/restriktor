@@ -24,7 +24,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     operators <- c("=~", "<~", "~*~", "~~", "~", "\\|", "%")
     
     # check for user input error
-    if (grepl(paste(operators, collapse = "|"), constraints) | all(grepl("[><]{2,}", constraints))) {
+    if (grepl(paste(operators, collapse = "|"), constraints) || all(grepl("[><]{2,}", constraints))) {
       stop(paste("Restriktor ERROR: error in constraint syntax. Only the operators \'<, >, ==, =, :=\' are allowed.",
            "See ?restriktor for details on how to specify the constraint syntax or check the website:",
            "https://restriktor.org/tutorial/syntax.html."), call. = FALSE) 
@@ -32,7 +32,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     
     # deal with constraints of format x1 < x2 < x3
     OUT <- list()
-    for (i in 1:length(constraints)) {
+    for (i in seq_len(length(constraints))) {
       # some constraint cleanup
       constraint.syntax <- gsub("[#!].*(?=\n)", "", constraints  , perl = TRUE)
       constraint.syntax <- gsub(";", "\n", constraint.syntax     , perl = TRUE)
@@ -99,7 +99,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     nsc_lhs.idx <- sum(grepl("<|>|=", parTable$lhs))
     nsc_rhs.idx <- sum(grepl("<|>|=", parTable$rhs))
     
-    if (all(Amat == 0) | nsc_lhs.idx > 0 | nsc_rhs.idx > 0) {
+    if (all(Amat == 0) || nsc_lhs.idx > 0 || nsc_rhs.idx > 0) {
       stop(paste("Restriktor ERROR: I have no idea how to deal with this constraint syntax.",
            "See ?restriktor for details on how to specify the constraint syntax or check the website", 
             "https://restriktor.org/tutorial/syntax.html."), sep = "", call. = FALSE

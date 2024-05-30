@@ -11,7 +11,7 @@ con_loglik_lm <- function(object, ...) {
     excl <- w == 0
     if (any(excl)) {
       res <- res[!excl]
-      N <- length(res)
+      n <- length(res)
       w <- w[!excl]
     }
   }

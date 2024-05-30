@@ -5,8 +5,8 @@ goric_benchmark_anova <- function(object, pop_es = 0, ratio_pop_means = NULL,
                                   ncpus = 1, seed.value = NULL, ...) {
   
   # Check:
-  if (!inherits(object, "con_goric")) {# any(class(object) == "con_goric")){
-    return(paste0("The object should be of class con_goric (a goric object from restriktor); it belongs to ", class(object)))
+  if (!inherits(object, "con_goric")) {
+    return(paste0("Restriktor ERROR: The object should be of class con_goric (a goric object from the goric() function); it belongs to ", class(object)))
   }
 
   # number of groups
@@ -248,14 +248,14 @@ goric_benchmark_anova <- function(object, pop_es = 0, ratio_pop_means = NULL,
   }
   
   # Error probability based on complement of preferred hypothesis in data
-  if (nr.hypos == 2 & object$comparison == "complement") {
+  if (nr.hypos == 2 && object$comparison == "complement") {
     if (object$type == 'goric') {
       error.prob <- 1 - object$result$goric.weights[PrefHypo]
     } else {
       error.prob <- 1 - object$result$gorica.weights[PrefHypo]
     }
   } else {
-    if (PrefHypo == nr.hypos & object$comparison == "unconstrained") {
+    if (PrefHypo == nr.hypos && object$comparison == "unconstrained") {
       error.prob <- "The unconstrained (i.e., the failsafe) containing all possible orderings is preferred..."
     } else {
       H_pref <- hypos[[PrefHypo]]

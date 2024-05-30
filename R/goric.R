@@ -72,7 +72,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     
     # give constraints list a name if null
     if (is.null(names(constraints))) {
-      names(constraints) <- paste0("H", 1:length(constraints)) 
+      names(constraints) <- paste0("H", seq_len(length(constraints)))
     }
 
   }
@@ -188,7 +188,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     idx <- length(conList) 
     objectnames <- vector("character", idx)
     #CALL$object <- NULL
-  } else if ("numeric" %in% object_class & isConChar) {
+  } else if ("numeric" %in% object_class && isConChar) {
     # fit restriktor object for each hypothesis
     conList <- lapply(constraints, function(constraint) {
       CALL.restr <- append(list(object      = object$object, 
@@ -204,7 +204,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     isSummary <- lapply(conList, function(x) summary(x, 
                                                      type        = type,
                                                      sample.nobs = sample.nobs)) 
-    } else if ("numeric" %in% object_class & !isConChar) {
+    } else if ("numeric" %in% object_class && !isConChar) {
       # tolower names Amat and rhs
       for (i in seq_along(constraints)) { 
         names(constraints[[i]]) <- tolower(names(constraints[[i]]))
@@ -243,9 +243,9 @@ goric.default <- function(object, ..., hypotheses = NULL,
   objectnames <- names(constraints) 
   # constraints are inherited
   if ("restriktor" %in% object_class) {
-    objectnames <- paste0("H", 1:length(object))
+    objectnames <- paste0("H", seq_len(length(object)))
   } else if (any(is.null(names(constraints))) || all(names(constraints) == "")) {  
-    objectnames <- paste0("H", 1:length(constraints))
+    objectnames <- paste0("H", seq_len(length(constraints)))
   } 
 
   if (comparison == "complement" && length(conList) > 1L) {
@@ -575,7 +575,7 @@ goric.lm <- function(object, ..., hypotheses = NULL,
     tsm  <- two_stage_matrices(object, auxiliary = auxiliary, emControl = emControl)
     vcov <- two_stage_sandwich(tsm)
     est  <- coef(tsm$fitTarget)
-    N <- tsm$N
+    #N <- tsm$N
     
     if (!type %in% c("gorica", "goricac")) {
       stop("restriktor EROR: missing = \"two.stage\" is only (for now) available for type = 'gorica(c)'\n", call. = FALSE)

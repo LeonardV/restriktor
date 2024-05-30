@@ -83,7 +83,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   # residuals
   residuals <- residuals(object) # NOT working residual
   # sample size
-  n <- dim(X)[1]
+  #n <- dim(X)[1]
   # number of parameters
   p <- dim(X)[2]
   # compute the loglikelihood
@@ -187,7 +187,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   start.time <- proc.time()[3]
   
   # # check if the constraints are in line with the data    
-  if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) & meq == 0) {  
+  if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) && meq == 0) {  
     b.restr   <- b.unrestr
     #scale.restr <- scale
     

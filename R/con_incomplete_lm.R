@@ -8,7 +8,7 @@ two_stage_sandwich <- function(object, ...) {
   delta   <- object$delta
   satACOV <- object$satACOV
   
-  acov <- satACOV * object$N
+  #acov <- satACOV * object$N
   
   meat  <- H %*% delta
   bread <- solve(t(delta) %*% meat) 
@@ -209,7 +209,7 @@ computeDelta <- function(object = NULL) {
   #lavmodel@GLIST
   
   nvar <- p
-  num.idx <- seq_len(p)
+  #num.idx <- seq_len(p)
   
   pstar <- as.integer(nvar * (nvar + 1)/2)
   pstar <- nvar + pstar
@@ -282,7 +282,7 @@ computeDelta <- function(object = NULL) {
     }
     
     
-    for (mm in 1:length(GLIST)) {
+    for (mm in seq_len(length(GLIST))) {
       #lavmodel@m.free.idx
       #lavmodel@x.free.idx
       dix <- duplicated(x.el.idx[[mm]])
@@ -335,7 +335,7 @@ computeDelta <- function(object = NULL) {
 two_stage_matrices <- function(object, auxiliary = c(), emControl = list(), ...) {
   
   
-  obj_terms <- terms(object)
+  #obj_terms <- terms(object)
   # check for interaction effects
   #label_terms <- attr(obj_terms, "term.labels")
   

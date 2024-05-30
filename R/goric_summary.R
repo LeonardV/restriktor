@@ -188,7 +188,7 @@ summary.con_goric <- function(object, brief = TRUE,
     first_na[is.na(first_na)] <- 0
     
     selected_names <- list()
-    for (i in 1:length(first_na)) {
+    for (i in seq_len(length(first_na))) {
       if (first_na[i] == 0) {
         selected_names[[i]] <- vnames
       } else {
@@ -200,13 +200,13 @@ summary.con_goric <- function(object, brief = TRUE,
       colnames(Amat) <- vnames
       out.rest <- cbind(round(Amat, 4), c(rep("   ==", meq), rep("   >=", nrow(Amat) - 
                                                                    meq)), bvec, " ")
-      rownames(out.rest) <- paste(1:nrow(out.rest), ":", sep = "")
+      rownames(out.rest) <- paste(seq_len(nrow(out.rest)), ":", sep = "")
       colnames(out.rest)[(ncol(Amat) + 1):ncol(out.rest)] <- c("op", "rhs", "active")
       idx <- ncol(out.rest)
       out.rest[, idx] <- "no"
       out.rest[iact, idx] <- "yes"
       if (nrow(Amat) == meq) {
-        out.rest[1:nrow(Amat), idx] <- "yes"
+        out.rest[seq_len(nrow(Amat)), idx] <- "yes"
       }  
       out.rest <- as.data.frame(out.rest)
       
@@ -232,7 +232,7 @@ summary.con_goric <- function(object, brief = TRUE,
     if (!is.null(object$hypotheses_usr)) {
       cat("\norder-restricted hypotheses:\n\n")
       hypotheses_usr <- object$hypotheses_usr
-      for (i in 1:length(x$objectList)) {
+      for (i in seq_len(length(x$objectList))) {
         text <- gsub("(\\n\\s+)+", "\n", hypotheses_usr[[i]])
         cat(paste0(objectnames[i],":\n", trimws(gsub("\\h+", " ", text, perl = TRUE))), "\n\n")
       }

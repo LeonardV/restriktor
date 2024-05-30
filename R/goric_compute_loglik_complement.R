@@ -31,11 +31,11 @@ compute_complement_likelihood <- function(model.org, VCOV,
     }
     # if any constraints are violated LL_c = LL_u
   } else if (nrow(Amat) > meq && !(all(c(Amat) == 0L))) {
-    nr <- 1:nrow(Amat)
+    nr <- seq_len(nrow(Amat))
     ll <- vector("list", length(nr))
     betas <- vector("list", length(nr))
     if (meq > 0L) { nr <- nr[-c(0:meq)] }
-      for (l in 1:length(nr)) {
+      for (l in seq_len(length(nr))) {
         idx <- c(nr[l], nr[-l])
         Amatx <- Amat[idx, , drop = FALSE]
         if (type %in% c("goric", "goricc")) {          

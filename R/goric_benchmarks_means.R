@@ -1,0 +1,277 @@
+goric_benchmark_means <- function(object, pop_es = 0, ratio_pop_means = NULL, 
+                                  N = NULL, other_N = NULL, quant = NULL, iter = 1000, 
+                                  control = list(convergence_crit = 1e-03, 
+                                                 chunk_size = 1e4), 
+                                  ncpus = 1, cl = NULL, seed.value = NULL, ...) {
+  
+  
+  # Check:
+  if (!inherits(object, "con_goric")) {
+    stop(paste("Restriktor ERROR:", 
+               "The object should be of class 'con_goric' (a goric object from the goric() function).",
+               "However, it belongs to the following class(es):", 
+      paste(class(object), collapse = ", ")
+    ), call. = FALSE)
+  }
+  
+  # number of groups
+  ngroups <- length(coef(object))
+  
+  # does original model fit exist
+  #has_model_org <- !is.null(object$model.org)
+  form_model_org <- formula(object$model.org)
+  
+  # ES and ratio in data
+  if (is.null(object$model.org)) {
+    # Number of subjects per group
+    if (is.null(N)) {
+      stop("Restriktor Error: please specify the sample-size, e.g. N = 100.", call. = FALSE)
+    } else if (length(N) == 1) {
+      group_sizes <- rep(N, ngroups)
+    } else {
+      group_sizes <- N
+    }
+    # Unrestricted (adjusted) group_means
+    group_means <- object$objectList[[object$objectNames]]$b.unrestr
+    # residual variance
+    VCOV <- object$objectList[[object$objectNames]]$Sigma
+    var_e_data_mx <- VCOV * group_sizes
+    var_e_data <- mean(diag(var_e_data_mx)) # different if sample size per group in unequal
+  } else {
+    # Number of subjects per group
+    group_sizes <- colSums(model.matrix(object$model.org)) #summary(object$model.org$model[, 2])
+    # Unrestricted group_means
+    group_means <- coef(object$model.org)
+    # residual variance
+    var_e_data <- sum(object$model.org$residuals^2) / (sum(group_sizes) - ngroups)
+  }
+  
+  # Check if the model has an intercept
+  has_intercept <- any(grepl("\\(Intercept\\)", names(group_means)))
+  
+  ## Compute observed Cohens f
+  #grand_mean <- mean(group_means)
+  #SST <- var_e_data * (sum(group_sizes) - 1)
+  #SSM <- sum(group_sizes * (group_means - grand_mean)^2)
+  #eta_squared <- SSM / SST
+  #cohens_f_observed <- sqrt(eta_squared / (1 - eta_squared))
+  
+  #cohens_f_observed <- mean(1/sqrt(var_e_data)) * sqrt((1/ngroups) * sum((group_means - mean(group_means))^2))
+  
+  ratio_data <- rep(NA, ngroups)
+  ratio_data[order(group_means) == 1] <- 1
+  ratio_data[order(group_means) == 2] <- 2
+  # The choice of the smallest and the second smallest mean makes the scaling 
+  # more robust against changes in the other group means. Since these values 
+  # represent the lower bound of the data, the scale is less sensitive to the 
+  # spread of higher values.
+  
+  # For example:
+  # The value of 2.28 indicates that this particular group mean is 2.28 times 
+  # the scale factor d above the smallest mean. This means the group mean is 
+  # further from the smallest mean compared to the second smallest mean, and 
+  # helps in understanding the relative differences between the group means in 
+  # a normalized manner.
+  d <- group_means[order(group_means) == 2] - group_means[order(group_means) == 1]
+  
+  for (i in seq_len(ngroups)) {
+    if (order(group_means)[i] > 2) {
+      ratio_data[i] <- 1 + (group_means[i] - group_means[order(group_means) == 1]) / d
+    }
+  }
+  # ratio population means
+  if (is.null(ratio_pop_means)) {
+    # Then same as in data
+    ratio_pop_means <- ratio_data 
+  } else {
+    if (length(ratio_pop_means) != ngroups) { 
+      return(paste0("The argument ratio_pop_means should be of length ", 
+                    ngroups, " (or NULL) but not of length ", length(ratio_pop_means)))
+    }
+  }
+  
+  # Hypotheses
+  hypos <- object$hypotheses_usr
+  nr.hypos <- dim(object$result)[1]
+  pref_hypo <- which.max(object$result[, 7]) 
+  pref_hypo_name <- object$result$model[pref_hypo]
+  
+  # Error variance
+  # var_e <- var(object$model.org$residuals)
+  # var_e <- 1
+  var_e <- var_e_data
+  #
+  # When determining pop.means, value does not matter: works exactly the same
+  # choose first or last, then pop. means comparable to sample estimates
+  
+  # Possibly adjust var_e based on other sample size
+  if (!is.null(other_N)) {
+    if (length(other_N) == 1) {
+      var_e <- var_e * (sum(group_sizes) - ngroups)
+      group_sizes <- rep(other_N, ngroups)
+      var_e <- var_e / (sum(group_sizes) - ngroups)
+    } else if (length(other_N) == ngroups) {
+      var_e <- var_e * (sum(group_sizes) - ngroups)
+      group_sizes <- other_N
+      var_e <- var_e / (sum(group_sizes) - ngroups)
+    } else {
+      return(paste0("The argument other_N should be of length 1 or ", 
+                    ngroups, " (or NULL) but not of length ", length(other_N)))
+    }
+  }
+  
+  # effect size population
+  es <- pop_es
+  nrES <- length(es)
+  
+  means_pop_all <- matrix(NA, ncol = ngroups, nrow = nrES)
+  for (teller_es in seq_len(nrES)) {
+    #teller_es = 1
+    
+    # Determine mean values, with ratio of ratio.m
+    # Solve for x here
+  
+    # If all equal, then set population means to all 0
+    if (length(unique(ratio_pop_means)) == 1) {
+      means_pop <- rep(0, ngroups)
+    } else {
+      fun <- function (d) {
+        means_pop = ratio_pop_means * d
+        (1/sqrt(var_e)) * sqrt((1/ngroups) * sum((means_pop - mean(means_pop))^2)) - es[teller_es] #  AANPASSSEN NAAR NIEUWE FORMULE
+      }
+      d <- uniroot(fun, lower = 0, upper = 100)$root
+      # Construct means_pop
+      means_pop <- ratio_pop_means*d
+    }
+    means_pop_all[teller_es, ] <- means_pop
+  }
+  colnames(means_pop_all) <- colnames(coef(object))
+  rownames(means_pop_all) <- paste0("pop_es = ", pop_es)
+
+  # Create dummies
+  sample <- data.frame(D = as.factor(rep(1:ngroups, times = group_sizes)))
+  sample <- data.frame(sample$D, model.matrix(~ D - 1, data = sample))
+  colnames(sample)[-1] <- names(coef(object))
+  
+  nr.iter <- iter
+  set.seed(seed.value)
+  
+  if (is.null(quant)) {
+    quant <- c(.025, .05, .35, .50, .65, .95, .975)
+    names_quant <- c("Sample", "2.5%", "5%", "35%", "50%", "65%", "95%", "97.5%")
+  } else {
+    names_quant <- c("Sample", paste0(as.character(quant*100), "%"))
+  }
+
+  # parallel backend
+  if (is.null(cl)) {
+    cl <- parallel::makePSOCKcluster(rep("localhost", ncpus))
+  }
+  on.exit(parallel::stopCluster(cl))
+  
+  
+  # Export required variables to cluster nodes
+  parallel::clusterExport(cl, c("group_sizes", "var_e", "means_pop", 
+                                "hypos", "pref_hypo", "object", "ngroups", "sample",
+                                "control", "form_model_org"), 
+                          envir = environment())
+  
+  parallel::clusterEvalQ(cl, {
+    library(restriktor) 
+  })
+
+  # Use pbapply::pblapply with arguments
+  pbapply::pboptions(type = "timer", style = 1, char = ">")
+  
+  parallel_function_results <- list()  
+  for (teller_es in 1:nrES) {
+    cat("Calculating means benchmark for effect-size =", pop_es[teller_es], "\n")
+    #teller_es = 1
+    means_pop <- means_pop_all[teller_es, ]
+    
+    # main function
+    # Create a function that wraps parallel_function
+    wrapper_function_means <- function(i) {
+      parallel_function_means(i, samplesize = group_sizes, var_e = var_e, 
+                              means_pop = means_pop, 
+                              hypos = hypos, pref_hypo = pref_hypo, 
+                              object = object, ngroups = ngroups, 
+                              sample = sample, control = control, 
+                              form_model_org = form_model_org, 
+                              ...)
+    }
+    
+    name <- paste0("pop_es = ", pop_es[teller_es])
+    parallel_function_results[[name]] <- pbapply::pblapply(seq_len(nr.iter), 
+                                                           wrapper_function_means, 
+                                                           cl = cl)
+  }
+  
+  # get benchmark results
+  benchmark_results <- get_results_benchmark_means(parallel_function_results, 
+                                                   object, pref_hypo, 
+                                                   pref_hypo_name, quant, 
+                                                   names_quant, nr.hypos)
+   
+  # Error probability based on complement of preferred hypothesis in data
+  if (nr.hypos == 2 && object$comparison == "complement") { 
+    if (object$type == 'goric') {
+      error_prob <- 1 - object$result$goric.weights[pref_hypo]
+    } else {
+      error_prob <- 1 - object$result$gorica.weights[pref_hypo]
+    }
+  } else {
+    if (pref_hypo == nr.hypos && object$comparison == "unconstrained") {
+      error_prob <- "The unconstrained (i.e., the failsafe) containing all possible orderings is preferred."
+    } else {
+      H_pref <- hypos[[pref_hypo]]
+      if (is.null(object$model.org)) {
+        results_goric_pref <- goric(group_means, VCOV = VCOV,
+                                    hypotheses = list(H_pref = H_pref),
+                                    comparison = "complement",
+                                    type = object$type, 
+                                    control = control, 
+                                    ...)
+      } else {
+        fit_data <- object$model.org
+        results_goric_pref <- goric(fit_data,
+                                    hypotheses = list(H_pref = H_pref),
+                                    comparison = "complement",
+                                    type = object$type,
+                                    control = control, 
+                                    ...)
+      }
+      if (object$type == 'goric') {
+        error_prob <- results_goric_pref$result$goric.weights[2]
+      } else {
+        error_prob <- results_goric_pref$result$gorica.weights[2]
+      }
+    }
+  }
+
+  OUT <- list(
+    type = object$type,
+    comparison = object$comparison,
+    ngroups = ngroups,
+    group_size = group_sizes,
+    group_means_observed = group_means, 
+    ratio_group_means.data = ratio_data, 
+    #cohens_f_observed = cohens_f_observed,
+    res_var_observed = var_e_data,
+    pop_es = pop_es, pop_group_means = means_pop_all,
+    ratio_pop_means = ratio_pop_means,
+    res_var_pop = var_e,
+    pref_hypo_name = pref_hypo_name, 
+    error_prob_pref_hypo_name = error_prob,
+    benchmarks_goric_weights = benchmark_results$benchmarks_gw,
+    benchmarks_ratio_goric_weights = benchmark_results$benchmarks_rgw,
+    benchmarks_ratio_ll_weights = benchmark_results$benchmarks_rlw,
+    benchmarks_ratio_ll_ge1 = benchmark_results$benchmarks_rlw_ge1,
+    benchmarks_difLL = benchmark_results$benchmarks_difLL,
+    benchmarks_absdifLL = benchmark_results$benchmarks_absdifLL,
+    combined_values = benchmark_results$combined_values
+    )
+  
+  class(OUT) <- c("benchmarks_means", "benchmarks", "list")
+  return(OUT)
+} 

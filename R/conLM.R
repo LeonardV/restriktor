@@ -4,7 +4,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                      control = list(), verbose = FALSE, debug = FALSE, ...) {
   
   # check class
-  if (!(class(object)[1] == "lm")) {
+  if (!(class(object)[1] %in% c("lm", "aov"))) {
     stop("Restriktor ERROR: object must be of class lm.")
   }
   # standard error methods

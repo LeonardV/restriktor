@@ -3,7 +3,7 @@ con_partable <- function(object, est = FALSE, label = FALSE,
                          as.data.frame. = FALSE) {
 
     #  we first check the class of object
-    if (!(class(object)[1] %in% c("lm", "rlm", "glm", "mlm"))) {
+    if (!(class(object)[1] %in% c("lm", "aov", "rlm", "glm", "mlm"))) {
        stop("Restriktor ERROR: It only works for lm, mlm, rlm and glm")
      }
 
@@ -13,7 +13,7 @@ con_partable <- function(object, est = FALSE, label = FALSE,
     varNames <- as.character(attr(objectTerms, "variables"))[-1]
     responseName <- varNames[responseIndex]
 
-    predCoef  <- coef(object)
+    predCoef <- coef(object)
     if (class(object)[1] == "mlm") {
       predNames <- colnames(predCoef)  
     } else {

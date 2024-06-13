@@ -75,41 +75,43 @@ importFrom("norm", em.norm, prelim.norm, imp.norm, rngseed)
 
 importFrom("ggplot2", ggplot, aes, .data, geom_point, geom_line, theme, unit, margin,
            element_blank, element_text, element_line, scale_y_continuous, 
-           scale_x_discrete, labs, guides, guide_legend, scale_color_brewer)
+           scale_x_discrete, labs, guides, guide_legend, scale_color_brewer,
+           geom_density, geom_segment, ggtitle, xlab, ylab, element_rect, 
+           scale_fill_brewer, scale_color_manual, coord_cartesian)
+
 
 #importFrom("lpSolve", lp)
 
 
 # export ordinary functions defined in this package
-export("restriktor", 
-       "conLM.lm", "conRLM.rlm", "conGLM.glm", "conMLM.mlm", 
-       "conTest", "iht", 
-       "conTest_summary", "conTest_ceq", "conTestC",
-       "conTestF.conLM", "conTestF.conRLM", "conTestF.conGLM", 
-       "conTestLRT.conLM", "conTestLRT.conGLM", "conTestLRT.conMLM", 
-       "conTestScore.conLM", "conTestScore.conRLM", "conTestScore.conGLM", 
-       "conTestWald.conRLM", 
-       "conTestC.restriktor", 
-       "conTest_ceq.conLM", "conTest_ceq.conRLM", "conTest_ceq.conGLM", 
-       "conTestD", "bootstrapD", 
-       "goric", "calculate_IC_weights",
-       #"print.con_goric", "print.conTestLavaan",
-       #"print.restriktor", "print.summary.restriktor",
-       "summary.restriktor", "conTest_summary.restriktor",
-       #"print.conTest", 
-       "logLik.restriktor",
-       "coef.restriktor", "model.matrix.restriktor",
-       "con_weights_boot", "coef.con_goric", 
-       #"summary.con_goric", 
-       "evSyn", "plot.evSyn",
-       "calculate_IC_weights", "calc_ICweights",
-       "print.goric_ICw"#,
-       #"benchmarks_ANOVA"
-       #"benchmarks_goric"
-       #"print.evSyn", 
-       #"summary.evSyn",
-       #"print.summary.evSyn"
-       )
+export(restriktor)
+export(conLM.lm, conRLM.rlm, conGLM.glm, conMLM.mlm)
+export(conTest, iht)
+export(conTest_summary)
+export(conTest_ceq)
+export(conTestC)
+export(conTestF.conLM, conTestF.conRLM, conTestF.conGLM)
+export(conTestLRT.conLM, conTestLRT.conGLM, conTestLRT.conMLM)
+export(conTestScore.conLM, conTestScore.conRLM, conTestScore.conGLM)
+export(conTestWald.conRLM)
+export(conTestC.restriktor)
+export(conTest_ceq.conLM, conTest_ceq.conRLM, conTest_ceq.conGLM)
+export(conTestD)
+export(bootstrapD)
+export(goric)
+export(calculate_IC_weights)
+export(summary.restriktor)
+export(conTest_summary.restriktor)
+export(logLik.restriktor)
+export(coef.restriktor, model.matrix.restriktor)
+export(con_weights_boot)
+export(coef.con_goric)
+export(evSyn, plot.evSyn)
+export(calculate_IC_weights, calc_ICweights)
+export(print.goric_ICw)
+export(goric_benchmark_means)
+export(plot_goric_distribution)
+
 
 S3method(coef, restriktor)
 S3method(model.matrix, restriktor)

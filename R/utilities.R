@@ -141,6 +141,32 @@ expand_parentheses <- function(hyp) {
   }
 }
 
+# used in print.goric_benchmark_means()
+capitalize_first_letter <- function(input_string) {
+  paste0(toupper(substring(input_string, 1, 1)), substring(input_string, 2))
+}
+
+# used in get_results_benchmark_means()
+remove_single_value_rows <- function(data, value) {
+  rows_to_keep <- apply(data, 1, function(row) !all(row == value))
+  data[rows_to_keep, , drop = FALSE]
+}  
+
+# used in print.goric_benchmark_means()
+print_rounded <- function(df, pop_es) {
+  pop_es_value <- gsub("pop_es = ", "", pop_es)
+  cat(sprintf("Population effect size = %s%s%s\n", green, pop_es_value, reset))
+  
+  rounded_column <- sprintf("%.3f", df)
+  rounded_df <- `dim<-`(rounded_column, dim(df))
+  
+  rownames(rounded_df) <- rownames(df)
+  colnames(rounded_df) <- colnames(df)
+  
+  print(rounded_df, row.names = TRUE, quote = FALSE)
+  cat("\n")
+}
+
 
 format_numeric <- function(x, digits = 3) {
   if (abs(x) <= 1e-8) {
@@ -191,20 +217,46 @@ calculate_model_comparison_metrics <- function(x) {
 }
 
 # this function is called from the goric_benchmark_anova() function
-parallel_function <- function(i, samplesize, var.e, nr.iter, means_pop, 
-                              hypos, PrefHypo, object, n.coef, sample, 
-                              control, ...) {  
+parallel_function_means <- function(i, samplesize, var_e, means_pop, 
+                                    hypos, pref_hypo, object, ngroups, sample, 
+                                    control, form_model_org, ...) {  
   # Sample residuals
-  epsilon <- rnorm(sum(samplesize), sd = sqrt(var.e))
-  # Generate data
-  sample$y <- as.matrix(sample[, 2:(1 + n.coef)]) %*% matrix(means_pop, 
-                                                             nrow = n.coef) + epsilon
-  df <- data.frame(y = sample$y, sample[, 2:(1 + n.coef)])
+  epsilon <- rnorm(sum(samplesize), sd = sqrt(var_e))
+  
+  # original model formula 
+  if (length(form_model_org) > 0) {
+    model <- form_model_org
+    lhs <- all.vars(model)[1]
+    sample[[lhs]] <- as.matrix(sample[, 2:(1 + ngroups)]) %*% matrix(means_pop, 
+                                                                         nrow = ngroups) + epsilon
+    df_boot <- data.frame(lhs = sample[[lhs]], sample[, 2:(1 + ngroups)])
+    colnames(df_boot)[1] <- lhs
+    
+    has_intercept <- attr(terms(model), "intercept") == 1
+    rhs <- as.character(attr(terms(model), "term.labels"))
+    
+    # Create the RHS with all other variables and optionally the intercept
+    if (has_intercept) {
+      new_rhs <- "."
+    } else {
+      new_rhs <- "-1 + ."
+    }
+    
+    # Create the new formula
+    new_model <- as.formula(paste(lhs, "~", new_rhs))
+  } else {
+    new_model <- y ~ 0 + .
+    # Generate data
+    sample$y <- as.matrix(sample[, 2:(1 + ngroups)]) %*% matrix(means_pop, 
+                                                                nrow = ngroups) + epsilon
+    df_boot <- data.frame(y = sample$y, sample[, 2:(1 + ngroups)])
+  }
+  
   
   # Obtain fit
-  fit <- lm(y ~ 0 + ., data = df)
+  fit_boot <- lm(new_model, data = df_boot)  
   # GORICA or GORICA depending on what is done in data
-  results.goric <- goric(fit,
+  results_goric <- goric(fit_boot,
                          hypotheses = hypos,
                          comparison = object$comparison,
                          type = object$type,
@@ -214,14 +266,12 @@ parallel_function <- function(i, samplesize, var.e, nr.iter, means_pop,
   # Return the relevant results
   list(
     #test  = attr(results.goric$objectList[[results.goric$objectNames]]$wt.bar, "mvtnorm"),
-    goric = results.goric$result[PrefHypo, 7],
-    gw    = results.goric$ratio.gw[PrefHypo, ],
-    lw    = results.goric$ratio.lw[PrefHypo, ],
-    ld    = (results.goric$result$loglik[PrefHypo] - results.goric$result$loglik)
+    gw  = results_goric$result[pref_hypo, 7], # goric(a) weight
+    rgw = results_goric$ratio.gw[pref_hypo, ], # ratio goric(a) weights
+    rlw = results_goric$ratio.lw[pref_hypo, ], # ratio likelihood weights
+    ld  = (results_goric$result$loglik[pref_hypo] - results_goric$result$loglik)
   )
 }
-
-
 
 # Function to identify list and corresponding messages
 identify_messages <- function(x) {

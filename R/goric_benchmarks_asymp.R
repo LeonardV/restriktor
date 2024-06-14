@@ -166,6 +166,6 @@ goric_benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     combined_values = benchmark_results$combined_values
   )
   
-  class(OUT) <- c("benchmarks", "list")
+  class(OUT) <- c("goric_benchmark_asymp", "benchmark", "list")
   return(OUT)
 }

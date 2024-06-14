@@ -281,6 +281,6 @@ goric_benchmark_means <- function(object, pop_es = 0, ratio_pop_means = NULL,
     combined_values = benchmark_results$combined_values
     )
   
-  class(OUT) <- c("benchmark_means", "benchmark", "list")
+  class(OUT) <- c("goric_benchmark_means", "benchmark", "list")
   return(OUT)
 } 

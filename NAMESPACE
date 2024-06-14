@@ -166,5 +166,5 @@ S3method(print, summary.evSyn)
 
 S3method(print, goric_ICw)
 
-S3method(print, goric_benchmark)
-S3method(plot, goric_benchmark)
+S3method(print, benchmark)
+S3method(plot, benchmark)

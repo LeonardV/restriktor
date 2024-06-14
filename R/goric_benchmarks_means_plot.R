@@ -1,5 +1,10 @@
 plot_goric_distribution <- function(x, type = "gw", CI = 0.95, x_lim = c()) {
   
+  # Ensure the object is of class 'benchmark_means'
+  if (!inherits(x, "benchmark_means")) {
+    stop("Invalid object. The object should be of class 'benchmarks_means'.", call. = FALSE)
+  }
+  
   # Check if the type is valid
   valid_types <- c("gw", "rgw", "rlw", "ld")
   if (!type %in% valid_types) {

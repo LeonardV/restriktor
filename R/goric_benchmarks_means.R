@@ -1,18 +1,27 @@
 goric_benchmark_means <- function(object, pop_es = 0, ratio_pop_means = NULL, 
-                                  N = NULL, other_N = NULL, quant = NULL, iter = 1000, 
+                                  group_size = NULL, hyp_group_size = NULL, 
+                                  quant = NULL, iter = 1000, 
                                   control = list(convergence_crit = 1e-03, 
                                                  chunk_size = 1e4), 
-                                  ncpus = 1, cl = NULL, seed.value = NULL, ...) {
+                                  ncpus = 1, cl = NULL, seed = NULL, ...) {
   
+  
+  # is het nodig om zowel N als other_N te gebruiken, volstaat other_N niet gewoon?
+  # Als object = model dan wordt var_e herschaald ahdv other_N
+  # Als object = est+vcov dan wordt voor var_e other_N gebruikt. 
   
   # Check:
   if (!inherits(object, "con_goric")) {
     stop(paste("Restriktor ERROR:", 
-               "The object should be of class 'con_goric' (a goric object from the goric() function).",
-               "However, it belongs to the following class(es):", 
+               "The object should be of class 'con_goric' (a goric object from",
+               "the goric() function). However, it belongs to the following class(es):", 
       paste(class(object), collapse = ", ")
     ), call. = FALSE)
   }
+  
+  if (!is.null(seed)) set.seed(seed)
+  if (!exists(".Random.seed", envir = .GlobalEnv)) runif(1)
+  
   
   # number of groups
   ngroups <- length(coef(object))
@@ -24,26 +33,26 @@ goric_benchmark_means <- function(object, pop_es = 0, ratio_pop_means = NULL,
   # ES and ratio in data
   if (is.null(object$model.org)) {
     # Number of subjects per group
-    if (is.null(N)) {
-      stop("Restriktor Error: please specify the sample-size, e.g. N = 100.", call. = FALSE)
-    } else if (length(N) == 1) {
-      group_sizes <- rep(N, ngroups)
+    if (is.null(group_size)) {
+      stop("Restriktor Error: please specify the sample-size, e.g. group_size = 100.", 
+           call. = FALSE)
+    } else if (length(group_size) == 1) {
+      N <- rep(group_size, ngroups)
     } else {
-      group_sizes <- N
+      N <- group_size
     }
     # Unrestricted (adjusted) group_means
     group_means <- object$objectList[[object$objectNames]]$b.unrestr
     # residual variance
     VCOV <- object$objectList[[object$objectNames]]$Sigma
-    var_e_data_mx <- VCOV * group_sizes
-    var_e_data <- mean(diag(var_e_data_mx)) # different if sample size per group in unequal
+    var_e_data <- mean(diag(VCOV * N)) # different if sample size per group is unequal
   } else {
     # Number of subjects per group
-    group_sizes <- colSums(model.matrix(object$model.org)) #summary(object$model.org$model[, 2])
+    N <- colSums(model.matrix(object$model.org)) #summary(object$model.org$model[, 2])
     # Unrestricted group_means
     group_means <- coef(object$model.org)
     # residual variance
-    var_e_data <- sum(object$model.org$residuals^2) / (sum(group_sizes) - ngroups)
+    var_e_data <- sum(object$model.org$residuals^2) / (sum(N) - ngroups)
   }
   
   # Check if the model has an intercept
@@ -51,8 +60,8 @@ goric_benchmark_means <- function(object, pop_es = 0, ratio_pop_means = NULL,
   
   ## Compute observed Cohens f
   #grand_mean <- mean(group_means)
-  #SST <- var_e_data * (sum(group_sizes) - 1)
-  #SSM <- sum(group_sizes * (group_means - grand_mean)^2)
+  #SST <- var_e_data * (sum(N) - 1)
+  #SSM <- sum(N * (group_means - grand_mean)^2)
   #eta_squared <- SSM / SST
   #cohens_f_observed <- sqrt(eta_squared / (1 - eta_squared))
   
@@ -92,7 +101,7 @@ goric_benchmark_means <- function(object, pop_es = 0, ratio_pop_means = NULL,
   
   # Hypotheses
   hypos <- object$hypotheses_usr
-  nr.hypos <- dim(object$result)[1]
+  nr_hypos <- dim(object$result)[1]
   pref_hypo <- which.max(object$result[, 7]) 
   pref_hypo_name <- object$result$model[pref_hypo]
   
@@ -100,32 +109,32 @@ goric_benchmark_means <- function(object, pop_es = 0, ratio_pop_means = NULL,
   # var_e <- var(object$model.org$residuals)
   # var_e <- 1
   var_e <- var_e_data
-  #
+  
   # When determining pop.means, value does not matter: works exactly the same
   # choose first or last, then pop. means comparable to sample estimates
   
   # Possibly adjust var_e based on other sample size
-  if (!is.null(other_N)) {
-    if (length(other_N) == 1) {
-      var_e <- var_e * (sum(group_sizes) - ngroups)
-      group_sizes <- rep(other_N, ngroups)
-      var_e <- var_e / (sum(group_sizes) - ngroups)
-    } else if (length(other_N) == ngroups) {
-      var_e <- var_e * (sum(group_sizes) - ngroups)
-      group_sizes <- other_N
-      var_e <- var_e / (sum(group_sizes) - ngroups)
+  if (!is.null(hyp_group_size)) {
+    if (length(hyp_group_size) == 1) {
+      var_e <- var_e * (sum(N) - ngroups)
+      N <- rep(hyp_group_size, ngroups)
+      var_e <- var_e / (sum(N) - ngroups)
+    } else if (length(hyp_group_size) == ngroups) {
+      var_e <- var_e * (sum(N) - ngroups)
+      N <- hyp_group_size
+      var_e <- var_e / (sum(N) - ngroups)
     } else {
-      return(paste0("The argument other_N should be of length 1 or ", 
-                    ngroups, " (or NULL) but not of length ", length(other_N)))
+      return(paste0("The argument hyp_group_size should be of length 1 or ", 
+                    ngroups, " (or NULL) but not of length ", length(hyp_group_size)))
     }
   }
   
   # effect size population
   es <- pop_es
-  nrES <- length(es)
+  nr_es <- length(es)
   
-  means_pop_all <- matrix(NA, ncol = ngroups, nrow = nrES)
-  for (teller_es in seq_len(nrES)) {
+  means_pop_all <- matrix(NA, ncol = ngroups, nrow = nr_es)
+  for (teller_es in seq_len(nr_es)) {
     #teller_es = 1
     
     # Determine mean values, with ratio of ratio.m
@@ -149,12 +158,11 @@ goric_benchmark_means <- function(object, pop_es = 0, ratio_pop_means = NULL,
   rownames(means_pop_all) <- paste0("pop_es = ", pop_es)
 
   # Create dummies
-  sample <- data.frame(D = as.factor(rep(1:ngroups, times = group_sizes)))
+  sample <- data.frame(D = as.factor(rep(1:ngroups, times = N)))
   sample <- data.frame(sample$D, model.matrix(~ D - 1, data = sample))
   colnames(sample)[-1] <- names(coef(object))
   
-  nr.iter <- iter
-  set.seed(seed.value)
+  nr_iter <- iter
   
   if (is.null(quant)) {
     quant <- c(.025, .05, .35, .50, .65, .95, .975)
@@ -171,8 +179,9 @@ goric_benchmark_means <- function(object, pop_es = 0, ratio_pop_means = NULL,
   
   
   # Export required variables to cluster nodes
-  parallel::clusterExport(cl, c("group_sizes", "var_e", "means_pop", 
-                                "hypos", "pref_hypo", "object", "ngroups", "sample",
+  parallel::clusterExport(cl, c("N", "var_e", "means_pop", 
+                                "hypos", "pref_hypo", 
+                                "object", "ngroups", "sample",
                                 "control", "form_model_org"), 
                           envir = environment())
   
@@ -184,7 +193,7 @@ goric_benchmark_means <- function(object, pop_es = 0, ratio_pop_means = NULL,
   pbapply::pboptions(type = "timer", style = 1, char = ">")
   
   parallel_function_results <- list()  
-  for (teller_es in 1:nrES) {
+  for (teller_es in 1:nr_es) {
     cat("Calculating means benchmark for effect-size =", pop_es[teller_es], "\n")
     #teller_es = 1
     means_pop <- means_pop_all[teller_es, ]
@@ -192,7 +201,7 @@ goric_benchmark_means <- function(object, pop_es = 0, ratio_pop_means = NULL,
     # main function
     # Create a function that wraps parallel_function
     wrapper_function_means <- function(i) {
-      parallel_function_means(i, samplesize = group_sizes, var_e = var_e, 
+      parallel_function_means(i, N = N, var_e = var_e, 
                               means_pop = means_pop, 
                               hypos = hypos, pref_hypo = pref_hypo, 
                               object = object, ngroups = ngroups, 
@@ -202,26 +211,26 @@ goric_benchmark_means <- function(object, pop_es = 0, ratio_pop_means = NULL,
     }
     
     name <- paste0("pop_es = ", pop_es[teller_es])
-    parallel_function_results[[name]] <- pbapply::pblapply(seq_len(nr.iter), 
+    parallel_function_results[[name]] <- pbapply::pblapply(seq_len(nr_iter), 
                                                            wrapper_function_means, 
                                                            cl = cl)
   }
   
   # get benchmark results
-  benchmark_results <- get_results_benchmark_means(parallel_function_results, 
-                                                   object, pref_hypo, 
-                                                   pref_hypo_name, quant, 
-                                                   names_quant, nr.hypos)
-   
+  benchmark_results <- get_results_benchmark(parallel_function_results, 
+                                             object, pref_hypo, 
+                                             pref_hypo_name, quant, 
+                                             names_quant, nr_hypos)
+
   # Error probability based on complement of preferred hypothesis in data
-  if (nr.hypos == 2 && object$comparison == "complement") { 
+  if (nr_hypos == 2 && object$comparison == "complement") { 
     if (object$type == 'goric') {
       error_prob <- 1 - object$result$goric.weights[pref_hypo]
     } else {
       error_prob <- 1 - object$result$gorica.weights[pref_hypo]
     }
   } else {
-    if (pref_hypo == nr.hypos && object$comparison == "unconstrained") {
+    if (pref_hypo == nr_hypos && object$comparison == "unconstrained") {
       error_prob <- "The unconstrained (i.e., the failsafe) containing all possible orderings is preferred."
     } else {
       H_pref <- hypos[[pref_hypo]]
@@ -253,7 +262,7 @@ goric_benchmark_means <- function(object, pop_es = 0, ratio_pop_means = NULL,
     type = object$type,
     comparison = object$comparison,
     ngroups = ngroups,
-    group_size = group_sizes,
+    group_size = N,
     group_means_observed = group_means, 
     ratio_group_means.data = ratio_data, 
     #cohens_f_observed = cohens_f_observed,
@@ -272,6 +281,6 @@ goric_benchmark_means <- function(object, pop_es = 0, ratio_pop_means = NULL,
     combined_values = benchmark_results$combined_values
     )
   
-  class(OUT) <- c("benchmarks_means", "benchmarks", "list")
+  class(OUT) <- c("benchmark_means", "benchmark", "list")
   return(OUT)
 } 

@@ -2,8 +2,8 @@ print.goric_benchmark_means <- function(x,
                                         output_type = c("all", "gw", "rgw", "rlw", "ld"), 
                                         ...) {
   
-  # Ensure the object is of class 'benchmarks_means'
-  if (!inherits(x, "benchmarks_means")) {
+  # Ensure the object is of class 'benchmark_means'
+  if (!inherits(x, "benchmark_means")) {
     stop("Invalid object. The object should be of class 'benchmarks_means'.", call. = FALSE)
   }
   

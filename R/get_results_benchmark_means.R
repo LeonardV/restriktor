@@ -1,5 +1,5 @@
-get_results_benchmark_means <- function(x, object, pref_hypo, pref_hypo_name, 
-                                        quant, names_quant, nr.hypos) {
+get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name, 
+                                  quant, names_quant, nr.hypos) {
   
   results <- x
   

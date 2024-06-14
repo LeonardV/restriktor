@@ -217,11 +217,11 @@ calculate_model_comparison_metrics <- function(x) {
 }
 
 # this function is called from the goric_benchmark_anova() function
-parallel_function_means <- function(i, samplesize, var_e, means_pop, 
+parallel_function_means <- function(i, N, var_e, means_pop, 
                                     hypos, pref_hypo, object, ngroups, sample, 
                                     control, form_model_org, ...) {  
   # Sample residuals
-  epsilon <- rnorm(sum(samplesize), sd = sqrt(var_e))
+  epsilon <- rnorm(sum(N), sd = sqrt(var_e))
   
   # original model formula 
   if (length(form_model_org) > 0) {
@@ -272,6 +272,30 @@ parallel_function_means <- function(i, samplesize, var_e, means_pop,
     ld  = (results_goric$result$loglik[pref_hypo] - results_goric$result$loglik)
   )
 }
+
+
+# this function is called from the goric_benchmark_asymp() function
+parallel_function_asymp <- function(i, est, VCOV, hypos, pref_hypo, comparison,
+                                    type, control, ...) {  
+  
+  results_goric <- goric(est[i, ], VCOV = VCOV,
+                         hypotheses = hypos,
+                         comparison = comparison,
+                         type = type,
+                         control = control, 
+                         ...)
+  
+  # Return the relevant results
+  list(
+    #test  = attr(results.goric$objectList[[results.goric$objectNames]]$wt.bar, "mvtnorm"),
+    gw  = results_goric$result[pref_hypo, 7], # goric(a) weight
+    rgw = results_goric$ratio.gw[pref_hypo, ], # ratio goric(a) weights
+    rlw = results_goric$ratio.lw[pref_hypo, ], # ratio likelihood weights
+    ld  = (results_goric$result$loglik[pref_hypo] - results_goric$result$loglik)
+  )
+}
+
+
 
 # Function to identify list and corresponding messages
 identify_messages <- function(x) {

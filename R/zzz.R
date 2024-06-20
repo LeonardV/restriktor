@@ -5,3 +5,5 @@
     #packageStartupMessage(pkgname, " is BETA software! Please report any bugs.")
     packageStartupMessage("Please report any bugs to info@restriktor.org")
 }
+
+utils::globalVariables(c("Group", "Value", "green", "reset"))

@@ -1,14 +1,14 @@
-plot.benchmark <- function(x, type = "gw", CI = 0.95, x_lim = c()) {
+plot.benchmark <- function(x, output_type = "gw", CI = 0.95, x_lim = c(), ...) {
   
   # Ensure the object is of class 'benchmark_means'
   if (!inherits(x, "benchmark")) {
     stop("Invalid object. The object should be of class 'benchmark'.", call. = FALSE)
   }
   
-  # Check if the type is valid
+  # Check if the output_type is valid
   valid_types <- c("gw", "rgw", "rlw", "ld")
-  if (!type %in% valid_types) {
-    stop("Restriktor ERROR: Invalid type. Valid types are 'gw', 'rgw', 'rlw', 'ld'.", call. = FALSE)
+  if (!output_type %in% valid_types) {
+    stop("Restriktor ERROR: Invalid output_type. Valid types are 'gw', 'rgw', 'rlw', 'ld'.", call. = FALSE)
   }
   
   quant <- CI
@@ -19,25 +19,33 @@ plot.benchmark <- function(x, type = "gw", CI = 0.95, x_lim = c()) {
   comparison <- x$comparison
   pref_hypo_name <- x$pref_hypo_name
   
-  # Define the labels based on the type
-  if (type == "gw") {
+  # if (inherits(x, "benchmark_asymp")) {
+  #   legend_lab <- row.names(x$pop_est)
+  #   names(x$combined_values$gw_combined) <- row.names(x$pop_est)
+  #   names(x$combined_values$rgw_combined) <- row.names(x$pop_est)
+  #   names(x$combined_values$rlw_combined) <- row.names(x$pop_est)
+  #   names(x$combined_values$ld_combined) <- row.names(x$pop_est)
+  # } 
+  
+  # Define the labels based on the output_type
+  if (output_type == "gw") {
     df <- as.data.frame(x$combined_values$gw_combined)  
     sample_value <- x$benchmarks_goric_weights[[1]][1]
     xlabel <- paste0(goric_type, "-weights")
     title <- paste0("Benchmark: ", goric_type, "-weight distribution for preferred hypothesis ", pref_hypo_name)
-  } else if (type == "rgw") {
+  } else if (output_type == "rgw") {
     df <- as.data.frame(x$combined_values$rgw_combined)  
     df <- df[, !colMeans(df) == 1, drop = FALSE]
     sample_value <- x$benchmarks_ratio_goric_weights[[1]][1, 1]
     xlabel <- paste0("Ratio ", goric_type, "-weights")
     title <- paste0("Benchmark: Ratio ", goric_type, "-weight distribution for preferred hypothesis ", pref_hypo_name)
-  } else if (type == "rlw") {
+  } else if (output_type == "rlw") {
     df <- as.data.frame(x$combined_values$rlw_combined)  
     df <- df[, !colMeans(df) == 1, drop = FALSE]
     sample_value <- x$benchmarks_ratio_ll_weights[[1]][1, 1]
     xlabel <- "Ratio likelihood-weights"
     title <- paste0("Benchmark: Ratio likelihood weight distribution for preferred hypothesis ", pref_hypo_name)
-  } else if (type == "ld") {
+  } else if (output_type == "ld") {
     df <- as.data.frame(x$combined_values$ld_combined)
     df <- df[, !colMeans(df) == 0, drop = FALSE]
     sample_value <- x$benchmarks_difLL[[1]][1, 1]
@@ -54,16 +62,17 @@ plot.benchmark <- function(x, type = "gw", CI = 0.95, x_lim = c()) {
   
   # Reshape the dataframe 
   df_long <- reshape(df, 
-                     varying = list(names(df)[grepl("^pop", names(df))]), 
+                     varying = list(1:length(df)),#list(names(df)[grepl("^pop", names(df))]), 
                      v.names = "Value", 
                      timevar = "Group", 
-                     times = names(df)[grepl("^pop", names(df))], 
+                     times = legend_lab, #names(df)[grepl("^pop", names(df))], 
                      direction = "long")
   
   row.names(df_long) <- NULL
   
   # Rename the Group column to replace triple dots with equals sign
   df_long$Group <- gsub("\\.\\.\\.", " = ", df_long$Group)
+  df_long$Group <- factor(df_long$Group, levels = legend_lab)
   
   # Calculate the custom confidence intervals
   ci_df <- aggregate(Value ~ Group, data = df_long, function(x) {

@@ -141,7 +141,7 @@ expand_parentheses <- function(hyp) {
   }
 }
 
-# used in print.goric_benchmark_means()
+# used in print.benchmark()
 capitalize_first_letter <- function(input_string) {
   paste0(toupper(substring(input_string, 1, 1)), substring(input_string, 2))
 }
@@ -152,7 +152,7 @@ remove_single_value_rows <- function(data, value) {
   data[rows_to_keep, , drop = FALSE]
 }  
 
-# used in print.goric_benchmark_means()
+# used in print.benchmark()
 print_rounded <- function(df, pop_es) {
   pop_es_value <- gsub("pop_es = ", "", pop_es)
   cat(sprintf("Population effect size = %s%s%s\n", green, pop_es_value, reset))

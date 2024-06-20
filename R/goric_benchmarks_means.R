@@ -1,5 +1,5 @@
-goric_benchmark_means <- function(object, pop_es = 0, ratio_pop_means = NULL, 
-                                  group_size = NULL, hyp_group_size = NULL, 
+goric_benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL, 
+                                  group_size = NULL, alt_group_size = NULL, 
                                   quant = NULL, iter = 1000, 
                                   control = list(convergence_crit = 1e-03, 
                                                  chunk_size = 1e4), 
@@ -9,6 +9,7 @@ goric_benchmark_means <- function(object, pop_es = 0, ratio_pop_means = NULL,
   # is het nodig om zowel N als other_N te gebruiken, volstaat other_N niet gewoon?
   # Als object = model dan wordt var_e herschaald ahdv other_N
   # Als object = est+vcov dan wordt voor var_e other_N gebruikt. 
+  # Ja, je hebt group_size nodig om te herschalen obv alt_group_size.
   
   # Check:
   if (!inherits(object, "con_goric")) {
@@ -21,13 +22,11 @@ goric_benchmark_means <- function(object, pop_es = 0, ratio_pop_means = NULL,
   
   if (!is.null(seed)) set.seed(seed)
   if (!exists(".Random.seed", envir = .GlobalEnv)) runif(1)
-  
-  
+
   # number of groups
   ngroups <- length(coef(object))
   
   # does original model fit exist
-  #has_model_org <- !is.null(object$model.org)
   form_model_org <- formula(object$model.org)
   
   # ES and ratio in data
@@ -42,30 +41,38 @@ goric_benchmark_means <- function(object, pop_es = 0, ratio_pop_means = NULL,
       N <- group_size
     }
     # Unrestricted (adjusted) group_means
-    group_means <- object$objectList[[object$objectNames]]$b.unrestr
+    group_means <- object$b.unrestr
     # residual variance
-    VCOV <- object$objectList[[object$objectNames]]$Sigma
-    var_e_data <- mean(diag(VCOV * N)) # different if sample size per group is unequal
+    VCOV <- object$Sigma
+    var_e_data <- diag(VCOV * N)[1] # are the elements on the diagonal always equal?
   } else {
     # Number of subjects per group
     N <- colSums(model.matrix(object$model.org)) #summary(object$model.org$model[, 2])
     # Unrestricted group_means
     group_means <- coef(object$model.org)
+    VCOV <- vcov(object$model.org)
     # residual variance
     var_e_data <- sum(object$model.org$residuals^2) / (sum(N) - ngroups)
   }
   
   # Check if the model has an intercept
   has_intercept <- any(grepl("\\(Intercept\\)", names(group_means)))
+  if (has_intercept) { 
+    stop("Error: A model with an intercept is not allowed. Please refit the model without an intercept.")
+  }
   
   ## Compute observed Cohens f
-  #grand_mean <- mean(group_means)
-  #SST <- var_e_data * (sum(N) - 1)
-  #SSM <- sum(N * (group_means - grand_mean)^2)
-  #eta_squared <- SSM / SST
-  #cohens_f_observed <- sqrt(eta_squared / (1 - eta_squared))
-  
-  #cohens_f_observed <- mean(1/sqrt(var_e_data)) * sqrt((1/ngroups) * sum((group_means - mean(group_means))^2))
+  #group_means <- coef(model0)
+  # Totale gemiddelde berekenen
+  total_mean <- sum(group_means * N) / sum(N) 
+  # Tussen-groep variantie berekenen
+  ss_between <- sum(N * (group_means - total_mean)^2) 
+  # Covariantiematrix (variances on the diagonal)
+  cov_matrix <- VCOV * N
+  # Binnen-groep variantie berekenen 
+  ss_within <- sum((N - 1) * diag(cov_matrix)) 
+  # Cohen's f berekenen
+  cohens_f_observed <- sqrt(ss_between/ss_within)
   
   ratio_data <- rep(NA, ngroups)
   ratio_data[order(group_means) == 1] <- 1
@@ -108,28 +115,32 @@ goric_benchmark_means <- function(object, pop_es = 0, ratio_pop_means = NULL,
   # Error variance
   # var_e <- var(object$model.org$residuals)
   # var_e <- 1
-  var_e <- var_e_data
+  var_e <- as.vector(var_e_data)
   
   # When determining pop.means, value does not matter: works exactly the same
   # choose first or last, then pop. means comparable to sample estimates
   
   # Possibly adjust var_e based on other sample size
-  if (!is.null(hyp_group_size)) {
-    if (length(hyp_group_size) == 1) {
+  if (!is.null(alt_group_size)) {
+    if (length(alt_group_size) == 1) {
       var_e <- var_e * (sum(N) - ngroups)
-      N <- rep(hyp_group_size, ngroups)
+      N <- rep(alt_group_size, ngroups)
       var_e <- var_e / (sum(N) - ngroups)
-    } else if (length(hyp_group_size) == ngroups) {
+    } else if (length(alt_group_size) == ngroups) {
       var_e <- var_e * (sum(N) - ngroups)
-      N <- hyp_group_size
+      N <- alt_group_size
       var_e <- var_e / (sum(N) - ngroups)
     } else {
-      return(paste0("The argument hyp_group_size should be of length 1 or ", 
-                    ngroups, " (or NULL) but not of length ", length(hyp_group_size)))
+      return(paste0("The argument alt_group_size should be of length 1 or ", 
+                    ngroups, " (or NULL) but not of length ", length(alt_group_size)))
     }
   }
   
   # effect size population
+  if (is.null(pop_es)) {
+    pop_es <- c(0, round(cohens_f_observed, 3))
+  }
+  
   es <- pop_es
   nr_es <- length(es)
   
@@ -265,7 +276,7 @@ goric_benchmark_means <- function(object, pop_es = 0, ratio_pop_means = NULL,
     group_size = N,
     group_means_observed = group_means, 
     ratio_group_means.data = ratio_data, 
-    #cohens_f_observed = cohens_f_observed,
+    cohens_f_observed = cohens_f_observed,
     res_var_observed = var_e_data,
     pop_es = pop_es, pop_group_means = means_pop_all,
     ratio_pop_means = ratio_pop_means,
@@ -281,6 +292,6 @@ goric_benchmark_means <- function(object, pop_es = 0, ratio_pop_means = NULL,
     combined_values = benchmark_results$combined_values
     )
   
-  class(OUT) <- c("goric_benchmark_means", "benchmark", "list")
+  class(OUT) <- c("benchmark_means", "benchmark", "list")
   return(OUT)
 } 

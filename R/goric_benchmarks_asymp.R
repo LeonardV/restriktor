@@ -1,5 +1,5 @@
 goric_benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL, 
-                                  hyp_sample_size = NULL, quant = NULL, iter = 1000, 
+                                  alt_sample_size = NULL, quant = NULL, iter = 1000, 
                                   control = list(convergence_crit = 1e-03, 
                                                  chunk_size = 1e4), 
                                   ncpus = 1, cl = NULL, seed = NULL, ...) {
@@ -22,17 +22,21 @@ goric_benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   comparison <- object$comparison
   type <- object$type
   
+  est_sample <- object$b.unrestr
+  n_coef <- length(est_sample)
+  
   if (is.null(object$model.org)) {
-    est_sample <- object$objectList[[object$objectNames]]$b.unrestr
-    if (is.null(pop_est)) {
-      pop_est <- matrix(est_sample, nrow = 1)
+    if (is.null(pop_est)) { 
+      pop_est <- matrix(rbind(rep(0, n_coef), round(est_sample, 3)), nrow = 2)
+    } else if (is.data.frame(pop_est)) {
+      pop_est <- as.matrix(pop_est)
     } else if (!is.matrix(pop_est)) {
       pop_est <- matrix(pop_est, nrow = 1)
     }
     colnames(pop_est) <- names(est_sample)
-    VCOV <- object$objectList[[object$objectNames]]$Sigma
+    VCOV <- object$Sigma
     if (is.null(sample_size)) {
-      hyp_sample_size <- NULL
+      alt_sample_size <- NULL
       stop("Restriktor Error: please specify the sample-size, e.g. group_size = 100.", 
            call. = FALSE)
     } else {
@@ -40,7 +44,7 @@ goric_benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     }
   } else {
     if (is.null(pop_est)) {
-      pop_est <- coef(object$model.org)
+      pop_est <- est_sample
       pop_est <- matrix(pop_est, nrow = 1)
     }
     colnames(pop_est) <- names(object$model.org$coefficients)
@@ -48,12 +52,11 @@ goric_benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     N <- length(object$model.org$residuals)
   }
   
-  n_coef <- dim(pop_est)[2]
-  nr_es <- length(pop_est) / n_coef
+  nr_es  <- nrow(pop_est) #length(pop_est) / n_coef
   
-  if (!is.null(hyp_sample_size)) {
-    VCOV <- VCOV * N / hyp_sample_size
-    N <- hyp_sample_size
+  if (!is.null(alt_sample_size)) {
+    VCOV <- VCOV * N / alt_sample_size
+    N <- alt_sample_size
   }
   
   nr_iter <- iter
@@ -65,16 +68,18 @@ goric_benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     names_quant <- c("Sample", paste0(as.character(quant*100), "%"))
   }
   
+  rnames <- row.names(pop_est)
+  if (is.null(rnames)) {
+    rnames <- as.character(rep(1:nrow(pop_est)))
+    row.names(pop_est) <- rnames
+  }
+  
+  
   # parallel backend
   if (is.null(cl)) {
     cl <- parallel::makePSOCKcluster(rep("localhost", ncpus))
   }
   on.exit(parallel::stopCluster(cl))
-  
-  # Export required variables to cluster nodes
-  parallel::clusterExport(cl, c("est", "VCOV", "hypos", "pref_hypo", "type",
-                                "comparison", "control"), 
-                          envir = environment())
   
   parallel::clusterEvalQ(cl, {
     library(restriktor) 
@@ -89,6 +94,11 @@ goric_benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     cat("Calculating asymptotic benchmark for population values =", pop_est[teller_es, ], "\n")
     
     est <- mvtnorm::rmvnorm(n = iter, pop_est[teller_es, ], sigma = VCOV)
+
+    # Export required variables to cluster nodes
+    parallel::clusterExport(cl, c("est", "VCOV", "hypos", "pref_hypo", "type",
+                                  "comparison", "control"), 
+                            envir = environment())
     
     # main function
     # Create a function that wraps parallel_function
@@ -100,7 +110,7 @@ goric_benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
                               control = control, ...)
     }
     
-    name <- paste0("pop_est = ", pop_est[teller_es])
+    name <- paste0("pop_est = ", rnames[teller_es])
     parallel_function_results[[name]] <- pbapply::pblapply(seq_len(nr_iter), 
                                                            wrapper_function_asymp, 
                                                            cl = cl)
@@ -166,6 +176,6 @@ goric_benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     combined_values = benchmark_results$combined_values
   )
   
-  class(OUT) <- c("goric_benchmark_asymp", "benchmark", "list")
+  class(OUT) <- c("benchmark_asymp", "benchmark", "list")
   return(OUT)
 }

@@ -19,14 +19,6 @@ print.benchmark <- function(x,
   } else if (inherits(x, "benchmark_asymp")) {
     group_size <- x$sample_size
     ngroups <- x$n_coef
-    # rnames <- row.names(pop_est)
-    # if (is.null(rnames)) {
-    #   rnames <- as.character(rep(1:nrow(pop_est)))
-    # }
-    # names(x$benchmarks_goric_weights) <- rnames
-    # names(x$benchmarks_ratio_goric_weights) <- rnames
-    # names(x$benchmarks_ratio_ll_weights) <- rnames
-    # names(x$benchmarks_difLL) <- rnames
   } 
   
   # ANSI escape codes for colors
@@ -60,7 +52,11 @@ print.benchmark <- function(x,
   cat(paste0(blue, "Benchmark Results", reset), "\n")
   cat(strrep("-", 70), "\n")
   cat(sprintf("Preferred Hypothesis: %s%s%s\n", green, pref_hypo, reset))
-  cat(sprintf("Number of Groups: %s%s%s\n", green, ngroups, reset))
+  if (inherits(x, "benchmark_means")) {
+    cat(sprintf("Number of Groups: %s%s%s\n", green, ngroups, reset))
+  } else {
+    cat(sprintf("Number of Parameter Estimates: %s%s%s\n", green, ngroups, reset))
+  }
   if (inherits(x, "benchmark_means")) {
     cat(sprintf("Group Size: %s%s%s\n", green, paste(group_size, collapse = ", "), reset))
     cat(sprintf("Ratio of Population Means: %s%s%s\n", green, paste(sprintf("%.3f", ratio_pop_means), collapse = ", "), reset))

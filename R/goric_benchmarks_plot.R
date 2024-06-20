@@ -19,14 +19,6 @@ plot.benchmark <- function(x, output_type = "gw", CI = 0.95, x_lim = c(), ...) {
   comparison <- x$comparison
   pref_hypo_name <- x$pref_hypo_name
   
-  # if (inherits(x, "benchmark_asymp")) {
-  #   legend_lab <- row.names(x$pop_est)
-  #   names(x$combined_values$gw_combined) <- row.names(x$pop_est)
-  #   names(x$combined_values$rgw_combined) <- row.names(x$pop_est)
-  #   names(x$combined_values$rlw_combined) <- row.names(x$pop_est)
-  #   names(x$combined_values$ld_combined) <- row.names(x$pop_est)
-  # } 
-  
   # Define the labels based on the output_type
   if (output_type == "gw") {
     df <- as.data.frame(x$combined_values$gw_combined)  
@@ -115,7 +107,12 @@ plot.benchmark <- function(x, output_type = "gw", CI = 0.95, x_lim = c(), ...) {
     geom_segment(aes(x = 0, xend = 0, y = 0, yend = 0, color = paste0("Observed value ", sample_value)),
                  linetype = "solid", linewidth = 0) +
     ggtitle(title) + 
-    xlab(xlabel) + ylab("Density") + labs(fill = "Effect-Size f") +
+    xlab(xlabel) + ylab("Density") + 
+    {if (inherits(x, "benchmark_asymp")) {
+      labs(fill = "Effect-Size")
+    } else {
+      labs(fill = "Effect-Size f")
+    }}  +
     theme(axis.text = element_text(size = 11),
           axis.title.x = element_text(size = 12, margin = margin(t = 10)),
           axis.title.y = element_text(size = 12, margin = margin(r = 10)),

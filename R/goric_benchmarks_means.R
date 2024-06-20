@@ -14,7 +14,7 @@ goric_benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   # Check:
   if (!inherits(object, "con_goric")) {
     stop(paste("Restriktor ERROR:", 
-               "The object should be of class 'con_goric' (a goric object from",
+               "The object should be of class 'con_goric' (a goric(a) object from",
                "the goric() function). However, it belongs to the following class(es):", 
       paste(class(object), collapse = ", ")
     ), call. = FALSE)

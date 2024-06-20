@@ -7,7 +7,7 @@ goric_benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   # Check if object is of class con_goric
   if (!inherits(object, "con_goric")) {
     stop(paste("Restriktor ERROR:", 
-               "The object should be of class 'con_goric' (a goric object from the goric() function).",
+               "The object should be of class 'con_goric' (a goric(a) object from the goric() function).",
                "However, it belongs to the following class(es):", 
                paste(class(object), collapse = ", ")), call. = FALSE)
   }
@@ -24,42 +24,63 @@ goric_benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   
   est_sample <- object$b.unrestr
   n_coef <- length(est_sample)
+
+  if (is.null(pop_est)) {
+    pop_est <- matrix(rbind(rep(0, n_coef), round(est_sample, 3)), nrow = 2)
+    row.names(pop_est) <- c("No-effect", "Observed")
+  }
   
-  if (is.null(object$model.org)) {
-    if (is.null(pop_est)) { 
-      pop_est <- matrix(rbind(rep(0, n_coef), round(est_sample, 3)), nrow = 2)
-    } else if (is.data.frame(pop_est)) {
-      pop_est <- as.matrix(pop_est)
-    } else if (!is.matrix(pop_est)) {
-      pop_est <- matrix(pop_est, nrow = 1)
-    }
-    colnames(pop_est) <- names(est_sample)
-    VCOV <- object$Sigma
+  rnames <- row.names(pop_est)
+  if (is.null(rnames)) {
+    rnames <- paste0("ES_", rep(1:nrow(pop_est)))
+    row.names(pop_est) <- rnames
+  }
+  colnames(pop_est) <- names(est_sample)
+  
+  VCOV <- object$Sigma
+  N <- length(object$model.org$residuals) 
+  
+  if (is.null(object$model.org$residuals)) {
     if (is.null(sample_size)) {
-      alt_sample_size <- NULL
-      stop("Restriktor Error: please specify the sample-size, e.g. group_size = 100.", 
-           call. = FALSE)
+      stop("Restriktor Error: please specify the sample-size(s), e.g. sample_size = 100.", call. = FALSE)
     } else {
       N <- sample_size
     }
-  } else {
-    if (is.null(pop_est)) {
-      pop_est <- est_sample
-      pop_est <- matrix(pop_est, nrow = 1)
-    }
-    colnames(pop_est) <- names(object$model.org$coefficients)
-    VCOV <- vcov(object$model.org)
-    N <- length(object$model.org$residuals)
   }
-  
-  nr_es  <- nrow(pop_est) #length(pop_est) / n_coef
-  
+
+  #   
+  # if (is.null(object$model.org)) {
+  #   if (is.null(pop_est)) { 
+  #     pop_est <- matrix(rbind(rep(0, n_coef), round(est_sample, 3)), nrow = 2)
+  #     row.names(pop_est) <- c("No-effect", "Observed")
+  #   } else if (is.data.frame(pop_est)) {
+  #     pop_est <- as.matrix(pop_est)
+  #   } else if (!is.matrix(pop_est)) {
+  #     pop_est <- matrix(pop_est, nrow = 1)
+  #   }
+  #   colnames(pop_est) <- names(est_sample)
+  #   VCOV <- object$Sigma
+  #   if (is.null(sample_size)) {
+  #     alt_sample_size <- NULL
+  #     stop("Restriktor Error: please specify the sample-size, e.g. group_size = 100.", 
+  #          call. = FALSE)
+  #   } else {
+  #     N <- sample_size
+  #   }
+  # } else {
+  #   if (is.null(pop_est)) {
+  #     pop_est <- matrix(rbind(rep(0, n_coef), round(est_sample, 3)), nrow = 2)
+  #     row.names(pop_est) <- c("No-effect", "Observed")
+  #   }
+  #   colnames(pop_est) <- names(object$b.unrestr)
+  #   VCOV <- vcov(object$model.org)
+  #   N <- length(object$model.org$residuals) 
+  # }
+
   if (!is.null(alt_sample_size)) {
     VCOV <- VCOV * N / alt_sample_size
     N <- alt_sample_size
   }
-  
-  nr_iter <- iter
   
   if (is.null(quant)) {
     quant <- c(.025, .05, .35, .50, .65, .95, .975)
@@ -67,13 +88,6 @@ goric_benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   } else {
     names_quant <- c("Sample", paste0(as.character(quant*100), "%"))
   }
-  
-  rnames <- row.names(pop_est)
-  if (is.null(rnames)) {
-    rnames <- as.character(rep(1:nrow(pop_est)))
-    row.names(pop_est) <- rnames
-  }
-  
   
   # parallel backend
   if (is.null(cl)) {
@@ -88,6 +102,8 @@ goric_benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   # Use pbapply::pblapply with arguments
   pbapply::pboptions(type = "timer", style = 1, char = ">")
   
+  nr_iter <- iter
+  nr_es  <- nrow(pop_est) #length(pop_est) / n_coef
   parallel_function_results <- list()  
   
   for (teller_es in seq_len(nr_es)) {
@@ -135,7 +151,7 @@ goric_benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     } else {
       H_pref <- hypos[[pref_hypo]]
       if (is.null(object$model.org)) {
-        results_goric_pref <- goric(group_means, VCOV = VCOV,
+        results_goric_pref <- goric(est_sample, VCOV = VCOV,
                                     hypotheses = list(H_pref = H_pref),
                                     comparison = "complement",
                                     type = object$type, 

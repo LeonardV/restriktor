@@ -64,10 +64,11 @@ importFrom("stats", coef, df.residual, dnorm, fitted,
            formula, frequency, median, model.matrix,
            naresid, pchisq, pf, pnorm, printCoefmat, pt,
            quantile, rchisq, residuals, rnorm, rt, runif,
-           sd, start, terms, update, var, vcov,
+           sd, start, terms, update, var, vcov, density,
            weighted.residuals, weights, gaussian, lm.fit,
            lm.wfit, mad, coefficients, family, logLik,
-           model.frame, anova, optimize, sigma, cov, dist, lm, uniroot) 
+           model.frame, anova, optimize, sigma, cov, dist, 
+           lm, uniroot, reshape, aggregate, setNames, as.formula) 
 
 importFrom("graphics", abline, axis, box, hist, par)
 
@@ -79,6 +80,7 @@ importFrom("ggplot2", ggplot, aes, .data, geom_point, geom_line, theme, unit, ma
            geom_density, geom_segment, ggtitle, xlab, ylab, element_rect, 
            scale_fill_brewer, scale_color_manual, coord_cartesian)
 
+importFrom("scales", brewer_pal)
 
 #importFrom("lpSolve", lp)
 

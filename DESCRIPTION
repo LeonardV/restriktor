@@ -16,7 +16,7 @@ Authors@R: c(person(given = "Leonard", family = "Vanbrabant",
            )
 Description: Allow for easy-to-use testing or evaluating of linear equality and inequality restrictions about parameters and effects in (generalized) linear statistical models.
 Depends: R(>= 4.0.0)
-Imports: boot, ic.infer, lavaan(>= 0.6-10), MASS, mvtnorm, tmvtnorm, quadprog, norm, ggplot2, pbapply, glue
+Imports: boot, ic.infer, lavaan(>= 0.6-10), MASS, mvtnorm, tmvtnorm, quadprog, norm, ggplot2, pbapply, glue, scales
 License: GPL (>= 2)
 LazyData: yes
 URL: https://restriktor.org

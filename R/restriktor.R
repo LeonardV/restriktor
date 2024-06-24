@@ -16,7 +16,6 @@ restriktor <- function(object, constraints = NULL, ...) {
     pnames <- c("se", "B", "rhs", "neq", "mix_weights",  
                 "auxilliary", "emControl", "parallel", "ncpus", "cl", "seed", 
                 "control", "verbose", "debug", "auto_bound",
-                #"chunk_size", "convergence_crit",
                 # for rtmvnorm() function
                 "lower", "upper", "algorithm",
                 "burn.in.samples", "start.values", "thinning")

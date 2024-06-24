@@ -657,15 +657,6 @@ goric.numeric <- function(object, ..., hypotheses = NULL,
   
   
   objectList <- list(...)
-  
-  # mcList <- as.list(match.call())
-  # mcList <- mcList[-c(1)]
-  # 
-  # mcnames <- names(mcList) == ""
-  # lnames <- as.character(mcList[mcnames])
-  # names(mcList)[mcnames] <- lnames
-  # objectList <- mcList  
-  
   objectList$object      <- object
   objectList$hypotheses  <- hypotheses
   objectList$comparison  <- comparison
@@ -710,16 +701,6 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
   }
   
   objectList <- list(...)
-  
-  # mcList <- as.list(match.call())
-  # mcList <- mcList[-c(1)]
-  # mcList$standardized <- NULL
-  # 
-  # mcnames <- names(mcList) == ""
-  # lnames <- as.character(mcList[mcnames])
-  # names(mcList)[mcnames] <- lnames
-  # objectList <- mcList  
-  
   est <- con_gorica_est_lav(object, standardized)
   objectList$object     <- est$estimate
   objectList$VCOV       <- est$VCOV
@@ -766,16 +747,6 @@ goric.CTmeta <- function(object, ..., hypotheses = NULL,
   }
   
   objectList <- list(...)
-  
-  # mcList <- as.list(match.call())
-  # mcList <- mcList[-c(1)]
-  # 
-  # mcnames <- names(mcList) == ""
-  # lnames <- as.character(mcList[mcnames])
-  # names(mcList)[mcnames] <- lnames
-  # objectList <- mcList
-  # objectList$object <- NULL
-  
   objectList$object <- coef(object) 
   objectList$VCOV   <- vcov(object)
   objectList$hypotheses  <- hypotheses
@@ -823,16 +794,6 @@ goric.rma <- function(object, ..., hypotheses = NULL,
   }
   
   objectList <- list(...)
-  
-  # mcList <- as.list(match.call())
-  # mcList <- mcList[-c(1)]
-  # 
-  # mcnames <- names(mcList) == ""
-  # lnames <- as.character(mcList[mcnames])
-  # names(mcList)[mcnames] <- lnames
-  # objectList <- mcList  
-  # objectList$object <- NULL
-  
   objectList$object <- coef(object) 
   objectList$VCOV   <- vcov(object)
   objectList$comparison   <- comparison

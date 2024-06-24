@@ -1,26 +1,29 @@
-\name{goric_benchmark_functions}
-\alias{goric_benchmark_means}
-\alias{goric_benchmark_asymp}
+\name{benchmark_functions}
+\alias{benchmark}
+\alias{benchmark_means}
+\alias{benchmark_asymp}
 \alias{print.benchmark}
 \alias{plot.benchmark}
 \title{Benchmark Functions for GORIC(A) Analysis}
 \description{
-  The `goric_benchmark_means` and `goric_benchmark_asymp` functions perform benchmarking 
+  The `benchmark_means` and `benchmark_asymp` functions perform benchmarking 
   for models using the Generalized Order-Restricted Information Criterion (GORIC). 
 }
 \usage{
-  goric_benchmark_means(object, pop_es = NULL, ratio_pop_means = NULL, 
-                        group_size = NULL, alt_group_size = NULL, 
-                        quant = NULL, iter = 1000, 
-                        control = list(convergence_crit = 1e-03, 
-                                       chunk_size = 1e4), 
-                        ncpus = 1, cl = NULL, seed = NULL, \ldots)
+  benchmark(object, model_type = NULL, \dots)
   
-  goric_benchmark_asymp(object, pop_est = NULL, sample_size = NULL, 
-                        alt_sample_size = NULL, quant = NULL, iter = 1000, 
-                        control = list(convergence_crit = 1e-03, 
-                                       chunk_size = 1e4), 
-                        ncpus = 1, cl = NULL, seed = NULL, \ldots)
+  benchmark_means(object, pop_es = NULL, ratio_pop_means = NULL, 
+                  group_size = NULL, alt_group_size = NULL, 
+                  quant = NULL, iter = 1000, 
+                  control = list(convergence_crit = 1e-03, 
+                                 chunk_size = 1e4), 
+                  ncpus = 1, cl = NULL, seed = NULL, \ldots)
+
+  benchmark_asymp(object, pop_est = NULL, sample_size = NULL, 
+                  alt_sample_size = NULL, quant = NULL, iter = 1000, 
+                  control = list(convergence_crit = 1e-03, 
+                                 chunk_size = 1e4), 
+                  ncpus = 1, cl = NULL, seed = NULL, \ldots)
   
   \method{print}{benchmark}(x, output_type = c("all", "gw", "rgw", "rlw", "ld"), \ldots)
   
@@ -28,6 +31,8 @@
 }
 \arguments{
   \item{object}{An object of class \code{con_goric} (a GORIC object from the \code{goric} function).}
+  \item{model_type}{If "means", the model parameters relect (adjusted) means, else
+  model_type = "asymp".}
   \item{x}{An object of class \code{benchmark_means} or \code{benchmark_asymp}.}
   \item{pop_es}{A scalar or a vector of population Cohen's f (effect-size) values. 
   By default, it benchmarks ES = 0 and the observed Cohen's f.}
@@ -72,10 +77,10 @@
   \item{\ldots}{Not used for now.}
 }
 \details{
-  \code{goric_benchmark_means} benchmarks the group means of a given GORIC object 
+  \code{benchmark_means} benchmarks the group means of a given GORIC object 
   by evaluating various population effect sizes and comparing the observed 
   group means against these benchmarks.
-  \code{goric_benchmark_asymp} benchmarks the population estimates of a given 
+  \code{benchmark_asymp} benchmarks the population estimates of a given 
   GORIC object by evaluating various population estimates and comparing them 
   against the observed estimates.
   
@@ -86,7 +91,7 @@
   of class \code{benchmark_means} or \code{benchmark_asymp}.
 }
 \value{
-  \code{goric_benchmark_means} and \code{goric_benchmark_asymp} return a list of 
+  \code{benchmark_means} and \code{benchmark_asymp} return a list of 
   class \code{benchmark_means}, \code{benchmark}, and \code{list} or 
   \code{benchmark_asymp}, \code{benchmark}, and \code{list} containing the 
   results of the benchmark analysis.
@@ -126,14 +131,15 @@ fit_goric <- goric(anova_result, hypotheses = list(h1=h1),
 
 # by default: ES = 0 \& ES = observed ES
 # In practice you want to increase the number of iterations.
-benchmark_results_mean <- goric_benchmark_means(fit_goric, iter = 30)
+benchmark_results_mean <- benchmark(fit_goric, iter = 30, model_type = "means")
 
 print(benchmark_results_mean)
 plot(benchmark_results_mean, output_type = "gw")
 
 # specify custom effect-sizes
-benchmark_results_mean_es <- goric_benchmark_means(fit_goric, iter = 30,
-                                                   pop_es = c(0, 0.1, 0.2))
+benchmark_results_mean_es <- benchmark(fit_goric, iter = 30,
+                                       pop_es = c(0, 0.1, 0.2),
+                                       model_type = "means")
 print(benchmark_results_mean_es)  
   
   
@@ -142,13 +148,14 @@ fit_gorica <- goric(anova_result, hypotheses = list(h1=h1),
                     comparison = "complement", type = "gorica")
 
 # by default: no-effect \& estimates from the sample are used
-benchmark_results_asymp <- goric_benchmark_asymp(fit_gorica, sample_size = 100, 
-                                                 iter = 30)
+benchmark_results_asymp <- benchmark(fit_gorica, sample_size = 100, iter = 30,
+                                     model_type = "asymp")
 print(benchmark_results_asymp)
 
 # specify custom population estimates
 my_pop_est <- rbind("no" = c(0,0,0,0), "medium" = c(4,5,6,7), "observed"= coef(anova_result))
-benchmark_results_asymp <- goric_benchmark_asymp(fit_gorica, sample_size = 100, 
-                                                 iter = 30, pop_est = my_pop_est)
+benchmark_results_asymp <- benchmark(fit_gorica, sample_size = 100, 
+                                     iter = 30, pop_est = my_pop_est,
+                                     model_type = "asymp")
 print(benchmark_results_asymp)
 }

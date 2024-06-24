@@ -73,8 +73,7 @@ robWeights <- function(w, eps = 0.1/length(w), eps1 = 0.001, ...) {
               "You should use different 'eps' and/or 'eps1'")
     if (n0 > 0 || n1 > 0) {
       if (n0 > 0) {
-        formE <- function(e) formatC(e, digits = max(2, 
-                                                     5 - 3), width = 1)
+        formE <- function(e) formatC(e, digits = max(2, 5 - 3), width = 1)
         i0 <- which(w0)
         maxw <- max(w[w0])
         c3 <- paste0("with |weight| ", if (maxw == 0) 
@@ -152,19 +151,22 @@ remove_single_value_rows <- function(data, value) {
   data[rows_to_keep, , drop = FALSE]
 }  
 
-# used in print.benchmark()
-print_rounded <- function(df, pop_es) {
-  pop_es_value <- gsub("pop_es = ", "", pop_es)
-  cat(sprintf("Population effect size = %s%s%s\n", green, pop_es_value, reset))
+
+detect_intercept <- function(model) {
+  coefficients <- model$b.unrestr
+  intercept_names <- c("(Intercept)", "Intercept", "(const)", "const", 
+                       "(Int)", "Int", "(Cons)", "Cons", "b0", "beta0")
   
-  rounded_column <- sprintf("%.3f", df)
-  rounded_df <- `dim<-`(rounded_column, dim(df))
+  names_lower <- tolower(names(coefficients))
+  intercept_names_lower <- tolower(intercept_names)
   
-  rownames(rounded_df) <- rownames(df)
-  colnames(rounded_df) <- colnames(df)
-  
-  print(rounded_df, row.names = TRUE, quote = FALSE)
-  cat("\n")
+  detected_intercepts <- intercept_names[names_lower %in% intercept_names_lower]
+
+  if (length(detected_intercepts) > 0) {
+    return(TRUE)
+  } else {
+    return(FALSE)
+  }
 }
 
 
@@ -274,7 +276,7 @@ parallel_function_means <- function(i, N, var_e, means_pop,
 }
 
 
-# this function is called from the goric_benchmark_asymp() function
+# this function is called from the benchmark_asymp() function
 parallel_function_asymp <- function(i, est, VCOV, hypos, pref_hypo, comparison,
                                     type, control, ...) {  
   

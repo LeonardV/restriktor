@@ -7,6 +7,7 @@ print.benchmark <- function(x,
     stop("Invalid object. The object should be of class 'benchmark'.", call. = FALSE)
   }
   
+  model_type <- class(x)[1]
   goric_type <- capitalize_first_letter(x$type)
   pref_hypo <- x$pref_hypo_name
   
@@ -21,14 +22,9 @@ print.benchmark <- function(x,
     ngroups <- x$n_coef
   } 
   
-  # ANSI escape codes for colors
-  blue <- "\033[34m"
-  green <- "\033[32m"
-  reset <- "\033[0m"
-  
   # Helper function to print rounded data frames
-  print_rounded_es_value <- function(df, pop_es) {
-    if (inherits(x, "benchmark_asymp")) {
+  print_rounded_es_value <- function(df, pop_es, model_type) {
+    if (model_type == "benchmark_asymp") {
       pop_es_value <- gsub("pop_est = ", "", pop_es)
     } else {
       pop_es_value <- gsub("pop_es = ", "", pop_es)  
@@ -41,6 +37,11 @@ print.benchmark <- function(x,
     print(rounded_df, row.names = TRUE, quote = FALSE)
     cat("\n")
   }
+  
+  # ANSI escape codes for colors
+  blue <- "\033[34m"
+  green <- "\033[32m"
+  reset <- "\033[0m"
   
   text_gw <- paste0("Benchmark Analysis: Percentiles of ", goric_type, "-Weights for Preferred Hypothesis '", pref_hypo, "'")
   text_rgw <- paste0("Benchmark Analysis: Percentiles of Ratios of ", goric_type, "-Weights for Preferred Hypothesis '", pref_hypo, "'")
@@ -87,7 +88,7 @@ print.benchmark <- function(x,
       text_gw,
       function() {
         for (pop_es in names(x$benchmarks_goric_weights)) {
-          print_rounded_es_value(x$benchmarks_goric_weights[[pop_es]], pop_es)
+          print_rounded_es_value(x$benchmarks_goric_weights[[pop_es]], pop_es, model_type)
         }
       }, nchar(text_gw)
     )
@@ -99,7 +100,7 @@ print.benchmark <- function(x,
       text_rgw,
       function() {
         for (pop_es in names(x$benchmarks_ratio_goric_weights)) {
-          print_rounded_es_value(x$benchmarks_ratio_goric_weights[[pop_es]], pop_es)
+          print_rounded_es_value(x$benchmarks_ratio_goric_weights[[pop_es]], pop_es, model_type)
         }
       }, nchar(text_rgw)
     )
@@ -111,7 +112,7 @@ print.benchmark <- function(x,
       text_rlw,
       function() {
         for (pop_es in names(x$benchmarks_ratio_ll_weights)) {
-          print_rounded_es_value(x$benchmarks_ratio_ll_weights[[pop_es]], pop_es)
+          print_rounded_es_value(x$benchmarks_ratio_ll_weights[[pop_es]], pop_es, model_type)
         }
       }, nchar(text_rlw)
     )
@@ -123,7 +124,7 @@ print.benchmark <- function(x,
       text_ld,
       function() {
         for (pop_es in names(x$benchmarks_difLL)) {
-          print_rounded_es_value(x$benchmarks_difLL[[pop_es]], pop_es)
+          print_rounded_es_value(x$benchmarks_difLL[[pop_es]], pop_es, model_type)
         }
       }, nchar(text_ld)
     )

@@ -6,7 +6,7 @@ benchmark <- function(object, model_type = NULL, ...) {
 
   if (is.null(model_type)) {
     stop("Restriktor ERROR: Please specify if you want to benchmark means or not. ",
-         "In case of model_type = means, no intercept is allowed.")
+         "In case of model_type = means (default), no intercept is allowed.")
   }
   
   # Check if the model has an intercept. Since the goric function accepts both 
@@ -123,7 +123,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     ratio_pop_means <- ratio_data 
   } else {
     if (length(ratio_pop_means) != ngroups) { 
-      return(paste0("The argument ratio_pop_means should be of length ", 
+      stop(paste0("The argument ratio_pop_means should be of length ", 
                     ngroups, " (or NULL) but not of length ", length(ratio_pop_means)))
     }
   }
@@ -353,11 +353,25 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     row.names(pop_est) <- c("No-effect", "Observed")
   }
   
+  # Check if pop_est and est_sample have the same length
+  if (ncol(pop_est) != length(est_sample)) {
+    stop(paste("Restriktor Error: The number of columns in pop_est (", ncol(pop_est), 
+               ") does not match the length of est_sample (", length(est_sample), ").", sep=""))
+  }
+  
+  # Assign row names to pop_est if they are null or empty strings
   rnames <- row.names(pop_est)
   if (is.null(rnames)) {
-    rnames <- paste0("ES_", rep(1:nrow(pop_est)))
+    rnames <- paste0("ES_", seq_len(nrow(pop_est)))
     row.names(pop_est) <- rnames
-  }
+  } else {
+    empty_names <- rnames == ""
+    if (any(empty_names)) {
+      rnames[empty_names] <- paste0("ES_", seq_len(sum(empty_names)))
+      row.names(pop_est) <- rnames
+    }
+  }  
+  
   colnames(pop_est) <- names(est_sample)
   
   VCOV <- object$Sigma
@@ -416,7 +430,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
       parallel_function_asymp(i, 
                               est = est, VCOV = VCOV,
                               hypos = hypos, pref_hypo = pref_hypo, 
-                              comparison = comparison, type = type,
+                              comparison = comparison, type = "gorica",
                               control = control, ...)
     }
     

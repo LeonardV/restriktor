@@ -6,8 +6,8 @@
 \alias{plot.benchmark}
 \title{Benchmark Functions for GORIC(A) Analysis}
 \description{
-  The `benchmark_means` and `benchmark_asymp` functions perform benchmarking 
-  for models using the Generalized Order-Restricted Information Criterion (GORIC). 
+  The `benchmark` functions perform benchmarking for models using the 
+  Generalized Order-Restricted Information Criterion (Approximation) (GORIC(A)). 
 }
 \usage{
   benchmark(object, model_type = NULL, \dots)
@@ -30,15 +30,15 @@
   \method{plot}{benchmark}(x, output_type = "gw", CI = 0.95, x_lim = c(), \ldots)
 }
 \arguments{
-  \item{object}{An object of class \code{con_goric} (a GORIC object from the \code{goric} function).}
-  \item{model_type}{If "means", the model parameters relect (adjusted) means, else
+  \item{object}{An object of class \code{con_goric} (a GORIC(A) object from the \code{goric} function).}
+  \item{model_type}{If "means" (default), the model parameters relect (adjusted) means, else
   model_type = "asymp".}
-  \item{x}{An object of class \code{benchmark_means} or \code{benchmark_asymp}.}
+  \item{x}{An object of class \code{benchmark} or \code{benchmark}.}
   \item{pop_es}{A scalar or a vector of population Cohen's f (effect-size) values. 
   By default, it benchmarks ES = 0 and the observed Cohen's f.}
   \item{pop_est}{A 1 x k vector or an n x k matrix of population 
   estimates to benchmark. By default, all estimates are set to zero and the 
-  estimates from the sample are used.}
+  observed estimates from the sample are used.}
   \item{ratio_pop_means}{A 1 x k vector denoting the relative difference
   between the k group means. Note that a ratio of \code{c(3, 2, 1)} gives the 
   same as \code{c(1, 0, -1)}, as the consecutive relative differences are 1 in 
@@ -52,7 +52,7 @@
   can be used, for example, to see the values to which the GORIC(A) weights will 
   converge (and thus to see the maximum value of the weights). If a scalar is 
   specified, it is assumed that each group is of that size. By default, the group 
-  sizes from the data will be used.}
+  sizes from the data are used.}
   \item{sample_size}{A scalar to denote the (total) sample sizes. Only used if 
   the GORIC object is based on estimates and their covariance matrix (instead 
   of on a model/fit object) and \code{alt_sample_size} is not \code{NULL}. }
@@ -76,20 +76,22 @@
   \item{x_lim}{A numeric vector of length 2 specifying the x-axis limits. Defaults to \code{c()}.}
   \item{\ldots}{Not used for now.}
 }
+
 \details{
-  \code{benchmark_means} benchmarks the group means of a given GORIC object 
+  \code{benchmark_means} benchmarks the group means of a given GORIC(A) object 
   by evaluating various population effect sizes and comparing the observed 
   group means against these benchmarks.
   \code{benchmark_asymp} benchmarks the population estimates of a given 
-  GORIC object by evaluating various population estimates and comparing them 
+  GORIC(A) object by evaluating various population estimates and comparing them 
   against the observed estimates.
   
   \code{print.benchmark} prints the results of benchmark analyses performed on 
-  objects of class \code{benchmark_means} or \code{benchmark_asymp}.
+  objects of class \code{benchmark}.
   
   \code{plot.benchmark} generates density plots for benchmark analyses of objects 
-  of class \code{benchmark_means} or \code{benchmark_asymp}.
-}
+  of class \code{benchmark}.
+  }
+
 \value{
   \code{benchmark_means} and \code{benchmark_asymp} return a list of 
   class \code{benchmark_means}, \code{benchmark}, and \code{list} or 

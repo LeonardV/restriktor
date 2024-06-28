@@ -86,7 +86,7 @@ compute_population_means <- function(pop_es, ratio_pop_means, var_e, ngroups) {
 
 
 # Calculate the error probability
-calculate_error_probability <- function(object, hypos, pref_hypo, group_means, 
+calculate_error_probability <- function(object, hypos, pref_hypo, est, 
                                         VCOV, control, ...) {
   # Error probability based on complement of preferred hypothesis in data
   nr_hypos <- dim(object$result)[1]
@@ -102,10 +102,10 @@ calculate_error_probability <- function(object, hypos, pref_hypo, group_means,
     } else {
       H_pref <- hypos[[pref_hypo]]
       if (is.null(object$model.org)) {
-        results_goric_pref <- goric(group_means, VCOV = VCOV,
+        results_goric_pref <- goric(est, VCOV = VCOV,
                                     hypotheses = list(H_pref = H_pref),
                                     comparison = "complement",
-                                    type = object$type, 
+                                    type = "gorica", 
                                     control = control, 
                                     ...)
       } else {

@@ -200,7 +200,8 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
                                              names_quant, nr_hypos)
 
   # compute error probability
-  error_prob <- calculate_error_probability(object, hypos, pref_hypo, group_means, 
+  error_prob <- calculate_error_probability(object, hypos, pref_hypo, 
+                                            est = group_means, 
                                             VCOV, control, ...)
 
   OUT <- list(
@@ -366,45 +367,9 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   
   
   # compute error probability
-  error_prob <- calculate_error_probability(object, hypos, pref_hypo, group_means, 
-                                            VCOV, control)
-  
-  # # Error probability based on complement of preferred hypothesis in data
-  # if (nr_hypos == 2 && object$comparison == "complement") { 
-  #   if (object$type == 'goric') {
-  #     error_prob <- 1 - object$result$goric.weights[pref_hypo]
-  #   } else {
-  #     error_prob <- 1 - object$result$gorica.weights[pref_hypo]
-  #   }
-  # } else {
-  #   if (pref_hypo == nr_hypos && object$comparison == "unconstrained") {
-  #     error_prob <- "The unconstrained (i.e., the failsafe) containing all possible orderings is preferred."
-  #   } else {
-  #     H_pref <- hypos[[pref_hypo]]
-  #     if (is.null(object$model.org)) {
-  #       results_goric_pref <- goric(est_sample, VCOV = VCOV,
-  #                                   hypotheses = list(H_pref = H_pref),
-  #                                   comparison = "complement",
-  #                                   type = "gorica", 
-  #                                   control = control, 
-  #                                   ...)
-  #     } else {
-  #       fit_data <- object$model.org
-  #       results_goric_pref <- goric(fit_data,
-  #                                   hypotheses = list(H_pref = H_pref),
-  #                                   comparison = "complement",
-  #                                   type = "gorica",
-  #                                   control = control, 
-  #                                   ...)
-  #     }
-  #     if (object$type == 'goric') {
-  #       error_prob <- results_goric_pref$result$goric.weights[2]
-  #     } else {
-  #       error_prob <- results_goric_pref$result$gorica.weights[2]
-  #     }
-  #   }
-  # }
-  
+  error_prob <- calculate_error_probability(object, hypos, pref_hypo, 
+                                            est = est_sample, VCOV, control, ...)
+
   OUT <- list(
     type = object$type,
     comparison = object$comparison,

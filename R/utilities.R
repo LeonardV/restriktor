@@ -107,8 +107,6 @@ robWeights <- function(w, eps = 0.1/length(w), eps1 = 0.001, ...) {
 }
 
 
-
-
 # function taken from 'bain' package 
 expand_compound_constraints <- function(hyp) {
   equality_operators <- gregexpr("[=<>]", hyp)[[1]]
@@ -137,35 +135,6 @@ expand_parentheses <- function(hyp) {
     }
   } else {
     return(hyp)
-  }
-}
-
-# used in print.benchmark()
-capitalize_first_letter <- function(input_string) {
-  paste0(toupper(substring(input_string, 1, 1)), substring(input_string, 2))
-}
-
-# used in get_results_benchmark_means()
-remove_single_value_rows <- function(data, value) {
-  rows_to_keep <- apply(data, 1, function(row) !all(row == value))
-  data[rows_to_keep, , drop = FALSE]
-}  
-
-
-detect_intercept <- function(model) {
-  coefficients <- model$b.unrestr
-  intercept_names <- c("(Intercept)", "Intercept", "(const)", "const", 
-                       "(Int)", "Int", "(Cons)", "Cons", "b0", "beta0")
-  
-  names_lower <- tolower(names(coefficients))
-  intercept_names_lower <- tolower(intercept_names)
-  
-  detected_intercepts <- intercept_names[names_lower %in% intercept_names_lower]
-
-  if (length(detected_intercepts) > 0) {
-    return(TRUE)
-  } else {
-    return(FALSE)
   }
 }
 

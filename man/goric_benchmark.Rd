@@ -10,7 +10,7 @@
   Generalized Order-Restricted Information Criterion (Approximation) (GORIC(A)). 
 }
 \usage{
-  benchmark(object, model_type = NULL, \dots)
+  benchmark(object, model_type = c("asymp", "means"), \dots)
   
   benchmark_means(object, pop_es = NULL, ratio_pop_means = NULL, 
                   group_size = NULL, alt_group_size = NULL, 
@@ -27,7 +27,9 @@
   
   \method{print}{benchmark}(x, output_type = c("all", "gw", "rgw", "rlw", "ld"), \ldots)
   
-  \method{plot}{benchmark}(x, output_type = "gw", percentile = c(0.025, 0.0975), x_lim = c(), \ldots)
+  \method{plot}{benchmark}(x, output_type = c("rgw", "rlw", "gw", "ld"), 
+                           hypothesis_comparison = NULL,
+                           percentiles = c(0.025, 0.975), x_lim = c(), \ldots)
 }
 \arguments{
   \item{object}{An object of class \code{con_goric} (a GORIC(A) object from the \code{goric} function).}
@@ -55,7 +57,7 @@
   sizes from the data are used.}
   \item{sample_size}{A scalar to denote the (total) sample sizes. Only used if 
   the GORIC object is based on estimates and their covariance matrix (instead 
-  of on a model/fit object) and \code{alt_sample_size} is not \code{NULL}. }
+  of on a model/fit object) or \code{alt_sample_size} is not \code{NULL}. }
   \item{alt_sample_size}{A scalar to denote an alternative sample size if you 
   want to use a different sample size from the one in the data. This can be used, 
   for example, to see the values to which the GORIC(A) weights will converge 
@@ -72,9 +74,13 @@
   or plot. Options are \code{"all"}, \code{"gw"} (goric(a) weights), 
   \code{"rgw"} (ratio of goric(a) weights), \code{"rlw"} (ratio of likelihood values), 
   and \code{"ld"} (likelihood difference). Defaults to \code{"all"} for print and \code{"gw"} for plot.}
-  \item{percentile}{A numeric vector specifying the lower and upper percentiles. Defaults to \code{0.025, 0.975}.}
+  \item{hypothesis_comparison}{A character vector specifying which hypotheses to 
+  include in the comparison. If \code{NULL}, all hypotheses will be included. 
+  This allows for focusing on a subset of hypotheses, which can be particularly 
+  useful when dealing with a large number of hypotheses.}
+  \item{percentiles}{A numeric vector specifying the lower and upper percentiles. Defaults to \code{0.025, 0.975}.}
   \item{x_lim}{A numeric vector of length 2 specifying the x-axis limits. Defaults to \code{c()}.}
-  \item{\ldots}{Not used for now.}
+  \item{\ldots}{See \link{goric}.}
 }
 
 \details{

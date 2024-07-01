@@ -2,12 +2,15 @@ benchmark_means  <- function(object, ...) UseMethod("benchmark_means")
 benchmark_asymp  <- function(object, ...) UseMethod("benchmark_asymp")
 
 
-benchmark <- function(object, model_type = NULL, ...) {
+benchmark <- function(object, model_type = c("asymp", "means"), ...) {
 
+  model_type <- match.arg(model_type, c("asymp", "means"))
   if (is.null(model_type)) {
     stop("Restriktor ERROR: Please specify if you want to benchmark means or asymptotic result ",
          "In case of model_type = means (default), no intercept is allowed.")
   }
+  
+  args <- list(...)
   
   # Check if the model has an intercept. Since the goric function accepts both 
   # a model/fit or only estimates+VCOV, we cannot rely on the original model fit.
@@ -113,7 +116,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   
   # Possibly adjust var_e based on other sample size
   if (!is.null(alt_group_size)) {
-    result_adjust_variance <- adjust_variance(var_e, N, alt_group_size = 100, ngroups)
+    result_adjust_variance <- adjust_variance(var_e, N, alt_group_size = alt_group_size, ngroups)
     N <- result_adjust_variance$N
     var_e <- result_adjust_variance$var_e
   }
@@ -278,12 +281,12 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   # Assign row names to pop_est if they are null or empty strings
   rnames <- row.names(pop_est)
   if (is.null(rnames)) {
-    rnames <- paste0("ES_", seq_len(nrow(pop_est)))
+    rnames <- paste0("PE_", seq_len(nrow(pop_est)))
     row.names(pop_est) <- rnames
   } else {
     empty_names <- rnames == ""
     if (any(empty_names)) {
-      rnames[empty_names] <- paste0("ES_", seq_len(sum(empty_names)))
+      rnames[empty_names] <- paste0("PE_", seq_len(sum(empty_names)))
       row.names(pop_est) <- rnames
     }
   }  

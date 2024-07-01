@@ -14,6 +14,25 @@ remove_single_value_col <- function(data, value) {
   data[, cols_to_keep, drop = FALSE]
 }  
 
+# Function to filter columns based on exact matching of hypothesis_comparison
+filter_columns <- function(data, hypothesis_comparison) {
+  colnames_to_keep <- sapply(hypothesis_comparison, function(hypo) {
+    grep(paste0("\\b", hypo, "\\b"), names(data), value = TRUE, fixed = FALSE)
+  })
+  colnames_to_keep <- unique(unlist(colnames_to_keep))
+  colnames_to_keep <- intersect(names(data), colnames_to_keep) # Preserve original order
+  return(data[, colnames_to_keep, drop = FALSE])
+}
+
+filter_vector <- function(data, hypothesis_comparison) {
+  names_to_keep <- sapply(hypothesis_comparison, function(hypo) {
+    grep(paste0("\\b", hypo, "\\b"), names(data), value = TRUE, fixed = FALSE)
+  })
+  names_to_keep <- unique(unlist(names_to_keep))
+  names_to_keep <- intersect(names(data), names_to_keep) # Preserve original order
+  return(data[names_to_keep])
+}
+
 
 detect_intercept <- function(model) {
   coefficients <- model$b.unrestr
@@ -253,6 +272,15 @@ print_section <- function(header, content_printer, nchar, text_color, reset) {
   cat("\n")
 }
 
+
+format_value <- function(value) {
+  if (abs(value) >= 1000 || abs(value) <= 0.001 && value != 0) {
+    return(sprintf("%.3e", value))  
+  } else {
+    return(sprintf("%.3f", value))  
+  }
+}
+
 # called by the benchmark.print() function
 print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset) {
   if (model_type == "benchmark_asymp") {
@@ -262,13 +290,6 @@ print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset) {
   }
   cat(sprintf("Population effect estimates = %s%s%s\n", text_color, pop_es_value, reset))
   
-  format_value <- function(value) {
-    if (abs(value) >= 1000 || abs(value) <= 0.001 && value != 0) {
-      return(sprintf("%.3e", value))  
-    } else {
-      return(sprintf("%.3f", value))  
-    }
-  }
   #formatted_column <- sprintf("%.3f", df)
   formatted_values <- sapply(as.numeric(df), format_value)
   formatted_df <- `dim<-`(formatted_values, dim(df))

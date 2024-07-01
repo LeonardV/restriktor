@@ -39,8 +39,8 @@ print.benchmark <- function(x,
   green <- "\033[32m"
   reset <- "\033[0m"
   
-  text_gw  <- paste0("Benchmark Analysis: Percentiles of ", goric_type, "-Weights for the Preferred Hypothesis '", pref_hypo, "'")
-  text_rgw <- paste0("Benchmark Analysis: Percentiles of Ratios of ", goric_type, "-Weights for the Preferred Hypothesis '", pref_hypo, "'")
+  text_gw  <- paste0("Benchmark Analysis: Percentiles of ", goric_type, " Weights for the Preferred Hypothesis '", pref_hypo, "'")
+  text_rgw <- paste0("Benchmark Analysis: Percentiles of Ratios of ", goric_type, " Weights for the Preferred Hypothesis '", pref_hypo, "'")
   text_rlw <- paste0("Benchmark Analysis: Percentiles of Ratios of Likelihood Weights for the Preferred Hypothesis '", pref_hypo, "'")
   text_ld  <- paste0("Benchmark Analysis: Percentiles of Differences in Likelihood Values for the Preferred Hypothesis '", pref_hypo, "'")
   

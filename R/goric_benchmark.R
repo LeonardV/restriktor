@@ -339,7 +339,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   parallel_function_results <- list()  
   
     for (teller_es in seq_len(nr_es)) {
-    cat("Calculating asymptotic benchmark for population estimates =", pop_est[teller_es, ], "\n")
+    cat("Calculating asymptotic benchmark for population estimates =", row.names(pop_est)[teller_es], "\n")
     
     est <- mvtnorm::rmvnorm(n = iter, pop_est[teller_es, ], sigma = VCOV)
     

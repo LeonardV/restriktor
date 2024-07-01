@@ -78,7 +78,8 @@ importFrom("ggplot2", ggplot, aes, .data, geom_point, geom_line, theme, unit, ma
            element_blank, element_text, element_line, scale_y_continuous, 
            scale_x_discrete, labs, guides, guide_legend, scale_color_brewer,
            geom_density, geom_segment, ggtitle, xlab, ylab, element_rect, 
-           scale_fill_brewer, scale_color_manual, coord_cartesian)
+           scale_fill_brewer, scale_color_manual, coord_cartesian,
+           scale_linetype_manual)
 
 importFrom("scales", brewer_pal)
 

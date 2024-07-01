@@ -86,7 +86,7 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     CI_benchmarks_ld_all[[name]] <- CI_benchmarks_ld
     CI_benchmarks_ld_ge0_all[[name]] <- CI_benchmarks_ld_ge0
   } 
-  
+   
 
   CI_benchmarks_rgw_all_cleaned <- lapply(CI_benchmarks_rgw_all, function(pop_es_list) {
     remove_single_value_rows(pop_es_list, 1)
@@ -107,7 +107,21 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   CI_benchmarks_ld_ge0_all_cleaned <- lapply(CI_benchmarks_ld_ge0_all, function(pop_es_list) {
     remove_single_value_rows(pop_es_list, 0)
   })
+
+
+  rgw_combined <- lapply(rgw_combined, function(pop_es_list) {
+    remove_single_value_col(pop_es_list, 1)
+  })
   
+  rlw_combined <- lapply(rlw_combined, function(pop_es_list) {
+    remove_single_value_col(pop_es_list, 1)
+  })
+  
+  ld_combined <- lapply(ld_combined, function(pop_es_list) {
+    remove_single_value_col(pop_es_list, 0)
+  })
+  
+    
   OUT <- list(
     benchmarks_gw = CI_benchmarks_gw,
     benchmarks_rgw = CI_benchmarks_rgw_all_cleaned,

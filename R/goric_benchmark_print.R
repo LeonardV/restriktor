@@ -8,7 +8,7 @@ print.benchmark <- function(x,
   }
   
   model_type <- class(x)[1]
-  goric_type <- capitalize_first_letter(x$type)
+  goric_type <- toupper(x$type)
   pref_hypo <- x$pref_hypo_name
   error_prob_pref_hypo <- x$error_prob_pref_hypo_name
   error_prob_pref_hypo <- 
@@ -49,7 +49,7 @@ print.benchmark <- function(x,
   cat(paste0(blue, "Benchmark Results", reset), "\n")
   cat(strrep("-", 70), "\n")
   cat(sprintf("Preferred Hypothesis: %s%s%s\n", green, pref_hypo, reset))
-  cat(sprintf("Error probability Preferred Hypothesis: %s%s%s\n", green, error_prob_pref_hypo, reset))
+  cat(sprintf("Error probability Preferred Hypothesis Vs. complement: %s%s%s\n", green, error_prob_pref_hypo, reset))
   if (inherits(x, "benchmark_means")) {
     cat(sprintf("Number of Groups: %s%s%s\n", green, ngroups, reset))
   } else {

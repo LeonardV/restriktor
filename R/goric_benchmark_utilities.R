@@ -1,3 +1,37 @@
+# used in print.benchmark()
+capitalize_first_letter <- function(input_string) {
+  paste0(toupper(substring(input_string, 1, 1)), substring(input_string, 2))
+}
+
+# used in get_results_benchmark_means()
+remove_single_value_rows <- function(data, value) {
+  rows_to_keep <- apply(data, 1, function(row) !all(row == value))
+  data[rows_to_keep, , drop = FALSE]
+}  
+
+remove_single_value_col <- function(data, value) {
+  cols_to_keep <- apply(data, 2, function(col) !all(col == value))
+  data[, cols_to_keep, drop = FALSE]
+}  
+
+
+detect_intercept <- function(model) {
+  coefficients <- model$b.unrestr
+  intercept_names <- c("(Intercept)", "Intercept", "(const)", "const", 
+                       "(Int)", "Int", "(Cons)", "Cons", "b0", "beta0")
+  
+  names_lower <- tolower(names(coefficients))
+  intercept_names_lower <- tolower(intercept_names)
+  
+  detected_intercepts <- intercept_names[names_lower %in% intercept_names_lower]
+  
+  if (length(detected_intercepts) > 0) {
+    return(TRUE)
+  } else {
+    return(FALSE)
+  }
+}
+
 # Compute Cohen's f based on group_means, N, and VCOV
 compute_cohens_f <- function(group_means, N, VCOV) {
   total_mean <- sum(group_means * N) / sum(N) 
@@ -226,7 +260,7 @@ print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset) {
   } else {
     pop_es_value <- gsub("pop_es = ", "", pop_es)  
   }
-  cat(sprintf("Population effect size = %s%s%s\n", text_color, pop_es_value, reset))
+  cat(sprintf("Population effect estimates = %s%s%s\n", text_color, pop_es_value, reset))
   
   format_value <- function(value) {
     if (abs(value) >= 1000 || abs(value) <= 0.001 && value != 0) {
@@ -246,7 +280,7 @@ print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset) {
 
 # called by the benchmark.print() function
 print_formatted_matrix <- function(mat, text_color, reset) {
-  cat("Population Estimates:\n")
+  cat("Population Estimates (PE):\n")
   cat(sprintf("%-10s", ""))
   for (colname in colnames(mat)) {
     cat(sprintf(" %7s", colname))

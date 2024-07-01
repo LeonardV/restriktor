@@ -27,7 +27,7 @@
   
   \method{print}{benchmark}(x, output_type = c("all", "gw", "rgw", "rlw", "ld"), \ldots)
   
-  \method{plot}{benchmark}(x, output_type = "gw", CI = 0.95, x_lim = c(), \ldots)
+  \method{plot}{benchmark}(x, output_type = "gw", percentile = c(0.025, 0.0975), x_lim = c(), \ldots)
 }
 \arguments{
   \item{object}{An object of class \code{con_goric} (a GORIC(A) object from the \code{goric} function).}
@@ -72,7 +72,7 @@
   or plot. Options are \code{"all"}, \code{"gw"} (goric(a) weights), 
   \code{"rgw"} (ratio of goric(a) weights), \code{"rlw"} (ratio of likelihood values), 
   and \code{"ld"} (likelihood difference). Defaults to \code{"all"} for print and \code{"gw"} for plot.}
-  \item{CI}{A numeric value specifying the confidence interval level. Defaults to \code{0.95}.}
+  \item{percentile}{A numeric vector specifying the lower and upper percentiles. Defaults to \code{0.025, 0.975}.}
   \item{x_lim}{A numeric vector of length 2 specifying the x-axis limits. Defaults to \code{c()}.}
   \item{\ldots}{Not used for now.}
 }

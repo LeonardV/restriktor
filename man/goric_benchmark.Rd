@@ -34,7 +34,7 @@
 \arguments{
   \item{object}{An object of class \code{con_goric} (a GORIC(A) object from the \code{goric} function).}
   \item{model_type}{If "means" (default), the model parameters relect (adjusted) means, else
-  model_type = "asymp".}
+  model_type = "asymp". See details for more information about \code{asymp}.}
   \item{x}{An object of class \code{benchmark} or \code{benchmark}.}
   \item{pop_es}{A scalar or a vector of population Cohen's f (effect-size) values. 
   By default, it benchmarks ES = 0 and the observed Cohen's f.}
@@ -84,6 +84,16 @@
 }
 
 \details{
+  The function \code{benchmark_asymp} is named as such because it generates data from a 
+  multivariate normal distribution with means equal to the population parameter 
+  estimates and a covariance matrix derived from the original data. This is based 
+  on the assumption that parameter estimates are asymptotically normally distributed. 
+  This assumption is valid for many statistical models, including parameters from 
+  a generalized linear model (GLM). In such models, as the sample size increases, 
+  the distribution of the parameter estimates tends to a normal distribution, 
+  allowing us to utilize the multivariate normal distribution for benchmarking.
+
+
   \code{benchmark_means} benchmarks the group means of a given GORIC(A) object 
   by evaluating various population effect sizes and comparing the observed 
   group means against these benchmarks.
@@ -95,7 +105,7 @@
   objects of class \code{benchmark}.
   
   \code{plot.benchmark} generates density plots for benchmark analyses of objects 
-  of class \code{benchmark}.
+  of class \code{benchmark}. 
   }
 
 \value{
@@ -132,17 +142,25 @@ anova_result <- aov(value ~ -1 + group, data = data)
 
 # model/hypothesis
 h1 <- 'group1 < group2 < group3 < group4'
+h2 <- 'group1 > group2 < group3 < group4'
 
-# fit h1 model against its complement
-fit_goric <- goric(anova_result, hypotheses = list(h1=h1), 
-                   comparison = "complement", type = "goric")
+# fit h1 and h2 model against the unconstrained model (i.e., failsafe to avoid
+# selecting a weak hypothesis)
+fit_goric <- goric(anova_result, hypotheses = list(H1 = h1, H2 = h2), 
+                   comparison = "unconstrained", type = "goric")
 
 # by default: ES = 0 \& ES = observed ES
 # In practice you want to increase the number of iterations.
 benchmark_results_mean <- benchmark(fit_goric, iter = 30, model_type = "means")
 
 print(benchmark_results_mean)
-plot(benchmark_results_mean, output_type = "gw")
+
+# by default the ratio of GORIC weights for the preferred hypothesis (here h1) is
+# plotted against its competitors (i.e., h2 and the unconstrained). To improve
+# the readability of the plot, the argument hypothesis_comparison can be used to
+# focus on a specif competitor. Further readability can be achieved by setting
+# the x_lim option. 
+plot(benchmark_results_mean, output_type = "rgw", hypotheses_comparison = "h2")
 
 # specify custom effect-sizes
 benchmark_results_mean_es <- benchmark(fit_goric, iter = 30,
@@ -162,6 +180,7 @@ print(benchmark_results_asymp)
 
 # specify custom population estimates
 my_pop_est <- rbind("no" = c(0,0,0,0), "medium" = c(4,5,6,7), "observed"= coef(anova_result))
+
 benchmark_results_asymp <- benchmark(fit_gorica, sample_size = 100, 
                                      iter = 30, pop_est = my_pop_est,
                                      model_type = "asymp")

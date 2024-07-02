@@ -25,22 +25,22 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
     df <- as.data.frame(x$combined_values$gw_combined)  
     sample_value <- x$benchmarks_goric_weights[[1]][1]
     xlabel <- paste(goric_type, "weights")
-    title <- paste0("Benchmark: ", goric_type, "-weight distribution for preferred hypothesis ", pref_hypo_name)
+    title <- paste0("Benchmark: ", goric_type, "-weight Distribution for Preferred Hypothesis ", pref_hypo_name)
   } else if (output_type == "rgw") {
     df <- as.data.frame(x$combined_values$rgw_combined)  
     sample_value <- x$benchmarks_ratio_goric_weights[[1]][, 1]
     xlabel <- paste0("Ratio ", goric_type, " weights")
-    title <- paste0("Benchmark: Ratio ", goric_type, "-weight distribution for preferred hypothesis ", pref_hypo_name)
+    title <- paste0("Benchmark: Ratio ", goric_type, "-weight Distribution for Preferred Hypothesis ", pref_hypo_name)
   } else if (output_type == "rlw") {
     df <- as.data.frame(x$combined_values$rlw_combined)  
     sample_value <- x$benchmarks_ratio_ll_weights[[1]][, 1]
     xlabel <- "Ratio likelihood weights"
-    title <- paste0("Benchmark: Ratio likelihood weight distribution for preferred hypothesis ", pref_hypo_name)
+    title <- paste0("Benchmark: Ratio Likelihood Weight Distribution for Preferred Hypothesis ", pref_hypo_name)
   } else if (output_type == "ld") {
     df <- as.data.frame(x$combined_values$ld_combined)
     sample_value <- x$benchmarks_difLL[[1]][, 1]
     xlabel <- "Likelihood difference"
-    title <- paste0("Benchmark: Likelihood difference distribution for preferred hypothesis ", pref_hypo_name)
+    title <- paste0("Benchmark: Likelihood Difference Distribution for Preferred Hypothesis ", pref_hypo_name)
   }
   
   if (output_type != "gw") {

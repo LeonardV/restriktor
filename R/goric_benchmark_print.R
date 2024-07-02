@@ -56,10 +56,10 @@ print.benchmark <- function(x,
     cat(sprintf("Number of Parameters: %s%s%s\n", green, ngroups, reset))
   }
   if (inherits(x, "benchmark_means")) {
-    cat(sprintf("Group Size: %s%s%s\n", green, paste(group_size, collapse = ", "), reset))
+    cat(sprintf("Group Sizes: %s%s%s\n", green, paste(group_size, collapse = ", "), reset))
     cat(sprintf("Ratio of Population Means: %s%s%s\n", green, paste(sprintf("%.3f", ratio_pop_means), collapse = ", "), reset))
-    cat(sprintf("Population Effect-Sizes Cohens f: %s%s%s\n", green,  paste(formatted_values, collapse = ", "), reset))
-    cat(sprintf("Observed Effect-Size Cohens f: %s%s%s\n", green, sprintf("%.3f", cohens_f_observed), reset))
+    cat(sprintf("Population Effect-Sizes (Cohens f): %s%s%s\n", green,  paste(formatted_values, collapse = ", "), reset))
+    cat(sprintf("Observed Effect-Size (Cohens f): %s%s%s\n", green, sprintf("%.3f", cohens_f_observed), reset))
   } else {
     cat(sprintf("Sample Size: %s%s%s\n", green, paste(group_size, collapse = ", "), reset))
     print_formatted_matrix(formatted_values, green, reset)

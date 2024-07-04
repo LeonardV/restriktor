@@ -34,6 +34,74 @@ filter_vector <- function(data, hypothesis_comparison) {
 }
 
 
+# Functie om de power te berekenen voor een enkele density en critical value
+calculate_power <- function(density_h1, critical_value) {
+  sum(density_h1$y[density_h1$x > critical_value]) * mean(diff(density_h1$x))
+}
+
+# Extract the parts within the parentheses
+extract_in_parentheses <- function(name) {
+  regmatches(name, regexpr("\\(.*\\)", name))
+}
+
+# create new column names
+construct_colnames <- function(list_name, colnames, pref_hypo_name) {
+  paste0(list_name, " (", pref_hypo_name, " ", colnames, ")", sep = "")
+}
+
+plot_all_groups <- function(plot_df, groups, title, xlabel, x_lim = NULL, 
+                            alpha = 0.25) {
+  plot_list <- list()
+  for (group in groups) {
+    plot <- create_density_plot(plot_df, group, title, xlabel, x_lim, alpha)
+    plot_list[[group]] <- plot
+  }
+  return(plot_list)
+}
+
+# benchmark plots
+create_density_plot <- function(plot_df, group_comparison, title, xlabel,
+                                x_lim = NULL, alpha = 0.25) {
+  
+  #group_comparison <- group[1]
+  df_subset <- subset(plot_df, Group_hypo_comparison == group_comparison)
+  #df_subset <- subset(plot_df, Group_pop_values == group_comparison)
+  
+  #percentile_lower <- quantile(df_subset$Value, 0.05)
+  #percentile_upper <- quantile(df_subset$Value, 0.95)
+  
+  if (!is.null(df_subset$Group_hypo_comparison)) {
+    title <- paste(title, "Vs.", sub(".*vs\\. ", "", unique(df_subset$Group_hypo_comparison)))
+  }
+  
+  p <- ggplot(df_subset, aes(x = Value, fill = Group_pop_values)) +
+    geom_density(alpha = alpha) +  
+    geom_vline(aes(xintercept = sample_value[1], color = paste("Observed sample-value =", 
+                                                               sprintf("%.3f", sample_value))), 
+                   linetype = "solid", linewidth = 1.1) +
+    ggtitle(title) + 
+    xlab(xlabel) + 
+    ylab("Density") + 
+    theme(axis.text = element_text(size = 11),
+          axis.title.x = element_text(size = 12, margin = margin(t = 10)),
+          axis.title.y = element_text(size = 12, margin = margin(r = 10)),
+          plot.title = element_text(size = 12)) +
+    scale_fill_brewer(palette = "Set2") +
+    theme(legend.key = element_rect(fill = "white")) +
+    labs(fill = "Distribution under:",
+         color = "") +
+    guides(fill = guide_legend(order = 1),
+           color = guide_legend(order = 2))
+  
+  if (!is.null(x_lim) && length(x_lim) == 2) {
+    p <- p + coord_cartesian(xlim = x_lim)
+  } else {
+    #p <- p + coord_cartesian(xlim = c(percentile_lower, percentile_upper))
+  }
+  
+  return(p)
+}
+
 detect_intercept <- function(model) {
   coefficients <- model$b.unrestr
   intercept_names <- c("(Intercept)", "Intercept", "(const)", "const", 
@@ -299,18 +367,25 @@ print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset) {
   cat("\n")
 }
 
-# called by the benchmark.print() function
+
 print_formatted_matrix <- function(mat, text_color, reset) {
+  # Bepaal de maximale breedte van elke kolom
+  col_widths <- apply(mat, 2, function(col) max(nchar(as.character(col))))
+  col_widths <- pmax(col_widths, nchar(colnames(mat))) + 2  # Voeg extra ruimte toe voor padding
+  
+  # Print de koppen
   cat("Population Estimates (PE):\n")
   cat(sprintf("%-10s", ""))
-  for (colname in colnames(mat)) {
-    cat(sprintf(" %7s", colname))
+  for (k in 1:ncol(mat)) {
+    cat(sprintf(paste0("%", col_widths[k], "s"), colnames(mat)[k]))
   }
   cat("\n")
+  
+  # Print de rijen
   for (i in 1:nrow(mat)) {
     cat(sprintf("%-10s", rownames(mat)[i]))
     for (j in 1:ncol(mat)) {
-      cat(sprintf(" %s%7s%s", text_color, mat[i, j], reset))
+      cat(sprintf(paste0("%s%", col_widths[j], "s%s"), text_color, mat[i, j], reset))
     }
     cat("\n")
   }

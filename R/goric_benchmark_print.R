@@ -1,5 +1,6 @@
 print.benchmark <- function(x, 
-                            output_type = c("all", "gw", "rgw", "rlw", "ld"), 
+                            output_type = c("rgw", "gw", "rlw", "ld", "all"), 
+                            output_format = "console",  # "console", "html", "latex"
                             ...) {
 
   # Ensure the object is of class 'benchmark_means'
@@ -34,14 +35,24 @@ print.benchmark <- function(x,
     ngroups <- x$n_coef
   } 
   
-  # ANSI escape codes for colors
-  blue <- "\033[34m"
-  green <- "\033[32m"
-  reset <- "\033[0m"
+  # ANSI escape codes for console colors
+  if (output_format == "console") {
+    blue <- "\033[34m"
+    green <- "\033[32m"
+    reset <- "\033[0m"
+  } else if (output_format == "html") {
+    blue <- "<span style='color:blue'>"
+    green <- "<span style='color:green'>"
+    reset <- "</span>"
+  } else if (output_format == "latex") {
+    blue <- "\\textcolor{blue}{"
+    green <- "\\textcolor{green}{"
+    reset <- "}"
+  }
   
   text_gw  <- paste0("Benchmark Analysis: Percentiles of ", goric_type, " Weights for the Preferred Hypothesis '", pref_hypo, "'")
-  text_rgw <- paste0("Benchmark Analysis: Percentiles of Ratios of ", goric_type, " Weights for the Preferred Hypothesis '", pref_hypo, "'")
-  text_rlw <- paste0("Benchmark Analysis: Percentiles of Ratios of Likelihood Weights for the Preferred Hypothesis '", pref_hypo, "'")
+  text_rgw <- paste0("Benchmark Analysis: Percentiles of Ratio-of-", goric_type, "-weights for the Preferred Hypothesis '", pref_hypo, "'")
+  text_rlw <- paste0("Benchmark Analysis: Percentiles of Ratio-of-likelihood-weights for the Preferred Hypothesis '", pref_hypo, "'")
   text_ld  <- paste0("Benchmark Analysis: Percentiles of Differences in Likelihood Values for the Preferred Hypothesis '", pref_hypo, "'")
   
   cat("\n")

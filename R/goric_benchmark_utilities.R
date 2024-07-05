@@ -44,16 +44,23 @@ extract_in_parentheses <- function(name) {
   regmatches(name, regexpr("\\(.*\\)", name))
 }
 
-# create new column names
+remove_spaces_in_parentheses <- function(string) {
+  string <- gsub("\\(\\s+", "(", string)
+  string <- gsub("\\s+\\)", ")", string)
+  return(string)
+}
+
 construct_colnames <- function(list_name, colnames, pref_hypo_name) {
-  paste0(list_name, " (", pref_hypo_name, " ", colnames, ")", sep = "")
+  remove_spaces_in_parentheses(paste0(list_name, " (", pref_hypo_name, " ", colnames, ")", sep = ""))
 }
 
 plot_all_groups <- function(plot_df, groups, title, xlabel, x_lim = NULL, 
-                            alpha = 0.25) {
+                            alpha = 0.5, distr_grid = FALSE, 
+                            percentiles = c(0.05, 0.95)) {
   plot_list <- list()
   for (group in groups) {
-    plot <- create_density_plot(plot_df, group, title, xlabel, x_lim, alpha)
+    plot <- create_density_plot(plot_df, group, title, xlabel, x_lim, alpha, 
+                                distr_grid, percentiles)
     plot_list[[group]] <- plot
   }
   return(plot_list)
@@ -61,42 +68,84 @@ plot_all_groups <- function(plot_df, groups, title, xlabel, x_lim = NULL,
 
 # benchmark plots
 create_density_plot <- function(plot_df, group_comparison, title, xlabel,
-                                x_lim = NULL, alpha = 0.25) {
+                                x_lim = NULL, alpha = 0.5, distr_grid = FALSE,
+                                percentiles = c(0.05, 0.95)) {
   
-  #group_comparison <- group[1]
   df_subset <- subset(plot_df, Group_hypo_comparison == group_comparison)
-  #df_subset <- subset(plot_df, Group_pop_values == group_comparison)
-  
-  #percentile_lower <- quantile(df_subset$Value, 0.05)
-  #percentile_upper <- quantile(df_subset$Value, 0.95)
   
   if (!is.null(df_subset$Group_hypo_comparison)) {
-    title <- paste(title, "Vs.", sub(".*vs\\. ", "", unique(df_subset$Group_hypo_comparison)))
+    title <- paste(title, "vs.", sub(".*vs\\. ", "", unique(df_subset$Group_hypo_comparison)))
   }
   
-  p <- ggplot(df_subset, aes(x = Value, fill = Group_pop_values)) +
-    geom_density(alpha = alpha) +  
-    geom_vline(aes(xintercept = sample_value[1], color = paste("Observed sample-value =", 
-                                                               sprintf("%.3f", sample_value))), 
-                   linetype = "solid", linewidth = 1.1) +
-    ggtitle(title) + 
+  # Function to calculate density
+  calculate_density <- function(data, var, sample_value) {
+    dens <- density(data[[var]], kernel = "gaussian", from = 0)
+    data.frame(x = dens$x, y = dens$y, sample_value = sample_value)
+  }
+  
+  # Calculate densities for each group
+  # density_data <- df_subset %>%
+  #   group_by(Group_pop_values) %>%
+  #   do(calculate_density(., "Value", unique(.$sample_value))) %>%
+  #   ungroup()
+  
+  group_levels <- unique(df_subset$Group_pop_values)
+  density_data <- do.call(rbind, lapply(group_levels, function(group) {
+    data <- subset(df_subset, Group_pop_values == group)
+    dens <- calculate_density(data, var = "Value", sample_value = data$sample_value[1])
+    dens$Group_pop_values <- group
+    dens$sample_value <- unique(data$sample_value)
+    dens
+  }))
+
+  percentile_label <- paste0("[", percentiles[1]*100, ", ", percentiles[2]*100, "]th Percentiles")
+  percentile_first_group_lower <- df_subset$lb_first_group[1]
+  percentile_first_group_upper <- df_subset$ub_first_group[1]
+  formatted_sample_value <- sprintf("Sample Value = %.3f", unique(df_subset$sample_value)[1])
+  linetype_labels <- unique(c(formatted_sample_value, percentile_label))
+  
+  p <- ggplot(density_data, aes(x = x, y = y, fill = Group_pop_values)) +
+    geom_ribbon(aes(ymin = 0, ymax = y), alpha = alpha) +
+    geom_segment(data = df_subset, aes(x = sample_value, xend = sample_value, 
+                                       y = 0, yend = Inf, linetype = formatted_sample_value), 
+                 color = "red", linewidth = 1) +
+    geom_segment(data = df_subset, aes(x = percentile_first_group_lower, 
+                                       xend = percentile_first_group_lower, y = 0, 
+                                       yend = Inf, linetype = percentile_label), 
+                 color = df_subset$first_group_color[1], linewidth = 1) + 
+    geom_segment(data = df_subset, aes(x = percentile_first_group_upper, 
+                                       xend = percentile_first_group_upper, y = 0, 
+                                       yend = Inf, linetype = percentile_label), 
+                 color = df_subset$first_group_color[1], linewidth = 1) + 
+    #scale_x_continuous(expand = c(0, 0)) +  
+    #scale_y_continuous(expand = c(0, 0)) +  
+    ggtitle(title) +
     xlab(xlabel) + 
     ylab("Density") + 
     theme(axis.text = element_text(size = 11),
           axis.title.x = element_text(size = 12, margin = margin(t = 10)),
           axis.title.y = element_text(size = 12, margin = margin(r = 10)),
           plot.title = element_text(size = 12)) +
-    scale_fill_brewer(palette = "Set2") +
+    scale_fill_brewer(palette = "Set2", name = "Distribution under:") +
+    scale_linetype_manual(values = setNames(rep("solid", length(linetype_labels)), linetype_labels), name = "") +
     theme(legend.key = element_rect(fill = "white")) +
-    labs(fill = "Distribution under:",
-         color = "") +
+    labs(fill = "Distribution under:", linetype = "Legend") +
     guides(fill = guide_legend(order = 1),
-           color = guide_legend(order = 2))
-  
+           linetype = guide_legend(order = 2)) 
+ 
+  if (distr_grid) {
+    p <- p + facet_grid(. ~ Group_pop_values, scales = "free_x")
+  }
+
   if (!is.null(x_lim) && length(x_lim) == 2) {
     p <- p + coord_cartesian(xlim = x_lim)
   } else {
-    #p <- p + coord_cartesian(xlim = c(percentile_lower, percentile_upper))
+    iqr <- IQR(df_subset$Value)
+    #q1 <- quantile(df_subset$Value, 0.05)
+    q3 <- quantile(df_subset$Value, 0.95)
+    #lower_limit <- q1 - 1.5 * iqr
+    upper_limit <- q3 + 1.5 * iqr
+    p <- p + coord_cartesian(xlim = c(0, upper_limit))
   }
   
   return(p)
@@ -298,12 +347,16 @@ parallel_function_means <- function(i, N, var_e, means_pop,
                          ...)
   
   # Return the relevant results
+  ld_names <- names(results_goric$ratio.gw[pref_hypo, ])
+  ld <- results_goric$result$loglik[pref_hypo] - results_goric$result$loglik
+  names(ld) <- ld_names
+  
   list(
     #test  = attr(results.goric$objectList[[results.goric$objectNames]]$wt.bar, "mvtnorm"),
     gw  = results_goric$result[pref_hypo, 7], # goric(a) weight
     rgw = results_goric$ratio.gw[pref_hypo, ], # ratio goric(a) weights
     rlw = results_goric$ratio.lw[pref_hypo, ], # ratio likelihood weights
-    ld  = (results_goric$result$loglik[pref_hypo] - results_goric$result$loglik)
+    ld  = ld # loglik difference
   )
 }
 
@@ -354,10 +407,10 @@ print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset) {
   if (model_type == "benchmark_asymp") {
     pop_es_value <- gsub("pop_est = ", "", pop_es)
   } else {
-    pop_es_value <- gsub("pop_es = ", "", pop_es)  
+    pop_es_value <- gsub("pop_es = ", "", pop_es)
   }
   cat(sprintf("Population effect estimates = %s%s%s\n", text_color, pop_es_value, reset))
-  
+
   #formatted_column <- sprintf("%.3f", df)
   formatted_values <- sapply(as.numeric(df), format_value)
   formatted_df <- `dim<-`(formatted_values, dim(df))
@@ -368,12 +421,60 @@ print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset) {
 }
 
 
+# print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset) {
+#   # Extract population effect estimate
+#   if (model_type == "benchmark_asymp") {
+#     pop_es_value <- gsub("pop_est = ", "", pop_es)
+#   } else {
+#     pop_es_value <- gsub("pop_es = ", "", pop_es)  
+#   }
+#   cat(sprintf("Population effect estimates = %s%s%s\n", text_color, pop_es_value, reset))
+#   
+#   # Function to format and right-align values
+#   format_value <- function(value) {
+#     formatted <- sprintf("%.3f", as.numeric(value))
+#     return(formatted)
+#   }
+#   
+#   # Apply formatting to the dataframe
+#   formatted_values <- apply(df, c(1, 2), format_value)
+#   formatted_df <- as.data.frame(formatted_values)
+#   rownames(formatted_df) <- rownames(df)
+#   colnames(formatted_df) <- colnames(df)
+#   
+#   # Function to print the dataframe with aligned columns and rows
+#   print_aligned_df <- function(df) {
+#     # Voeg de rijnamen als een aparte kolom toe
+#     #df_with_row_names <- cbind(Row = rownames(df), df)
+#     
+#     # Vind de maximale breedte van elke kolom inclusief kolomnamen
+#     col_widths <- sapply(df, function(col) max(nchar(as.character(col))))
+#     col_widths <- pmax(col_widths, nchar(names(df)))
+#     
+#     # Formatteer de kolomnamen
+#     colnames_formatted <- mapply(format, names(df), width = col_widths, SIMPLIFY = FALSE)
+#     
+#     # Print de kolomnamen
+#     cat(paste(unlist(colnames_formatted), collapse = "  "), "\n")
+#     
+#     # Print de rijen met de rijnamen
+#     for (i in 1:nrow(df)) {
+#       row_values <- mapply(format, as.character(df[i, ]), width = col_widths, SIMPLIFY = FALSE)
+#       cat(paste(unlist(row_values), collapse = "  "), "\n")
+#     }
+#   }
+#   
+#   # Gebruik de functie om de geformatteerde data frame af te drukken
+#   print_aligned_df(formatted_df)
+#   cat("\n")
+# }
+
+
+
 print_formatted_matrix <- function(mat, text_color, reset) {
-  # Bepaal de maximale breedte van elke kolom
   col_widths <- apply(mat, 2, function(col) max(nchar(as.character(col))))
-  col_widths <- pmax(col_widths, nchar(colnames(mat))) + 2  # Voeg extra ruimte toe voor padding
+  col_widths <- pmax(col_widths, nchar(colnames(mat))) + 2  
   
-  # Print de koppen
   cat("Population Estimates (PE):\n")
   cat(sprintf("%-10s", ""))
   for (k in 1:ncol(mat)) {

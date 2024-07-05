@@ -143,8 +143,8 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   nr_iter <- iter
   
   if (is.null(quant)) {
-    quant <- c(.025, .05, .35, .50, .65, .95, .975)
-    names_quant <- c("Sample", "2.5%", "5%", "35%", "50%", "65%", "95%", "97.5%")
+    quant <- c(.05, .35, .50, .65, .95)
+    names_quant <- c("Sample", "5%", "35%", "50%", "65%", "95%")
   } else {
     names_quant <- c("Sample", paste0(as.character(quant*100), "%"))
   }
@@ -270,6 +270,10 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   if (is.null(pop_est)) {
     pop_est <- matrix(rbind(rep(0, n_coef), round(est_sample, 3)), nrow = 2)
     row.names(pop_est) <- c("No-effect", "Observed")
+  } else {
+    if (is.vector(pop_est)) {
+      pop_est <- matrix(pop_est, nrow = 1, ncol = length(pop_est))
+    }
   }
   
   # Check if pop_est and est_sample have the same length
@@ -295,23 +299,22 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   
   VCOV <- object$Sigma
   N <- length(object$model.org$residuals) 
-  
-  if (is.null(object$model.org$residuals)) {
-    if (is.null(sample_size)) {
-      stop("Restriktor Error: please specify the sample-size(s), e.g. sample_size = 100.", call. = FALSE)
-    } else {
-      N <- sample_size
-    }
+  if (N == 0) {
+    N <- ""
   }
   
   if (!is.null(alt_sample_size)) {
+    if (is.null(sample_size)) {
+      stop("Restriktor Error: Please provide the original sample size(s) using the argument `sample_size`. This information is required to rescale the variance-covariance matrix (VCOV).", call. = FALSE)
+    }
+    N <- sample_size
     VCOV <- VCOV * N / alt_sample_size
     N <- alt_sample_size
   }
   
   if (is.null(quant)) {
-    quant <- c(.025, .05, .35, .50, .65, .95, .975)
-    names_quant <- c("Sample", "2.5%", "5%", "35%", "50%", "65%", "95%", "97.5%")
+    quant <- c(.05, .35, .50, .65, .95)
+    names_quant <- c("Sample", "5%", "35%", "50%", "65%", "95%")
   } else {
     names_quant <- c("Sample", paste0(as.character(quant*100), "%"))
   }

@@ -25,11 +25,12 @@
                                  chunk_size = 1e4), 
                   ncpus = 1, cl = NULL, seed = NULL, \ldots)
   
-  \method{print}{benchmark}(x, output_type = c("all", "gw", "rgw", "rlw", "ld"), \ldots)
+  \method{print}{benchmark}(x, output_type = c("rgw", "gw", "rlw", "ld", "all"), ...)
   
   \method{plot}{benchmark}(x, output_type = c("rgw", "rlw", "gw", "ld"), 
-                           hypothesis_comparison = NULL,
-                           percentiles = c(0.025, 0.975), x_lim = c(), \ldots)
+                           percentiles = c(0.05, 0.95), x_lim = c(), 
+                           alpha = 0.50, nrow_grid = NULL, ncol_grid = 1, 
+                           distr_grid = FALSE, ...)
 }
 \arguments{
   \item{object}{An object of class \code{con_goric} (a GORIC(A) object from the \code{goric} function).}
@@ -74,10 +75,10 @@
   or plot. Options are \code{"all"}, \code{"gw"} (goric(a) weights), 
   \code{"rgw"} (ratio of goric(a) weights), \code{"rlw"} (ratio of likelihood values), 
   and \code{"ld"} (likelihood difference). Defaults to \code{"all"} for print and \code{"gw"} for plot.}
-  \item{hypothesis_comparison}{A character vector specifying which hypotheses to 
-  include in the comparison. If \code{NULL}, all hypotheses will be included. 
-  This allows for focusing on a subset of hypotheses, which can be particularly 
-  useful when dealing with a large number of hypotheses.}
+  \item{alpha}{Alpha refers to the opacity of a geom. Values of alpha range from 0 to 1, with lower values corresponding to more transparent colors.}
+  \item{nrow_grid}{An integer value representing the number of rows in the grid layout.}
+  \item{ncol_grid}{An integer value representing the number of columns in the grid layout.}
+  \item{distr_grid}{If TRUE, the facet_grid function is used to create a grid of separate plots for each effect-size (estimates).}
   \item{percentiles}{A numeric vector specifying the lower and upper percentiles. Defaults to \code{0.025, 0.975}.}
   \item{x_lim}{A numeric vector of length 2 specifying the x-axis limits. Defaults to \code{c()}.}
   \item{\ldots}{See \link{goric}.}
@@ -117,14 +118,16 @@
   \code{print.benchmark} does not return a value. It prints formatted benchmark 
   analysis results to the console.
   
-  \code{plot.benchmark} returns a ggplot object that can be displayed or further 
-  customized using ggplot2 functions.
+  \code{plot.benchmark} returns a gtable object that can be displayed or further 
+  customized using various functions from the gridExtra and grid packages. This 
+  allows for flexible and detailed adjustments to the appearance and layout of the plot.
 }
 
 \author{Leonard Vanbrabant and Rebecca Kuiper}
 
 
 \examples{
+set.seed(1234)
 # Generate data for 4 groups with different group sizes
 group1 <- rnorm(10, mean = 5, sd = 0.1)
 group2 <- rnorm(20, mean = 5.5, sd = 1)
@@ -160,7 +163,7 @@ print(benchmark_results_mean)
 # the readability of the plot, the argument hypothesis_comparison can be used to
 # focus on a specif competitor. Further readability can be achieved by setting
 # the x_lim option. 
-plot(benchmark_results_mean, output_type = "rgw", hypotheses_comparison = "h2")
+plot(benchmark_results_mean, output_type = "rgw")
 
 # specify custom effect-sizes
 benchmark_results_mean_es <- benchmark(fit_goric, iter = 30,
@@ -185,4 +188,5 @@ benchmark_results_asymp <- benchmark(fit_gorica, sample_size = 100,
                                      iter = 30, pop_est = my_pop_est,
                                      model_type = "asymp")
 print(benchmark_results_asymp)
+plot(benchmark_results_asymp, x_lim = c(0, 75))
 }

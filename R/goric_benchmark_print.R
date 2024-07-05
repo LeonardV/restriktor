@@ -1,4 +1,5 @@
-print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"), ...) {
+print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"), 
+                            color = TRUE, ...) {
 
   # Ensure the object is of class 'benchmark_means'
   if (!inherits(x, "benchmark")) {
@@ -6,6 +7,8 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"),
   }
   
   output_type <- match.arg(output_type, c("rgw", "gw", "rlw", "ld", "all"))
+  
+  ldots <- list(...)
   
   model_type <- class(x)[1]
   goric_type <- toupper(x$type)
@@ -34,21 +37,32 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"),
     ngroups <- x$n_coef
   } 
   
-  output_format <- "console"
+  output_format <- ldots$output_format
+  if (is.null(output_format)) {
+    output_format <- "console"
+  }
+  
   # ANSI escape codes for console colors
-  if (output_format == "console") {
-    blue <- "\033[34m"
-    green <- "\033[32m"
-    orange <- "\033[38;5;214m"
-    reset <- "\033[0m"
-  } else if (output_format == "html") {
-    blue <- "<span style='color:blue'>"
-    green <- "<span style='color:green'>"
-    reset <- "</span>"
-  } else if (output_format == "latex") {
-    blue <- "\\textcolor{blue}{"
-    green <- "\\textcolor{green}{"
-    reset <- "}"
+  if (color) {
+    # ANSI escape codes for console colors
+    if (output_format == "console") {
+      blue <- "\033[34m"
+      green <- "\033[32m"
+      orange <- "\033[38;5;214m"
+      reset <- "\033[0m"
+    } else if (output_format == "html") {
+      blue <- "<span style='color:blue'>"
+      green <- "<span style='color:green'>"
+      orange <- "<span style='color:orange'>"
+      reset <- "</span>"
+    } else if (output_format == "latex") {
+      blue <- "\\textcolor{blue}{"
+      green <- "\\textcolor{green}{"
+      orange <- "\\textcolor{orange}{"
+      reset <- "}"
+    }
+  } else {
+    blue <- green <- orange <- reset <- ""
   }
   
   text_gw  <- paste0("Benchmark: Percentiles of ", orange, goric_type, " Weights", blue, " for the Preferred Hypothesis '", pref_hypo, "'")

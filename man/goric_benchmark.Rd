@@ -25,7 +25,8 @@
                                  chunk_size = 1e4), 
                   ncpus = 1, cl = NULL, seed = NULL, \ldots)
   
-  \method{print}{benchmark}(x, output_type = c("rgw", "gw", "rlw", "ld", "all"), ...)
+  \method{print}{benchmark}(x, output_type = c("rgw", "gw", "rlw", "ld", "all"), 
+                            color = TRUE, ...)
   
   \method{plot}{benchmark}(x, output_type = c("rgw", "rlw", "gw", "ld"), 
                            percentiles = c(0.05, 0.95), x_lim = c(), 
@@ -75,6 +76,8 @@
   or plot. Options are \code{"all"}, \code{"gw"} (goric(a) weights), 
   \code{"rgw"} (ratio of goric(a) weights), \code{"rlw"} (ratio of likelihood values), 
   and \code{"ld"} (likelihood difference). Defaults to \code{"all"} for print and \code{"gw"} for plot.}
+  \item{color}{If TRUE, the output will include ANSI color coding. Set \code{color = FALSE} 
+  when using this function in R Markdown documents to avoid rendering issues with color codes.}
   \item{alpha}{Alpha refers to the opacity of a geom. Values of alpha range from 0 to 1, with lower values corresponding to more transparent colors.}
   \item{nrow_grid}{An integer value representing the number of rows in the grid layout.}
   \item{ncol_grid}{An integer value representing the number of columns in the grid layout.}

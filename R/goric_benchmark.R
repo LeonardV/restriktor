@@ -4,13 +4,17 @@ benchmark_asymp  <- function(object, ...) UseMethod("benchmark_asymp")
 
 benchmark <- function(object, model_type = c("asymp", "means"), ...) {
 
+  args <- list(...)
+  
+  # if (!is.null(args$pop_es)) {
+  #   model_type <- "means"
+  # }
+  
   model_type <- match.arg(model_type, c("asymp", "means"))
   if (is.null(model_type)) {
     stop("Restriktor ERROR: Please specify if you want to benchmark means or asymptotic result ",
          "In case of model_type = means (default), no intercept is allowed.")
   }
-  
-  args <- list(...)
   
   # Check if the model has an intercept. Since the goric function accepts both 
   # a model/fit or only estimates+VCOV, we cannot rely on the original model fit.

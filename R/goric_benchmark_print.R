@@ -1,12 +1,11 @@
-print.benchmark <- function(x, 
-                            output_type = c("rgw", "gw", "rlw", "ld", "all"), 
-                            output_format = "console",  # "console", "html", "latex"
-                            ...) {
+print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"), ...) {
 
   # Ensure the object is of class 'benchmark_means'
   if (!inherits(x, "benchmark")) {
     stop("Invalid object. The object should be of class 'benchmark'.", call. = FALSE)
   }
+  
+  output_type <- match.arg(output_type, c("rgw", "gw", "rlw", "ld", "all"))
   
   model_type <- class(x)[1]
   goric_type <- toupper(x$type)
@@ -35,10 +34,12 @@ print.benchmark <- function(x,
     ngroups <- x$n_coef
   } 
   
+  output_format <- "console"
   # ANSI escape codes for console colors
   if (output_format == "console") {
     blue <- "\033[34m"
     green <- "\033[32m"
+    orange <- "\033[38;5;214m"
     reset <- "\033[0m"
   } else if (output_format == "html") {
     blue <- "<span style='color:blue'>"
@@ -50,10 +51,10 @@ print.benchmark <- function(x,
     reset <- "}"
   }
   
-  text_gw  <- paste0("Benchmark Analysis: Percentiles of ", goric_type, " Weights for the Preferred Hypothesis '", pref_hypo, "'")
-  text_rgw <- paste0("Benchmark Analysis: Percentiles of Ratio-of-", goric_type, "-weights for the Preferred Hypothesis '", pref_hypo, "'")
-  text_rlw <- paste0("Benchmark Analysis: Percentiles of Ratio-of-likelihood-weights for the Preferred Hypothesis '", pref_hypo, "'")
-  text_ld  <- paste0("Benchmark Analysis: Percentiles of Differences in Likelihood Values for the Preferred Hypothesis '", pref_hypo, "'")
+  text_gw  <- paste0("Benchmark Analysis: Percentiles of ", orange, goric_type, " Weights", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
+  text_rgw <- paste0("Benchmark Analysis: Percentiles of ", orange, "Ratio-of-", goric_type, "-weights", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
+  text_rlw <- paste0("Benchmark Analysis: Percentiles of ", orange, "Ratio-of-likelihood-weights", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
+  text_ld  <- paste0("Benchmark Analysis: Percentiles of ", orange, "Differences in Likelihood Values", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
   
   cat("\n")
   #cat(strrep("=", 70), "\n")

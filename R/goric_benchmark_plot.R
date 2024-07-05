@@ -1,7 +1,7 @@
 plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"), 
-                           hypothesis_comparison = NULL,
-                           percentiles = c(0.025, 0.975), x_lim = c(), 
-                           alpha = 0.25, nrow_grid = NULL, ncol_grid = 1, ...) {
+                           percentiles = c(0.05, 0.95), x_lim = c(), 
+                           alpha = 0.50, nrow_grid = NULL, ncol_grid = 1, 
+                           distr_grid = FALSE, ...) {
   
   # Ensure the object is of class 'benchmark_means'
   if (!inherits(x, "benchmark")) {
@@ -42,7 +42,7 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   }
   
   # -------------------------------------------------------------------------
-  new_combined_values <- lapply(names(DATA), function(list_name) {
+  new_combined_values <- lapply(names(DATA), function(list_name) { 
     colnames <- colnames(DATA[[list_name]])
     new_colnames <- construct_colnames(list_name, colnames, pref_hypo_name)
     colnames(DATA[[list_name]]) <- new_colnames
@@ -78,15 +78,36 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   # Rename the Group column to replace triple dots with equals sign
   df_long$Group <- factor(df_long$Group)
   
-  if (!output_type %in% c("gw", "ld")) {
+  percentile_df <- aggregate(Value ~ Group, data = df_long, function(x) {
+    c(lower = quantile(x, probs = percentiles[1]), 
+      upper = quantile(x, probs = percentiles[2]), mean = mean(x))
+  })
+  
+  percentile_df <- data.frame(Group = percentile_df$Group, percentile_df$Value)
+  names(percentile_df) <- c("Group", "lower", "upper", "mean")
+  
+  first_group <- levels(factor(df_long$Group))[1]
+  first_group_data <- subset(df_long, Group == first_group)
+  percentile_first_group <- percentile_df[percentile_df$Group == first_group, ]
+  
+  group_color <- scales::brewer_pal(palette = "Set3")(length(unique(df_long$Group)))
+  first_group_color <- group_color[1]
+  
+  percentile_first_group_lower <- round(percentile_first_group$lower, 3)
+  percentile_first_group_upper <- round(percentile_first_group$upper, 3)
+  
+  if (!output_type == "gw") {
     # sub plots per hypo, dus h1 vs h2, maar wel alle ES in dezelfde plot
     df_long$Group_pop_values <- sub("\\s*\\(.*\\)", "", df_long$Group)
-    df_long$Group_hypo_comparison <- gsub("\\(|\\)", "",  extract_in_parentheses(df_long$Group))
+    df_long$Group_hypo_comparison <- trimws(gsub("\\(|\\)", "",  extract_in_parentheses(df_long$Group)))
     sample_value <- setNames(as.vector(t(sample_value)), rownames(sample_value))
     
     sample_value_df <- data.frame(
       Group_hypo_comparison = names(sample_value),
       sample_value = as.numeric(sample_value),
+      lb_first_group = percentile_first_group_lower,
+      ub_first_group = percentile_first_group_upper,
+      first_group_color = first_group_color,
       stringsAsFactors = FALSE
     )
     df_long <- merge(df_long, sample_value_df, by = "Group_hypo_comparison", all.x = TRUE)
@@ -95,7 +116,10 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
     df_long$Group_pop_values <- sub("\\s*\\(.*\\)", "", df_long$Group)
     df_long$Group_hypo_comparison <- gsub("\\(|\\)", "",  extract_in_parentheses(df_long$Group))
     sample_value <- as.vector(sample_value)
-    df_long <- suppressWarnings(cbind(df_long, sample_value))
+    df_long <- suppressWarnings(cbind(df_long, sample_value, 
+                                      lb_first_group = percentile_first_group_lower,
+                                      ub_first_group = percentile_first_group_upper,
+                                      first_group_color = first_group_color))
   }
   
   group <- unique(df_long$Group_hypo_comparison)
@@ -105,7 +129,9 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
                            title = title,
                            xlabel = xlabel,
                            x_lim = x_lim,
-                           alpha = alpha)
+                           alpha = alpha,
+                           distr_grid = distr_grid,
+                           percentiles = percentiles)
   
   plots <- do.call(grid.arrange, c(plots, ncol = ncol_grid, nrow = nrow_grid))
   

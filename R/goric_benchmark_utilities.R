@@ -413,7 +413,7 @@ print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset) {
   } else {
     pop_es_value <- gsub("pop_es = ", "", pop_es)
   }
-  cat(sprintf("Population effect estimates = %s%s%s\n", text_color, pop_es_value, reset))
+  cat(sprintf("Population estimates = %s%s%s\n", text_color, pop_es_value, reset))
 
   #formatted_column <- sprintf("%.3f", df)
   formatted_values <- sapply(as.numeric(df), format_value)

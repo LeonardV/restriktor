@@ -70,7 +70,7 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   row.names(df_long) <- NULL
   
   if (inherits(x, "benchmark_asymp")) {
-    df_long$Group <- gsub("pop_est", "Effect-size estimates", df_long$Group)
+    df_long$Group <- gsub("pop_est", "Population estimates", df_long$Group)
   } else {
     df_long$Group <- gsub("pop_es", "Effect-size", df_long$Group)
   } 

@@ -51,20 +51,25 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"),
     reset <- "}"
   }
   
-  text_gw  <- paste0("Benchmark Analysis: Percentiles of ", orange, goric_type, " Weights", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
-  text_rgw <- paste0("Benchmark Analysis: Percentiles of ", orange, "Ratio-of-", goric_type, "-weights", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
-  text_rlw <- paste0("Benchmark Analysis: Percentiles of ", orange, "Ratio-of-likelihood-weights", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
-  text_ld  <- paste0("Benchmark Analysis: Percentiles of ", orange, "Differences in Likelihood Values", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
+  text_gw  <- paste0("Benchmark: Percentiles of ", orange, goric_type, " Weights", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
+  text_rgw <- paste0("Benchmark: Percentiles of ", orange, "Ratio-of-", goric_type, "-weights", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
+  text_rlw <- paste0("Benchmark: Percentiles of ", orange, "Ratio-of-likelihood-weights", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
+  text_ld  <- paste0("Benchmark: Percentiles of ", orange, "Differences in Likelihood Values", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
   
   cat("\n")
   #cat(strrep("=", 70), "\n")
   cat(paste0(blue, "Benchmark Results", reset), "\n")
   cat(strrep("-", 70), "\n")
   cat(sprintf("Preferred Hypothesis: %s%s%s\n", green, pref_hypo, reset))
-  cat(sprintf("Error probability Preferred Hypothesis Vs. complement: %s%s%s\n", green, error_prob_pref_hypo, reset))
+  cat(sprintf("Error probability Preferred Hypothesis vs. complement: %s%s%s\n", green, error_prob_pref_hypo, reset))
   if (inherits(x, "benchmark_means")) {
     cat(sprintf("Number of Groups: %s%s%s\n", green, ngroups, reset))
   } else {
+    if (group_size != "") {
+      cat(sprintf("Sample Size: %s%s%s\n", green, paste(group_size, collapse = ", "), reset))
+    } else {
+      cat("\n")
+    }
     cat(sprintf("Number of Parameters: %s%s%s\n", green, ngroups, reset))
   }
   if (inherits(x, "benchmark_means")) {
@@ -73,7 +78,6 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"),
     cat(sprintf("Population Effect-Sizes (Cohens f): %s%s%s\n", green,  paste(formatted_values, collapse = ", "), reset))
     cat(sprintf("Observed Effect-Size (Cohens f): %s%s%s\n", green, sprintf("%.3f", cohens_f_observed), reset))
   } else {
-    cat(sprintf("Sample Size: %s%s%s\n", green, paste(group_size, collapse = ", "), reset))
     print_formatted_matrix(formatted_values, green, reset)
   }
   #cat(strrep("-", 70), "\n")

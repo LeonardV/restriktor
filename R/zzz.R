@@ -6,4 +6,6 @@
     packageStartupMessage("Please report any bugs to info@restriktor.org")
 }
 
-utils::globalVariables(c("Group", "Value", "green", "reset"))
+utils::globalVariables(c("Group", "Value", "green", "reset", 
+                         "Group_hypo_comparison", "Group_pop_values", 
+                         "sample_value", "x", "y"))

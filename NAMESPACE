@@ -68,7 +68,8 @@ importFrom("stats", coef, df.residual, dnorm, fitted,
            weighted.residuals, weights, gaussian, lm.fit,
            lm.wfit, mad, coefficients, family, logLik,
            model.frame, anova, optimize, sigma, cov, dist, 
-           lm, uniroot, reshape, aggregate, setNames, as.formula) 
+           lm, uniroot, reshape, aggregate, setNames, as.formula,
+           IQR) 
 
 importFrom("graphics", abline, axis, box, hist, par)
 
@@ -79,7 +80,8 @@ importFrom("ggplot2", ggplot, aes, .data, geom_point, geom_line, theme, unit, ma
            scale_x_discrete, labs, guides, guide_legend, scale_color_brewer,
            geom_density, geom_segment, ggtitle, xlab, ylab, element_rect, 
            scale_fill_brewer, scale_color_manual, coord_cartesian,
-           scale_linetype_manual, geom_vline)
+           scale_linetype_manual, geom_vline, geom_ribbon, scale_x_continuous,
+           facet_grid)
 
 importFrom("scales", brewer_pal)
 

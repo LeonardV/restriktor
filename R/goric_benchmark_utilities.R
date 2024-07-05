@@ -373,12 +373,16 @@ parallel_function_asymp <- function(i, est, VCOV, hypos, pref_hypo, comparison,
                          ...)
   
   # Return the relevant results
+  ld_names <- names(results_goric$ratio.gw[pref_hypo, ])
+  ld <- results_goric$result$loglik[pref_hypo] - results_goric$result$loglik
+  names(ld) <- ld_names
+  
   list(
     #test  = attr(results.goric$objectList[[results.goric$objectNames]]$wt.bar, "mvtnorm"),
     gw  = results_goric$result[pref_hypo, 7], # goric(a) weight
     rgw = results_goric$ratio.gw[pref_hypo, ], # ratio goric(a) weights
     rlw = results_goric$ratio.lw[pref_hypo, ], # ratio likelihood weights
-    ld  = (results_goric$result$loglik[pref_hypo] - results_goric$result$loglik)
+    ld  = ld
   )
 }
 

@@ -174,7 +174,7 @@ benchmark_results_mean_es <- benchmark(fit_goric, iter = 5,
                                        model_type = "means")
 print(benchmark_results_mean_es)  
   
-\dontrun{  
+\donttest{  
 # Benchmark asymptotic estimates
 fit_gorica <- goric(anova_result, hypotheses = list(h1=h1), 
                     comparison = "complement", type = "gorica")
@@ -185,9 +185,9 @@ benchmark_results_asymp <- benchmark(fit_gorica, sample_size = 100, iter = 5,
 print(benchmark_results_asymp)
 }
 
-\dontrun{
+\donttest{
 # specify custom population estimates
-#my_pop_est <- rbind("no" = c(0,0,0,0), "observed"= coef(anova_result))
+my_pop_est <- rbind("no" = c(0,0,0,0), "observed"= coef(anova_result))
 
 benchmark_results_asymp <- benchmark(fit_gorica, sample_size = 100, 
                                      iter = 5, pop_est = my_pop_est,

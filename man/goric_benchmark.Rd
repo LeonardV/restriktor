@@ -166,7 +166,7 @@ print(benchmark_results_mean)
 # the readability of the plot, the argument hypothesis_comparison can be used to
 # focus on a specif competitor. Further readability can be achieved by setting
 # the x_lim option. 
-# plot(benchmark_results_mean, output_type = "rgw")
+\donttest{plot(benchmark_results_mean, output_type = "rgw")}
 
 # specify custom effect-sizes
 benchmark_results_mean_es <- benchmark(fit_goric, iter = 5,

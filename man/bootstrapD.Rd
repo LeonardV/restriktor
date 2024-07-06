@@ -16,10 +16,8 @@
   \method{print}{conTestLavaan}(x, digits = max(3, getOption("digits") - 2), \dots)
 }
 \arguments{ 
-  \item{h0}{An object of class \code{\linkS4class{lavaan}}. The restricted
-    model.}
-  \item{h1}{An object of class \code{\linkS4class{lavaan}}. The unrestricted
-    model.}
+  \item{h0}{An object of class \code{\linkS4class{lavaan}[lavaan]}. The restricted model.}
+  \item{h1}{An object of class \code{\linkS4class{lavaan}[lavaan]}. The unrestricted model.}
   \item{x}{an object of class \code{conTestLavaan}.}
   \item{constraints}{The imposed (in)equality constraints on the model.}  
   \item{type}{hypothesis test type "A", "B".}

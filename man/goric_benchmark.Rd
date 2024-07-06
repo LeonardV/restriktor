@@ -156,8 +156,8 @@ fit_goric <- goric(anova_result, hypotheses = list(H1 = h1, H2 = h2),
                    comparison = "unconstrained", type = "goric")
 
 # by default: ES = 0 \& ES = observed ES
-# In practice you want to increase the number of iterations.
-benchmark_results_mean <- benchmark(fit_goric, iter = 30, model_type = "means")
+# In practice you want to increase the number of iterations (default = 1000).
+benchmark_results_mean <- benchmark(fit_goric, iter = 5, model_type = "means")
 
 print(benchmark_results_mean)
 
@@ -166,30 +166,33 @@ print(benchmark_results_mean)
 # the readability of the plot, the argument hypothesis_comparison can be used to
 # focus on a specif competitor. Further readability can be achieved by setting
 # the x_lim option. 
-plot(benchmark_results_mean, output_type = "rgw")
+# plot(benchmark_results_mean, output_type = "rgw")
 
 # specify custom effect-sizes
-benchmark_results_mean_es <- benchmark(fit_goric, iter = 30,
-                                       pop_es = c(0, 0.1, 0.2),
+benchmark_results_mean_es <- benchmark(fit_goric, iter = 5,
+                                       pop_es = c(0, 0.1),
                                        model_type = "means")
 print(benchmark_results_mean_es)  
   
-  
+\dontrun{  
 # Benchmark asymptotic estimates
 fit_gorica <- goric(anova_result, hypotheses = list(h1=h1), 
                     comparison = "complement", type = "gorica")
 
 # by default: no-effect \& estimates from the sample are used
-benchmark_results_asymp <- benchmark(fit_gorica, sample_size = 100, iter = 30,
+benchmark_results_asymp <- benchmark(fit_gorica, sample_size = 100, iter = 5,
                                      model_type = "asymp")
 print(benchmark_results_asymp)
+}
 
+\dontrun{
 # specify custom population estimates
-my_pop_est <- rbind("no" = c(0,0,0,0), "medium" = c(4,5,6,7), "observed"= coef(anova_result))
+#my_pop_est <- rbind("no" = c(0,0,0,0), "observed"= coef(anova_result))
 
 benchmark_results_asymp <- benchmark(fit_gorica, sample_size = 100, 
-                                     iter = 30, pop_est = my_pop_est,
+                                     iter = 5, pop_est = my_pop_est,
                                      model_type = "asymp")
 print(benchmark_results_asymp)
 plot(benchmark_results_asymp, x_lim = c(0, 75))
+}
 }

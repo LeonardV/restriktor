@@ -40,7 +40,7 @@
   \item{bty}{a character string representing the type of interval
   required. The value should be any of the values \code{"norm",
   "basic","perc","bca"}. The value \code{"stud"} is not supported.
-  For more details see \code{\link{boot.ci}}.}
+  For more details see \code{\link[boot]{boot.ci}}.}
   
   \item{level}{the confidence level of the interval (default = 0.95).}
   

@@ -410,6 +410,7 @@ example6
 ##########################
 ### artificial example ###
 ##########################
+\donttest{
 # Simple ANOVA model with 3 groups (N = 20 per group)
 set.seed(1234)
 Y <- cbind(c(rnorm(20,0,1), rnorm(20,0.5,1), rnorm(20,1,1)))
@@ -444,5 +445,5 @@ example7 <- iht(model = model, data = Data.new,
                 R = 10L, double.bootstrap = "no",
                 constraints = constraints)
 example7
-
+}
 }

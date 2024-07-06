@@ -157,9 +157,10 @@ fit_goric <- goric(anova_result, hypotheses = list(H1 = h1, H2 = h2),
 
 # by default: ES = 0 \& ES = observed ES
 # In practice you want to increase the number of iterations (default = 1000).
-benchmark_results_mean <- benchmark(fit_goric, iter = 5, model_type = "means")
-
+\donttest{
+benchmark_results_mean <- benchmark(fit_goric, iter = 10, model_type = "means")
 print(benchmark_results_mean)
+}
 
 # by default the ratio of GORIC weights for the preferred hypothesis (here h1) is
 # plotted against its competitors (i.e., h2 and the unconstrained). To improve
@@ -169,18 +170,20 @@ print(benchmark_results_mean)
 \donttest{plot(benchmark_results_mean, output_type = "rgw")}
 
 # specify custom effect-sizes
-benchmark_results_mean_es <- benchmark(fit_goric, iter = 5,
+\donttest{
+benchmark_results_mean_es <- benchmark(fit_goric, iter = 10,
                                        pop_es = c(0, 0.1),
                                        model_type = "means")
 print(benchmark_results_mean_es)  
-  
-\donttest{  
+}  
+
 # Benchmark asymptotic estimates
+\donttest{
 fit_gorica <- goric(anova_result, hypotheses = list(h1=h1), 
                     comparison = "complement", type = "gorica")
 
 # by default: no-effect \& estimates from the sample are used
-benchmark_results_asymp <- benchmark(fit_gorica, sample_size = 100, iter = 5,
+benchmark_results_asymp <- benchmark(fit_gorica, sample_size = 30, iter = 5,
                                      model_type = "asymp")
 print(benchmark_results_asymp)
 }
@@ -189,7 +192,7 @@ print(benchmark_results_asymp)
 # specify custom population estimates
 my_pop_est <- rbind("no" = c(0,0,0,0), "observed"= coef(anova_result))
 
-benchmark_results_asymp <- benchmark(fit_gorica, sample_size = 100, 
+benchmark_results_asymp <- benchmark(fit_gorica, sample_size = 30, 
                                      iter = 5, pop_est = my_pop_est,
                                      model_type = "asymp")
 print(benchmark_results_asymp)

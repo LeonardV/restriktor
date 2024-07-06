@@ -15,9 +15,10 @@
              
   \method{print}{conTestLavaan}(x, digits = max(3, getOption("digits") - 2), \dots)
 }
+
 \arguments{ 
-  \item{h0}{An object of class \code{\linkS4class{lavaan}[lavaan]}. The restricted model.}
-  \item{h1}{An object of class \code{\linkS4class{lavaan}[lavaan]}. The unrestricted model.}
+  \item{h0}{An object of class \code{lavaan}. The restricted model.}
+  \item{h1}{An object of class \code{lavaan}. The unrestricted model.}
   \item{x}{an object of class \code{conTestLavaan}.}
   \item{constraints}{The imposed (in)equality constraints on the model.}  
   \item{type}{hypothesis test type "A", "B".}
@@ -104,6 +105,7 @@ example1
 ##########################
 ### artificial example ###
 ##########################
+\donttest{
 # Simple ANOVA model with 3 groups (N = 20 per group)
 set.seed(1234)
 Y <- cbind(c(rnorm(20,0,1), rnorm(20,0.5,1), rnorm(20,1,1)))
@@ -138,5 +140,5 @@ example2 <- conTestD(model = model, data = Data.new,
                      R = 10L, double.bootstrap = "no",
                      constraints = constraints)
 example2
-  
+}
 }

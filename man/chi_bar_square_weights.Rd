@@ -96,6 +96,7 @@ weights with the following attributes:
 
 
 \examples{
+\donttest{
 W <- matrix(c(1,0.5,0.5,1),2,2)
 Amat <- rbind(c(0,1))
 meq <- 0L
@@ -105,4 +106,5 @@ wt.bar
 # in practice you want to use are more conservative convergence criterion
 wt.bar2 <- con_weights_boot(W, Amat, meq, R = 99999, convergence_crit = 1e-02)
 wt.bar2
+}
 }

@@ -349,6 +349,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     cat("Calculating asymptotic benchmark for population estimates =", row.names(pop_est)[teller_es], "\n")
     
     est <- mvtnorm::rmvnorm(n = iter, pop_est[teller_es, ], sigma = VCOV)
+    colnames(est) <- names(est_sample)
     
     # Update the est variable within the cluster nodes
     parallel::clusterExport(cl, c("est"), envir = environment())

@@ -35,8 +35,8 @@
 }
 \arguments{
   \item{object}{An object of class \code{con_goric} (a GORIC(A) object from the \code{goric} function).}
-  \item{model_type}{If "means" (default), the model parameters relect (adjusted) means, else
-  model_type = "asymp". See details for more information about \code{asymp}.}
+  \item{model_type}{If "means", the model parameters relect (adjusted) means, else
+  model_type = "asymp" (default). See details for more information about \code{asymp}.}
   \item{x}{An object of class \code{benchmark} or \code{benchmark}.}
   \item{pop_es}{A scalar or a vector of population Cohen's f (effect-size) values. 
   By default, it benchmarks ES = 0 and the observed Cohen's f.}

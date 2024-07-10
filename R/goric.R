@@ -797,6 +797,7 @@ goric.rma <- function(object, ..., hypotheses = NULL,
   objectList <- list(...)
   objectList$object <- coef(object) 
   objectList$VCOV   <- vcov(object)
+  objectList$hypotheses  <- hypotheses
   objectList$comparison   <- comparison
   objectList$type         <- type
   objectList$debug        <- debug

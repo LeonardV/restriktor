@@ -702,6 +702,7 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
   
   objectList <- list(...)
   est <- con_gorica_est_lav(object, standardized)
+  objectList$hypotheses <- hypotheses
   objectList$object     <- est$estimate
   objectList$VCOV       <- est$VCOV
   objectList$comparison <- comparison

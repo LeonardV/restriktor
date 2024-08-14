@@ -54,102 +54,7 @@ construct_colnames <- function(list_name, colnames, pref_hypo_name) {
   remove_spaces_in_parentheses(paste0(list_name, " (", pref_hypo_name, " ", colnames, ")", sep = ""))
 }
 
-plot_all_groups <- function(plot_df, groups, title, xlabel, x_lim = NULL, 
-                            alpha = 0.5, distr_grid = FALSE, 
-                            percentiles = c(0.05, 0.95)) {
-  plot_list <- list()
-  for (group in groups) {
-    plot <- create_density_plot(plot_df, group, title, xlabel, x_lim, alpha, 
-                                distr_grid, percentiles)
-    plot_list[[group]] <- plot
-  }
-  return(plot_list)
-}
 
-# benchmark plots
-create_density_plot <- function(plot_df, group_comparison, title, xlabel,
-                                x_lim = NULL, alpha = 0.5, distr_grid = FALSE,
-                                percentiles = c(0.05, 0.95)) {
-  
-  df_subset <- subset(plot_df, Group_hypo_comparison == group_comparison)
-  
-  if (!is.null(df_subset$Group_hypo_comparison)) {
-    title <- paste(title, "vs.", sub(".*vs\\. ", "", unique(df_subset$Group_hypo_comparison)))
-  }
-  
-  # Function to calculate density
-  calculate_density <- function(data, var, sample_value) {
-    dens <- density(data[[var]], kernel = "gaussian", from = 0)
-    data.frame(x = dens$x, y = dens$y, sample_value = sample_value)
-  }
-  
-  # Calculate densities for each group
-  # density_data <- df_subset %>%
-  #   group_by(Group_pop_values) %>%
-  #   do(calculate_density(., "Value", unique(.$sample_value))) %>%
-  #   ungroup()
-  
-  group_levels <- unique(df_subset$Group_pop_values)
-  density_data <- do.call(rbind, lapply(group_levels, function(group) {
-    data <- subset(df_subset, Group_pop_values == group)
-    dens <- calculate_density(data, var = "Value", sample_value = data$sample_value[1])
-    dens$Group_pop_values <- group
-    dens$sample_value <- unique(data$sample_value)
-    dens
-  }))
-
-  percentile_label <- paste0("[", percentiles[1]*100, ", ", percentiles[2]*100, "]th Percentiles")
-  percentile_first_group_lower <- df_subset$lb_first_group[1]
-  percentile_first_group_upper <- df_subset$ub_first_group[1]
-  formatted_sample_value <- sprintf("Sample Value = %.3f", unique(df_subset$sample_value)[1])
-  linetype_labels <- unique(c(formatted_sample_value, percentile_label))
-  
-  p <- ggplot(density_data, aes(x = x, y = y, fill = Group_pop_values)) +
-    geom_ribbon(aes(ymin = 0, ymax = y), alpha = alpha) +
-    geom_segment(data = df_subset, aes(x = sample_value, xend = sample_value, 
-                                       y = 0, yend = Inf, linetype = formatted_sample_value), 
-                 color = "red", linewidth = 1) +
-    geom_segment(data = df_subset, aes(x = percentile_first_group_lower, 
-                                       xend = percentile_first_group_lower, y = 0, 
-                                       yend = Inf, linetype = percentile_label), 
-                 color = df_subset$first_group_color[1], linewidth = 1) + 
-    geom_segment(data = df_subset, aes(x = percentile_first_group_upper, 
-                                       xend = percentile_first_group_upper, y = 0, 
-                                       yend = Inf, linetype = percentile_label), 
-                 color = df_subset$first_group_color[1], linewidth = 1) + 
-    #scale_x_continuous(expand = c(0, 0)) +  
-    #scale_y_continuous(expand = c(0, 0)) +  
-    ggtitle(title) +
-    xlab(xlabel) + 
-    ylab("Density") + 
-    theme(axis.text = element_text(size = 11),
-          axis.title.x = element_text(size = 12, margin = margin(t = 10)),
-          axis.title.y = element_text(size = 12, margin = margin(r = 10)),
-          plot.title = element_text(size = 12)) +
-    scale_fill_brewer(palette = "Set2", name = "Distribution under:") +
-    scale_linetype_manual(values = setNames(rep("solid", length(linetype_labels)), linetype_labels), name = "") +
-    theme(legend.key = element_rect(fill = "white")) +
-    labs(fill = "Distribution under:", linetype = "Legend") +
-    guides(fill = guide_legend(order = 1),
-           linetype = guide_legend(order = 2)) 
- 
-  if (distr_grid) {
-    p <- p + facet_grid(. ~ Group_pop_values, scales = "free_x")
-  }
-
-  if (!is.null(x_lim) && length(x_lim) == 2) {
-    p <- p + coord_cartesian(xlim = x_lim)
-  } else {
-    iqr <- IQR(df_subset$Value)
-    #q1 <- quantile(df_subset$Value, 0.05)
-    q3 <- quantile(df_subset$Value, 0.95)
-    #lower_limit <- q1 - 1.5 * iqr
-    upper_limit <- q3 + 1.5 * iqr
-    p <- p + coord_cartesian(xlim = c(0, upper_limit))
-  }
-  
-  return(p)
-}
 
 detect_intercept <- function(model) {
   coefficients <- model$b.unrestr
@@ -410,11 +315,12 @@ format_value <- function(value) {
 print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset) {
   if (model_type == "benchmark_asymp") {
     pop_es_value <- gsub("pop_est = ", "", pop_es)
+    cat(sprintf("Population estimates = %s%s%s\n", text_color, pop_es_value, reset))
   } else {
     pop_es_value <- gsub("pop_es = ", "", pop_es)
+    cat(sprintf("Population effect-size = %s%s%s\n", text_color, pop_es_value, reset))
   }
-  cat(sprintf("Population estimates = %s%s%s\n", text_color, pop_es_value, reset))
-
+  
   #formatted_column <- sprintf("%.3f", df)
   formatted_values <- sapply(as.numeric(df), format_value)
   formatted_df <- `dim<-`(formatted_values, dim(df))
@@ -504,11 +410,11 @@ check_rhs_constants <- function(rhs_list) {
   hypotheses_with_constants <- names(constants_check)[unlist(constants_check)]
   if (length(hypotheses_with_constants) > 0) {
     warning_message <- paste0("Restriktor Warning: The following hypotheses contain constants",
-                              "greater or less than 0: ", 
+                              " greater or less than 0: ", 
                               paste(hypotheses_with_constants, collapse = ", "),
                               ". The default population estimates are likely incorrect.",
-                              "Consider providing custom population estimates via the",
-                              "pop_est argument.")
+                              " Consider providing custom population estimates via the",
+                              " pop_est argument.")
     warning(warning_message, call. = FALSE)
   }
 }

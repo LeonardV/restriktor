@@ -186,17 +186,14 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
   }))
   
   
+  # FOR TESTING PURPOSES ONLY!
+  # tmp <- subset(density_data, Group_pop_values != "Effect-size = 0")
+  # ggplot(tmp, aes(x = x, y = y)) +
+  # geom_ribbon(aes(ymin = 0, ymax = y), alpha = alpha) +
+  # #    scale_x_log10()
+  # coord_cartesian(xlim = c(0, 2.05))
   ###
-  tmp <- subset(density_data, Group_pop_values != "Effect-size = 0")
-  ggplot(tmp, aes(x = x, y = y)) +
-  geom_ribbon(aes(ymin = 0, ymax = y), alpha = alpha) +
-  #    scale_x_log10()
-  coord_cartesian(xlim = c(0, 2.05))
-  ###
-  
-  tail(tmp)
-  quantile(df_subset$Value)
-  
+
   # 
   percentile_values <- as.numeric(df_subset[, paste0(percentiles*100, "%")][1, ])
   percentile_labels <- paste0("[", percentiles * 100, "]th Percentile = ", sprintf("%.3f", percentile_values))

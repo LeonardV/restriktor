@@ -180,7 +180,7 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
   density_data <- do.call(rbind, lapply(group_levels, function(group) {
     data <- subset(df_subset, Group_pop_values == group)
     dens <- calculate_density(data, var = "Value", sample_value = data$sample_value[1])
-    dens$Group_pop_values <- group
+    dens$Group_pop_values <- factor(group)
     dens$sample_value <- unique(data$sample_value)
     dens
   }))

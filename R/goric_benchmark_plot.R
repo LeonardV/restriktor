@@ -1,5 +1,5 @@
 plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"), 
-                           percentiles = c(0.05, 0.95), x_lim = c(), 
+                           percentiles = NULL, x_lim = c(), 
                            alpha = 0.50, nrow_grid = NULL, ncol_grid = 1, 
                            distr_grid = FALSE, ...) {
   
@@ -17,6 +17,13 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   goric_type <- toupper(x$type) 
   comparison <- x$comparison
   pref_hypo_name <- x$pref_hypo_name
+  
+  # values are extracted from benchmark
+  if (is.null(percentiles)) {
+    # exclude sample
+    percentile_names <- colnames(x$benchmarks_goric_weights[[1]])[-1]
+    percentiles <- as.numeric(sub("%", "", percentile_names)) / 100
+  }
   
   # Define the labels based on the output_type
   if (output_type == "gw") {
@@ -79,22 +86,25 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   df_long$Group <- factor(df_long$Group)
   
   percentile_df <- aggregate(Value ~ Group, data = df_long, function(x) {
-    c(lower = quantile(x, probs = percentiles[1]), 
-      upper = quantile(x, probs = percentiles[2]), mean = mean(x))
+    quantile(x, probs = percentiles, names = TRUE)
+    # c(lower = quantile(x, probs = percentiles[1]), 
+    #   upper = quantile(x, probs = percentiles[2]), mean = mean(x))
   })
   
-  percentile_df <- data.frame(Group = percentile_df$Group, percentile_df$Value)
-  names(percentile_df) <- c("Group", "lower", "upper", "mean")
+  percentile_df <- data.frame(Group = percentile_df$Group, percentile_df$Value, check.names = FALSE)
   
-  first_group <- levels(factor(df_long$Group))[1]
-  first_group_data <- subset(df_long, Group == first_group)
-  percentile_first_group <- percentile_df[percentile_df$Group == first_group, ]
+  n_plots <- nrow(x$benchmarks_ratio_goric_weights[[1]])
+  first_group <- levels(factor(df_long$Group))[1:n_plots]
+  first_group_data <- subset(df_long, Group %in% first_group)
+  # first groups are the ones with no-effect or ES = 0
+  percentile_first_group <- percentile_df[percentile_df$Group %in% first_group, ]
+  rownames(percentile_first_group) <- NULL
   
   group_color <- scales::brewer_pal(palette = "Set3")(length(unique(df_long$Group)))
   first_group_color <- group_color[1]
   
-  percentile_first_group_lower <- round(percentile_first_group$lower, 3)
-  percentile_first_group_upper <- round(percentile_first_group$upper, 3)
+  #percentile_first_group_lower <- round(percentile_first_group$lower, 3)
+  #percentile_first_group_upper <- round(percentile_first_group$upper, 3)
   
   if (!output_type == "gw") {
     # sub plots per hypo, dus h1 vs h2, maar wel alle ES in dezelfde plot
@@ -105,11 +115,12 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
     sample_value_df <- data.frame(
       Group_hypo_comparison = names(sample_value),
       sample_value = as.numeric(sample_value),
-      lb_first_group = percentile_first_group_lower,
-      ub_first_group = percentile_first_group_upper,
+      #lb_first_group = percentile_first_group_lower,
+      #ub_first_group = percentile_first_group_upper,
       first_group_color = first_group_color,
       stringsAsFactors = FALSE
     )
+    sample_value_df <- cbind(sample_value_df, percentile_first_group[-1])
     df_long <- merge(df_long, sample_value_df, by = "Group_hypo_comparison", all.x = TRUE)
   } else {
     df_long$Group <- paste(df_long$Group, "()")
@@ -117,23 +128,146 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
     df_long$Group_hypo_comparison <- gsub("\\(|\\)", "",  extract_in_parentheses(df_long$Group))
     sample_value <- as.vector(sample_value)
     df_long <- suppressWarnings(cbind(df_long, sample_value, 
-                                      lb_first_group = percentile_first_group_lower,
-                                      ub_first_group = percentile_first_group_upper,
-                                      first_group_color = first_group_color))
+                                      percentile_first_group,
+                                      # lb_first_group = percentile_first_group_lower,
+                                      # ub_first_group = percentile_first_group_upper,
+                                      first_group_color = first_group_color)
+    )
   }
   
   group <- unique(df_long$Group_hypo_comparison)
   # here we start to create the plot ----------------------------------------
-  plots <- plot_all_groups(plot_df = df_long, 
-                           groups = group, 
-                           title = title,
-                           xlabel = xlabel,
-                           x_lim = x_lim,
-                           alpha = alpha,
-                           distr_grid = distr_grid,
-                           percentiles = percentiles)
+  plot_list <- plot_all_groups(plot_df = df_long, 
+                               groups = group, 
+                               title = title,
+                               xlabel = xlabel,
+                               x_lim = x_lim,
+                               alpha = alpha,
+                               distr_grid = distr_grid,
+                               percentiles = percentiles)
   
-  plots <- do.call(grid.arrange, c(plots, ncol = ncol_grid, nrow = nrow_grid))
+  combined_plots <- do.call(grid.arrange, c(plot_list, ncol = ncol_grid, nrow = nrow_grid))
   
-  return(plots)
+  return(invisible(combined_plots))
+  
+}
+
+
+# benchmark plots
+create_density_plot <- function(plot_df, group_comparison, title, xlabel,
+                                x_lim = NULL, alpha = 0.5, distr_grid = FALSE,
+                                percentiles = NULL) {
+  
+  df_subset <- subset(plot_df, Group_hypo_comparison == group_comparison)
+  
+  if (!is.null(df_subset$Group_hypo_comparison)) {
+    title <- paste(title, "vs.", sub(".*vs\\. ", "", unique(df_subset$Group_hypo_comparison)))
+  }
+  
+  # Function to calculate density
+  calculate_density <- function(data, var, sample_value) {
+    dens <- density(data[[var]], kernel = "gaussian")
+    data.frame(x = dens$x, y = dens$y, sample_value = sample_value)
+  }
+  
+  # Calculate densities for each group
+  # density_data <- df_subset %>%
+  #   group_by(Group_pop_values) %>%
+  #   do(calculate_density(., "Value", unique(.$sample_value))) %>%
+  #   ungroup()
+  
+  group_levels <- unique(df_subset$Group_pop_values)
+  density_data <- do.call(rbind, lapply(group_levels, function(group) {
+    data <- subset(df_subset, Group_pop_values == group)
+    dens <- calculate_density(data, var = "Value", sample_value = data$sample_value[1])
+    dens$Group_pop_values <- group
+    dens$sample_value <- unique(data$sample_value)
+    dens
+  }))
+  
+  
+  ###
+  tmp <- subset(density_data, Group_pop_values != "Effect-size = 0")
+  ggplot(tmp, aes(x = x, y = y)) +
+  geom_ribbon(aes(ymin = 0, ymax = y), alpha = alpha) +
+  #    scale_x_log10()
+  coord_cartesian(xlim = c(0, 2.05))
+  ###
+  
+  tail(tmp)
+  quantile(df_subset$Value)
+  
+  # 
+  percentile_values <- as.numeric(df_subset[, paste0(percentiles*100, "%")][1, ])
+  percentile_labels <- paste0("[", percentiles * 100, "]th Percentile = ", sprintf("%.3f", percentile_values))
+  formatted_sample_value <- sprintf("Sample Value = %.3f", unique(df_subset$sample_value)[1])
+  
+  percentile_df <- data.frame(
+    percentile_value = percentile_values,
+    percentile_label = factor(percentile_labels, levels = percentile_labels), 
+    color = df_subset$first_group_color[1]
+  )
+  
+  # Voeg de sample value toe als apart segment
+  percentile_df <- percentile_df |> 
+    rbind(data.frame(percentile_value = unique(df_subset$sample_value)[1],
+                     percentile_label = formatted_sample_value, color = "red")
+  )
+  percentile_df$Group_pop_values <- unique(df_subset$Group_pop_values)[1]
+  
+  # Plot maken
+  p <- ggplot(density_data, aes(x = x, y = y, fill = Group_pop_values)) +
+    geom_ribbon(aes(ymin = 0, ymax = y), alpha = alpha) +
+    geom_segment(data = percentile_df, aes(x = percentile_value, xend = percentile_value,
+                                           y = 0, yend = Inf, linetype = percentile_label, color = percentile_label),
+                 linewidth = 1) +
+    ggtitle(title) +
+    xlab(xlabel) + 
+    ylab("Density") + 
+    theme(axis.text = element_text(size = 11),
+          axis.title.x = element_text(size = 12, margin = margin(t = 10)),
+          axis.title.y = element_text(size = 12, margin = margin(r = 10)),
+          plot.title = element_text(size = 12)) +
+    scale_fill_brewer(palette = "Set2", name = "Distribution under:") +
+    scale_linetype_manual(values = setNames(c("solid", rep(c("dashed", "dotdash", "twodash", "longdash", "dotted"), length.out = length(percentiles))), 
+                                            c(formatted_sample_value, percentile_labels)), 
+                          name = "") +
+    scale_color_manual(values = setNames(c("red", rep(df_subset$first_group_color[1], length(percentiles))),
+                                         c(formatted_sample_value, percentile_labels)),
+                       name = "") +
+    theme(legend.key = element_rect(fill = "white")) +
+    labs(fill = "Distribution under:", linetype = "Legend", color = "Legend") +
+    guides(fill = guide_legend(order = 1),
+           linetype = guide_legend(order = 2),
+           color = guide_legend(order = 2))
+  
+  if (distr_grid) {
+    p <- p + facet_grid(. ~ Group_pop_values, scales = "free_x")
+  }
+  
+  if (!is.null(x_lim) && length(x_lim) == 2) {
+    p <- p + coord_cartesian(xlim = x_lim)
+  } else {
+    iqr <- IQR(df_subset$Value)
+    q3 <- quantile(df_subset$Value, 0.95)
+    #lower_limit <- q1 - 1.5 * iqr
+    upper_limit <- q3 + 1.5 * iqr
+    p <- p + coord_cartesian(xlim = c(0, upper_limit))
+  }
+  
+  return(p)
+}
+
+
+# 
+plot_all_groups <- function(plot_df, groups, title, xlabel, x_lim = NULL, 
+                            alpha = 0.5, distr_grid = FALSE, 
+                            percentiles = NULL) {
+  plot_list <- list()
+  for (group in groups) {
+    plot <- create_density_plot(plot_df, group, title, xlabel, x_lim, alpha, 
+                                distr_grid, percentiles)
+    plot_list[[group]] <- plot
+  }
+  return(plot_list)
 }

@@ -29,7 +29,7 @@
                             color = TRUE, ...)
   
   \method{plot}{benchmark}(x, output_type = c("rgw", "rlw", "gw", "ld"), 
-                           percentiles = c(0.05, 0.95), x_lim = c(), 
+                           percentiles = NULL, x_lim = c(), 
                            alpha = 0.50, nrow_grid = NULL, ncol_grid = 1, 
                            distr_grid = FALSE, ...)
 }
@@ -64,7 +64,7 @@
   want to use a different sample size from the one in the data. This can be used, 
   for example, to see the values to which the GORIC(A) weights will converge 
   (and thus to see the maximum value of the weights).}
-  \item{quant}{Quantiles for benchmarking results. Defaults 2.5\%, 5\%, 35\%, 50\%, 65\%, 95\%, and 97.5\%}
+  \item{quant}{Quantiles for benchmarking results. Defaults 5\%, 35\%, 50\%, 65\%, 95\%.}
   \item{iter}{The number of iterations for benchmarking. Defaults to \code{1000}.}
   \item{control}{A list of control parameters including \code{convergence_crit} 
   and \code{chunk_size}. For more information, see \link{goric}.}
@@ -82,7 +82,8 @@
   \item{nrow_grid}{An integer value representing the number of rows in the grid layout.}
   \item{ncol_grid}{An integer value representing the number of columns in the grid layout.}
   \item{distr_grid}{If TRUE, the facet_grid function is used to create a grid of separate plots for each effect-size (estimates).}
-  \item{percentiles}{A numeric vector specifying the lower and upper percentiles. Defaults to \code{0.025, 0.975}.}
+  \item{percentiles}{A numeric vector specifying the percentiles to be shown. By default 
+  the percentiles are inherited from the quantiles used for benchmarking, see \code{quant}.}
   \item{x_lim}{A numeric vector of length 2 specifying the x-axis limits. Defaults to \code{c()}.}
   \item{\ldots}{See \link{goric}.}
 }

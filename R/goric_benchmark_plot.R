@@ -87,8 +87,6 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   
   percentile_df <- aggregate(Value ~ Group, data = df_long, function(x) {
     quantile(x, probs = percentiles, names = TRUE)
-    # c(lower = quantile(x, probs = percentiles[1]), 
-    #   upper = quantile(x, probs = percentiles[2]), mean = mean(x))
   })
   
   percentile_df <- data.frame(Group = percentile_df$Group, percentile_df$Value, check.names = FALSE)
@@ -102,10 +100,7 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   
   group_color <- scales::brewer_pal(palette = "Set3")(length(unique(df_long$Group)))
   first_group_color <- group_color[1]
-  
-  #percentile_first_group_lower <- round(percentile_first_group$lower, 3)
-  #percentile_first_group_upper <- round(percentile_first_group$upper, 3)
-  
+
   if (!output_type == "gw") {
     # sub plots per hypo, dus h1 vs h2, maar wel alle ES in dezelfde plot
     df_long$Group_pop_values <- sub("\\s*\\(.*\\)", "", df_long$Group)
@@ -115,8 +110,6 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
     sample_value_df <- data.frame(
       Group_hypo_comparison = names(sample_value),
       sample_value = as.numeric(sample_value),
-      #lb_first_group = percentile_first_group_lower,
-      #ub_first_group = percentile_first_group_upper,
       first_group_color = first_group_color,
       stringsAsFactors = FALSE
     )
@@ -129,8 +122,6 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
     sample_value <- as.vector(sample_value)
     df_long <- suppressWarnings(cbind(df_long, sample_value, 
                                       percentile_first_group,
-                                      # lb_first_group = percentile_first_group_lower,
-                                      # ub_first_group = percentile_first_group_upper,
                                       first_group_color = first_group_color)
     )
   }
@@ -190,7 +181,7 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
   # tmp <- subset(density_data, Group_pop_values != "Effect-size = 0")
   # ggplot(tmp, aes(x = x, y = y)) +
   # geom_ribbon(aes(ymin = 0, ymax = y), alpha = alpha) +
-  # #    scale_x_log10()
+  # scale_x_log10()
   # coord_cartesian(xlim = c(0, 2.05))
   ###
 
@@ -201,23 +192,25 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
   
   percentile_df <- data.frame(
     percentile_value = percentile_values,
-    percentile_label = factor(percentile_labels, levels = percentile_labels), 
+    percentile_label = percentile_labels, 
     color = df_subset$first_group_color[1]
   )
   
-  # Voeg de sample value toe als apart segment
-  percentile_df <- percentile_df |> 
-    rbind(data.frame(percentile_value = unique(df_subset$sample_value)[1],
-                     percentile_label = formatted_sample_value, color = "red")
-  )
+  # add sample value
+  percentile_df <- rbind(data.frame(percentile_value = unique(df_subset$sample_value)[1], 
+                                    percentile_label = formatted_sample_value, color = "red"), 
+                         percentile_df)
   percentile_df$Group_pop_values <- unique(df_subset$Group_pop_values)[1]
+  # make sure the right order is preserved in the legend
+  percentile_df$percentile_label <- factor(percentile_df$percentile_label, levels = percentile_df$percentile_label) 
   
   # Plot maken
   p <- ggplot(density_data, aes(x = x, y = y, fill = Group_pop_values)) +
     geom_ribbon(aes(ymin = 0, ymax = y), alpha = alpha) +
     geom_segment(data = percentile_df, aes(x = percentile_value, xend = percentile_value,
-                                           y = 0, yend = Inf, linetype = percentile_label, color = percentile_label),
-                 linewidth = 1) +
+                                           y = 0, yend = Inf, linetype = percentile_label, 
+                                           color = percentile_label),
+                 size = 1.10) +
     ggtitle(title) +
     xlab(xlabel) + 
     ylab("Density") + 

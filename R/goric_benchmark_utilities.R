@@ -382,19 +382,21 @@ print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset) {
 
 
 print_formatted_matrix <- function(mat, text_color, reset) {
+  row_width <- max(nchar(rownames(mat))) + 0  
   col_widths <- apply(mat, 2, function(col) max(nchar(as.character(col))))
   col_widths <- pmax(col_widths, nchar(colnames(mat))) + 2  
   
   cat("Population Estimates (PE):\n")
-  cat(sprintf("%-10s", ""))
+  #cat(sprintf("%-10s", ""))
+  cat(sprintf(paste0("%-", row_width, "s"), "")) 
   for (k in 1:ncol(mat)) {
     cat(sprintf(paste0("%", col_widths[k], "s"), colnames(mat)[k]))
   }
   cat("\n")
   
-  # Print de rijen
+  # Print rows
   for (i in 1:nrow(mat)) {
-    cat(sprintf("%-10s", rownames(mat)[i]))
+    cat(sprintf(paste0("%-", row_width, "s"), rownames(mat)[i]))
     for (j in 1:ncol(mat)) {
       cat(sprintf(paste0("%s%", col_widths[j], "s%s"), text_color, mat[i, j], reset))
     }

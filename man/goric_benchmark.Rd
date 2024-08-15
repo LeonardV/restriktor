@@ -39,10 +39,10 @@
   model_type = "asymp" (default). See details for more information about \code{asymp}.}
   \item{x}{An object of class \code{benchmark} or \code{benchmark}.}
   \item{pop_es}{A scalar or a vector of population Cohen's f (effect-size) values. 
-  By default, it benchmarks ES = 0 and the observed Cohen's f.}
+  By default, it benchmarks ES = 0 (no-effect) and the observed Cohen's f.}
   \item{pop_est}{A 1 x k vector or an n x k matrix of population 
-  estimates to benchmark. By default, all estimates are set to zero and the 
-  observed estimates from the sample are used.}
+  estimates to benchmark. By default, all estimates are set to zero (no-effect) 
+  and the observed estimates from the sample are used.}
   \item{ratio_pop_means}{A 1 x k vector denoting the relative difference
   between the k group means. Note that a ratio of \code{c(3, 2, 1)} gives the 
   same as \code{c(1, 0, -1)}, as the consecutive relative differences are 1 in 

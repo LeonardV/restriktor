@@ -1,6 +1,9 @@
 benchmark_means  <- function(object, ...) UseMethod("benchmark_means")
 benchmark_asymp  <- function(object, ...) UseMethod("benchmark_asymp")
 
+# FIXME sample value should also be adjusted, thus we need to refit the model using gorica
+# This new object_alt_group_size must also be used for calculating the error probability
+
 
 benchmark <- function(object, model_type = c("asymp", "means"), ...) {
 
@@ -58,8 +61,6 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   # Hypotheses
   hypos <- object$hypotheses_usr
   nr_hypos <- dim(object$result)[1]
-  pref_hypo <- which.max(object$result[, 7]) 
-  pref_hypo_name <- object$result$model[pref_hypo]
   
   # number of groups
   ngroups <- length(coef(object))
@@ -82,7 +83,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     group_means <- object$b.unrestr
     # residual variance
     VCOV <- object$Sigma
-    var_e_data <- diag(VCOV * N)[1] # are the elements on the diagonal always equal?
+    var_e_data <- diag(VCOV * N)[1] # are the elements on the diagonal always equal? Yes!
   } else {
     # Number of subjects per group
     N <- colSums(model.matrix(object$model.org)) #summary(object$model.org$model[, 2])
@@ -118,8 +119,12 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   # When determining pop.means, value does not matter: works exactly the same
   # choose first or last, then pop. means comparable to sample estimates
   
-  # Possibly adjust var_e based on other sample size
+  # Possibly to adjust var_e based on other sample size
   if (!is.null(alt_group_size)) {
+    
+    # goric(est, VCOV = VCOV, hypotheses = list(H_pref = H_pref),
+    #       comparison = "complement", type = "gorica", control = control, ...)
+    # 
     result_adjust_variance <- adjust_variance(var_e, N, alt_group_size = alt_group_size, ngroups)
     N <- result_adjust_variance$N
     var_e <- result_adjust_variance$var_e
@@ -143,6 +148,12 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   sample <- data.frame(D = as.factor(rep(1:ngroups, times = N)))
   sample <- data.frame(sample$D, model.matrix(~ D - 1, data = sample))
   colnames(sample)[-1] <- names(coef(object))
+  
+  # preferred hypothesis
+  pref_hypo <- which.max(object$result[, 7]) 
+  pref_hypo_name <- object$result$model[pref_hypo]
+  
+  
   
   nr_iter <- iter
   
@@ -224,7 +235,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     ratio_pop_means = ratio_pop_means,
     res_var_pop = var_e,
     pref_hypo_name = pref_hypo_name, 
-    error_prob_pref_hypo_name = error_prob,
+    error_prob_pref_hypo = error_prob,
     benchmarks_goric_weights = benchmark_results$benchmarks_gw,
     benchmarks_ratio_goric_weights = benchmark_results$benchmarks_rgw,
     benchmarks_ratio_ll_weights = benchmark_results$benchmarks_rlw,
@@ -389,7 +400,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     pop_est = pop_est, 
     pop_VCOV = VCOV,
     pref_hypo_name = pref_hypo_name, 
-    error_prob_pref_hypo_name = error_prob,
+    error_prob_pref_hypo = error_prob,
     benchmarks_goric_weights = benchmark_results$benchmarks_gw,
     benchmarks_ratio_goric_weights = benchmark_results$benchmarks_rgw,
     benchmarks_ratio_ll_weights = benchmark_results$benchmarks_rlw,

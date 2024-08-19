@@ -31,7 +31,8 @@ importFrom("glue",
 
 importFrom("mvtnorm",
            #rmvnorm, 
-           dmvnorm)
+           dmvnorm,
+           pmvnorm)
 
 # truncated multivariate normal
 importFrom("tmvtnorm",
@@ -54,9 +55,9 @@ importFrom("pbapply",
            pboptions)
 
 
-importFrom("ic.infer",
+#importFrom("ic.infer",
            #nchoosek, NOT EXPORTED!
-           ic.weights)
+#           ic.weights)
 
 importFrom("utils", combn, packageDescription, menu, capture.output)
 
@@ -81,7 +82,7 @@ importFrom("ggplot2", ggplot, aes, .data, geom_point, geom_line, theme, unit, ma
            geom_density, geom_segment, ggtitle, xlab, ylab, element_rect, 
            scale_fill_brewer, scale_color_manual, coord_cartesian,
            scale_linetype_manual, geom_vline, geom_ribbon, scale_x_continuous,
-           facet_grid)
+           facet_grid, scale_x_log10, stat_density, after_stat)
 
 importFrom("scales", brewer_pal)
 

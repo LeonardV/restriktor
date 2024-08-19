@@ -1,5 +1,5 @@
 plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"), 
-                           percentiles = NULL, x_lim = c(), 
+                           percentiles = NULL, x_lim = c(), log_scale = FALSE,
                            alpha = 0.50, nrow_grid = NULL, ncol_grid = 1, 
                            distr_grid = FALSE, ...) {
   
@@ -58,12 +58,7 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   
   DATA <- new_combined_values
   
-  combine_matrices_cbind <- function(lst) {
-    df_list <- lapply(lst, as.data.frame)
-    combined_df <- do.call(cbind, df_list)
-    return(combined_df)
-  }
-  
+
   df <- combine_matrices_cbind(DATA)
   # -------------------------------------------------------------------------
   
@@ -86,7 +81,7 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   df_long$Group <- factor(df_long$Group)
   
   percentile_df <- aggregate(Value ~ Group, data = df_long, function(x) {
-    quantile(x, probs = percentiles, names = TRUE)
+    quantile(x, probs = percentiles, names = TRUE, na.rm = TRUE)
   })
   
   percentile_df <- data.frame(Group = percentile_df$Group, percentile_df$Value, check.names = FALSE)
@@ -135,7 +130,8 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
                                x_lim = x_lim,
                                alpha = alpha,
                                distr_grid = distr_grid,
-                               percentiles = percentiles)
+                               percentiles = percentiles,
+                               log_scale = log_scale)
   
   combined_plots <- do.call(grid.arrange, c(plot_list, ncol = ncol_grid, nrow = nrow_grid))
   
@@ -147,20 +143,15 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
 # benchmark plots
 create_density_plot <- function(plot_df, group_comparison, title, xlabel,
                                 x_lim = NULL, alpha = 0.5, distr_grid = FALSE,
-                                percentiles = NULL) {
+                                percentiles = NULL, log_scale = FALSE) {
   
   df_subset <- subset(plot_df, Group_hypo_comparison == group_comparison)
   
   if (!is.null(df_subset$Group_hypo_comparison)) {
     title <- paste(title, "vs.", sub(".*vs\\. ", "", unique(df_subset$Group_hypo_comparison)))
   }
-  
-  # Function to calculate density
-  calculate_density <- function(data, var, sample_value) {
-    dens <- density(data[[var]], kernel = "gaussian")
-    data.frame(x = dens$x, y = dens$y, sample_value = sample_value)
-  }
-  
+
+
   # Calculate densities for each group
   # density_data <- df_subset %>%
   #   group_by(Group_pop_values) %>%
@@ -170,21 +161,15 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
   group_levels <- unique(df_subset$Group_pop_values)
   density_data <- do.call(rbind, lapply(group_levels, function(group) {
     data <- subset(df_subset, Group_pop_values == group)
-    dens <- calculate_density(data, var = "Value", sample_value = data$sample_value[1])
-    dens$Group_pop_values <- factor(group)
-    dens$sample_value <- unique(data$sample_value)
-    dens
+    data$Group_pop_values <- factor(group)
+    data$sample_value <- unique(data$sample_value)
+    data
+    #dens <- calculate_density(data, var = "Value", sample_value = data$sample_value[1])
+    # dens$Group_pop_values <- factor(group)
+    # dens$sample_value <- unique(data$sample_value)
+    # dens
   }))
   
-  
-  # FOR TESTING PURPOSES ONLY!
-  # tmp <- subset(density_data, Group_pop_values != "Effect-size = 0")
-  # ggplot(tmp, aes(x = x, y = y)) +
-  # geom_ribbon(aes(ymin = 0, ymax = y), alpha = alpha) +
-  # scale_x_log10()
-  # coord_cartesian(xlim = c(0, 2.05))
-  ###
-
   # 
   percentile_values <- as.numeric(df_subset[, paste0(percentiles*100, "%")][1, ])
   percentile_labels <- paste0("[", percentiles * 100, "]th Percentile = ", sprintf("%.3f", percentile_values))
@@ -204,9 +189,20 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
   # make sure the right order is preserved in the legend
   percentile_df$percentile_label <- factor(percentile_df$percentile_label, levels = percentile_df$percentile_label) 
   
+  
   # Plot maken
-  p <- ggplot(density_data, aes(x = x, y = y, fill = Group_pop_values)) +
-    geom_ribbon(aes(ymin = 0, ymax = y), alpha = alpha) +
+  p <- ggplot(density_data, aes(x = Value, fill = Group_pop_values)) +
+    stat_density(
+      aes(ymin = 0, ymax = after_stat(density)),
+      geom = "ribbon",
+      position = "identity",
+      alpha = alpha,
+      adjust = 0.5,          # Pas aan als je de gladheid wilt veranderen
+      trim = TRUE,
+      bw = "nrd0",         # Bandwidth selector
+      kernel = "gaussian"  # Kernel voor dichtheidschatting
+    ) +
+    #geom_ribbon(aes(ymin = 0, ymax = y), alpha = alpha) +
     geom_segment(data = percentile_df, aes(x = percentile_value, xend = percentile_value,
                                            y = 0, yend = Inf, linetype = percentile_label, 
                                            color = percentile_label),
@@ -219,7 +215,7 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
           axis.title.y = element_text(size = 12, margin = margin(r = 10)),
           plot.title = element_text(size = 12)) +
     scale_fill_brewer(palette = "Set2", name = "Distribution under:") +
-    scale_linetype_manual(values = setNames(c("solid", rep(c("dashed", "dotdash", "twodash", "longdash", "dotted"), length.out = length(percentiles))), 
+    scale_linetype_manual(values = setNames(c("dotted", rep(c("dotted", "dotdash", "dashed", "twodash", "longdash"), length.out = length(percentiles))), 
                                             c(formatted_sample_value, percentile_labels)), 
                           name = "") +
     scale_color_manual(values = setNames(c("red", rep(df_subset$first_group_color[1], length(percentiles))),
@@ -229,7 +225,11 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
     labs(fill = "Distribution under:", linetype = "Legend", color = "Legend") +
     guides(fill = guide_legend(order = 1),
            linetype = guide_legend(order = 2),
-           color = guide_legend(order = 2))
+           color = guide_legend(order = 2)) 
+  
+  if (log_scale) {
+    p <- p + scale_x_log10()
+  }
   
   if (distr_grid) {
     p <- p + facet_grid(. ~ Group_pop_values, scales = "free_x")
@@ -238,8 +238,8 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
   if (!is.null(x_lim) && length(x_lim) == 2) {
     p <- p + coord_cartesian(xlim = x_lim)
   } else {
-    iqr <- IQR(df_subset$Value)
-    q3 <- quantile(df_subset$Value, 0.95)
+    iqr <- IQR(df_subset$Value, na.rm = TRUE)
+    q3 <- quantile(df_subset$Value, 0.95, na.rm = TRUE)
     #lower_limit <- q1 - 1.5 * iqr
     upper_limit <- q3 + 1.5 * iqr
     p <- p + coord_cartesian(xlim = c(0, upper_limit))
@@ -252,11 +252,11 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
 # 
 plot_all_groups <- function(plot_df, groups, title, xlabel, x_lim = NULL, 
                             alpha = 0.5, distr_grid = FALSE, 
-                            percentiles = NULL) {
+                            percentiles = NULL, log_scale = FALSE) {
   plot_list <- list()
   for (group in groups) {
     plot <- create_density_plot(plot_df, group, title, xlabel, x_lim, alpha, 
-                                distr_grid, percentiles)
+                                distr_grid, percentiles, log_scale)
     plot_list[[group]] <- plot
   }
   return(plot_list)

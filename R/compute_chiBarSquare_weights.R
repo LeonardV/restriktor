@@ -4,9 +4,9 @@
 # using R: The Package ic.infer. 
 con_weights <- function(cov, meq) {
   if (meq == 0L) {
-    wt_bar <- try(ic.weights(cov))
+    wt_bar <- try(ic_weights(cov))
   } else if (meq > 0) {
-    wt_bar <- try(ic.weights(solve(solve(cov)[-c(1:meq), -c(1:meq)])))
+    wt_bar <- try(ic_weights(solve(solve(cov)[-c(1:meq), -c(1:meq)])))
   }
   if (inherits(wt_bar, "try-error")) {
     stop("Restriktor ERROR: the covariance matrix is too large. Try to set mix_weights = \"boot\".", call. = FALSE)

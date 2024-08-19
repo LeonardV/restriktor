@@ -29,7 +29,7 @@
                             color = TRUE, ...)
   
   \method{plot}{benchmark}(x, output_type = c("rgw", "rlw", "gw", "ld"), 
-                           percentiles = NULL, x_lim = c(), 
+                           percentiles = NULL, x_lim = c(), log_scale = FALSE,
                            alpha = 0.50, nrow_grid = NULL, ncol_grid = 1, 
                            distr_grid = FALSE, ...)
 }
@@ -85,6 +85,7 @@
   \item{percentiles}{A numeric vector specifying the percentiles to be shown. By default 
   the percentiles are inherited from the quantiles used for benchmarking, see \code{quant}.}
   \item{x_lim}{A numeric vector of length 2 specifying the x-axis limits. Defaults to \code{c()}.}
+  \item{log_scale}{If TRUE, The x-axis is transformed using a base-10 logarithmic scale.}
   \item{\ldots}{See \link{goric}.}
 }
 

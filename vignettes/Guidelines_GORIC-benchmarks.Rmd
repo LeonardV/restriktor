@@ -1,0 +1,668 @@
+---
+title: 'Guidelines interpretation GORIC(A) benchmark output'
+author: "Rebecca M. Kuiper and Leonard Vanbrabant"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  #pdf_document:
+  #  toc: yes
+  html_document:
+    toc: yes
+    toc_float: yes
+    number_sections: yes
+fontsize: 14pt
+editor_options:
+  chunk_output_type: console
+number_sections: true
+---
+
+
+<style>
+body {
+  width: 100%;
+  margin: 0 auto;
+}
+</style>
+
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 80), tidy = TRUE)
+knitr::opts_chunk$set(comment = NA, warning = FALSE)
+knitr::opts_chunk$set(fig.width = 8, fig.height = 7)
+options(width = 1200) # width console output
+
+
+## First, install the packages, if you have not done this already:
+if (!require("psych")) install.packages("psych")
+if (!require("restriktor")) install.packages("restriktor")
+
+## Then, load the packages:
+library(restriktor) # for the goric function
+
+# If you want to use restriktor from github:
+#if (!require("devtools")) install.packages("devtools")
+#library(devtools) 
+#install_github("LeonardV/restriktor")
+#library(restriktor) # for goric function
+
+# NB default iter is 1000
+# als testen dan ws iter = iters gebruiken, met:
+# iters = 30 
+```
+
+
+
+# Introduction
+To aid qualifying or labeling the height/size of support for the preferred hypothesis, one can inspect case-specific benchmarks for i) the GORIC(A) weights and ii)  the ratio of GORIC(A) weights of the preferred hypothesis versus the other hypotheses in the set. This is especially helpful when you found support for one hypothesis, as opposed to support for the overlap or a boundary/border of two or more hypotheses (see 'Guidelines_output_GORIC'). These benchmarks can also help in noticing support for overlap (if you forgot to check the fit values), since the benchmarks will show that there is maximum/bounded support; as will exemplified in the second example below.
+
+The benchmarks are based on (user-specified) sets of population parameter values (as is also used in a power analysis when performing a null hypothesis test). For an ANOVA, the set of population parameter values can be obtained by specifying a population effect size (i.e., Cohen's $f$) and a specific ratio of population means (which by default is the ratio of sample means, that is, the ratio of means found in the data). For all types of statistical models (including ANOVA), one can specify the set of population parameter values themselves.  
+We advise on using the null as a reference population, that is, assuming that one or more equalities (instead of the hypothesized inequalities) hold true in the population. Then, you obtain insight in how (un)likely your results are when one or more equalities are true. The extremer your finding, the more support for your informative, theory-based, inequality-constrained hypothesis.  
+By default, the null population in which the effect size is -- or parameter values are -- zero ('No-effect') and a population based on the sample effect size -- or sample parameter values -- ('Observed') is used.
+<!-- TO DO In means variant staat dat er niet! -->
+
+Additionally, the function renders benchmarks for the ratio of log-likelihood (loglik) weights of the preferred hypothesis versus the other hypotheses in the set and for the differences in loglik values of the preferred hypothesis versus the other hypotheses in the set. Note that the log-likelihood benchmarks (under a null population) give insight into the distribution of loglik weight ratios and of the loglik differences in case some or all of the group means or model parameters would be the same or zero (depending in the type of null). When you calculate these loglik benchmarks for a population in which one or more of the hypothesized inequalities is set to an equality, these loglik benchmarks are helpful in determining support for a boundary hypothesis (if of interest). This will be illustrated in the third example below. Bear in mind that research (e.g., a simulation study) is needed to obtain more insight into whether and how well the log-likelihood benchmarks work.  
+
+
+
+# GORIC(A) weights benchmarks
+
+The GORIC(A) weights benchmarks come from several percentiles of sets of GORIC(A) weights assuming that the specified set of population values is true (for the sample size under consideration). More specifically, the benchmarks are, currently, based on the 5th, 35th, 50th, 65th, and 95th percentiles of the GORIC(A) weights for the preferred hypothesis and of the ratios of the GORIC(A) weights for the preferred hypothesis versus the other hypotheses. Bear in mind that research (e.g., a simulation study) is needed to obtain more insight into how well these choices work.  
+<!-- The analogue holds for the other type of benchmarks. -->
+Notably, you can a-priori decide on what percentiles you believe reflect the different types of support, and **pre-register** that together with your informative hypothesis/-es.
+
+You can compare your GORIC(A) weight and ratios of GORIC(A) weights of the preferred hypothesis to these benchmarks to make a conclusion regarding the strength of support for the hypothesis (given the assumed set of population parameter values and given the sample size). 
+If the benchmarks show a maximum/bounded support (see second example below), there is support for the overlap of two or more hypotheses (which is also signaled by equal log-likelihood values). Otherwise, the GORIC(A) weights (ratios) benchmarks can be used to qualify the height of support (see first example below).  
+
+<!-- Additionally, one can check the log-likelihood benchmarks. This can give insight into whether there is support for the boundary of hypotheses (see the third example below, part of the third section). -->
+
+
+## How to use benchmarks
+
+### Labelling
+
+We are not in favor of cut-off points (or 'surrounding anchors'), but we need them when we want to label the height of support via the benchmarks, we propose the following:  
+
+|Benchmark (percentile)  |Height support                  |
+|:-----------------------|:-------------------------------|
+|below 5th               |no support                      |  
+|between  5th and 35th   |low support                     | 
+|between 35th and 65th   |medium support                  | 
+|between 65th and 95th   |high (compelling) support       | 
+|over 95th               |very large (tremendous) support | 
+
+We advise on using some kind of null model as the assumed population. Then, you can see how extreme your finding is (or not) for this null population. The extremer your finding, the more support for your informative, theory-based, inequality-constrained hypothesis.  
+
+You can of course use other percentile levels (for which you think the finding is said to be extreme enough etc), but do make sure to define these before seeing the data, and preferably also pre-register them (together with your informative hypothesis/-es).
+
+
+### Use minimum effect
+You may want to use a minimum effect. One option, the one we also advise, is to specify your hypothesis such that it inspects, for example, minimum differences between parameters (e.g., $\mu_1 - \mu_2 >$ 0.2 instead of $\mu_1 > \mu_2$, that is, $\mu_1 - \mu_2 >$ 0).  
+
+A second option, although not something we advise on doing, is to investigate benchmarks using a minimum effect size (or looking at multiple ones). In the function, you should specify the population parameter values (reflecting specific effect sizes). In case of an ANOVA model, you can also specify the effect size level(s) (for Cohen's $f$). Note that the benchmarks differ when you assume different effect sizes or different population parameter estimates.
+<!-- (additionally, the benchmarks change with sample size, as do the GORIC(A) weights themselves).  -->
+
+
+### Sensitivity analysis
+If of interest, as a sensitivity analysis, you can calculate the benchmarks for multiple sets of population parameter values (or population effect sizes). Note that this may also complicate drawing conclusions (especially when the assumed sets of population parameter values differ much, like when using multiple effect size heights). We advise on doing this for multiple null populations (setting some to all of the inequality restrictions to equalities). 
+
+If your preferred hypothesis does not have the highest fit and you want to inspect benchmarks, we advise on inspecting multiple ratios of population parameter estimates, where some are in agreement with your hypothesis and others in agreement with the data.   
+
+
+### Defaults
+Once more, we advise on inspecting populations in which some of the inequalities of your hypothesis/-es of interest are set to equalities (especially if the log-likelihood values seem to be close). This way, you can also check for the support of a boundary hypothesis; as discussed in the third example below.  
+
+By default, two populations are used: i) a null population in which the population effect size is -- or population parameter values are -- set to 0 and ii) a population based on the observed effect size -- or observed parameter values. One can overrule this by using the `pop_es` or `pop_est` argument, respectively.
+
+
+## Examples
+Next, we will discuss two ANOVA examples. More specifically, We will inspect the case-specific benchmarks values (using the ratio of means as in the data).
+We will look at  
+- an ANOVA example where we evaluate $H_1: \mu_1 > \mu_2 > \mu_3$ versus its complement, and $H_1$ is true;  
+- an ANOVA example where we evaluate two overlapping hypotheses, namely $H_1: \mu_1 > \mu_2 > \mu_3$ and $H_2: \mu_1 > \mu_2, \ \mu_3$, together with the unconstrained, and $H_1$ is true (and thus the others are as well, but they are not the most parsimonious one).
+
+<!-- Later on (in other sections), We will also discuss two other examples:   -->
+<!-- - an ANOVA example where we evaluate $H_1: \mu_1 > \mu_2 > \mu_3$ versus its complement, and the border $\mu_1 = \mu_2 > \mu_3$ is true. Notably, here, both hypotheses are true, $H_1$ is the most parsimonious one, and we want to conclude that the border is true.   -->
+
+<!-- - a SEM example. -->
+<!-- TO DO pas aan als wel SEM example! -->
+Later on (in another section), We will also discuss the following example:  
+- an ANOVA example where we evaluate $H_1: \mu_1 > \mu_2 > \mu_3$ versus its complement, and the border $\mu_1 = \mu_2 > \mu_3$ is true. Notably, here, both hypotheses are true, $H_1$ is the most parsimonious one, and we want to conclude that the border is true.  
+
+For a description of interpreting GORIC(A) output, see 'Guidelines_output_GORIC' (https://github.com/rebeccakuiper/Tutorials).
+
+
+### Example 1 (ANOVA): $H_1$ vs its complement
+
+```{r, echo=FALSE, results = FALSE, message = FALSE, warning = FALSE}
+n.coef <- 3 # Number of dummy variables (model without intercept)
+
+mu <- rep(0, n.coef)
+intercept <- 0
+
+f <- .25 #c(0, .1, .25, .4) # According to Cohen 1992
+#f2 = r2 / (1-r2) -> r2 = f2 - f2*r2 -> (1-f2)*r2 = f2
+#r2 <- f^2 / (1-f^2)
+# NB correspondeert niet met: 0, .02, .15, .35
+# Voor nu zo laten, lijken wel goede voorbeelden
+
+samplesize <- 3*40 # c(40, 40, 40) - geeft fout in restr, data ms dan gek? # 40 - geeft nu ineens 40 in totaal 
+b.ratios <- c(3,2,1)
+
+sample <- NULL
+
+# Determine true / population beta coefficients in data generating process
+D_ <- matrix(rep(1:n.coef), nrow = samplesize)
+D <- as.factor(D_)
+sample$D <- D
+
+sample <- model.matrix(~sample$D-1)
+colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
+sample <- as.data.frame(sample)
+
+# Determine mean values (betas)
+var.e <- 1
+if (sum(abs(b.ratios)) == 0) { # all zeros (thus under H0)
+  means_pop <- b.ratios
+} else {
+  fun <- function (d) {
+        means_pop = b.ratios*d
+        (1/sqrt(var.e)) * sqrt((1/n.coef) * sum((means_pop - mean(means_pop))^2)) - f
+      }
+      d <- uniroot(fun, lower=0, upper=100)$root
+      # Construct means_pop
+      means_pop <- b.ratios*d
+      # Check
+      #means_pop #[1] 0.9185587 0.6123724 0.3061862
+      #means_pop[1] - means_pop[2]; means_pop[2] - means_pop[3]
+      # Check: ES =
+      #(1/sqrt(var.e)) * sqrt((1/n.coef) * sum((means_pop - mean(means_pop))^2)) # .25
+    }
+
+set.seed(123) # set seed: to obtain same results when you re-run it
+epsilon <- rnorm(samplesize, sd=sqrt(var.e))
+sample$y <- as.matrix(sample[, 1:n.coef]) %*% matrix(means_pop, nrow = n.coef) + epsilon
+
+# Obtain fit
+fit <- lm(y ~ 0 + D, data=sample)
+#fit
+
+```
+
+```{r, message = FALSE, warning = FALSE}
+# H1 vs complement - H1 is true
+H1 <- "D1 > D2 > D3" # mu1 > mu2 > mu3
+
+# Apply GORIC #
+set.seed(123) 
+results_1c <- goric(fit, hypotheses = list(H1), comparison = "complement")
+results_1c
+
+# Benchmarks based on null
+benchmarks_1c <- benchmark(results_1c, model_type = "means", ncpus = 8)
+#benchmarks_1c # use in R file
+print(benchmarks_1c, color = FALSE) # use in Rmd file, since Rmd cannot deal with colored text
+plot(benchmarks_1c) 
+plot(benchmarks_1c, x_lim = c(0, 6))
+```
+
+<!-- TO DO: -->
+<!-- TO DO RMK overal getallen uitlezen (BV. benchmarks_1c$benchmarks_goric_weights) -->
+
+<!-- TO DO loglik lijken close, maar loglik.weights niet... Kan dus ws heel misleidend zijn... -->
+
+<!-- TO DO RMK: om eens naar te kijken: -->
+<!-- Als n = 40 ipv 3*40=120: -->
+<!-- TO DO hier is plot niet zo convincing als dat cut-offs zeggen.... -->
+<!-- TO DO nu liggen loglik dichtbij elkaar!!! -->
+<!-- Is dat al de reden voor de plot? Dan dus extra inidcatie... check andere vb'n hieronder ook. -->
+<!-- TO DO end  --> 
+
+From the `goric()` output, you can conclude that there is support for $H_1: \mu_1 > \mu_2 > \mu_3$, and $H_1$ is 
+`r round(results_1c$result[1,7], 2)` $/$ `r round(results_1c$result[2,7], 2)` 
+$\approx$ 
+`r round(results_1c$result[1,7] / results_1c$result[2,7], 2)` 
+times more supported than its complement. The probability that $H_1$ is not the best is 
+`r round(100*benchmarks_1c$error_prob_pref_hypo_name, 2)`% (namely, the goric.weight for the complement of H1, which is also given in the benchmark output by `$error_prob_pref_hypo_name`, that is, the `Error probability Preferred Hypothesis vs. complement`). This already gives insight into the (un)certainty and, therefore, helps in qualifying the results. Additionally, the benchmarks can help:
+<!-- TO DO `$error_prob_pref_hypo_name` is niet een mooie naamgeving wat mij betreft. Ms iets als: -->
+<!-- error_prob_pref_hypo -->
+<!-- TO DO RMK: Dan wel overal aanpassen uiteraard. -->
+
+
+Based on the benchmarks, you can check how plausible your finding is (given the assumed population parameters and given the sample size).
+If you want to compare your results with the situation in which one or more equalities hold true, use a null population (here, an effect size of 0, indicating that the three means are equal). Then, you obtain insight into how (un)likely / how extreme your finding (based on inequalities) is.
+
+When assuming that there is no effect in the population (i.e., under the null), that is, all three group means are equal, the ratio of GORIC weights of $H_1$ versus its complement (i.e., `r round(results_1c$ratio.gw[1,2], 2)`) is larger than the 95th percentile (i.e., `r round(benchmarks_1c$benchmarks_ratio_goric_weights[[1]][6], 2)`).
+Hence, our finding is very extreme if the null would be true. Using the table with cut-off values above, this indicates that there is very large (tremendous) support, when assuming no population effect size (given a group size of 40 for each of the 3 groups).
+
+<!-- TO DO RMK: add the following above? -->
+<!-- When inspecting the distributions of the ratio of GORIC weights of $H_1$ versus its complement under the null population and under the population based on the observed effect size (see plot), then we can see that they differ, that is, do not overlap much.   -->
+
+
+*Log-likelihood check*:  
+Before inspecting the height of the support, one may want to establish whether there is support for the overlap or boundary of hypotheses. Since we evaluate an informative hypothesis $H_1$ versus its complement, we should check whether there is support for a boundary hypothesis (in which one or more inequalities in $H_1$ is replaced by an equality). For this, one should inspect the log-likelihood / fit values of the hypotheses. When these are close (i.e., the ratio of loglik weights is close to 1 or the  difference in loglik values is close to 0), then there is support for (one of their) boundaries. In this case, the loglik values are `r round(results_1c$result$loglik[1], 2)` and `r round(results_1c$result$loglik[2], 2)`, with corresponding loglik.weights of `r round(results_1c$result$loglik.weights[1], 2)` and `r round(results_1c$result$loglik.weights[2], 2)` (and thus a difference of approx. `r round(results_1c$result$loglik[1] - results_1c$result$loglik[2], 2)` and a ratio of approx. `r round(results_1c$ratio.lw[1,2], 2)`).
+Since it is hard to judge what is close, one can inspect the benchmarks for the ratio of log-likelihood (loglik) weights and/or for the differences in log-likelihood values. This should then be done for a null population in which such a boundary is true. We discuss this in the next section.  
+For now, we assume that the loglik values are not close.
+
+
+*Population information*:  
+In the data generation, we used a ratio of population means of 3:2:1; implying that $H_1$ is correct. More specifically, We used population mean values of approximately 0.92, 0.61, and 0.31. This implies that Cohen's $f$ is .25; thus, there is a medium population effect size (which are in the same order as hypothesized). We then sampled 40 observations for each of the three groups, ran an ANOVA (with three groups), and applied the GORIC. Note that Cohen (1992) suggest that a minimum group size of 52 is needed to find a medium effect when doing null hypothesis testing.  
+Notable, the sample/observed effect size is .411 (with sample means of 1.12, 0.51, and 0.25), which can be seen as a high effect size. This also explains why we, despite the medium population effect size, find tremendous support for our hypothesis.  
+When we would sample more observations, the GORIC(A) weight for $H_1$ converges to 1 (denoting full support for $H_1$). Note that the benchmarks for the GORIC(A) weight for $H_1$ will remain the same for a null population and will go to 1 for a non-null population. Note that the error probability then goes to 0, and that the ratio of GORIC(A) weights of $H_1$ versus its complement then goes to infinity.
+<!-- TO DO ms helpt bepalen 'power', dus hoeveel under the curve in observed vanaf zeg 95th perc under null?? (JA, AL ZIE JE DIT OOK WEL TERUG IN DE GROTE ES) -->
+
+
+### Example 2 (ANOVA): Overlapping hypotheses
+
+```{r, message = FALSE, warning = FALSE}
+# H1, H2, and unconstrained (default) - subset/overlap, that is, H1 is true
+H1 <- "D1 > D2 > D3"               # mu1 > mu2 > mu3
+H2 <- "D1 > D2" # H2: D1 > D2, D3  # mu1 > mu2,  mu3
+
+# Apply GORIC #
+set.seed(123) 
+results_12u <- goric(fit, hypotheses = list(H1, H2))
+results_12u
+round(results_12u$ratio.gw, 3)
+
+# Benchmarks
+benchmarks_12u <- benchmark(results_12u, model_type = "means", ncpus = 8)
+#benchmarks_12u # R file
+print(benchmarks_12u, color = FALSE) # Rmd file
+plot(benchmarks_12u, output_type = "rgw") 
+plot_out <- plot(benchmarks_12u) # save all plots in object plot_out
+plot(plot_out$grobs$`H1 vs. H2`) # call separate plots
+```
+<!-- TO DO RMK nu is plot niet zo informatief... al zie je wel flink overlap, maar je ziet er vooral vs null pop en dat is nu niet interessant! -->
+<!--   -->
+<!-- TO DO de plot klopt toch niet? De max is 1.948 voor H1 vs H2 en de 95% voor null and observed zijn ook dat (en voor meer percentilen). Hoe kan verdeling dan verder lopen?  (DIT HEEFT TE MAKEN MET DE DENSITY KERNEL DIE EEN CONTINUE GESCHATTE BENADERING GEEFT, DE MAX IS HIER 2.05 EN WIJKT NIET HEEL VEEL AF VAN 1.948)-->
+<!-- Maar het is gek als de max waarde 1.948 is en dat we eigenlijk ook willen dat ze kunnen zien dat het de max waarde betreft – zo zie je support voor overlap namelijk. -->
+<!--   -->
+<!-- TO DO groen en rood voor H1 vs H2 zijn hetzelfde (eigenlijk voor H1 vs unc ook, maar in plot niet - gek...). Dan zie je rode lijn niet... Kan je ms rood dan dashed maked en dan rood boven op, dan zie je beide wel. (NU OOK IN PLOT) -->
+<!-- TO DO verder dus gek dat null/groene lijnen bij H1 vs unc niet lijken te kloppen - en hier verdelingen dan ook. (DONE) -->
+<!--   -->
+<!-- TO DO titel loopt door legend -->
+<!--   -->
+<!-- TO DO Legend heeft nu niet rode dashed lijn, maar nog steeds rode solid lijn - ms sowieso altijd dan dashed lijn gebruiken.... -->
+From the GORIC output, we can see that both hypotheses are not weak and that $H_1$ is the best. Additionally, we can see that the log-likelihood values are exactly the same, and thus there is support for the overlap of the hypotheses which is $H_1$ here (since $H_1$ is a subset of $H_2$).  
+
+If we would now check the GORIC(A) weights benchmarks (especially for non-nulls), we would find again that there is support for the overlap (here, $H_1$):
+Namely, the benchmarks for multiple percentiles  (here, even all percentiles) have the same value as our finding, that is, the sample value. 
+
+Notably, if there is support for the overlap or boundary, it is not meaningful to use the benchmarks to label the height of support for $H_1$, since The ratio of support reached its maximum. Hence, we do not proceed with labeling the height of support (by comparing the sample value to the benchmarks under the null population). Instead, we conclude that there is support for the overlap.  
+If of interest, one can next inspect the support for the overlap, here $H_1$, versus its complement. When that does not result in support for a boundary, then the height of the support for $H_1$ versus its complement can be labelled using the benchmarks. This is then helpful information for future research: Generating a new theory and having another value to compare future results to.
+
+
+*Log-likelihood check*:  
+Here, one clearly finds that the loglik / fit values are exactly the same. Hence, the ratio of loglik weights is exactly 1 and the difference in loglik values is exactly 0. Consequently, there is support for the overlap. In this case, we do not need to check the log-likelihood benchmarks.  
+Note that the log-likelihood benchmarks (under a null population) give insight into the distribution of loglik weight ratios and of the loglik differences in case some or all of the group means would be the same.
+
+
+*Population information*:  
+In the data generation, We used a ratio of population means of 3:2:1; implying that $H_1$ is correct. More specifically, We used population mean values of approximately 0.92, 0.61, and 0.31. This implies that Cohen's $f$ is .25; thus, there is a medium population effect size (which are in the same order as hypothesized). We then sampled 40 observations for each of the three groups, ran an ANOVA (with three groups), and applied the GORIC. Note that Cohen (1992) suggest that a minimum group size of 52 is needed to find a medium effect when doing null hypothesis testing.  
+When We would sample more observations, it does not (really) affect the GORIC(A) weights for $H_1$, $H_2$, and the unconstrained: It will converge to the bounds (i.e., the maximum support) it can take on. The benchmarks for the GORIC(A) weights will also attain the maximum value as will the ratio of weights; and it will for each positive population effect size. For a null population, the GORIC(A) weight benchmarks will remain the same. 
+
+
+# Log-likelihood benchmarks
+Before inspecting the height of the support, one may want to establish whether there is support for the overlap / boundary of hypotheses. Since we evaluate an informative hypothesis $H_1$ versus its complement, we should check whether there is support for a boundary hypothesis (in which one or more inequalities in $H_1$ is replaced by an equality). For this, one should inspect the log-likelihood / fit values of the hypotheses. When these are close (i.e., the ratio of loglik weights is close to 1 or the difference in loglik values is close to 0), then there is support for (one of their) boundaries. 
+
+Since it is hard to judge what is close, one can inspect the benchmarks for the ratio of log-likelihood (loglik) weights and for the differences in log-likelihood values. This should then be done for a population in which such a boundary is true. 
+
+Next, We will inspect two examples: one in which the border is true (Example 3) and one where it is not (Example 1 continued). We will first use a group size of 40, like in the example above; afterwards, We will inspect a higher sample size to obtain insight into the asymptotic properties of the loglik weights.
+
+For now, We will use that the loglik values are said to be the same if the loglik differences are in between the 5th and 95th percentiles of the loglik benchmarks for a null population. You can of course use a narrower range to be more strict.
+
+*Remarks*:  
+- The loglik benchmarks need to be more properly investigated.  
+<!-- - The benchmark function contains four types of loglik benchmarks:    -->
+- The benchmark function contains two types of loglik benchmarks:  
+  * the loglik ratios (i.e., ratio of loglik weights; `output_type = "rlw"`), which can take on values between 0 and infinity, where 1 means that the loglik values are the same;  
+  <!-- * the loglik ratios transformed such that the values lie between 1 and infinity, where 1 means that the loglik values are the same;   -->
+  * the loglik differences (`output_type = "ld"`), which can take on values between minus infinity and infinity and where 0 means that the loglik values are the same;  
+<!-- Note that the first and the third contain the same information, as do the second and the fourth. Namely, the ratio of loglik weights is the same as the ratio of the likelihood values, and both equal the exponent of the difference in loglik values.   -->
+- One could think about doing a likelihood ratio test (LRT), using a Chi-square distribution or, because of the inequality restrictions, a Chi-bar-square distribution. However, the LRT test is appropriate for nested models, while we are interested in models that are non-nested and even non-overlapping (except for the boundary).
+
+
+
+## Example 3 (ANOVA): Border is true
+
+```{r, echo = F, message = FALSE, warning = FALSE}
+b.ratios <- c(2.5,2.5,1)
+
+sample <- NULL
+
+# Determine true / population beta coefficients in data generating process
+D_ <- matrix(rep(1:n.coef), nrow = samplesize)
+D <- as.factor(D_)
+sample$D <- D
+
+sample <- model.matrix(~sample$D-1)
+colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
+sample <- as.data.frame(sample)
+
+# Determine mean values (betas)
+var.e <- 1
+if (sum(abs(b.ratios)) == 0) { # all zeros (thus under H0)
+  means_pop <- b.ratios
+} else {
+  fun <- function (d) {
+        means_pop = b.ratios*d
+        (1/sqrt(var.e)) * sqrt((1/n.coef) * sum((means_pop - mean(means_pop))^2)) - f
+      }
+      d <- uniroot(fun, lower=0, upper=100)$root
+      # Construct means_pop
+      means_pop <- b.ratios*d
+      # Check
+      #means_pop #[1] 0.8838835 0.8838835 0.3535534
+      #means_pop[1] - means_pop[2]; means_pop[2] - means_pop[3]
+      # Check: ES =
+      #(1/sqrt(var.e)) * sqrt((1/n.coef) * sum((means_pop - mean(means_pop))^2)) # .25
+    }
+
+set.seed(124) # set seed: to obtain same results when you re-run it
+epsilon <- rnorm(samplesize, sd=sqrt(var.e))
+sample$y <- as.matrix(sample[, 1:n.coef]) %*% matrix(means_pop, nrow = n.coef) + epsilon
+
+# Obtain fit
+fit_border <- lm(y ~ 0 + D, data=sample)
+#fit_border
+```
+
+
+```{r, message = FALSE, warning = FALSE}
+# H1 vs complement - border (nl., mu1 = mu2 > mu3) is true
+H1 <- "D1 > D2 > D3" # mu1 > mu2 > mu3
+
+# Apply GORIC #
+set.seed(123) 
+results_1c_border <- goric(fit_border, hypotheses = list(H1), comparison = "complement")
+results_1c_border
+```
+Before we inspect the height of support for the preferred hypotheses, we should check whether there is support for the boundary/border of the two (non-overlapping) hypotheses. By eyeballing, We believe the log-likelihood values are close.
+To obtain better evidence for the closeness of the loglik values, We will use the log-likelihood benchmarks functions for several specifications of null populations.
+
+```{r, message = FALSE, warning = FALSE}
+# Default null (when using `model_type = "means"`)
+## Loglik benchmarks based on default null / no effect sizes, that is,
+## setting all three means equal in the population
+#benchmarks_1c_border <- benchmark(results_1c_border, model_type = "means", ncpus = 8)
+## loglik diff
+##print(benchmarks_1c_border, output_type = "ld") # in R file
+#print(benchmarks_1c_border, output_type = "ld", color = FALSE) # in Rmd file
+#plot(benchmarks_1c_border, output_type = "ld")
+## ratio loglik weights
+##print(benchmarks_1c_border, output_type = "rlw") # in R file
+#print(benchmarks_1c_border, output_type = "rlw", color = FALSE) # in Rmd file
+#plot(benchmarks_1c_border, output_type = "rlw")
+```
+<!-- TO DO ms de optie om meerdere output types tegelijkertijd op te geven en die geef je dan steeds apart weer; dus hier dan bijv: c("ld", "rlw") -->
+<!--   -->
+<!-- TO DO hier komen waarden in plot niet overeen met die in tabel (in plot alleen pos, in tabel ook neg). -->
+<!-- NB als niet 'means', dan lijkt het wel ok. -->
+```{r, message = FALSE, warning = FALSE}
+# Specifying multiple null populations, that is,
+# using all possibilities of setting inequalities to equalities.
+# Here, we will use the default `model_type` (i.e., "asymp") which takes population parameter values (instead of population effect sizes) 
+est <- coef(fit_border)
+pop_est <- matrix(c(
+                  mean(est[1:3]), mean(est[1:3]), mean(est[1:3]),
+                  mean(est[1:2]), mean(est[1:2]), est[3],
+                  mean(est[1:2]), est[2], mean(est[1:2]),
+                  est[1], mean(est[2:3]), mean(est[2:3]),
+                  
+                  est[1], est[2], est[3]
+                  ),
+                  byrow = TRUE, ncol = length(est))
+rownames(pop_est) <- c("PE_123eq", "PE_12eq", "PE_13eq", "PE_23eq", "Observed")
+benchmarks_1c_border_allpos <- benchmark(results_1c_border, pop_est = pop_est, ncpus = 8)
+# loglik difference
+#print(benchmarks_1c_border_allpos, output_type = "ld") # R file
+print(benchmarks_1c_border_allpos, output_type = "ld", color = FALSE) # Rmd file
+plot(benchmarks_1c_border_allpos, output_type = "ld")
+plot(benchmarks_1c_border_allpos, output_type = "ld", x_lim = c(-2.5,2))
+# ratio of loglik weights
+#print(benchmarks_1c_border_allpos, output_type = "rlw") # R file
+print(benchmarks_1c_border_allpos, output_type = "rlw", color = FALSE) # Rmd file
+plot(benchmarks_1c_border_allpos, output_type = "rlw")
+```
+<!-- TO DO evt nog grijze lijn oid toevoegen bij 0 voor ld en bij 1 voor rlw - bij zowel means als aymp. (HET WORDEN WEL VEEL LIJNEN, NU NIET TOEGEVOEGD) -->
+In this example, the difference in log-likelihood values and the ratio of log-likelihood weights lies between the 5th and the 95th percentile of the corresponding benchmarks (for all null populations).
+Based on this, we conclude that the log-likelihood values of $H_1$ and its complement are close (i.e., their loglik weight ratio is close to 1 and their difference is close to 0). Possibly, one can also conclude that there is a bit more support for a boundary hypothesis in which either the first two or the last means are the same (because the sample value is less extreme for those orderings).
+
+
+*Population information*:  
+In the data generation, We used a ratio of population means of 2.5:2.5:1; implying that the boundary of $H_1$ and its complement is correct (and that $H_1$ is preferred over its complement, since it is more parsimonious). More specifically, We used population mean values of approximately 0.88, 0.88, and 0.35. This implies that Cohen's $f$ is .25; thus, there is a medium population effect size. We then sampled 40 observations per group, ran an ANOVA (with three groups), and applied the GORIC.  
+When We would sample more observations, the GORIC(A) weight for $H_1$ converges to 1 (denoting full support for $H_1$). Note that the error probability then goes to 0 and the the ratio of GORIC(A) weights of $H_1$ versus its complement then goes to infinity. Nevertheless, this is not of interest now, now we are interested in the closeness of log-likelihood values. 
+
+
+### Higher sample size
+```{r, echo = F, message = FALSE, warning = FALSE}
+# Now, group size is 200 (instead of 40)
+
+samplesize_orig <- samplesize
+samplesize <- 3*200
+
+b.ratios <- c(2.5,2.5,1)
+
+sample <- NULL
+
+# Determine true / population beta coefficients in data generating process
+D_ <- matrix(rep(1:n.coef), nrow = samplesize)
+D <- as.factor(D_)
+sample$D <- D
+
+sample <- model.matrix(~sample$D-1)
+colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
+sample <- as.data.frame(sample)
+
+# Determine mean values (betas)
+var.e <- 1
+if (sum(abs(b.ratios)) == 0) { # all zeros (thus under H0)
+  means_pop <- b.ratios
+} else {
+  fun <- function (d) {
+        means_pop = b.ratios*d
+        (1/sqrt(var.e)) * sqrt((1/n.coef) * sum((means_pop - mean(means_pop))^2)) - f
+      }
+      d <- uniroot(fun, lower=0, upper=100)$root
+      # Construct means_pop
+      means_pop <- b.ratios*d
+      # Check
+      #means_pop #[1] 0.8838835 0.8838835 0.3535534
+      #means_pop[1] - means_pop[2]; means_pop[2] - means_pop[3]
+      # Check: ES =
+      #(1/sqrt(var.e)) * sqrt((1/n.coef) * sum((means_pop - mean(means_pop))^2)) # .25
+    }
+
+set.seed(123) # set seed: to obtain same results when you re-run it
+epsilon <- rnorm(samplesize, sd=sqrt(var.e))
+sample$y <- as.matrix(sample[, 1:n.coef]) %*% matrix(means_pop, nrow = n.coef) + epsilon
+
+# Obtain fit
+fit_border_200 <- lm(y ~ 0 + D, data=sample)
+#fit_border_200
+
+# Return to original value
+samplesize <- samplesize_orig
+```
+
+
+```{r, message = FALSE, warning = FALSE}
+# Now, group size is 200 (instead of 40)
+
+# H1 vs complement - border (nl., mu1 = mu2 > mu3) is true
+H1 <- "D1 > D2 > D3" # mu1 > mu2 > mu3
+
+# Apply GORIC #
+set.seed(123) 
+results_1c_border_200 <- goric(fit_border_200, hypotheses = list(H1), comparison = "complement")
+results_1c_border_200
+```
+We will also now check whether there is support for the border of the two (non-overlapping) hypotheses:
+
+```{r, message = FALSE, warning = FALSE}
+# Specifying multiple null populations, that is,
+# using all possibilities of setting inequalities to equalities.
+# Here, we will use the default `model_type` (i.e., "asymp") which takes population parameter values (instead of population effect sizes) 
+est <- coef(fit_border_200)
+pop_est <- matrix(c(
+                  mean(est[1:3]), mean(est[1:3]), mean(est[1:3]),
+                  mean(est[1:2]), mean(est[1:2]), est[3],
+                  mean(est[1:2]), est[2], mean(est[1:2]),
+                  est[1], mean(est[2:3]), mean(est[2:3]),
+                  
+                  est[1], est[2], est[3]
+                  ),
+                  byrow = TRUE, ncol = length(est))
+rownames(pop_est) <- c("PE_123eq", "PE_12eq", "PE_13eq", "PE_23eq", "Observed")
+benchmarks_1c_border_allpos_200 <- benchmark(results_1c_border_200, pop_est = pop_est, ncpus = 8)
+# loglik difference
+#print(benchmarks_1c_border_allpos_200, output_type = "ld") # R file
+print(benchmarks_1c_border_allpos_200, output_type = "ld", color = FALSE) # Rmd file
+#plot(benchmarks_1c_border_allpos_200, output_type = "ld")
+# ratio of loglik weights
+#print(benchmarks_1c_border_allpos_200, output_type = "rlw") # R file
+print(benchmarks_1c_border_allpos_200, output_type = "rlw", color = FALSE) # Rmd file
+plot(benchmarks_1c_border_allpos_200, output_type = "rlw")
+```
+Also in this example, with a much higher sample size, the difference in log-likelihood values and the ratio of log-likelihood weights lies between the 5th and the 95th percentiles of the corresponding benchmarks (for all null populations).
+Based on this, We conclude that the log-likelihood values of $H_1$ and its complement are close (i.e., their loglik weight ratio is close to 1 and their difference is close to 0). Additionally, one can argue that there is more support for a boundary hypothesis in which group means 1 and 2 are the same, since the sample value is the closest to the 50th percentile of that null distribution.
+
+
+
+## Example 1 (ANOVA) Ctd.
+In this subsection, we look at Example 1 again, where we evaluate H1 $\leftarrow$ "D1 > D2 > D3" versus its complement, like in Example 3. In this example, $H_1$ is true in the population, while in Example 3 the truth is on the border.
+
+In this example, the loglik values are `r round(results_1c$result$loglik[1], 2)` and `r round(results_1c$result$loglik[2], 2)`, with corresponding loglik.weights of `r round(results_1c$result$loglik.weights[1], 2)` and `r round(results_1c$result$loglik.weights[2], 2)` (and thus a difference of approx. `r round(results_1c$result$loglik[1] - results_1c$result$loglik[2], 2)` and a ratio of approx. `r round(results_1c$ratio.lw[1,2], 2)`).
+Since it is hard to judge what is close, one can inspect the benchmarks for the ratio of log-likelihood (loglik) weights and for the differences in log-likelihood values: 
+
+```{r, message = FALSE, warning = FALSE}
+# Specifying multiple null populations, that is,
+# using all possibilities of setting inequalities to equalities.
+# Here, we will use the default `model_type` (i.e., "asymp") which takes population parameter values (instead of population effect sizes) 
+est <- coef(fit)
+pop_est <- matrix(c(
+                  mean(est[1:3]), mean(est[1:3]), mean(est[1:3]),
+                  mean(est[1:2]), mean(est[1:2]), est[3],
+                  mean(est[1:2]), est[2], mean(est[1:2]),
+                  est[1], mean(est[2:3]), mean(est[2:3]),
+                  
+                  est[1], est[2], est[3]
+                  ),
+                  byrow = TRUE, ncol = length(est))
+rownames(pop_est) <- c("PE_123eq", "PE_12eq", "PE_13eq", "PE_23eq", "Observed")
+benchmarks_1c_allpos <- benchmark(results_1c, pop_est = pop_est, ncpus = 8)
+# loglik difference
+#print(benchmarks_1c_allpos, output_type = "ld") # R file
+print(benchmarks_1c_allpos, output_type = "ld", color = FALSE) # Rmd file
+#plot(benchmarks_1c_allpos, output_type = "ld")
+# ratio of loglik weights
+#print(benchmarks_1c_allpos, output_type = "rlw") # R file
+print(benchmarks_1c_allpos, output_type = "rlw", color = FALSE) # Rmd file
+plot(benchmarks_1c_allpos, output_type = "rlw")
+```
+In this example, the difference in log-likelihood values and the ratio of log-likelihood weights are larger than the 95th percentile of the corresponding benchmarks for almost all null populations. Only for the null population where the means of groups 2 and 3 are set equal, the sample value is in between the 65th and 95th percentile. When looking at the distributions, the sample value seems more plausible to come from the non-null population ('Observed'), but it could also fit in the null distribution 'PE_23eq'. Hence, we cannot rule out that the log-likelihood values are close, indicating support for the means of groups 2 and 3 being the same.
+
+Next, we will inspect the case where we have a higher sample size.
+
+
+### Higher sample size
+```{r, echo = F, message = FALSE, warning = FALSE}
+# Now, total sample size is 200 (instead of 40)
+
+samplesize_orig <- samplesize
+samplesize <- 3*200
+
+b.ratios <- c(3,2,1)
+
+sample <- NULL
+
+# Determine true / population beta coefficients in data generating process
+D_ <- matrix(rep(1:n.coef), nrow = samplesize)
+D <- as.factor(D_)
+sample$D <- D
+
+sample <- model.matrix(~sample$D-1)
+colnames(sample) <- paste0("D_", seq_len(ncol(sample)))
+sample <- as.data.frame(sample)
+
+# Determine mean values (betas)
+var.e <- 1
+if (sum(abs(b.ratios)) == 0) { # all zeros (thus under H0)
+  means_pop <- b.ratios
+} else {
+  fun <- function (d) {
+        means_pop = b.ratios*d
+        (1/sqrt(var.e)) * sqrt((1/n.coef) * sum((means_pop - mean(means_pop))^2)) - f
+      }
+      d <- uniroot(fun, lower=0, upper=100)$root
+      # Construct means_pop
+      means_pop <- b.ratios*d
+      # Check
+      #means_pop #[1] 0.9185587 0.6123724 0.3061862
+      #means_pop[1] - means_pop[2]; means_pop[2] - means_pop[3]
+      # Check: ES =
+      #(1/sqrt(var.e)) * sqrt((1/n.coef) * sum((means_pop - mean(means_pop))^2)) # .25
+    }
+
+set.seed(123) # set seed: to obtain same results when you re-run it
+epsilon <- rnorm(samplesize, sd=sqrt(var.e))
+sample$y <- as.matrix(sample[, 1:n.coef]) %*% matrix(means_pop, nrow = n.coef) + epsilon
+
+# Obtain fit
+fit_200 <- lm(y ~ 0 + D, data=sample)
+#fit_200
+
+# Return to original value
+samplesize <- samplesize_orig
+```
+
+
+<!-- #### Group size of 200 -->
+```{r, message = FALSE, warning = FALSE}
+# Now, group size is 200 (instead of 40)
+
+# H1 vs complement
+H1 <- "D1 > D2 > D3" # mu1 > mu2 > mu3
+
+# Apply GORIC #
+set.seed(123) 
+results_1c_200 <- goric(fit_200, hypotheses = list(H1), comparison = "complement")
+results_1c_200
+```
+Also here, we will check whether there is support for the border of the two (non-overlapping) hypotheses:
+
+```{r, message = FALSE, warning = FALSE}
+# Specifying multiple null populations, that is,
+# using all possibilities of setting inequalities to equalities.
+# Here, we will use the default `model_type` (i.e., "asymp") which takes population parameter values (instead of population effect sizes) 
+est <- coef(fit_200)
+pop_est <- matrix(c(
+                  mean(est[1:3]), mean(est[1:3]), mean(est[1:3]),
+                  mean(est[1:2]), mean(est[1:2]), est[3],
+                  mean(est[1:2]), est[2], mean(est[1:2]),
+                  est[1], mean(est[2:3]), mean(est[2:3]),
+                  
+                  est[1], est[2], est[3]
+                  ),
+                  byrow = TRUE, ncol = length(est))
+rownames(pop_est) <- c("PE_123eq", "PE_12eq", "PE_13eq", "PE_23eq", "Observed")
+benchmarks_1c_allpos_200 <- benchmark(results_1c_200, pop_est = pop_est, ncpus = 8)
+# loglik difference
+#print(benchmarks_1c_allpos, output_type = "ld") # R file
+print(benchmarks_1c_allpos_200, output_type = "ld", color = FALSE) # Rmd file
+#plot(benchmarks_1c_allpos_200, output_type = "ld")
+# ratio of loglik weights
+#print(benchmarks_1c_allpos_200, output_type = "rlw") # R file
+print(benchmarks_1c_allpos_200, output_type = "rlw", color = FALSE) # Rmd file
+plot(benchmarks_1c_allpos_200, output_type = "rlw") 
+```
+In this example with a higher sample size, the difference in log-likelihood values and the ratio of log-likelihood weights are higher than the 95th percentile of the corresponding benchmarks (for all null populations).
+Based on this, We conclude that the log-likelihood values of $H_1$ and its complement are not close. Thus, there is no support for a boundary hypothesis, only for $H_1$. In that case, we can inspect the height of the support via the GORIC(A) benchmarks (as was done in a previous section).
+
+
+<!-- # Example 4 (SEM) -->
+<!-- TO DO -->
+<!-- gebruik data van' SEM artikel en dan ws kijken naar twee regr coeff en de twee groepen? -->
+
+
+[//]: #The following line is needed to prevent R Markdown from including a lot of white space below the last content.
+<div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>

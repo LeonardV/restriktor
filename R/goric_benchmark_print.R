@@ -13,7 +13,7 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"),
   model_type <- class(x)[1]
   goric_type <- toupper(x$type)
   pref_hypo <- x$pref_hypo_name
-  error_prob_pref_hypo <- x$error_prob_pref_hypo_name
+  error_prob_pref_hypo <- x$error_prob_pref_hypo
   error_prob_pref_hypo <- 
     if (error_prob_pref_hypo < 0.001) {
       "<.001"

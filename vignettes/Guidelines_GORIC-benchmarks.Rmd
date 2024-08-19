@@ -23,6 +23,13 @@ body {
 }
 </style>
 
+<style>
+/* Zorg ervoor dat afbeeldingen gecentreerd zijn en tekst eronder komt */
+img {
+  display: block;
+  margin: 0 auto;
+}
+</style>
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 80), tidy = TRUE)
@@ -282,6 +289,7 @@ plot(plot_out$grobs$`H1 vs. H2`) # call separate plots
 <!-- TO DO titel loopt door legend -->
 <!--   -->
 <!-- TO DO Legend heeft nu niet rode dashed lijn, maar nog steeds rode solid lijn - ms sowieso altijd dan dashed lijn gebruiken.... -->
+
 From the GORIC output, we can see that both hypotheses are not weak and that $H_1$ is the best. Additionally, we can see that the log-likelihood values are exactly the same, and thus there is support for the overlap of the hypotheses which is $H_1$ here (since $H_1$ is a subset of $H_2$).  
 
 If we would now check the GORIC(A) weights benchmarks (especially for non-nulls), we would find again that there is support for the overlap (here, $H_1$):

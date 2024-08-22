@@ -17,13 +17,13 @@
                   quant = NULL, iter = 1000, 
                   control = list(convergence_crit = 1e-03, 
                                  chunk_size = 1e4), 
-                  ncpus = 1, cl = NULL, seed = NULL, \ldots)
+                  ncpus = 1, seed = NULL, \ldots)
 
   benchmark_asymp(object, pop_est = NULL, sample_size = NULL, 
                   alt_sample_size = NULL, quant = NULL, iter = 1000, 
                   control = list(convergence_crit = 1e-03, 
                                  chunk_size = 1e4), 
-                  ncpus = 1, cl = NULL, seed = NULL, \ldots)
+                  ncpus = 1, seed = NULL, \ldots)
   
   \method{print}{benchmark}(x, output_type = c("rgw", "gw", "rlw", "ld", "all"), 
                             color = TRUE, ...)
@@ -69,8 +69,6 @@
   \item{control}{A list of control parameters including \code{convergence_crit} 
   and \code{chunk_size}. For more information, see \link{goric}.}
   \item{ncpus}{Number of CPUs to use for parallel processing. Defaults to \code{1}.}
-  \item{cl}{A cluster object for parallel processing. If not supplied, a cluster 
-  on the local machine is created for the duration of the \code{benchmark} call.}
   \item{seed}{A seed for random number generation.}
   \item{output_type}{A character vector specifying the type of output to print 
   or plot. Options are \code{"all"}, \code{"gw"} (goric(a) weights), 

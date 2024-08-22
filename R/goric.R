@@ -35,7 +35,9 @@ goric.default <- function(object, ..., hypotheses = NULL,
   # check for unkown arguments
   pm <- pmatch(names(ldots), goric_arguments, 0L)
   if (any(pm == 0)) {
-    stop("restriktor ERROR: argument ", sQuote(names(ldots)[pm == 0]), " unknown.", call. = FALSE)
+    stop("restriktor ERROR: argument ", 
+         sQuote(paste(names(ldots)[pm == 0], collapse = ", ")), 
+         " unknown.", call. = FALSE)
   }
   
   if (any(c("lower", "upper", "algorithm", "burn.in.samples", "start.values", 
@@ -627,8 +629,8 @@ goric.numeric <- function(object, ..., hypotheses = NULL,
   }
   
   if (is.null(hypotheses)) {
-    stop("restriktor ERROR: The 'hypotheses' argument is missing. Please make sure 
-         to provide a valid set of hypotheses, for example, hypotheses = list(h1 = 'x1 > x2 > x3').", call. = FALSE)   }
+    stop("restriktor ERROR: The 'hypotheses' argument is missing. Please make sure", 
+         " to provide a valid set of hypotheses, for example, hypotheses = list(h1 = 'x1 > x2 > x3').", call. = FALSE)   }
   
   if (!c(type %in% c("gorica", "goricac"))) {
     stop("restriktor ERROR: object of class numeric is only supported for type = 'gorica(c)'.")
@@ -686,8 +688,8 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
   }
   
   if (is.null(hypotheses)) {
-    stop("restriktor ERROR: The 'hypotheses' argument is missing. Please make sure 
-         to provide a valid set of hypotheses, for example, hypotheses = list(h1 = 'x1 > x2 > x3').", call. = FALSE) 
+    stop("restriktor ERROR: The 'hypotheses' argument is missing. Please make sure", 
+         " to provide a valid set of hypotheses, for example, hypotheses = list(h1 = 'x1 > x2 > x3').", call. = FALSE) 
   }
   
   if (!c(type %in% c("gorica", "goricac"))) {
@@ -734,8 +736,8 @@ goric.CTmeta <- function(object, ..., hypotheses = NULL,
   }
   
   if (is.null(hypotheses)) {
-    stop("restriktor ERROR: The 'hypotheses' argument is missing. Please make sure to 
-         provide a valid set of hypotheses, for example, hypotheses = list(h1 = 'x1 > x2 > x3').", call. = FALSE) 
+    stop("restriktor ERROR: The 'hypotheses' argument is missing. Please make sure to",
+         " provide a valid set of hypotheses, for example, hypotheses = list(h1 = 'x1 > x2 > x3').", call. = FALSE) 
   }
   
   if (!c(type %in% c("gorica", "goricac"))) {
@@ -783,7 +785,8 @@ goric.rma <- function(object, ..., hypotheses = NULL,
   }
   
   if (is.null(hypotheses)) {
-    stop("restriktor ERROR: The 'hypotheses' argument is missing. Please make sure to provide a valid set of hypotheses, for example, hypotheses = list(h1 = 'x1 > x2 > x3').", call. = FALSE) 
+    stop("restriktor ERROR: The 'hypotheses' argument is missing. Please make sure",
+         " to provide a valid set of hypotheses, for example, hypotheses = list(h1 = 'x1 > x2 > x3').", call. = FALSE) 
   }
   
   if (!c(type %in% c("gorica", "goricac"))) {

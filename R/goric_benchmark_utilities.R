@@ -40,13 +40,10 @@ calculate_power <- function(density_h1, critical_value) {
 }
 
 # Function to calculate density
-# nrd0
-calculate_density <- function(data, var, sample_value) {
-  #scaled_var <- scale(data[[var]], center = TRUE, scale = TRUE)
-  #dens <- density(scaled_var, kernel = "gaussian", na.rm = TRUE, bw = "nrd0")
-  dens <- density(data[[var]], kernel = "gaussian", na.rm = TRUE, bw = "nrd0")
-  data.frame(x = dens$x, y = dens$y, sample_value = sample_value)
-}
+# calculate_density <- function(data, var, sample_value) {
+#   dens <- density(data[[var]], kernel = "gaussian", na.rm = TRUE, bw = "nrd0")
+#   data.frame(x = dens$x, y = dens$y, sample_value = sample_value)
+# }
 
 
 # Extract the parts within the parentheses
@@ -192,50 +189,6 @@ compute_population_means <- function(pop_es, ratio_pop_means, var_e, ngroups) {
 }
 
 
-# Calculate the error probability
-calculate_error_probability <- function(object, hypos, pref_hypo, est, 
-                                        VCOV, control, ...) {
-  # Error probability based on complement of preferred hypothesis in data
-  nr_hypos <- dim(object$result)[1]
-  if (nr_hypos == 2 && object$comparison == "complement") { 
-    if (object$type == 'goric') {
-      error_prob <- 1 - object$result$goric.weights[pref_hypo]
-    } else {
-      error_prob <- 1 - object$result$gorica.weights[pref_hypo]
-    }
-  } else {
-    if (pref_hypo == nr_hypos && object$comparison == "unconstrained") {
-      error_prob <- "The unconstrained (i.e., the failsafe) containing all possible orderings is preferred."
-    } else {
-      H_pref <- hypos[[pref_hypo]]
-      if (is.null(object$model.org)) {
-        results_goric_pref <- goric(est, VCOV = VCOV,
-                                    hypotheses = list(H_pref = H_pref),
-                                    comparison = "complement",
-                                    type = "gorica", 
-                                    control = control, 
-                                    ...)
-      } else {
-        fit_data <- object$model.org
-        results_goric_pref <- goric(fit_data,
-                                    hypotheses = list(H_pref = H_pref),
-                                    comparison = "complement",
-                                    type = object$type,
-                                    control = control, 
-                                    ...)
-      }
-      if (object$type == 'goric') {
-        error_prob <- results_goric_pref$result$goric.weights[2]
-      } else {
-        error_prob <- results_goric_pref$result$gorica.weights[2]
-      }
-    }
-  }
-  return(error_prob)
-}
-
-
-
 # this function is called from the goric_benchmark_anova() function
 parallel_function_means <- function(i, N, var_e, means_pop, 
                                     hypos, pref_hypo, object, ngroups, sample, 
@@ -275,17 +228,31 @@ parallel_function_means <- function(i, N, var_e, means_pop,
   
   # Obtain fit
   fit_boot <- lm(new_model, data = df_boot)  
-  # GORICA or GORICA depending on what is done in data
-  results_goric <- try(goric(fit_boot,
-                             hypotheses = hypos,
-                             comparison = object$comparison,
-                             type = object$type,
-                             control = control, 
-                             ...), silent = TRUE
+  
+  results_goric <- tryCatch(
+    {
+      # Voer de goric functie uit
+      goric(fit_boot,
+            hypotheses = hypos,
+            comparison = object$comparison,
+            type = object$type,
+            control = control, 
+            ...)
+    },
+    error = function(e) {
+      # error message 
+      message(paste("Error in iteration", i, ":", e$message))
+      return(NULL)  
+    },
+    warning = function(w) {
+      # warning message
+      message(paste("Warning in iteration", i, ":", w$message))
+      return(NULL)  
+    }
   )
   
-  if (inherits(results_goric, "try-error")) {
-    return(as.numeric(NA))
+  if (is.null(results_goric)) {
+    return(NULL)
   }
   
   # Return the relevant results
@@ -306,47 +273,95 @@ parallel_function_means <- function(i, N, var_e, means_pop,
 # this function is called from the benchmark_asymp() function
 parallel_function_asymp <- function(i, est, VCOV, hypos, pref_hypo, comparison,
                                     type, control, ...) {  
-  
-  results_goric <- try(goric(est[i, ], VCOV = VCOV,
-                             hypotheses = hypos,
-                             comparison = comparison,
-                             type = type,
-                             control = control, 
-                             ...), silent = TRUE
+  results_goric <- tryCatch(
+    {
+      # Voer de goric functie uit
+      goric(est[i, ], VCOV = VCOV,
+            hypotheses = hypos,
+            comparison = comparison,
+            type = type,
+            control = control, 
+            ...)
+    },
+    error = function(e) {
+      # error message 
+      message(paste("Error in iteration", i, ":", e$message))
+      return(NULL)  
+    },
+    warning = function(w) {
+      # warning message
+      message(paste("Warning in iteration", i, ":", w$message))
+      return(NULL)  
+    }
   )
   
-  if (inherits(results_goric, "try-error")) {
-    return(as.numeric(NA))
+  if (is.null(results_goric)) {
+    return(NULL)
   }
   
-  
-  # Return the relevant results
   ld_names <- names(results_goric$ratio.gw[pref_hypo, ])
   ld <- results_goric$result$loglik[pref_hypo] - results_goric$result$loglik
   names(ld) <- ld_names
   
-  list(
-    #test  = attr(results.goric$objectList[[results.goric$objectNames]]$wt.bar, "mvtnorm"),
+  out <- list(
     gw  = results_goric$result[pref_hypo, 7], # goric(a) weight
     rgw = results_goric$ratio.gw[pref_hypo, ], # ratio goric(a) weights
     rlw = results_goric$ratio.lw[pref_hypo, ], # ratio likelihood weights
     ld  = ld
   )
+  
+  return(out)
 }
+
+
+# parallel_function_asymp <- function(i, est, VCOV, hypos, pref_hypo, comparison,
+#                                     type, control, ...) {  
+#   
+#   results_goric <- try(goric(est[i, ], VCOV = VCOV,
+#                              hypotheses = hypos,
+#                              comparison = comparison,
+#                              type = type,
+#                              control = control, 
+#                              ...), silent = TRUE
+#   )
+#   
+#   if (inherits(results_goric, "try-error")) {
+#     warning("Error encountered: ", attr(results_goric, "condition")$message)
+#     return(NULL)
+#   }
+# 
+#   # Return the relevant results
+#   ld_names <- names(results_goric$ratio.gw[pref_hypo, ])
+#   ld <- results_goric$result$loglik[pref_hypo] - results_goric$result$loglik
+#   names(ld) <- ld_names
+#   
+#   out <- list(
+#     #test  = attr(results.goric$objectList[[results.goric$objectNames]]$wt.bar, "mvtnorm"),
+#     gw  = results_goric$result[pref_hypo, 7], # goric(a) weight
+#     rgw = results_goric$ratio.gw[pref_hypo, ], # ratio goric(a) weights
+#     rlw = results_goric$ratio.lw[pref_hypo, ], # ratio likelihood weights
+#     ld  = ld
+#   )
+#   return(out)
+# }
 
 
 # Define a function to extract and combine values from all elements in each pop_es list
 extract_and_combine_values <- function(pop_es_list, value_name) {
-  # remove empty lists
-  pop_es_list <- pop_es_list[!sapply(pop_es_list, function(x) any(is.na(x)))]
-  do.call(rbind, lapply(pop_es_list, function(sub_list) sub_list[[value_name]]))
+  empty_lists_count <- sum(sapply(pop_es_list, is.null))
+  #print(empty_lists_count)
+  # remove empty lists (is.na)
+  #pop_es_list <- pop_es_list[!sapply(pop_es_list, function(x) any(is.na(x)))]
+  out <- do.call(rbind, lapply(pop_es_list, function(sub_list) sub_list[[value_name]]))
+  attr(out, "empty_lists_count") <- empty_lists_count
+  
+  return(out)
 }
 
 
 ## 
 get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name, 
                                   quant, names_quant, nr.hypos) {
-  
   results <- x
 
   # Use lapply to apply the extract_and_combine_values function to each element in the results list
@@ -357,7 +372,9 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   
   # Calculate CI_benchmarks_gw for each pop_es category
   CI_benchmarks_gw <- lapply(gw_combined, function(gw_values) {
-    CI_benchmarks_gw <- matrix(c(object$result[pref_hypo, 7], quantile(gw_values, quant, na.rm = TRUE)), nrow = 1)
+    CI_benchmarks_gw <- matrix(c(object$result[pref_hypo, 7], quantile(gw_values, 
+                                                                       quant, na.rm = TRUE)), 
+                               nrow = 1)
     colnames(CI_benchmarks_gw) <- names_quant
     rownames(CI_benchmarks_gw) <- pref_hypo_name
     CI_benchmarks_gw
@@ -477,6 +494,49 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   )
   
   return(OUT)
+}
+
+
+# Calculate the error probability
+calculate_error_probability <- function(object, hypos, pref_hypo, est, 
+                                        VCOV, control, ...) {
+  # Error probability based on complement of preferred hypothesis in data
+  nr_hypos <- dim(object$result)[1]
+  if (nr_hypos == 2 && object$comparison == "complement") { 
+    if (object$type == 'goric') {
+      error_prob <- 1 - object$result$goric.weights[pref_hypo]
+    } else {
+      error_prob <- 1 - object$result$gorica.weights[pref_hypo]
+    }
+  } else {
+    if (pref_hypo == nr_hypos && object$comparison == "unconstrained") {
+      error_prob <- "The unconstrained (i.e., the failsafe) containing all possible orderings is preferred."
+    } else {
+      H_pref <- hypos[[pref_hypo]]
+      if (is.null(object$model.org)) {
+        results_goric_pref <- goric(est, VCOV = VCOV,
+                                    hypotheses = list(H_pref = H_pref),
+                                    comparison = "complement",
+                                    type = "gorica", 
+                                    control = control, 
+                                    ...)
+      } else {
+        fit_data <- object$model.org
+        results_goric_pref <- goric(fit_data,
+                                    hypotheses = list(H_pref = H_pref),
+                                    comparison = "complement",
+                                    type = object$type,
+                                    control = control, 
+                                    ...)
+      }
+      if (object$type == 'goric') {
+        error_prob <- results_goric_pref$result$goric.weights[2]
+      } else {
+        error_prob <- results_goric_pref$result$gorica.weights[2]
+      }
+    }
+  }
+  return(error_prob)
 }
 
 

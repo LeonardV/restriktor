@@ -727,7 +727,12 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
       attr(wt.bar, "mix_weights_bootstrap_limit") <- attr(object$wt.bar, "mix_weights_bootstrap_limit")
     } else if (attr(object$wt.bar, "method") == "pmvnorm" && (meq < nrow(Amat))) {
       # compute chi-square-bar weights based on pmvnorm
-      wt.bar <- rev(con_weights(Amat %*% V %*% t(Amat), meq = meq))
+      wt.bar <- rev(con_weights(Amat %*% V %*% t(Amat), meq = meq, 
+                                tolerance = ifelse(is.null(control$tolerance), 1e-15, 
+                                                   control$tolerance), 
+                                ridge_constant = ifelse(is.null(control$ridge_constant), 1e-05, 
+                                                        control$ridge_constant), 
+                                ...))
     } 
   } else {
     wt.bar <- as.numeric(NA)

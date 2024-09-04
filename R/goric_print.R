@@ -3,7 +3,17 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   type <- x$type
   comparison <- x$comparison
   dig <- paste0("%6.", digits, "f")
-  x2 <- lapply(x$result[-1], sprintf, fmt = dig)
+  #x2 <- lapply(x$result[-1], sprintf, fmt = dig)
+  x2 <- as.data.frame(lapply(x$result[, -1], function(column) {
+    sapply(column, function(val) {
+      if (is.na(val)) {
+        return("")  # Zet NA om naar een lege string
+      } else {
+        return(sprintf(dig, val))  # Anders sprintf toepassen
+      }
+    })
+  }))
+  
   df <- data.frame(model = x$result$model, x2)
   objectnames <- as.character(df$model)
   
@@ -125,27 +135,11 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     paste(get_names, collapse = " vs. ")
   })
   
-  # Create a function to sort the elements in each string
-  sort_combination <- function(combination) {
-    split_combination <- strsplit(combination, " vs. ")[[1]]
-    #sorted_combination <- sort(split_combination)
-    # Check if the combination includes "complement"
-    if ("complement" %in% split_combination) {
-      # Find the other element that is not "complement"
-      other_element <- split_combination[split_combination != "complement"]
-      sorted_combination <- c(other_element, "complement")
-    } else if ("unconstrained" %in% split_combination) {
-      # Find the other element that is not "unconstrained"
-      other_element <- split_combination[split_combination != "unconstrained"]
-      sorted_combination <- c(other_element, "unconstrained")
-    } else {
-      sorted_combination <- sort(split_combination)
-    }
-    paste(sorted_combination, collapse = " vs. ")
-  }
-
   overlap_sorted_vector <- sapply(overlap_unique_combinations, sort_combination)
   overlap_unique_combinations <- unique(overlap_sorted_vector)
+  
+  # remove all combinations involving unconstrained. They overlap by definition
+  overlap_unique_combinations <- overlap_unique_combinations[!grepl("unconstrained", overlap_unique_combinations)]
   
   combined_string <- gsub("vs\\.", "", overlap_unique_combinations)
   combined_string <- strsplit(combined_string, " ")
@@ -166,7 +160,7 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
             " in comparison to the unconstrained one, rather than its complement?")
   }
   
-  if (comparison == "complement" && length(overlap_unique_combinations) == 0) { 
+  if (comparison == "complement" && length(overlap_unique_combinations) == 0) {  
     class(x$ratio.gw) <- "numeric"
     objectname1 <- sQuote(objectnames[1])
     support_ratio <- sprintf("%.2f", x$ratio.gw[1, 2])
@@ -189,6 +183,42 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     } else {
       result <- paste(numbers[1], "/", numbers[2], "= 1", sep = " ")
       cat("---\nThe order-restricted hypothesis", sQuote(objectnames[1]), "and the unconstrained have equal support:", result, "\n\n")      
+    }
+  } else if (comparison == "unconstrained" && length(df$model) > 2) {
+    best_hypo <- which.max(x$result[, 7])
+    best_hypo_name <- x$result$model[best_hypo]
+    modelnames <- x$result$model[!x$result$model == "unconstrained"]
+    if (best_hypo_name != "unconstrained") {
+      goric_weights_without_unc <- x$result[, 8][!is.na(x$result[, 8])]
+      goric_rw_without_unc <- goric_weights_without_unc %*% t(1/goric_weights_without_unc)
+      diag(goric_rw_without_unc) <- 1L
+      colnames(goric_rw_without_unc) <- paste0("vs. ", modelnames)
+      goric_rw_without_unc_best_hypo <- goric_rw_without_unc[best_hypo, ]
+      goric_rw_without_unc_best_hypo <- goric_rw_without_unc_best_hypo[goric_rw_without_unc_best_hypo != 1]
+      goric_rw_without_unc_best_hypo <- sapply(goric_rw_without_unc_best_hypo, format_value)
+      best_hypos_rest <- paste(df$model[!df$model %in% c(best_hypo_name, "unconstrained")])
+      # cat(paste0("---\nThe order-restricted hypothesis ", sQuote(best_hypo_name), " is not weak, with ", 
+      #     goric_rw_without_unc_best_hypo, " times more support than ", best_hypos_rest, ", respectively.\n\n"))
+      # 
+      message <- paste0("The order-restricted hypothesis ", sQuote(best_hypo_name), " is not weak, with ")
+      for (i in seq_along(best_hypos_rest)) {
+        message <- paste0(
+          message,
+          goric_rw_without_unc_best_hypo[i], " times more support than ",
+          best_hypos_rest[i]
+        )
+      
+        if (i == length(best_hypos_rest) - 1) {
+          message <- paste0(message, " and ")
+        } else if (i < length(best_hypos_rest)) {
+          message <- paste0(message, ", ")
+        } else {
+          message <- paste0(message, ".")
+        }
+      }
+      cat(paste0("---\n", message, "\n"))
+    } else {
+      cat(paste0("---\nThe unconstrained hypothesis is the best hypothesis in the set, meaning that all order-restricted hypotheses in the set are weak.\n"))
     }
   } else if (length(overlap_unique_combinations) == 0 && length(df$model) > 2) {
     if (!is.null(x$ratio.gw)) {

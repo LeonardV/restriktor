@@ -1,4 +1,4 @@
-# taken from ic.infer package
+# ic_weight and nchoosk are taken from ic.infer package
 # slightly adjusted by LV (2024-08-19)
 # check for small eigenvalues, abs(values) <= .Machine$double.eps are replaced by zero
 # using ridging to deal with exactly singular corr matrix. A small constant (1e-05) 
@@ -17,7 +17,7 @@ make_positive_semi_definite <- function(mat, tolerance = 1e-15,
   return(corr)
 }
 
-ic_weights <- function(corr, tolerance = 1e-15, ridge_constant = 1e-05, ...) {
+ic_weights <- function(corr, tolerance, ridge_constant, ...) {
   if (!(is.matrix(corr) & nrow(corr) == ncol(corr))) 
     stop("corr must be a square matrix.")
   corr <- make_positive_semi_definite(corr, tolerance = tolerance, 
@@ -102,7 +102,7 @@ ic_weights <- function(corr, tolerance = 1e-15, ridge_constant = 1e-05, ...) {
 }
 
 
-# taken from ic.infer package
+# taken from ic.infer package, the function is not exported
 nchoosek <- function (n, k) {
   if (!is.numeric(n) || !is.numeric(k) || is.na(n) || is.na(k) || 
       length(n) != 1 || length(k) != 1) 

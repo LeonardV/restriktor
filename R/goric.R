@@ -250,11 +250,12 @@ goric.default <- function(object, ..., hypotheses = NULL,
   
   objectnames <- names(constraints) 
   # constraints are inherited
-  if ("restriktor" %in% object_class) {
-    objectnames <- paste0("H", seq_len(length(object)))
-  } else if (any(is.null(names(constraints))) || all(names(constraints) == "")) {  
+  if (any(is.null(names(constraints)))) {  
     objectnames <- paste0("H", seq_len(length(constraints)))
-  } 
+  } else if (any(names(constraints) == "")) {
+    objectnames <- ifelse(names(constraints) == "", paste0("H", seq_along(names(constraints))), 
+                          names(constraints))
+  }
 
   if (comparison == "complement" && length(conList) > 1L) {
     warning("Restriktor Warning: Only one hypothesis is allowed (for now) when comparison = 'complement'.",
@@ -469,7 +470,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
     ans[[attr]] <- extracted
   }
   
-
   ans$Sigma <- VCOV
   ans$b.unrestr <- conList[[1]]$b.unrestr
   ans$ormle$b.restr <- coefs  

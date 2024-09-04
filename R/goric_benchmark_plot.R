@@ -29,23 +29,23 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   if (output_type == "gw") {
     DATA <- x$combined_values$gw_combined
     sample_value <- x$benchmarks_goric_weights[[1]][1]
-    xlabel <- paste(goric_type, "weights")
-    title <- paste0("Benchmark: ", goric_type, "-weight Distribution for Preferred Hypothesis ", pref_hypo_name)
+    xlabel <- paste(goric_type, "Weights")
+    title <- paste0("Benchmark: ", goric_type, "-Weights Distribution for Preferred Hypothesis ", pref_hypo_name)
   } else if (output_type == "rgw") {
     DATA <- x$combined_values$rgw_combined
     sample_value <- x$benchmarks_ratio_goric_weights[[1]][, 1, drop = FALSE]
-    xlabel <- paste0("Ratio ", goric_type, " weights")
-    title <- paste0("Benchmark: Ratio ", goric_type, "-weight Distribution for Preferred Hypothesis ", pref_hypo_name)
+    xlabel <- paste0("Ratio-", goric_type, "-Weights")
+    title <- paste0("Benchmark: Ratio-", goric_type, "-Weights Distribution for Preferred Hypothesis ", pref_hypo_name)
   } else if (output_type == "rlw") {
     DATA <- x$combined_values$rlw_combined  
     sample_value <- x$benchmarks_ratio_ll_weights[[1]][, 1, drop = FALSE]
-    xlabel <- "Ratio likelihood weights"
-    title <- paste0("Benchmark: Ratio Likelihood Weight Distribution for Preferred Hypothesis ", pref_hypo_name)
+    xlabel <- "Ratio-likelihood-weights"
+    title <- paste0("Benchmark: Ratio-Likelihood-Weights Distribution for Preferred Hypothesis ", pref_hypo_name)
   } else if (output_type == "ld") {
     DATA <- x$combined_values$ld_combined
     sample_value <- x$benchmarks_difLL[[1]][, 1, drop = FALSE]
-    xlabel <- "Likelihood difference"
-    title <- paste0("Benchmark: Likelihood Difference Distribution for Preferred Hypothesis ", pref_hypo_name)
+    xlabel <- "Log-likelihood difference"
+    title <- paste0("Benchmark: Log-likelihood Difference Distribution for Preferred Hypothesis ", pref_hypo_name)
   }
   
   # -------------------------------------------------------------------------
@@ -191,16 +191,19 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
                          percentile_df)
   
   # add segment: if gw or ld, then x = 0, else x = 1
+  vert_line_width <- 1
   if (output_type == "ld") {
-    vert_line_label <- "No Difference"
-    vert_line_width <- 1
+    vert_line_label <- "Equal Fit"
     percentile_df <- rbind(percentile_df, 
                            data.frame(percentile_value = 0, 
                                       percentile_label = vert_line_label, 
                                       color = "darkgrey", width = vert_line_width))
   } else if (output_type %in% c("rgw", "rlw")) {
-    vert_line_label <- "Same Ratios"
-    vert_line_width <- 1
+    if (output_type == "rgw") {
+      vert_line_label <- "Equal Support"  
+    } else if (output_type == "rlw") {
+      vert_line_label <- "Equal Fit"  
+    }
     percentile_df <- rbind(percentile_df, 
                            data.frame(percentile_value = 1, 
                                       percentile_label = vert_line_label, 
@@ -211,6 +214,7 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
   # make sure the right order is preserved in the legend
   percentile_df$percentile_label <- factor(percentile_df$percentile_label, levels = percentile_df$percentile_label) 
   
+  #sample_value_df <- percentile_df[percentile_df$percentile_label == "sample_value", ]
   
   # Plot maken
   p <- ggplot(density_data, aes(x = Value, fill = Group_pop_values)) +
@@ -226,7 +230,7 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
         na.rm = TRUE
       ) +
     #geom_ribbon(aes(ymin = 0, ymax = y), alpha = alpha) +
-    geom_segment(data = percentile_df, aes(x = percentile_value, xend = percentile_value,
+    geom_segment(data = percentile_df[nrow(percentile_df):1, ], aes(x = percentile_value, xend = percentile_value,
                                            y = 0, yend = Inf, linetype = percentile_label, 
                                            color = percentile_label),
                                            size = 1) +
@@ -253,14 +257,21 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
            color = guide_legend(order = 2),
            size = "none") +
     theme(
-      panel.background = element_rect(fill = "gray97", color = NA), # Voor het plotpaneel
-      plot.background = element_rect(fill = "white", color = NA),      # Voor de hele plot
-      panel.grid.major = element_line(color = "gray90"),               # Voor rasterlijnen
-      panel.grid.minor = element_line(color = "gray90")                # Voor lichte rasterlijnen
-    )
+      panel.background = element_rect(fill = "gray97", color = NA), 
+      plot.background = element_rect(fill = "white", color = NA),   
+      panel.grid.major = element_line(color = "gray90"),            
+      panel.grid.minor = element_line(color = "gray90")             
+    ) 
+  # + geom_segment(data = sample_value_df,
+  #                    aes(x = percentile_value, xend = percentile_value,
+  #                        y = 0, yend = Inf, linetype = percentile_label, 
+  #                        color = percentile_label),
+  #                    size = 1)
   
   if (log_scale) {
-    p <- p + scale_x_log10()
+    p <- p + scale_x_log10() + 
+      labs(caption = "Note: The x-axis is on a log10 scale. The data values themselves are not transformed.")
+
   }
   
   if (distr_grid) {

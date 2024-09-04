@@ -68,7 +68,8 @@
   \item{iter}{The number of iterations for benchmarking. Defaults to \code{1000}.}
   \item{control}{A list of control parameters including \code{convergence_crit} 
   and \code{chunk_size}. For more information, see \link{goric}.}
-  \item{ncpus}{Number of CPUs to use for parallel processing. Defaults to \code{1}.}
+  \item{ncpus}{Number of CPUs to use for parallel processing. Defaults to \code{1}.
+  See details for more information.}
   \item{seed}{A seed for random number generation.}
   \item{output_type}{A character vector specifying the type of output to print 
   or plot. Options are \code{"all"}, \code{"gw"} (goric(a) weights), 
@@ -83,7 +84,9 @@
   \item{percentiles}{A numeric vector specifying the percentiles to be shown. By default 
   the percentiles are inherited from the quantiles used for benchmarking, see \code{quant}.}
   \item{x_lim}{A numeric vector of length 2 specifying the x-axis limits. Defaults to \code{c()}.}
-  \item{log_scale}{If TRUE, The x-axis is transformed using a base-10 logarithmic scale.}
+  \item{log_scale}{logical, If TRUE, The x-axis is transformed using a base-10 logarithmic scale.
+        This transformation adjusts the way the data is visualized on the x-axis, but does not 
+        alter the underlying data values themselves.}
   \item{\ldots}{See \link{goric}.}
 }
 
@@ -97,7 +100,6 @@
   the distribution of the parameter estimates tends to a normal distribution, 
   allowing us to utilize the multivariate normal distribution for benchmarking.
 
-
   \code{benchmark_means} benchmarks the group means of a given GORIC(A) object 
   by evaluating various population effect sizes and comparing the observed 
   group means against these benchmarks.
@@ -110,6 +112,16 @@
   
   \code{plot.benchmark} generates density plots for benchmark analyses of objects 
   of class \code{benchmark}. 
+  
+  The benchmark function leverages the \pkg{future} package for parallel processing, 
+  allowing users to speed up computations by distributing tasks across multiple 
+  cores or machines. If the user does not specify a parallelization plan using 
+  \code{future::plan()}, the package will choose an appropriate strategy based 
+  on the user's operating system. Specifically, on Windows, the package defaults 
+  to using \code{multisession}, which creates separate R sessions for each 
+  parallel task. On Unix-like systems (such as Linux and macOS), the package 
+  defaults to \code{multicore}, which uses forked R processes to avoid the 
+  overhead of setting up separate R sessions.
   }
 
 \value{

@@ -47,20 +47,23 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
                paste(class(object), collapse = ", ")
     ), call. = FALSE)
   }
-  
-  # try to catch user error
-  # ldots <- list(...)
-  # if (!is.null(ldots$alt_sample_size)) {
-  #   alt_group_size <- ldots$alt_sample_size
-  #   ldots$alt_sample_size <- NULL
-  # }
-  # if (!is.null(ldots$sample_size)) {
-  #   group_size <- ldots$sample_size
-  #   ldots$sample_size <- NULL
-  # }
-  
+
   if (!is.null(seed)) set.seed(seed)
   if (!exists(".Random.seed", envir = .GlobalEnv)) runif(1)
+  
+  # keep current plan 
+  oplan <- future::plan() 
+  on.exit(future::plan(oplan), add = TRUE)  
+  
+  current_plan <- future::plan()  
+  
+  if (inherits(current_plan, "sequential")) {
+    if (.Platform$OS.type == "windows") {
+      future::plan(future::multisession, workers = ncpus)
+    } else {
+      future::plan(future::multicore, workers = ncpus)
+    }
+  }
   
   # Hypotheses
   hypos <- object$hypotheses_usr
@@ -185,7 +188,6 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   
   parallel_function_results <- list() 
   
-  future::plan(future::multisession, workers = ncpus)
   progressr::handlers(progressr::handler_txtprogressbar(char = ">"))  
   
   progressr::with_progress({
@@ -202,7 +204,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
       # Create a function that wraps parallel_function
       wrapper_function_means <- function(i) {
         #if (i %% 10 == 0) {  # Only update every 10 iterations
-          p()
+        p()
         #}
         parallel_function_means(i, N = N, var_e = var_e, 
                                 means_pop = means_pop, 
@@ -546,24 +548,27 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
                "However, it belongs to the following class(es):", 
                paste(class(object), collapse = ", ")), call. = FALSE)
   }
-  
-  # # try to catch user error
-  # ldots <- list(...)
-  # if (!is.null(ldots$alt_group_size)) {
-  #   alt_sample_size <- ldots$alt_group_size
-  #   ldots$alt_group_size <- NULL
-  # }
-  # if (!is.null(ldots$group_size)) {
-  #   sample_size <- ldots$group_size
-  #   ldots$group_size <- NULL
-  # }
-  
+ 
   if (!is.null(seed)) set.seed(seed)
   if (!exists(".Random.seed", envir = .GlobalEnv)) runif(1)
   
+  # keep current plan 
+  oplan <- future::plan() 
+  on.exit(future::plan(oplan), add = TRUE)  
+  
+  current_plan <- future::plan()  
+  
+  if (inherits(current_plan, "sequential")) {
+    if (.Platform$OS.type == "windows") {
+      future::plan(future::multisession, workers = ncpus)
+    } else {
+      future::plan(future::multicore, workers = ncpus)
+    }
+  }
+  
   hypos <- object$hypotheses_usr
   
-  if (!is.null(pop_est)) {
+  if (is.null(pop_est)) {
     check_rhs_constants(object$rhs)
   }
   
@@ -627,9 +632,6 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   
   pref_hypo <- which.max(object$result[, 7])
   pref_hypo_name <- object$result$model[pref_hypo]
-  
-  # Stel de parallelle backend in met future
-  future::plan(future::multisession, workers = ncpus)  # Aantal CPUs
   
   nr_iter <- iter
   nr_es  <- nrow(pop_est)

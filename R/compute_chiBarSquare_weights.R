@@ -2,11 +2,12 @@
 # Monte Carlo steps.
 # REF: Groemping, U. Inference with linear Equality and Inequality constraints
 # using R: The Package ic.infer. 
-con_weights <- function(cov, meq) {
+con_weights <- function(cov, meq, tolerance, ridge_constant, ...) {
   if (meq == 0L) {
-    wt_bar <- try(ic_weights(cov))
+    wt_bar <- try(ic_weights(cov, tolerance, ridge_constant, ...))
   } else if (meq > 0) {
-    wt_bar <- try(ic_weights(solve(solve(cov)[-c(1:meq), -c(1:meq)])))
+    wt_bar <- try(ic_weights(solve(solve(cov)[-c(1:meq), -c(1:meq)]), 
+                             tolerance, ridge_constant, ...))
   }
   if (inherits(wt_bar, "try-error")) {
     stop("Restriktor ERROR: the covariance matrix is too large. Try to set mix_weights = \"boot\".", call. = FALSE)

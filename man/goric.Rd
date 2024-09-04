@@ -18,31 +18,31 @@ comparable to the Akaike weights.
 \usage{goric(object, ...)
 
 \method{goric}{default}(object, ..., hypotheses = NULL,
-      comparison = c("unconstrained", "complement", "none"), 
-      VCOV = NULL, sample.nobs = NULL, type = "goric", 
+      comparison = NULL, 
+      VCOV = NULL, sample_nobs = NULL, type = "goric", 
       control = list(), debug = FALSE)
 
 \method{goric}{lm}(object, ..., hypotheses = NULL,
-      comparison = "unconstrained", type = "goric",
+      comparison = NULL, type = "goric",
       missing = "none", auxiliary = c(), emControl = list(),
       debug = FALSE)
 
 \method{goric}{numeric}(object, ..., hypotheses = NULL,
-      VCOV = NULL, comparison = "unconstrained",
-      type = "gorica", sample.nobs = NULL,
+      VCOV = NULL, comparison = NULL,
+      type = "gorica", sample_nobs = NULL,
       debug = FALSE)
 
 \method{goric}{lavaan}(object, ..., hypotheses = NULL,
-      comparison = "unconstrained", type = "gorica",
+      comparison = NULL, type = "gorica",
       standardized = FALSE, debug = FALSE)
 
 \method{goric}{CTmeta}(object, ..., hypotheses = NULL,
-      comparison = "unconstrained", type = "gorica", 
-      sample.nobs = NULL, debug = FALSE)
+      comparison = NULL, type = "gorica", 
+      sample_nobs = NULL, debug = FALSE)
 
 \method{goric}{rma}(object, ..., hypotheses = NULL,
-      VCOV = NULL, comparison = "unconstrained", type = "gorica", 
-      sample.nobs = NULL, debug = FALSE)
+      VCOV = NULL, comparison = NULL, type = "gorica", 
+      sample_nobs = NULL, debug = FALSE)
 
 
 \method{print}{con_goric}(x, digits = max(3, getOption("digits") - 4), \dots)
@@ -63,6 +63,9 @@ comparable to the Akaike weights.
     \item a fitted object of class \code{lavaan}. See examples on how to specify the hypotheses.
     \item a fitted object of class \code{CTmeta}.
     \item a fitted object of class \code{rma}.
+    \item a fitted object of class \code{nlmerMod}.
+    \item a fitted object of class \code{glmerMod}.
+    \item a fitted object of class \code{lmerMod}.
   }
   }
   
@@ -101,7 +104,7 @@ comparable to the Akaike weights.
   error. For more information about constructing the matrix \eqn{R} and \eqn{rhs} 
   see details.}
   
-  \item{comparison}{if "\code{unconstrained}" (default) the unconstrained model is 
+  \item{comparison}{if "\code{unconstrained}" the unconstrained model is 
   included in the set of models. If "\code{complement}" then the restricted object 
   is compared against its complement. Note that the complement can only be computed 
   for one model/hypothesis at a time (for now). If "\code{none}" the model is only 
@@ -110,7 +113,7 @@ comparable to the Akaike weights.
   \item{VCOV}{variance-coviance matrix. Only needed if object is of class numeric and
   \code{type = "gorica"} or \code{type = "goricac"}.}
   
-  \item{sample.nobs}{the number of observations if \code{type = "goricac"}. Note that, 
+  \item{sample_nobs}{the number of observations if \code{type = "goricac"}. Note that, 
   if \code{type = "goricc"}, the number of observations are inherited from the fitted
   object.}
   

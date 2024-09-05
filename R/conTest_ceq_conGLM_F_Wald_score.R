@@ -76,7 +76,7 @@ conTest_ceq.conGLM <- function(object, test = "F", boot = "no",
       OUT$b.restr   <- object$b.restr
       OUT$b.unrestr <- object$b.unrestr
     } else {
-      stop("restriktor ERROR: test ", sQuote(test), " not (yet) implemented.")
+      stop("Restriktor ERROR: test ", sQuote(test), " not (yet) implemented.")
     }
   } else if (#length(CON$ceq.nonlinear.idx) == 0L &&
     #length(CON$cin.linear.idx)     > 0L && # some inequalities restr.

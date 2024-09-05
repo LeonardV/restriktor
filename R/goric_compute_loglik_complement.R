@@ -77,9 +77,9 @@ compute_complement_likelihood <- function(model.org, VCOV,
       cat("log-likelihood_c value =", llc, "\n")
     }
   } else if (all(c(Amat) == 0L)) {
-    stop("restriktor ERROR: no complement exists for an unconstrained hypothesis.")
+    stop("Restriktor ERROR: no complement exists for an unconstrained hypothesis.")
   } else {
-    stop("restriktor ERROR: you might have found a bug, please contact me at: info@restriktor.org!")
+    stop("Restriktor ERROR: you might have found a bug, please contact me at: info@restriktor.org!")
   }
   
   return(list(llc = llc, betasc = betasc))

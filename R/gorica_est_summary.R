@@ -35,7 +35,7 @@ summary.gorica_est <- function(object, type, ...) {
         PT <- PT - 1
       }
     } else {
-      stop("restriktor ERROR: unable to compute penalty term value.")  
+      stop("Restriktor ERROR: unable to compute penalty term value.")  
     }
     
     ans$goric <- -2*(z$loglik - PT)

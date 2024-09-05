@@ -84,12 +84,12 @@ penalty_complement_goric <- function(Amat, meq, type, wt.bar,
     } else if (attr(wt.bar, "method") == "pmvnorm") {
       PTc <- as.numeric(1 + p - wt.bar[idx] * lq1) 
     } else {
-      stop("restriktor ERROR: no level probabilities (chi-bar-square weights) found.")
+      stop("Restriktor ERROR: no level probabilities (chi-bar-square weights) found.")
     }
   } else if (type %in% c("goricc", "goricac")) {
     idx <- length(wt.bar) 
     if (is.null(sample.nobs)) {
-      stop("restriktor ERROR: the argument sample.nobs is not found.")
+      stop("Restriktor ERROR: the argument sample.nobs is not found.")
     }
     N <- sample.nobs
     # small sample correction

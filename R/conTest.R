@@ -43,7 +43,7 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
       if (type %in% c("a","b","global")) {
         if (class(object)[2] %in% "conLM") {
           if (!(test %in% c("f","lrt","score"))) {
-            stop("restriktor ERROR: test ", sQuote(test), " unknown. Choose F, LRT or score.")  
+            stop("Restriktor ERROR: test ", sQuote(test), " unknown. Choose F, LRT or score.")  
           } 
           if (test == "f") {
             conTestF(object, type = type, ...)
@@ -54,7 +54,7 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
           } 
         } else if (class(object)[2] %in% "conRLM") { 
           if (!(test %in% c("f","wald","score"))) {
-            stop("restriktor ERROR: test ", sQuote(test), " unknown. Choose F, Wald or score.")  
+            stop("Restriktor ERROR: test ", sQuote(test), " unknown. Choose F, Wald or score.")  
           } 
           if (test == "f") {
             conTestF(object, type = type, ...)
@@ -65,7 +65,7 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
           } 
         } else if (class(object)[2] %in% "conGLM") {
           if (!(test %in% c("f","lrt","score"))) {
-            stop("restriktor ERROR: test ", sQuote(test), " unknown. Choose Wald, LRT or score.")  
+            stop("Restriktor ERROR: test ", sQuote(test), " unknown. Choose Wald, LRT or score.")  
           } 
           if (test == "f") {
             conTestF(object, type = type, ...)
@@ -76,7 +76,7 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
           } 
         } else if (class(object)[2] %in% "conMLM") {
           if (!(test %in% c("lrt"))) {
-            stop("restriktor ERROR: test ", sQuote(test), " unknown. Only LRT available for now.")  
+            stop("Restriktor ERROR: test ", sQuote(test), " unknown. Only LRT available for now.")  
           }
           if (test == "lrt") {
             conTestLRT(object, type = type, ...)

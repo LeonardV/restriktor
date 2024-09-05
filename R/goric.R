@@ -17,12 +17,12 @@ goric.default <- function(object, ..., hypotheses = NULL,
   }
   
   if (is.null(hypotheses)) {
-    stop(paste("restriktor ERROR: The 'hypotheses' argument is missing. Please make sure",
+    stop(paste("Restriktor ERROR: The 'hypotheses' argument is missing. Please make sure",
          "to provide a valid set of hypotheses, for example, hypotheses =",
          "list(h1 = 'x1 > x2 > x3')."), call. = FALSE)
   } else {
     if (!is.list(hypotheses)) {
-      stop(paste("restriktor ERROR: the hypotheses must be specified as a list.",
+      stop(paste("Restriktor ERROR: the hypotheses must be specified as a list.",
       "For example, hypotheses = list(h1 = 'x1 > x2 > x3')", call. = FALSE))
     }
     
@@ -33,7 +33,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   }
   
   if (is.null(sample_nobs) && type %in% c("goricac")) {
-    stop(paste("restriktor ERROR: the argument sample_nobs is not found."))
+    stop(paste("Restriktor ERROR: the argument sample_nobs is not found."))
   }
   
   if (!is.null(VCOV)) {
@@ -59,7 +59,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   # check for unkown arguments
   pm <- pmatch(names(ldots), goric_arguments, 0L)
   if (any(pm == 0)) {
-    stop("restriktor ERROR: argument ", 
+    stop("Restriktor ERROR: argument ", 
          sQuote(paste(names(ldots)[pm == 0], collapse = ", ")), 
          " unknown.", call. = FALSE)
   }
@@ -238,7 +238,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
                                                        type        = type,
                                                        sample.nobs = sample_nobs)) 
     } else {
-      stop("restriktor ERROR: I don't know how to handle an object of class ", paste0(class(object)[1]))
+      stop("Restriktor ERROR: I don't know how to handle an object of class ", paste0(class(object)[1]))
     }
 
   
@@ -342,7 +342,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
               PTu <- 1 + ncol(VCOV)
             } else if (type %in% c("goricc", "goricac")) {
               if (is.null(sample_nobs)) {
-                stop("restriktor ERROR: if type = \'goric(a)c\' the argument \'sample_nobs\' needs to be provided.",
+                stop("Restriktor ERROR: if type = \'goric(a)c\' the argument \'sample_nobs\' needs to be provided.",
                      call. = FALSE)
               }
               N <- sample_nobs
@@ -356,7 +356,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
             }
             
             if (is.null(PTm)) {
-              stop("restriktor ERROR: no chi-bar-square weights (a.k.a. level probabilities) are found. Use mix_weights = 'pmvnorm' (default) or 'boot'.", call. = FALSE)
+              stop("Restriktor ERROR: no chi-bar-square weights (a.k.a. level probabilities) are found. Use mix_weights = 'pmvnorm' (default) or 'boot'.", call. = FALSE)
             }
             
             goric.Hm <- -2*(llm - PTm)
@@ -422,7 +422,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
             df$model <- as.character(df$model)
           }
         },
-          stop("restriktor ERROR: I don't know how to compute the goric-values.")
+          stop("Restriktor ERROR: I don't know how to compute the goric-values.")
   )
 
   ans$objectList  <- conList
@@ -500,7 +500,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
 #   # hypotheses are inherited from the restriktor object
 #   
 #   if (!inherits(object, "restriktor")) {
-#     stop("restriktor ERROR: the object must be of class restriktor.")
+#     stop("Restriktor ERROR: the object must be of class restriktor.")
 #   }
 #   
 #   objectList <- list(...)
@@ -565,12 +565,12 @@ goric.lm <- function(object, ..., hypotheses = NULL,
   # only one object of class lm is allowed
   isLm <- unlist(lapply(objectList, function(x) class(x)[1] %in% c("lm", "glm", "mlm", "rlm")))
   if (sum(isLm) > 1L) {
-    stop(paste("restriktor ERROR: multiple objects of class lm found, only 1 is allowed."), call. = FALSE)
+    stop(paste("Restriktor ERROR: multiple objects of class lm found, only 1 is allowed."), call. = FALSE)
   }
   
   if (missing == "two.stage") {
     if (family(object)$family != "gaussian") {
-      stop(paste("restriktor ERROR: \"two.stage\" is not available in the categorical setting"), call. = FALSE)
+      stop(paste("Restriktor ERROR: \"two.stage\" is not available in the categorical setting"), call. = FALSE)
     }
     tsm  <- two_stage_matrices(object, auxiliary = auxiliary, emControl = emControl)
     vcov <- two_stage_sandwich(tsm)
@@ -622,12 +622,12 @@ goric.numeric <- function(object, ..., hypotheses = NULL,
                           debug = FALSE) {
   
   if (!c(type %in% c("gorica", "goricac"))) {
-    stop(paste("restriktor ERROR: object of class numeric is only supported for", 
+    stop(paste("Restriktor ERROR: object of class numeric is only supported for", 
          "type = 'gorica(c)'."), call. = FALSE)
   }
   
   if (is.null(VCOV)) {
-    stop(paste("restriktor ERROR: the argument VCOV is not found."), call. = FALSE)
+    stop(paste("Restriktor ERROR: the argument VCOV is not found."), call. = FALSE)
   } 
   
   # Maak de objectList aan en voeg de vereiste elementen toe
@@ -660,7 +660,7 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
                          debug = FALSE) {
   
   if (!c(type %in% c("gorica", "goricac"))) {
-    stop(paste("restriktor ERROR: object of class lavaan is only supported for", 
+    stop(paste("Restriktor ERROR: object of class lavaan is only supported for", 
          "type = 'gorica(c)'."), call. = FALSE)
   }
   
@@ -696,7 +696,7 @@ goric.CTmeta <- function(object, ..., hypotheses = NULL,
                          debug = FALSE) {
   
   if (!c(type %in% c("gorica", "goricac"))) {
-    stop(paste("restriktor ERROR: object of class CTmeta is only supported for",
+    stop(paste("Restriktor ERROR: object of class CTmeta is only supported for",
                "type = 'gorica(c)'."), call. = FALSE)
   }
   
@@ -729,11 +729,11 @@ goric.rma <- function(object, ..., hypotheses = NULL,
                       debug = FALSE) {
   
   if (!inherits(object, c("rma.uni"))) {
-    stop(paste("restriktor ERROR: the object must be of class 'rma.uni'."), call. = FALSE)
+    stop(paste("Restriktor ERROR: the object must be of class 'rma.uni'."), call. = FALSE)
   }
   
   if (!c(type %in% c("gorica", "goricac"))) {
-    stop(paste("restriktor ERROR: object of class rma is only supported for type = 'gorica(c)'."), call. = FALSE)
+    stop(paste("Restriktor ERROR: object of class rma is only supported for type = 'gorica(c)'."), call. = FALSE)
   }
   
   # Maak de objectList aan en voeg de vereiste elementen toe
@@ -769,7 +769,7 @@ goric.nlmerMod <- function(object, ..., hypotheses = NULL,
                            debug = FALSE) {
   
   if (!c(type %in% c("gorica", "goricac"))) {
-    stop(paste("restriktor ERROR: object of class nlmerMod is only supported for", 
+    stop(paste("Restriktor ERROR: object of class nlmerMod is only supported for", 
                "type = 'gorica(c)'."), call. = FALSE)
   }
   
@@ -804,7 +804,7 @@ goric.glmerMod <- function(object, ..., hypotheses = NULL,
                            debug = FALSE) {
   
   if (!c(type %in% c("gorica", "goricac"))) {
-    stop(paste("restriktor ERROR: object of class glmerMod is only supported for", 
+    stop(paste("Restriktor ERROR: object of class glmerMod is only supported for", 
                "type = 'gorica(c)'."), call. = FALSE)
   }
   
@@ -839,7 +839,7 @@ goric.lmerMod <- function(object, ..., hypotheses = NULL,
                           debug = FALSE) {
   
   if (!c(type %in% c("gorica", "goricac"))) {
-    stop(paste("restriktor ERROR: object of class lmerMod is only supported for", 
+    stop(paste("Restriktor ERROR: object of class lmerMod is only supported for", 
                "type = 'gorica(c)'."), call. = FALSE)
   }
   
@@ -874,7 +874,7 @@ goric.lmerMod <- function(object, ..., hypotheses = NULL,
 #                       debug = FALSE) {
 #   
 #   if (!c(type %in% c("gorica", "goricac"))) {
-#     stop(paste("restriktor ERROR: object of class nlmerMod is only supported for", 
+#     stop(paste("Restriktor ERROR: object of class nlmerMod is only supported for", 
 #          "type = 'gorica(c)'."), call. = FALSE)
 #   }
 #   

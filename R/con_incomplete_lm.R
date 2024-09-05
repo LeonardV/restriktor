@@ -379,7 +379,7 @@ two_stage_matrices <- function(object, auxiliary = c(), emControl = list(), ...)
   sat_vnames_dup <- sat_vnames[duplicated(sat_vnames)]
   
   if (length(sat_vnames_dup) > 0L) {
-    stop("restriktor ERROR: duplicated variable name(s) found: ", sQuote(sat_vnames_dup))
+    stop("Restriktor ERROR: duplicated variable name(s) found: ", sQuote(sat_vnames_dup))
   }
   
   covstruc <- outer(sat_vnames, sat_vnames, function(x, y) paste(x, "~~", y))

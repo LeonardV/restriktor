@@ -120,7 +120,7 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
       ans$coefficients <- cbind(c(b.restr, b.def))
       colnames(ans$coefficients) <- "Estimate"
   } else {
-      stop("restriktor ERROR: you may have found a bug, please contact me at info@restriktor.org")
+      stop("Restriktor ERROR: you may have found a bug, please contact me at info@restriktor.org")
     }
   
   ny <- ncol(coef(object$model.org))

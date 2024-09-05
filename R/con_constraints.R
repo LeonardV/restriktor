@@ -146,16 +146,16 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
   bvec <- rrc$rhs
   
   if (!(nrow(Amat) == length(bvec))) {
-    warning(paste("restriktor WARNING: The number of constraints does not match", 
+    warning(paste("Restriktor WARNING: The number of constraints does not match", 
                   "the \'rhs\' (nrow(Amat) != length(rhs))."))
   }
   
   if (meq > nrow(Amat)) { 
-    stop("restriktor ERROR: The maximum number of equality constraints = ", nrow(Amat), "\n")
+    stop("Restriktor ERROR: The maximum number of equality constraints = ", nrow(Amat), "\n")
   }
   
   if (length(CON$ceq.nonlinear.idx) > 0L || length(CON$cin.nonlinear.idx) > 0L) {
-    stop(paste("restriktor ERROR: can not handle (yet) nonlinear (in)equality restriktions"))
+    stop(paste("Restriktor ERROR: can not handle (yet) nonlinear (in)equality restriktions"))
   }
   
   if (debug && is.character(constraints)) {

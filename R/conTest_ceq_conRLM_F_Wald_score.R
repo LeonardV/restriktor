@@ -90,13 +90,13 @@ conTest_ceq.conRLM <- function(object, test = "F", boot = "no",
       OUT$b.restr <- object$b.restr
       OUT$b.unrestr <- object$b.unrestr 
     } else {
-      stop("restriktor ERROR: test ", sQuote(test), " not (yet) implemented.")
+      stop("Restriktor ERROR: test ", sQuote(test), " not (yet) implemented.")
     }
   } else if (nrow(Amat != meq)) {
     stop("test not applicable with inequality constraints.")
   } else if (length(CON$ceq.nonlinear.idx) > 0L ||
              length(CON$cin.nonlinear.idx) > 0L) {
-    stop("ERROR: can not handle (yet) nonlinear (in)equality constraints")
+    stop("Restriktor ERROR: can not handle (yet) nonlinear (in)equality constraints")
   }
   
   OUT$boot <- boot

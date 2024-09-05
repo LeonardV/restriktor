@@ -260,7 +260,7 @@ con_pvalue_boot_parametric <- function(model, Ts.org,
        Ts.boot <- Ts.boot[-idx.unique]
      }
      if (length(idx.unique) > 0L) {
-       warning("restriktor WARNING: only ", (R - length(idx.unique)), 
+       warning("Restriktor WARNING: only ", (R - length(idx.unique)), 
                " bootstrap draws were successful")
      }
     # > or >= ??? 
@@ -429,7 +429,7 @@ con_pvalue_boot_model_based <- function(model, Ts.org,
     Ts.boot <- Ts.boot[-idx.unique]
   }
   if (length(idx.unique) > 0L) {
-    warning("restriktor WARNING: only ", (R - length(idx.unique)), 
+    warning("Restriktor WARNING: only ", (R - length(idx.unique)), 
             " bootstrap draws were successful")
   }
   # > or >= ???

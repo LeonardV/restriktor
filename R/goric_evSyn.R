@@ -140,7 +140,7 @@ evSyn_ICvalues  <- function(object, ...) UseMethod("evSyn_ICvalues")
 #     }
 #     evSyn_ICvalues(object, ...)
 #   } else {
-#     stop("restriktor Error: I don't know how to handle the input.")
+#     stop("Restriktor Error: I don't know how to handle the input.")
 #   }
 # }
 

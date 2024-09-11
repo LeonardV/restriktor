@@ -148,16 +148,6 @@ evSyn <- function(object, ...) {
   
   arguments <- list(...)
   
-  # checkArguments <- function(args) {
-  #   pnames <- c("VCOV", "PT", "hypotheses", "type", "comparison", "hypo_names")
-  #   pm <- pmatch(names(args), pnames, nomatch = 0L)
-  #   if (any(pm == 0L)) { 
-  #     stop("Restriktor Error: ", names(args[which(pm == 0L)]), " invalid argument(s).")
-  #   }
-  # }
-  # 
-  # if (length(arguments)) checkArguments(arguments)
-  
   VCOV <- arguments$VCOV
   PT   <- arguments$PT
   
@@ -1070,7 +1060,7 @@ plot.evSyn <- function(x, ...) {
     scale_y_continuous(limits = c(0, 1), n.breaks = 10) +
     scale_x_discrete(expand = c(0, 0.05)) +
     labs(x = "Studies", y = "GORIC(A) weights",
-         title = "GORIC(A) weights per study and cumulative",
+         title = "Cumulative GORIC(A) weights and GORIC(A) weights per study",
          shape = "", color = "", linetype = "") +
     guides(shape = guide_legend(override.aes = list(linetype = 0)))
 }

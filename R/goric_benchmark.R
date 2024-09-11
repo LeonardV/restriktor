@@ -52,16 +52,13 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   if (!exists(".Random.seed", envir = .GlobalEnv)) runif(1)
   
   # keep current plan 
-  oplan <- future::plan() 
-  on.exit(future::plan(oplan), add = TRUE)  
-  
-  current_plan <- future::plan()  
-  
+  current_plan <- plan()  
+  on.exit(plan(current_plan), add = TRUE)  
   if (inherits(current_plan, "sequential")) {
     if (.Platform$OS.type == "windows") {
-      future::plan(future::multisession, workers = ncpus)
+      plan(future::multisession, workers = ncpus)
     } else {
-      future::plan(future::multicore, workers = ncpus)
+      plan(future::multicore, workers = ncpus)
     }
   }
   
@@ -216,7 +213,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
       }
       
       name <- paste0("pop_es = ", pop_es[teller_es])
-      parallel_function_results[[name]] <- future.apply::future_lapply(
+      parallel_function_results[[name]] <- future_lapply(
         seq_len(nr_iter),
         wrapper_function_means,
         future.seed = TRUE  # Ensures safe and reproducible random number generation
@@ -553,16 +550,13 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   if (!exists(".Random.seed", envir = .GlobalEnv)) runif(1)
   
   # keep current plan 
-  oplan <- future::plan() 
-  on.exit(future::plan(oplan), add = TRUE)  
-  
-  current_plan <- future::plan()  
-  
+  current_plan <- plan()  
+  on.exit(plan(current_plan), add = TRUE)  
   if (inherits(current_plan, "sequential")) {
     if (.Platform$OS.type == "windows") {
-      future::plan(future::multisession, workers = ncpus)
+      plan(future::multisession, workers = ncpus)
     } else {
-      future::plan(future::multicore, workers = ncpus)
+      plan(future::multicore, workers = ncpus)
     }
   }
   
@@ -660,7 +654,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
       }
       
       name <- paste0("pop_est = ", rnames[teller_es])
-      parallel_function_results[[name]] <- future.apply::future_lapply(
+      parallel_function_results[[name]] <- future_lapply(
         seq_len(nr_iter),
         wrapper_function_asymp,
         future.seed = TRUE  # Ensures safe and reproducible random number generation

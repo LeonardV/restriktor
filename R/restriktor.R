@@ -23,7 +23,7 @@ restriktor <- function(object, constraints = NULL, ...) {
     pm <- pmatch(names(arguments), pnames, nomatch = 0L)
     if (any(pm == 0L)) { 
       pm.idx <- which(pm == 0L)
-      stop("Restriktor Error: ", names(arguments[pm.idx]), " invalid argument(s).")
+      stop("Restriktor Error: ", paste(sQuote(names(arguments[pm.idx])), collapse = " and "), " invalid argument(s).")
     }
   }
 

@@ -164,13 +164,17 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     class(x$ratio.gw) <- "numeric"
     objectname1 <- sQuote(objectnames[1])
     support_ratio <- sprintf("%.2f", x$ratio.gw[1, 2])
-    cat(glue("---\nThe order-restricted hypothesis {objectname1} has {support_ratio} times more support than its complement.\n\n"))
+    #cat(glue("---\nThe order-restricted hypothesis {objectname1} has {support_ratio} times more support than its complement.\n\n"))
+    cat(paste0("---\nThe order-restricted hypothesis ", objectname1, 
+               " has ", support_ratio, " times more support than its complement.\n\n"))
   } else if (comparison == "none" && length(overlap_unique_combinations) == 0 && length(df$model) == 2) {
     class(x$ratio.gw) <- "numeric"
     support_ratio <- sprintf("%.2f", x$ratio.gw[1, 2])
     objectname1 <- sQuote(objectnames[1])
     objectname2 <- sQuote(objectnames[2])
-    cat(glue("---\nThe order-restricted hypothesis {objectname1} has {support_ratio} times more support than {objectname2}.\n\n"))
+    #cat(glue("---\nThe order-restricted hypothesis {objectname1} has {support_ratio} times more support than {objectname2}.\n\n"))
+    cat(paste0("---\nThe order-restricted hypothesis ", objectname1, 
+               " has ", support_ratio, " times more support than ", objectname2, ".\n\n"))
   } else if (comparison == "unconstrained" && length(overlap_unique_combinations) == 0 && length(df$model) == 2) { 
     formatted_numbers <- sprintf("%.3f %.3f", x$result[[7]][1], x$result[[7]][2])
     numbers <- strsplit(formatted_numbers, " ")[[1]]

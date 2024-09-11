@@ -25,10 +25,6 @@ importFrom("lavaan",
            lavaan # conTestD
            )
 
-importFrom("glue",
-           glue)
-
-
 importFrom("mvtnorm",
            #rmvnorm, 
            dmvnorm,

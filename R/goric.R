@@ -23,7 +23,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   } else {
     if (!is.list(hypotheses)) {
       stop(paste("Restriktor ERROR: the hypotheses must be specified as a list.",
-      "For example, hypotheses = list(h1 = 'x1 > x2 > x3')", call. = FALSE))
+      "For example, hypotheses = list(h1 = 'x1 > x2 > x3')"), call. = FALSE)
     }
     
     if (length(hypotheses) == 1 && is.null(comparison)) {

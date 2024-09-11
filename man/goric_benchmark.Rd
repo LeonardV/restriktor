@@ -122,6 +122,9 @@
   parallel task. On Unix-like systems (such as Linux and macOS), the package 
   defaults to \code{multicore}, which uses forked R processes to avoid the 
   overhead of setting up separate R sessions.
+  
+  The \code{plan()} must be specified before running the benchmark function, e.g.,
+  \code{future::plan(future::multisession, workers = ncpus)}
   }
 
 \value{
@@ -170,6 +173,8 @@ fit_goric <- goric(anova_result, hypotheses = list(H1 = h1, H2 = h2),
 # by default: ES = 0 \& ES = observed ES
 # In practice you want to increase the number of iterations (default = 1000).
 \donttest{
+# multisession supports windows machines
+# future::plan(future::multisession, workers = ncpus)
 benchmark_results_mean <- benchmark(fit_goric, iter = 10, model_type = "means")
 print(benchmark_results_mean)
 }

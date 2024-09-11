@@ -9,7 +9,17 @@ summary.con_goric <- function(object, brief = TRUE,
   ratio.gw <- x$ratio.gw
   rownames(ratio.gw) <- rownames(x$ratio.gw)
   
-  x2 <- lapply(x$result[-1], sprintf, fmt = dig)
+  #x2 <- lapply(x$result[-1], sprintf, fmt = dig)
+  x2 <- as.data.frame(lapply(x$result[, -1], function(column) {
+    sapply(column, function(val) {
+      if (is.na(val)) {
+        return("")  # Zet NA om naar een lege string
+      } else {
+        return(sprintf(dig, val))  # Anders sprintf toepassen
+      }
+    })
+  }))
+  
   df <- data.frame(model = x$result$model, x2)
   
   objectnames <- as.character(df$model)

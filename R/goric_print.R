@@ -149,10 +149,10 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   # check if the likelihood of models are equal, this means that the hypotheses overlap (i.e., subset)
   if (length(combined_string) > 0) {
     message("---\nNote: Hypotheses ", paste0(sQuote(combined_string), collapse = " and "), 
-            " have equal likelihood values (i.e., the hypotheses overlap). The GORIC(A) weights,", 
-            " are influenced only by changes in penalty values and have a maximum limit.",
-            " If any overlapping hypothesis has the lowest GORIC(A) value in the entire set,",
-            " it is recommended to further evaluate it against its complement.")
+            " have equal likelihood values. This indicates that they overlap and",
+            " that the ratio of their GORIC(A) weights reached its maximum. If of", 
+            " interest, we recommend evaluating the overlap versus its complement.", 
+            " See vignette(\"Guidelines_GORIC_output\") for more information and an example.")
   }
 
   if (comparison == "unconstrained" && length(df$model) == 2) {
@@ -161,18 +161,28 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   }
   
   if (comparison == "complement" && length(overlap_unique_combinations) == 0) {  
-    class(x$ratio.gw) <- "numeric"
-    objectname1 <- sQuote(objectnames[1])
-    support_ratio <- sprintf("%.2f", x$ratio.gw[1, 2])
-    #cat(glue("---\nThe order-restricted hypothesis {objectname1} has {support_ratio} times more support than its complement.\n\n"))
-    cat(paste0("---\nThe order-restricted hypothesis ", objectname1, 
-               " has ", support_ratio, " times more support than its complement.\n\n"))
+    
+    formatted_numbers <- sprintf("%.3f %.3f", x$result[[7]][1], x$result[[7]][2])
+    numbers <- strsplit(formatted_numbers, " ")[[1]]
+    if (as.numeric(numbers[1]) / as.numeric(numbers[2]) > 1) {
+      support_ratio <- sprintf("%.2f", x$ratio.gw[1, 2])
+      cat(paste0("---\nThe order-restricted hypothesis ", sQuote(objectnames[1]), 
+                 " has ", support_ratio, " times more support than its complement.\n\n"))
+    } else if (as.numeric(numbers[1]) / as.numeric(numbers[2]) < 1) {
+      result <- paste(numbers[1], "/", numbers[2], "< 1", sep = " ")
+      cat("---\nThe order-restricted hypothesis", sQuote(objectnames[1]), "has", result, "times more support than its complement.",
+      "That is, the complement has", sprintf("%.2f", as.numeric(numbers[2]) / as.numeric(numbers[1])), "times more support than", sQuote(objectnames[1]), "\n\n")      
+    } else {
+      result <- paste(numbers[1], "/", numbers[2], "= 1", sep = " ")
+      cat("---\nThe order-restricted hypothesis", sQuote(objectnames[1]), "and the complement have equal support:", result, "\n\n")      
+    }
+    # cat(paste0("---\nThe order-restricted hypothesis ", objectname1, 
+    #            " has ", support_ratio, " times more support than its complement.\n\n"))
   } else if (comparison == "none" && length(overlap_unique_combinations) == 0 && length(df$model) == 2) {
     class(x$ratio.gw) <- "numeric"
     support_ratio <- sprintf("%.2f", x$ratio.gw[1, 2])
     objectname1 <- sQuote(objectnames[1])
     objectname2 <- sQuote(objectnames[2])
-    #cat(glue("---\nThe order-restricted hypothesis {objectname1} has {support_ratio} times more support than {objectname2}.\n\n"))
     cat(paste0("---\nThe order-restricted hypothesis ", objectname1, 
                " has ", support_ratio, " times more support than ", objectname2, ".\n\n"))
   } else if (comparison == "unconstrained" && length(overlap_unique_combinations) == 0 && length(df$model) == 2) { 

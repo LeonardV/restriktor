@@ -297,7 +297,7 @@ benchmarks_12u <- benchmark(results_12u, model_type = "means", iter = 100)
 print(benchmarks_12u, color = FALSE) # Rmd file
 plot(benchmarks_12u, output_type = "rgw") 
 plot_out <- plot(benchmarks_12u) # save all plots in object plot_out
-plot(plot_out$grobs$`H1 vs. H2`) # call separate plot
+plot(plot_out$plots$`H1 vs. H2`) # call separate plot
 ```
 <!--   -->
 <!-- TO DO titel loopt door legend -->
@@ -316,7 +316,7 @@ If of interest, one can next inspect the support for the overlap, here $H_1$, ve
 <!-- TO DO dit verwerken in tekst! -->
 <!-- ```{r, message = FALSE, warning = FALSE} -->
 <!-- plot_out_log <- plot(benchmarks_12u, log_scale = TRUE) # save all plots in object plot_out -->
-<!-- plot(plot_out_log$grobs$`H1 vs. H2`) # call separate plot -->
+<!-- plot(plot_out_log$plots$`H1 vs. H2`) # call separate plot -->
 <!-- ``` -->
 <!-- NB nu grijze lijn nog steeds op 1 -->
 <!-- Plot verandert ook eigenlijk niet - kan dit  hier nog niet - in vorige ging log transformatie an sich wel goed, toch? -->

@@ -259,10 +259,15 @@ goric.default <- function(object, ..., hypotheses = NULL,
 
   if (comparison == "complement" && length(conList) > 1L) {
     warning("Restriktor Warning: Only one hypothesis is allowed (for now) when comparison = 'complement'.",
-            " Setting comparison to 'unconstrained' instead.", call. = FALSE)
+            " Comparison set to 'unconstrained' instead.", call. = FALSE)
     comparison <- "unconstrained"
-  } 
-
+  }
+  
+  if (comparison == "complement" && length(conList) == 1L && nrow(conList[[1]]$constraints) == conList[[1]]$neq) {
+    comparison  <- "unconstrained"
+    message("Restriktor Message: The complement of a hypothesis with only equality", 
+    " constraints is the unconstrained model. Comparison set to 'unconstrained' instead.")
+  }
 # compute complement ------------------------------------------------------
   df.c <- NULL
   if (comparison == "complement") {

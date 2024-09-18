@@ -26,7 +26,7 @@ print.restriktor <- function(x, digits = max(3, getOption("digits") - 2), ...) {
     cat("restricted multivariate linear model:\n\n")
   }
   
-  if (attr(x$wt.bar, "method") == "boot") {
+  if (attr(x$wt.bar, "method") == "boot" && nrow(x$constraints) != x$neq) {
     total_bootstrap_draws <- attr(x$wt.bar, "total_bootstrap_draws")
     wt_boostrap_errors <- attr(x$wt.bar, "error.idx")
     converged <- attr(x$wt.bar, "converged")

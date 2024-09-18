@@ -321,14 +321,25 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   }
   
   
+  ## FIXME
+  # check if ceq only! It might happen that nrow(amat) < meq
+  # if restriktor is called from goric() (inherits(x, goric)) than something goes wrong.
+  ##
+  
+  
   ## determing level probabilities
   # start timing
   start.time <- proc.time()[3]
   # compute chi-square-bar weights
   if (mix_weights != "none" && inherits(object, "goric")) {
+    # here we deal with possible range restrictions and are considered as ceq
     RREF <- Amat_meq_PT$RREF
     OUT$PT_Amat <- PT_Amat <- Amat_meq_PT$PT_Amat
     OUT$PT_meq <- PT_meq <- Amat_meq_PT$PT_meq
+    
+    if (nrow(Amat) == meq) {
+      OUT$PT_meq <- PT_meq <- nrow(PT_Amat)
+    }
 
     if (mix_weights == "pmvnorm") {
       if (RREF$rank < nrow(PT_Amat) && RREF$rank != 0L) {
@@ -339,8 +350,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
         )
         mix_weights <- "boot"
       }
-    } 
-    
+    }
     wt.bar <- calculate_weight_bar(Amat = PT_Amat, meq = PT_meq, VCOV = Sigma, 
                                    mix_weights = mix_weights, seed = seed, 
                                    control = control, verbose = verbose, ...) 

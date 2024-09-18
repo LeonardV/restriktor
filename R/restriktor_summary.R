@@ -174,7 +174,11 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
   if (goric != "none" && !(attr(wt.bar, "method") == "none")) {
     Amat_meq_PT <- PT_Amat_meq(Amat, meq)
     ans$PT_Amat <- Amat_meq_PT$PT_Amat
-    ans$PT_meq  <- Amat_meq_PT$PT_meq
+    if (nrow(Amat) == meq) {
+      ans$PT_meq <- nrow(ans$PT_Amat)
+    } else {
+      ans$PT_meq  <- Amat_meq_PT$PT_meq
+    }
     
     # compute penalty term based on simulated level probabilities (wt.bar)
     # The value 1 is the penalty for estimating the variance/dispersion parameter.

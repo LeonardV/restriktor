@@ -331,6 +331,10 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
     OUT$PT_Amat <- PT_Amat <- Amat_meq_PT$PT_Amat
     OUT$PT_meq <- PT_meq <- Amat_meq_PT$PT_meq
     
+    if (nrow(Amat) == meq) {
+      OUT$PT_meq <- PT_meq <- nrow(PT_Amat)
+    }
+    
     if (mix_weights == "pmvnorm") {
       if (RREF$rank < nrow(PT_Amat) && RREF$rank != 0L) {
         messages$mix_weights_rank <- paste(

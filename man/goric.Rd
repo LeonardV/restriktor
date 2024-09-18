@@ -104,11 +104,16 @@ comparable to the Akaike weights.
   error. For more information about constructing the matrix \eqn{R} and \eqn{rhs} 
   see details.}
   
-  \item{comparison}{if "\code{unconstrained}" the unconstrained model is 
-  included in the set of models. If "\code{complement}" then the restricted object 
-  is compared against its complement. Note that the complement can only be computed 
-  for one model/hypothesis at a time (for now). If "\code{none}" the model is only 
-  compared against the models provided by the user.}
+  \item{comparison}{The default behavior depends on the number of user-specified 
+  order-restricted hypotheses. If a single hypothesis is specified, it is compared 
+  against its complement by default. When multiple order-restricted hypotheses are 
+  specified, the unconstrained model is added as a safeguard to the set of hypotheses.
+
+  These default settings can be overridden. Use "\code{unconstrained}" to include 
+  the unconstrained model in the set of models. Use "\code{complement}" to compare 
+  the order-restricted object against its complement; note that the complement can 
+  only be computed for one model/hypothesis at a time for now. If "\code{none}" 
+  is chosen, the model is compared only against those provided by the user.}
   
   \item{VCOV}{variance-coviance matrix. Only needed if object is of class numeric and
   \code{type = "gorica"} or \code{type = "goricac"}.}

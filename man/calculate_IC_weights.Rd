@@ -39,7 +39,7 @@ calculate_IC_weights(IC)
 
 ## PT weights 
 # This examples shows how to calculate PT weights.
-# Notably, one is interested in PT weights when the log likelihood for two or more
+# Notably, one is interested in PT weights when the log-likelihood for two or more
 # hypotheses are (approximately) equal.
 # Then, the comparison between those hypotheses is solely based on the PT values.
 # The IC weights will then equal the PT weights.

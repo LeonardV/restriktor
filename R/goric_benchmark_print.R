@@ -72,8 +72,8 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"),
   
   text_gw  <- paste0("Benchmark: Percentiles of ", orange, goric_type, " Weights", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
   text_rgw <- paste0("Benchmark: Percentiles of ", orange, "Ratio-of-", goric_type, "-weights", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
-  text_rlw <- paste0("Benchmark: Percentiles of ", orange, "Ratio-of-likelihood-weights", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
-  text_ld  <- paste0("Benchmark: Percentiles of ", orange, "Differences in Likelihood Values", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
+  text_rlw <- paste0("Benchmark: Percentiles of ", orange, "Ratio-of-log-likelihood-weights", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
+  text_ld  <- paste0("Benchmark: Percentiles of ", orange, "Differences in Log-likelihood Values", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
   
   cat("\n")
   #cat(strrep("=", 70), "\n")
@@ -143,7 +143,7 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"),
     )
   }
   
-  # Print benchmarks for ratio likelihood-weights percentiles
+  # Print benchmarks for ratio log-likelihood-weights percentiles
   if ("all" %in% output_type || "rlw" %in% output_type) {
     print_section(
       text_rlw,
@@ -155,7 +155,7 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"),
     )
   }
   
-  # Print benchmarks for difference likelihood-values percentiles
+  # Print benchmarks for difference log-likelihood-values percentiles
   if ("all" %in% output_type || "ld" %in% output_type) {
     print_section(
       text_ld,

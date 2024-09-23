@@ -73,8 +73,9 @@
   \item{seed}{A seed for random number generation.}
   \item{output_type}{A character vector specifying the type of output to print 
   or plot. Options are \code{"all"}, \code{"gw"} (goric(a) weights), 
-  \code{"rgw"} (ratio of goric(a) weights), \code{"rlw"} (ratio of likelihood values), 
-  and \code{"ld"} (likelihood difference). Defaults to \code{"rgw"} for print and \code{"rgw"} for plot.}
+  \code{"rgw"} (ratio of goric(a) weights), \code{"rlw"} (ratio of log-likelihood values), 
+  and \code{"ld"} (log-likelihood difference). Defaults to \code{"rgw"} for print 
+  and \code{"rgw"} for plot.}
   \item{color}{If TRUE, the output will include ANSI color coding. Set \code{color = FALSE} 
   when using this function in R Markdown documents to avoid rendering issues with color codes.}
   \item{alpha}{Alpha refers to the opacity of a geom. Values of alpha range from 0 to 1, with lower values corresponding to more transparent colors.}

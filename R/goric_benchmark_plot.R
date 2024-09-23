@@ -40,7 +40,7 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
     DATA <- x$combined_values$rlw_combined  
     sample_value <- x$benchmarks_ratio_ll_weights[[1]][, 1, drop = FALSE]
     xlabel <- "Ratio Log-likelihood Weights"
-    title <- paste0("Benchmark: Ratio-Likelihood-Weights Distribution for Preferred Hypothesis ", pref_hypo_name)
+    title <- paste0("Benchmark: Ratio-Log-Likelihood-Weights Distribution for Preferred Hypothesis ", pref_hypo_name)
   } else if (output_type == "ld") {
     DATA <- x$combined_values$ld_combined
     sample_value <- x$benchmarks_difLL[[1]][, 1, drop = FALSE]

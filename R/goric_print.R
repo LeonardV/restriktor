@@ -127,7 +127,7 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   # Create a matrix with the logical vector and assign dimension names
   loglik_diff_mat <- matrix(loglik_diff, nrow(loglik_diff), ncol(loglik_diff), 
                             dimnames = list(rownames(x$ratio.gw), colnames(x$ratio.gw)))
-  # which hypotheses overlap, i.e., have equal likelihood values
+  # which hypotheses overlap, i.e., have equal log-likelihood values
   loglik_overlap <- which(loglik_diff_mat == 0, arr.ind = TRUE)
   # get unique combination from row- and columnnames
   overlap_unique_combinations <- apply(loglik_overlap, 1, function(x) {
@@ -146,16 +146,19 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   combined_string <- unique(unlist(combined_string))
   combined_string <- combined_string[combined_string != ""]
   
-  # check if the likelihood of models are equal, this means that the hypotheses overlap (i.e., subset)
+  # check if the log-likelihood of models are equal, this means that the hypotheses overlap (i.e., subset)
   if (length(combined_string) > 0) {
     message("---\nNote: Hypotheses ", paste0(sQuote(combined_string), collapse = " and "), 
-            " have equal likelihood values. This indicates that they overlap and",
+            " have equal log-likelihood values. This indicates that they overlap and",
             " that the ratio of their GORIC(A) weights reached its maximum. If of", 
             " interest, we recommend evaluating the overlap versus its complement.", 
-            " See vignette(\"Guidelines_GORIC_output\") for more information and an example.")
+            " Run vignette(\"Guidelines_GORIC_output\") in your console for more", 
+            " information and an example.")
   }
 
-  if (comparison == "unconstrained" && length(df$model) == 2) {
+  if (comparison == "unconstrained" && length(df$model) == 2 && 
+      # If comparison = "complement" and ceq only, than comparison is set to unconstrained internally.
+      nrow(x$objectList[[1]]$constraints) != x$objectList[[1]]$neq) { 
     message("---\nAdvise: Are you certain you wish to assess the order-restricted hypothesis", 
             " in comparison to the unconstrained one, rather than its complement?")
   }
@@ -211,28 +214,37 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       goric_rw_without_unc_best_hypo <- goric_rw_without_unc_best_hypo[goric_rw_without_unc_best_hypo != 1]
       goric_rw_without_unc_best_hypo <- sapply(goric_rw_without_unc_best_hypo, format_value)
       best_hypos_rest <- paste(df$model[!df$model %in% c(best_hypo_name, "unconstrained")])
-      # cat(paste0("---\nThe order-restricted hypothesis ", sQuote(best_hypo_name), " is not weak, with ", 
-      #     goric_rw_without_unc_best_hypo, " times more support than ", best_hypos_rest, ", respectively.\n\n"))
-      # 
-      message <- paste0("The order-restricted hypothesis ", sQuote(best_hypo_name), " is not weak, with ")
-      for (i in seq_along(best_hypos_rest)) {
-        message <- paste0(
-          message,
-          goric_rw_without_unc_best_hypo[i], " times more support than ",
-          best_hypos_rest[i]
-        )
+      # Step 1: Check if the best hypothesis in the set is not weak
+      message <- paste0("Step 1: The order-restricted hypothesis ", sQuote(best_hypo_name), 
+                        " is the best in the set, as it has the highest GORIC weight.\n\n")
       
-        if (i == length(best_hypos_rest) - 1) {
-          message <- paste0(message, " and ")
-        } else if (i < length(best_hypos_rest)) {
-          message <- paste0(message, ", ")
+      # Step 2: if not weak, compare it against all other hypotheses in the set
+      message <- paste0(message, "Step 2: Since ", sQuote(best_hypo_name), " has a higher", 
+      " GORIC weight than the unconstrained hypothesis, it is not considered weak.", 
+      " We can now inspect the relative support for ", sQuote(best_hypo_name), " against",
+      " the other order-restricted hypotheses:\n\n")
+      
+      for (i in seq_along(best_hypos_rest)) {
+        message <- paste0(message,  sQuote(best_hypo_name), " is ", 
+                          goric_rw_without_unc_best_hypo[i], " times more supported than ‘", 
+                          best_hypos_rest[i], "’")
+        
+        if (i < length(best_hypos_rest)) {
+          message <- paste0(message, ".\n")
         } else {
           message <- paste0(message, ".")
         }
       }
       cat(paste0("---\n", message, "\n"))
     } else {
-      cat(paste0("---\nThe unconstrained hypothesis is the best hypothesis in the set, meaning that all order-restricted hypotheses in the set are weak.\n"))
+      message <- paste0("Step 1: The unconstrained hypothesis is the best in the set,", 
+                        " as it has the highest GORIC weight. As a result, the order-restricted", 
+                        " hypotheses are considered weak.\n\n")
+
+      message <- paste0(message, "Step 2: Since all the order-restricted hypotheses are weak,",
+                        " inspecting their relative support is not meaningful.")
+            
+      cat(paste0("---\n", message, "\n"))
     }
   } else if (length(overlap_unique_combinations) == 0 && length(df$model) > 2) {
     if (!is.null(x$ratio.gw)) {

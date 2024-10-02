@@ -235,13 +235,13 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       for (i in seq_along(best_hypos_rest)) {
         if (best_hypos_rest[i] %in% overlap_hypo) {
           # Als er overlap is, voeg toe dat de relatieve support zijn maximum heeft bereikt
-          message <- paste0(message, "  • ", sQuote(best_hypo_name), " is ", 
+          message <- paste0(message, "  * ", sQuote(best_hypo_name), " is ", 
                             goric_rw_without_unc_best_hypo[i], 
                             " times more supported than ", sQuote(best_hypos_rest[i]), 
                             " (See Note. This relative support reached its maximum)")
         } else {
           # Als er geen overlap is, geef normale relatieve support
-          message <- paste0(message, "  • ", sQuote(best_hypo_name), " is ", 
+          message <- paste0(message, "  * ", sQuote(best_hypo_name), " is ", 
                             goric_rw_without_unc_best_hypo[i], 
                             " times more supported than ", sQuote(best_hypos_rest[i]))
         }
@@ -253,17 +253,6 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
           message <- paste0(message, ".")
         }
       }
-      # for (i in seq_along(best_hypos_rest)) {
-      #   message <- paste0(message, "  • ", sQuote(best_hypo_name), " is ", 
-      #                     goric_rw_without_unc_best_hypo[i], " times more supported than ", 
-      #                     sQuote(best_hypos_rest[i]))
-      #   
-      #   if (i < length(best_hypos_rest)) {
-      #     message <- paste0(message, ".\n")
-      #   } else {
-      #     message <- paste0(message, ".")
-      #   }
-      # }
       cat(paste0(message, "\n"))
     } else {
       message <- paste0("- The unconstrained hypothesis is the best in the set,", 
@@ -291,13 +280,13 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     for (i in seq_along(best_hypos_rest)) {
       if (best_hypos_rest[i] %in% overlap_hypo) {
         # Als er overlap is, voeg toe dat de relatieve support zijn maximum heeft bereikt
-        message <- paste0(message, "  • ", sQuote(best_hypo_name), " is ", 
+        message <- paste0(message, "  * ", sQuote(best_hypo_name), " is ", 
                           goric_rw_best_hypo[i], 
                           " times more supported than ", sQuote(best_hypos_rest[i]), 
                           " (See Note. This relative support reached its maximum)")
       } else {
         # Als er geen overlap is, geef normale relatieve support
-        message <- paste0(message, "  • ", sQuote(best_hypo_name), " is ", 
+        message <- paste0(message, "  * ", sQuote(best_hypo_name), " is ", 
                           goric_rw_best_hypo[i], 
                           " times more supported than ", sQuote(best_hypos_rest[i]))
       }

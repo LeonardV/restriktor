@@ -4,7 +4,7 @@ benchmark_asymp  <- function(object, ...) UseMethod("benchmark_asymp")
 
 benchmark <- function(object, model_type = c("asymp", "means"), ...) {
   
-  args <- list(...)
+  #args <- list(...)
   
   model_type <- match.arg(model_type, c("asymp", "means"))
   if (is.null(model_type)) {
@@ -31,7 +31,7 @@ benchmark <- function(object, model_type = c("asymp", "means"), ...) {
 
 benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL, 
                             group_size = NULL, alt_group_size = NULL, 
-                            quant = NULL, iter = 1000, 
+                            quant = NULL, iter = 1000, #hypo_rate_threshold = 1,
                             control = list(convergence_crit = 1e-03, 
                                            chunk_size = 1e4), 
                             ncpus = 1, seed = NULL, ...) {
@@ -232,6 +232,10 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
                                             est = group_means, 
                                             VCOV, control, ...)
   
+  # # compute hypothesis rate
+  # hypothesis_rate <- lapply(benchmark_results$combined_values$rgw_combined, 
+  #                           calculate_hypothesis_rate, q = hypo_rate_threshold)
+
   OUT <- list(
     type = object$type,
     comparison = object$comparison,
@@ -246,6 +250,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     res_var_pop = var_e,
     pref_hypo_name = pref_hypo_name, 
     error_prob_pref_hypo = error_prob,
+    #hypothesis_rate = hypothesis_rate,
     benchmarks_goric_weights = benchmark_results$benchmarks_gw,
     benchmarks_ratio_goric_weights = benchmark_results$benchmarks_rgw,
     benchmarks_ratio_ll_weights = benchmark_results$benchmarks_rlw,
@@ -263,6 +268,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
 
 benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL, 
                             alt_sample_size = NULL, quant = NULL, iter = 1000, 
+                            #hypo_rate_threshold = 1,
                             control = list(convergence_crit = 1e-03, 
                                            chunk_size = 1e4), 
                             ncpus = 1, seed = NULL, ...) {
@@ -312,7 +318,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   
   if (ncol(pop_est) != length(est_sample)) {
     stop(paste("Restriktor Error: The number of columns in pop_est (", ncol(pop_est), 
-               ") does not match the length of est_sample (", length(est_sample), ").", sep=""))
+               ") does not match the length of est_sample (", length(est_sample), ").", sep = ""))
   }
   
   rnames <- row.names(pop_est)
@@ -397,6 +403,9 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   error_prob <- calculate_error_probability(object, hypos, pref_hypo, 
                                             est = est_sample, VCOV, control, ...)
   
+  # hypothesis_rate <- lapply(benchmark_results$combined_values$rgw_combined, 
+  #                           calculate_hypothesis_rate, q = hypo_rate_threshold)
+  
   OUT <- list(
     type = object$type,
     comparison = object$comparison,
@@ -406,6 +415,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     pop_VCOV = VCOV,
     pref_hypo_name = pref_hypo_name, 
     error_prob_pref_hypo = error_prob,
+    #hypothesis_rate = hypothesis_rate,
     benchmarks_goric_weights = benchmark_results$benchmarks_gw,
     benchmarks_ratio_goric_weights = benchmark_results$benchmarks_rgw,
     benchmarks_ratio_ll_weights = benchmark_results$benchmarks_rlw,

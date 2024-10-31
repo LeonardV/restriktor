@@ -19,8 +19,8 @@ comparable to the Akaike weights.
 
 \method{goric}{default}(object, ..., hypotheses = NULL,
       comparison = NULL, 
-      VCOV = NULL, sample_nobs = NULL, type = "goric", 
-      control = list(), debug = FALSE)
+      VCOV = NULL, sample_nobs = NULL, type = "goric",
+      penalty_factor = 2, control = list(), debug = FALSE)
 
 \method{goric}{lm}(object, ..., hypotheses = NULL,
       comparison = NULL, type = "goric",
@@ -126,6 +126,13 @@ comparable to the Akaike weights.
   information criterion value is computed. If \code{"gorica"} the 
   log-likihood is computed using the multivariate normal distribution 
   function.}
+  
+  \item{penalty_factor}{The penalty factor adjusts the penalty in the GORIC(A) formula
+  (GORIC(A) = -2 x log-likelihood + penalty_factor x penalty). 
+  By default, GORIC(A) uses a penalty factor of 2, but penalty factor allows this 
+  to be customized. Higher values of penalty factor place a stronger emphasis on 
+  model simplicity, helping to prevent overfitting by penalizing complex models 
+  more heavily.}
   
   \item{missing}{the default setting for objects of class "lm" is listwise:
   all cases with missing values are removed from the data before the analysis. This

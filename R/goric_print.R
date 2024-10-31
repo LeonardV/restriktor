@@ -76,7 +76,6 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
                               "is not full row-rank, we used the 'boot' method for calculating", 
                               "the penalty term value. For additional details, see '?goric' or the Vignette.")
         }
-      
         if (any(NaN_messages)) {
           text_msg_2 <- paste("Note: Some returned mixing weights for hypotheses", paste0(sQuote(names(NaN_messages)[NaN_messages]), collapse = " and "), 
                               "are NaN (not a number). Continued the analysis with mix_weights = 'boot' method.")
@@ -238,7 +237,7 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
           message <- paste0(message, "  * ", sQuote(best_hypo_name), " is ", 
                             goric_rw_without_unc_best_hypo[i], 
                             " times more supported than ", sQuote(best_hypos_rest[i]), 
-                            " (See Note. This relative support reached its maximum)")
+                            " (This relative support reached its maximum, see Note.)")
         } else {
           # Als er geen overlap is, geef normale relatieve support
           message <- paste0(message, "  * ", sQuote(best_hypo_name), " is ", 
@@ -283,7 +282,7 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
         message <- paste0(message, "  * ", sQuote(best_hypo_name), " is ", 
                           goric_rw_best_hypo[i], 
                           " times more supported than ", sQuote(best_hypos_rest[i]), 
-                          " (See Note. This relative support reached its maximum)")
+                          " (This relative support reached its maximum, see Note.)")
       } else {
         # Als er geen overlap is, geef normale relatieve support
         message <- paste0(message, "  * ", sQuote(best_hypo_name), " is ", 

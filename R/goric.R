@@ -4,8 +4,8 @@ goric <- function(object, ...) { UseMethod("goric") }
 goric.default <- function(object, ..., hypotheses = NULL,
                           comparison = NULL, 
                           VCOV = NULL, sample_nobs = NULL,
-                          type = "goric", control = list(),
-                          debug = FALSE) {
+                          type = "goric", penalty_factor = 2,
+                          control = list(), debug = FALSE) {
   
   # the following classes are allowed (for now)
   obj_class <- class(object)
@@ -33,7 +33,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   }
   
   if (is.null(sample_nobs) && type %in% c("goricac")) {
-    stop(paste("Restriktor ERROR: the argument sample_nobs is not found."))
+    stop(paste("Restriktor ERROR: the argument sample_nobs is not found."), call. = FALSE)
   }
   
   if (!is.null(VCOV)) {
@@ -41,6 +41,11 @@ goric.default <- function(object, ..., hypotheses = NULL,
     if (inherits(VCOV, "dpoMatrix")) {
       VCOV <- as.matrix(VCOV)
     }
+  }
+  
+  if (penalty_factor < 0) {
+    stop(paste("Restriktor ERROR: the penalty factor must be >= 0."), 
+         call. = FALSE)
   }
   
   ldots <- list(...)
@@ -130,8 +135,9 @@ goric.default <- function(object, ..., hypotheses = NULL,
     names(conList) <- names(constraints)
     # compute summary for each restriktor object. 
     isSummary <- lapply(conList, function(x) summary(x, 
-                                                     goric       = type,
-                                                     sample.nobs = sample_nobs))
+                                                     goric          = type,
+                                                     sample.nobs    = sample_nobs,
+                                                     penalty_factor = penalty_factor))
     
     PT_Amat <- lapply(isSummary, function(x) x$PT_Amat)
     PT_meq  <- lapply(isSummary, function(x) x$PT_meq)
@@ -177,8 +183,9 @@ goric.default <- function(object, ..., hypotheses = NULL,
     # compute symmary for each restriktor object. Here is the goric value 
     # computed. Note: not the gorica value
     isSummary <- lapply(conList, function(x) summary(x, 
-                                                     goric       = type,
-                                                     sample.nobs = sample_nobs))
+                                                     goric          = type,
+                                                     sample.nobs    = sample_nobs,
+                                                     penalty_factor = penalty_factor))
     
     PT_Amat <- lapply(isSummary, function(x) x$PT_Amat)
     PT_meq  <- lapply(isSummary, function(x) x$PT_meq)
@@ -210,8 +217,9 @@ goric.default <- function(object, ..., hypotheses = NULL,
     ans$hypotheses_usr <- lapply(conList, function(x) x$CON$constraints)
     
     isSummary <- lapply(conList, function(x) summary(x, 
-                                                     type        = type,
-                                                     sample.nobs = sample_nobs)) 
+                                                     type           = type,
+                                                     sample.nobs    = sample_nobs,
+                                                     penalty_factor = penalty_factor)) 
     } else if ("numeric" %in% object_class && !isConChar) {
       # tolower names Amat and rhs
       for (i in seq_along(constraints)) { 
@@ -235,8 +243,9 @@ goric.default <- function(object, ..., hypotheses = NULL,
       names(conList) <- names(constraints)
       
       isSummary <- lapply(conList, function(x) summary(x, 
-                                                       type        = type,
-                                                       sample.nobs = sample_nobs)) 
+                                                       type           = type,
+                                                       sample.nobs    = sample_nobs,
+                                                       penalty_factor = penalty_factor)) 
     } else {
       stop("Restriktor ERROR: I don't know how to handle an object of class ", paste0(class(object)[1]))
     }
@@ -364,8 +373,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
               stop("Restriktor ERROR: no chi-bar-square weights (a.k.a. level probabilities) are found. Use mix_weights = 'pmvnorm' (default) or 'boot'.", call. = FALSE)
             }
             
-            goric.Hm <- -2*(llm - PTm)
-            goric.Hu <- -2*(llu - PTu)
+            goric.Hm <- -2*llm + penalty_factor*PTm #-2*(llm - PTm)
+            goric.Hu <- -2*llu + penalty_factor*PTu #-2*(llu - PTu)
             df.Hm <- data.frame(model = objectnames, loglik = llm, penalty = PTm, 
                                 goric = goric.Hm)
             df.Hm$model <- as.character(df.Hm$model)
@@ -387,22 +396,22 @@ goric.default <- function(object, ..., hypotheses = NULL,
             # restriktor.summary() function.
             if (type %in% c("goric", "goricc")) {
               # model
-              goric.Hm <- -2*(llm - PTm)
+              goric.Hm <- -2*llm + penalty_factor*PTm #-2*(llm - PTm)
               df.Hm  <- data.frame(model = objectnames, loglik = llm, penalty = PTm, 
                                    goric = goric.Hm)
               df.Hm$model <- as.character(df.Hm$model)
               # complement
-              goric.Hc <- -2*(llc - PTc)
+              goric.Hc <- -2*llc + penalty_factor*PTc #-2*(llc - PTc)
               df.c  <- data.frame(model = "complement", loglik = llc, penalty = PTc, 
                                   goric = goric.Hc)
             } else if (type %in% c("gorica", "goricac")) {
               # model
-              gorica.Hm <- -2*(llm - PTm)
+              gorica.Hm <- -2*llm + penalty_factor*PTm #-2*(llm - PTm)
               df.Hm  <- data.frame(model = objectnames, loglik = llm, penalty = PTm, 
                                    gorica = gorica.Hm)
               df.Hm$model <- as.character(df.Hm$model)
               # complement
-              gorica.Hc <- -2*(llc - PTc)
+              gorica.Hc <- -2*llc + penalty_factor*PTc #-2*(llc - PTc)
               df.c  <- data.frame(model = "complement", loglik = llc, penalty = PTc, 
                                   gorica = gorica.Hc)
             }
@@ -421,7 +430,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
           } else if (type %in% c("gorica", "goricac")) {
             ll <- unlist(lapply(conList, function(x) dmvnorm(c(x$b.unrestr - x$b.restr), 
                                                                sigma = VCOV, log = TRUE) )) 
-            goric.Hm <- -2*(ll - PT)
+            goric.Hm <- -2*ll + penalty_factor*PT #-2*(ll - PT)
             df <- data.frame(model = objectnames, loglik = ll, penalty = PT, 
                              gorica = goric.Hm)
             df$model <- as.character(df$model)

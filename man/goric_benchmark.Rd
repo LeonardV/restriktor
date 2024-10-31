@@ -26,7 +26,7 @@
                   ncpus = 1, seed = NULL, \ldots)
   
   \method{print}{benchmark}(x, output_type = c("rgw", "gw", "rlw", "ld", "all"), 
-                            color = TRUE, ...)
+                            hypo_rate_threshold = 1, color = TRUE, ...)
   
   \method{plot}{benchmark}(x, output_type = c("rgw", "rlw", "gw", "ld"), 
                            percentiles = NULL, x_lim = c(), log_scale = FALSE,
@@ -66,6 +66,9 @@
   (and thus to see the maximum value of the weights).}
   \item{quant}{Quantiles for benchmarking results. Defaults 5\%, 35\%, 50\%, 65\%, 95\%.}
   \item{iter}{The number of iterations for benchmarking. Defaults to \code{1000}.}
+  \item{hypo_rate_threshold}{A numeric value specifying the threshold for the 
+  hypothesis rate. The function calculates the proportion of ratio-of-goric-weights 
+  that exceeds this threshold. Defaults to 1.}
   \item{control}{A list of control parameters including \code{convergence_crit} 
   and \code{chunk_size}. For more information, see \link{goric}.}
   \item{ncpus}{Number of CPUs to use for parallel processing. Defaults to \code{1}.
@@ -127,6 +130,7 @@
   The \code{plan()} must be specified before running the benchmark function, e.g.,
   \code{future::plan(future::multisession, workers = ncpus)}
   }
+
 
 \value{
   \code{benchmark_means} and \code{benchmark_asymp} return a list of 

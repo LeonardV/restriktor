@@ -13,7 +13,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
                "rma.uni", "nlmerMod", "glmerMod", "merMod")
   check_class <- obj_class %in% classes
   if (!any(check_class)) {
-    stop(paste("Objects of class", paste(obj_class, collapse = ", "), "are not supported. Supported classes are:", paste(classes, collapse = ", "), "."))
+    stop(paste("Objects of class", paste(obj_class, collapse = ", "), 
+               "are not supported. Supported classes are:", paste(classes, collapse = ", "), "."))
   }
   
   if (is.null(hypotheses)) {

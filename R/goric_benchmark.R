@@ -76,7 +76,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   if (is.null(object$model.org)) {
     # Number of subjects per group
     if (is.null(group_size)) {
-      stop("Restriktor Error: please specify the sample-size, e.g. group_size = 100.", 
+      stop("Restriktor Error: please specify the group-size, e.g. group_size = 100.", 
            call. = FALSE)
     } else if (length(group_size) == 1) {
       N <- rep(group_size, ngroups)
@@ -127,10 +127,18 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     var_e_adjusted <- result_adjust_variance$var_e / N
     VCOV <- diag(var_e_adjusted, length(group_means))
     
-    object <- goric(group_means, VCOV = VCOV, 
-                    sample.nobs = N[1], hypotheses = hypos, 
-                    comparison = object$comparison, type = object$type, 
-                    control = control, ...)
+    if (object$type == "goric") {
+      type <- "gorica"
+    } else if (object$type == "goricc") {
+      type <- "goricac"
+    } else {
+      type <- object$type
+    }
+    
+    object <- try(goric(group_means, VCOV = VCOV, 
+                    sample_nobs = N[1], hypotheses = hypos, 
+                    comparison = object$comparison, type = type, 
+                    control = control, ...))
   }
   
   
@@ -267,8 +275,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
 
 
 benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL, 
-                            alt_sample_size = NULL, quant = NULL, iter = 1000, 
-                            #hypo_rate_threshold = 1,
+                            alt_sample_size = NULL, quant = NULL, iter = 1000,
                             control = list(convergence_crit = 1e-03, 
                                            chunk_size = 1e4), 
                             ncpus = 1, seed = NULL, ...) {
@@ -346,8 +353,16 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     VCOV <- VCOV * N / alt_sample_size
     N <- alt_sample_size
     
+    if (object$type == "goric") {
+      type <- "gorica"
+    } else if (object$type == "goricc") {
+      type <- "goricac"
+    } else {
+      type <- object$type
+    }
+    
     object <- goric(est_sample, VCOV = VCOV, 
-                    sample.nobs = N[1], hypotheses = hypos, 
+                    sample_nobs = N[1], hypotheses = hypos, 
                     comparison = object$comparison, type = object$type, 
                     control = control, ...)
   }

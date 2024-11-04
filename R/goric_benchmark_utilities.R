@@ -558,12 +558,16 @@ print_section <- function(header, content_printer, nchar, text_color, reset) {
 
 
 format_value <- function(value) {
-  if (abs(value) >= 1000 || abs(value) <= 0.001 && value != 0) {
+  if (is.na(value)) {
+    return("")  
+  }
+  if (abs(value) >= 1000 || (abs(value) <= 0.001 && value != 0)) {
     return(sprintf("%.3e", value))  
   } else {
     return(sprintf("%.3f", value))  
   }
 }
+
 
 # called by the benchmark.print() function
 print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset) {

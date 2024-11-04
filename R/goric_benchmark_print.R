@@ -14,6 +14,10 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"),
   x$hypothesis_rate <- lapply(x$combined_values$rgw_combined, 
                               calculate_hypothesis_rate, q = hypo_rate_threshold)
   
+  # no effect names
+  NE_names <- names(x$hypothesis_rate) %in% c("pop_est = No-effect", "pop_es = 0")
+  x$hypothesis_rate[NE_names] <- as.numeric(NA)
+  
   # number of failed bootstrap runs
   empty_lists_count <- sapply(x$combined_values$gw_combined, function(x) { 
     attr(x, "empty_lists_count") } )

@@ -322,4 +322,8 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       }
     }
   } 
+  if (x$penalty_factor != 2) {
+    message(sprintf("\nNote that a penalty factor of %s (default is 2) is used in the calculation of the %s value, that is -2 x log-likelihood + penalty_factor x penalty",
+                    x$penalty_factor, x$type))
+  }
 }

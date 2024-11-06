@@ -48,8 +48,7 @@ comparable to the Akaike weights.
 \method{print}{con_goric}(x, digits = max(3, getOption("digits") - 4), \dots)
 
 \method{summary}{con_goric}(object, brief = TRUE, digits = max(3, getOption("digits") - 4), \dots)
-      %threshold = 3, \dots)
-
+      
 \method{coef}{con_goric}(object, \dots)
 }
 
@@ -71,10 +70,9 @@ comparable to the Akaike weights.
   
   \item{x}{an object of class \code{con_goric}.}
 
-  \item{\ldots}{this depends on the class of the object. Note that, the 
-  objects have to be of the same class. If object is of class \code{lavaan}, the 
-  standardized or unstandardized vcov can be used, using setting \code{standardized = TRUE}. 
-  See details for more information.
+  \item{\ldots}{this depends on the class of the object. If object is of class 
+  \code{lavaan}, the standardized or unstandardized vcov can be used, using 
+  setting \code{standardized = TRUE}. See details for more information.
   
   \emph{Options for calculating the chi-bar-square weights:}
 

@@ -45,8 +45,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   }
   
   if (penalty_factor < 0) {
-    stop(paste("Restriktor ERROR: the penalty factor must be >= 0."), 
-         call. = FALSE)
+    stop(paste("Restriktor ERROR: the penalty factor must be >= 0."), call. = FALSE)
   }
   
   ldots <- list(...)
@@ -490,6 +489,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   ans$ormle$b.restr <- coefs  
   ans$comparison <- comparison
   ans$type <- type
+  ans$penalty_factor <- penalty_factor
 
   # Assign class based on type\
   classMappings <- list(

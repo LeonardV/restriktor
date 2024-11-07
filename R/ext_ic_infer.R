@@ -2,7 +2,7 @@
 # slightly adjusted by LV (2024-08-19)
 # check for small eigenvalues, abs(values) <= .Machine$double.eps are replaced by zero
 # using ridging to deal with exactly singular corr matrix. A small constant (1e-05) 
-# value is addesd to the diagonal of corr. 
+# value is added to the diagonal of corr. 
 
 make_positive_semi_definite <- function(mat, tolerance = 1e-15, 
                                         ridge_constant = 1e-05) {

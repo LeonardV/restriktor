@@ -14,6 +14,8 @@ evSyn_est       <- function(object, ...) UseMethod("evSyn_est")
 evSyn_LL        <- function(object, ...) UseMethod("evSyn_LL")
 evSyn_ICweights <- function(object, ...) UseMethod("evSyn_ICweights")
 evSyn_ICvalues  <- function(object, ...) UseMethod("evSyn_ICvalues")
+evSyn_ICratios  <- function(object, ...) UseMethod("evSyn_ICratios")
+
 # -------------------------------------------------------------------------
 ## est (list + vec) + cov (list + mat)
 ## LL (list + vec) + PT (list + vec)
@@ -24,6 +26,7 @@ evSyn_ICvalues  <- function(object, ...) UseMethod("evSyn_ICvalues")
 ## object = LL, PT = PT
 ## object = IC weights + rowsum check
 ## object = IC values
+## object = Ratio IC weights
 # -------------------------------------------------------------------------
 
 evSyn <- function(object, ...) {
@@ -49,8 +52,8 @@ evSyn <- function(object, ...) {
     }
   }
   
-  checkListContent(VCOV, is.matrix, "VCOV must be a list of matrices.")
-  checkListContent(PT, is.numeric, "PT must be a list of numeric vectors.")
+  checkListContent(lst = VCOV, fun = is.matrix, msg = "VCOV must be a list of matrices.")
+  checkListContent(lst = PT, fun = is.numeric, msg = "PT must be a list of numeric vectors.")
   
   if (!is.null(VCOV) && !is.null(PT)) {
     stop("Restriktor ERROR: both VCOV and PT are found, which confuses me.")
@@ -58,6 +61,8 @@ evSyn <- function(object, ...) {
   
   # if they are weights, the sum of all vectors must be 1.
   obj_isICweights <- all(abs(vapply(object, sum, numeric(1)) - 1) <= sqrt(.Machine$double.eps))
+  # Check if they are IC ratios: each vector should end with 1.
+  obj_isICratios <- all(vapply(object, function(x) tail(x, n = 1) == 1, logical(1)))
   
   if (!is.null(VCOV)) {
     return(evSyn_est(object, ...))
@@ -68,6 +73,11 @@ evSyn <- function(object, ...) {
       message("The added-evidence method is the only available approach when weights are included in the input.")
     }
     return(evSyn_ICweights(object, ...))
+  } else if (obj_isICratios) {
+    if (!is.null(arguments$type) && arguments$type == "equal") {
+      message("The added-evidence method is the only available approach when weights are included in the input.")
+    }
+    return(evSyn_ICratios(object, ...))
   } else {
     if (!is.null(arguments$type) && arguments$type == "equal") {
       message("The added-evidence method is the only available approach when the input consists of GORIC(A) values.")
@@ -83,7 +93,7 @@ evSyn <- function(object, ...) {
 # GORIC(A) evidence synthesis based on the (standardized) parameter estimates and 
 # the covariance matrix
 evSyn_est.list <- function(object, ..., VCOV = list(), hypotheses = list(),
-                           type = c("equal", "added", "average"), 
+                           type = c("added", "equal", "average"), 
                            comparison = c("unconstrained", "complement", "none"),
                            hypo_names = c()) {
   
@@ -360,7 +370,7 @@ evSyn_est.list <- function(object, ..., VCOV = list(), hypotheses = list(),
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on log likelihood and penalty values
-evSyn_LL.list <- function(object, ..., PT = list(), type = c("equal", "added", "average"),
+evSyn_LL.list <- function(object, ..., PT = list(), type = c("added", "equal", "average"),
                           hypo_names = c()) {
   
   if (missing(type)) 
@@ -565,7 +575,8 @@ evSyn_ICvalues.list <- function(object, ..., hypo_names = c()) {
 
 
 # -------------------------------------------------------------------------
-# GORIC(A) evidence synthesis based on AIC or ORIC or GORIC or GORICA weights or (Bayesian) posterior model probabilities
+# GORIC(A) evidence synthesis based on AIC or ORIC or GORIC or GORICA weights or 
+# (Bayesian) posterior model probabilities
 evSyn_ICweights.list <- function(object, ..., priorWeights = NULL, hypo_names = c()) {
   
   Weights <- object
@@ -615,8 +626,62 @@ evSyn_ICweights.list <- function(object, ..., priorWeights = NULL, hypo_names = 
 }
 
 
+# -------------------------------------------------------------------------
+# GORIC(A) evidence synthesis based on the ratio of AIC or ORIC or GORIC or GORICA 
+# weights or (Bayesian) posterior model probabilities
+evSyn_ICratios.list <- function(object, ..., priorWeights = NULL, hypo_names = c()) {
+  
+  Weights <- object
+  S <- length(Weights)
+  Weights <- do.call(rbind, Weights)
+  NrHypos <- ncol(Weights)
+  
+  if (is.null(priorWeights)) {
+    priorWeights <- rep(1/(NrHypos), (NrHypos))
+  }
+  # To make it sum to 1 (if it not already did)
+  priorWeights <- priorWeights / sum(priorWeights) 
+  
+  if (is.null(hypo_names)) {
+    hypo_names <- paste0("H", 1:(NrHypos)) 
+  }
+  
+  CumulativeWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos))
+  colnames(Weights) <- colnames(CumulativeWeights) <- hypo_names
+  
+  sequence <- paste0("Studies 1-", 1:S)
+  sequence[1] <- "Studies 1"
+  
+  rownames(CumulativeWeights) <- c(sequence, "Final")
+  CumulativeWeights[1, ] <- priorWeights * Weights[1, ] / sum( priorWeights * Weights[1, ] )
+  
+  for (s in 2:S) {
+    CumulativeWeights[s, ] <- CumulativeWeights[(s-1), ] * Weights[s, ] / 
+      sum( CumulativeWeights[(s-1), ] * Weights[s, ] )
+  }
+  
+  CumulativeWeights[(S+1), ] <- CumulativeWeights[S, ]
+  
+  Final.weights <- CumulativeWeights[S, ]
+  Final.ratio.GORICA.weights <- Final.weights %*% t(1/Final.weights)
+  rownames(Final.ratio.GORICA.weights) <- hypo_names
+  colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hypo_names)
+  
+  out <- list(type                       = "added",
+              GORICA_weight_m            = Weights,
+              Cumulative_GORICA_weights  = CumulativeWeights,
+              Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
+  
+  class(out) <- c("evSyn.ICratios", "evSyn")
+  
+  return(out)
+}
+
+
+
+# -------------------------------------------------------------------------
 # list with goric objects
-evSyn_gorica.list <- function(object, ..., type = c("equal", "added", "average"), 
+evSyn_gorica.list <- function(object, ..., type = c("added", "equal", "average"), 
                               hypo_names = c()) {
   
   # Check if all objects are of type "con_goric"

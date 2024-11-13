@@ -1,10 +1,23 @@
 print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   
-  # added or equal approach
-  #type <- x$type
-  
   cat(sprintf("restriktor (%s): %s Evidence Synthesis results:\n", 
               packageDescription("restriktor", fields = "Version"), x$type))
+  
+  # Display input type information
+  cat("\nInput type detected: ")
+  if (inherits(x, "evSyn.est")) {
+    cat("Parameter estimates and covariance matrix\n")
+  } else if (inherits(x, "evSyn.LL")) {
+    cat("Log-likelihood and penalty values\n")
+  } else if (inherits(x, "evSyn.ICvalues")) {
+    cat("Information criteria values\n")
+  } else if (inherits(x, "evSyn.ICweights")) {
+    cat("Information criteria weights (summing to 1)\n")
+  } else if (inherits(x, "evSyn.ICratios")) {
+    cat("Ratio of information criteria weights (each vector ends with 1)\n")
+  } else {
+    cat("Unknown input type\n")
+  }
   
   if (!is.null(x$Cumulative_GORICA_weights)) {
     cat("\nFinal GORICA weights:\n") 

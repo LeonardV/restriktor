@@ -30,6 +30,8 @@ evSyn(object, \ldots)
 
 \method{evSyn_ICweights}{list}(object, \ldots, priorWeights = NULL, hypo_names = c())
 
+\method{evSyn_ICratios}{list}(object, \ldots, priorWeights = NULL, hypo_names = c())
+
 \method{print}{evSyn}(x, digits = max(3, getOption("digits") - 4), \dots)
 
 \method{summary}{evSyn}(object, \dots)

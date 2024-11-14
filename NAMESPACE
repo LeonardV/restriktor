@@ -54,7 +54,7 @@ importFrom("MASS",
            #nchoosek, NOT EXPORTED!
 #           ic.weights)
 
-importFrom("utils", combn, packageDescription, menu, capture.output)
+importFrom("utils", packageDescription, capture.output, tail)
 
 importFrom("stats", coef, df.residual, dnorm, fitted,
            formula, frequency, median, model.matrix,
@@ -164,11 +164,6 @@ S3method(goric, nlmerMod)
 S3method(goric, glmerMod)
 S3method(goric, lmerMod)
 
-S3method(evSyn_est, list)
-S3method(evSyn_LL, list)
-S3method(evSyn_ICvalues, list)
-S3method(evSyn_ICweights, list)
-S3method(evSyn_ICratios, list)
 S3method(plot, evSyn)
 S3method(print, evSyn)
 S3method(summary, evSyn)

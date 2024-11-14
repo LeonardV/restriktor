@@ -3,6 +3,8 @@
 # 2. LL + PT
 # 3. IC values (AIC, ORIC, GORIC, GORICA)
 # 4. IC weights or (Bayesian) posterior model probs. 
+# 5. Output from gorica function
+# 6. Output from escalc (metafor package)
 
 # In case of an equal-evidence approach, aggregating evidence from, say, 5 studies 
 # with n=100 observations is the same as obtaining evidence from 1 study 
@@ -10,12 +12,12 @@
 # In the added-evidence approach, the aggregated evidence from, says, 5 studies 
 # is stronger than as if the data were combined (as if that was possible).
 
-evSyn_est       <- function(object, ...) UseMethod("evSyn_est")
-evSyn_LL        <- function(object, ...) UseMethod("evSyn_LL")
-evSyn_ICweights <- function(object, ...) UseMethod("evSyn_ICweights")
-evSyn_ICvalues  <- function(object, ...) UseMethod("evSyn_ICvalues")
-evSyn_ICratios  <- function(object, ...) UseMethod("evSyn_ICratios")
-
+# evSyn_est       <- function(object, ...) UseMethod("evSyn_est")
+# evSyn_LL        <- function(object, ...) UseMethod("evSyn_LL")
+# evSyn_ICweights <- function(object, ...) UseMethod("evSyn_ICweights")
+# evSyn_ICvalues  <- function(object, ...) UseMethod("evSyn_ICvalues")
+# evSyn_ICratios  <- function(object, ...) UseMethod("evSyn_ICratios")
+# evSyn_escalc    <- function(object, ...) UseMethod("evSyn_escalc")
 # -------------------------------------------------------------------------
 ## est (list + vec) + cov (list + mat)
 ## LL (list + vec) + PT (list + vec)
@@ -27,6 +29,7 @@ evSyn_ICratios  <- function(object, ...) UseMethod("evSyn_ICratios")
 ## object = IC weights + rowsum check
 ## object = IC values
 ## object = Ratio IC weights
+
 # -------------------------------------------------------------------------
 
 evSyn <- function(object, ...) {
@@ -39,8 +42,13 @@ evSyn <- function(object, ...) {
   isGoric <- vapply(object, function(x) inherits(x, "con_goric"), logical(1))
   
   if (all(isGoric)) {
-    return(evSyn_gorica.list(object, ...))
+    return(evSyn_gorica(object, ...))
   }
+  
+  if (inherits(object, "escalc")) {
+    return(evSyn_escalc(object, ...))
+  } 
+  
   
   if (!is.list(object) || !any(vapply(object, is.numeric, logical(1)))) {
     stop("Restriktor ERROR: object must be a list of numeric vectors.")
@@ -84,7 +92,6 @@ evSyn <- function(object, ...) {
     }
     return(evSyn_ICvalues(object, ...))
   }
-  
   stop("Restriktor Error: I don't know how to handle the input.")
 }
 
@@ -92,10 +99,10 @@ evSyn <- function(object, ...) {
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on the (standardized) parameter estimates and 
 # the covariance matrix
-evSyn_est.list <- function(object, ..., VCOV = list(), hypotheses = list(),
-                           type = c("added", "equal", "average"), 
-                           comparison = c("unconstrained", "complement", "none"),
-                           hypo_names = c()) {
+evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
+                      type = c("added", "equal", "average"), 
+                      comparison = c("unconstrained", "complement", "none"),
+                      hypo_names = c()) {
   
   if (missing(comparison)) 
     comparison <- "unconstrained"
@@ -370,8 +377,8 @@ evSyn_est.list <- function(object, ..., VCOV = list(), hypotheses = list(),
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on log likelihood and penalty values
-evSyn_LL.list <- function(object, ..., PT = list(), type = c("added", "equal", "average"),
-                          hypo_names = c()) {
+evSyn_LL <- function(object, ..., PT = list(), type = c("added", "equal", "average"),
+                     hypo_names = c()) {
   
   if (missing(type)) 
     type <- "added"
@@ -513,7 +520,7 @@ evSyn_LL.list <- function(object, ..., PT = list(), type = c("added", "equal", "
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on AIC or ORIC or GORIC or GORICA values
-evSyn_ICvalues.list <- function(object, ..., hypo_names = c()) {
+evSyn_ICvalues <- function(object, ..., hypo_names = c()) {
   
   IC <- object
   S  <- length(IC)
@@ -577,7 +584,7 @@ evSyn_ICvalues.list <- function(object, ..., hypo_names = c()) {
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on AIC or ORIC or GORIC or GORICA weights or 
 # (Bayesian) posterior model probabilities
-evSyn_ICweights.list <- function(object, ..., priorWeights = NULL, hypo_names = c()) {
+evSyn_ICweights <- function(object, ..., priorWeights = NULL, hypo_names = c()) {
   
   Weights <- object
   S <- length(Weights)
@@ -629,7 +636,7 @@ evSyn_ICweights.list <- function(object, ..., priorWeights = NULL, hypo_names = 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on the ratio of AIC or ORIC or GORIC or GORICA 
 # weights or (Bayesian) posterior model probabilities
-evSyn_ICratios.list <- function(object, ..., priorWeights = NULL, hypo_names = c()) {
+evSyn_ICratios <- function(object, ..., priorWeights = NULL, hypo_names = c()) {
   
   Weights <- object
   S <- length(Weights)
@@ -681,8 +688,8 @@ evSyn_ICratios.list <- function(object, ..., priorWeights = NULL, hypo_names = c
 
 # -------------------------------------------------------------------------
 # list with goric objects
-evSyn_gorica.list <- function(object, ..., type = c("added", "equal", "average"), 
-                              hypo_names = c()) {
+evSyn_gorica <- function(object, ..., type = c("added", "equal", "average"), 
+                         hypo_names = c()) {
   
   # Check if all objects are of type "con_goric"
   if (!all(vapply(object, function(x) inherits(x, "con_goric"), logical(1)))) {
@@ -699,7 +706,35 @@ evSyn_gorica.list <- function(object, ..., type = c("added", "equal", "average")
   )
   
   # Call the evSyn_LL.list function and return the result
-  result <- do.call(evSyn_LL.list, conList)
+  result <- do.call(evSyn_LL, append(conList, list(...)))
+  
+  return(result)
+}
+
+
+evSyn_escalc <- function(data, outcome_col = NULL, yi_col = "yi", vi_cols = "vi", 
+                         cluster_col = "trial", ...) {
+  
+  results <- extract_est_vcov_outcomes(
+    data = data,
+    outcome_col = outcome_col,
+    yi_col = yi_col,
+    vi_cols = vi_cols,
+    cluster_col = cluster_col
+  )
+  
+  # Access the parameter estimates and vcov blocks
+  yi_list <- results$yi_list
+  vcov_blocks <- results$vcov_blocks
+  
+  
+  conList <- list(
+    object = yi_list,
+    VCOV = vcov_blocks
+  )
+  
+  # Call the evSyn_LL.list function and return the result
+  result <- do.call(evSyn_est, append(conList, list(...)))
   
   return(result)
 }

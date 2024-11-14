@@ -83,7 +83,8 @@ plot.evSyn <- function(x, output_type = "gorica_weights", ...) {
       legend.key = element_blank(),
       legend.text = element_text(size = 12),
       axis.text.x  = element_text(size = 12), axis.text.y = element_text(size = 12),
-      axis.title.x = element_text(size = 14, vjust = -3), axis.title.y = element_text(size = 14, vjust = 5),
+      axis.title.x = element_text(size = 14, vjust = -3), 
+      axis.title.y = element_text(size = 14, vjust = 5),
       panel.background = element_blank(),
       axis.line = element_line(colour = "black"),
       plot.title = element_text(hjust = 0.5, size = 14)

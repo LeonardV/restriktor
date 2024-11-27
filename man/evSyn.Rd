@@ -20,7 +20,7 @@ same central theory.}
 
 \usage{
 # I try to guess the input type.
-evSyn(object, \ldots)
+evSyn(object, input_type = NULL, \ldots)
 
 # input: Parameter estimates and covariance matrix
 evSyn_est(object, \ldots, VCOV = list(), hypotheses = list(),
@@ -49,7 +49,7 @@ evSyn_gorica(object, \dots, type = c("added", "equal", "average"), hypo_names = 
 
 # input: Result from the escalc() function from the metafor package. 
 # Note that this is a wrapper function for evSyn_est.
-evSyn_escalc(data, outcome_col, yi_col = "yi", vi_cols = "vi", cluster_col, \ldots)
+evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldots)
 
 \method{print}{evSyn}(x, digits = max(3, getOption("digits") - 4), \dots)
 
@@ -66,9 +66,27 @@ evSyn_escalc(data, outcome_col, yi_col = "yi", vi_cols = "vi", cluster_col, \ldo
       \item a list of vectors with (standardized) parameter estimates (the \code{VCOV} argument is required);   
       \item a list of vectors with log-likelihood values (the \code{PT} argument is required);
       \item a list of vectors with GORIC(A) weights;
+      \item a list of vectors with ratio of GORIC(A) weights;
       \item a list of vectors with GORIC(A) values;
+      \item a list of objects of class goric;
+      \item a data.frame of class escalc from the \pkg{metafore} package;
     }
   }
+  
+  \item{input_type}{
+  \code{character} Specifies the type of input provided to the function. Valid options are:
+  \describe{
+    \item{\code{"est_vcov"}}{Indicates that the input consists of estimates and covariance matrices. Invokes the \code{evSyn_est()} function.}
+    \item{\code{"ll_pt"}}{Indicates that the input consists of log-likelihoods and penalty values. Invokes the \code{evSyn_LL()} function.}
+    \item{\code{"icweights"}}{Indicates that the input consists of information criterion (IC) weights. Invokes the \code{evSyn_ICweights()} function.}
+    \item{\code{"icratios"}}{Indicates that the input consists of IC weights ratios. Invokes the \code{evSyn_ICratios()} function.}
+    \item{\code{"icvalues"}}{Indicates that the input consists of IC values. Invokes the \code{evSyn_ICvalues()} function.}
+    \item{\code{"gorica"}}{Indicates that the input is of class goric from the \code{goric} function. Invokes the \code{evSyn_gorica()} function.}
+    \item{\code{"escalc"}}{Indicates that the input is of class escalc from the \pkg{metafor} package. Invokes the \code{evSyn_escalc()} function.}
+  }
+  If \code{input_type} is \code{NULL}, the function attempts to infer the input type based on the structure of the \code{object} and other arguments.
+}
+  
   \item{VCOV}{a list of covariance matrices of the (standardized) parameter estimates 
   of interest.} 
   

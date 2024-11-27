@@ -1,4 +1,121 @@
 ## utility functions
+clean_constraints <- function(constraints) {
+  constraints <- gsub("[#!].*(?=\n)", "", constraints, perl = TRUE) # Remove comments
+  constraints <- gsub("[;|&]", "\n", constraints, perl = TRUE) # Standardize delimiters to \n
+  constraints <- gsub("[ \t]+", "", constraints, perl = TRUE) # Remove extra whitespace
+  constraints <- gsub("\n{2,}", "\n", constraints, perl = TRUE) # Remove extra newlines
+  
+  # Adjust parentheses formatting
+  if (length(gregexpr("[\\(\\)]", constraints)[[1]]) %% 2 == 0) {
+    constraints <- gsub("\\),", ")\n", constraints, perl = TRUE)
+  } else {
+    constraints <- gsub(",", "\n", constraints, perl = TRUE)
+  }
+  
+  return(constraints)
+}
+
+# Function to process constraint syntax
+process_constraint_syntax <- function(constraint.syntax) {
+  syntax <- strsplit(constraint.syntax, split = "\n", perl = TRUE)[[1]]
+  syntax <- syntax[syntax != ""] # Remove empty strings
+  syntax <- gsub("==", "=", syntax, perl = TRUE) # Normalize equality
+  syntax <- gsub("<=", "<", syntax, perl = TRUE) # Normalize less-than-equal
+  syntax <- gsub(">=", ">", syntax, perl = TRUE) # Normalize greater-than-equal
+  return(syntax)
+}
+
+
+# # function taken from 'bain' package 
+# expand_parentheses <- function(hyp) {
+#   parenth_locations <- gregexpr("[\\(\\)]", hyp)[[1]]
+#   if (!parenth_locations[1] == -1 && !grepl("abs\\(.*\\)", hyp)) {
+#     if (length(parenth_locations) %% 2 > 0) {
+#       stop("Not all opening parentheses are matched by a closing parenthesis, or vice versa.")
+#     }
+#     expanded_contents <- strsplit(substring(hyp, (parenth_locations[1]+1), (parenth_locations[2]-1)), ",")[[1]]
+#     if (length(parenth_locations) == 2){
+#       return(paste0(substring(hyp, 1, (parenth_locations[1]-1)), expanded_contents, substring(hyp, (parenth_locations[2]+1), nchar(hyp))))
+#     } else {
+#       res <- apply(expand.grid(expanded_contents, expand_parentheses(substring(hyp, (parenth_locations[2]+1), nchar(hyp)))), 1, paste, collapse = "")
+#       return(res)
+#     }
+#   } else {
+#     return(hyp)
+#   }
+# }
+
+# function taken from 'bain' package, but adapted by LV (27-11-2024)
+expand_parentheses <- function(hyp) {
+  # Vind de locaties van haakjes
+  parenth_locations <- gregexpr("[\\(\\)]", hyp)[[1]]
+  
+  # Als er haakjes zijn
+  if (parenth_locations[1] != -1 && !grepl("abs\\(.*\\)", hyp)) {
+    # Controleer of de haakjes correct sluiten
+    if (length(parenth_locations) %% 2 != 0) {
+      stop("Not all opening parentheses are matched by a closing parenthesis, or vice versa.")
+    }
+    
+    # Haal de inhoud binnen de eerste set haakjes
+    expanded_contents <- strsplit(
+      substring(hyp, parenth_locations[1] + 1, parenth_locations[2] - 1), 
+      ",\\s*"
+    )[[1]]
+    
+    # Maak een lijst van uitgebreide strings
+    expanded_strings <- sapply(expanded_contents, function(content) {
+      paste0(
+        substring(hyp, 1, parenth_locations[1] - 1), 
+        content, 
+        substring(hyp, parenth_locations[2] + 1, nchar(hyp))
+      )
+    }, USE.NAMES = FALSE)
+    
+    # Als er nog meer haakjes zijn, verwerk ze recursief
+    if (any(grepl("\\(", expanded_strings))) {
+      return(unlist(lapply(expanded_strings, expand_parentheses)))
+    } else {
+      return(expanded_strings)
+    }
+  } else {
+    # Geen haakjes aanwezig
+    return(hyp)
+  }
+}
+
+
+# function taken from 'bain' package 
+# expand_compound_constraints <- function(hyp) {
+#   equality_operators <- gregexpr("[=<>]", hyp)[[1]]
+#   if(length(equality_operators) > 1){
+#     string_positions <- c(0, equality_operators, nchar(hyp)+1)
+#     res <- sapply(1:(length(string_positions)-2), function(pos) {
+#       substring(hyp, (string_positions[pos]+1), (string_positions[pos+2]-1))
+#     })
+#     return(res)
+#   } else {
+#     return(hyp)
+#   }
+# }
+
+# function taken from 'bain' package, but adapted by LV (27-11-2024) 
+expand_compound_constraints <- function(hyp_list) {
+  lapply(hyp_list, function(hyp) {
+    equality_operators <- gregexpr("[=<>]", hyp)[[1]]
+    if (length(equality_operators) > 1 && equality_operators[1] != -1) {
+      string_positions <- c(0, equality_operators, nchar(hyp) + 1)
+      sapply(1:(length(string_positions) - 2), function(pos) {
+        substring(hyp, string_positions[pos] + 1, string_positions[pos + 2] - 1)
+      })
+    } else {
+      hyp
+    }
+  })
+}
+
+
+
 coef.restriktor <- function(object, ...)  {
   
   b.def <- c()
@@ -98,36 +215,7 @@ robWeights <- function(w, eps = 0.1/length(w), eps1 = 0.001, ...) {
 }
 
 
-# function taken from 'bain' package 
-expand_compound_constraints <- function(hyp) {
-  equality_operators <- gregexpr("[=<>]", hyp)[[1]]
-  if(length(equality_operators) > 1){
-    string_positions <- c(0, equality_operators, nchar(hyp)+1)
-    return(sapply(1:(length(string_positions)-2), function(pos) {
-      substring(hyp, (string_positions[pos]+1), (string_positions[pos+2]-1))
-    }))
-  } else {
-    return(hyp)
-  }
-}
 
-# function taken from 'bain' package 
-expand_parentheses <- function(hyp) {
-  parenth_locations <- gregexpr("[\\(\\)]", hyp)[[1]]
-  if (!parenth_locations[1] == -1 && !grepl("abs\\(.*\\)", hyp) ) {
-    if (length(parenth_locations) %% 2 > 0) stop("Not all opening parentheses are matched by a closing parenthesis, or vice versa.")
-    expanded_contents <- strsplit(substring(hyp, (parenth_locations[1]+1), (parenth_locations[2]-1)), ",")[[1]]
-    if (length(parenth_locations) == 2){
-      return(paste0(substring(hyp, 1, (parenth_locations[1]-1)), expanded_contents, substring(hyp, (parenth_locations[2]+1), nchar(hyp))))
-    } else {
-      return(apply(
-        expand.grid(expanded_contents, expand_parentheses(substring(hyp, (parenth_locations[2]+1), nchar(hyp)))),
-        1, paste, collapse = ""))
-    }
-  } else {
-    return(hyp)
-  }
-}
 
 
 format_numeric <- function(x, digits = 3) {

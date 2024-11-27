@@ -26,11 +26,11 @@ extract_est_vcov_outcomes <- function(data, outcome_col = NULL, yi_col = "yi",
     if (is.null(outcome_col)) {
       outcomes <- "yi"
       yi_vals <- setNames(cluster_data[[yi_col]], outcomes)
-      yi_list[[paste("Trial", cluster_id)]] <- yi_vals
+      yi_list[[paste(cluster_col, cluster_id)]] <- yi_vals
     } else {
       outcomes <- cluster_data[[outcome_col]]
       yi_vals <- setNames(cluster_data[[yi_col]], outcomes)
-      yi_list[[paste("Trial", cluster_id)]] <- yi_vals
+      yi_list[[paste(cluster_col, cluster_id)]] <- yi_vals
     }
     
     # Determine the number of outcomes for this trial
@@ -60,9 +60,9 @@ extract_est_vcov_outcomes <- function(data, outcome_col = NULL, yi_col = "yi",
     }
     
     # Store the matrix in vcov_blocks list
-    vcov_blocks[[paste("Trial", cluster_id)]] <- vcov_matrix
+    vcov_blocks[[paste(cluster_col, cluster_id)]] <- vcov_matrix
   }
   
   # Return both lists as a named list
-  list(yi_list = yi_list, vcov_blocks = vcov_blocks)
+  return(list(yi_list = yi_list, vcov_blocks = vcov_blocks))
 }

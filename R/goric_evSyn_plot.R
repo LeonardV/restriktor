@@ -5,7 +5,7 @@ plot.evSyn <- function(x, output_type = "gorica_weights", ...) {
     stop("Restriktor ERROR: output_type must be gorica_weights or ll_weights", call. = FALSE)
   }
   
-  if (inherits(x, "evSyn.est")) {
+  if (inherits(x, "evSyn_est")) {
     data_list <- switch(output_type,
                         "gorica_weights" = list(weight_m = x$GORICA_weight_m, 
                                                 cumulative_weights = x$Cumulative_GORICA_weights,
@@ -14,7 +14,7 @@ plot.evSyn <- function(x, output_type = "gorica_weights", ...) {
                                             cumulative_weights = x$Cumulative_LL_weights,
                                             y_label = "Log-Likelihood weights")
     )
-  } else if (inherits(x, "evSyn.LL")) {
+  } else if (inherits(x, "evSyn_LL")) {
     data_list <- switch(output_type,
                         "gorica_weights" = list(weight_m = x$GORICA_weight_m, 
                                                 cumulative_weights = x$Cumulative_GORICA_weights,
@@ -23,13 +23,13 @@ plot.evSyn <- function(x, output_type = "gorica_weights", ...) {
                                             cumulative_weights = x$Cumulative_LL_weights,
                                             y_label = "Log-Likelihood weights")
     )
-  } else if (inherits(x, "evSyn.ICvalues")) {
+  } else if (inherits(x, "evSyn_ICvalues")) {
     data_list <- switch(output_type,
                         "gorica_weights" = list(weight_m = x$GORICA_weight_m, 
                                                 cumulative_weights = x$Cumulative_GORICA_weights,
                                                 y_label = "GORIC(A) weights")
     )
-  } else if (inherits(x, "evSyn.ICweights")) {
+  } else if (inherits(x, "evSyn_ICweights")) {
     data_list <- switch(output_type,
                         "gorica_weights" = list(weight_m = x$GORICA_weight_m, 
                                                 cumulative_weights = x$Cumulative_GORICA_weights,

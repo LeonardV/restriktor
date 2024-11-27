@@ -5,19 +5,21 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   
   # Display input type information
   cat("\nInput type detected: ")
-  if (inherits(x, "evSyn.est")) {
+  if (inherits(x, "evSyn_gorica")) {
+    cat("Parameter estimates and covariance matrix inherited from gorica object\n")
+  } else if (inherits(x, "evSyn_escalc")) {
+    cat("Parameter estimates and covariance matrix inherited from escalc object\n")
+  } else if (inherits(x, "evSyn_est")) {
     cat("Parameter estimates and covariance matrix\n")
-  } else if (inherits(x, "evSyn.LL")) {
+  } else if (inherits(x, "evSyn_LL")) {
     cat("Log-likelihood and penalty values\n")
-  } else if (inherits(x, "evSyn.ICvalues")) {
+  } else if (inherits(x, "evSyn_ICvalues")) {
     cat("Information criteria values\n")
-  } else if (inherits(x, "evSyn.ICweights")) {
+  } else if (inherits(x, "evSyn_ICweights")) {
     cat("Information criteria weights (summing to 1)\n")
-  } else if (inherits(x, "evSyn.ICratios")) {
+  } else if (inherits(x, "evSyn_ICratios")) {
     cat("Ratio of information criteria weights (each vector ends with 1)\n")
-  } else {
-    cat("Unknown input type\n")
-  }
+  } 
   
   if (!is.null(x$Cumulative_GORICA_weights)) {
     cat("\nFinal GORICA weights:\n") 

@@ -274,7 +274,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   
   if (comparison == "complement" && length(conList) == 1L && nrow(conList[[1]]$constraints) == conList[[1]]$neq) {
     comparison  <- "unconstrained"
-    message("Restriktor Message: The complement of a hypothesis with only equality", 
+    message("\nRestriktor Message: The complement of a hypothesis with only equality", 
     " constraints is the unconstrained model. Comparison set to 'unconstrained' instead.")
   }
 # compute complement ------------------------------------------------------
@@ -748,7 +748,8 @@ goric.rma <- function(object, ..., hypotheses = NULL,
   }
   
   if (!c(type %in% c("gorica", "goricac"))) {
-    stop(paste("Restriktor ERROR: object of class rma is only supported for type = 'gorica(c)'."), call. = FALSE)
+    stop(paste("Restriktor ERROR: object of class rma is only supported for type = 'gorica(c)'."), 
+         call. = FALSE)
   }
   
   # Maak de objectList aan en voeg de vereiste elementen toe

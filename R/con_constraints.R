@@ -25,43 +25,39 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     
     # check for user input error
     if (grepl(paste(operators, collapse = "|"), constraints) || all(grepl("[><]{2,}", constraints))) {
-      stop(paste("Restriktor ERROR: error in constraint syntax. Only the operators \'<, >, ==, =, :=\' are allowed.",
-           "See ?restriktor for details on how to specify the constraint syntax or check the website:",
-           "https://restriktor.org/tutorial/syntax.html."), call. = FALSE) 
+      stop(
+        paste(
+          "Restriktor ERROR: error in constraint syntax.",
+           "Only the operators \'<, >, ==, =, :=\' are allowed.",
+           "See ?restriktor for details or check the website:",
+           "https://restriktor.org/tutorial/syntax.html."
+        ), call. = FALSE) 
     }
     
-    # deal with constraints of format x1 < x2 < x3
-    OUT <- list()
-    for (i in seq_len(length(constraints))) {
-      # some constraint cleanup
-      constraint.syntax <- gsub("[#!].*(?=\n)", "", constraints  , perl = TRUE)
-      constraint.syntax <- gsub(";", "\n", constraint.syntax     , perl = TRUE)
-      #constraint.syntax <- gsub(",", "\n", constraint.syntax     , perl = TRUE)
-      constraint.syntax <- gsub("&", "\n", constraint.syntax     , perl = TRUE)
-      constraint.syntax <- gsub("[ \t]+", "", constraint.syntax  , perl = TRUE)
-      constraint.syntax <- gsub("\n{2,}", "\n", constraint.syntax, perl = TRUE)
-      # the regular expression "[\\(\\)]" is a pattern that matches either an opening 
-      # parenthesis ( or a closing parenthesis ).
-      if (length(gregexpr("[\\(\\)]", constraints)[[1]]) %% 2 == 0) {
-        constraint.syntax <- gsub("\\),", "\\)\n", constraint.syntax, perl = TRUE)
-      } else {
-        constraint.syntax <- gsub(",", "\n", constraint.syntax, perl = TRUE)
-      }
+    # Initialize output
+    OUT <- vector("list", length(constraints))
+    
+    # Process constraints
+    for (i in seq_along(constraints)) {
+      # Clean up the constraints
+      constraint.syntax <- clean_constraints(constraints[i])
       
-      constraint.syntax[[i]] <- strsplit(constraint.syntax[[i]], split = "\n", perl = TRUE)
-      constraint.syntax[[i]] <- unlist(constraint.syntax[[i]])
-      constraint.syntax[[i]] <- gsub("==","=", constraint.syntax[[i]], perl = TRUE)
-      constraint.syntax[[i]] <- gsub("<=","<", constraint.syntax[[i]], perl = TRUE)
-      constraint.syntax[[i]] <- gsub(">=",">", constraint.syntax[[i]], perl = TRUE)
-      constraint.syntax <- unlist(constraint.syntax[i])
+      # Process the constraint syntax
+      syntax <- process_constraint_syntax(constraint.syntax)
       
-      LIST <- lapply(constraint.syntax, function(x) { sapply(x, expand_parentheses) })
-      LIST <- lapply(LIST, function(x) { sapply(x, expand_compound_constraints) })
+      # Expand parentheses and compound constraints
+      expanded_list <- lapply(syntax, function(x) expand_parentheses(x))
+      expanded_list <- lapply(expanded_list, function(x) expand_compound_constraints(x))
       
-      unLIST <- unique(unlist(LIST))
-      def.idx  <- grepl(":=", unLIST)
+      # Flatten and remove duplicates
+      unLIST <- unique(unlist(expanded_list))
+      
+      # Handle definitions and reformat equality
+      def.idx <- grepl(":=", unLIST)
       unLIST[!def.idx] <- gsub("=", "==", unLIST[!def.idx])
-      OUT[[i]] <- paste(unLIST, collapse = '\n')
+      
+      # Store in output
+      OUT[[i]] <- paste(unLIST, collapse = "\n")
     }
     
     constraints <- unlist(OUT)

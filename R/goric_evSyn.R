@@ -32,7 +32,7 @@
 
 # -------------------------------------------------------------------------
 
-evSyn <- function(object, ...) {
+evSyn <- function(object, input_type = NULL, ...) {
   
   arguments <- list(...)
   
@@ -40,6 +40,29 @@ evSyn <- function(object, ...) {
   PT   <- arguments$PT
   
   isGoric <- vapply(object, function(x) inherits(x, "con_goric"), logical(1))
+  
+  # Handle input_type explicitly if provided
+  if (!is.null(input_type)) {
+    input_type <- tolower(input_type)
+    if (input_type == "est_vcov") {
+      return(evSyn_est(object, ...))
+    } else if (input_type == "ll_pt") {
+      return(evSyn_LL(object, ...))
+    } else if (input_type == "icweights") {
+      return(evSyn_ICweights(object, ...))
+    } else if (input_type == "icratios") {
+      return(evSyn_ICratios(object, ...))
+    } else if (input_type == "icvalues") {
+      return(evSyn_ICvalues(object, ...))
+    } else if (input_type == "gorica") {
+      return(evSyn_gorica(object, ...))
+    } else if (input_type == "escalc") {
+      return(evSyn_escalc(object, ...))
+    } else {
+      stop(paste0("Restriktor ERROR: Unknown input_type ", sQuote(input_type), "."))
+    }
+  }
+  
   
   if (all(isGoric)) {
     return(evSyn_gorica(object, ...))
@@ -369,7 +392,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
               Final_ratio_LL_weights = Final.ratio.LL.weights
               )
   
-  class(out) <- c("evSyn.est", "evSyn")
+  class(out) <- c("evSyn_est", "evSyn")
   
   return(out)
 }
@@ -511,7 +534,7 @@ evSyn_LL <- function(object, ..., PT = list(), type = c("added", "equal", "avera
               Final_ratio_LL_weights = Final.ratio.LL.weights
               )
   
-  class(out) <- c("evSyn.LL", "evSyn")
+  class(out) <- c("evSyn_LL", "evSyn")
   
   return(out)
 }
@@ -574,7 +597,7 @@ evSyn_ICvalues <- function(object, ..., hypo_names = c()) {
               Cumulative_GORICA_weights  = CumulativeGoricaWeights,
               Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
   
-  class(out) <- c("evSyn.ICvalues", "evSyn")
+  class(out) <- c("evSyn_ICvalues", "evSyn")
   
   return(out)
 }
@@ -627,7 +650,7 @@ evSyn_ICweights <- function(object, ..., priorWeights = NULL, hypo_names = c()) 
               Cumulative_GORICA_weights  = CumulativeWeights,
               Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
   
-  class(out) <- c("evSyn.ICweights", "evSyn")
+  class(out) <- c("evSyn_ICweights", "evSyn")
   
   return(out)
 }
@@ -679,7 +702,7 @@ evSyn_ICratios <- function(object, ..., priorWeights = NULL, hypo_names = c()) {
               Cumulative_GORICA_weights  = CumulativeWeights,
               Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
   
-  class(out) <- c("evSyn.ICratios", "evSyn")
+  class(out) <- c("evSyn_ICratios", "evSyn")
   
   return(out)
 }
@@ -707,13 +730,14 @@ evSyn_gorica <- function(object, ..., type = c("added", "equal", "average"),
   
   # Call the evSyn_LL.list function and return the result
   result <- do.call(evSyn_LL, append(conList, list(...)))
+  class(result) <- c(class(result), "evSyn_gorica")
   
   return(result)
 }
 
 
-evSyn_escalc <- function(data, outcome_col = NULL, yi_col = "yi", vi_cols = "vi", 
-                         cluster_col = "trial", ...) {
+evSyn_escalc <- function(data, yi_col = "yi", vi_cols = "vi", 
+                         cluster_col = "trial", outcome_col = NULL, ...) {
   
   results <- extract_est_vcov_outcomes(
     data = data,
@@ -735,6 +759,7 @@ evSyn_escalc <- function(data, outcome_col = NULL, yi_col = "yi", vi_cols = "vi"
   
   # Call the evSyn_LL.list function and return the result
   result <- do.call(evSyn_est, append(conList, list(...)))
+  class(result) <- c(class(result), "evSyn_escalc")
   
   return(result)
 }

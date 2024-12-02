@@ -46,8 +46,9 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       syntax <- process_constraint_syntax(constraint.syntax)
       
       # Expand parentheses and compound constraints
-      expanded_list <- lapply(syntax, function(x) expand_parentheses(x))
-      expanded_list <- lapply(expanded_list, function(x) expand_compound_constraints(x))
+      #expanded_list <- lapply(syntax, function(x) expand_parentheses(x))
+      expanded_list <- lapply(syntax, process_abs_and_expand)
+      expanded_list <- lapply(expanded_list, expand_compound_constraints)
       
       # Flatten and remove duplicates
       unLIST <- unique(unlist(expanded_list))

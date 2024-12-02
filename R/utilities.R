@@ -1,69 +1,60 @@
-## utility functions
+# Functie om haakjesbalans te valideren
+validate_parentheses <- function(hyp) {
+  open_count <- 0
+  for (char in strsplit(hyp, NULL)[[1]]) {
+    if (char == "(") {
+      open_count <- open_count + 1
+    } else if (char == ")") {
+      open_count <- open_count - 1
+    }
+    if (open_count < 0) return(FALSE) # Meer sluitende dan open haakjes
+  }
+  return(open_count == 0) # Gelijk aantal open en sluitende haakjes
+}
+
+# Functie om constraints op te schonen
 clean_constraints <- function(constraints) {
-  constraints <- gsub("[#!].*(?=\n)", "", constraints, perl = TRUE) # Remove comments
-  constraints <- gsub("[;|&]", "\n", constraints, perl = TRUE) # Standardize delimiters to \n
-  constraints <- gsub("[ \t]+", "", constraints, perl = TRUE) # Remove extra whitespace
-  constraints <- gsub("\n{2,}", "\n", constraints, perl = TRUE) # Remove extra newlines
+  constraints <- gsub("[#!].*(?=\n)", "", constraints, perl = TRUE) # Verwijder opmerkingen
+  constraints <- gsub("[;|&]", "\n", constraints, perl = TRUE) # Normaliseer delimiters naar \n
+  constraints <- gsub("[ \t]+", "", constraints, perl = TRUE) # Verwijder extra spaties
+  constraints <- gsub("\n{2,}", "\n", constraints, perl = TRUE) # Verwijder extra nieuwe regels
   
-  # Adjust parentheses formatting
-  if (length(gregexpr("[\\(\\)]", constraints)[[1]]) %% 2 == 0) {
-    constraints <- gsub("\\),", ")\n", constraints, perl = TRUE)
-  } else {
-    constraints <- gsub(",", "\n", constraints, perl = TRUE)
+  # Alleen komma's buiten haakjes vervangen
+  result <- ""
+  open_parens <- 0
+  
+  for (char in strsplit(constraints, NULL)[[1]]) {
+    if (char == "(") {
+      open_parens <- open_parens + 1
+    } else if (char == ")") {
+      open_parens <- open_parens - 1
+    }
+    
+    if (char == "," && open_parens == 0) {
+      result <- paste0(result, "\n")
+    } else {
+      result <- paste0(result, char)
+    }
   }
   
-  return(constraints)
+  return(result)
 }
 
-# Function to process constraint syntax
-process_constraint_syntax <- function(constraint.syntax) {
-  syntax <- strsplit(constraint.syntax, split = "\n", perl = TRUE)[[1]]
-  syntax <- syntax[syntax != ""] # Remove empty strings
-  syntax <- gsub("==", "=", syntax, perl = TRUE) # Normalize equality
-  syntax <- gsub("<=", "<", syntax, perl = TRUE) # Normalize less-than-equal
-  syntax <- gsub(">=", ">", syntax, perl = TRUE) # Normalize greater-than-equal
-  return(syntax)
-}
-
-
-# # function taken from 'bain' package 
-# expand_parentheses <- function(hyp) {
-#   parenth_locations <- gregexpr("[\\(\\)]", hyp)[[1]]
-#   if (!parenth_locations[1] == -1 && !grepl("abs\\(.*\\)", hyp)) {
-#     if (length(parenth_locations) %% 2 > 0) {
-#       stop("Not all opening parentheses are matched by a closing parenthesis, or vice versa.")
-#     }
-#     expanded_contents <- strsplit(substring(hyp, (parenth_locations[1]+1), (parenth_locations[2]-1)), ",")[[1]]
-#     if (length(parenth_locations) == 2){
-#       return(paste0(substring(hyp, 1, (parenth_locations[1]-1)), expanded_contents, substring(hyp, (parenth_locations[2]+1), nchar(hyp))))
-#     } else {
-#       res <- apply(expand.grid(expanded_contents, expand_parentheses(substring(hyp, (parenth_locations[2]+1), nchar(hyp)))), 1, paste, collapse = "")
-#       return(res)
-#     }
-#   } else {
-#     return(hyp)
-#   }
-# }
-
-# function taken from 'bain' package, but adapted by LV (27-11-2024)
+# Functie om haakjesinhoud uit te breiden
 expand_parentheses <- function(hyp) {
+  if (!validate_parentheses(hyp)) {
+    stop("Not all opening parentheses are matched by a closing parenthesis, or vice versa.")
+  }
+  
   # Vind de locaties van haakjes
   parenth_locations <- gregexpr("[\\(\\)]", hyp)[[1]]
   
-  # Als er haakjes zijn
-  if (parenth_locations[1] != -1 && !grepl("abs\\(.*\\)", hyp)) {
-    # Controleer of de haakjes correct sluiten
-    if (length(parenth_locations) %% 2 != 0) {
-      stop("Not all opening parentheses are matched by a closing parenthesis, or vice versa.")
-    }
-    
-    # Haal de inhoud binnen de eerste set haakjes
+  if (parenth_locations[1] != -1) {
     expanded_contents <- strsplit(
       substring(hyp, parenth_locations[1] + 1, parenth_locations[2] - 1), 
       ",\\s*"
     )[[1]]
     
-    # Maak een lijst van uitgebreide strings
     expanded_strings <- sapply(expanded_contents, function(content) {
       paste0(
         substring(hyp, 1, parenth_locations[1] - 1), 
@@ -72,16 +63,58 @@ expand_parentheses <- function(hyp) {
       )
     }, USE.NAMES = FALSE)
     
-    # Als er nog meer haakjes zijn, verwerk ze recursief
     if (any(grepl("\\(", expanded_strings))) {
       return(unlist(lapply(expanded_strings, expand_parentheses)))
     } else {
       return(expanded_strings)
     }
   } else {
-    # Geen haakjes aanwezig
     return(hyp)
   }
+}
+
+# Functie om abs() en haakjes correct te verwerken
+process_abs_and_expand <- function(hyp) {
+  abs_matches <- gregexpr("abs\\([^)]+\\)", hyp)[[1]]
+  
+  if (abs_matches[1] != -1) {
+    abs_substrings <- regmatches(hyp, list(abs_matches))[[1]]
+    placeholder <- paste0("PLACEHOLDER_", seq_along(abs_substrings))
+    for (i in seq_along(abs_substrings)) {
+      hyp <- sub(abs_substrings[i], placeholder[i], hyp, fixed = TRUE)
+    }
+  } else {
+    abs_substrings <- NULL
+    placeholder <- NULL
+  }
+  
+  # Sorteer placeholders en corresponderende substrings op lengte
+  # Als een placeholder al een deelstring van een andere placeholder bevat 
+  # (bijvoorbeeld PLACEHOLDER_10 bevat PLACEHOLDER_1), kan gsub verkeerd werken 
+  # en een onbedoeld resultaat opleveren. Dit fixen we hier
+  order <- order(nchar(placeholder), decreasing = TRUE)
+  placeholder <- placeholder[order]
+  abs_substrings <- abs_substrings[order]
+  
+  res <- expand_parentheses(hyp)
+  
+  if (!is.null(abs_substrings)) {
+    for (i in seq_along(placeholder)) {
+      res <- gsub(placeholder[i], abs_substrings[i], res, fixed = TRUE)
+    }
+  }
+  
+  return(res)
+}
+
+# Functie om constraints te verwerken
+process_constraint_syntax <- function(constraint.syntax) {
+  syntax <- strsplit(constraint.syntax, split = "\n", perl = TRUE)[[1]]
+  syntax <- syntax[syntax != ""] # Verwijder lege strings
+  syntax <- gsub("==", "=", syntax, perl = TRUE) # Normaliseer gelijkheid
+  syntax <- gsub("<=", "<", syntax, perl = TRUE) # Normaliseer <= naar <
+  syntax <- gsub(">=", ">", syntax, perl = TRUE) # Normaliseer >= naar >
+  return(syntax)
 }
 
 

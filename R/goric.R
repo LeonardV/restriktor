@@ -680,6 +680,11 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
   }
   
   est <- con_gorica_est_lav(object, standardized)
+  
+  if (!is.null(hypotheses)) {
+    est <- adjust_labels(hypotheses, est)
+  }
+  
   objectList <- list(
     object = est$estimate,
     VCOV = est$VCOV,

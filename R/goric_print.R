@@ -223,7 +223,7 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       best_hypos_rest <- paste(df$model[!df$model %in% c(best_hypo_name, "unconstrained")])
       # Step 1: Check if the best hypothesis in the set is not weak
       message <- paste0("- The order-restricted hypothesis ", sQuote(best_hypo_name), 
-                        " is the best in the set, as it has the highest GORIC weight.\n\n")
+                        " is the best in the set, as it has the highest GORIC(A) weight.\n\n")
       
       # Step 2: if not weak, compare it against all other hypotheses in the set
       message <- paste0(message, "- Since ", sQuote(best_hypo_name), " has a higher", 
@@ -255,7 +255,7 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       cat(paste0(message, "\n"))
     } else {
       message <- paste0("- The unconstrained hypothesis is the best in the set,", 
-                        " as it has the highest GORIC weight. As a result, the order-restricted", 
+                        " as it has the highest GORIC(A) weight. As a result, the order-restricted", 
                         " hypotheses are considered weak.\n\n")
 
       message <- paste0(message, "- Since all the order-restricted hypotheses are weak,",

@@ -150,4 +150,32 @@ calculate_weight_bar <- function(Amat, meq, VCOV, mix_weights, seed, control,
   return(wt.bar)
 }
 
+# Functie om labels in estimate en VCOV aan te passen
+adjust_labels <- function(hypotheses, est) {
+  # Extract labels uit hypotheses
+  hypothesis_labels <- unique(unlist(strsplit(unlist(hypotheses), ",\\s*|\\s*>\\s*")))
+  
+  #Controleer welke labels in rhs voorkomen
+  valid_labels <- intersect(est$rhs, hypothesis_labels)  # Behoud volgorde van est$rhs
+  
+  # Alleen doorgaan als er overeenkomende labels zijn
+  if (length(valid_labels) > 0) {
+    mapping <- setNames(valid_labels, valid_labels)
+    
+    # Pas namen aan in estimate
+    names(est$estimate) <- ifelse(est$rhs %in% valid_labels,
+                                  mapping,
+                                  names(est$estimate))
+    
+    # Pas row- en colnamen aan in VCOV
+    rownames(est$VCOV) <- ifelse(est$rhs %in% valid_labels,
+                                 mapping,
+                                 rownames(est$VCOV))
+    colnames(est$VCOV) <- ifelse(est$rhs %in% valid_labels,
+                                 mapping,
+                                 colnames(est$VCOV))
+  }
+  
+  return(est)
+}
 

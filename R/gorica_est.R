@@ -185,23 +185,21 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
 
 
 con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
-  ## create empty list
+  # create empty list
   out <- list()
-  ## number of groups 
-  #num_groups <- lavInspect(x, what = "ngroups")
-  ## get parameter table
+    # get parameter table
   unstandardized_parTable <- parTable(x)
   unstandardized_parTable <- unstandardized_parTable[unstandardized_parTable[, "plabel"] != "", ]
   standardized_parTable   <- standardizedSolution(x, ci = FALSE, zstat = FALSE, se = FALSE)$est.std
   
-  ## combine unstandardized and standardized parameter estimates  
+  # combine unstandardized and standardized parameter estimates  
   parameter_table <- cbind(unstandardized_parTable, est.std = standardized_parTable)
   
-  ## Only user-specified labels
+  # Only user-specified labels
   parameter_table <- parameter_table[parameter_table$label != "" & parameter_table$free != 0L, ]
-  ## remove any duplicate labels
+  # remove any duplicate labels
   parameter_table <- parameter_table[!duplicated(parameter_table$label), ]
-  ## use (un)standardized parameter estimates
+  # use (un)standardized parameter estimates
   out$estimate <- 
     if (standardized) {
       parameter_table$est.std
@@ -216,8 +214,9 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
     } else {
       lavInspect(x, "vcov")
     }
-  ## remove not used columns of VCOV
+  # remove not used columns of VCOV
   out$VCOV <- out$VCOV[parameter_table$label, parameter_table$label, drop = FALSE]
   
+  out$rhs <- parameter_table$rhs
   out
 }

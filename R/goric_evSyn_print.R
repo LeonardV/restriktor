@@ -4,20 +4,26 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
               packageDescription("restriktor", fields = "Version"), x$type))
   
   # Display input type information
-  cat("\nInput type detected: ")
   if (inherits(x, "evSyn_gorica")) {
+    cat(paste("\nInput type 'gorica' detected: "))
     cat("Parameter estimates and covariance matrix inherited from gorica object\n")
   } else if (inherits(x, "evSyn_escalc")) {
+    cat(paste("\nInput type 'escalc' detected: "))
     cat("Parameter estimates and covariance matrix inherited from escalc object\n")
   } else if (inherits(x, "evSyn_est")) {
+    cat(paste("\nInput type 'est_vcov' detected: "))
     cat("Parameter estimates and covariance matrix\n")
   } else if (inherits(x, "evSyn_LL")) {
+    cat(paste("\nInput type 'll_pt' detected: "))
     cat("Log-likelihood and penalty values\n")
   } else if (inherits(x, "evSyn_ICvalues")) {
+    cat(paste("\nInput type 'icvalues' detected: "))
     cat("Information criteria values\n")
   } else if (inherits(x, "evSyn_ICweights")) {
-    cat("Information criteria weights (summing to 1)\n")
+    cat(paste("\nInput type 'icvalues' detected: "))
+    cat("Information criteria icweights (summing to 1)\n")
   } else if (inherits(x, "evSyn_ICratios")) {
+    cat(paste("\nInput type 'icratios' detected: "))
     cat("Ratio of information criteria weights (each vector ends with 1)\n")
   } 
   

@@ -150,6 +150,11 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"),
       )
     }
     
+    if (any(NE_names)) {
+      x$benchmarks_ratio_goric_weights[NE_names][[1]] <- 
+        x$benchmarks_ratio_goric_weights[NE_names][[1]][, -7]
+    }
+    
     print_section(
       text_rgw,
       function() {

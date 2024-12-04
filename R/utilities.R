@@ -7,7 +7,9 @@ validate_parentheses <- function(hyp) {
     } else if (char == ")") {
       open_count <- open_count - 1
     }
-    if (open_count < 0) return(FALSE) # Meer sluitende dan open haakjes
+    if (open_count < 0) {
+      return(FALSE) # Meer sluitende dan open haakjes
+    }
   }
   return(open_count == 0) # Gelijk aantal open en sluitende haakjes
 }
@@ -36,7 +38,6 @@ clean_constraints <- function(constraints) {
       result <- paste0(result, char)
     }
   }
-  
   return(result)
 }
 
@@ -103,7 +104,6 @@ process_abs_and_expand <- function(hyp) {
       res <- gsub(placeholder[i], abs_substrings[i], res, fixed = TRUE)
     }
   }
-  
   return(res)
 }
 
@@ -114,23 +114,10 @@ process_constraint_syntax <- function(constraint.syntax) {
   syntax <- gsub("==", "=", syntax, perl = TRUE) # Normaliseer gelijkheid
   syntax <- gsub("<=", "<", syntax, perl = TRUE) # Normaliseer <= naar <
   syntax <- gsub(">=", ">", syntax, perl = TRUE) # Normaliseer >= naar >
+  
   return(syntax)
 }
 
-
-# function taken from 'bain' package 
-# expand_compound_constraints <- function(hyp) {
-#   equality_operators <- gregexpr("[=<>]", hyp)[[1]]
-#   if(length(equality_operators) > 1){
-#     string_positions <- c(0, equality_operators, nchar(hyp)+1)
-#     res <- sapply(1:(length(string_positions)-2), function(pos) {
-#       substring(hyp, (string_positions[pos]+1), (string_positions[pos+2]-1))
-#     })
-#     return(res)
-#   } else {
-#     return(hyp)
-#   }
-# }
 
 # function taken from 'bain' package, but adapted by LV (27-11-2024) 
 expand_compound_constraints <- function(hyp_list) {
@@ -163,7 +150,6 @@ coef.restriktor <- function(object, ...)  {
   } else {
     OUT <- c(b.restr, b.def)
   }
-  
   return(OUT)
 }
 

@@ -34,7 +34,7 @@ calc_ICweights <- calculate_IC_weights <- function(IC, hypo_names = NULL) {
   # Calculate ratio of IC weights
   ratio_IC_weights <- weight_m %*% t(1/weight_m)
     rownames(ratio_IC_weights) <- hypo_names
-    colnames(ratio_IC_weights) <- paste0("vs. ", hypo_names)
+    colnames(ratio_IC_weights) <- paste0("vs_", hypo_names)
   
   out <- list(IC = IC, IC_weights = weight_m, ratio_IC_weights = ratio_IC_weights)
   class(out) <- c("goric_ICw", "list")
@@ -44,19 +44,20 @@ calc_ICweights <- calculate_IC_weights <- function(IC, hypo_names = NULL) {
 
 
 print.goric_ICw <- function(x, digits = max(3, getOption("digits") - 4), ...) {
-  x <- as.list(x)
-  model_names <- attr(x$IC, "names")
-  rownames(x$ratio_IC_weights) <- NULL
+  #x <- as.list(x)
+  df <- as.data.frame(x)
+  #model_names <- attr(x$IC, "names")
+  #rownames(x$ratio_IC_weights) <- NULL
   
   # Create the dataframe
-  df <- data.frame(model = model_names,
-                   IC.values = x$IC,
-                   IC.weights = x$IC_weights,
-                   ratio.IC.weights = x$ratio_IC_weights)
-  rownames(df) <- NULL
+  # df <- data.frame(model = model_names,
+  #                  IC.values = x$IC,
+  #                  IC.weights = x$IC_weights,
+  #                  ratio.IC.weights = x$ratio_IC_weights)
+  # rownames(df) <- NULL
   
   # Correcting the column names
-  names(df)[4:ncol(df)] <- gsub("vs..", "vs.", names(df)[4:ncol(df)]) 
+  #names(df)[4:ncol(df)] <- gsub("vs..", "vs.", names(df)[4:ncol(df)]) 
   
   # Format and print the dataframe
   formatted_df <- format(df, digits = digits, nsmall = digits, scientific = FALSE)

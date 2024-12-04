@@ -283,14 +283,16 @@ hypotheses = list(H1 = h1, H2 = h2)
 hypotheses = list(Ha = h1, Hb = 'x1 = x2 > x3')
 
 # lavaan object syntax:
-# we need labels (here a, b and c) to define our hypothesis.
-model.lav <- "y ~  1 + a*x1 + b*x2 + c*x3 + x4"
+# the recommended option for objects of class lavaan is to use labels (here a, b and c) 
+# to define our hypothesis.
+model.lav <- "y ~ 1 + a*x1 + b*x2 + c*x3 + x4"
 # fit lavaan model, for example
 # library(lavaan)
 # fit.lav <- sem(model, data = DATA)
 # define hypothesis syntax
 hypotheses = list(h1 = 'a > b > c')
-
+# if needed absolute values can be used.
+hypotheses = list(h1 = 'abs(a) > abs(b) > abs(c)')
 
 library(MASS)
 ## lm

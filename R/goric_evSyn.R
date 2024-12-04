@@ -63,7 +63,6 @@ evSyn <- function(object, input_type = NULL, ...) {
     }
   }
   
-  
   if (all(isGoric)) {
     return(evSyn_gorica(object, ...))
   }
@@ -71,7 +70,6 @@ evSyn <- function(object, input_type = NULL, ...) {
   if (inherits(object, "escalc")) {
     return(evSyn_escalc(object, ...))
   } 
-  
   
   if (!is.list(object) || !any(vapply(object, is.numeric, logical(1)))) {
     stop("Restriktor ERROR: object must be a list of numeric vectors.")

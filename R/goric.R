@@ -5,7 +5,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
                           comparison = NULL, 
                           VCOV = NULL, sample_nobs = NULL,
                           type = "goric", penalty_factor = 2,
-                          control = list(), debug = FALSE) {
+                          Heq = FALSE, control = list(), debug = FALSE) {
   
   # the following classes are allowed (for now)
   obj_class <- class(object)
@@ -26,11 +26,9 @@ goric.default <- function(object, ..., hypotheses = NULL,
       stop(paste("Restriktor ERROR: the hypotheses must be specified as a list.",
       "For example, hypotheses = list(h1 = 'x1 > x2 > x3')"), call. = FALSE)
     }
-    
     if (length(hypotheses) == 1 && is.null(comparison)) {
       comparison <- "complement"
     }
-    
   }
   
   if (is.null(sample_nobs) && type %in% c("goricac")) {
@@ -73,7 +71,12 @@ goric.default <- function(object, ..., hypotheses = NULL,
             "thinning") %in% names(ldots))) {
     ldots$mix_weights <- "boot"
   }
-  
+
+  if (length(hypotheses) == 1 & Heq & comparison == "complement") {
+    Hceq <- gsub("<|>", "=", hypotheses[[1]])
+    hypotheses <- append(list(Heq = Hceq), hypotheses)
+  } 
+    
   constraints <- hypotheses
   # class objects
   object_class <- obj_class
@@ -266,7 +269,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
                           names(constraints))
   }
 
-  if (comparison == "complement" && length(conList) > 1L) {
+  if (comparison == "complement" && length(conList) > 1L && !Heq)  {
     warning("Restriktor Warning: Only one hypothesis is allowed (for now) when comparison = 'complement'.",
             " Comparison set to 'unconstrained' instead.", call. = FALSE)
     comparison <- "unconstrained"
@@ -277,65 +280,85 @@ goric.default <- function(object, ..., hypotheses = NULL,
     message("\nRestriktor Message: The complement of a hypothesis with only equality", 
     " constraints is the unconstrained model. Comparison set to 'unconstrained' instead.")
   }
+  
+  names(conList) <- objectnames
 # compute complement ------------------------------------------------------
   df.c <- NULL
-  if (comparison == "complement") {
-      # unrestricted estimates
-      if (inherits(object, "numeric")) {
-        b.unrestr <- object
-      } else {
-        b.unrestr <- coef(ans$model.org)
-      }
-      # restricted estimates
-      b.restr <- conList[[1]]$b.restr
-      # level probabilities
-      wt.bar <- conList[[1]]$wt.bar
-      # constraints matrix
-      Amat <- conList[[1]]$constraints
-      # remove all zero rows
-      Amat <- Amat[apply(Amat, 1, function(x) !all(x == 0)), , drop = FALSE]
-      # number of equalities
-      meq <- conList[[1]]$neq
-      # rhs
-      bvec <- conList[[1]]$rhs
-    # extract equalities and inequalities
-    if (meq > 0) {
-      Amat.ceq <- Amat[1:meq, , drop = FALSE]
-      bvec.ceq <- bvec[1:meq]
-      Amat.ciq <- Amat[-c(1:meq), , drop = FALSE]
-      bvec.ciq <- bvec[-c(1:meq)]
+   if (comparison == "complement") { 
+    Hm <- setdiff(names(conList), "Heq")  
+     
+    # unrestricted estimates
+    if (inherits(object, "numeric")) {
+      b.unrestr <- object
     } else {
-      Amat.ceq <- matrix(numeric(0), nrow = 0, ncol = ncol(Amat))
-      bvec.ceq <- rep(0, 0)
-      Amat.ciq <- Amat[, , drop = FALSE]
-      bvec.ciq <- bvec
+      b.unrestr <- coef(ans$model.org)
     }
-    
-    # compute log-likelihood for complement
-    # moet dit obv PT_Amat en PT_meq?
-    LL_c <- compute_complement_likelihood(ans$model.org, VCOV, 
-                                          Amat, Amat.ciq, Amat.ceq, 
-                                          bvec, bvec.ciq, bvec.ceq, 
-                                          meq, b.unrestr, type, ldots,
-                                          debug = debug)
-    llc <- LL_c$llc
-    betasc <- LL_c$betasc
-    
-    # compute log-likelihood model
-    if (type %in% c("goric", "goricc")) {
-      llm <- logLik(conList[[1]])
-    } else if (type %in% c("gorica", "goricac")) {
-      llm <- dmvnorm(c(b.unrestr - b.restr), sigma = VCOV, log = TRUE)
-    }
+    # restricted estimates
+    b.restr <- conList[[Hm]]$b.restr
+    # level probabilities
+    wt.bar <- conList[[Hm]]$wt.bar
+    # constraints matrix
+    Amat <- conList[[Hm]]$constraints
+    # remove all zero rows
+    Amat <- Amat[apply(Amat, 1, function(x) !all(x == 0)), , drop = FALSE]
+    # number of equalities
+    meq <- conList[[Hm]]$neq
+    # rhs
+    bvec <- conList[[Hm]]$rhs
+  # extract equalities and inequalities
+  if (meq > 0) {
+    Amat.ceq <- Amat[1:meq, , drop = FALSE]
+    bvec.ceq <- bvec[1:meq]
+    Amat.ciq <- Amat[-c(1:meq), , drop = FALSE]
+    bvec.ciq <- bvec[-c(1:meq)]
+  } else {
+    Amat.ceq <- matrix(numeric(0), nrow = 0, ncol = ncol(Amat))
+    bvec.ceq <- rep(0, 0)
+    Amat.ciq <- Amat[, , drop = FALSE]
+    bvec.ciq <- bvec
+  }
+  
+  # compute log-likelihood for complement
+  # moet dit obv PT_Amat en PT_meq?
+  LL_c <- compute_complement_likelihood(ans$model.org, VCOV, 
+                                        Amat, Amat.ciq, Amat.ceq, 
+                                        bvec, bvec.ciq, bvec.ceq, 
+                                        meq, b.unrestr, type, ldots,
+                                        debug = debug)
+  llc <- LL_c$llc
+  betasc <- LL_c$betasc
+  
+  # compute log-likelihood model
+  if (type %in% c("goric", "goricc")) {
+    llm <- logLik(conList[[Hm]])
+  } else if (type %in% c("gorica", "goricac")) {
+    llm <- dmvnorm(c(b.unrestr - b.restr), sigma = VCOV, log = TRUE)
+  }
 
-    # compute complement penalty term value 
-    PTc <- penalty_complement_goric(Amat = conList[[1]]$PT_Amat, 
-                                    meq  = conList[[1]]$PT_meq, 
-                                    type, wt.bar, 
-                                    debug = debug, 
-                                    sample.nobs = sample_nobs)   
+  # compute complement penalty term value 
+  PTc <- penalty_complement_goric(Amat = conList[[Hm]]$PT_Amat, 
+                                  meq  = conList[[Hm]]$PT_meq, 
+                                  type, wt.bar, 
+                                  debug = debug, 
+                                  sample.nobs = sample_nobs)   
   } 
    
+  
+  
+  if (comparison == "complement" && Heq) {
+    # restricted estimates
+    b.restr <- conList$Heq$b.restr
+    # compute log-likelihood model
+    if (type %in% c("goric", "goricc")) {
+      llceq <- logLik(conList$Heq)                                             
+    } else if (type %in% c("gorica", "goricac")) {
+      llceq <- dmvnorm(c(b.unrestr - b.restr), sigma = VCOV, log = TRUE)
+    }
+    llm <- c(llceq, llm)
+    names(llm) <- c("Heq", Hm)
+  }
+  
+  
   ## for complement compute loglik-value, goric(a)-values, and PT-values if comparison = unconstrained
   switch(comparison,
           "unconstrained" = { 
@@ -490,6 +513,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   ans$comparison <- comparison
   ans$type <- type
   ans$penalty_factor <- penalty_factor
+  ans$Heq <- Heq
 
   # Assign class based on type\
   classMappings <- list(

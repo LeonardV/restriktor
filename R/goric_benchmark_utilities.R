@@ -192,7 +192,8 @@ compute_population_means <- function(pop_es, ratio_pop_means, var_e, ngroups) {
 # this function is called from the goric_benchmark_anova() function
 parallel_function_means <- function(i, N, var_e, means_pop, 
                                     hypos, pref_hypo, object, ngroups, sample, 
-                                    control, form_model_org, ...) {  
+                                    control, form_model_org, mix_weights, 
+                                    penalty_factor, ...) {  
   # Sample residuals
   epsilon <- rnorm(sum(N), sd = sqrt(var_e))
   
@@ -237,6 +238,7 @@ parallel_function_means <- function(i, N, var_e, means_pop,
             comparison = object$comparison,
             type = object$type,
             control = control, 
+            mix_weights = mix_weights,
             ...)
     },
     error = function(e) {
@@ -272,7 +274,7 @@ parallel_function_means <- function(i, N, var_e, means_pop,
 
 # this function is called from the benchmark_asymp() function
 parallel_function_asymp <- function(i, est, VCOV, hypos, pref_hypo, comparison,
-                                    type, control, ...) {  
+                                    type, control, mix_weights, penalty_factor, ...) {  
   results_goric <- tryCatch(
     {
       # Voer de goric functie uit
@@ -281,6 +283,8 @@ parallel_function_asymp <- function(i, est, VCOV, hypos, pref_hypo, comparison,
             comparison = comparison,
             type = type,
             control = control, 
+            mix_weights = mix_weights,
+            penalty_factor = penalty_factor,
             ...)
     },
     error = function(e) {

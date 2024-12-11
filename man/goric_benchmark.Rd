@@ -15,14 +15,12 @@
   benchmark_means(object, pop_es = NULL, ratio_pop_means = NULL, 
                   group_size = NULL, alt_group_size = NULL, 
                   quant = NULL, iter = 1000, 
-                  control = list(convergence_crit = 1e-03, 
-                                 chunk_size = 1e4), 
+                  control = list(), 
                   ncpus = 1, seed = NULL, \ldots)
 
   benchmark_asymp(object, pop_est = NULL, sample_size = NULL, 
                   alt_sample_size = NULL, quant = NULL, iter = 1000, 
-                  control = list(convergence_crit = 1e-03, 
-                                 chunk_size = 1e4), 
+                  control = list(), 
                   ncpus = 1, seed = NULL, \ldots)
   
   \method{print}{benchmark}(x, output_type = c("rgw", "gw", "rlw", "ld", "all"), 
@@ -69,8 +67,7 @@
   \item{hypo_rate_threshold}{A numeric value specifying the threshold for the 
   hypothesis rate. The function calculates the proportion of ratio-of-goric-weights 
   that exceeds this threshold. Defaults to 1.}
-  \item{control}{A list of control parameters including \code{convergence_crit} 
-  and \code{chunk_size}. For more information, see \link{goric}.}
+  \item{control}{A list of control parameters.For more information, see details \link{goric}.}
   \item{ncpus}{Number of CPUs to use for parallel processing. Defaults to \code{1}.
   See details for more information.}
   \item{seed}{A seed for random number generation.}

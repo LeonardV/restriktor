@@ -4,8 +4,6 @@ benchmark_asymp  <- function(object, ...) UseMethod("benchmark_asymp")
 
 benchmark <- function(object, model_type = c("asymp", "means"), ...) {
   
-  #args <- list(...)
-  
   model_type <- match.arg(model_type, c("asymp", "means"))
   if (is.null(model_type)) {
     stop("Restriktor ERROR: Please specify if you want to benchmark means or asymptotic result ",
@@ -31,13 +29,19 @@ benchmark <- function(object, model_type = c("asymp", "means"), ...) {
 
 benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL, 
                             group_size = NULL, alt_group_size = NULL, 
-                            quant = NULL, iter = 1000, #hypo_rate_threshold = 1,
-                            control = list(convergence_crit = 1e-03, 
-                                           chunk_size = 1e4), 
+                            quant = NULL, iter = 1000, 
+                            control = list(), 
                             ncpus = 1, seed = NULL, ...) {
   
   
   # group_size is needed to rescale vcov based on alt_group_size.
+  
+  if (length(control) == 1) {
+    control <- object$objectList[[1]]$control
+  }
+  
+  mix_weights <- attr(object$objectList[[1]]$wt.bar, "method")
+  penalty_factor <- object$penalty_factor
   
   # Check:
   if (!inherits(object, "con_goric")) {
@@ -138,7 +142,9 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     object <- try(goric(group_means, VCOV = VCOV, 
                     sample_nobs = N[1], hypotheses = hypos, 
                     comparison = object$comparison, type = type, 
-                    control = control, ...))
+                    control = control, mix_weights = mix_weights, 
+                    penalty_factor = penalty_factor, 
+                    Heq = FALSE, ...))
   }
   
   
@@ -217,6 +223,8 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
                                 object = object, ngroups = ngroups, 
                                 sample = sample, control = control, 
                                 form_model_org = form_model_org, 
+                                mix_weights = mix_weights, 
+                                penalty_factor = penalty_factor,
                                 ...)
       }
       
@@ -258,7 +266,6 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     res_var_pop = var_e,
     pref_hypo_name = pref_hypo_name, 
     error_prob_pref_hypo = error_prob,
-    #hypothesis_rate = hypothesis_rate,
     benchmarks_goric_weights = benchmark_results$benchmarks_gw,
     benchmarks_ratio_goric_weights = benchmark_results$benchmarks_rgw,
     benchmarks_ratio_ll_weights = benchmark_results$benchmarks_rlw,
@@ -276,9 +283,15 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
 
 benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL, 
                             alt_sample_size = NULL, quant = NULL, iter = 1000,
-                            control = list(convergence_crit = 1e-03, 
-                                           chunk_size = 1e4), 
+                            control = list(), 
                             ncpus = 1, seed = NULL, ...) {
+  
+  if (length(control) == 1) {
+    control <- object$objectList[[1]]$control
+  }
+  
+  mix_weights <- attr(object$objectList[[1]]$wt.bar, "method")
+  penalty_factor <- object$penalty_factor
   
   # Check if object is of class con_goric
   if (!inherits(object, "con_goric")) {
@@ -364,7 +377,8 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     object <- goric(est_sample, VCOV = VCOV, 
                     sample_nobs = N[1], hypotheses = hypos, 
                     comparison = object$comparison, type = object$type, 
-                    control = control, ...)
+                    control = control, mix_weights = mix_weights, 
+                    penalty_factor = penalty_factor, Heq = FALSE, ...)
   }
   
   if (is.null(quant)) {
@@ -400,7 +414,8 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
                                 est = est, VCOV = VCOV,
                                 hypos = hypos, pref_hypo = pref_hypo, 
                                 comparison = comparison, type = "gorica",
-                                control = control, ...)
+                                control = control, mix_weights = mix_weights, 
+                                penalty_factor = penalty_factor, Heq = FALSE, ...)
       }
       
       name <- paste0("pop_est = ", rnames[teller_es])

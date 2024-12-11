@@ -20,7 +20,7 @@ comparable to the Akaike weights.
 \method{goric}{default}(object, ..., hypotheses = NULL,
       comparison = NULL, 
       VCOV = NULL, sample_nobs = NULL, type = "goric",
-      penalty_factor = 2, control = list(), debug = FALSE)
+      penalty_factor = 2, Heq = FALSE, control = list(), debug = FALSE)
 
 \method{goric}{lm}(object, ..., hypotheses = NULL,
       comparison = NULL, type = "goric",
@@ -131,6 +131,11 @@ comparable to the Akaike weights.
   to be customized. Higher values of penalty factor place a stronger emphasis on 
   model simplicity, helping to prevent overfitting by penalizing complex models 
   more heavily.}
+  
+  \item{Heq}{If \code{TRUE}, the null hypothesis is added to the set of models. 
+  This means that all inequality constraints are replaced with equality constraints, 
+  effectively testing the hypothesis that the parameters satisfy exact equality 
+  rather than inequality. Defaults to \code{FALSE}.}
   
   \item{missing}{the default setting for objects of class "lm" is listwise:
   all cases with missing values are removed from the data before the analysis. This

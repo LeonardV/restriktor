@@ -151,6 +151,11 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
   OUT$PT_meq  <- PT_meq
   OUT$PT_Amat <- PT_Amat
   
+  if (nrow(Amat) == meq) {
+    OUT$PT_meq <- PT_meq <- nrow(PT_Amat)
+  }
+  
+  
   if (mix_weights == "pmvnorm") {
     if (RREF$rank < nrow(PT_Amat) && RREF$rank != 0L) {
       messages$mix_weights_rank <- paste(

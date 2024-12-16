@@ -28,7 +28,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     }
     if (length(hypotheses) == 1 && is.null(comparison)) {
       comparison <- "complement"
-    }
+    } 
   }
   
   if (is.null(sample_nobs) && type %in% c("goricac")) {
@@ -72,6 +72,11 @@ goric.default <- function(object, ..., hypotheses = NULL,
     ldots$mix_weights <- "boot"
   }
 
+  # some checks
+  if (!is.null(comparison)) {
+    comparison <- tolower(comparison)
+  }
+  comparison <- match.arg(comparison, c("unconstrained", "complement", "none"))
   if (length(hypotheses) == 1 & Heq & comparison == "complement") {
     Hceq <- gsub("<|>", "=", hypotheses[[1]])
     hypotheses <- append(list(Heq = Hceq), hypotheses)
@@ -81,11 +86,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
   # class objects
   object_class <- obj_class
 
-  # some checks
-  if (!is.null(comparison)) {
-    comparison <- tolower(comparison)
-  }
-  comparison <- match.arg(comparison, c("unconstrained", "complement", "none"))
   type <- tolower(type)
   type <- match.arg(type, c("goric", "goricc", "gorica", "goricac"))
   

@@ -160,32 +160,97 @@ calculate_weight_bar <- function(Amat, meq, VCOV, mix_weights, seed, control,
   return(wt.bar)
 }
 
-# # Functie om labels in estimate en VCOV aan te passen
-# adjust_labels <- function(hypotheses, est) {
-#   # Extract labels uit hypotheses
-#   hypothesis_labels <- unique(unlist(strsplit(unlist(hypotheses), ",\\s*|\\s*>\\s*")))
+
+
+# Functie om rijen te filteren uit de parameter tabel
+# extract_constraints <- function(parameter_table, hypotheses) {
+#   # 1. Verwijder alle spaties in hypotheses
+#   clean_hypotheses <- gsub("\\s+", "", hypotheses)
 #   
-#   #Controleer welke labels in rhs voorkomen
-#   valid_labels <- intersect(est$rhs, hypothesis_labels)  # Behoud volgorde van est$rhs
+#   # 2. Definieer de model- en constraint-operators
+#   model_operators <- c("=~", "<~", "~*~", "~~", "~", "\\|", "%")
+#   constraint_operators <- c("<", ">", "=", "==", ":=")
 #   
-#   # Alleen doorgaan als er overeenkomende labels zijn
-#   if (length(valid_labels) > 0) {
-#     mapping <- setNames(valid_labels, valid_labels)
-#     
-#     # Pas namen aan in estimate
-#     names(est$estimate) <- ifelse(est$rhs %in% valid_labels,
-#                                   mapping,
-#                                   names(est$estimate))
-#     
-#     # Pas row- en colnamen aan in VCOV
-#     rownames(est$VCOV) <- ifelse(est$rhs %in% valid_labels,
-#                                  mapping,
-#                                  rownames(est$VCOV))
-#     colnames(est$VCOV) <- ifelse(est$rhs %in% valid_labels,
-#                                  mapping,
-#                                  colnames(est$VCOV))
+#   # 3. Splits de hypotheses in afzonderlijke constraints
+#   subconstraints <- unlist(strsplit(clean_hypotheses, ",|;|&|\\n"))
+#   
+#   # Functie om model-onderdelen te parseren
+#   parse_model <- function(expression) {
+#     for (op in model_operators) {
+#       if (grepl(op, expression, fixed = TRUE)) {
+#         parts <- unlist(strsplit(expression, op, fixed = TRUE))
+#         if (length(parts) == 2) {
+#           return(list(lhs = parts[1], op = op, rhs = parts[2]))
+#         }
+#       }
+#     }
+#     return(NULL)
 #   }
 #   
-#   return(est)
+#   # Parse alle subconstraints
+#   parsed_constraints <- lapply(subconstraints, function(constraint) {
+#     for (c_op in constraint_operators) {
+#       if (grepl(c_op, constraint, fixed = TRUE)) {
+#         terms <- unlist(strsplit(constraint, c_op, fixed = TRUE))
+#         if (length(terms) == 2) {
+#           return(list(lhs = parse_model(terms[1]), 
+#                       c_op = c_op, 
+#                       rhs = parse_model(terms[2])))
+#         }
+#       }
+#     }
+#     return(list(lhs = parse_model(constraint), c_op = NULL, rhs = NULL))
+#   })
+#   
+#   # Filter parameter_table voor elke constraint
+#   results <- lapply(parsed_constraints, function(pc) {
+#     if (!is.null(pc$lhs) && !is.null(pc$rhs)) {
+#       # Filter met beide zijden van de constraint
+#       parameter_table[
+#         (parameter_table$lhs == pc$lhs$lhs & parameter_table$op == pc$lhs$op & parameter_table$rhs == pc$lhs$rhs) |
+#           (parameter_table$lhs == pc$rhs$lhs & parameter_table$op == pc$rhs$op & parameter_table$rhs == pc$rhs$rhs), ]
+#     } else if (!is.null(pc$lhs)) {
+#       # Filter alleen met lhs (indien rhs ontbreekt)
+#       parameter_table[
+#         parameter_table$lhs == pc$lhs$lhs & parameter_table$op == pc$lhs$op & parameter_table$rhs == pc$lhs$rhs, ]
+#     } else {
+#       NULL
+#     }
+#   })
+#   
+#   # Combineer alle resultaten
+#   result <- do.call(rbind, results)
+#   
+#   return(result)
 # }
+# 
+# 
+# # Voorbeeldgebruik
+# hypotheses <- "dem60=~y2>dem65=~y6, dem60=~y3>dem65=~y7,dem60=~y4>dem65=~y8"
+# 
+# model1 <- '
+#     A =~ Ab + Al + Af + An + Ar + Ac 
+#     B =~ Bb + Bl + Bf + Bn + Br + Bc 
+# '
+# # Use the lavaan sem function to execute the confirmatory factor analysis
+# fit1 <- sem(model1, data = sesamesim, std.lv = TRUE)
+# 
+# parameter_table <- parameterTable(fit1)
+# hypotheses1 <-
+#   " A=~Ab > .6 & A=~Al > .6 & A=~Af > .6 & A=~An > .6 & A=~Ar > .6 & A=~Ac >.6 & 
+# B=~Bb > .6 & B=~Bl > .6 & B=~Bf > .6 & B=~Bn > .6 & B=~Br > .6 & B=~Bc >.6"
+# 
+# 
+# model2 <- '
+#     A  =~ Ab + Al + Af + An + Ar + Ac 
+#     B =~ Bb + Bl + Bf + Bn + Br + Bc
+# 
+#     A ~ B + age + peabody
+# '
+# fit2 <- sem(model2, data = sesamesim, std.lv = TRUE)
+# hypotheses2 <- "A~B > A~peabody = A~age = 0; 
+#                A~B > A~peabody > A~age = 0; 
+# A~B > A~peabody > A~age > 0"
+# parameter_table <- parameterTable(fit2)
+# extract_constraints(parameter_table, hypotheses2)
 

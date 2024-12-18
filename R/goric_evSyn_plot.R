@@ -1,6 +1,4 @@
-## plot function
-plot.evSyn <- function(x, output_type = "gorica_weights", ...) {
-  
+plot.evSyn <- function(x, output_type = "gorica_weights", xlab = NULL, ...) {
   if (!output_type %in% c("gorica_weights", "ll_weights")) {
     stop("Restriktor ERROR: output_type must be gorica_weights or ll_weights", call. = FALSE)
   }
@@ -45,7 +43,14 @@ plot.evSyn <- function(x, output_type = "gorica_weights", ...) {
   namesH <- colnames(weight_m)
   NrHypos_incl <- ncol(weight_m[,,drop = FALSE])
   S <- nrow(weight_m[,,drop = FALSE])
-  Name_studies <- as.factor(1:S)
+  Name_studies <- if (!is.null(xlab)) {
+    if (length(xlab) != S) {
+      stop("Restriktor ERROR: Length of xlab must match the number of studies", call. = FALSE)
+    }
+    as.factor(xlab)
+  } else {
+    as.factor(1:S)
+  }
   
   # Creëer data frames voor individuele en cumulatieve gewichten
   if (all(is.na(weight_m))) {
@@ -87,12 +92,14 @@ plot.evSyn <- function(x, output_type = "gorica_weights", ...) {
       axis.title.y = element_text(size = 14, vjust = 5),
       panel.background = element_blank(),
       axis.line = element_line(colour = "black"),
-      plot.title = element_text(hjust = 0.5, size = 14)
+      plot.title = element_text(hjust = 0.5, size = 14),
+      plot.subtitle = element_text(hjust = 0.5, size = 12)
     ) +
     scale_y_continuous(limits = c(0, 1), n.breaks = 10) +
     scale_x_discrete(expand = c(0, 0.05)) +
     labs(x = "Studies", y = y_label,
          title = paste("Cumulative", y_label, "and", y_label, "per study"),
+         subtitle = paste(x$type, "Evidence Synthesis results"),
          shape = "", color = "", linetype = "") +
     guides(shape = guide_legend(override.aes = list(linetype = 0)))
 }

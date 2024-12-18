@@ -14,7 +14,7 @@ penalty_goric <- function(Amat, meq, LP, correction = FALSE,
     }
   }
   
-  if (all(Amat == 0)) {
+  if (all(Amat == 0)) { 
     lPT_values <- ifelse(correction, num_cols, 0:num_cols)
     return(compute_PT(lPT_values))
   }

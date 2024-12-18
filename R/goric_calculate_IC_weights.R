@@ -2,7 +2,7 @@
 # This function transforms IC values into IC weights: IC values denote the ordering 
 # of hypotheses/models, while IC weights quantify the relative strength of 
 # hypotheses/models.
-calc_ICweights <- calculate_IC_weights <- function(IC, hypo_names = NULL) {
+calc_ICweights <- calculate_IC_weights <- function(IC, hypo_names = NULL, use_scientific = TRUE) {
   
   # Check if IC is a vector or a matrix with one column
   if (!is.vector(IC) && !(is.matrix(IC) && ncol(IC) == 1)) {
@@ -30,12 +30,18 @@ calc_ICweights <- calculate_IC_weights <- function(IC, hypo_names = NULL) {
   # Calculate IC weights
   weight_m <- exp(-0.5 * (IC - minIC)) / sum(exp(-0.5 * (IC - minIC)))
     names(weight_m) <- hypo_names
-  
+
   # Calculate ratio of IC weights
   ratio_IC_weights <- weight_m %*% t(1/weight_m)
     rownames(ratio_IC_weights) <- hypo_names
     colnames(ratio_IC_weights) <- paste0("vs_", hypo_names)
   
+    
+  if (use_scientific) {
+    weight_m <- format(weight_m, scientific = use_scientific)
+    ratio_IC_weights <- format(ratio_IC_weights, scientific = use_scientific)
+  }
+    
   out <- list(IC = IC, IC_weights = weight_m, ratio_IC_weights = ratio_IC_weights)
   class(out) <- c("goric_ICw", "list")
   

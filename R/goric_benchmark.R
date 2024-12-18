@@ -248,10 +248,6 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
                                             est = group_means, 
                                             VCOV, control, ...)
   
-  # # compute hypothesis rate
-  # hypothesis_rate <- lapply(benchmark_results$combined_values$rgw_combined, 
-  #                           calculate_hypothesis_rate, q = hypo_rate_threshold)
-
   OUT <- list(
     type = object$type,
     comparison = object$comparison,
@@ -376,7 +372,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     
     object <- goric(est_sample, VCOV = VCOV, 
                     sample_nobs = N[1], hypotheses = hypos, 
-                    comparison = object$comparison, type = object$type, 
+                    comparison = comparison, type = type, 
                     control = control, mix_weights = mix_weights, 
                     penalty_factor = penalty_factor, Heq = FALSE, ...)
   }
@@ -409,7 +405,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
       
       # Wrapper function for future_lapply
       wrapper_function_asymp <- function(i) {
-        p()  # Update the progress
+        p() # Update the progress
         parallel_function_asymp(i, 
                                 est = est, VCOV = VCOV,
                                 hypos = hypos, pref_hypo = pref_hypo, 
@@ -433,9 +429,6 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   error_prob <- calculate_error_probability(object, hypos, pref_hypo, 
                                             est = est_sample, VCOV, control, ...)
   
-  # hypothesis_rate <- lapply(benchmark_results$combined_values$rgw_combined, 
-  #                           calculate_hypothesis_rate, q = hypo_rate_threshold)
-  
   OUT <- list(
     type = object$type,
     comparison = object$comparison,
@@ -445,7 +438,6 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     pop_VCOV = VCOV,
     pref_hypo_name = pref_hypo_name, 
     error_prob_pref_hypo = error_prob,
-    #hypothesis_rate = hypothesis_rate,
     benchmarks_goric_weights = benchmark_results$benchmarks_gw,
     benchmarks_ratio_goric_weights = benchmark_results$benchmarks_rgw,
     benchmarks_ratio_ll_weights = benchmark_results$benchmarks_rlw,

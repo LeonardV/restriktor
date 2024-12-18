@@ -37,6 +37,15 @@ calculate_model_comparison_metrics <- function(x) {
     goric_weights_without_unc <- c(goric_weights_without_unc, NA)
   } else { goric_weights_without_unc <- NULL }
   
+  mn_heq_idx <- grep("Heq", modelnames)
+  if (length(modelnames) > 2 && length(mn_heq_idx) > 0 && 
+      which.max(goric_weights) != mn_heq_idx) {
+    delta_goric = x$goric[-mn_heq_idx] - min(x$goric[mn_heq_idx])
+    goric_weights_without_heq = exp(0.5 * -delta_goric) / 
+      sum(exp(0.5 * -delta_goric))
+    goric_weights_without_heq <- c(NA, goric_weights_without_heq)
+  } else { goric_weights_without_heq <- NULL }
+  
   rownames(goric_rw) = modelnames
   rownames(penalty_rw) = modelnames
   rownames(loglik_rw) = modelnames
@@ -48,6 +57,7 @@ calculate_model_comparison_metrics <- function(x) {
               penalty_weights = penalty_weights,
               goric_weights = goric_weights,
               goric_weights_without_unc = goric_weights_without_unc,
+              goric_weights_without_heq = goric_weights_without_heq,
               loglik_rw = loglik_rw,
               penalty_rw = penalty_rw,
               goric_rw = goric_rw)

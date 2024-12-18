@@ -102,7 +102,7 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
         } 
         text_msg_3 <- paste("Advise: If a substantial number of bootstrap draws fail to converge,", 
                             "the resulting penalty term may become unreliable. In such cases, it is advisable", 
-                            "to increase the number of bootstrap draws, i.e., control = list(mix_weights_bootstrap_limit = 1e5)")
+                            "to increase the maximum number of bootstrap draws, e.g., control = list(mix_weights_bootstrap_limit = 1e5)")
       }
     }
   }
@@ -170,8 +170,7 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     cat("\nConclusion:\n")
   }
   
-  if (comparison == "complement" && length(overlap_unique_combinations) == 0) {  
-    
+  if (comparison == "complement" && length(overlap_unique_combinations) == 0 && !x$Heq) {
     formatted_numbers <- sprintf("%.3f %.3f", x$result[[7]][1], x$result[[7]][2])
     numbers <- strsplit(formatted_numbers, " ")[[1]]
     if (as.numeric(numbers[1]) / as.numeric(numbers[2]) > 1) {
@@ -188,6 +187,64 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     }
     # cat(paste0("---\nThe order-restricted hypothesis ", objectname1, 
     #            " has ", support_ratio, " times more support than its complement.\n\n"))
+  } else if (comparison == "complement" && x$Heq) { 
+    modelnames <- x$result$model[!x$result$model == "Heq"]
+    if (best_hypo_name != "Heq") {
+      goric_weights_without_heq <- x$result[, 8][!is.na(x$result[, 8])]
+      goric_rw_without_heq <- goric_weights_without_heq %*% t(1/goric_weights_without_heq)
+      diag(goric_rw_without_heq) <- 1L
+      colnames(goric_rw_without_heq) <- paste0("vs. ", modelnames)
+      goric_rw_without_heq_best_hypo <- goric_rw_without_heq[best_hypo-1, ]
+      goric_rw_without_heq_best_hypo <- goric_rw_without_heq_best_hypo[goric_rw_without_heq_best_hypo != 1]
+      goric_rw_without_heq_best_hypo <- sapply(goric_rw_without_heq_best_hypo, format_value)
+      best_hypos_rest <- paste(df$model[!df$model %in% c(best_hypo_name, "Heq")])
+      # Step 1: Check if the best hypothesis in the set is not weak
+      message <- paste0("- The order-restricted hypothesis ", sQuote(best_hypo_name), 
+                        " is the best in the set, as it has the highest GORIC(A) weight.\n\n")
+      
+      # Step 2: if not weak, compare it against all other hypotheses in the set
+      message <- paste0(message, "- Since ", sQuote(best_hypo_name), " has a higher", 
+                        " GORIC(A) weight than the null-hypothesis,", 
+                        " we can now inspect the relative support for ", sQuote(best_hypo_name), " against",
+                        " the other order-restricted hypothesis:\n\n")
+      
+      #Dan worden het afhankelijk van wat je vindt was 1 of twee zinnen: 
+      # eerst een mbt H0 en daarna evt nog een mbt H1 vs Hc 
+      # (met dan ook hier dat als ratio van gorica weights < 1 dan net anders rapporteren).
+      
+      for (i in seq_along(best_hypos_rest)) {
+        # if (best_hypos_rest[i] %in% overlap_hypo) {
+        #   # Als er overlap is, voeg toe dat de relatieve support zijn maximum heeft bereikt
+        #   message <- paste0(message, "  * ", sQuote(best_hypo_name), " is ", 
+        #                     goric_rw_without_heq_best_hypo[i], 
+        #                     " times more supported than ", sQuote(best_hypos_rest[i]), 
+        #                     " (This relative support reached its maximum, see Note.)")
+        # } else {
+          # Als er geen overlap is, geef normale relatieve support
+        message <- paste0(message, "  * ", sQuote(best_hypo_name), " is ", 
+                          goric_rw_without_heq_best_hypo[i], 
+                          " times more supported than ", sQuote(best_hypos_rest[i]))
+        #}
+        
+        # Voeg punt toe, behalve als het de laatste hypothese is
+        if (i < length(best_hypos_rest)) {
+          message <- paste0(message, ".\n")
+        } else {
+          message <- paste0(message, ".")
+        }
+      }
+      cat(paste0(message, "\n"))
+    } else {
+      message <- paste0("- The null-hypothesis is the best in the set,", 
+                        " as it has the highest GORIC(A) weight. As a result, the order-restricted", 
+                        " hypotheses are considered as equality constraints.\n\n")
+      
+      message <- paste0(message, "- Since the order-restricted hypotheses are weak,",
+                        " inspecting their relative support is not meaningful.")
+      
+      #cat(paste0("---\n", message, "\n"))
+      cat(paste0(message, "\n"))
+    }
   } else if (comparison == "none" && length(overlap_unique_combinations) == 0 && length(df$model) == 2) {
     class(x$ratio.gw) <- "numeric"
     support_ratio <- sprintf("%.2f", x$ratio.gw[1, 2])
@@ -208,7 +265,7 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       result <- paste(numbers[1], "/", numbers[2], "= 1", sep = " ")
       cat("The order-restricted hypothesis", sQuote(objectnames[1]), "and the unconstrained have equal support:", result, "\n\n")      
     }
-  } else if (comparison == "unconstrained" && length(df$model) > 2) {
+  } else if ( (comparison == "unconstrained" && length(df$model) > 2) )  {
     #best_hypo <- which.max(x$result[, 7])
     #best_hypo_name <- x$result$model[best_hypo]
     modelnames <- x$result$model[!x$result$model == "unconstrained"]
@@ -227,7 +284,7 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       
       # Step 2: if not weak, compare it against all other hypotheses in the set
       message <- paste0(message, "- Since ", sQuote(best_hypo_name), " has a higher", 
-      " GORIC weight than the unconstrained hypothesis, it is not considered weak.", 
+      " GORIC(A) weight than the unconstrained hypothesis, it is not considered weak.", 
       " We can now inspect the relative support for ", sQuote(best_hypo_name), " against",
       " the other order-restricted hypotheses:\n\n")
       

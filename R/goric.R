@@ -76,6 +76,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   if (!is.null(comparison)) {
     comparison <- tolower(comparison)
   }
+  
   comparison <- match.arg(comparison, c("unconstrained", "complement", "none"))
   if (length(hypotheses) == 1 & Heq & comparison == "complement") {
     Hceq <- gsub("<|>", "=", hypotheses[[1]])
@@ -269,7 +270,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
                           names(constraints))
   }
 
-  if (comparison == "complement" && length(conList) > 1L && !Heq)  {
+  if (comparison == "complement" && length(conList) > 1L && !("Heq" %in% names(hypotheses)) )  { 
     warning("Restriktor Warning: Only one hypothesis is allowed (for now) when comparison = 'complement'.",
             " Comparison set to 'unconstrained' instead.", call. = FALSE)
     comparison <- "unconstrained"
@@ -472,10 +473,16 @@ goric.default <- function(object, ..., hypotheses = NULL,
   df$penalty.weights <- model_comparison_metrics$penalty_weights
   df$goric.weights   <- model_comparison_metrics$goric_weights
   df$goric.weights_without_unc <- model_comparison_metrics$goric_weights_without_unc
+  df$goric.weights_without_heq <- model_comparison_metrics$goric_weights_without_heq
+  
   names(df)[7] <- paste0(type, ".weights")
   if (!is.null(df$goric.weights_without_unc)) {
     names(df)[8] <- paste0(type, ".weights_without_unc")
   }
+  if (!is.null(df$goric.weights_without_heq)) {
+    names(df)[8] <- paste0(type, ".weights_without_heq")
+  }
+  
   rownames(df) <- NULL
 
   ans$result <- df

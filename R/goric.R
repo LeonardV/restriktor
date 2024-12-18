@@ -7,6 +7,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
                           type = "goric", penalty_factor = 2,
                           Heq = FALSE, control = list(), debug = FALSE) {
   
+  comparison <- match.arg(comparison, c("unconstrained", "complement", "none"))
+  
   # the following classes are allowed (for now)
   obj_class <- class(object)
   classes <- c("aov", "lm", "glm", "mlm", "rlm", "numeric", "lavaan", "CTmeta", 
@@ -39,6 +41,11 @@ goric.default <- function(object, ..., hypotheses = NULL,
     # check if it is of class matrix
     if (inherits(VCOV, "dpoMatrix")) {
       VCOV <- as.matrix(VCOV)
+    }
+    
+    if (any(is.na(VCOV))) {
+      stop(paste("Restriktor ERROR: The covariance matrix (VCOV) contains NA or NaN values.", 
+           "Please check your data or model specification."), call. = FALSE)
     }
   }
   
@@ -77,7 +84,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
     comparison <- tolower(comparison)
   }
   
-  comparison <- match.arg(comparison, c("unconstrained", "complement", "none"))
   if (length(hypotheses) == 1 & Heq & comparison == "complement") {
     Hceq <- gsub("<|>", "=", hypotheses[[1]])
     hypotheses <- append(list(Heq = Hceq), hypotheses)
@@ -270,13 +276,31 @@ goric.default <- function(object, ..., hypotheses = NULL,
                           names(constraints))
   }
 
-  if (comparison == "complement" && length(conList) > 1L && !("Heq" %in% names(hypotheses)) )  { 
+  if (comparison == "complement" && length(conList) > 1L && 
+      !("Heq" %in% names(hypotheses)) )  { 
     warning("Restriktor Warning: Only one hypothesis is allowed (for now) when comparison = 'complement'.",
             " Comparison set to 'unconstrained' instead.", call. = FALSE)
+    
+    if (Heq) {
+      warning("Restriktor Warning: The 'Heq' argument is ignored. The specified", 
+      " hypothesis is only valid when the order-restricted hypothesis is compared",
+      " to its complement.", call. = FALSE)
+      Heq <- FALSE
+    }
     comparison <- "unconstrained"
   }
-  
-  if (comparison == "complement" && length(conList) == 1L && nrow(conList[[1]]$constraints) == conList[[1]]$neq) {
+
+  if (comparison %in% c("unconstrained", "none") && Heq) {
+    if (Heq) {
+      warning("Restriktor Warning: The 'Heq' argument is ignored. The specified", 
+              " hypothesis is only valid when the order-restricted hypothesis is compared",
+              " to its complement.", call. = FALSE)
+      Heq <- FALSE
+    }
+  }
+    
+  if (comparison == "complement" && length(conList) == 1L && 
+      nrow(conList[[1]]$constraints) == conList[[1]]$neq) {
     comparison  <- "unconstrained"
     message("\nRestriktor Message: The complement of a hypothesis with only equality", 
     " constraints is the unconstrained model. Comparison set to 'unconstrained' instead.")
@@ -699,6 +723,56 @@ goric.numeric <- function(object, ..., hypotheses = NULL,
 
 
 # object of class lavaan --------------------------------------------------
+# goric.lavaan <- function(object, ..., hypotheses = NULL,
+#                          comparison = NULL,
+#                          type = "gorica",
+#                          standardized = FALSE,
+#                          debug = FALSE) {
+#   
+#   if (!c(type %in% c("gorica", "goricac"))) {
+#     stop(paste("Restriktor ERROR: object of class lavaan is only supported for", 
+#          "type = 'gorica(c)'."), call. = FALSE)
+#   }
+#   
+#   parTable_list <- con_gorica_est_lav(object, standardized)
+#   parameter_table <- parTable_list$parameter_table
+#   
+#   # Only user-specified labels or "lhs-op-rhs"
+#   usr_specified_labels_idx <- parameter_table$label != "" & parameter_table$free != 0L
+#   # no user-specified labels
+#   if (all(!usr_specified_labels_idx)) {
+#     
+#   } else {
+#     parameter_table <- parameter_table[!duplicated(parameter_table$label), ]  
+#   } 
+#    
+#   
+#   #out$VCOV[parameter_table$label, parameter_table$label, drop = FALSE]
+#   
+#   objectList <- list(
+#     object = est$estimate,
+#     VCOV = est$VCOV,
+#     hypotheses = hypotheses,
+#     comparison = comparison,
+#     type = type,
+#     debug = debug
+#   )
+#   
+#   if (type == "goricac") {
+#     objectList$sample_nobs <- lavInspect(object, what = "ntotal")
+#   }
+#   
+#   # Voeg extra argumenten toe aan de objectList
+#   extraArgs <- list(...)
+#   objectList <- c(objectList, extraArgs)
+#   
+#   # Roep de goric.default functie aan met de samengestelde lijst
+#   res <- do.call(goric.default, objectList)
+#   
+#   res
+# }
+
+
 goric.lavaan <- function(object, ..., hypotheses = NULL,
                          comparison = NULL,
                          type = "gorica",
@@ -707,14 +781,10 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
   
   if (!c(type %in% c("gorica", "goricac"))) {
     stop(paste("Restriktor ERROR: object of class lavaan is only supported for", 
-         "type = 'gorica(c)'."), call. = FALSE)
+               "type = 'gorica(c)'."), call. = FALSE)
   }
   
   est <- con_gorica_est_lav(object, standardized)
-  
-  # if (!is.null(hypotheses)) {
-  #   est <- adjust_labels(hypotheses, est)
-  # }
   
   objectList <- list(
     object = est$estimate,
@@ -738,7 +808,6 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
   
   res
 }
-
 
 # object of class CTmeta --------------------------------------------------
 goric.CTmeta <- function(object, ..., hypotheses = NULL,

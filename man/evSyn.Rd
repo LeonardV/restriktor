@@ -57,7 +57,7 @@ evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldo
 
 \method{print}{summary.evSyn}(x, digits = max(3, getOption("digits") - 4), \dots)  
 
-\method{plot}{evSyn}(x, output_type = "gorica_weights", \dots)
+\method{plot}{evSyn}(x, output_type = "gorica_weights", xlab = NULL, \dots)
 }
 
 \arguments{
@@ -124,6 +124,10 @@ evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldo
   weights and goric(a) weights per study is displayed. If "\code{ll_weights}"
   a plot with the cumulative log-likelihood weights and log-likelihood weights 
   per study is displayed.}
+
+  \item{xlab}{a vector specifying custom labels for the x-axis. The length of 
+  the vector must match the number of studies in the dataset. If not provided, 
+  the x-axis labels default to a sequence from 1 to the number of studies.}
 
   \item{data}{an object of class "escalc" from the \pkg{metafor} package.}
 

@@ -146,7 +146,7 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   overlap_hypo <- overlap_hypo[overlap_hypo != ""]
   
   # check if the log-likelihood of models are equal, this means that the hypotheses overlap (i.e., subset)
-  if (length(overlap_hypo) > 0) {
+  if (length(overlap_hypo) > 0 & !x$Heq) {
     message("---\nNote: Hypotheses ", paste0(sQuote(overlap_hypo), collapse = " and "), 
             " have equal log-likelihood values. This indicates that they overlap and",
             " that the ratio of their GORIC(A) weights reached its maximum. If of", 
@@ -198,34 +198,24 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       goric_rw_without_heq_best_hypo <- goric_rw_without_heq_best_hypo[goric_rw_without_heq_best_hypo != 1]
       goric_rw_without_heq_best_hypo <- sapply(goric_rw_without_heq_best_hypo, format_value)
       best_hypos_rest <- paste(df$model[!df$model %in% c(best_hypo_name, "Heq")])
-      # Step 1: Check if the best hypothesis in the set is not weak
-      message <- paste0("- The order-restricted hypothesis ", sQuote(best_hypo_name), 
-                        " is the best in the set, as it has the highest GORIC(A) weight.\n\n")
       
-      # Step 2: if not weak, compare it against all other hypotheses in the set
-      message <- paste0(message, "- Since ", sQuote(best_hypo_name), " has a higher", 
-                        " GORIC(A) weight than the null-hypothesis,", 
-                        " we can now inspect the relative support for ", sQuote(best_hypo_name), " against",
-                        " the other order-restricted hypothesis:\n\n")
-      
-      #Dan worden het afhankelijk van wat je vindt was 1 of twee zinnen: 
-      # eerst een mbt H0 en daarna evt nog een mbt H1 vs Hc 
-      # (met dan ook hier dat als ratio van gorica weights < 1 dan net anders rapporteren).
-      
+      if (best_hypo_name == "complement") {
+        message <- paste0("- The complement is the best in the set, as it has the highest GORIC(A) weight.",
+                          " Since the complement has a higher GORIC(A) weight than the equality-restricted", 
+                          " hypothesis Heq, we can now inspect the relative support for the complement",
+                          " against the order-restricted hypothesis ", modelnames[modelnames != "complement"], ":\n\n")
+      } else if (best_hypo_name != "complement") {
+        message <- paste0("- The order-restricted hypothesis ", modelnames[modelnames != "complement"], " is the best",
+                          " in the set, as it has the highest GORIC(A) weight. Since it has a higher GORIC(A) weight",
+                          " than the equality-restricted hypothesis Heq, we can now inspect the relative support for", 
+                          " the order-restricted hypothesis against its complement:\n\n")
+      } 
+
       for (i in seq_along(best_hypos_rest)) {
-        # if (best_hypos_rest[i] %in% overlap_hypo) {
-        #   # Als er overlap is, voeg toe dat de relatieve support zijn maximum heeft bereikt
-        #   message <- paste0(message, "  * ", sQuote(best_hypo_name), " is ", 
-        #                     goric_rw_without_heq_best_hypo[i], 
-        #                     " times more supported than ", sQuote(best_hypos_rest[i]), 
-        #                     " (This relative support reached its maximum, see Note.)")
-        # } else {
-          # Als er geen overlap is, geef normale relatieve support
         message <- paste0(message, "  * ", sQuote(best_hypo_name), " is ", 
                           goric_rw_without_heq_best_hypo[i], 
                           " times more supported than ", sQuote(best_hypos_rest[i]))
-        #}
-        
+
         # Voeg punt toe, behalve als het de laatste hypothese is
         if (i < length(best_hypos_rest)) {
           message <- paste0(message, ".\n")
@@ -235,14 +225,13 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       }
       cat(paste0(message, "\n"))
     } else {
-      message <- paste0("- The null-hypothesis is the best in the set,", 
+      message <- paste0("- The null-hypothesis Heq is the best in the set,", 
                         " as it has the highest GORIC(A) weight. As a result, the order-restricted", 
                         " hypotheses are considered as equality constraints.\n\n")
       
       message <- paste0(message, "- Since the order-restricted hypotheses are weak,",
                         " inspecting their relative support is not meaningful.")
       
-      #cat(paste0("---\n", message, "\n"))
       cat(paste0(message, "\n"))
     }
   } else if (comparison == "none" && length(overlap_unique_combinations) == 0 && length(df$model) == 2) {

@@ -188,7 +188,7 @@ compute_population_means <- function(pop_es, ratio_pop_means, var_e, ngroups) {
   return(means_pop_all)  
 }
 
-
+#undebug(restriktor:::parallel_function_means)
 # this function is called from the goric_benchmark_anova() function
 parallel_function_means <- function(i, N, var_e, means_pop, 
                                     hypos, pref_hypo, object, ngroups, sample, 
@@ -316,38 +316,6 @@ parallel_function_asymp <- function(i, est, VCOV, hypos, pref_hypo, comparison,
   
   return(out)
 }
-
-
-# parallel_function_asymp <- function(i, est, VCOV, hypos, pref_hypo, comparison,
-#                                     type, control, ...) {  
-#   
-#   results_goric <- try(goric(est[i, ], VCOV = VCOV,
-#                              hypotheses = hypos,
-#                              comparison = comparison,
-#                              type = type,
-#                              control = control, 
-#                              ...), silent = TRUE
-#   )
-#   
-#   if (inherits(results_goric, "try-error")) {
-#     warning("Error encountered: ", attr(results_goric, "condition")$message)
-#     return(NULL)
-#   }
-# 
-#   # Return the relevant results
-#   ld_names <- names(results_goric$ratio.gw[pref_hypo, ])
-#   ld <- results_goric$result$loglik[pref_hypo] - results_goric$result$loglik
-#   names(ld) <- ld_names
-#   
-#   out <- list(
-#     #test  = attr(results.goric$objectList[[results.goric$objectNames]]$wt.bar, "mvtnorm"),
-#     gw  = results_goric$result[pref_hypo, 7], # goric(a) weight
-#     rgw = results_goric$ratio.gw[pref_hypo, ], # ratio goric(a) weights
-#     rlw = results_goric$ratio.lw[pref_hypo, ], # ratio log-likelihood weights
-#     ld  = ld
-#   )
-#   return(out)
-# }
 
 
 # Define a function to extract and combine values from all elements in each pop_es list

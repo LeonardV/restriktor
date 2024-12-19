@@ -7,8 +7,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
                           type = "goric", penalty_factor = 2,
                           Heq = FALSE, control = list(), debug = FALSE) {
   
-  comparison <- match.arg(comparison, c("unconstrained", "complement", "none"))
-  
   # the following classes are allowed (for now)
   obj_class <- class(object)
   classes <- c("aov", "lm", "glm", "mlm", "rlm", "numeric", "lavaan", "CTmeta", 
@@ -19,20 +17,44 @@ goric.default <- function(object, ..., hypotheses = NULL,
                "are not supported. Supported classes are:", paste(classes, collapse = ", "), "."))
   }
   
-  if (is.null(hypotheses)) {
-    stop(paste("Restriktor ERROR: The 'hypotheses' argument is missing. Please make sure",
-         "to provide a valid set of hypotheses, for example, hypotheses =",
+  if (!is.list(hypotheses) || is.null(hypotheses)) {
+    stop(paste("Restriktor ERROR: The 'hypotheses' argument is missing or not a list.",
+         "Please make sure to provide a valid set of hypotheses, for example, hypotheses =",
          "list(h1 = 'x1 > x2 > x3')."), call. = FALSE)
-  } else {
-    if (!is.list(hypotheses)) {
-      stop(paste("Restriktor ERROR: the hypotheses must be specified as a list.",
-      "For example, hypotheses = list(h1 = 'x1 > x2 > x3')"), call. = FALSE)
-    }
-    if (length(hypotheses) == 1 && is.null(comparison)) {
+  } 
+  
+  num_hypotheses <- length(hypotheses)
+  # Set default comparison if needed
+  
+  if (is.null(comparison)) {
+    if (num_hypotheses == 1) {
       comparison <- "complement"
-    } 
+    } else {
+      comparison <- "unconstrained"
+    }
+  }
+ 
+  comparison <- match.arg(comparison, c("unconstrained", "complement", "none"))
+  
+  # Validate Heq
+  if (Heq && (comparison != "complement" || num_hypotheses > 1)) {
+    stop("Restriktor ERROR: Heq = TRUE is only allowed when comparison = 'complement' and there is at most one hypothesis.", call. = FALSE)
+  }
+
+  # Adjust comparison if necessary based on hypotheses
+  if (comparison == "complement" && num_hypotheses > 1) {
+    warning("Restritor WARNING: More than one hypothesis provided. 'comparison' set to 'unconstrained'.", call. = FALSE)
+    comparison <- "unconstrained"
   }
   
+  # Ignore Heq for other comparisons
+  if (comparison %in% c("unconstrained", "none") && Heq) {
+      warning("Restriktor Warning: The 'Heq' argument is ignored. The specified", 
+              " hypothesis is only valid when the order-restricted hypothesis is compared",
+              " to its complement.", call. = FALSE)
+      Heq <- FALSE
+  }
+
   if (is.null(sample_nobs) && type %in% c("goricac")) {
     stop(paste("Restriktor ERROR: the argument sample_nobs is not found."), call. = FALSE)
   }
@@ -276,29 +298,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
                           names(constraints))
   }
 
-  if (comparison == "complement" && length(conList) > 1L && 
-      !("Heq" %in% names(hypotheses)) )  { 
-    warning("Restriktor Warning: Only one hypothesis is allowed (for now) when comparison = 'complement'.",
-            " Comparison set to 'unconstrained' instead.", call. = FALSE)
-    
-    if (Heq) {
-      warning("Restriktor Warning: The 'Heq' argument is ignored. The specified", 
-      " hypothesis is only valid when the order-restricted hypothesis is compared",
-      " to its complement.", call. = FALSE)
-      Heq <- FALSE
-    }
-    comparison <- "unconstrained"
-  }
-
-  if (comparison %in% c("unconstrained", "none") && Heq) {
-    if (Heq) {
-      warning("Restriktor Warning: The 'Heq' argument is ignored. The specified", 
-              " hypothesis is only valid when the order-restricted hypothesis is compared",
-              " to its complement.", call. = FALSE)
-      Heq <- FALSE
-    }
-  }
-    
+ 
   if (comparison == "complement" && length(conList) == 1L && 
       nrow(conList[[1]]$constraints) == conList[[1]]$neq) {
     comparison  <- "unconstrained"

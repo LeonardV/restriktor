@@ -115,29 +115,57 @@ compute_cohens_f <- function(group_means, N, VCOV) {
 
 
 # Compute ratio data based on group_means
+# compute_ratio_data <- function(group_means) {
+#   ngroups <- length(group_means)
+#   ratio_data <- rep(NA, ngroups)
+#   ratio_data[order(group_means) == 1] <- 1
+#   ratio_data[order(group_means) == 2] <- 2
+#   # The choice of the smallest and the second smallest mean makes the scaling 
+#   # more robust against changes in the other group means. Since these values 
+#   # represent the lower bound of the data, the scale is less sensitive to the 
+#   # spread of higher values.
+#   
+#   # For example:
+#   # The value of 2.28 indicates that this particular group mean is 2.28 times 
+#   # the scale factor d above the smallest mean. This means the group mean is 
+#   # further from the smallest mean compared to the second smallest mean, and 
+#   # helps in understanding the relative differences between the group means in 
+#   # a normalized manner.
+#   d <- group_means[order(group_means) == 2] - group_means[order(group_means) == 1]
+#   
+#   for (i in seq_len(ngroups)) {
+#     if (order(group_means)[i] > 2) {
+#       ratio_data[i] <- 1 + (group_means[i] - group_means[order(group_means) == 1]) / d
+#     }
+#   }
+#   return(ratio_data)
+# }
+
+
 compute_ratio_data <- function(group_means) {
+  # Aantal groepen
   ngroups <- length(group_means)
+  
+  # Lege vector voor ratio_data
   ratio_data <- rep(NA, ngroups)
-  ratio_data[order(group_means) == 1] <- 1
-  ratio_data[order(group_means) == 2] <- 2
-  # The choice of the smallest and the second smallest mean makes the scaling 
-  # more robust against changes in the other group means. Since these values 
-  # represent the lower bound of the data, the scale is less sensitive to the 
-  # spread of higher values.
   
-  # For example:
-  # The value of 2.28 indicates that this particular group mean is 2.28 times 
-  # the scale factor d above the smallest mean. This means the group mean is 
-  # further from the smallest mean compared to the second smallest mean, and 
-  # helps in understanding the relative differences between the group means in 
-  # a normalized manner.
-  d <- group_means[order(group_means) == 2] - group_means[order(group_means) == 1]
+  # Sorteer de indices van de waarden
+  sorted_indices <- order(group_means)
   
+  # Wijs 1 en 2 toe aan de kleinste en tweede kleinste waarden
+  ratio_data[sorted_indices[1]] <- 1
+  ratio_data[sorted_indices[2]] <- 2
+  
+  # Bereken d: verschil tussen de tweede kleinste en de kleinste waarde
+  d <- group_means[sorted_indices[2]] - group_means[sorted_indices[1]]
+  
+  # Bereken de ratio's voor de overige waarden
   for (i in seq_len(ngroups)) {
-    if (order(group_means)[i] > 2) {
-      ratio_data[i] <- 1 + (group_means[i] - group_means[order(group_means) == 1]) / d
+    if (!(i %in% sorted_indices[1:2])) {
+      ratio_data[i] <- 1 + (group_means[i] - group_means[sorted_indices[1]]) / d
     }
   }
+  
   return(ratio_data)
 }
 

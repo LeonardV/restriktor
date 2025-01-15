@@ -294,8 +294,13 @@ goric.default <- function(object, ..., hypotheses = NULL,
   if (any(is.null(names(constraints)))) {  
     objectnames <- paste0("H", seq_len(length(constraints)))
   } else if (any(names(constraints) == "")) {
-    objectnames <- ifelse(names(constraints) == "", paste0("H", seq_along(names(constraints))), 
-                          names(constraints))
+    if (Heq) {
+      objectnames <- ifelse(names(constraints) == "", paste0("H", seq_along(names(constraints)) - 1), 
+                            names(constraints))
+    } else {
+      objectnames <- ifelse(names(constraints) == "", paste0("H", seq_along(names(constraints))), 
+                            names(constraints))
+    }
   }
 
  

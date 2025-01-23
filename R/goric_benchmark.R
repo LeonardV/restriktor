@@ -349,33 +349,55 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     }
   }  
   
-  colnames(pop_est) <- names(est_sample)
   VCOV <- object$Sigma
-  N <- length(object$model.org$residuals) 
-  if (N == 0) N <- ""
+  colnames(pop_est) <- names(est_sample)
+  N <- length(object$model.org$residuals)
   
-  if (!is.null(alt_sample_size)) {
+  # Controleer of de originele steekproefgrootte beschikbaar is
+  if (N == 0) {
     if (is.null(sample_size)) {
       stop("Restriktor Error: Please provide the original sample size(s) using the argument `sample_size`.")
     }
     N <- sample_size
-    VCOV <- VCOV * N / alt_sample_size
-    N <- alt_sample_size
-    
-    if (object$type == "goric") {
-      type <- "gorica"
-    } else if (object$type == "goricc") {
-      type <- "goricac"
-    } else {
-      type <- object$type
-    }
-    
-    object <- goric(est_sample, VCOV = VCOV, 
-                    sample_nobs = N[1], hypotheses = hypos, 
-                    comparison = comparison, type = type, 
-                    control = control, mix_weights = mix_weights, 
-                    penalty_factor = penalty_factor, Heq = FALSE, ...)
   }
+  
+  # modeltype
+  type <- switch(object$type,
+                 "goric" = {
+                   message("Note: 'goric' has been converted to 'gorica'.")
+                   "gorica"
+                 },
+                 "goricc" = {
+                   message("Note: 'goricc' has been converted to 'goricac'.")
+                   "goricac"
+                 },
+                 object$type)
+  
+  
+  # Controleer op alternatieve steekproefgrootte
+  if (!is.null(alt_sample_size)) {
+    scaling_factor <- N / alt_sample_size
+    VCOV <- VCOV * scaling_factor 
+    N <- alt_sample_size
+  } 
+
+  VCOV <- VCOV * N
+
+  # Herbereken met goric-functie
+  object <- goric(
+    est_sample, 
+    VCOV = VCOV, 
+    sample_nobs = N[1], 
+    hypotheses = hypos, 
+    comparison = comparison, 
+    type = type, 
+    control = control, 
+    mix_weights = mix_weights, 
+    penalty_factor = penalty_factor, 
+    Heq = FALSE, 
+    ...
+  )
+  
   
   if (is.null(quant)) {
     quant <- c(.05, .35, .50, .65, .95)
@@ -391,21 +413,19 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   nr_es  <- nrow(pop_est)
   parallel_function_results <- list()
   
-  # Voortgangsbalk (optioneel)
   progressr::handlers(progressr::handler_txtprogressbar(char = ">"))
-  
   progressr::with_progress({
     p <- progressr::progressor(along = seq_len(nr_iter * nr_es))  
     
     for (teller_es in seq_len(nr_es)) {
       cat("Calculating asymptotic benchmark for population estimates =", row.names(pop_est)[teller_es], "\n")
       
-      est <- mvtnorm::rmvnorm(n = iter, pop_est[teller_es, ], sigma = VCOV)
+      est <- mvtnorm::rmvnorm(n = iter, pop_est[teller_es, ], sigma = VCOV / N)
       colnames(est) <- names(est_sample)
       
       # Wrapper function for future_lapply
       wrapper_function_asymp <- function(i) {
-        p() # Update the progress
+        p() # Update progress
         parallel_function_asymp(i, 
                                 est = est, VCOV = VCOV,
                                 hypos = hypos, pref_hypo = pref_hypo, 

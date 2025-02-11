@@ -2,7 +2,7 @@
 # This function transforms IC values into IC weights: IC values denote the ordering 
 # of hypotheses/models, while IC weights quantify the relative strength of 
 # hypotheses/models.
-calc_ICweights <- calculate_IC_weights <- function(IC, hypo_names = NULL, use_scientific = TRUE) {
+calc_ICweights <- calculate_IC_weights <- function(IC, hypo_names = NULL) {
   
   # Check if IC is a vector or a matrix with one column
   if (!is.vector(IC) && !(is.matrix(IC) && ncol(IC) == 1)) {
@@ -37,10 +37,10 @@ calc_ICweights <- calculate_IC_weights <- function(IC, hypo_names = NULL, use_sc
     colnames(ratio_IC_weights) <- paste0("vs_", hypo_names)
   
     
-  if (use_scientific) {
-    weight_m <- format(weight_m, scientific = use_scientific)
-    ratio_IC_weights <- format(ratio_IC_weights, scientific = use_scientific)
-  }
+#  if (use_scientific) {
+#    weight_m <- format(weight_m, scientific = use_scientific)
+#    ratio_IC_weights <- format(ratio_IC_weights, scientific = use_scientific)
+#  }
     
   out <- list(IC = IC, IC_weights = weight_m, ratio_IC_weights = ratio_IC_weights)
   class(out) <- c("goric_ICw", "list")
@@ -49,24 +49,12 @@ calc_ICweights <- calculate_IC_weights <- function(IC, hypo_names = NULL, use_sc
 }
 
 
-print.goric_ICw <- function(x, digits = max(3, getOption("digits") - 4), ...) {
-  #x <- as.list(x)
+print.goric_ICw <- function(x, digits = max(3, getOption("digits") - 4), 
+                            use_scientific = TRUE, ...) {
   df <- as.data.frame(x)
-  #model_names <- attr(x$IC, "names")
-  #rownames(x$ratio_IC_weights) <- NULL
-  
-  # Create the dataframe
-  # df <- data.frame(model = model_names,
-  #                  IC.values = x$IC,
-  #                  IC.weights = x$IC_weights,
-  #                  ratio.IC.weights = x$ratio_IC_weights)
-  # rownames(df) <- NULL
-  
-  # Correcting the column names
-  #names(df)[4:ncol(df)] <- gsub("vs..", "vs.", names(df)[4:ncol(df)]) 
-  
+ 
   # Format and print the dataframe
-  formatted_df <- format(df, digits = digits, nsmall = digits, scientific = FALSE)
+  formatted_df <- format(df, digits = digits, nsmall = digits, scientific = use_scientific)
   print(formatted_df, print.gap = 2, quote = FALSE)
 }
 

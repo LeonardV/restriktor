@@ -84,17 +84,17 @@ combine_matrices_cbind <- function(lst) {
 }
 
 
-
+# model_type = "means" ----------------------------------------------------
 detect_intercept <- function(model) {
   coefficients <- model$b.unrestr
-  intercept_names <- c("(Intercept)", "Intercept", "(const)", "const", 
+  intercept_names <- c("(Intercept)", "Intercept", "(const)", "const",
                        "(Int)", "Int", "(Cons)", "Cons", "b0", "beta0")
-  
+
   names_lower <- tolower(names(coefficients))
   intercept_names_lower <- tolower(intercept_names)
-  
+
   detected_intercepts <- intercept_names[names_lower %in% intercept_names_lower]
-  
+
   if (length(detected_intercepts) > 0) {
     return(TRUE)
   } else {
@@ -104,70 +104,52 @@ detect_intercept <- function(model) {
 
 # Compute Cohen's f based on group_means, N, and VCOV
 compute_cohens_f <- function(group_means, N, VCOV) {
-  total_mean <- sum(group_means * N) / sum(N) 
-  ss_between <- sum(N * (group_means - total_mean)^2) 
+  total_mean <- sum(group_means * N) / sum(N)
+  ss_between <- sum(N * (group_means - total_mean)^2)
   cov_matrix <- VCOV * N
-  ss_within <- sum((N - 1) * diag(cov_matrix)) 
+  ss_within <- sum((N - 1) * diag(cov_matrix))
   cohens_f <- sqrt(ss_between/ss_within)
-  
+
   return(cohens_f)
 }
 
 
 # Compute ratio data based on group_means
 # compute_ratio_data <- function(group_means) {
-#   ngroups <- length(group_means)
-#   ratio_data <- rep(NA, ngroups)
-#   ratio_data[order(group_means) == 1] <- 1
-#   ratio_data[order(group_means) == 2] <- 2
+#   # ratio_data <- rep(NA, ngroups)
+#   # ratio_data[order(group_means) == 1] <- 1
+#   # ratio_data[order(group_means) == 2] <- 2
 #   # The choice of the smallest and the second smallest mean makes the scaling 
 #   # more robust against changes in the other group means. Since these values 
 #   # represent the lower bound of the data, the scale is less sensitive to the 
 #   # spread of higher values.
-#   
+#     
 #   # For example:
 #   # The value of 2.28 indicates that this particular group mean is 2.28 times 
 #   # the scale factor d above the smallest mean. This means the group mean is 
 #   # further from the smallest mean compared to the second smallest mean, and 
 #   # helps in understanding the relative differences between the group means in 
 #   # a normalized manner.
-#   d <- group_means[order(group_means) == 2] - group_means[order(group_means) == 1]
 #   
+#   # Aantal groepen
+#   ngroups <- length(group_means)
+#   # Lege vector voor ratio_data
+#   ratio_data <- rep(NA, ngroups)
+#   # Sorteer de indices van de waarden
+#   sorted_indices <- order(group_means)
+#   # Wijs 1 en 2 toe aan de kleinste en tweede kleinste waarden
+#   ratio_data[sorted_indices[1]] <- 1
+#   ratio_data[sorted_indices[2]] <- 2
+#   # Bereken d: verschil tussen de tweede kleinste en de kleinste waarde
+#   d <- group_means[sorted_indices[2]] - group_means[sorted_indices[1]]
+#   # Bereken de ratio's voor de overige waarden
 #   for (i in seq_len(ngroups)) {
-#     if (order(group_means)[i] > 2) {
-#       ratio_data[i] <- 1 + (group_means[i] - group_means[order(group_means) == 1]) / d
+#     if (!(i %in% sorted_indices[1:2])) {
+#       ratio_data[i] <- 1 + (group_means[i] - group_means[sorted_indices[1]]) / d
 #     }
 #   }
 #   return(ratio_data)
 # }
-
-
-compute_ratio_data <- function(group_means) {
-  # Aantal groepen
-  ngroups <- length(group_means)
-  
-  # Lege vector voor ratio_data
-  ratio_data <- rep(NA, ngroups)
-  
-  # Sorteer de indices van de waarden
-  sorted_indices <- order(group_means)
-  
-  # Wijs 1 en 2 toe aan de kleinste en tweede kleinste waarden
-  ratio_data[sorted_indices[1]] <- 1
-  ratio_data[sorted_indices[2]] <- 2
-  
-  # Bereken d: verschil tussen de tweede kleinste en de kleinste waarde
-  d <- group_means[sorted_indices[2]] - group_means[sorted_indices[1]]
-  
-  # Bereken de ratio's voor de overige waarden
-  for (i in seq_len(ngroups)) {
-    if (!(i %in% sorted_indices[1:2])) {
-      ratio_data[i] <- 1 + (group_means[i] - group_means[sorted_indices[1]]) / d
-    }
-  }
-  
-  return(ratio_data)
-}
 
 
 # Adjust the variance based on alternative group sizes
@@ -182,114 +164,144 @@ adjust_variance <- function(var_e, N, alt_group_size, ngroups) {
     N <- alt_group_size
     var_e <- var_e / (sum(N) - ngroups)
   } else {
-    return(paste0("The argument alt_group_size should be of length 1 or ", 
+    return(paste0("The argument alt_group_size should be of length 1 or ",
                   ngroups, " (or NULL) but not of length ", length(alt_group_size)))
   }
   return(list(var_e = var_e, N = N))
 }
 
-
-# Compute the population means based on the input parameters
-compute_population_means <- function(pop_es, ratio_pop_means, var_e, ngroups) {
-  means_pop_all <- matrix(NA, ncol = ngroups, nrow = length(pop_es))
-  nr_es <- length(pop_es)
-  for (teller_es in seq_len(nr_es)) {
-    #teller_es = 1
-    
-    # Determine mean values, with ratio of ratio.m
-    # Solve for x here
-    
-    # If all equal, then set population means to all 0
-    if (length(unique(ratio_pop_means)) == 1) {
-      means_pop <- rep(0, ngroups)
-    } else {
-      fun <- function (d) {
-        means_pop = ratio_pop_means * d 
-        (1/sqrt(var_e)) * sqrt((1/ngroups) * sum((means_pop - mean(means_pop))^2)) - pop_es[teller_es] #  AANPASSSEN NAAR NIEUWE FORMULE
-      }
-      d <- uniroot(fun, lower = 0, upper = 100)$root
-      # Construct means_pop
-      means_pop <- ratio_pop_means*d
-    }
-    means_pop_all[teller_es, ] <- means_pop
+generate_scaled_means <- function(group_means, target_f, N, VCOV) {
+  original_order <- order(group_means)
+  sorted_means <- sort(group_means)
+  min_value <- sorted_means[1]
+  ratio_vector <- sorted_means / min_value  # Behoudt de verhoudingen
+  
+  objective <- function(d) {
+    means_new <- ratio_vector * d
+    computed_f <- compute_cohens_f(means_new, N, VCOV)
+    return(abs(computed_f - target_f))  # Minimaliseer het verschil tussen berekende en gewenste Cohen's f
   }
-  return(means_pop_all)  
+  
+  opt_result <- optimize(objective, interval = c(0, 100))
+  d_optimal <- opt_result$minimum
+  
+  new_means <- ratio_vector * d_optimal
+  new_means_ordered <- new_means[original_order]  # Behoud de oorspronkelijke volgorde
+  
+  # Debugging output
+  #cat(sprintf("Gevonden d: %.5f voor target f: %.5f\n", d_optimal, target_f))
+  #cat("Oude means:", group_means, "\n")
+  #cat("Nieuwe means:", new_means_ordered, "\n")
+  
+  return(new_means_ordered)
 }
 
-#undebug(restriktor:::parallel_function_means)
+# Compute the population means based on the input parameters
+# compute_population_means <- function(pop_es, ratio_pop_means, var_e, ngroups) {
+#   means_pop_all <- matrix(NA, ncol = ngroups, nrow = length(pop_es))
+#   nr_es <- length(pop_es)
+#   for (teller_es in seq_len(nr_es)) {
+#     #teller_es = 1
+#     
+#     # Determine mean values, with ratio of ratio.m
+#     # Solve for x here
+#     
+#     # If all equal, then set population means to all 0
+#     if (length(unique(ratio_pop_means)) == 1) {
+#       means_pop <- rep(0, ngroups)
+#     } else {
+#       fun <- function(d) {
+#         means_pop = ratio_pop_means * d 
+#         (1/sqrt(var_e)) * sqrt((1/ngroups) * sum((means_pop - mean(means_pop))^2)) - pop_es[teller_es] #  AANPASSSEN NAAR NIEUWE FORMULE
+#       }
+#       d <- uniroot(fun, lower = 0, upper = 100)$root
+#       # Construct means_pop
+#       means_pop <- ratio_pop_means*d
+#     }
+#     means_pop_all[teller_es, ] <- means_pop
+#   }
+#   return(means_pop_all)  
+# }
+
 # this function is called from the goric_benchmark_anova() function
-parallel_function_means <- function(i, N, var_e, means_pop, 
-                                    hypos, pref_hypo, object, ngroups, sample, 
-                                    control, form_model_org, mix_weights, 
-                                    penalty_factor, ...) {  
+parallel_function_means <- function(i, N, var_e, means_pop,
+                                    hypos, pref_hypo, comparison, ngroups, sample,
+                                    control, form_model_org, mix_weights,
+                                    penalty_factor, ...) {
+
   # Sample residuals
-  epsilon <- rnorm(sum(N), sd = sqrt(var_e))
-  
-  # original model formula 
-  if (length(form_model_org) > 0) {
-    model <- form_model_org
-    lhs <- all.vars(model)[1]
-    sample[[lhs]] <- as.matrix(sample[, 2:(1 + ngroups)]) %*% matrix(means_pop, 
-                                                                     nrow = ngroups) + epsilon
-    df_boot <- data.frame(lhs = sample[[lhs]], sample[, 2:(1 + ngroups)])
-    colnames(df_boot)[1] <- lhs
-    
-    has_intercept <- attr(terms(model), "intercept") == 1
-    rhs <- as.character(attr(terms(model), "term.labels"))
-    
-    # Create the RHS with all other variables and optionally the intercept
-    if (has_intercept) {
-      new_rhs <- "."
-    } else {
-      new_rhs <- "-1 + ."
-    }
-    
-    # Create the new formula
-    new_model <- as.formula(paste(lhs, "~", new_rhs))
-  } else {
-    new_model <- y ~ 0 + .
-    # Generate data
-    sample$y <- as.matrix(sample[, 2:(1 + ngroups)]) %*% matrix(means_pop, 
-                                                                nrow = ngroups) + epsilon
-    df_boot <- data.frame(y = sample$y, sample[, 2:(1 + ngroups)])
-  }
-  
-  
+  #epsilon <- rnorm(sum(N), sd = sqrt(var_e/sum(N)))
+  VCOV <- diag(ngroups)
+  diag(VCOV) <- var_e
+  est <- as.vector(mvtnorm::rmvnorm(n = 1, mean = means_pop, sigma = VCOV))
+  names(est) <- names(means_pop)
+
+  # original model formula
+  # if (length(form_model_org) > 0) {
+  #   model <- form_model_org
+  #   lhs <- all.vars(model)[1]
+  #   sample[[lhs]] <- as.matrix(sample[, 2:(1 + ngroups)]) %*% matrix(means_pop,
+  #                                                                    nrow = ngroups) + epsilon
+  #   df_boot <- data.frame(lhs = sample[[lhs]], sample[, 2:(1 + ngroups)])
+  #   colnames(df_boot)[1] <- lhs
+  #
+  #   has_intercept <- attr(terms(model), "intercept") == 1
+  #   rhs <- as.character(attr(terms(model), "term.labels"))
+  #
+  #   # Create the RHS with all other variables and optionally the intercept
+  #   if (has_intercept) {
+  #     new_rhs <- "."
+  #   } else {
+  #     new_rhs <- "-1 + ."
+  #   }
+  #
+  #   # Create the new formula
+  #   new_model <- as.formula(paste(lhs, "~", new_rhs))
+  # } else {
+  #   new_model <- y ~ 0 + .
+  #   # Generate data
+  #   sample$y <- as.matrix(sample[, 2:(1 + ngroups)]) %*% matrix(means_pop,
+  #                                                               nrow = ngroups) + epsilon
+  #   df_boot <- data.frame(y = sample$y, sample[, 2:(1 + ngroups)])
+  # }
+
+
   # Obtain fit
-  fit_boot <- lm(new_model, data = df_boot)  
-  
+  #fit_boot <- lm(new_model, data = df_boot)
+
   results_goric <- tryCatch(
     {
       # Voer de goric functie uit
-      goric(fit_boot,
+      goric(est,
+            VCOV = VCOV,
             hypotheses = hypos,
-            comparison = object$comparison,
-            type = object$type,
-            control = control, 
+            comparison = comparison,
+            type = "gorica", 
+            control = control,
             mix_weights = mix_weights,
             ...)
     },
     error = function(e) {
-      # error message 
+      # error message
       message(paste("Error in iteration", i, ":", e$message))
-      return(NULL)  
+      return(NULL)
     },
     warning = function(w) {
       # warning message
       message(paste("Warning in iteration", i, ":", w$message))
-      return(NULL)  
+      return(NULL)
     }
   )
-  
+
   if (is.null(results_goric)) {
     return(NULL)
   }
-  
+
   # Return the relevant results
   ld_names <- names(results_goric$ratio.gw[pref_hypo, ])
   ld <- results_goric$result$loglik[pref_hypo] - results_goric$result$loglik
   names(ld) <- ld_names
-  
+
   list(
     #test  = attr(results.goric$objectList[[results.goric$objectNames]]$wt.bar, "mvtnorm"),
     gw  = results_goric$result[pref_hypo, 7], # goric(a) weight
@@ -299,6 +311,8 @@ parallel_function_means <- function(i, N, var_e, means_pop,
   )
 }
 
+
+# model_type = "asymp" ----------------------------------------------------
 
 # this function is called from the benchmark_asymp() function
 parallel_function_asymp <- function(i, est, VCOV, hypos, pref_hypo, comparison,
@@ -627,4 +641,10 @@ check_rhs_constants <- function(rhs_list) {
                               " pop_est argument.")
     warning(warning_message, call. = FALSE)
   }
+}
+
+# restricted least squares
+theta_restricted <- function(theta, V, R, rhs) {
+  correction <- V %*% t(R) %*% solve(R %*% V %*% t(R)) %*% (R %*% theta - rhs)
+  as.vector(theta - correction)
 }

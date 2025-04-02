@@ -2,62 +2,65 @@ benchmark_means  <- function(object, ...) UseMethod("benchmark_means")
 benchmark_asymp  <- function(object, ...) UseMethod("benchmark_asymp")
 
 
+# benchmark <- function(object, ...) {
+#   benchmark_asymp(object, ...)
+# }
+
 benchmark <- function(object, model_type = c("asymp", "means"), ...) {
-  
+
   model_type <- match.arg(model_type, c("asymp", "means"))
   if (is.null(model_type)) {
     stop("Restriktor ERROR: Please specify if you want to benchmark means or asymptotic result ",
-         "In case of model_type = means (default), no intercept is allowed.")
+         "In case of model_type = means, no intercept is allowed.")
   }
-  
-  # Check if the model has an intercept. Since the goric function accepts both 
+
+  # Check if the model has an intercept. Since the goric function accepts both
   # a model/fit or only estimates+VCOV, we cannot rely on the original model fit.
   # So we only check if the names of the vector with parameter estimates includes
   # the word \(Intercept\).
   has_intercept <- detect_intercept(object)
   if (model_type == "means") {
-    if (has_intercept) { 
+    if (has_intercept) {
       stop("Restriktor ERROR: A model with an intercept is not allowed for model_type = means. ",
            "Please refit the model without an intercept.")
     }
-    benchmark_means(object, ...)  
+    benchmark_means(object, ...)
   } else if (model_type == "asymp") {
     benchmark_asymp(object, ...)
   }
 }
 
 
-benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL, 
-                            group_size = NULL, alt_group_size = NULL, 
-                            quant = NULL, iter = 1000, 
-                            control = list(), 
+benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
+                            group_size = NULL, alt_group_size = NULL,
+                            quant = NULL, iter = 2000,
+                            control = list(),
                             ncpus = 1, seed = NULL, ...) {
-  
-  
-  # group_size is needed to rescale vcov based on alt_group_size.
-  
+
+  # NoTE: group_size is needed to rescale vcov based on alt_group_size.
+
   if (length(control) == 1) {
     control <- object$objectList[[1]]$control
   }
-  
+
   mix_weights <- attr(object$objectList[[1]]$wt.bar, "method")
   penalty_factor <- object$penalty_factor
-  
+
   # Check:
   if (!inherits(object, "con_goric")) {
-    stop(paste("Restriktor ERROR:", 
+    stop(paste("Restriktor ERROR:",
                "The object should be of class 'con_goric' (a goric(a) object from",
-               "the goric() function). However, it belongs to the following class(es):", 
+               "the goric() function). However, it belongs to the following class(es):",
                paste(class(object), collapse = ", ")
     ), call. = FALSE)
   }
 
   if (!is.null(seed)) set.seed(seed)
   if (!exists(".Random.seed", envir = .GlobalEnv)) runif(1)
-  
-  # keep current plan 
-  current_plan <- plan()  
-  on.exit(plan(current_plan), add = TRUE)  
+
+  # keep current plan
+  current_plan <- plan()
+  on.exit(plan(current_plan), add = TRUE)
   if (inherits(current_plan, "sequential")) {
     if (.Platform$OS.type == "windows") {
       plan(future::multisession, workers = ncpus)
@@ -65,100 +68,104 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
       plan(future::multicore, workers = ncpus)
     }
   }
-  
+
   # Hypotheses
   hypos <- object$hypotheses_usr
   nr_hypos <- dim(object$result)[1]
-  
+
+  # Unrestricted (adjusted) group_means
+  group_means <- object$b.unrestr
   # number of groups
-  ngroups <- length(coef(object))
-  
-  # does original model fit exist
+  ngroups <- length(group_means)
+
+  # original model fit (if exists)
   form_model_org <- formula(object$model.org)
-  
+
   # ES and ratio in data
   if (is.null(object$model.org)) {
     # Number of subjects per group
     if (is.null(group_size)) {
-      stop("Restriktor Error: please specify the group-size, e.g. group_size = 100.", 
-           call. = FALSE)
+      stop("Restriktor Error: please specify the group-size, e.g. group_size = 100.", call. = FALSE)
     } else if (length(group_size) == 1) {
       N <- rep(group_size, ngroups)
     } else {
       N <- group_size
     }
-    # Unrestricted (adjusted) group_means
-    group_means <- object$b.unrestr
-    # residual variance
-    VCOV <- object$Sigma
-    var_e_data <- diag(VCOV * N)[1] # are the elements on the diagonal always equal? Yes!
   } else {
     # Number of subjects per group
-    N <- colSums(model.matrix(object$model.org)) #summary(object$model.org$model[, 2])
-    # Unrestricted group_means
-    group_means <- coef(object$model.org)
-    VCOV <- vcov(object$model.org)
-    # residual variance
-    var_e_data <- sum(object$model.org$residuals^2) / (sum(N) - ngroups)
+    N <- rep(object$sample_nobs/ngroups, ngroups) #colSums(model.matrix(object$model.org))
   }
-  
-  # Compute ratio data based on group_means
-  ratio_data <- compute_ratio_data(group_means)
-  
-  # ratio population means
-  if (is.null(ratio_pop_means)) {
-    # Then same as in data
-    ratio_pop_means <- ratio_data 
-  } else {
-    if (length(ratio_pop_means) != ngroups) { 
-      stop(paste0("The argument ratio_pop_means should be of length ", 
-                  ngroups, " (or NULL) but not of length ", length(ratio_pop_means)))
-    }
-  }
-  
-  # Error variance
-  # var_e <- var(object$model.org$residuals)
-  # var_e <- 1
-  var_e <- as.vector(var_e_data)
-  
+
+  VCOV <- object$Sigma
+
+  # residual error variance
+  #var_e <- var_e_data <- as.vector(diag(VCOV * N)[1])
+  var_e <- var_e_data <- as.vector(diag(VCOV)[1])
+
+  # # ratio population means
+  # if (!is.null(ratio_pop_means)) {
+  #   ratio_data <- compute_ratio_data(group_means)
+  #   # Then same as in data
+  #   ratio_pop_means <- ratio_data
+  # } else {
+  #   ratio_pop_means <- ratio_data <- group_means
+  #   if (length(ratio_pop_means) != ngroups) {
+  #     stop(paste0("The argument ratio_pop_means should be of length ",
+  #                 ngroups, " (or NULL) but not of length ", length(ratio_pop_means)), .call = FALSE)
+  #   }
+  # }
+
   # Possibility to adjust var_e based on alt_group_size
   # The sample-value must also be adjusted, thus we need to fit a new goric-object
   # with est, VCOV = VCOV_new, and N = alt_group_size
   if (!is.null(alt_group_size)) {
+    # Pas variantie aan met de alternatieve groepsgrootte
     result_adjust_variance <- adjust_variance(var_e, N, alt_group_size, ngroups)
     N <- result_adjust_variance$N
     var_e <- result_adjust_variance$var_e
     var_e_adjusted <- result_adjust_variance$var_e / N
     VCOV <- diag(var_e_adjusted, length(group_means))
-    
-    if (object$type == "goric") {
-      type <- "gorica"
-    } else if (object$type == "goricc") {
-      type <- "goricac"
-    } else {
-      type <- object$type
-    }
-    
-    object <- try(goric(group_means, VCOV = VCOV, 
-                    sample_nobs = N[1], hypotheses = hypos, 
-                    comparison = object$comparison, type = type, 
-                    control = control, mix_weights = mix_weights, 
-                    penalty_factor = penalty_factor, 
-                    Heq = FALSE, ...))
   }
-  
-  
+
+  # Converteer type indien nodig
+  type <- switch(object$type,
+                 "goric" = {
+                   message("Note: 'goric' has been converted to 'gorica'.")
+                   "gorica"
+                 },
+                 "goricc" = {
+                   message("Note: 'goricc' has been converted to 'goricac'.")
+                   "goricac"
+                 },
+                 object$type)
+
+  # herbereken het goric-model
+  object <-
+    goric(
+      group_means,
+      VCOV = VCOV,
+      sample_nobs = N[1],
+      hypotheses = hypos,
+      comparison = object$comparison,
+      type = type,
+      control = control,
+      mix_weights = mix_weights,
+      penalty_factor = penalty_factor,
+      Heq = FALSE,
+      ...
+    )
+
   ## Compute observed Cohens f
   cohens_f_observed <- compute_cohens_f(group_means, N, VCOV)
-  
+
   # effect size population
   if (is.null(pop_es)) {
     pop_es <- c(0, round(cohens_f_observed, 3))
     names(pop_es) <- c("No-effect", "Observed")
   } else {
-    pop_es <- sort(pop_es)  
+    pop_es <- sort(pop_es)
   }
-  
+
   # Assign row names to pop_es if they are null or empty strings
   rnames <- names(pop_es)
   if (is.null(rnames)) {
@@ -171,96 +178,87 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
       names(pop_es) <- rnames
     }
   }
-  
+
   es <- pop_es
   nr_es <- length(es)
-  
-  means_pop_all <- compute_population_means(pop_es, ratio_pop_means, var_e, ngroups)
+
+  #means_pop_all <- compute_population_means(pop_es, ratio_pop_means, var_e, ngroups)
+  means_pop_all <- t(sapply(pop_es, function(x) generate_scaled_means(group_means, target_f = x, N, VCOV)))
   colnames(means_pop_all) <- colnames(coef(object))
   rownames(means_pop_all) <- paste0("pop_es = ", pop_es)
-  
-  # Create dummies
-  sample <- data.frame(D = as.factor(rep(1:ngroups, times = N)))
-  sample <- data.frame(sample$D, model.matrix(~ D - 1, data = sample))
-  colnames(sample)[-1] <- names(coef(object))
-  
+
   # preferred hypothesis
-  pref_hypo <- which.max(object$result[, 7]) 
+  pref_hypo <- which.max(object$result[, 7])
   pref_hypo_name <- object$result$model[pref_hypo]
-  
+
   nr_iter <- iter
-  
+
   if (is.null(quant)) {
     quant <- c(.05, .35, .50, .65, .95)
     names_quant <- c("Sample", "5%", "35%", "50%", "65%", "95%")
   } else {
     names_quant <- c("Sample", paste0(as.character(quant*100), "%"))
   }
-  
-  parallel_function_results <- list() 
-  
-  progressr::handlers(progressr::handler_txtprogressbar(char = ">"))  
-  
+
+  parallel_function_results <- list()
+
+  progressr::handlers(progressr::handler_txtprogressbar(char = ">"))
+
   progressr::with_progress({
-    p <- progressr::progressor(along = seq_len(nr_iter * nr_es))  
-    
-    for (teller_es in 1:nr_es) {
-      cat("Calculating means benchmark for effect-size =", es[teller_es], 
-          paste0("(", names(es)[teller_es], ")\n"))
-      
-      # Update the means_pop variable within the cluster nodes
-      means_pop <- means_pop_all[teller_es, ]
-      
-      # main function
-      # Create a function that wraps parallel_function
-      wrapper_function_means <- function(i) {
-        #if (i %% 10 == 0) {  # Only update every 10 iterations
-        p()
-        #}
-        parallel_function_means(i, N = N, var_e = var_e, 
-                                means_pop = means_pop, 
-                                hypos = hypos, pref_hypo = pref_hypo, 
-                                object = object, ngroups = ngroups, 
-                                sample = sample, control = control, 
-                                form_model_org = form_model_org, 
-                                mix_weights = mix_weights, 
-                                penalty_factor = penalty_factor,
-                                ...)
+    p <- progressr::progressor(along = seq_len(nr_iter * nr_es))
+
+    for (teller_es in seq_len(nr_es)) {
+        cat("Calculating means benchmark for effect-size =", es[teller_es],
+            paste0("(", names(es)[teller_es], ")\n"))
+
+      est <- mvtnorm::rmvnorm(n = iter, means_pop_all[teller_es, ], sigma = VCOV)
+      colnames(est) <- names(group_means)
+
+      # Wrapper function for future_lapply
+      wrapper_function_asymp <- function(i) {
+        p() # Update progress
+        parallel_function_asymp(i,
+                                est = est, VCOV = VCOV,
+                                hypos = hypos, pref_hypo = pref_hypo,
+                                comparison = object$comparison, type = "gorica",
+                                control = control, mix_weights = mix_weights,
+                                penalty_factor = penalty_factor, Heq = FALSE, ...)
       }
-      
-      name <- paste0("pop_es = ", pop_es[teller_es])
+
+      name <- paste0("pop_es = ", rnames[teller_es])
       parallel_function_results[[name]] <- future_lapply(
         seq_len(nr_iter),
-        wrapper_function_means,
+        wrapper_function_asymp,
         future.seed = TRUE  # Ensures safe and reproducible random number generation
       )
     }
   })
-  
+
+
   # get benchmark results
-  benchmark_results <- get_results_benchmark(parallel_function_results, 
-                                             object, pref_hypo, 
-                                             pref_hypo_name, quant, 
+  benchmark_results <- get_results_benchmark(parallel_function_results,
+                                             object, pref_hypo,
+                                             pref_hypo_name, quant,
                                              names_quant, nr_hypos)
-  
+
   # compute error probability
-  error_prob <- calculate_error_probability(object, hypos, pref_hypo, 
-                                            est = group_means, 
+  error_prob <- calculate_error_probability(object, hypos, pref_hypo,
+                                            est = group_means,
                                             VCOV, control, ...)
-  
+
   OUT <- list(
     type = object$type,
     comparison = object$comparison,
     ngroups = ngroups,
     group_size = N,
-    group_means_observed = group_means, 
-    ratio_group_means.data = ratio_data, 
+    group_means_observed = group_means,
+    #ratio_group_means.data = ratio_data,
     cohens_f_observed = cohens_f_observed,
     res_var_observed = var_e_data,
     pop_es = pop_es, pop_group_means = means_pop_all,
     ratio_pop_means = ratio_pop_means,
     res_var_pop = var_e,
-    pref_hypo_name = pref_hypo_name, 
+    pref_hypo_name = pref_hypo_name,
     error_prob_pref_hypo = error_prob,
     benchmarks_goric_weights = benchmark_results$benchmarks_gw,
     benchmarks_ratio_goric_weights = benchmark_results$benchmarks_rgw,
@@ -271,14 +269,17 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     combined_values = benchmark_results$combined_values,
     iter = iter
   )
-  
+
   class(OUT) <- c("benchmark_means", "benchmark", "list")
   return(OUT)
-} 
+}
 
 
+
+
+## asymp
 benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL, 
-                            alt_sample_size = NULL, quant = NULL, iter = 1000,
+                            alt_sample_size = NULL, quant = NULL, iter = 2000,
                             control = list(), 
                             ncpus = 1, seed = NULL, ...) {
   
@@ -311,6 +312,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     }
   }
   
+  VCOV <- object$Sigma
   hypos <- object$hypotheses_usr
   
   if (is.null(pop_est)) {
@@ -324,7 +326,10 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   n_coef <- length(est_sample)
   
   if (is.null(pop_est)) {
-    pop_est <- matrix(rbind(rep(0, n_coef), round(est_sample, 3)), nrow = 2)
+    NE <- theta_restricted(theta = est_sample, V = VCOV, R = object$constraints[[1]], rhs = object$rhs[[1]])
+    pop_est <- matrix(rbind(NE, round(est_sample, 3)), nrow = 2)
+    pop_est[abs(pop_est) < 1e-16] <- 0
+    #pop_est <- matrix(rbind(rep(0, n_coef), round(est_sample, 3)), nrow = 2)
     row.names(pop_est) <- c("No-effect", "Observed")
   } else {
     if (is.vector(pop_est)) {
@@ -334,7 +339,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   
   if (ncol(pop_est) != length(est_sample)) {
     stop(paste("Restriktor Error: The number of columns in pop_est (", ncol(pop_est), 
-               ") does not match the length of est_sample (", length(est_sample), ").", sep = ""))
+               ") does not match the length of est_sample (", length(est_sample), ").", sep = ""), .call = FALSE)
   }
   
   rnames <- row.names(pop_est)
@@ -349,17 +354,8 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     }
   }  
   
-  VCOV <- object$Sigma
   colnames(pop_est) <- names(est_sample)
-  N <- length(object$model.org$residuals)
-  
-  # Controleer of de originele steekproefgrootte beschikbaar is
-  if (N == 0) {
-    if (is.null(sample_size)) {
-      stop("Restriktor Error: Please provide the original sample size(s) using the argument `sample_size`.")
-    }
-    N <- sample_size
-  }
+  N <- object$sample_nobs #length(object$model.org$residuals)
   
   # modeltype
   type <- switch(object$type,
@@ -376,25 +372,30 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   
   # Controleer op alternatieve steekproefgrootte
   if (!is.null(alt_sample_size)) {
+    # Controleer of de originele steekproefgrootte beschikbaar is
+    if (is.null(N) || N == 0) {
+      if (is.null(sample_size)) {
+        stop("Restriktor Error: Please provide the original sample size(s) using the argument `sample_size`.", .call = FALSE)
+      }
+      N <- sample_size
+    }
     scaling_factor <- N / alt_sample_size
     VCOV <- VCOV * scaling_factor 
     N <- alt_sample_size
   } 
 
-  VCOV <- VCOV * N
-
   # Herbereken met goric-functie
   object <- goric(
-    est_sample, 
-    VCOV = VCOV, 
-    sample_nobs = N[1], 
-    hypotheses = hypos, 
-    comparison = comparison, 
-    type = type, 
-    control = control, 
-    mix_weights = mix_weights, 
-    penalty_factor = penalty_factor, 
-    Heq = FALSE, 
+    est_sample,
+    VCOV = VCOV,
+    sample_nobs = N[1],
+    hypotheses = hypos,
+    comparison = comparison,
+    type = type,
+    control = control,
+    mix_weights = mix_weights,
+    penalty_factor = penalty_factor,
+    Heq = FALSE,
     ...
   )
   
@@ -420,7 +421,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     for (teller_es in seq_len(nr_es)) {
       cat("Calculating asymptotic benchmark for population estimates =", row.names(pop_est)[teller_es], "\n")
       
-      est <- mvtnorm::rmvnorm(n = iter, pop_est[teller_es, ], sigma = VCOV / N)
+      est <- mvtnorm::rmvnorm(n = iter, pop_est[teller_es, ], sigma = VCOV)
       colnames(est) <- names(est_sample)
       
       # Wrapper function for future_lapply

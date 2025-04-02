@@ -14,12 +14,12 @@
   
   benchmark_means(object, pop_es = NULL, ratio_pop_means = NULL, 
                   group_size = NULL, alt_group_size = NULL, 
-                  quant = NULL, iter = 1000, 
+                  quant = NULL, iter = 2000, 
                   control = list(), 
                   ncpus = 1, seed = NULL, \ldots)
 
   benchmark_asymp(object, pop_est = NULL, sample_size = NULL, 
-                  alt_sample_size = NULL, quant = NULL, iter = 1000, 
+                  alt_sample_size = NULL, quant = NULL, iter = 2000, 
                   control = list(), 
                   ncpus = 1, seed = NULL, \ldots)
   
@@ -63,7 +63,7 @@
   for example, to see the values to which the GORIC(A) weights will converge 
   (and thus to see the maximum value of the weights).}
   \item{quant}{Quantiles for benchmarking results. Defaults 5\%, 35\%, 50\%, 65\%, 95\%.}
-  \item{iter}{The number of iterations for benchmarking. Defaults to \code{1000}.}
+  \item{iter}{The number of iterations for benchmarking. Defaults to \code{2000}.}
   \item{hypo_rate_threshold}{A numeric value specifying the threshold for the 
   hypothesis rate. The function calculates the proportion of ratio-of-goric-weights 
   that exceeds this threshold. Defaults to 1.}

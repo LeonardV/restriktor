@@ -93,7 +93,8 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"),
   if (inherits(x, "benchmark_means")) {
     cat(sprintf("Number of Groups: %s%s%s\n", green, ngroups, reset))
   } else {
-    if (group_size != "") {
+    #if (group_size != "") {
+    if (!is.null(group_size)) {
       cat(sprintf("Sample Size: %s%s%s\n", green, paste(group_size, collapse = ", "), reset))
     } 
     cat(sprintf("Number of Parameters: %s%s%s\n", green, ngroups, reset))

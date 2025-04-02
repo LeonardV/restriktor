@@ -521,7 +521,7 @@ fit <- lm(y ~ 0 + D, data=sample)
 ```
 
 
-```{r, message = FALSE, warning = FALSE}
+```{r, message = TRUE, warning = FALSE}
 # H1, H2, and unconstrained (default) - subset true
 H1 <- "D1 > D2 > D3"               # mu1 > mu2 > mu3
 H2 <- "D1 > D2" # H2: D1 > D2, D3  # mu1 > mu2,  mu3

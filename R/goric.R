@@ -350,7 +350,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   
   # compute log-likelihood for complement
   # moet dit obv PT_Amat en PT_meq?
-  LL_c <- compute_complement_likelihood(ans$model.org, VCOV, 
+  LL_c <- compute_complement_likelihood(ans$model.org, VCOV,
                                         Amat, Amat.ciq, Amat.ceq, 
                                         bvec, bvec.ciq, bvec.ceq, 
                                         meq, b.unrestr, type, ldots,
@@ -363,6 +363,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     llm <- logLik(conList[[Hm]])
   } else if (type %in% c("gorica", "goricac")) {
     llm <- dmvnorm(c(b.unrestr - b.restr), sigma = VCOV, log = TRUE)
+    #llm <- mnormt::dmnorm(c(b.unrestr - b.restr), varcov = VCOV, log = FALSE) 
   }
 
   # compute complement penalty term value 
@@ -383,6 +384,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
       llceq <- logLik(conList$Heq)                                             
     } else if (type %in% c("gorica", "goricac")) {
       llceq <- dmvnorm(c(b.unrestr - b.restr), sigma = VCOV, log = TRUE)
+      #llceq <- mnormt::dmnorm(c(b.unrestr - b.restr), varcov = VCOV, log = FALSE) 
     }
     llm <- c(llceq, llm)
     names(llm) <- c("Heq", Hm)
@@ -399,10 +401,14 @@ goric.default <- function(object, ..., hypotheses = NULL,
               # unrestricted
               llu <- logLik(ans$model.org)
             } else if (type %in% c("gorica", "goricac")) {
-                llm <- unlist(lapply(conList, function(x) dmvnorm(c(x$b.unrestr - x$b.restr), 
-                                                                    sigma = VCOV, log = TRUE) )) 
+                llm <- unlist(lapply(conList, function(x) { 
+                  dmvnorm(c(x$b.unrestr - x$b.restr), sigma = VCOV, log = TRUE) 
+                  # mnormt::dmnorm(c(x$b.unrestr - x$b.restr), varcov = VCOV, log = FALSE) 
+                  } 
+                )) 
                 # unrestricted
                 llu <- dmvnorm(rep(0, ncol(VCOV)), sigma = VCOV, log = TRUE) 
+                #llu <- mnormt::dmnorm(rep(0, ncol(VCOV)), varcov = VCOV, log = FALSE) 
             }
             
             if (type %in% c("goric", "gorica")) {
@@ -481,8 +487,11 @@ goric.default <- function(object, ..., hypotheses = NULL,
                              goric = goric.Hm)
             df$model <- as.character(df$model)
           } else if (type %in% c("gorica", "goricac")) {
-            ll <- unlist(lapply(conList, function(x) dmvnorm(c(x$b.unrestr - x$b.restr), 
-                                                               sigma = VCOV, log = TRUE) )) 
+            ll <- unlist(lapply(conList, function(x) { 
+              dmvnorm(c(x$b.unrestr - x$b.restr), sigma = VCOV, log = TRUE)
+              #mnormt::dmnorm(c(x$b.unrestr - x$b.restr), varcov = VCOV, log = FALSE) 
+              }
+            )) 
             goric.Hm <- -2*ll + penalty_factor*PT #-2*(ll - PT)
             df <- data.frame(model = objectnames, loglik = ll, penalty = PT, 
                              gorica = goric.Hm)
@@ -523,7 +532,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   # list all object estimates
   coefs <- lapply(conList, FUN = function(x) { coef(x) } )
   max.length <- max(sapply(coefs, length))
-  coefs <- lapply(coefs, function(v) { c(v, rep(NA, max.length-length(v)))})
+  coefs <- lapply(coefs, function(v) { c(v, rep(NA, max.length - length(v)))})
   coefs <- as.data.frame(do.call("rbind", coefs))
   if (comparison == "complement") {
     coefs <- rbind(coefs, betasc)
@@ -543,6 +552,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     ans[[attr]] <- extracted
   }
   
+  ans$sample_nobs <- sample_nobs
   ans$Sigma <- VCOV
   ans$b.unrestr <- conList[[1]]$b.unrestr
   ans$ormle$b.restr <- coefs  
@@ -662,7 +672,7 @@ goric.lm <- function(object, ..., hypotheses = NULL,
     objectList$object <- object
     objectList$VCOV   <- NULL
   } 
-    
+    objectList$sample_nobs <- length(residuals(object))
     objectList$hypotheses  <- hypotheses
     objectList$comparison  <- comparison
     objectList$type        <- type
@@ -670,15 +680,6 @@ goric.lm <- function(object, ..., hypotheses = NULL,
     objectList$missing     <- NULL
     objectList$auxiliary   <- NULL
     objectList$emControl   <- NULL
-    
-    if (type == "goricac") {
-      objectList$sample_nobs <- length(residuals(object))
-    }
-    
-    # if (missing == "none") {
-    #   object_idx <- grepl("object", names(objectList))
-    #   objectList <- append(list(object = objectList[object_idx]), objectList[!object_idx])
-    # }
     
     if (missing == "two.stage") {
       res <- do.call(goric.numeric, objectList)
@@ -794,15 +795,12 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
   objectList <- list(
     object = est$estimate,
     VCOV = est$VCOV,
+    sample_nobs = lavInspect(object, what = "ntotal"),
     hypotheses = hypotheses,
     comparison = comparison,
     type = type,
     debug = debug
   )
-  
-  if (type == "goricac") {
-    objectList$sample_nobs <- lavInspect(object, what = "ntotal")
-  }
   
   # Voeg extra argumenten toe aan de objectList
   extraArgs <- list(...)
@@ -829,6 +827,7 @@ goric.CTmeta <- function(object, ..., hypotheses = NULL,
   objectList <- list(
     object = coef(object),
     VCOV = vcov(object),
+    sample_nobs = sample_nobs,
     hypotheses = hypotheses,
     comparison = comparison,
     type = type,
@@ -866,6 +865,7 @@ goric.rma <- function(object, ..., hypotheses = NULL,
   objectList <- list(
     object = coef(object),
     VCOV = vcov(object),
+    sample_nobs = sample_nobs,
     hypotheses = hypotheses,
     comparison = comparison,
     type = type,
@@ -903,10 +903,10 @@ goric.nlmerMod <- function(object, ..., hypotheses = NULL,
   objectList <- list(
     object = object@beta,
     VCOV = suppressWarnings(vcov(object)),
+    sample_nobs = sample_nobs,
     hypotheses = hypotheses,
     comparison = comparison,
     type = type,
-    sample_nobs = sample_nobs,
     debug = debug
   )
   
@@ -938,10 +938,10 @@ goric.glmerMod <- function(object, ..., hypotheses = NULL,
   objectList <- list(
     object = object@beta,
     VCOV = suppressWarnings(vcov(object)),
+    sample_nobs = sample_nobs,
     hypotheses = hypotheses,
     comparison = comparison,
     type = type,
-    sample_nobs = sample_nobs,
     debug = debug
   )
   
@@ -973,10 +973,10 @@ goric.lmerMod <- function(object, ..., hypotheses = NULL,
   objectList <- list(
     object = object@beta,
     VCOV = suppressWarnings(vcov(object)),
+    sample_nobs = sample_nobs,
     hypotheses = hypotheses,
     comparison = comparison,
     type = type,
-    sample_nobs = sample_nobs,
     debug = debug
   )
   

@@ -706,13 +706,13 @@ goric.numeric <- function(object, ..., hypotheses = NULL,
     stop(paste("Restriktor ERROR: the argument VCOV is not found."), call. = FALSE)
   } 
   
-  if (!is.null(dim(object)) && dim(object)[1] == 1) {
-    object <- c(object)
-  }
+  #  if (!is.null(dim(object)) && dim(object)[1] == 1) {
+  #  object <- c(object)
+  #}
   
   # Maak de objectList aan en voeg de vereiste elementen toe
   objectList <- list(
-    object = object,
+    object = c(object),
     VCOV = VCOV,
     hypotheses = hypotheses,
     comparison = comparison,

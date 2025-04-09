@@ -13,8 +13,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
                "rma.uni", "nlmerMod", "glmerMod", "merMod")
   check_class <- obj_class %in% classes
   if (!any(check_class)) {
-    stop(paste("Objects of class", paste(obj_class, collapse = ", "), 
-               "are not supported. Supported classes are:", paste(classes, collapse = ", "), "."))
+    stop(paste0("Objects of class", paste(obj_class, collapse = ", "), 
+               "are not supported. Supported classes are:", paste(classes, collapse = ", "),"."), call. = FALSE)
   }
   
   if (!is.list(hypotheses) || is.null(hypotheses)) {
@@ -705,6 +705,10 @@ goric.numeric <- function(object, ..., hypotheses = NULL,
   if (is.null(VCOV)) {
     stop(paste("Restriktor ERROR: the argument VCOV is not found."), call. = FALSE)
   } 
+  
+  if (!is.null(dim(object)) && dim(object)[1] == 1) {
+    object <- c(object)
+  }
   
   # Maak de objectList aan en voeg de vereiste elementen toe
   objectList <- list(

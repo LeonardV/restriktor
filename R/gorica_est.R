@@ -24,11 +24,11 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
   b.unrestr[abs(b.unrestr) < ifelse(is.null(control$tol), 
                                     sqrt(.Machine$double.eps), 
                                     control$tol)] <- 0L
-  Sigma <- VCOV
+  #Sigma <- VCOV
   # number of parameters
   p <- length(b.unrestr)
   # unrestricted log-likelihood
-  ll.unrestr <- dmvnorm(rep(0, p), sigma = Sigma, log = TRUE)
+  ll.unrestr <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE)
   
   if (debug) {
     print(list(loglik.unc = ll.unrestr))
@@ -40,7 +40,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
   # deal with constraints
   if (!is.null(constraints)) {
     restr.OUT <- con_constraints(object, 
-                                 VCOV        = Sigma,
+                                 VCOV        = VCOV,
                                  est         = b.unrestr,
                                  constraints = Amat, 
                                  bvec        = bvec, 
@@ -103,7 +103,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
                 b.unrestr   = b.unrestr,
                 b.restr     = b.unrestr,
                 loglik      = ll.unrestr, 
-                Sigma       = Sigma,
+                VCOV        = VCOV,
                 constraints = Amat, 
                 rhs         = bvec, 
                 neq         = meq, 
@@ -113,7 +113,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
   } else {
     # compute constrained estimates using quadprog
     out.solver <- con_solver_gorica(est  = b.unrestr, 
-                                    VCOV = Sigma, 
+                                    VCOV = VCOV, 
                                     Amat = Amat, 
                                     bvec = bvec, 
                                     meq  = meq)
@@ -125,7 +125,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
     timing$optim <- (proc.time()[3] - start.time)
     start.time <- proc.time()[3]
     
-    ll.restr <- dmvnorm(c(b.unrestr - b.restr), sigma = Sigma, log = TRUE)
+    ll.restr <- dmvnorm(c(b.unrestr - b.restr), sigma = VCOV, log = TRUE)
     
     OUT <- list(CON         = CON,
                 #call        = mc,
@@ -134,7 +134,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
                 b.unrestr   = b.unrestr,
                 b.restr     = b.restr,
                 loglik      = ll.restr, 
-                Sigma       = Sigma,
+                Sigma       = VCOV,
                 constraints = Amat, 
                 rhs         = bvec, 
                 neq         = meq, 
@@ -168,7 +168,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
   } 
 
   ## determine level probabilities
-  wt.bar <- calculate_weight_bar(Amat = PT_Amat, meq = PT_meq, VCOV = Sigma, 
+  wt.bar <- calculate_weight_bar(Amat = PT_Amat, meq = PT_meq, VCOV = VCOV, 
                                    mix_weights = mix_weights, seed = seed, 
                                    control = control, verbose = verbose, ...)
   attr(wt.bar, "method") <- mix_weights

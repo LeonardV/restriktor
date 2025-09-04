@@ -54,7 +54,7 @@ evSyn <- function(object, input_type = NULL, ...) {
       return(evSyn_ICratios(object, ...))
     } else if (input_type == "icvalues") {
       return(evSyn_ICvalues(object, ...))
-    } else if (input_type == "gorica") {
+    } else if (input_type %in% c("goric", "gorica", "goricc", "goricac")) {
       return(evSyn_gorica(object, ...))
     } else if (input_type == "escalc") {
       return(evSyn_escalc(object, ...))
@@ -81,7 +81,7 @@ evSyn <- function(object, input_type = NULL, ...) {
     }
   }
   
-  checkListContent(lst = VCOV, fun = is.matrix, msg = "VCOV must be a list of matrices.")
+  #checkListContent(lst = VCOV, fun = is.matrix, msg = "VCOV must be a list of matrices.")
   checkListContent(lst = PT, fun = is.numeric, msg = "PT must be a list of numeric vectors.")
   
   if (!is.null(VCOV) && !is.null(PT)) {
@@ -98,17 +98,18 @@ evSyn <- function(object, input_type = NULL, ...) {
   } else if (!is.null(PT)) {
     return(evSyn_LL(object, ...))
   } else if (obj_isICweights) {
-    if (!is.null(arguments$type) && arguments$type == "equal") {
+    if (!is.null(arguments$type_ev) && arguments$type_ev == "equal") {
+      # TO DO naam van method - overal doen
       message("The added-evidence method is the only available approach when weights are included in the input.")
     }
     return(evSyn_ICweights(object, ...))
   } else if (obj_isICratios) {
-    if (!is.null(arguments$type) && arguments$type == "equal") {
+    if (!is.null(arguments$type_ev) && arguments$type_ev == "equal") {
       message("The added-evidence method is the only available approach when weights are included in the input.")
     }
     return(evSyn_ICratios(object, ...))
   } else {
-    if (!is.null(arguments$type) && arguments$type == "equal") {
+    if (!is.null(arguments$type_ev) && arguments$type_ev == "equal") {
       message("The added-evidence method is the only available approach when the input consists of GORIC(A) values.")
     }
     return(evSyn_ICvalues(object, ...))
@@ -121,17 +122,25 @@ evSyn <- function(object, input_type = NULL, ...) {
 # GORIC(A) evidence synthesis based on the (standardized) parameter estimates and 
 # the covariance matrix
 evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
-                      type = c("added", "equal", "average"), 
+                      type_ev = c("added", "equal", "average"), 
                       comparison = c("unconstrained", "complement", "none"),
-                      hypo_names = c()) {
+                      hypo_names = c(),
+                      type = c("gorica", "goricac")) {
   
-  if (missing(comparison)) 
-    comparison <- "unconstrained"
+  if (missing(comparison)) {
+    if (length(hypotheses) == 1) {
+      comparison <- "complement"
+    }
+  }
   comparison <- match.arg(comparison)
 
   if (missing(type)) 
-    type <- "added"
+    type <- "gorica"
   type <- match.arg(type)
+  
+  if (missing(type_ev)) 
+    type_ev <- "added"
+  type_ev <- match.arg(type_ev)
 
   # number of primary studies
   S <- length(object)
@@ -157,12 +166,12 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   
   
   # check if the matrices are all symmetrical
-  VCOV_isSym <- vapply(VCOV, isSymmetric, logical(1), check.attributes = FALSE)
-  if (!all(VCOV_isSym)) {
-    stop(sprintf("Restriktor ERROR: the %sth covariance matrix in VCOV is not symmetric.", which(!VCOV_isSym)), call. = FALSE)  
-  }
+  #VCOV_isSym <- vapply(VCOV, isSymmetric, logical(1), check.attributes = FALSE)
+  #if (!all(VCOV_isSym)) {
+  #  stop(sprintf("Restriktor ERROR: the %sth covariance matrix in VCOV is not symmetric.", which(!VCOV_isSym)), call. = FALSE)  
+  #}
 
-  # number of hypotheses must be equal for each studie. In each study a set of 
+  # number of hypotheses must be equal for each study. In each study a set of 
   # shared theories (i.e., hypotheses) are compared.
   len_H <- vapply(hypotheses, length, integer(1))
   NrHypos <- unique(len_H)
@@ -280,7 +289,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   for (s in 1:S) {
     res_goric <- goric(object[[s]], VCOV = VCOV[[s]],
                        hypotheses = hypotheses[[s]],
-                       type = 'gorica', comparison = comparison,
+                       type = type, comparison = comparison,
                        ...)
 
     if (comparison == "unconstrained") {
@@ -291,13 +300,13 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     
     LL_m[s, ] <- res_goric$result$loglik
     LL_weights_m[s, ] <- res_goric$result$loglik.weights
-    GORICA_m[s, ] <- res_goric$result$gorica
-    GORICA_weight_m[s, ] <- res_goric$result$gorica.weights
+    GORICA_m[s, ] <- res_goric$result[[type]] #res_goric$result$gorica
+    GORICA_weight_m[s, ] <- res_goric$result[[paste0(type, ".weights")]]
     PT[s, ] <- res_goric$result$penalty
   }
   
   sumPT <- sumLL <- 0
-  if (type == "added") { 
+  if (type_ev == "added") { 
     # added-evidence approach
     for(s in 1:S) {
       sumLL <- sumLL + LL_m[s, ]
@@ -307,7 +316,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
       CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / 
         sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
     }
-  } else if (type == "equal") { 
+  } else if (type_ev == "equal") { 
     # equal-evidence approach
     for(s in 1:S) {
       sumLL <- sumLL + LL_m[s, ]
@@ -375,6 +384,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   }
   
   out <- list(type = type,
+              type_ev = type_ev,
               hypotheses = hypotheses,
               PT_m = PT,
               GORICA_weight_m = GORICA_weight_m, 
@@ -398,12 +408,12 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on log likelihood and penalty values
-evSyn_LL <- function(object, ..., PT = list(), type = c("added", "equal", "average"),
+evSyn_LL <- function(object, ..., PT = list(), type_ev = c("added", "equal", "average"),
                      hypo_names = c()) {
   
-  if (missing(type)) 
-    type <- "added"
-  type <- match.arg(type)
+  if (missing(type_ev)) 
+    type_ev <- "added"
+  type_ev <- match.arg(type_ev)
   
   # check if PT is a non-empty list
   if ( !is.list(PT) && length(PT) == 0 ) {
@@ -467,7 +477,7 @@ evSyn_LL <- function(object, ..., PT = list(), type = c("added", "equal", "avera
 
   sumPT <- sumLL <- 0
   IC <- -2 * LL_m + 2 * PT
-  if (type == "added") { 
+  if (type_ev == "added") { 
     # added-ev approach
     for(s in 1:S) {
       minIC <- min(IC[s, ])
@@ -479,7 +489,7 @@ evSyn_LL <- function(object, ..., PT = list(), type = c("added", "equal", "avera
       CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / 
         sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
     }
-  } else if (type == "equal") { 
+  } else if (type_ev == "equal") { 
     # equal-ev approach
     for (s in 1:S) {
       minIC <- min(IC[s, ])
@@ -518,7 +528,7 @@ evSyn_LL <- function(object, ..., PT = list(), type = c("added", "equal", "avera
   rownames(Final.ratio.LL.weights) <- rownames(Final.ratio.GORICA.weights) <- hnames
   colnames(Final.ratio.LL.weights) <- colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hnames)
   
-  out <- list(type = type,
+  out <- list(type_ev = type_ev,
               PT_m = PT, 
               GORICA_weight_m = GORICA_weight_m,
               LL_weights_m = LL_weights_m,
@@ -588,7 +598,7 @@ evSyn_ICvalues <- function(object, ..., hypo_names = c()) {
   rownames(Final.ratio.GORICA.weights) <- hnames
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hnames)
   
-  out <- list(type              = "added",
+  out <- list(type_ev              = "added",
               GORICA_m          = IC, 
               GORICA_weight_m   = GORICA_weight_m,
               Cumulative_GORICA = CumulativeGorica, 
@@ -643,7 +653,7 @@ evSyn_ICweights <- function(object, ..., priorWeights = NULL, hypo_names = c()) 
   rownames(Final.ratio.GORICA.weights) <- hypo_names
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hypo_names)
   
-  out <- list(type                       = "added",
+  out <- list(type_ev                       = "added",
               GORICA_weight_m            = Weights,
               Cumulative_GORICA_weights  = CumulativeWeights,
               Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
@@ -695,7 +705,7 @@ evSyn_ICratios <- function(object, ..., priorWeights = NULL, hypo_names = c()) {
   rownames(Final.ratio.GORICA.weights) <- hypo_names
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hypo_names)
   
-  out <- list(type                       = "added",
+  out <- list(type_ev                       = "added",
               GORICA_weight_m            = Weights,
               Cumulative_GORICA_weights  = CumulativeWeights,
               Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
@@ -709,7 +719,7 @@ evSyn_ICratios <- function(object, ..., priorWeights = NULL, hypo_names = c()) {
 
 # -------------------------------------------------------------------------
 # list with goric objects
-evSyn_gorica <- function(object, ..., type = c("added", "equal", "average"), 
+evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"), 
                          hypo_names = c()) {
   
   # Check if all objects are of type "con_goric"
@@ -722,7 +732,7 @@ evSyn_gorica <- function(object, ..., type = c("added", "equal", "average"),
   conList <- list(
     object = lapply(object, function(x) x$result$loglik),
     PT = lapply(object, function(x) x$result$penalty),
-    type = type,
+    type_ev = type_ev,
     hypo_names = hypo_names
   )
   

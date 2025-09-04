@@ -24,12 +24,12 @@ evSyn(object, input_type = NULL, \ldots)
 
 # input: Parameter estimates and covariance matrix
 evSyn_est(object, \ldots, VCOV = list(), hypotheses = list(),
-          type = c("added", "equal", "average"), 
+          type_ev = c("added", "equal", "average"), 
           comparison = c("unconstrained", "complement", "none"),
           hypo_names = c())
 
 # input: Log-likelihood and penalty values
-evSyn_LL(object, \ldots, PT = list(), type = c("added", "equal", "average"),
+evSyn_LL(object, \ldots, PT = list(), type_ev = c("added", "equal", "average"),
          hypo_names = c())
 
 # input: GORIC(A), ORIC, AIC values
@@ -45,7 +45,7 @@ evSyn_ICratios(object, \ldots, priorWeights = NULL, hypo_names = c())
 
 # input: result from the goric() function
 # Note that this is a wrapper function for evSyn_LL.
-evSyn_gorica(object, \dots, type = c("added", "equal", "average"), hypo_names = c())
+evSyn_gorica(object, \dots, type_ev = c("added", "equal", "average"), hypo_names = c())
 
 # input: Result from the escalc() function from the metafor package. 
 # Note that this is a wrapper function for evSyn_est.
@@ -69,7 +69,7 @@ evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldo
       \item a list of vectors with ratio of GORIC(A) weights;
       \item a list of vectors with GORIC(A) values;
       \item a list of objects of class goric;
-      \item a data.frame of class escalc from the \pkg{metafore} package;
+      \item a data.frame of class escalc from the \pkg{metafor} package;
     }
   }
   
@@ -94,9 +94,9 @@ evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldo
   
   \item{x}{an object of class \code{evSyn}}
 
-  \item{type}{type of evidence-synthesis approach: Equal-evidence approach 
-  (\code{type = "equal"}), Added-evidence approach (\code{type = "added"}), or
-  Average-evidence approach (\code{type = "average"}). See details for more 
+  \item{type_ev}{type of evidence-synthesis approach: Equal-evidence approach 
+  (\code{type_ev = "equal"}), Added-evidence approach (\code{type_ev = "added"}), or
+  Average-evidence approach (\code{type_ev = "average"}). See details for more 
   information.}
 
   \item{hypotheses}{When applying the same set of hypotheses to each study, 
@@ -268,7 +268,7 @@ comparison <- "none"
 
 evS4_added <- evSyn(object = Param_studies, VCOV = CovMx_studies, 
                     hypotheses = hypotheses,
-                    type = "added", 
+                    type_ev = "added", 
                     comparison = "none")
 evS4_added
 summary(evS4_added)
@@ -277,7 +277,7 @@ plot(evS4_added)
 
 evS4_equal <- evSyn(object = Param_studies, VCOV = CovMx_studies, 
                     hypotheses = hypotheses,
-                    type = "equal", 
+                    type_ev = "equal", 
                     comparison = "none")
 
 evS4_equal
@@ -310,7 +310,7 @@ H22 <- 'gr2 > gr1 > gr3'
 hypotheses <- list(H1 = list(H11, H12), H2 = list(H21, H22))
 
 evS2_added <- evSyn(object, VCOV = VCOV, hypotheses = hypotheses,
-                    type = "added", comparison = "unconstrained") 
+                    type_ev = "added", comparison = "unconstrained") 
 evS2_added
 plot(evS2_added)
 
@@ -382,7 +382,7 @@ hypothesis <- 'x1 < x2 < x3'
 # Evidence synthesis
 evS3 <- evSyn(object = Param_studies, VCOV = CovMx_studies, 
               hypotheses = list(H1 = hypothesis),
-              type = "added", 
+              type_ev = "added", 
               comparison = "complement") 
 evS3
 plot(evS3)
@@ -392,8 +392,8 @@ plot(evS3)
 LL <- as.list(data.frame(t(myLLs)))
 penalty.values <- as.list(data.frame(t(myPTs)))
 
-evS_LL_added <- evSyn(object = LL, PT = penalty.values, type = "added")
-evS_LL_equal <- evSyn(object = LL, PT = penalty.values, type = "equal")
+evS_LL_added <- evSyn(object = LL, PT = penalty.values, type_ev = "added")
+evS_LL_equal <- evSyn(object = LL, PT = penalty.values, type_ev = "equal")
 
 evS_LL_added
 evS_LL_equal

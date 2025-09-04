@@ -72,12 +72,15 @@ plot.evSyn <- function(x, output_type = "gorica_weights", xlab = NULL, ...) {
   plot_data$variable <- rep(rep(namesH, each = S), times = times)
   
   # Plot aanmaken
+  # TO DO RMK
+  #plot_data$weight_type <- factor(plot_data$weight_type, levels = c("per study", "cumulative"))
+  #plot_data$variable <- factor(plot_data$variable, levels = colnames(x$PT_m))
   ggplot(plot_data, aes(x = .data[['study']],  
                         y = .data[['weight']], 
                         shape = .data[['weight_type']], 
                         linetype = .data[['weight_type']], 
                         color = .data[['variable']])) +
-    geom_point(size = 3) +
+    geom_point(size = 3) #, shape = rep(c(17,16), each = nrow(plot_data)/2)) +
     geom_line(data = plot_data[plot_data[['weight_type']] == "cumulative", ], 
               aes(group = .data[['variable']]), linewidth = 1) +
     scale_color_brewer(palette = "Dark2") +
@@ -99,7 +102,7 @@ plot.evSyn <- function(x, output_type = "gorica_weights", xlab = NULL, ...) {
     scale_x_discrete(expand = c(0, 0.05)) +
     labs(x = "Studies", y = y_label,
          title = paste("Cumulative", y_label, "and", y_label, "per study"),
-         subtitle = paste(x$type, "Evidence Synthesis results"),
+         subtitle = paste(x$type_ev, "Evidence Synthesis results"),
          shape = "", color = "", linetype = "") +
     guides(shape = guide_legend(override.aes = list(linetype = 0)))
 }

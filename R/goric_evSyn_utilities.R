@@ -34,6 +34,7 @@ extract_est_vcov_outcomes <- function(data, outcome_col = NULL, yi_col = "yi",
     }
     
     # Determine the number of outcomes for this trial
+    # TO DO namen yi icm outcome maken
     num_outcomes <- nrow(cluster_data)
     vcov_matrix <- matrix(0, nrow = num_outcomes, ncol = num_outcomes)
     rownames(vcov_matrix) <- colnames(vcov_matrix) <- outcomes

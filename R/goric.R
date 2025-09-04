@@ -60,6 +60,20 @@ goric.default <- function(object, ..., hypotheses = NULL,
   }
   
   if (!is.null(VCOV)) {
+    
+    # check if scalar
+    if (length(VCOV) == 1) {
+      VCOV <- as.matrix(VCOV)
+    }
+    
+    # check if matrix and whether p times p matrix
+    if (!is.matrix(VCOV)) {
+      VCOV <- as.matrix(VCOV)
+    }
+    if (dim(VCOV)[1] != dim(VCOV)[2]) {
+      stop(paste("Restriktor ERROR: The covariance matrix (VCOV) should be a square matrix."), call. = FALSE)
+    }
+    
     # check if it is of class matrix
     if (inherits(VCOV, "dpoMatrix")) {
       VCOV <- as.matrix(VCOV)
@@ -513,6 +527,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   df$goric.weights_without_unc <- model_comparison_metrics$goric_weights_without_unc
   df$goric.weights_without_heq <- model_comparison_metrics$goric_weights_without_heq
   
+  names(df)[4] <- type
   names(df)[7] <- paste0(type, ".weights")
   if (!is.null(df$goric.weights_without_unc)) {
     names(df)[8] <- paste0(type, ".weights_without_unc")

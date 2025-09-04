@@ -498,7 +498,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
             df$model <- as.character(df$model)
           }
         },
-          stop("Restriktor ERROR: I don't know how to compute the goric-values.")
+          stop("Restriktor ERROR: I don't know how to compute the GORIC values.")
   )
 
   ans$objectList  <- conList

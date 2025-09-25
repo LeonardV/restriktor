@@ -159,6 +159,8 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   if ( !is.list(VCOV) && length(VCOV) == 0 ) {
     stop("Restriktor ERROR: VCOV must be a list of covariance matrices of the (standardized) parameter estimates of interest.", call. = FALSE)  
   } 
+  # TO DO check of square matrices in list, kan evt door nu fout in goric() te laten gebeuren, maar
+  #       dan is het meegeven van study nr wel fijn!
 
   if ( !is.list(hypotheses) && length(hypotheses) == 0 ) {
     stop("Restriktor ERROR: hypotheses must be a list.", call. = FALSE)  

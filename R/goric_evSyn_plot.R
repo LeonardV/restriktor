@@ -71,24 +71,19 @@ plot.evSyn <- function(x, output_type = "gorica_weights", xlab = NULL, ...) {
   plot_data <- rbind(per_study_df, cumulative_df)
   plot_data$variable <- rep(rep(namesH, each = S), times = times)
   
-  # Plot aanmaken
-  # TO DO RMK
-  #plot_data$weight_type <- factor(plot_data$weight_type, levels = c("per study", "cumulative"))
-  #plot_data$variable <- factor(plot_data$variable, levels = colnames(x$PT_m))
+  # Plot
   ggplot(plot_data, aes(x = .data[['study']],  
-                        y = .data[['weight']], 
-                        shape = .data[['weight_type']], 
-                        linetype = .data[['weight_type']], 
-                        color = .data[['variable']])) +
-    geom_point(size = 3) #, shape = rep(c(17,16), each = nrow(plot_data)/2)) +
-    geom_line(data = plot_data[plot_data[['weight_type']] == "cumulative", ], 
-              aes(group = .data[['variable']]), linewidth = 1) +
+                        y = .data[['weight']])) +
+    geom_point(size = 3, aes(color = factor(.data[['variable']], levels = namesH), shape = .data[['weight_type']])) + 
+    theme(legend.position = "bottom", 
+          legend.box = "vertical",
+          legend.margin=margin(unit(c(0,0,0,0), "cm"))) +
+    #scale_fill_discrete(breaks=namesH) +
+    geom_line(data = plot_data[plot_data[['weight_type']] == "cumulative", ],
+              aes(group = .data[['variable']], color = .data[['variable']]), linewidth = 1) +
     scale_color_brewer(palette = "Dark2") +
     theme(
       plot.margin = unit(c(1,1,1,1), "cm"),
-      legend.position = "bottom",
-      legend.margin = margin(t = 10, r = 0, b = 3, l = 0),
-      legend.key = element_blank(),
       legend.text = element_text(size = 12),
       axis.text.x  = element_text(size = 12), axis.text.y = element_text(size = 12),
       axis.title.x = element_text(size = 14, vjust = -3), 
@@ -104,5 +99,38 @@ plot.evSyn <- function(x, output_type = "gorica_weights", xlab = NULL, ...) {
          title = paste("Cumulative", y_label, "and", y_label, "per study"),
          subtitle = paste(x$type_ev, "Evidence Synthesis results"),
          shape = "", color = "", linetype = "") +
-    guides(shape = guide_legend(override.aes = list(linetype = 0)))
+    guides(color = guide_legend(order = 2),
+           shape = guide_legend(order = 1))
+  #
+  # # TO DO ws delete - is iig oude code
+  # ggplot(plot_data, aes(x = .data[['study']],
+  #                       y = .data[['weight']],
+  #                       shape = .data[['weight_type']],
+  #                       linetype = .data[['weight_type']],
+  #                       color = .data[['variable']])) +
+  #   geom_point(size = 3) + #, shape = rep(c(17,16), each = nrow(plot_data)/2)) +
+  #   geom_line(data = plot_data[plot_data[['weight_type']] == "cumulative", ], 
+  #             aes(group = .data[['variable']]), linewidth = 1) +
+  #   scale_color_brewer(palette = "Dark2") +
+  #   theme(
+  #     plot.margin = unit(c(1,1,1,1), "cm"),
+  #     legend.position = "bottom",
+  #     legend.margin = margin(t = 10, r = 0, b = 3, l = 0),
+  #     legend.key = element_blank(),
+  #     legend.text = element_text(size = 12),
+  #     axis.text.x  = element_text(size = 12), axis.text.y = element_text(size = 12),
+  #     axis.title.x = element_text(size = 14, vjust = -3), 
+  #     axis.title.y = element_text(size = 14, vjust = 5),
+  #     panel.background = element_blank(),
+  #     axis.line = element_line(colour = "black"),
+  #     plot.title = element_text(hjust = 0.5, size = 14),
+  #     plot.subtitle = element_text(hjust = 0.5, size = 12)
+  #   ) +
+  #   scale_y_continuous(limits = c(0, 1), n.breaks = 10) +
+  #   scale_x_discrete(expand = c(0, 0.05)) +
+  #   labs(x = "Studies", y = y_label,
+  #        title = paste("Cumulative", y_label, "and", y_label, "per study"),
+  #        subtitle = paste(x$type_ev, "Evidence Synthesis results"),
+  #        shape = "", color = "", linetype = "") +
+  #   guides(shape = guide_legend(override.aes = list(linetype = 0)))
 }

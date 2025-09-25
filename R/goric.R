@@ -198,6 +198,15 @@ goric.default <- function(object, ..., hypotheses = NULL,
     ans$model.org <- object
     # unrestricted VCOV
     VCOV <- vcov(ans$model.org)
+    # TO DO alleen hier aanpassen of op meer plekken?
+    # If lm object, then use cov.mx based on N not N-k, such that output goric and gorica are the same
+    # Btw if est & VCOV are used instead of fitted lm object, then their gorica results differ...
+    #     But now goric and gorica for lm objects give the same.
+    if (object_class %in% c("lm")) {
+      N_min_k <- ans$model.org$df.residual
+      N <- N_min_k + ans$model.org$rank
+      VCOV <- vcov(ans$model.org)*N_min_k/N
+    } 
     sample_nobs <- nrow(model.frame(object))
     idx <- length(conList) 
     objectnames <- vector("character", idx)

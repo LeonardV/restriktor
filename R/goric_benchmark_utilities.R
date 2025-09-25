@@ -106,8 +106,8 @@ detect_intercept <- function(model) {
 compute_cohens_f <- function(group_means, N, VCOV) {
   total_mean <- sum(group_means * N) / sum(N)
   ss_between <- sum(N * (group_means - total_mean)^2)
-  cov_matrix <- VCOV * N
-  ss_within <- sum((N - 1) * diag(cov_matrix))
+  cov_matrix <- VCOV * (N - 1) # covmx based on N instead of N-1
+  ss_within <- sum(N * diag(cov_matrix)) # equates: summing over i = 1 to N
   cohens_f <- sqrt(ss_between/ss_within)
 
   return(cohens_f)
@@ -171,29 +171,59 @@ adjust_variance <- function(var_e, N, alt_group_size, ngroups) {
 }
 
 generate_scaled_means <- function(group_means, target_f, N, VCOV) {
-  original_order <- order(group_means)
-  sorted_means <- sort(group_means)
-  min_value <- sorted_means[1]
-  ratio_vector <- sorted_means / min_value  # Behoudt de verhoudingen
-  
-  objective <- function(d) {
-    means_new <- ratio_vector * d
-    computed_f <- compute_cohens_f(means_new, N, VCOV)
-    return(abs(computed_f - target_f))  # Minimaliseer het verschil tussen berekende en gewenste Cohen's f
+  # TO DO evt delete:
+  #original_order <- order(group_means)
+  #sorted_means <- sort(group_means)
+  #min_value <- sorted_means[1]
+  #ratio_vector <- sorted_means / min_value  # Behoudt de verhoudingen
+  ##
+  #objective <- function(d) {
+  #  means_new <- ratio_vector * d
+  #  computed_f <- compute_cohens_f(means_new, N, VCOV)
+  #  # TO DO nu staan de means in andere volgorde en hoort het dus niet meer bij die VCOV (als ongelijke n's)
+  #  #       waarom volgorde eigenlijk aanpassen?
+  #  return(abs(computed_f - target_f))  # Minimaliseer het verschil tussen berekende en gewenste Cohen's f
+  #}
+  ##
+  #opt_result <- optimize(objective, interval = c(0, 100))
+  #d_optimal <- opt_result$minimum
+  ##
+  #new_means <- ratio_vector * d_optimal
+  #new_means_ordered <- new_means[original_order]  # Behoud de oorspronkelijke volgorde
+  ##
+  ## Debugging output
+  ##cat(sprintf("Gevonden d: %.5f voor target f: %.5f\n", d_optimal, target_f))
+  ##cat("Oude means:", group_means, "\n")
+  ##cat("Nieuwe means:", new_means_ordered, "\n")
+  ##
+  ##return(new_means_ordered)
+  ##
+  ##
+  # TO DO Suggestion RMK (works much better :-))
+  if (target_f == 0) {
+    # If targeted effect size f is 0, then set all the means to 0.
+    new_means <- rep(0, length(group_means))
+  } else {
+    ratio_vector <- group_means / min(group_means)  # Behoudt de verhoudingen
+    #
+    objective <- function(d) {
+      means_new <- ratio_vector * d
+      computed_f <- compute_cohens_f(means_new, N, VCOV)
+      return(abs(computed_f - target_f))  # Minimaliseer het verschil tussen berekende en gewenste Cohen's f
+    }
+    
+    opt_result <- optimize(objective, interval = c(0, 100))
+    d_optimal <- opt_result$minimum
+    
+    new_means <- ratio_vector * d_optimal
   }
-  
-  opt_result <- optimize(objective, interval = c(0, 100))
-  d_optimal <- opt_result$minimum
-  
-  new_means <- ratio_vector * d_optimal
-  new_means_ordered <- new_means[original_order]  # Behoud de oorspronkelijke volgorde
   
   # Debugging output
   #cat(sprintf("Gevonden d: %.5f voor target f: %.5f\n", d_optimal, target_f))
   #cat("Oude means:", group_means, "\n")
   #cat("Nieuwe means:", new_means_ordered, "\n")
   
-  return(new_means_ordered)
+  return(new_means)
 }
 
 # Compute the population means based on the input parameters
@@ -231,8 +261,12 @@ parallel_function_means <- function(i, N, var_e, means_pop,
 
   # Sample residuals
   #epsilon <- rnorm(sum(N), sd = sqrt(var_e/sum(N)))
-  VCOV <- diag(ngroups)
-  diag(VCOV) <- var_e
+  # TO DO ws delete:
+  #VCOV <- diag(ngroups)
+  #diag(VCOV) <- var_e
+  # TO DO bovenstaande neemt nu gelijke varianties, wat niet klopt als ongelijke groepsgroottes
+  # TO DO deze functie wordt denk ik niet meer gebruikt...
+  VCOV <- diag(var_e, ngroups) * N[1]/N
   est <- as.vector(mvtnorm::rmvnorm(n = 1, mean = means_pop, sigma = VCOV))
   names(est) <- names(means_pop)
 
@@ -276,7 +310,7 @@ parallel_function_means <- function(i, N, var_e, means_pop,
             VCOV = VCOV,
             hypotheses = hypos,
             comparison = comparison,
-            type = "gorica", 
+            type = "gorica", # TO DO goricac ergens ook (als origineel dan goricc ws)?
             control = control,
             mix_weights = mix_weights,
             ...)
@@ -377,8 +411,8 @@ extract_and_combine_values <- function(pop_es_list, value_name) {
 get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name, 
                                   quant, names_quant, nr.hypos) {
   results <- x
-
-  # Use lapply to apply the extract_and_combine_values function to each element in the results list
+  
+    # Use lapply to apply the extract_and_combine_values function to each element in the results list
   gw_combined  <- lapply(results, function(pop_es_list) extract_and_combine_values(pop_es_list, "gw"))
   rgw_combined <- lapply(results, function(pop_es_list) extract_and_combine_values(pop_es_list, "rgw"))
   rlw_combined <- lapply(results, function(pop_es_list) extract_and_combine_values(pop_es_list, "rlw"))
@@ -518,6 +552,9 @@ calculate_error_probability <- function(object, hypos, pref_hypo, est,
   nr_hypos <- dim(object$result)[1]
   if (nr_hypos == 2 && object$comparison == "complement") { 
     if (object$type == 'goric') {
+      # TO DO also here re-run with GORICA, as we do for sample value as well?
+      #       is ws al opgelost als we goric en gorica resultaten gelijk maken!!!
+      #       Dus dan laten staan + re-run met gorica niet nodig dan ook!
       error_prob <- 1 - object$result$goric.weights[pref_hypo]
     } else {
       error_prob <- 1 - object$result$gorica.weights[pref_hypo]

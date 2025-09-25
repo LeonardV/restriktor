@@ -14,12 +14,12 @@ benchmark <- function(object, model_type = c("asymp", "means"), ...) {
          "In case of model_type = means, no intercept is allowed.")
   }
 
-  # Check if the model has an intercept. Since the goric function accepts both
-  # a model/fit or only estimates+VCOV, we cannot rely on the original model fit.
-  # So we only check if the names of the vector with parameter estimates includes
-  # the word \(Intercept\).
-  has_intercept <- detect_intercept(object)
   if (model_type == "means") {
+    # Check if the model has an intercept. Since the goric function accepts both
+    # a model/fit or only estimates+VCOV, we cannot rely on the original model fit.
+    # So we only check if the names of the vector with parameter estimates includes
+    # the word \(Intercept\).
+    has_intercept <- detect_intercept(object)
     if (has_intercept) {
       stop("Restriktor ERROR: A model with an intercept is not allowed for model_type = means. ",
            "Please refit the model without an intercept.")
@@ -36,8 +36,13 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
                             quant = NULL, iter = 2000,
                             control = list(),
                             ncpus = 1, seed = NULL, ...) {
-
-  # NoTE: group_size is needed to rescale vcov based on alt_group_size.
+# TO DO in asymp functie het group_size sample_size en dat kan vervelend voor gebruiker zijn...
+#       als argument ms toch sample_size en dan direct hierna:
+  # group_size <- sample_size
+  # TO DO dan wel ook help file en tutorial / example R scripts aanpassen ws!
+  
+  # NOTE: group_size is needed to rescale vcov based on alt_group_size.
+  #       and also for calculating Cohens f. 
 
   if (length(control) == 1) {
     control <- object$objectList[[1]]$control
@@ -82,8 +87,8 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   form_model_org <- formula(object$model.org)
 
   # ES and ratio in data
-  if (is.null(object$model.org)) {
-    # Number of subjects per group
+  #if (is.null(object$model.org)) {
+  #  # Number of subjects per group
     if (is.null(group_size)) {
       stop("Restriktor Error: please specify the group-size, e.g. group_size = 100.", call. = FALSE)
     } else if (length(group_size) == 1) {
@@ -91,17 +96,32 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     } else {
       N <- group_size
     }
-  } else {
-    # Number of subjects per group
-    N <- rep(object$sample_nobs/ngroups, ngroups) #colSums(model.matrix(object$model.org))
-  }
+  #} else {
+  #  # Number of subjects per group
+  #  # Note that the next assumes equal group size, which does not need to be the case.
+  #  N <- rep(object$sample_nobs/ngroups, ngroups) #colSums(model.matrix(object$model.org))
+  #}
 
   VCOV <- object$Sigma
-
+  
+  # TO DO ik denk dat we VCOV_N willen gebruiken op een paar plekken:
+  ##if (!is.null(object$model.org)) {
+  ##  N_min_k <- object$model.org$df.residual
+  ##  N <- N_min_k + object$model.org$rank
+  ##  VCOV_N <- vcov(object$model.org)*N_min_k/N
+  ##}
+  N_tot <- sum(N)
+  N_min_k <- N_tot - ngroups
+  VCOV_N <- VCOV*N_min_k/N_tot
+  
+  
   # residual error variance
   #var_e <- var_e_data <- as.vector(diag(VCOV * N)[1])
   var_e <- var_e_data <- as.vector(diag(VCOV)[1])
-
+  # This is used as reference value, because the diag. elements will differ if group sizes differ
+  # Btw var_e is based on N-K, not N, so base on VCOV not VCOV_N
+  
+  
   # # ratio population means
   # if (!is.null(ratio_pop_means)) {
   #   ratio_data <- compute_ratio_data(group_means)
@@ -119,12 +139,18 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   # The sample-value must also be adjusted, thus we need to fit a new goric-object
   # with est, VCOV = VCOV_new, and N = alt_group_size
   if (!is.null(alt_group_size)) {
+    # TO DO nog check of verhouding n's in alt en originele gelijk?
+    #       als niet, dan ms code niet correct (als, dan correct maken :-))
     # Pas variantie aan met de alternatieve groepsgrootte
     result_adjust_variance <- adjust_variance(var_e, N, alt_group_size, ngroups)
     N <- result_adjust_variance$N
     var_e <- result_adjust_variance$var_e
     var_e_adjusted <- result_adjust_variance$var_e / N
     VCOV <- diag(var_e_adjusted, length(group_means))
+    # TO DO waarom adjusted? Origineel var_e diag(VCOV), waarom nu delen door N?
+    ##VCOV <- diag(var_e, length(group_means))
+    # Extra TO DO het moet obv (nieuwe) verhoudingen (obv nieuwe groepsgroottes), anders blijven var gelijk ook als dat niet zo is nl als ongelijke n's
+    #VCOV <- diag(var_e, length(group_means)) * N[1]/N
   }
 
   # Converteer type indien nodig
@@ -143,15 +169,18 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   object <-
     goric(
       group_means,
-      VCOV = VCOV,
-      sample_nobs = N[1],
+      #VCOV = VCOV,
+      # TO DO nu weten we dat het een anova model is en dus ms direct zelf al N gebruiken ipv N-K...
+      VCOV = VCOV_N,
+      #sample_nobs = N[1], # TO DO als type = "goricac" nodig, MAAR dan is het nu voor alle groepen ineens gelijk? Het zou dan ws de som van N's moeten zijn...
+      sample_nobs = sum(N), # Needed for type = "goricac"
       hypotheses = hypos,
       comparison = object$comparison,
       type = type,
       control = control,
       mix_weights = mix_weights,
       penalty_factor = penalty_factor,
-      Heq = FALSE,
+      Heq = FALSE, # TO DO Default keuze of kan deze dus nooit TRUE zijn, ook niet als in het origneel gebruikt?
       ...
     )
 
@@ -160,7 +189,9 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
 
   # effect size population
   if (is.null(pop_es)) {
-    pop_es <- c(0, round(cohens_f_observed, 3))
+    # TO DO alleen in print afronden
+    #pop_es <- c(0, round(cohens_f_observed, 3))
+    pop_es <- c(0, cohens_f_observed)
     names(pop_es) <- c("No-effect", "Observed")
   } else {
     pop_es <- sort(pop_es)
@@ -212,6 +243,17 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
             paste0("(", names(es)[teller_es], ")\n"))
 
       est <- mvtnorm::rmvnorm(n = iter, means_pop_all[teller_es, ], sigma = VCOV)
+      # If one wants to use the unbiased cov.mx estimate:
+      # k <- number of estimates / predictors (including possible intercept)
+      ## TO DO als fit object bekend, dan kan je volgende twee uitlezen, al i shet ws nu ook al input...
+      ##N_min_k <- fit.object$df.residual
+      ##N_tot <- N_min_k + fit.object$rank
+      #N_tot <- sum(N)
+      #N_min_k <- N_tot - ngroups
+      #VCOV_N <- VCOV*N_min_k/N_tot
+      #est <- mvtnorm::rmvnorm(n = iter, means_pop_all[teller_es, ], sigma = VCOV_N)
+      # NB dit is sowieso niet meer nodig als we VCOV_N gebruiken!
+      #
       colnames(est) <- names(group_means)
 
       # Wrapper function for future_lapply
@@ -220,7 +262,10 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
         parallel_function_asymp(i,
                                 est = est, VCOV = VCOV,
                                 hypos = hypos, pref_hypo = pref_hypo,
-                                comparison = object$comparison, type = "gorica",
+                                comparison = object$comparison, 
+                                type = "gorica", # TO DO dus niet ook goricac (evt type = type?); als default en het dus wel kan, dan ook 'sample_nobs' nodig toch... 
+                                #type = type,
+                                #sample_nobs = sample_nobs,
                                 control = control, mix_weights = mix_weights,
                                 penalty_factor = penalty_factor, Heq = FALSE, ...)
       }
@@ -282,7 +327,10 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
                             alt_sample_size = NULL, quant = NULL, iter = 2000,
                             control = list(), 
                             ncpus = 1, seed = NULL, ...) {
-  
+
+  # TO DO als in means nog 'group_size' argument dan ms hier zeggen dat dat sample_size moet zijn?
+  #       NB alleen nodig als alt_sample_size nodig is...
+    
   if (length(control) == 1) {
     control <- object$objectList[[1]]$control
   }
@@ -326,10 +374,18 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   n_coef <- length(est_sample)
   
   if (is.null(pop_est)) {
-    NE <- theta_restricted(theta = est_sample, V = VCOV, R = object$constraints[[1]], rhs = object$rhs[[1]])
-    pop_est <- matrix(rbind(NE, round(est_sample, 3)), nrow = 2)
-    pop_est[abs(pop_est) < 1e-16] <- 0
+    # TO DO ws delete
+    #NE <- theta_restricted(theta = est_sample, V = VCOV, R = object$constraints[[1]], rhs = object$rhs[[1]])
+    # TO DO ik denk constraint matrix voor pref hypo gebruiken, niet altijd eerste...
+    #       Maar pref_hypo was nog niet bepaald... dus dat dan eerst doen:
+    pref_hypo <- which.max(object$result[, 7])
+    NE <- theta_restricted(theta = est_sample, V = VCOV, R = object$constraints[[pref_hypo]], rhs = object$rhs[[pref_hypo]])
+    # TO DO waarom hier al afronden of op 0 zetten, alleen in een print functie doen
+    #pop_est <- matrix(rbind(NE, round(est_sample, 3)), nrow = 2)
+    #pop_est[abs(pop_est) < 1e-16] <- 0
     #pop_est <- matrix(rbind(rep(0, n_coef), round(est_sample, 3)), nrow = 2)
+    pop_est <- matrix(rbind(NE, est_sample), nrow = 2)
+    #pop_est <- matrix(rbind(rep(0, n_coef), est_sample), nrow = 2)
     row.names(pop_est) <- c("No-effect", "Observed")
   } else {
     if (is.vector(pop_est)) {
@@ -388,7 +444,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   object <- goric(
     est_sample,
     VCOV = VCOV,
-    sample_nobs = N[1],
+    sample_nobs = N[1], # TO DO, dit is toch maar een getal en als niet dan ws de sum (iig bij anova wel)
     hypotheses = hypos,
     comparison = comparison,
     type = type,

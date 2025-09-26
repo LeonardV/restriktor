@@ -111,6 +111,7 @@ evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldo
   is compared against its complement. Note that the complement can only be computed 
   for one model/hypothesis at a time (for now). If "\code{none}" the model is only 
   compared against the models provided by the user.} 
+  % TO DO dit zou net als gorica moeten zijn: 1 hypo default complement, als meer dan default unc 
   
   \item{priorWeights}{vector that represents the prior belief for this model. By default,
   equal prior weights are used (i.e., 1/(#hypotheses)). Notably, in case the prior
@@ -124,10 +125,18 @@ evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldo
   weights and goric(a) weights per study is displayed. If "\code{ll_weights}"
   a plot with the cumulative log-likelihood weights and log-likelihood weights 
   per study is displayed.}
+  % TO DO geldt voor zowel output als plot toch?
+
+  \item{order_studies}{if "\code{input_order}" (default), the order of the studies 
+  in the output and/or plot will not be changed; 
+  if "\code{ascending}" or "\code{descending}", the order of the studies will be based
+  on the ascending or decscening order, respectively, of the study-specific support
+  for the overall preffered hypothesis.}
 
   \item{xlab}{a vector specifying custom labels for the x-axis. The length of 
   the vector must match the number of studies in the dataset. If not provided, 
-  the x-axis labels default to a sequence from 1 to the number of studies.}
+  the x-axis labels default to a sequence from 1 to the number of studies 
+  (possibly re-ordered based on \code{order_studies}).}
 
   \item{data}{an object of class "escalc" from the \pkg{metafor} package.}
 
@@ -138,6 +147,7 @@ evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldo
   \item{yi_col}{a character string specifying the column in \code{data} that 
   contains the outcome values for each observation. The default is \code{"yi"} 
   (one outcome variable).}
+  % TO DO Dit is wat verwarrend met optie hierboven...
 
   \item{vi_cols}{a character vector specifying the columns in \code{data} that 
   contain the variance and covariance values for each observation. The default is 
@@ -147,6 +157,8 @@ evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldo
   contains the cluster identifier. Observations within the same cluster should 
   share the same value in this column. The default is \code{"trial"}, other usual
   suspects are \code{"study"} and \code{"author"}.}
+  % TO DO ah, mooi, dus study can wel, dan die toch graag als default.
+  %       en de varianten met hoofdletters ook toelaten, lijkt me.
 
   \item{digits}{the number of significant digits to use when printing.}
 
@@ -205,23 +217,23 @@ The output comprises, among other things, the cumulative and final evidence
 for the theory-based hypotheses.}
 
 
-\author{Leonard Vanbrabant and Rebecca Kuiper}
+\author{Leonard Vanbrabant and Rebecca M. Kuiper}
 
 \examples{
 ## By following these examples, you can appropriately specify hypotheses based on 
 ## your research questions and analytical framework.
 
 # The hypotheses (i.e., constraints) have to be in a list. It is recommended to name
-# each hypothesis in the list. Otherwise the hypotheses are named accordingly 'H1', 'H2', \ldots
+# each hypothesis in the list. Otherwise, the hypotheses are named accordingly 'H1', 'H2', \ldots
 
 # text-based syntax (the labels x1, x2, and x2 are the names of coef(model) or names(vector))
-h1 <- '(x1, x2, x3) > 0'
-h2 <- '(x1, x3) > 0; x2 = 0'
-h3 <- 'x1 > 0; x2 < 0; x3 = 0'
-hypotheses = list(hypo1 = h1, hypo2 = h2, hypo3 = h3)
+H1 <- '(x1, x2, x3) > 0'
+H2 <- '(x1, x3) > 0; x2 = 0'
+H3 <- 'x1 > 0; x2 < 0; x3 = 0'
+hypotheses = list(hypo1 = H1, hypo2 = H2, hypo3 = H3)
 
 # mixed syntax:  
-hypotheses = list(Ha = h1, Hb = 'x1 = x2 > x3')
+hypotheses = list(Ha = H1, Hb = 'x1 = x2 > x3')
 
 # the same set of hypotheses for each study:
 # hypotheses = list(H1, H2, \ldots)
@@ -242,14 +254,17 @@ hypotheses = list(set1 = list(H11, H12), set2 = list(H21, H22))
 # NOT correct
 hypotheses = list(set1 = list(H12, H11), set2 = list(H21, H22))
 
-## Example 1 - 4 studies
+
+## Example 1: 4 studies
+
+# estimates (beta) (from the 4 primary studies)
 est_1 <- c(beta1 = 0.09)
 est_2 <- c(beta1 = 0.14)
 est_3 <- c(beta1 = 1.09)
 est_4 <- c(beta1 = 1.781)
 Param_studies <- list(est_1, est_2, est_3, est_4)
 
-# standard error of the beta's (from the primary studies)
+# standard error of the beta's (from the 4 primary studies)
 vcov_est_1 <- matrix(c(0.029^2), nrow = 1)
 vcov_est_2 <- matrix(c(0.054^2), nrow = 1)
 vcov_est_3 <- matrix(c(0.093^2), nrow = 1)
@@ -284,7 +299,11 @@ evS4_equal
 summary(evS4_equal)
 plot(evS4_equal)
 
-## Example 2 - 2 studies
+
+## Example 2: 2 studies
+
+#estimates and their covariance matrices (from the 2 primary studies)
+
 est_1 <- c(1.88, 2.54, 0.02)
 names(est_1) <- c("group1", "group2", "group3")
 vcov_est_1 <- diag(c(0.2149074, 0.2149074, 0.1408014))
@@ -293,28 +312,34 @@ est_2 <- c(0.98, 0.02, 0.27)
 names(est_2) <- c("gr1", "gr2", "gr3") 
 vcov_est_2 <- diag(c(0.1382856, 0.1024337, 0.0987754))
 
-# beta values from the analyses
+# list of estimates 
 object <- list(est_1, est_2)
-# standard error of the beta's (from the S primary studies)
+# list of covariance matrices of the estimates
 VCOV <- CovMx_studies <- list(vcov_est_1, vcov_est_2)
 
-# names(est_1) # Specify restrictions using those names
+
+# Hypotheses (study-specific)
+
+#names(est_1) # Specify restrictions using those names
 H11 <- 'group1 = group2 > group3'
 H12 <- 'group2 > group1 > group3'
 
-# names(est_2) # Specify restrictions using those names
+#names(est_2) # Specify restrictions using those names
 H21 <- 'gr1 = gr2 > gr3'
 H22 <- 'gr2 > gr1 > gr3' 
 
-# hypotheses
+# lis of (competing) hypotheses
 hypotheses <- list(H1 = list(H11, H12), H2 = list(H21, H22))
 
+
+# Evidence synthesis (added-evidence)
 evS2_added <- evSyn(object, VCOV = VCOV, hypotheses = hypotheses,
                     type_ev = "added", comparison = "unconstrained") 
 evS2_added
 plot(evS2_added)
 
-## Example 3 - 3 studies
+
+## Example 3: 3 studies
 
 # generate data
 ratio <- c(1,1.1,1.2)
@@ -387,7 +412,9 @@ evS3 <- evSyn(object = Param_studies, VCOV = CovMx_studies,
 evS3
 plot(evS3)
 
-## Example 4 - loglikelihood values and penalty values
+
+## Example 4: based on loglikelihood values and penalty values
+
 # make it a list
 LL <- as.list(data.frame(t(myLLs)))
 penalty.values <- as.list(data.frame(t(myPTs)))
@@ -399,7 +426,8 @@ evS_LL_added
 evS_LL_equal
 
 
-## Example 5 - AIC, ORIC, GORIC(A) values
+## Example 5: based on AIC, ORIC, GORIC(A) values
+
 goric.values <- as.list(data.frame(t(myGORICs)))
 
 evS_Gv <- evSyn(goric.values)

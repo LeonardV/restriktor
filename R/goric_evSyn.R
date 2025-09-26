@@ -125,7 +125,9 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
                       type_ev = c("added", "equal", "average"), 
                       comparison = c("unconstrained", "complement", "none"),
                       hypo_names = c(),
-                      type = c("gorica", "goricac")) {
+                      type = c("gorica", "goricac"),
+                      order_studies = c("input_order", "ascending", "descending")
+                      ) {
   
   if (missing(comparison)) {
     if (length(hypotheses) == 1) {
@@ -141,6 +143,10 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   if (missing(type_ev)) 
     type_ev <- "added"
   type_ev <- match.arg(type_ev)
+  
+  if (missing(order_studies)) 
+    order_studies <- "input_order"
+  order_studies <- match.arg(order_studies)
 
   # number of primary studies
   S <- length(object)
@@ -227,7 +233,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   CumulativeLLWeights <- CumulativeGoricaWeights <- CumulativeGorica <- matrix(NA, nrow = S+1, ncol = NrHypos_incl)
 
   sequence <- paste0("Studies 1-", 1:S)
-  sequence[1] <- "Studies 1"
+  sequence[1] <- "Study 1"
   rownames(CumulativeLLWeights) <- rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(sequence, "Final")
   
   if (NrHypos == 1 && comparison == "complement") {
@@ -307,6 +313,15 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     PT[s, ] <- res_goric$result$penalty
   }
   
+  # TO DO reorder based on
+  #order_studies: input_order, ascending, descending
+  # Hierna dan een teller uit de ordering en niet 1:S zelf
+  # Als ascending of descending:
+  # Eerst pref hypo beplen en dus eerst final result!
+  # Daarna cumm results obv ordering!
+  #
+  # Doe dit voor alle type ev syn functies (hieronder)
+
   sumPT <- sumLL <- 0
   if (type_ev == "added") { 
     # added-evidence approach
@@ -349,19 +364,20 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     CumulativeLLWeights[l, ] <- exp(-0.5*(CumulativeLL-minLL)) / sum(exp(-0.5*(CumulativeLL-minLL)))
   }
   
-  # cumulative log-likilihood values
+  # cumulative log-likelihood values
   Cumulative_LL <- apply(LL_m, 2, cumsum)
   Cumulative_LL <- matrix(Cumulative_LL, nrow = nrow(LL_m), 
                           dimnames = list(sequence, colnames(LL_m)))
-  # final cumulative log-likilihood value
+  # final cumulative log-likelihood value
   Cumulative_LL_final <- -2*Cumulative_LL[S, , drop = FALSE]
   rownames(Cumulative_LL_final) <- "Final"
   minLL <- min(Cumulative_LL_final)
-  # cumulative log-likihood weights
+  # cumulative log-likelihood weights
   Final.LL.weights <- exp(-0.5*(Cumulative_LL_final-minLL)) / sum(exp(-0.5*(Cumulative_LL_final-minLL)))
   Final.LL.weights <- Final.LL.weights[,, drop = TRUE]
   Final.ratio.LL.weights <- Final.LL.weights %*% t(1/Final.LL.weights)
   rownames(Final.ratio.LL.weights) <- hnames
+  
   
   # add final row
   CumulativeGorica[(S+1), ] <- CumulativeGorica[S, ]
@@ -371,6 +387,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   Final.GORICA.weights <- CumulativeGoricaWeights[S, ]
   Final.ratio.GORICA.weights <- Final.GORICA.weights %*% t(1/Final.GORICA.weights)
   rownames(Final.ratio.GORICA.weights) <- hnames
+  
   
   # Output
   if (NrHypos == 1 && comparison == "complement") {
@@ -447,7 +464,7 @@ evSyn_LL <- function(object, ..., PT = list(), type_ev = c("added", "equal", "av
   colnames(LL_m) <- colnames(LL_weights_m) <- colnames(PT) <- colnames(GORICA_weight_m) <- hnames
   
   sequence <- paste0("Studies 1-", 1:S)
-  sequence[1] <- "Studies 1"
+  sequence[1] <- "Study 1"
   
   rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(sequence, "Final")
   rownames(CumulativeLL) <- rownames(CumulativeLLWeights) <- c(sequence, "Final")
@@ -574,7 +591,7 @@ evSyn_ICvalues <- function(object, ..., hypo_names = c()) {
   colnames(CumulativeGorica) <- colnames(CumulativeGoricaWeights) <- colnames(IC) <- colnames(GORICA_weight_m) <- hnames
   
   sequence <- paste0("Studies 1-", 1:S)
-  sequence[1] <- "Studies 1"
+  sequence[1] <- "Study 1"
   
   rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(sequence, "Final")
   rownames(IC) <- rownames(GORICA_weight_m) <- paste0("Study ", 1:S)
@@ -638,7 +655,7 @@ evSyn_ICweights <- function(object, ..., priorWeights = NULL, hypo_names = c()) 
   colnames(Weights) <- colnames(CumulativeWeights) <- hypo_names
   
   sequence <- paste0("Studies 1-", 1:S)
-  sequence[1] <- "Studies 1"
+  sequence[1] <- "Study 1"
   
   rownames(CumulativeWeights) <- c(sequence, "Final")
   CumulativeWeights[1, ] <- priorWeights * Weights[1, ] / sum( priorWeights * Weights[1, ] )
@@ -690,7 +707,7 @@ evSyn_ICratios <- function(object, ..., priorWeights = NULL, hypo_names = c()) {
   colnames(Weights) <- colnames(CumulativeWeights) <- hypo_names
   
   sequence <- paste0("Studies 1-", 1:S)
-  sequence[1] <- "Studies 1"
+  sequence[1] <- "Study 1"
   
   rownames(CumulativeWeights) <- c(sequence, "Final")
   CumulativeWeights[1, ] <- priorWeights * Weights[1, ] / sum( priorWeights * Weights[1, ] )

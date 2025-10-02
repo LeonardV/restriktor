@@ -73,6 +73,12 @@ evSyn <- function(object, input_type = NULL, ...) {
   
   if (!is.list(object) || !any(vapply(object, is.numeric, logical(1)))) {
     stop("Restriktor ERROR: object must be a list of numeric vectors.")
+    # TO DO
+    # Laat evt volgende toe zodat namen hypos direct meegenomen kan worden:
+    #df <- data.frame(myGORICs)
+    #goric.values <- lapply(as.list(1:dim(df)[1]), function(x) df[x[1],])
+    # Met volgende nl geen namen maar wel numeric vector: goric.values <- as.list(data.frame(t(myGORICs)))
+    # Dito als LL & PT input zijn
   }
   
   checkListContent <- function(lst, fun, msg) {
@@ -99,20 +105,24 @@ evSyn <- function(object, input_type = NULL, ...) {
     return(evSyn_LL(object, ...))
   } else if (obj_isICweights) {
     if (!is.null(arguments$type_ev) && arguments$type_ev == "equal") {
-      # TO DO naam van method - overal doen
-      message("The added-evidence method is the only available approach when weights are included in the input.")
+      messageAdded <- "When the input consists of weights, the equal-evidence approach is not possible; the added-evidence approach is taken instead."
+      message(messageAdded)
     }
     return(evSyn_ICweights(object, ...))
   } else if (obj_isICratios) {
     if (!is.null(arguments$type_ev) && arguments$type_ev == "equal") {
-      message("The added-evidence method is the only available approach when weights are included in the input.")
+      messageAdded <- "When the input consists of ratios of weights, the equal-evidence approach is not possible; the added-evidence approach is taken instead."
+      message(messageAdded)
     }
     return(evSyn_ICratios(object, ...))
-  } else {
+  } else { # ICvalues
     if (!is.null(arguments$type_ev) && arguments$type_ev == "equal") {
-      message("The added-evidence method is the only available approach when the input consists of GORIC(A) values.")
+      messageAdded <- "When the input consists of IC values, the equal-evidence approach is not possible; the added-evidence approach is taken instead."
+      message(messageAdded)
     }
-    return(evSyn_ICvalues(object, ...))
+    return(evSyn_ICvalues(object, messageAdded, ...))
+    # TO DO werkt niet, ook niet als messageAdded = messageAdded
+    # TO DO doe dit dan ook voor bovenstaande!
   }
   stop("Restriktor Error: I don't know how to handle the input.")
 }
@@ -126,7 +136,8 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
                       comparison = c("unconstrained", "complement", "none"),
                       hypo_names = c(),
                       type = c("gorica", "goricac"),
-                      order_studies = c("input_order", "ascending", "descending")
+                      order_studies = c("input_order", "ascending", "descending"),
+                      study_names = c()
                       ) {
   
   if (missing(comparison)) {
@@ -219,6 +230,8 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
       #hypotheses <- lapply(hypotheses, function(x) { names(x) <- NULL; return(x) })
     }
   } else {
+    # TO DO check length of hypo_names
+    #       doe ws op meer plekken dan, nl in andere functies ook
     element_hypo_names <- hypo_names
   }
  
@@ -227,15 +240,6 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     NrHypos_incl <- NrHypos
   }
 
-  LL_weights_m <- LL_m <- PT <- GORICA_weight_m <- GORICA_m <- matrix(data = NA, nrow = S, ncol = NrHypos_incl)
-  rownames(LL_weights_m) <- rownames(GORICA_weight_m) <- rownames(GORICA_m) <- rownames(LL_m) <- rownames(PT) <- paste0("Study ", 1:S)
-  
-  CumulativeLLWeights <- CumulativeGoricaWeights <- CumulativeGorica <- matrix(NA, nrow = S+1, ncol = NrHypos_incl)
-
-  sequence <- paste0("Studies 1-", 1:S)
-  sequence[1] <- "Study 1"
-  rownames(CumulativeLLWeights) <- rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(sequence, "Final")
-  
   if (NrHypos == 1 && comparison == "complement") {
     if (!is.null(element_hypo_names)) {
       element_hypo_names <- c(element_hypo_names, "Complement")
@@ -290,10 +294,11 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     ratio.weight_mu <- matrix(data = NA, nrow = S, ncol = NrHypos_incl)
   }
   
-  rownames(ratio.weight_mu) <- paste0("Study ", 1:S)
-  colnames(GORICA_m) <- colnames(GORICA_weight_m) <- colnames(LL_m) <- colnames(LL_weights_m) <- colnames(PT) <- hnames
-  colnames(CumulativeLLWeights) <- colnames(CumulativeGorica) <- colnames(CumulativeGoricaWeights) <- hnames
-
+  
+  LL_m <- LL_weights_m <- GORICA_m <- GORICA_weight_m <- PT <- matrix(data = NA, nrow = S, ncol = NrHypos_incl)
+  colnames(LL_m) <- colnames(LL_weights_m) <- colnames(GORICA_m) <- colnames(GORICA_weight_m) <- colnames(PT) <- hnames
+  # rownames are set after determining the order of the studies
+  #
   for (s in 1:S) {
     res_goric <- goric(object[[s]], VCOV = VCOV[[s]],
                        hypotheses = hypotheses[[s]],
@@ -313,15 +318,62 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     PT[s, ] <- res_goric$result$penalty
   }
   
-  # TO DO reorder based on
-  #order_studies: input_order, ascending, descending
-  # Hierna dan een teller uit de ordering en niet 1:S zelf
-  # Als ascending of descending:
-  # Eerst pref hypo beplen en dus eerst final result!
-  # Daarna cumm results obv ordering!
+  orderStudies <- 1:S
+  # Check if order of studies should be changed.
+  #if (order_studies != "input_order"){
+  # Order needs to be changed.
+  if (order_studies %in% c("ascending", "descending")) {
+    # Order needs to be changed based on the overall preferred hypothesis.
+    # Determine what the overall preferred hypothesis is.
+    if (type_ev == "added") { 
+      # added-evidence approach
+      OverallGoric <- colSums(-LL_m) + colSums(PT)
+      OverallPrefHypo <- which(OverallGoric == min(OverallGoric))
+    } else if (type_ev == "equal") { 
+      # equal-evidence approach
+      OverallGoric <- colSums(-LL_m) + colMeans(PT)
+      OverallPrefHypo <- which(OverallGoric == min(OverallGoric))
+    } else if (type_ev == "average") { 
+      # average-evidence approach
+      OverallGoric <- colMeans(-LL_m) + colMeans(PT)
+      OverallPrefHypo <- which(OverallGoric == min(OverallGoric))
+    } #else {}
+    if (order_studies == "descending") {
+      decreasing = TRUE
+    } else {
+      decreasing = FALSE
+    }
+    orderStudies <- order(GORICA_weight_m[,OverallPrefHypo], decreasing = decreasing)
+    #
+    LL_m <- LL_m[orderStudies,]
+    LL_weights_m <- LL_weights_m[orderStudies,]
+    GORICA_m <- GORICA_m[orderStudies,]
+    GORICA_weight_m <- GORICA_weight_m[orderStudies,]
+    PT <- PT[orderStudies,]
+  }
+  
+  # Set rownames (after determining the order of the studies)
+  if (is.null(study_names)) {
+    # If no suggested study_names, then make them
+    #paste0("Study ", orderStudies)
+    study_names <- as.character(orderStudies)
+  } else {
+    # If suggested study_names:
+    # Check if length correct
+    # TO DO check
+    #
+    # Re-order
+    study_names <- study_names[orderStudies]
+  }
+  rownames(LL_m) <- rownames(LL_weights_m) <- rownames(GORICA_m) <- rownames(GORICA_weight_m) <- rownames(PT) <- study_names
+  rownames(ratio.weight_mu) <- study_names
+  
+  CumulativeLLWeights <- CumulativeGoricaWeights <- CumulativeGorica <- matrix(NA, nrow = S+1, ncol = NrHypos_incl)
+  colnames(CumulativeLLWeights) <- colnames(CumulativeGorica) <- colnames(CumulativeGoricaWeights) <- hnames
+  sequence <- paste0("Studies 1-", 1:S)
+  sequence[1] <- "Study 1"
+  rownames(CumulativeLLWeights) <- rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(sequence, "Final")
   #
-  # Doe dit voor alle type ev syn functies (hieronder)
-
   sumPT <- sumLL <- 0
   if (type_ev == "added") { 
     # added-evidence approach
@@ -343,7 +395,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
       CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / 
         sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
     }
-  } else {
+  } else if (type_ev == "average") { 
     # average-evidence approach
     for(s in 1:S) {
       sumLL <- sumLL + LL_m[s, ]
@@ -353,7 +405,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
       CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / 
         sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
     }
-  } 
+  } # else {}
   
   # cumulative log_likelihood weights
   sumLL <- 0
@@ -405,6 +457,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   out <- list(type = type,
               type_ev = type_ev,
               hypotheses = hypotheses,
+              orderStudies = orderStudies,
               PT_m = PT,
               GORICA_weight_m = GORICA_weight_m, 
               LL_weights_m = LL_weights_m,
@@ -418,6 +471,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
               Final_ratio_GORICA_weights = Final.ratio.GORICA.weights,
               Final_ratio_LL_weights = Final.ratio.LL.weights
               )
+  # TO DO welke volgorde en dan in alle functies zo gelijk mogelijk maken ook
   
   class(out) <- c("evSyn_est", "evSyn")
   
@@ -427,12 +481,20 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on log likelihood and penalty values
-evSyn_LL <- function(object, ..., PT = list(), type_ev = c("added", "equal", "average"),
-                     hypo_names = c()) {
+evSyn_LL <- function(object, ..., PT = list(), 
+                     type_ev = c("added", "equal", "average"),
+                     hypo_names = c(),
+                     order_studies = c("input_order", "ascending", "descending"),
+                     study_names = c()) {
   
   if (missing(type_ev)) 
     type_ev <- "added"
   type_ev <- match.arg(type_ev)
+  
+  if (missing(order_studies)) 
+    order_studies <- "input_order"
+  order_studies <- match.arg(order_studies)
+  
   
   # check if PT is a non-empty list
   if ( !is.list(PT) && length(PT) == 0 ) {
@@ -449,58 +511,107 @@ evSyn_LL <- function(object, ..., PT = list(), type_ev = c("added", "equal", "av
     hnames <- hypo_names
   }
   
-  LL_weights_m <- matrix(NA, nrow = S, ncol = (NrHypos + 1))
-  CumulativeLL <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
-  CumulativeLLWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
-  
-  GORICA_weight_m <- matrix(NA, nrow = S, ncol = (NrHypos + 1))
-  CumulativeGorica <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
-  CumulativeGoricaWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
   
   LL_m <- do.call(rbind, LL_m)
   PT <- do.call(rbind, PT)
+  IC <- -2 * LL_m + 2 * PT
+  #
+  GORICA_weight_m <- matrix(NA, nrow = S, ncol = (NrHypos + 1))
+  for(s in 1:S) {
+    minIC <- min(IC[s, ])
+    GORICA_weight_m[s, ] <- exp(-0.5*(IC[s, ]-minIC)) / sum(exp(-0.5*(IC[s, ]-minIC)))
+  }
+    
+  orderStudies <- 1:S
+  # Check if order of studies should be changed.
+  #if (order_studies != "input_order"){
+  # Order needs to be changed.
+  if (order_studies %in% c("ascending", "descending")) {
+    # Order needs to be changed based on the overall preferred hypothesis.
+    # Determine what the overall preferred hypothesis is.
+    if (type_ev == "added") { 
+      # added-evidence approach
+      OverallGoric <- colSums(-LL_m) + colSums(PT)
+      OverallPrefHypo <- which(OverallGoric == min(OverallGoric))
+    } else if (type_ev == "equal") { 
+      # equal-evidence approach
+      OverallGoric <- colSums(-LL_m) + colMeans(PT)
+      OverallPrefHypo <- which(OverallGoric == min(OverallGoric))
+    } else if (type_ev == "average") { 
+      # average-evidence approach
+      OverallGoric <- colMeans(-LL_m) + colMeans(PT)
+      OverallPrefHypo <- which(OverallGoric == min(OverallGoric))
+    } # else {}
+    if (order_studies == "descending") {
+      decreasing = TRUE
+    } else {
+      decreasing = FALSE
+    }
+    orderStudies <- order(GORICA_weight_m[,OverallPrefHypo], decreasing = decreasing)
+    #
+    LL_m <- LL_m[orderStudies,]
+    PT <- PT[orderStudies,]
+    IC <- IC[orderStudies,]
+    GORICA_weight_m <- GORICA_weight_m[orderStudies,]
+  }
   
-  colnames(CumulativeLL) <- colnames(CumulativeGorica) <- colnames(CumulativeGoricaWeights) <- colnames(CumulativeLLWeights) <- hnames
-  colnames(LL_m) <- colnames(LL_weights_m) <- colnames(PT) <- colnames(GORICA_weight_m) <- hnames
+  # Set rownames (after determining the order of the studies)
+  if (is.null(study_names)) {
+    # If no suggested study_names, then make them
+    #paste0("Study ", orderStudies)
+    study_names <- as.character(orderStudies)
+  } else {
+    # If suggested study_names:
+    # Check if length correct
+    # TO DO check
+    #
+    # Re-order
+    study_names <- study_names[orderStudies]
+  }
+  rownames(LL_m) <- rownames(PT) <- rownames(IC) <- rownames(GORICA_weight_m) <- study_names
+  # Set colnames
+  colnames(LL_m) <- colnames(PT) <- colnames(IC) <- colnames(GORICA_weight_m) <- hnames
   
   sequence <- paste0("Studies 1-", 1:S)
   sequence[1] <- "Study 1"
-  
-  rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(sequence, "Final")
-  rownames(CumulativeLL) <- rownames(CumulativeLLWeights) <- c(sequence, "Final")
-  rownames(LL_weights_m) <- rownames(LL_m) <- rownames(PT) <- rownames(GORICA_weight_m) <- paste0("Study ", 1:S)
-  
-  # cumulative log-likilihood values
+  #
+  # cumulative log-likelihood values
   Cumulative_LL <- apply(LL_m, 2, cumsum)
   Cumulative_LL <- matrix(Cumulative_LL, nrow = nrow(LL_m), 
                           dimnames = list(sequence, colnames(LL_m)))
-  # final cumulative log-likilihood value
+  # final cumulative log-likelihood value
   Cumulative_LL_final <- -2*Cumulative_LL[S, , drop = FALSE]
   minLL <- min(Cumulative_LL_final)
-  # cumulative log-likihood weights
+  # cumulative log-likelihood weights
   Final.LL.weights <- exp(-0.5*(Cumulative_LL_final-minLL)) / sum(exp(-0.5*(Cumulative_LL_final-minLL)))
   Final.LL.weights <- Final.LL.weights[,, drop = TRUE]
   Final.ratio.LL.weights <- Final.LL.weights %*% t(1/Final.LL.weights) 
   
   sumLL <- 0
+  LL_weights_m <- matrix(NA, nrow = S, ncol = (NrHypos + 1))
+  CumulativeLLWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
+  rownames(LL_weights_m) <- study_names
+  rownames(CumulativeLLWeights) <- c(sequence, "Final")
+  colnames(LL_weights_m) <- colnames(CumulativeLLWeights) <- hnames
   for (l in 1:S) {
     LL <- -2*LL_m[l, ]
     delta_LL <- LL - min(LL)
     LL_weights_m[l, ] <- exp(-0.5 * delta_LL) / sum(exp(-0.5 * delta_LL))
-    
+    #
     sumLL <- sumLL + LL_m[l, ]
     CumulativeLL <- -2 * sumLL
     minLL <- min(CumulativeLL)
     CumulativeLLWeights[l, ] <- exp(-0.5*(CumulativeLL-minLL)) / sum(exp(-0.5*(CumulativeLL-minLL)))
   }
-
+  
   sumPT <- sumLL <- 0
-  IC <- -2 * LL_m + 2 * PT
+  CumulativeGorica <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
+  CumulativeGoricaWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
+  rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(sequence, "Final")
+  colnames(CumulativeGorica) <- colnames(CumulativeGoricaWeights) <- hnames
   if (type_ev == "added") { 
     # added-ev approach
     for(s in 1:S) {
-      minIC <- min(IC[s, ])
-      GORICA_weight_m[s, ] <- exp(-0.5*(IC[s, ]-minIC)) / sum(exp(-0.5*(IC[s, ]-minIC)))
       sumLL <- sumLL + LL_m[s, ]
       sumPT <- sumPT + PT[s, ]
       CumulativeGorica[s, ] <- -2 * sumLL + 2 * sumPT
@@ -511,8 +622,6 @@ evSyn_LL <- function(object, ..., PT = list(), type_ev = c("added", "equal", "av
   } else if (type_ev == "equal") { 
     # equal-ev approach
     for (s in 1:S) {
-      minIC <- min(IC[s, ])
-      GORICA_weight_m[s, ] <- exp(-0.5*(IC[s, ]-minIC)) / sum(exp(-0.5*(IC[s, ]-minIC)))
       sumLL <- sumLL + LL_m[s, ]
       sumPT <- sumPT + PT[s, ]
       CumulativeGorica[s, ] <- -2 * sumLL + 2 * sumPT/s
@@ -520,11 +629,9 @@ evSyn_LL <- function(object, ..., PT = list(), type_ev = c("added", "equal", "av
       CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / 
         sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
     }
-  } else {
+  } else if (type_ev == "average") { 
     # average-ev approach
     for (s in 1:S) {
-      minIC <- min(IC[s, ])
-      GORICA_weight_m[s, ] <- exp(-0.5*(IC[s, ]-minIC)) / sum(exp(-0.5*(IC[s, ]-minIC)))
       sumLL <- sumLL + LL_m[s, ]
       sumPT <- sumPT + PT[s, ]
       CumulativeGorica[s, ] <- -2 * sumLL/s + 2 * sumPT/s
@@ -533,7 +640,7 @@ evSyn_LL <- function(object, ..., PT = list(), type_ev = c("added", "equal", "av
         sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
     }
     
-  }
+  } # else {}
 
   # fill in the final row  
   CumulativeGorica[(S+1), ] <- CumulativeGorica[S, ]
@@ -548,6 +655,7 @@ evSyn_LL <- function(object, ..., PT = list(), type_ev = c("added", "equal", "av
   colnames(Final.ratio.LL.weights) <- colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hnames)
   
   out <- list(type_ev = type_ev,
+              orderStudies = orderStudies,
               PT_m = PT, 
               GORICA_weight_m = GORICA_weight_m,
               LL_weights_m = LL_weights_m,
@@ -560,7 +668,7 @@ evSyn_LL <- function(object, ..., PT = list(), type_ev = c("added", "equal", "av
               Final_ratio_GORICA_weights = Final.ratio.GORICA.weights,
               Final_ratio_LL_weights = Final.ratio.LL.weights
               )
-  
+
   class(out) <- c("evSyn_LL", "evSyn")
   
   return(out)
@@ -570,7 +678,10 @@ evSyn_LL <- function(object, ..., PT = list(), type_ev = c("added", "equal", "av
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on AIC or ORIC or GORIC or GORICA values
-evSyn_ICvalues <- function(object, ..., hypo_names = c()) {
+evSyn_ICvalues <- function(object, ..., hypo_names = c(),
+                           order_studies = c("input_order", "ascending", "descending"),
+                           study_names = c(),
+                           messageAdded = NULL) {
   
   IC <- object
   S  <- length(IC)
@@ -583,29 +694,90 @@ evSyn_ICvalues <- function(object, ..., hypo_names = c()) {
     hnames <- hypo_names
   }
   
+  if (missing(order_studies)) 
+    order_studies <- "input_order"
+  order_studies <- match.arg(order_studies)
+  
+  
   IC <- do.call(rbind, IC)
-  
+  #
   GORICA_weight_m <- matrix(NA, nrow = S, ncol = (NrHypos + 1))
-  CumulativeGorica <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
-  CumulativeGoricaWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
-  colnames(CumulativeGorica) <- colnames(CumulativeGoricaWeights) <- colnames(IC) <- colnames(GORICA_weight_m) <- hnames
-  
-  sequence <- paste0("Studies 1-", 1:S)
-  sequence[1] <- "Study 1"
-  
-  rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(sequence, "Final")
-  rownames(IC) <- rownames(GORICA_weight_m) <- paste0("Study ", 1:S)
-  
-  sumIC <- 0
-  for (s in 1:S) {
+  for(s in 1:S) {
     minIC <- min(IC[s, ])
     GORICA_weight_m[s, ] <- exp(-0.5*(IC[s, ]-minIC)) / sum(exp(-0.5*(IC[s, ]-minIC)))
+  }
   
-    sumIC <- sumIC + IC[s, ]
-    CumulativeGorica[s, ] <- sumIC
-    minGoric <- min(CumulativeGorica[s, ])
-    CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / 
-      sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
+  orderStudies <- 1:S
+  # Check if order of studies should be changed.
+  #if (order_studies != "input_order"){
+  # Order needs to be changed.
+  if (order_studies %in% c("ascending", "descending")) {
+    # Order needs to be changed based on the overall preferred hypothesis.
+    # Determine what the overall preferred hypothesis is.
+    if (type_ev == "average") { 
+      # average-evidence approach
+      OverallGoric <- colMeans(IC)
+      OverallPrefHypo <- which(OverallGoric == min(OverallGoric))
+    } else {
+      # type_ev == "added" (or when "equal", because then it is overruled to be "added")
+      type_ev = "added"
+      OverallGoric <- colSums(IC)
+      OverallPrefHypo <- which(OverallGoric == min(OverallGoric))
+    }
+    if (order_studies == "descending") {
+      decreasing = TRUE
+    } else {
+      decreasing = FALSE
+    }
+    orderStudies <- order(GORICA_weight_m[,OverallPrefHypo], decreasing = decreasing)
+    #
+    IC <- IC[orderStudies,]
+    GORICA_weight_m <- GORICA_weight_m[orderStudies,]
+  }
+  
+  CumulativeGorica <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
+  CumulativeGoricaWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
+  #
+  colnames(CumulativeGorica) <- colnames(CumulativeGoricaWeights) <- colnames(IC) <- colnames(GORICA_weight_m) <- hnames
+  #
+  # Set rownames (after determining the order of the studies)
+  if (is.null(study_names)) {
+    # If no suggested study_names, then make them
+    #paste0("Study ", orderStudies)
+    study_names <- as.character(orderStudies)
+  } else {
+    # If suggested study_names:
+    # Check if length correct
+    # TO DO check
+    #
+    # Re-order
+    study_names <- study_names[orderStudies]
+  }
+  rownames(IC) <- rownames(GORICA_weight_m) <- study_names
+  sequence <- paste0("Studies 1-", 1:S)
+  sequence[1] <- "Study 1"
+  rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(sequence, "Final")
+  #
+  if (type_ev == "average") { 
+    # average-ev approach
+    sumIC <- 0
+    for (s in 1:S) {
+      sumIC <- sumIC + IC[s, ]
+      CumulativeGorica[s, ] <- sumIC/s
+      minGoric <- min(CumulativeGorica[s, ])
+      CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / 
+        sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
+    }
+  } else {
+    # type_ev == "added" (or when "equal", because then it is overruled to be "added")
+    sumIC <- 0
+    for (s in 1:S) {
+      sumIC <- sumIC + IC[s, ]
+      CumulativeGorica[s, ] <- sumIC
+      minGoric <- min(CumulativeGorica[s, ])
+      CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / 
+        sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
+    }
   }
 
   CumulativeGorica[(S+1), ] <- CumulativeGorica[S, ]
@@ -617,24 +789,32 @@ evSyn_ICvalues <- function(object, ..., hypo_names = c()) {
   rownames(Final.ratio.GORICA.weights) <- hnames
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hnames)
   
-  out <- list(type_ev              = "added",
+  out <- list(type_ev           = type_ev,
+              orderStudies      = orderStudies,
               GORICA_m          = IC, 
               GORICA_weight_m   = GORICA_weight_m,
               Cumulative_GORICA = CumulativeGorica, 
               Cumulative_GORICA_weights  = CumulativeGoricaWeights,
               Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
+  if (!is.null(messageAdded)) {
+    out <- append(out, messageAdded = messageAdded)
+    # TO DO dit is ws nodig als message meegeven, doe ook bij andere varianten dan nog
+  }
   
   class(out) <- c("evSyn_ICvalues", "evSyn")
   
   return(out)
-}
+  
+  }
 
 
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on AIC or ORIC or GORIC or GORICA weights or 
 # (Bayesian) posterior model probabilities
-evSyn_ICweights <- function(object, ..., priorWeights = NULL, hypo_names = c()) {
+evSyn_ICweights <- function(object, ..., priorWeights = NULL, hypo_names = c(),
+                            order_studies = c("input_order", "ascending", "descending"),
+                            study_names = c()) {
   
   Weights <- object
   S <- length(Weights)
@@ -645,26 +825,83 @@ evSyn_ICweights <- function(object, ..., priorWeights = NULL, hypo_names = c()) 
     priorWeights <- rep(1/(NrHypos), (NrHypos))
   }
   # To make it sum to 1 (if it not already did)
+  # TO DO give message that this is done
   priorWeights <- priorWeights / sum(priorWeights) 
   
   if (is.null(hypo_names)) {
     hypo_names <- paste0("H", 1:(NrHypos)) 
   }
   
-  CumulativeWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos))
-  colnames(Weights) <- colnames(CumulativeWeights) <- hypo_names
+  if (missing(order_studies)) 
+    order_studies <- "input_order"
+  order_studies <- match.arg(order_studies)
   
+  orderStudies <- 1:S
+  # Check if order of studies should be changed.
+  #if (order_studies != "input_order"){
+  # Order needs to be changed.
+  if (order_studies %in% c("ascending", "descending")) {
+    # Order needs to be changed based on the overall preferred hypothesis.
+    # Determine what the overall preferred hypothesis is.
+    if (type_ev == "average") { 
+      # average-evidence approach
+      OverallWeight <- (apply(Weights, 2, prod))^(1/S)
+      OverallPrefHypo <- which(OverallGoric == max(OverallWeight))
+    } else {
+      # type_ev == "added" (or when "equal", because then it is overruled to be "added")
+      type_ev = "added"
+      OverallWeight <- apply(Weights, 2, prod)
+      OverallPrefHypo <- which(OverallGoric == max(OverallWeight))
+    }
+    if (order_studies == "descending") {
+      decreasing = TRUE
+    } else {
+      decreasing = FALSE
+    }
+    orderStudies <- order(GORICA_weight_m[,OverallPrefHypo], decreasing = decreasing)
+    #
+    Weights <- Weights[orderStudies,]
+  }
+  #
+  # Set colnames
+  colnames(Weights) <- hypo_names
+  # Set rownames (after determining the order of the studies)
+  if (is.null(study_names)) {
+    # If no suggested study_names, then make them
+    #paste0("Study ", orderStudies)
+    study_names <- as.character(orderStudies)
+  } else {
+    # If suggested study_names:
+    # Check if length correct
+    # TO DO check
+    #
+    # Re-order
+    study_names <- study_names[orderStudies]
+  }
+  rownames(Weights) <- study_names
+  
+  CumulativeWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos))
+  colnames(CumulativeWeights) <- hypo_names
   sequence <- paste0("Studies 1-", 1:S)
   sequence[1] <- "Study 1"
-  
   rownames(CumulativeWeights) <- c(sequence, "Final")
-  CumulativeWeights[1, ] <- priorWeights * Weights[1, ] / sum( priorWeights * Weights[1, ] )
-  
-  for (s in 2:S) {
-    CumulativeWeights[s, ] <- CumulativeWeights[(s-1), ] * Weights[s, ] / 
-      sum( CumulativeWeights[(s-1), ] * Weights[s, ] )
+  #
+  if (type_ev == "average") { 
+    # average-ev approach
+    CumulativeWeights[1, ] <- priorWeights * Weights[1, ] / sum( priorWeights * Weights[1, ] )
+    for (s in 2:S) {
+      CumulativeWeights[s, ] <- CumulativeWeights[(s-1), ] * Weights[s, ]^(1/s) / 
+        sum( CumulativeWeights[(s-1), ] * Weights[s, ]^(1/s) )
+    }
+    # TO DO check of dit klopt en goed gaat
+  } else {
+    # type_ev == "added" (or when "equal", because then it is overruled to be "added")
+    CumulativeWeights[1, ] <- priorWeights * Weights[1, ] / sum( priorWeights * Weights[1, ] )
+    for (s in 2:S) {
+      CumulativeWeights[s, ] <- CumulativeWeights[(s-1), ] * Weights[s, ] / 
+        sum( CumulativeWeights[(s-1), ] * Weights[s, ] )
+    }
   }
-  
   CumulativeWeights[(S+1), ] <- CumulativeWeights[S, ]
   
   Final.weights <- CumulativeWeights[S, ]
@@ -672,7 +909,7 @@ evSyn_ICweights <- function(object, ..., priorWeights = NULL, hypo_names = c()) 
   rownames(Final.ratio.GORICA.weights) <- hypo_names
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hypo_names)
   
-  out <- list(type_ev                       = "added",
+  out <- list(type_ev                    = type_ev,
               GORICA_weight_m            = Weights,
               Cumulative_GORICA_weights  = CumulativeWeights,
               Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
@@ -686,9 +923,11 @@ evSyn_ICweights <- function(object, ..., priorWeights = NULL, hypo_names = c()) 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on the ratio of AIC or ORIC or GORIC or GORICA 
 # weights or (Bayesian) posterior model probabilities
-evSyn_ICratios <- function(object, ..., priorWeights = NULL, hypo_names = c()) {
+evSyn_ICratios <- function(object, ..., priorWeights = NULL, hypo_names = c(),
+                           order_studies = c("input_order", "ascending", "descending"),
+                           study_names = c()) {
   
-  Weights <- object
+  Weights <- object # Now, ratio of weights # TO DO check of onderstaande dan wel goed gaat
   S <- length(Weights)
   Weights <- do.call(rbind, Weights)
   NrHypos <- ncol(Weights)
@@ -698,25 +937,82 @@ evSyn_ICratios <- function(object, ..., priorWeights = NULL, hypo_names = c()) {
   }
   # To make it sum to 1 (if it not already did)
   priorWeights <- priorWeights / sum(priorWeights) 
+  # TO DO wel message meegeven dat dit gedaan is
   
   if (is.null(hypo_names)) {
     hypo_names <- paste0("H", 1:(NrHypos)) 
   }
   
-  CumulativeWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos))
-  colnames(Weights) <- colnames(CumulativeWeights) <- hypo_names
+  if (missing(order_studies)) 
+    order_studies <- "input_order"
+  order_studies <- match.arg(order_studies)
   
+  orderStudies <- 1:S
+  # Check if order of studies should be changed.
+  #if (order_studies != "input_order"){
+  # Order needs to be changed.
+  if (order_studies %in% c("ascending", "descending")) {
+    # Order needs to be changed based on the overall preferred hypothesis.
+    # Determine what the overall preferred hypothesis is.
+    if (type_ev == "average") { 
+      # average-evidence approach
+      OverallWeight <- (apply(Weights, 2, prod))^(1/S)
+      OverallPrefHypo <- which(OverallGoric == max(OverallWeight))
+    } else {
+      # type_ev == "added" (or when "equal", because then it is overruled to be "added")
+      type_ev = "added"
+      OverallWeight <- apply(Weights, 2, prod)
+      OverallPrefHypo <- which(OverallGoric == max(OverallWeight))
+    }
+    if (order_studies == "descending") {
+      decreasing = TRUE
+    } else {
+      decreasing = FALSE
+    }
+    orderStudies <- order(GORICA_weight_m[,OverallPrefHypo], decreasing = decreasing)
+    #
+    Weights <- Weights[orderStudies,]
+  }
+  #
+  # Set colnames
+  colnames(Weights) <- hypo_names
+  # Set rownames (after determining the order of the studies)
+  if (is.null(study_names)) {
+    # If no suggested study_names, then make them
+    #paste0("Study ", orderStudies)
+    study_names <- as.character(orderStudies)
+  } else {
+    # If suggested study_names:
+    # Check if length correct
+    # TO DO check
+    #
+    # Re-order
+    study_names <- study_names[orderStudies]
+  }
+  rownames(Weights) <- study_names
+  
+  CumulativeWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos))
+  colnames(CumulativeWeights) <- hypo_names
   sequence <- paste0("Studies 1-", 1:S)
   sequence[1] <- "Study 1"
-  
   rownames(CumulativeWeights) <- c(sequence, "Final")
-  CumulativeWeights[1, ] <- priorWeights * Weights[1, ] / sum( priorWeights * Weights[1, ] )
-  
-  for (s in 2:S) {
-    CumulativeWeights[s, ] <- CumulativeWeights[(s-1), ] * Weights[s, ] / 
-      sum( CumulativeWeights[(s-1), ] * Weights[s, ] )
+  #
+  if (type_ev == "average") { 
+    # average-ev approach
+    CumulativeWeights[1, ] <- priorWeights * Weights[1, ] / sum( priorWeights * Weights[1, ] )
+    for (s in 2:S) {
+      CumulativeWeights[s, ] <- CumulativeWeights[(s-1), ] * Weights[s, ]^(1/s) / 
+        sum( CumulativeWeights[(s-1), ] * Weights[s, ]^(1/s) )
+    }
+    # TO DO check of dit klopt en goed gaat
+  } else {
+    # type_ev == "added" (or when "equal", because then it is overruled to be "added")
+    CumulativeWeights[1, ] <- priorWeights * Weights[1, ] / sum( priorWeights * Weights[1, ] )
+    for (s in 2:S) {
+      CumulativeWeights[s, ] <- CumulativeWeights[(s-1), ] * Weights[s, ] / 
+        sum( CumulativeWeights[(s-1), ] * Weights[s, ] )
+    }
   }
-  
   CumulativeWeights[(S+1), ] <- CumulativeWeights[S, ]
   
   Final.weights <- CumulativeWeights[S, ]
@@ -724,10 +1020,13 @@ evSyn_ICratios <- function(object, ..., priorWeights = NULL, hypo_names = c()) {
   rownames(Final.ratio.GORICA.weights) <- hypo_names
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hypo_names)
   
-  out <- list(type_ev                       = "added",
+  out <- list(type_ev                    = type_ev,
+              orderStudies               = orderStudies,
               GORICA_weight_m            = Weights,
               Cumulative_GORICA_weights  = CumulativeWeights,
               Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
+  # TO DO dit klopt dan toch niet qua naamgeving!
+  #       Ms direct al WeightRatios noemen, dat helpt ms.
   
   class(out) <- c("evSyn_ICratios", "evSyn")
   
@@ -739,8 +1038,10 @@ evSyn_ICratios <- function(object, ..., priorWeights = NULL, hypo_names = c()) {
 # -------------------------------------------------------------------------
 # list with goric objects
 evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"), 
-                         hypo_names = c()) {
-  
+                         hypo_names = c(),
+                         order_studies = c("input_order", "ascending", "descending"),
+                         study_names = c()) {
+
   # Check if all objects are of type "con_goric"
   if (!all(vapply(object, function(x) inherits(x, "con_goric"), logical(1)))) {
     stop("Restriktor ERROR: the object must be a list with fitted objects from the goric() function", 
@@ -752,7 +1053,8 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
     object = lapply(object, function(x) x$result$loglik),
     PT = lapply(object, function(x) x$result$penalty),
     type_ev = type_ev,
-    hypo_names = hypo_names
+    hypo_names = hypo_names,
+    study_names = study_names
   )
   
   # Call the evSyn_LL.list function and return the result
@@ -789,4 +1091,6 @@ evSyn_escalc <- function(data, yi_col = "yi", vi_cols = "vi",
   class(result) <- c(class(result), "evSyn_escalc")
   
   return(result)
+  
+  # TO DO Hier zie ik wel result, maar als ik voorbeeld run dan print het niets....
 }

@@ -83,6 +83,9 @@ summary.evSyn <- function(object, ...) {
   class(ans) <- "summary.evSyn"
   
   ans
+  
+  # TO DO x$messageAdded
+
 }
 
 
@@ -244,4 +247,11 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   
   cat("\n")
   message(x$messages$mix_weights)
+  
+  # # TO DO
+  # if (!is.null(x$messageAdded)) {
+  #   cat("\n")
+  #   message(x$messageAdded)
+  # }
+  
 }

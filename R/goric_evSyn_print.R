@@ -3,6 +3,11 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   cat(sprintf("restriktor (%s): %s Evidence Synthesis results:\n", 
               packageDescription("restriktor", fields = "Version"), x$type_ev))
   
+  if (!is.null(x$messageAdded)) {
+    cat(x$messageAdded)
+    # TO DO
+  }
+  
   # Display input type information
   if (inherits(x, "evSyn_gorica")) {
     cat(paste("\nInput type 'gorica' detected: "))

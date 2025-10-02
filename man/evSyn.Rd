@@ -128,30 +128,18 @@ evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldo
   % TO DO geldt voor zowel output als plot toch?
 
   \item{order_studies}{if "\code{input_order}" (default), the order of the studies 
-  in the output and/or plot will not be changed; 
+  in the output (and thus plot) will not be changed; 
   if "\code{ascending}" or "\code{descending}", the order of the studies will be based
   on the ascending or decscening order, respectively, of the study-specific support
   for the overall preffered hypothesis.}
 
-  \item{xlab}{a vector specifying custom labels for the x-axis. The length of 
+  \item{xlab}{a vector specifying custom labels for the x-axis (be aware that 
+  study ordering may be changed based on \code{order_studies}). The length of 
   the vector must match the number of studies in the dataset. If not provided, 
   the x-axis labels default to a sequence from 1 to the number of studies 
   (possibly re-ordered based on \code{order_studies}).}
 
   \item{data}{an object of class "escalc" from the \pkg{metafor} package.}
-
-  \item{outcome_col}{an optional column name in \code{data} containing the outcome 
-  identifiers for each observation within a cluster. If \code{NULL}, the function 
-  assumes the outcome identifier is "yi" (one outcome variable).}
-
-  \item{yi_col}{a character string specifying the column in \code{data} that 
-  contains the outcome values for each observation. The default is \code{"yi"} 
-  (one outcome variable).}
-  % TO DO Dit is wat verwarrend met optie hierboven...
-
-  \item{vi_cols}{a character vector specifying the columns in \code{data} that 
-  contain the variance and covariance values for each observation. The default is 
-  \code{"vi"} (one outcome variable).}
 
   \item{cluster_col}{a character string specifying the column in \code{data} that 
   contains the cluster identifier. Observations within the same cluster should 
@@ -159,6 +147,23 @@ evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldo
   suspects are \code{"study"} and \code{"author"}.}
   % TO DO ah, mooi, dus study can wel, dan die toch graag als default.
   %       en de varianten met hoofdletters ook toelaten, lijkt me.
+  
+  \item{outcome_col}{an optional column name in \code{data} containing the outcome 
+  identifiers for each observation within a cluster. If \code{NULL}, the function 
+  assumes the outcome (identifier) is "yi" (one outcome variable); 
+  when there is a column called 'outcome', it will use "outcome" as the outcome identifier,
+  employing its unique levels/values (more outcome variables).}
+  % TO DO dit ws beter verwoorden
+
+  \item{yi_col}{a character string specifying the column in \code{data} that 
+  contains the outcome values for each observation. The default is \code{"yi"} 
+  (one outcome variable).}
+  % TO DO Dit is wat verwarrend met optie hierboven...
+
+  \item{vi_cols}{a character vector specifying the columns in \code{data} that 
+  contain the variance and covariance values for each observation. The default is, 
+  in the case of one outcome variable, \code{"vi"};
+  in the case of multiple (namely, O) variables, \code{c("v1i", \ldots, "vOi"}.}
 
   \item{digits}{the number of significant digits to use when printing.}
 
@@ -404,7 +409,7 @@ hypothesis <- 'x1 < x2 < x3'
 # The complement represents the remaining 11 theories, while the unconstrained 
 # scenario includes all 12 possible theories, including H1.
 
-# Evidence synthesis
+# Evidence synthesis (added-evidence)
 evS3 <- evSyn(object = Param_studies, VCOV = CovMx_studies, 
               hypotheses = list(H1 = hypothesis),
               type_ev = "added", 
@@ -415,22 +420,33 @@ plot(evS3)
 
 ## Example 4: based on loglikelihood values and penalty values
 
-# make it a list
+# Make LL and PT values a list
 LL <- as.list(data.frame(t(myLLs)))
 penalty.values <- as.list(data.frame(t(myPTs)))
 
-evS_LL_added <- evSyn(object = LL, PT = penalty.values, type_ev = "added")
-evS_LL_equal <- evSyn(object = LL, PT = penalty.values, type_ev = "equal")
-
+# Evidence synthesis
+#
+# Added-evidence
+evS_LL_added <- evSyn(object = LL, PT = penalty.values, 
+                          hypo_names = colnames(myLLs),
+                          type_ev = "added")
 evS_LL_added
+#
+# Equal-evidence
+evS_LL_equal <- evSyn(object = LL, PT = penalty.values, 
+                          hypo_names = colnames(myLLs),
+                          type_ev = "equal")
 evS_LL_equal
 
 
 ## Example 5: based on AIC, ORIC, GORIC(A) values
 
+# Make GORIC values a list
 goric.values <- as.list(data.frame(t(myGORICs)))
 
-evS_Gv <- evSyn(goric.values)
+# Evidence synthesis (added-evidence)
+evS_Gv <- evSyn(goric.values, 
+                    hypo_names = colnames(myGORICs))
 evS_Gv
 }
 

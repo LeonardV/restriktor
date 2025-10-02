@@ -1,5 +1,8 @@
 extract_est_vcov_outcomes <- function(data, outcome_col = NULL, yi_col = "yi", 
                                       vi_cols = "vi", cluster_col = "trial") {
+  # TO DO
+  #cluster_col = c("trial", "study", "author", "authors",
+  #"Trial", "Study", "Author", "Authors")
   
   if (!cluster_col %in% names(data)) {
     stop(paste("Restriktor ERROR: The cluster_col", sQuote(cluster_col), 
@@ -14,6 +17,11 @@ extract_est_vcov_outcomes <- function(data, outcome_col = NULL, yi_col = "yi",
   if (all(!vi_cols %in% names(data))) {
     stop(paste("Restriktor ERROR: The vi_cols", sQuote(vi_cols), 
                "are not found in the data."))
+  }
+  
+  if (is.null(outcome_col) && "outcome" %in% names(data)) {
+    # If no names specified, but there is a column with names, use that
+    outcome_col <- "outcome" #unique(data$outcome)
   }
     
   yi_list <- list()
@@ -34,8 +42,10 @@ extract_est_vcov_outcomes <- function(data, outcome_col = NULL, yi_col = "yi",
     }
     
     # Determine the number of outcomes for this trial
-    # TO DO namen yi icm outcome maken
     num_outcomes <- nrow(cluster_data)
+    if (num_outcomes > 1) {
+      vi_cols <- paste0("v", 1:num_outcomes, "i")
+    }
     vcov_matrix <- matrix(0, nrow = num_outcomes, ncol = num_outcomes)
     rownames(vcov_matrix) <- colnames(vcov_matrix) <- outcomes
     
@@ -45,19 +55,7 @@ extract_est_vcov_outcomes <- function(data, outcome_col = NULL, yi_col = "yi",
       vcov_matrix[1, 1] <- cluster_data[[vi_cols[1]]][1]
     } else {
       # Multiple outcomes: fill diagonal with variances and off-diagonals with covariances
-      for (i in 1:num_outcomes) {
-        vcov_matrix[i, i] <- cluster_data[[vi_cols[1]]][i]  # Assign variance for each outcome
-      }
-      
-      # Fill in the off-diagonal elements with covariances
-      cov_index <- 2  # Starting index for covariances in vi_cols
-      for (i in 1:(num_outcomes - 1)) {
-        for (j in (i + 1):num_outcomes) {
-          vcov_matrix[i, j] <- cluster_data[[vi_cols[cov_index]]][i]
-          vcov_matrix[j, i] <- cluster_data[[vi_cols[cov_index]]][i]  # Symmetric assignment
-          cov_index <- cov_index + 1
-        }
-      }
+      vcov_matrix <- as.matrix(cluster_data[vi_cols])
     }
     
     # Store the matrix in vcov_blocks list

@@ -130,6 +130,11 @@ goric.default <- function(object, ..., hypotheses = NULL,
   
   conChar <- sapply(constraints, function(x) inherits(x, "character"))
   isConChar <- all(conChar)
+  
+  messageVCOV <- paste("\nRestriktor Message: The covariance matrix of the estimates is obtained via the vcov function; ", 
+                       "therefore, it is the (biased) restricted sample covariance matrix and not the unbiased sample covariance matrix (based on 'N').")
+  messageVCOV_vb <- paste("\nRestriktor Message: The covariance matrix of the estimates is obtained via the 'vb' argument from the metaforpackage.")
+    # TO DO check messages
 
 # -------------------------------------------------------------------------
   # create output list
@@ -155,9 +160,14 @@ goric.default <- function(object, ..., hypotheses = NULL,
   #   ans$model.org <- object[[1]]$model.org
   #   sample_nobs   <- nrow(model.frame(object[[1]]$model.org))
   #   # unrestricted VCOV
-  #   VCOV <- vcov(ans$model.org)
+  #   #VCOV <- vcov(ans$model.org) 
+  #   VCOV <- VCOV.unbiased(ans$model.org)
   # } else 
   if (any(object_class %in% c("aov","lm","rlm","glm","mlm")) && isConChar) { 
+    # TO DO in mlm geeft coef() een matrix, je moet dan as.vector doen (coef.named.vector(...)).
+    #       Maakt dat in dit deel nog uit? Ik zie het niet, graag ff checken of dat klopt.
+    #       Dan ook in volgende 'if' evt.
+    
     # standard errors are not needed
     ldots$se <- "none"
     
@@ -190,19 +200,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
     }
     
     ans$hypotheses_usr <- lapply(conList, function(x) x$CON$constraints)
-    # add unrestricted object to output
-    ans$model.org <- object
-    # unrestricted VCOV
-    VCOV <- vcov(ans$model.org)
-    # TO DO alleen hier aanpassen of op meer plekken?
-    # If lm object, then use cov.mx based on N not N-k, such that output goric and gorica are the same
-    # Btw if est & VCOV are used instead of fitted lm object, then their gorica results differ...
-    #     But now goric and gorica for lm objects give the same.
-    if (object_class %in% c("lm")) {
-      N_min_k <- ans$model.org$df.residual
-      N <- N_min_k + ans$model.org$rank
-      VCOV <- vcov(ans$model.org)*N_min_k/N
-    } 
+    ans$model.org <- object # add unrestricted object to output
+    VCOV <- VCOV.unbiased(ans$model.org) # unrestricted VCOV
     sample_nobs <- nrow(model.frame(object))
     idx <- length(conList) 
     objectnames <- vector("character", idx)
@@ -246,10 +245,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
       conList[[lnames]]$PT_meq <- PT_meq[[lnames]]
     }
     
-    # add unrestricted object to output
-    ans$model.org <- object
-    # unrestricted VCOV
-    VCOV <- vcov(ans$model.org) 
+    ans$model.org <- object # add unrestricted object to output
+    VCOV <- VCOV.unbiased(ans$model.org) # unrestricted VCOV
     sample_nobs <- nrow(model.frame(object))
     idx <- length(conList) 
     objectnames <- vector("character", idx)
@@ -339,8 +336,11 @@ goric.default <- function(object, ..., hypotheses = NULL,
     # unrestricted estimates
     if (inherits(object, "numeric")) {
       b.unrestr <- object
+      # TO DO Wat als object niet een vector is?
+      #       NB Als: b.unrestr <- as.vector(object)
+      #          dan heb je geen namen meer (die juist wel in hypo terug moeten komen)
     } else {
-      b.unrestr <- coef(ans$model.org)
+      b.unrestr <- coef.named.vector(ans$model.org)
     }
     # restricted estimates
     b.restr <- conList[[Hm]]$b.restr
@@ -551,6 +551,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   
   # list all object estimates
   coefs <- lapply(conList, FUN = function(x) { coef(x) } )
+  # TO DO hier ook aanpassing nodig (nb ws wel namen nodig dan ook)?
   max.length <- max(sapply(coefs, length))
   coefs <- lapply(coefs, function(v) { c(v, rep(NA, max.length - length(v)))})
   coefs <- as.data.frame(do.call("rbind", coefs))
@@ -649,7 +650,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
 # object of class lm ------------------------------------------------------
 goric.lm <- function(object, ..., hypotheses = NULL,
                      comparison = NULL,
-                     type = "goric",
+                     type = "goric", # TO DO klopt dit? Ik zou denken NULL of wordt het overschreven?
                      missing = "none", auxiliary = c(), emControl = list(),
                      debug = FALSE) {
   
@@ -679,12 +680,13 @@ goric.lm <- function(object, ..., hypotheses = NULL,
     }
     tsm  <- two_stage_matrices(object, auxiliary = auxiliary, emControl = emControl)
     vcov <- two_stage_sandwich(tsm)
-    est  <- coef(tsm$fitTarget)
+    est  <- coef.named.vector(tsm$fitTarget, VCOV = vcov)
     #N <- tsm$N
     
     if (!type %in% c("gorica", "goricac")) {
       stop(paste("restriktor EROR: missing = \"two.stage\" is only (for now)", 
            "available for type = 'gorica(c)'"), call. = FALSE)
+      # TO DO message dat het gorica(c) wordt (ook in output) en die dan runnen (dus niet stoppen).
     }
     objectList$object <- est
     objectList$VCOV   <- vcov
@@ -815,6 +817,10 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
   }
   
   est <- con_gorica_est_lav(object, standardized)
+  # TO DO ik kan de functie con_gorica_est_lav niet vinden... Ms wordt dit niet meer gebruikt?
+  
+  # message VCOV
+  message(messageVCOV)
   
   objectList <- list(
     object = est$estimate,
@@ -847,10 +853,13 @@ goric.CTmeta <- function(object, ..., hypotheses = NULL,
                "type = 'gorica(c)'."), call. = FALSE)
   }
   
+  # message VCOV
+  message(messageVCOV_vb)
+  
   # Maak de objectList aan en voeg de vereiste elementen toe
   objectList <- list(
-    object = coef(object),
-    VCOV = vcov(object),
+    object = coef(object), 
+    VCOV = vcov(object), 
     sample_nobs = sample_nobs,
     hypotheses = hypotheses,
     comparison = comparison,
@@ -885,10 +894,13 @@ goric.rma <- function(object, ..., hypotheses = NULL,
          call. = FALSE)
   }
   
+  # message VCOV
+  message(messageVCOV)
+  
   # Maak de objectList aan en voeg de vereiste elementen toe
   objectList <- list(
-    object = coef(object),
-    VCOV = vcov(object),
+    object = coef(object), 
+    VCOV = vcov(object), 
     sample_nobs = sample_nobs,
     hypotheses = hypotheses,
     comparison = comparison,
@@ -923,9 +935,15 @@ goric.nlmerMod <- function(object, ..., hypotheses = NULL,
                "type = 'gorica(c)'."), call. = FALSE)
   }
   
+  # message VCOV
+  message(messageVCOV)
+  
   # Maak de objectList aan en voeg de vereiste elementen toe
   objectList <- list(
-    object = object@beta,
+    object = object@beta, # TO DO wat betekent dit
+    # NB je kan hier fixef en ranef doen en evt ms willen combineren....
+    # En hoe bepaal je dan corresponderende vcov?
+    # Ws alleen fixef als ik zo naar output kijk.... dan is vcov correct, maar eerst wel een dpoMatrix
     VCOV = suppressWarnings(vcov(object)),
     sample_nobs = sample_nobs,
     hypotheses = hypotheses,
@@ -958,10 +976,13 @@ goric.glmerMod <- function(object, ..., hypotheses = NULL,
                "type = 'gorica(c)'."), call. = FALSE)
   }
   
+  # message VCOV
+  message(messageVCOV)
+  
   # Maak de objectList aan en voeg de vereiste elementen toe
   objectList <- list(
-    object = object@beta,
-    VCOV = suppressWarnings(vcov(object)),
+    object = object@beta, # TO DO
+    VCOV = suppressWarnings(vcov(object)), 
     sample_nobs = sample_nobs,
     hypotheses = hypotheses,
     comparison = comparison,
@@ -993,10 +1014,13 @@ goric.lmerMod <- function(object, ..., hypotheses = NULL,
                "type = 'gorica(c)'."), call. = FALSE)
   }
   
+  # message VCOV
+  message(messageVCOV)
+  
   # Maak de objectList aan en voeg de vereiste elementen toe
   objectList <- list(
-    object = object@beta,
-    VCOV = suppressWarnings(vcov(object)),
+    object = object@beta, # TO DO
+    VCOV = suppressWarnings(vcov(object)), 
     sample_nobs = sample_nobs,
     hypotheses = hypotheses,
     comparison = comparison,

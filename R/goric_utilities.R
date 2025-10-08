@@ -6,6 +6,61 @@ coef.gorica_est <- function(object, ...)  {
   return(object$b.restr)
 }
 
+# TO DO check iig messages
+coef.named.vector <- function(x, VCOV = NULL, ...)  {
+  # TO DO wat als vcov niet bestaat of nog niet matrix (maar bijv dpo)?
+  # ms zelfs suppressWarnings(vcov(...)) gebruiken dan
+  if (!is.vector(coef(x))) {
+    # Some fit objects (like mlm) render matrices (>1 x >1 matrices).
+    # So, if not a vector, make it one, with names(!) coming from vcov.
+    est <- as.vector(coef(x))
+    if (is.null(VCOV)) {
+      names(est) <- rownames(vcov(x))
+      message("\nRestriktor Message: The estimates from the fit object -- i.e, coef(fit) -- are vectorized, ", 
+                    "and their names are based on the rownames used in vcov(). ",
+                    "Hence, these names should be used in the hypotheses specification ",
+                    "(where ':' should be replaced by '.'.")
+    } else { 
+      # TO DO eigenlijk nog checken of rownames bestaan
+      names(est) <- rownames(VCOV)
+      message("\nRestriktor Message: The estimates from the fit object -- i.e, coef(fit) -- are vectorized, ", 
+              "and their names are based on the rownames from their covariance matrix. ",
+              "Hence, these names should be used in the hypotheses specification ",
+              "(where ':' should be replaced by '.'.")
+    }
+  } else {
+    est <- coef(x)
+  }
+  return(est)
+}
+
+VCOV.unbiased <- function(model.org, ...)  {
+  # TO DO Controleer of goede check en message 
+  
+  #if (!is.null(model.org$df.residual) && !is.null(model.org$rank)) {
+  #  # Use cov.mx based on N not N-k, such that output goric and gorica are the same
+  #  # Btw if est & VCOV are used instead of fitted object, then their gorica results differ...
+  #  N_min_k <- model.org$df.residual
+  #  N <- N_min_k + model.org$rank
+  #  VCOV <- vcov(model.org)*N_min_k/N
+  #} else 
+  # Note: In rlm object model.org$df.residual is NA
+  if (!is.null(model.org$x) && !is.null(model.org$rank)) { 
+    # Use cov.mx based on N not N-k, such that output goric and gorica are the same
+    # Btw if est & VCOV are used instead of fitted object, then their gorica results differ...
+    N <- dim(model.org$x)[1] 
+    N_min_k <- N - model.org$rank
+    VCOV <- vcov(model.org)*N_min_k/N
+  } else {
+    VCOV <- vcov(model.org)
+    message("Note: The covariance matrix of the estimates is obtained via the vcov function; therefore, 
+                it is the (biased) restricted sample covariance matrix and not the unbiased sample covariance matrix (based on 'N').")
+  }
+  
+  return(VCOV)
+}
+  
+
 calculate_model_comparison_metrics <- function(x) {
   modelnames <- as.character(x$model)
   ## Log-likelihood

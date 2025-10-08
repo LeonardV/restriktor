@@ -56,8 +56,8 @@ comparable to the Akaike weights.
   \item{object}{an object containing the outcome of an unconstrained statistical analysis.
   Currently, the following objects can be processed:
   \itemize{
-    \item a fitted unconstrained object of class \code{lm}, \code{rlm} or \code{glm}. 
-    \item a numeric vector containing the unconstrained estimates resulting from any 
+    \item a fitted unconstrained object of class \code{aov}, \code{lm}, \code{glm}, \code{rlm} or \code{mlm}. 
+    \item a numeric (named) vector containing the unconstrained estimates resulting from any 
     statistical analysis.
     \item a fitted object of class \code{lavaan}. See examples on how to specify the hypotheses.
     \item a fitted object of class \code{CTmeta}.
@@ -92,7 +92,9 @@ comparable to the Akaike weights.
   descriptions, where the syntax can be specified as a literal 
   string enclosed by single quotes. Only the names of \code{coef(model)} or
   \code{names(vector)} can be used as names. See details for more information. 
-  Note that objects of class "mlm" do not (yet) support this method. 
+  Note that objects of class "mlm" do not (yet) support this method.
+  % TO DO ik gebruik nu rijnamen van vcov en dan moet gebruiker evt : vervangen door .. 
+  %       Werkt dat? Zo ja, dan kan deze opmerking gewijzigd worden.
   
   Second, the hypothesis syntax consists of a matrix \eqn{R} (or a vector in 
   case of one constraint) and defines the left-hand side of the constraint 
@@ -113,17 +115,23 @@ comparable to the Akaike weights.
   only be computed for one model/hypothesis at a time for now. If "\code{none}" 
   is chosen, the model is compared only against those provided by the user.}
   
-  \item{VCOV}{variance-coviance matrix. Only needed if object is of class numeric and
-  \code{type = "gorica"} or \code{type = "goricac"}.}
+  \item{VCOV}{variance-coviance matrix. Only needed if object is of class numeric (and, therefore,
+  \code{type = "gorica"} or \code{type = "goricac"}).}
   
-  \item{sample_nobs}{the number of observations if \code{type = "goricac"}. Note that, 
+  \item{sample_nobs}{the number of observations, only needed if \code{type = "goricac"}. Note that, 
   if \code{type = "goricc"}, the number of observations are inherited from the fitted
   object.}
   
+  % TO DO hierboven al 2x type genoemd en hier pas uitgelegd...
   \item{type}{if \code{"goric"}, the generalized order-restricted 
-  information criterion value is computed. If \code{"gorica"} the 
-  log-likihood is computed using the multivariate normal distribution 
-  function.}
+  information criterion value is computed. 
+  If \code{"gorica"}, a proxi for the log-likihood is calculated by assuming that 
+  the parameter estimates (of interest) are multivariate normally distributed. 
+  Then, either the unbiased covariance matrix of the estimates (based on 'N'; e.g., for an lm object) is used
+  or the biased one obtained via the vcov function (e.g., for a lavaan object). 
+  In the latter case, a corresponding message will be printed. 
+  If \code{"goricc"} or \code{"goricac"}, 
+  then the small-sample-size correction is applied.}
   
   \item{penalty_factor}{The penalty factor adjusts the penalty in the GORIC(A) formula
   (GORIC(A) = -2 x log-likelihood + penalty_factor x penalty). 
@@ -177,7 +185,9 @@ comparable to the Akaike weights.
   \item{brief}{if TRUE, a short overview is printed.}
 }
 
-\details{The GORIC(A) values themselves are not interpretable and 
+\details{The GORIC(A) can be used to evaluate theory-based, informative hypotheses,
+  that is, quantify the relative support of theory-based, informative hypotheses. 
+  The GORIC(A) values themselves are not interpretable and 
   the interest lie in their differences. The GORIC(A) weights reflect 
   the support of each hypothesis in the set. To compare two hypotheses 
   (and not one to the whole set), one can examine the ratio of the 
@@ -186,11 +196,12 @@ comparable to the Akaike weights.
   included as safeguard.
   
   In case of one order-constrained hypothesis, say H1, the complement 
-  Hc can be computed as competing hypothesis. The complement is defined 
-  as Hc = not H1.
+  Hc can be used as competing hypothesis. The complement is defined 
+  as 'Hc: not H1'.
   
   The hypothesis syntax can be parsed via the hypotheses argument. 
-  If the object is an unconstrained model of class \code{lm}, \code{rlm} or \code{glm}, 
+  If the object is an unconstrained model of class 
+  \code{aov}, \code{lm}, \code{glm}, \code{rlm}, or \code{mlm}, 
   then the hypotheses can be specified in two ways, see \code{\link{restriktor}}. Note 
   that if the hypotheses are written in matrix notation, then the hypotheses
   for each model/hypothesis is put in a named list with specific names constraints, rhs, 
@@ -250,18 +261,23 @@ is returned with the relative GORIC(A) weights.
 \references{
 Kuiper, R.M., Hoijtink, H., and Silvapulle, M.J. (2011). An Akaike-type
 information criterion for model selection under inequality constraints.
-\emph{Biometrika}, \bold{98}, 2, 495--501.
+\emph{Biometrika}, 98, 2, 495--501.
+\url{https://doi.org/10.1093/biomet/asr002}
 
 Vanbrabant, L. and Kuiper, R. (2020). Evaluating a theory-based hypothesis against 
 its complement using an AIC-type information criterion with an application to 
-facial burn injury. Psychological Methods. 
+facial burn injury. Psychological Methods.
+Vanbrabant, L., Van Loey, N., and Kuiper, R. M. (2020). 
+Evaluating a Theory-Based Hypothesis Against Its Complement Using an AIC-Type Information Criterion With an Application to Facial Burn Injury. 
+\emph{Psychological Methods}, 25(2), 129-142. 
+\url{https://doi.org/10.1037/met0000238}
 
 Victoria Savalei and Peter M. Bentler (2009) A Two-Stage Approach to
 Missing Data: Theory and Application to Auxiliary Variables, Structural Equation 
 Modeling: A Multidisciplinary Journal, 16:3, 477-497, DOI: 10.1080/10705510903008238
 }
 
-\author{Leonard Vanbrabant and Rebecca Kuiper}
+\author{Leonard Vanbrabant and Rebecca M. Kuiper}
 
 
 \examples{

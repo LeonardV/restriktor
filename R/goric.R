@@ -74,6 +74,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     # check if it is of class matrix
     if (inherits(VCOV, "dpoMatrix")) {
       VCOV <- as.matrix(VCOV)
+      # TO DO ws zelfs iets als: as.matrix(suppressWarnings(vcov(object)))
     }
     if (any(is.na(VCOV))) {
       stop(paste("Restriktor ERROR: The covariance matrix (VCOV) contains NA or NaN values.", 
@@ -188,6 +189,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     # compute summary for each restriktor object. 
     isSummary <- lapply(conList, function(x) summary(x, 
                                                      goric          = type,
+                                                     #VCOV           = VCOV, # TO DO klopt dit? Dat stond er eerst niet maar is wellicht wel nodig?
                                                      sample.nobs    = sample_nobs,
                                                      penalty_factor = penalty_factor))
     
@@ -202,7 +204,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     ans$hypotheses_usr <- lapply(conList, function(x) x$CON$constraints)
     ans$model.org <- object # add unrestricted object to output
     VCOV <- VCOV.unbiased(ans$model.org) # unrestricted VCOV
-    sample_nobs <- nrow(model.frame(object))
+    sample_nobs <- nrow(model.frame(object)) # TO DO wordt hierboven toch al in conList gezet? Dito evt voor VCOV, dat aanpassen?
     idx <- length(conList) 
     objectnames <- vector("character", idx)
   } else if (any(object_class %in% c("aov","lm","rlm","glm","mlm")) && !isConChar) {
@@ -234,6 +236,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     # computed. Note: not the gorica value
     isSummary <- lapply(conList, function(x) summary(x, 
                                                      goric          = type,
+                                                     #VCOV           = VCOV, # TO DO
                                                      sample.nobs    = sample_nobs,
                                                      penalty_factor = penalty_factor))
     
@@ -256,7 +259,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
     conList <- lapply(constraints, function(constraint) {
       CALL.restr <- append(list(object      = object, 
                                 constraints = constraint,
-                                VCOV        = as.matrix(VCOV)), ldots)
+                                VCOV        = as.matrix(VCOV)), 
+                                ldots)
       do.call("con_gorica_est", CALL.restr)
     })
     
@@ -266,6 +270,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     
     isSummary <- lapply(conList, function(x) summary(x, 
                                                      type           = type,
+                                                     #VCOV           = VCOV, # TO DO
                                                      sample.nobs    = sample_nobs,
                                                      penalty_factor = penalty_factor)) 
     } else if ("numeric" %in% object_class && !isConChar) {
@@ -292,6 +297,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
       
       isSummary <- lapply(conList, function(x) summary(x, 
                                                        type           = type,
+                                                       #VCOV           = VCOV, # TO DO
                                                        sample.nobs    = sample_nobs,
                                                        penalty_factor = penalty_factor)) 
     } else {
@@ -574,7 +580,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   }
   
   ans$sample_nobs <- sample_nobs
-  ans$Sigma <- VCOV
+  ans$VCOV <- conList[[1]]$Sigma # TO DO Komt Sigma van restriktor of kunnen we dat ergens VCOV noemen? en is het dan altijd een goede matrix? Want het is niet per se de VCOC van hierboven dus?
   ans$b.unrestr <- conList[[1]]$b.unrestr
   ans$ormle$b.restr <- coefs  
   ans$comparison <- comparison

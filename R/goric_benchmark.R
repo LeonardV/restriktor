@@ -36,9 +36,11 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
                             quant = NULL, iter = 2000,
                             control = list(),
                             ncpus = 1, seed = NULL, ...) {
-# TO DO in asymp functie het group_size sample_size en dat kan vervelend voor gebruiker zijn...
+# TO DO in asymp functie het niet group_size maar sample_size (dito sample_size) 
+  #     en dat kan vervelend voor gebruiker zijn...
 #       als argument ms toch sample_size en dan direct hierna:
   # group_size <- sample_size
+  # alt_sample_size <- alt_group_size
   # TO DO dan wel ook help file en tutorial / example R scripts aanpassen ws!
   
   # NOTE: group_size is needed to rescale vcov based on alt_group_size.
@@ -102,8 +104,8 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   #  N <- rep(object$sample_nobs/ngroups, ngroups) #colSums(model.matrix(object$model.org))
   #}
 
-  VCOV <- object$Sigma
-  
+  VCOV <- object$VCOV
+  # TO DO dit zou nu VCOC_N moeten zijn!!
   # TO DO ik denk dat we VCOV_N willen gebruiken op een paar plekken:
   ##if (!is.null(object$model.org)) {
   ##  N_min_k <- object$model.org$df.residual
@@ -360,7 +362,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     }
   }
   
-  VCOV <- object$Sigma
+  VCOV <- object$VCOV
   hypos <- object$hypotheses_usr
   
   if (is.null(pop_est)) {
@@ -374,10 +376,10 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   n_coef <- length(est_sample)
   
   if (is.null(pop_est)) {
-    # TO DO ws delete
     #NE <- theta_restricted(theta = est_sample, V = VCOV, R = object$constraints[[1]], rhs = object$rhs[[1]])
-    # TO DO ik denk constraint matrix voor pref hypo gebruiken, niet altijd eerste...
-    #       Maar pref_hypo was nog niet bepaald... dus dat dan eerst doen:
+    # TO determine pop_est, we need the constraint matrix for the preferred hypothesis.
+    # In that constraint matrix / hypothesis, the inequalities will be set to equalities.
+    # Firt determine the preferred hypothesis
     pref_hypo <- which.max(object$result[, 7])
     NE <- theta_restricted(theta = est_sample, V = VCOV, R = object$constraints[[pref_hypo]], rhs = object$rhs[[pref_hypo]])
     # TO DO waarom hier al afronden of op 0 zetten, alleen in een print functie doen

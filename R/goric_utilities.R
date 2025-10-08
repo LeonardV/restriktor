@@ -53,6 +53,8 @@ VCOV.unbiased <- function(model.org, ...)  {
     VCOV <- vcov(model.org)*N_min_k/N
   } else {
     VCOV <- vcov(model.org)
+    # TO DO Voor als dpo (kan dat hierboven ook?), dan ws:
+    #as.matrix(suppressWarnings(vcov(object))) # Behoud idt zijn namen ook?
     message("Note: The covariance matrix of the estimates is obtained via the vcov function; therefore, 
                 it is the (biased) restricted sample covariance matrix and not the unbiased sample covariance matrix (based on 'N').")
   }

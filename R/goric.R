@@ -60,12 +60,10 @@ goric.default <- function(object, ..., hypotheses = NULL,
   }
   
   if (!is.null(VCOV)) {
-    
     # check if scalar
     if (length(VCOV) == 1) {
       VCOV <- as.matrix(VCOV)
     }
-    
     # check if matrix and whether p times p matrix
     if (!is.matrix(VCOV)) {
       VCOV <- as.matrix(VCOV)
@@ -73,12 +71,10 @@ goric.default <- function(object, ..., hypotheses = NULL,
     if (dim(VCOV)[1] != dim(VCOV)[2]) {
       stop(paste("Restriktor ERROR: The covariance matrix (VCOV) should be a square matrix."), call. = FALSE)
     }
-    
     # check if it is of class matrix
     if (inherits(VCOV, "dpoMatrix")) {
       VCOV <- as.matrix(VCOV)
     }
-    
     if (any(is.na(VCOV))) {
       stop(paste("Restriktor ERROR: The covariance matrix (VCOV) contains NA or NaN values.", 
            "Please check your data or model specification."), call. = FALSE)
@@ -161,7 +157,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   #   # unrestricted VCOV
   #   VCOV <- vcov(ans$model.org)
   # } else 
-  if (any(object_class %in% c("lm","rlm","glm","mlm")) && isConChar) { 
+  if (any(object_class %in% c("aov","lm","rlm","glm","mlm")) && isConChar) { 
     # standard errors are not needed
     ldots$se <- "none"
     
@@ -210,7 +206,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     sample_nobs <- nrow(model.frame(object))
     idx <- length(conList) 
     objectnames <- vector("character", idx)
-  } else if (any(object_class %in% c("aov", "lm","rlm","glm","mlm")) && !isConChar) {
+  } else if (any(object_class %in% c("aov","lm","rlm","glm","mlm")) && !isConChar) {
     # tolower names Amat and rhs
     for (i in seq_along(constraints)) { 
       names(constraints[[i]]) <- tolower(names(constraints[[i]])) 

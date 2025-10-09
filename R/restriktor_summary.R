@@ -218,7 +218,7 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
       ll <- dmvnorm(c(z$b.unrestr - z$b.restr), sigma = VCOV, log = TRUE)  
     }
     
-    if (inherits(z, c("conLM", "conMLM"))) {
+    if (inherits(z, c("conLM", "conRLM", "conMLM"))) {
       ans$goric <- -2*ll + ldots$penalty_factor*PT #-2*(ll - PT) 
     } else if (inherits(z, "conGLM")) {
       if (!(z$model.org$family$family %in% c("gaussian", "Gamma", "inverse.gaussian"))) {

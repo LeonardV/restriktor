@@ -16,6 +16,7 @@ coef.named.vector <- function(x, VCOV = NULL, ...)  {
     est <- as.vector(coef(x))
     if (is.null(VCOV)) {
       names(est) <- rownames(vcov(x))
+      # TO DO dit werkt niet, er is niet alleen : maar ook _ en laatste mag ws niet (runt iig niet)
       message("\nRestriktor Message: The estimates from the fit object -- i.e, coef(fit) -- are vectorized, ", 
                     "and their names are based on the rownames used in vcov(). ",
                     "Hence, these names should be used in the hypotheses specification ",
@@ -37,15 +38,14 @@ coef.named.vector <- function(x, VCOV = NULL, ...)  {
 VCOV.unbiased <- function(model.org, ...)  {
   # TO DO Controleer of goede check en message 
   
-  #if (!is.null(model.org$df.residual) && !is.null(model.org$rank)) {
-  #  # Use cov.mx based on N not N-k, such that output goric and gorica are the same
-  #  # Btw if est & VCOV are used instead of fitted object, then their gorica results differ...
-  #  N_min_k <- model.org$df.residual
-  #  N <- N_min_k + model.org$rank
-  #  VCOV <- vcov(model.org)*N_min_k/N
-  #} else 
-  # Note: In rlm object model.org$df.residual is NA
-  if (!is.null(model.org$x) && !is.null(model.org$rank)) { 
+  if (!is.na(model.org$df.residual) && !is.null(model.org$df.residual) && !is.null(model.org$rank)) {
+    # Use cov.mx based on N not N-k, such that output goric and gorica are the same
+    # Btw if est & VCOV are used instead of fitted object, then their gorica results differ...
+    N_min_k <- model.org$df.residual
+    N <- N_min_k + model.org$rank
+    VCOV <- vcov(model.org)*N_min_k/N
+  } else if (!is.null(model.org$x) && !is.null(model.org$rank)) { 
+    # Note: In rlm object model.org$df.residual is NA
     # Use cov.mx based on N not N-k, such that output goric and gorica are the same
     # Btw if est & VCOV are used instead of fitted object, then their gorica results differ...
     N <- dim(model.org$x)[1] 
@@ -61,6 +61,19 @@ VCOV.unbiased <- function(model.org, ...)  {
   
   return(VCOV)
 }
+  
+
+# TO DO check message
+message.VCOV <- function(...)  {
+  message("\nRestriktor Message: The covariance matrix of the estimates is obtained via the vcov function; ", 
+                       "therefore, it is the (biased) restricted sample covariance matrix and not the unbiased sample covariance matrix (based on 'N').")
+} 
+
+# TO DO check message
+message.VCOVvb <- function(...)  {
+  message("\nRestriktor Message: The covariance matrix of the estimates is obtained via the 'vb' argument from the metaforpackage.")
+}
+
   
 
 calculate_model_comparison_metrics <- function(x) {

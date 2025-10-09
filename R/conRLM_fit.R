@@ -59,9 +59,12 @@ conRLM_fit <- function (x, y, weights, ..., w = rep(1, nrow(x)), init = "ls",
   else wt <- NULL
   if (method == "M") {
     scale.est <- match.arg(scale.est)
-    if (!is.function(psi)) 
+    if (!is.function(psi)) {
       psi <- get(psi, mode = "function")
-    arguments <- list(...)
+    }
+    #arguments <- list(...) # TO DO dit geeft bij mij bij een vb een error:
+                            #Error in conRLM.rlm(object, constraints, ...) : object 'rlm' not found
+    arguments <- NULL # TO DO
     if (length(arguments)) {
       pm <- pmatch(names(arguments), names(formals(psi)), 
                    nomatch = 0L)
@@ -105,26 +108,28 @@ conRLM_fit <- function (x, y, weights, ..., w = rep(1, nrow(x)), init = "ls",
                          bvec[1:meq], meq = meq)$solution
       out.qp[abs(out.qp) < tol] <- 0L
       idx.qp <- !out.qp %in% 0L
-      temp <- do.call("lqs",
+      temp <- do.call(MASS::lqs,
                       c(list(x = x[ , idx.qp, drop = FALSE], y, intercept = FALSE, 
                              method = "S", k0 = 1.54764), lqs.control)) 
+      # TO DO default en hieronder k0 = 1.548, waarom hier 1.54764 (of anders waarom hieronder niet 1.54764)
       coef  <- temp$coefficients
       resid <- temp$residuals
       scale <- temp$scale  
     } else {
-      temp <- do.call("lqs", c(list(x, y, intercept = FALSE, 
+      temp <- do.call(MASS::lqs, c(list(x, y, intercept = FALSE, 
                                     method = "S", k0 = 1.548), lqs.control))
       coef <- temp$coefficients
       resid <- temp$residuals
     }
-    if (length(arguments <- list(...))) 
-        if (match("c", names(arguments), nomatch = 0L)) {
-          c0 <- arguments$c
-          if (c0 > 1.54764) 
-            formals(psi)$c <- c0
-          else warning("'c' must be at least 1.548 and has been ignored")
-        }
-      scale <- temp$scale
+    # TO DO bij mij werkt list(...) dus niet, zie comment hierboven ook
+    #if (length(arguments <- list(...))) 
+    #    if (match("c", names(arguments), nomatch = 0L)) {
+    #      c0 <- arguments$c
+    #      if (c0 > 1.54764) 
+    #        formals(psi)$c <- c0
+    #      else warning("'c' must be at least 1.54764 and has been ignored")
+    #    }
+    #  scale <- temp$scale
   } else {
     stop("'method' is unknown")
   }

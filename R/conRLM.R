@@ -36,10 +36,15 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   if (is.null(psi)) {
     if (object$call[["method"]] == "M") {
       stop("Restriktor ERROR: only tukey's bisquare loss function is supported.")
+      # TO DO geef ook mee wat gebruiker wel moet runnen dan
+      # ws method = "MM", en evt dat psi = "psi.bisquare" opgeven ook al goed is (dan kan M en MM)....
     }
   } else {
     if (psi != "psi.bisquare") {
       stop("Restriktor ERROR: only tukey's bisquare loss function is supported.")
+      # TO DO geef ook mee wat gebruiker wel moet runnen dan, 
+      # ws psi = "psi.bisquare" -- maar dan bij goric juist error: Error in conRLM.rlm(object, constraints, ...) : object 'rlm' not found
+      # ws zowel method als psi nodig dan! method = "MM" werkt niet....
     }
   }
   
@@ -159,7 +164,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   
 
   ## some checks
-  if(ncol(Amat) != length(b.unrestr)) {
+  if (ncol(Amat) != length(b.unrestr)) {
     stop(paste("Restriktor ERROR: the columns of constraints does not", 
          "match with the number of parameters."))
   }
@@ -210,6 +215,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 df.residual = so$df[2],
                 loglik      = ll.unrestr, 
                 Sigma       = Sigma, 
+                VCOV        = Sigma, # TO DO bijgevoegd ivm goric code
                 constraints = Amat, 
                 rhs         = bvec, 
                 neq         = meq, 
@@ -289,7 +295,8 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 R2.reduced  = R2.reduced,
                 df.residual = so$df[2], 
                 loglik      = ll.restr, 
-                Sigma       = Sigma,                             
+                Sigma       = Sigma, 
+                VCOV        = Sigma, # TO DO bijgevoegd ivm goric code                             
                 constraints = Amat, 
                 rhs         = bvec, 
                 neq         = meq, 

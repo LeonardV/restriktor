@@ -8,7 +8,8 @@ restriktor <- function(object, constraints = NULL, ...) {
   
   # check the class of object
   if (!inherits(object, c("lm","rlm","glm","mlm"))) {
-    stop("Restriktor only works for lm(), mlm(), rlm() and glm().")
+    # Note: "aov" fit objects are also of class "lm"
+    stop("Restriktor only works for aov(), lm(), mlm(), rlm(), and glm().")
   }
   
   arguments <- list(...)

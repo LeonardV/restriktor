@@ -35,29 +35,29 @@ compute_complement_likelihood <- function(model.org, VCOV,
     ll <- vector("list", length(nr))
     betas <- vector("list", length(nr))
     if (meq > 0L) { nr <- nr[-c(0:meq)] }
-      for (l in seq_len(length(nr))) {
-        idx <- c(nr[l], nr[-l])
-        Amatx <- Amat[idx, , drop = FALSE]
-        if (type %in% c("goric", "goricc")) {          
-          Hc.restr <- restriktor(model.org, constraints = Amatx, 
-                                 neq = 1, rhs = bvec[idx], 
-                                 mix_weights = "none", se = "none")
-          betas[[l]] <- coef(Hc.restr)
-          ll[[l]]    <- logLik(Hc.restr)
-        } else if (type %in% c("gorica", "goricac")) {
-          ldots$mix_weights <- "none"
-          CALL.restr <- append(list(object      = b.unrestr,
-                                    constraints = Amatx,
-                                    rhs         = bvec[idx],
-                                    neq         = 1,
-                                    VCOV        = VCOV),
-                               ldots)
-          Hc.restr   <- do.call("con_gorica_est", CALL.restr) 
-          betas[[l]] <- Hc.restr$b.restr
-          ll[[l]]    <- dmvnorm(c(b.unrestr - Hc.restr$b.restr), 
-                                sigma = VCOV, log = TRUE)            
-        }
+    for (l in seq_len(length(nr))) {
+      idx <- c(nr[l], nr[-l])
+      Amatx <- Amat[idx, , drop = FALSE]
+      if (type %in% c("goric", "goricc")) {          
+        Hc.restr <- restriktor(model.org, constraints = Amatx, 
+                               neq = 1, rhs = bvec[idx], 
+                               mix_weights = "none", se = "none")
+        betas[[l]] <- coef(Hc.restr)
+        ll[[l]]    <- logLik(Hc.restr)
+      } else if (type %in% c("gorica", "goricac")) {
+        ldots$mix_weights <- "none"
+        CALL.restr <- append(list(object      = b.unrestr,
+                                  constraints = Amatx,
+                                  rhs         = bvec[idx],
+                                  neq         = 1,
+                                  VCOV        = VCOV),
+                             ldots)
+        Hc.restr   <- do.call("con_gorica_est", CALL.restr) 
+        betas[[l]] <- Hc.restr$b.restr
+        ll[[l]]    <- dmvnorm(c(b.unrestr - Hc.restr$b.restr), 
+                              sigma = VCOV, log = TRUE)            
       }
+    }
     if (debug) {
       cat("log-likelihood value =", ll[[l]], "\n")
     }

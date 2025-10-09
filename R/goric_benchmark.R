@@ -105,7 +105,8 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   #}
 
   VCOV <- object$VCOV
-  # TO DO dit zou nu VCOC_N moeten zijn!!
+  # TO DO dit zou nu VCOC_N moeten zijn!! of niet meer ivm ander input nu
+  # TO DO schrijf in help doc dat N evt N-k (df.residual) moet zijn!
   # TO DO ik denk dat we VCOV_N willen gebruiken op een paar plekken:
   ##if (!is.null(object$model.org)) {
   ##  N_min_k <- object$model.org$df.residual

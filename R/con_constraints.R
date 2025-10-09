@@ -19,7 +19,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
   
   if (is.character(constraints)) {
     # these operators are typical lavaan operators and are not allowed in the
-    # restriktor syntax. If a lavaan model is fitted, the contraints are already
+    # restriktor syntax. If a lavaan model is fitted, the constraints are already
     # in the fitted object of class lavaan. 
     operators <- c("=~", "<~", "~*~", "~~", "~", "\\|", "%")
     

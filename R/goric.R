@@ -74,7 +74,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
     # check if it is of class matrix
     if (inherits(VCOV, "dpoMatrix")) {
       VCOV <- as.matrix(VCOV)
-      # TO DO ws zelfs iets als: as.matrix(suppressWarnings(vcov(object)))
+      # TO DO Waarom niet juist ook hier suppress'en, dus iets als: as.matrix(suppressWarnings(vcov(object)))
+      #       of is er soms een andere melding ms? al halen we die hieronder dan net zo goed weg...
     }
     if (any(is.na(VCOV))) {
       stop(paste("Restriktor ERROR: The covariance matrix (VCOV) contains NA or NaN values.", 
@@ -131,11 +132,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
   
   conChar <- sapply(constraints, function(x) inherits(x, "character"))
   isConChar <- all(conChar)
-  
-  messageVCOV <- paste("\nRestriktor Message: The covariance matrix of the estimates is obtained via the vcov function; ", 
-                       "therefore, it is the (biased) restricted sample covariance matrix and not the unbiased sample covariance matrix (based on 'N').")
-  messageVCOV_vb <- paste("\nRestriktor Message: The covariance matrix of the estimates is obtained via the 'vb' argument from the metaforpackage.")
-    # TO DO check messages
 
 # -------------------------------------------------------------------------
   # create output list
@@ -189,7 +185,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
     # compute summary for each restriktor object. 
     isSummary <- lapply(conList, function(x) summary(x, 
                                                      goric          = type,
-                                                     #VCOV           = VCOV, # TO DO klopt dit? Dat stond er eerst niet maar is wellicht wel nodig?
                                                      sample.nobs    = sample_nobs,
                                                      penalty_factor = penalty_factor))
     
@@ -204,7 +199,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     ans$hypotheses_usr <- lapply(conList, function(x) x$CON$constraints)
     ans$model.org <- object # add unrestricted object to output
     VCOV <- VCOV.unbiased(ans$model.org) # unrestricted VCOV
-    sample_nobs <- nrow(model.frame(object)) # TO DO wordt hierboven toch al in conList gezet? Dito evt voor VCOV, dat aanpassen?
+    sample_nobs <- nrow(model.frame(object)) 
     idx <- length(conList) 
     objectnames <- vector("character", idx)
   } else if (any(object_class %in% c("aov","lm","rlm","glm","mlm")) && !isConChar) {
@@ -236,7 +231,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
     # computed. Note: not the gorica value
     isSummary <- lapply(conList, function(x) summary(x, 
                                                      goric          = type,
-                                                     #VCOV           = VCOV, # TO DO
                                                      sample.nobs    = sample_nobs,
                                                      penalty_factor = penalty_factor))
     
@@ -270,7 +264,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
     
     isSummary <- lapply(conList, function(x) summary(x, 
                                                      type           = type,
-                                                     #VCOV           = VCOV, # TO DO
                                                      sample.nobs    = sample_nobs,
                                                      penalty_factor = penalty_factor)) 
     } else if ("numeric" %in% object_class && !isConChar) {
@@ -297,7 +290,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
       
       isSummary <- lapply(conList, function(x) summary(x, 
                                                        type           = type,
-                                                       #VCOV           = VCOV, # TO DO
                                                        sample.nobs    = sample_nobs,
                                                        penalty_factor = penalty_factor)) 
     } else {
@@ -580,7 +572,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   }
   
   ans$sample_nobs <- sample_nobs
-  ans$VCOV <- conList[[1]]$Sigma # TO DO Komt Sigma van restriktor of kunnen we dat ergens VCOV noemen? en is het dan altijd een goede matrix? Want het is niet per se de VCOC van hierboven dus?
+  ans$VCOV <- VCOV 
   ans$b.unrestr <- conList[[1]]$b.unrestr
   ans$ormle$b.restr <- coefs  
   ans$comparison <- comparison
@@ -656,7 +648,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
 # object of class lm ------------------------------------------------------
 goric.lm <- function(object, ..., hypotheses = NULL,
                      comparison = NULL,
-                     type = "goric", # TO DO klopt dit? Ik zou denken NULL of wordt het overschreven?
+                     type = "goric", 
                      missing = "none", auxiliary = c(), emControl = list(),
                      debug = FALSE) {
   
@@ -675,7 +667,8 @@ goric.lm <- function(object, ..., hypotheses = NULL,
   #objectList <- mcList  
   
   # only one object of class lm is allowed
-  isLm <- unlist(lapply(objectList, function(x) class(x)[1] %in% c("lm", "glm", "mlm", "rlm")))
+  isLm <- unlist(lapply(objectList, function(x) class(x)[1] %in% c("aov", "lm", "glm", "mlm", "rlm")))
+  # TO DO werkte voor rlm niet, zie evt TO DOs in conRLM (wordt via restriktor functie in LL bepaling aangeroepen)
   if (sum(isLm) > 1L) {
     stop(paste("Restriktor ERROR: multiple objects of class lm found, only 1 is allowed."), call. = FALSE)
   }
@@ -692,7 +685,8 @@ goric.lm <- function(object, ..., hypotheses = NULL,
     if (!type %in% c("gorica", "goricac")) {
       stop(paste("restriktor EROR: missing = \"two.stage\" is only (for now)", 
            "available for type = 'gorica(c)'"), call. = FALSE)
-      # TO DO message dat het gorica(c) wordt (ook in output) en die dan runnen (dus niet stoppen).
+      # TO DO message kan alleen gorica / goricac ipv goric / goricc en dus daarmee gerund, ook in output melden.
+      # TO DO check overal waar dit zo is - ms standaard message maken en die op deze plekken neerzetten dan.
     }
     objectList$object <- est
     objectList$VCOV   <- vcov
@@ -726,8 +720,11 @@ goric.numeric <- function(object, ..., hypotheses = NULL,
                           debug = FALSE) {
   
   if (!c(type %in% c("gorica", "goricac"))) {
+    # TO DO hierboven de check net anders uitgeschreven dan in functies hierboven
     stop(paste("Restriktor ERROR: object of class numeric is only supported for", 
          "type = 'gorica(c)'."), call. = FALSE)
+    # TO DO message kan alleen gorica / goricac ipv goric / goricc en dus daarmee gerund, ook in output melden.
+    # TO DO check overal waar dit zo is - ms standaard message maken en die op deze plekken neerzetten dan.
   }
   
   if (is.null(VCOV)) {
@@ -820,13 +817,25 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
   if (!c(type %in% c("gorica", "goricac"))) {
     stop(paste("Restriktor ERROR: object of class lavaan is only supported for", 
                "type = 'gorica(c)'."), call. = FALSE)
+    # TO DO message kan alleen gorica / goricac ipv goric / goricc en dus daarmee gerund, ook in output melden
+    # TO DO check overal waar dit zo is - ms standaard message maken en die op deze plekken neerzetten dan.
   }
-  
+
+  # TO DO
+  #Lavaan object 
+  #Zelf gemaakte parameters zoals indirect effect. 
+  #Dan in coef en vcov die niet. 
+  #Kan wel opvragen, maar voor cov mx nodig om andere estimates ook toe te voegen.... 
+  #Check of ze er zijn en in hypo zit ook? Dan model uitbreiden met andere est in hypo. 
+  #Dat runnen, maar kan dat, zit data (ws cov mx en evt means) in object (naast mdoel specificatie)? 
+  # Nb wel oppassen voor singuliere vcov, bijv in mediatie indirect product is van twee directe!
+  # En dit kan natuurlijk bij andere modellen ook... eerst op checken dan?!
+    
   est <- con_gorica_est_lav(object, standardized)
-  # TO DO ik kan de functie con_gorica_est_lav niet vinden... Ms wordt dit niet meer gebruikt?
+  # Function is defined in 'gorica_est'.
   
   # message VCOV
-  message(messageVCOV)
+  message.VCOV()
   
   objectList <- list(
     object = est$estimate,
@@ -857,10 +866,12 @@ goric.CTmeta <- function(object, ..., hypotheses = NULL,
   if (!c(type %in% c("gorica", "goricac"))) {
     stop(paste("Restriktor ERROR: object of class CTmeta is only supported for",
                "type = 'gorica(c)'."), call. = FALSE)
+    # TO DO message kan alleen gorica / goricac ipv goric / goricc en dus daarmee gerund, ook in output melden.
+    # TO DO check overal waar dit zo is - ms standaard message maken en die op deze plekken neerzetten dan.
   }
   
   # message VCOV
-  message(messageVCOV_vb)
+  message.VCOVvb()
   
   # Maak de objectList aan en voeg de vereiste elementen toe
   objectList <- list(
@@ -891,17 +902,20 @@ goric.rma <- function(object, ..., hypotheses = NULL,
                       type = "gorica", sample_nobs = NULL,
                       debug = FALSE) {
   
-  if (!inherits(object, c("rma.uni"))) {
-    stop(paste("Restriktor ERROR: the object must be of class 'rma.uni'."), call. = FALSE)
+  if (!inherits(object, c("rma.uni", "rma.mv"))) {
+    stop(paste("Restriktor ERROR: the object must be of class 'rma.uni' or 'rma.mv'."), call. = FALSE)
+    # TO DO check of voor "rma.mv" het altijd goed gaat, bij mijn checks wel...
   }
   
   if (!c(type %in% c("gorica", "goricac"))) {
     stop(paste("Restriktor ERROR: object of class rma is only supported for type = 'gorica(c)'."), 
          call. = FALSE)
+    # TO DO message kan alleen gorica / goricac ipv goric / goricc en dus daarmee gerund, ook in output melden.
+    # TO DO check overal waar dit zo is - ms standaard message maken en die op deze plekken neerzetten dan.
   }
   
   # message VCOV
-  message(messageVCOV)
+  message.VCOV()
   
   # Maak de objectList aan en voeg de vereiste elementen toe
   objectList <- list(
@@ -939,18 +953,18 @@ goric.nlmerMod <- function(object, ..., hypotheses = NULL,
   if (!c(type %in% c("gorica", "goricac"))) {
     stop(paste("Restriktor ERROR: object of class nlmerMod is only supported for", 
                "type = 'gorica(c)'."), call. = FALSE)
+    # TO DO message kan alleen gorica / goricac ipv goric / goricc en dus daarmee gerund, ook in output melden.
+    # TO DO check overal waar dit zo is - ms standaard message maken en die op deze plekken neerzetten dan.
   }
   
   # message VCOV
-  message(messageVCOV)
+  message.VCOV()
   
   # Maak de objectList aan en voeg de vereiste elementen toe
   objectList <- list(
-    object = object@beta, # TO DO wat betekent dit
-    # NB je kan hier fixef en ranef doen en evt ms willen combineren....
-    # En hoe bepaal je dan corresponderende vcov?
-    # Ws alleen fixef als ik zo naar output kijk.... dan is vcov correct, maar eerst wel een dpoMatrix
-    VCOV = suppressWarnings(vcov(object)),
+    object = object@beta,  
+    # object@beta equals fixef(object); latter contains labels.
+    VCOV = suppressWarnings(vcov(object)), # dpoMatrix, will be made a matrix in goric.default
     sample_nobs = sample_nobs,
     hypotheses = hypotheses,
     comparison = comparison,
@@ -958,6 +972,7 @@ goric.nlmerMod <- function(object, ..., hypotheses = NULL,
     debug = debug
   )
   
+  # Label 'object = object@beta' (not needed when: 'object = fixef(object)')
   names(objectList$object) <- colnames(vcov(object))
   
   # Voeg extra argumenten toe aan de objectList
@@ -980,14 +995,16 @@ goric.glmerMod <- function(object, ..., hypotheses = NULL,
   if (!c(type %in% c("gorica", "goricac"))) {
     stop(paste("Restriktor ERROR: object of class glmerMod is only supported for", 
                "type = 'gorica(c)'."), call. = FALSE)
+    # TO DO message kan alleen gorica / goricac ipv goric / goricc en dus daarmee gerund, ook in output melden.
+    # TO DO check overal waar dit zo is - ms standaard message maken en die op deze plekken neerzetten dan.
   }
   
   # message VCOV
-  message(messageVCOV)
+  message.VCOV()
   
   # Maak de objectList aan en voeg de vereiste elementen toe
   objectList <- list(
-    object = object@beta, # TO DO
+    object = object@beta, 
     VCOV = suppressWarnings(vcov(object)), 
     sample_nobs = sample_nobs,
     hypotheses = hypotheses,
@@ -1018,14 +1035,16 @@ goric.lmerMod <- function(object, ..., hypotheses = NULL,
   if (!c(type %in% c("gorica", "goricac"))) {
     stop(paste("Restriktor ERROR: object of class lmerMod is only supported for", 
                "type = 'gorica(c)'."), call. = FALSE)
+    # TO DO message kan alleen gorica / goricac ipv goric / goricc en dus daarmee gerund, ook in output melden.
+    # TO DO check overal waar dit zo is - ms standaard message maken en die op deze plekken neerzetten dan.
   }
   
   # message VCOV
-  message(messageVCOV)
+  message.VCOV()
   
   # Maak de objectList aan en voeg de vereiste elementen toe
   objectList <- list(
-    object = object@beta, # TO DO
+    object = object@beta, 
     VCOV = suppressWarnings(vcov(object)), 
     sample_nobs = sample_nobs,
     hypotheses = hypotheses,

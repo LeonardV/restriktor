@@ -92,6 +92,7 @@ evSyn <- function(object, input_type = NULL, ...) {
   
   if (!is.null(VCOV) && !is.null(PT)) {
     stop("Restriktor ERROR: both VCOV and PT are found, which confuses me.")
+    # TO DO zeg wat je wel graag wilt, dus iets als 'een van de volgende twee opties: ...'
   }
   
   # if they are weights, the sum of all vectors must be 1.
@@ -137,18 +138,33 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
                       hypo_names = c(),
                       type = c("gorica", "goricac"),
                       order_studies = c("input_order", "ascending", "descending"),
-                      study_names = c()
+                      study_names = c(),
+                      study_sample_nobs = NULL
                       ) {
   
   if (missing(comparison)) {
     if (length(hypotheses) == 1) {
       comparison <- "complement"
+    } else {
+      comparison <- "unconstrained"
     }
   }
   comparison <- match.arg(comparison)
 
-  if (missing(type)) 
-    type <- "gorica"
+  if (missing(type)) { type <- "gorica" }
+  #
+  if (type == "goric") {
+    message("\nRestriktor Message: Since the input is a list of estimates, the GORICA will be used, not the the GORIC")
+    type = "gorica"
+  } else if (type == "goricc") {
+    message("\nRestriktor Message: Since the input is a list of estimates, the GORICAC will be used, not the the GORICC")
+    type = "goricac"
+  } 
+  #
+  if (type == "goricac" && is.null(study_sample_nobs)) {
+    stop("To calculate the GORICAC, the function needs the argument 'study_sample_nobs',",
+    "which contains a vector of sample sizes for all the primary studies.")
+  }
   type <- match.arg(type)
   
   if (missing(type_ev)) 
@@ -165,6 +181,13 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   
   if (S != V) {
     stop("Restriktor ERROR: the number of items in the object list (i.e., number of (standardized) estimates) must equal the number of items in the VCOV list.", call. = FALSE)
+  }
+  
+  if (type == "goricac" && length(study_sample_nobs) == 1) {
+    study_sample_nobs <- rep(study_sample_nobs, S)
+    message("Restriktor message: the argument 'study_sample_nobs' consists of 1 number, thus all primary studies have the same sample size.")
+  } else if (type == "goricac" && length(study_sample_nobs) != S) {
+    stop("Restriktor ERROR: the argument 'study_sample_nobs' should be a vector consisting of S = ", S, " numbers.")
   }
   
   # Ensure hypotheses are nested
@@ -303,6 +326,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     res_goric <- goric(object[[s]], VCOV = VCOV[[s]],
                        hypotheses = hypotheses[[s]],
                        type = type, comparison = comparison,
+                       sample_nobs = study_sample_nobs[s],
                        ...)
 
     if (comparison == "unconstrained") {
@@ -1047,6 +1071,9 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
     stop("Restriktor ERROR: the object must be a list with fitted objects from the goric() function", 
          call. = FALSE)
   }
+  # TO DO check of allemaal gelijke type, alleen dan samennemen.
+  # TO DO als small sample, dan ook sample_nobs nodig of kan het zonder?
+  # TO DO check of in elke zelfde aantal hypotheses (met evt controle of failsafe ook - dit als message dan), anders werkt het ook niet
   
   # Create a list for the evSyn_LL.list function
   conList <- list(
@@ -1066,7 +1093,8 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
 
 
 evSyn_escalc <- function(data, yi_col = "yi", vi_cols = "vi", 
-                         cluster_col = "trial", outcome_col = NULL, ...) {
+                         cluster_col = c("trial", "study", "author", "authors", "Trial", "Study", "Author", "Authors"),
+                         outcome_col = NULL, ...) {
   
   results <- extract_est_vcov_outcomes(
     data = data,
@@ -1092,5 +1120,4 @@ evSyn_escalc <- function(data, yi_col = "yi", vi_cols = "vi",
   
   return(result)
   
-  # TO DO Hier zie ik wel result, maar als ik voorbeeld run dan print het niets....
 }

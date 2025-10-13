@@ -106,12 +106,11 @@ evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldo
   See \code{\link{goric}} how to specify the hypotheses syntax or see the example 
   section below.}
 
-  \item{comparison}{if "\code{unconstrained}" (default) the unconstrained model is 
-  included in the set of models. If "\code{complement}" then the restricted object 
-  is compared against its complement. Note that the complement can only be computed 
-  for one model/hypothesis at a time (for now). If "\code{none}" the model is only 
-  compared against the models provided by the user.} 
-  % TO DO dit zou net als gorica moeten zijn: 1 hypo default complement, als meer dan default unc 
+  \item{comparison}{denotes the failsafe hypothesis; one can choose from "unconstrained", "complement", and "none".
+  If "\code{none}", the model is only compared against the models provided by the user.
+  By default, if one user-specified hypothesis, "\code{comparison = 'complement'}"; 
+  if multiple user-specified hypotheses, "\code{comparison = 'unconstrained'}".
+  Note that the complement can only be computed for one model/hypothesis at a time.} 
   
   \item{priorWeights}{vector that represents the prior belief for this model. By default,
   equal prior weights are used (i.e., 1/(#hypotheses)). Notably, in case the prior
@@ -121,11 +120,11 @@ evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldo
   \item{hypo_names}{character vector for labelling the hypotheses. By default the
   names are set to H1, H2, \ldots}
 
-  \item{output_type}{if "\code{gorica_weights}", a plot with the cumulative goric(a)
-  weights and goric(a) weights per study is displayed. If "\code{ll_weights}"
+  \item{output_type}{a plot options. If "\code{gorica_weights}" (default), 
+  a plot with the cumulative goric(a)
+  weights and goric(a) weights per study is displayed. If "\code{ll_weights}",
   a plot with the cumulative log-likelihood weights and log-likelihood weights 
   per study is displayed.}
-  % TO DO geldt voor zowel output als plot toch?
 
   \item{order_studies}{if "\code{input_order}" (default), the order of the studies 
   in the output (and thus plot) will not be changed; 
@@ -142,29 +141,42 @@ evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldo
   \item{data}{an object of class "escalc" from the \pkg{metafor} package.}
 
   \item{cluster_col}{a character string specifying the column in \code{data} that 
-  contains the cluster identifier. Observations within the same cluster should 
-  share the same value in this column. The default is \code{"trial"}, other usual
-  suspects are \code{"study"} and \code{"author"}.}
-  % TO DO ah, mooi, dus study can wel, dan die toch graag als default.
-  %       en de varianten met hoofdletters ook toelaten, lijkt me.
+  contains the cluster/study identifier. Observations within the same cluster/study should 
+  share the same value in this column. 
+  When not specified, the function looks for a column with one of the following names:
+  "trial", "study", "author", "authors", "Trial", "Study", "Author", or "Authors".
+  }
   
-  \item{outcome_col}{an optional column name in \code{data} containing the outcome 
-  identifiers for each observation within a cluster. If \code{NULL}, the function 
-  assumes the outcome (identifier) is "yi" (one outcome variable); 
-  when there is a column called 'outcome', it will use "outcome" as the outcome identifier,
-  employing its unique levels/values (more outcome variables).}
-  % TO DO dit ws beter verwoorden
-
+  \item{outcome_col}{a column name in \code{data} containing the outcome 
+  identifiers/labels for each observation within a cluster/study. 
+  The hypothesis/-es should be based on this labelling.
+  By default (i.e., if 'outcome_col' is null), the function assumes the label is 
+  "theta" 
+  % ms juist via deze de labels voor de hypo opgeven!
+  (one outcome variable); 
+  when there is additionally a column called 'outcome', it will use that as the outcome identifier,
+  employing its unique levels/values as the labels (more outcome variables).
+  If 'outcome_col' is not null but user-specified, then the labeling should be based
+  on the unique level(s)/value(s) in the corresponding data column.
+  Notably, outcome_col is related to the labeling; 
+  the column with estimates is referred to as 'yi_col' and is, 
+  by default, set to "yi".
+  For more information, see Example 5 below.
+  }
+  
   \item{yi_col}{a character string specifying the column in \code{data} that 
-  contains the outcome values for each observation. The default is \code{"yi"} 
-  (one outcome variable).}
-  % TO DO Dit is wat verwarrend met optie hierboven...
-
+  contains the outcome values / estimates for each observation. 
+  The default is \code{"yi"}.
+  For more information, see Example 5 below.
+  }
+  
   \item{vi_cols}{a character vector specifying the columns in \code{data} that 
   contain the variance and covariance values for each observation. The default is, 
   in the case of one outcome variable, \code{"vi"};
-  in the case of multiple (namely, O) variables, \code{c("v1i", \ldots, "vOi"}.}
-
+  in the case of multiple (namely, O) variables, \code{c("v1i", \ldots, "vOi"}.
+  For more information, see Example 5 below.
+  }
+  
   \item{digits}{the number of significant digits to use when printing.}
 
   \item{\ldots}{This depends on the class of the object.}
@@ -229,38 +241,39 @@ for the theory-based hypotheses.}
 ## your research questions and analytical framework.
 
 # The hypotheses (i.e., constraints) have to be in a list. It is recommended to name
-# each hypothesis in the list. Otherwise, the hypotheses are named accordingly 'H1', 'H2', \ldots
+# each hypothesis in the list. Otherwise, the hypotheses are named accordingly 'H1', 'H2', \ldots.
 
-# text-based syntax (the labels x1, x2, and x2 are the names of coef(model) or names(vector))
+# Example using text-based syntax (the labels x1, x2, and x3 are the names of coef(model) or names(vector))
 H1 <- '(x1, x2, x3) > 0'
-H2 <- '(x1, x3) > 0; x2 = 0'
+H2 <- '(x1, x3) > 0; x2 < 0'
 H3 <- 'x1 > 0; x2 < 0; x3 = 0'
 hypotheses = list(hypo1 = H1, hypo2 = H2, hypo3 = H3)
+# Here, it is assumed that each study uses the same hypothesis specification
 
-# mixed syntax:  
+# Example using mixed syntax: 
+H1 <- 'x1 > x2 > x3 > 0'
 hypotheses = list(Ha = H1, Hb = 'x1 = x2 > x3')
+# Here, it is assumed that each study uses the same hypothesis specification
 
-# the same set of hypotheses for each study:
-# hypotheses = list(H1, H2, \ldots)
-
-# a different set of hypotheses for each study: 
-# note that the list names set1 and set2 are redundant and can be left out. 
-# It is crucial to ensure that the hypotheses across each set are ordered in a similar manner.
-
+# Example using a different set of hypotheses for each study: 
+# Set for Study 1
 H11 <- 'group1 = group2 > group3' 
 H12 <- 'group2 > group1 > group3'   
-
+# Set for Study 2
 H21 <- 'gr1 = gr2 > gr3'
 H22 <- 'gr2 > gr1 > gr3'
-
+#
 # correct
 hypotheses = list(set1 = list(H11, H12), set2 = list(H21, H22))
-
+# note that the list names set1 and set2 are redundant and can be left out. 
+# It is crucial to ensure that the hypotheses across each set are ordered in a similar manner.
+#
 # NOT correct
-hypotheses = list(set1 = list(H12, H11), set2 = list(H21, H22))
+#hypotheses = list(set1 = list(H12, H11), set2 = list(H21, H22))
 
 
-## Example 1: 4 studies
+## Example 1: based on one estimate and its variance
+# 4 studies
 
 # estimates (beta) (from the 4 primary studies)
 est_1 <- c(beta1 = 0.09)
@@ -305,7 +318,8 @@ summary(evS4_equal)
 plot(evS4_equal)
 
 
-## Example 2: 2 studies
+## Example 2: based on (multiple) estimates and their covariance matrices
+# 2 studies
 
 #estimates and their covariance matrices (from the 2 primary studies)
 
@@ -344,7 +358,8 @@ evS2_added
 plot(evS2_added)
 
 
-## Example 3: 3 studies
+## Example 3: based on (multiple) estimates and their covariance matrices
+#3 studies
 
 # generate data
 ratio <- c(1,1.1,1.2)
@@ -448,6 +463,65 @@ goric.values <- as.list(data.frame(t(myGORICs)))
 evS_Gv <- evSyn(goric.values, 
                     hypo_names = colnames(myGORICs))
 evS_Gv
+
+
+
+## Example 5: based on an escalc object
+if (!require("metafor")) install.packages("metafor")
+library(metafor)
+#
+## Example 5a: one outcome, default labeling
+data_a <- dat.berkey1998[dat.berkey1998$outcome=="PD",][,c(1:4, 6:7)]
+#View(data_a)
+# yi gives the estimates and vi their variances.
+# So, here:
+# cluster_col = "trial" # using the first variable with a cluster variable name (year and author are other possibilities)
+# outcome_col = NULL # No, 'outcome' variable, so 'theta' is used a labeling
+# yi_col = "yi"
+# vi_cols = "vi"
+#  
+# The hypothesis should thus now be based on the default labelling theta:
+H1 <- "abs(theta) > 0.5" 
+evS_escalc_a <- evSyn(data_a, 
+                    hypotheses = list(H1 = H1), type_ev = "equal",
+                    comparison = "complement")
+evS_escalc_a
+#
+## Example 5b: one outcome, default labeling coming from 'outcome' variable
+data_b <- dat.berkey1998[dat.berkey1998$outcome=="PD",][,c(1:7)]
+#View(data_b)
+# yi gives the estimates and vi their variances.
+# So, here:
+# cluster_col = "trial" # using the first variable with a cluster variable name (year and author are other possibilities)
+# outcome_col = "outcome" # was NULL, but found 'outcome' variable, so use that labeling, that is, "PD"
+# yi_col = "yi"
+# vi_cols = "vi"
+#  
+# The hypothesis should thus now be based on the labeling based on the 'outcome' variable:
+H1 <- "abs(PD) > 0.5" 
+evS_escalc_b <- evSyn(data_b, 
+                    hypotheses = list(H1 = H1), type_ev = "equal",
+                    comparison = "complement")
+evS_escalc_b
+#
+## Example 5c: 2 outcomes, default labeling coming from 'outcome' variable 
+data_c <- dat.berkey1998
+#View(data_c)
+# yi gives the estimates (for both outcomes), vi their variances,
+# and v1i & v2i combined their covariance matrices.
+# So, here:
+# cluster_col = "trial" # using the first variable with a cluster variable name (year and author are other possibilities)
+# outcome_col = "outcome" # was NULL, but found 'outcome' variable, so use that labeling, that is, "PD"
+# yi_col = "yi"
+# vi_cols = c("v1i", "v2i")
+#  
+# The hypothesis should thus now be based on the labeling based on the 'outcome' variable:
+H1 <- "abs(AL) > 0.5, abs(PD) > 0.5" 
+evS_escalc_c <- evSyn(data_c, 
+                    hypotheses = list(H1 = H1), type_ev = "equal",
+                    comparison = "complement")
+evS_escalc_c
+
 }
 
 

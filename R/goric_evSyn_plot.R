@@ -85,7 +85,7 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
     geom_point(size = 3, aes(color = factor(.data[['variable']], levels = namesH), shape = .data[['weight_type']])) + 
     theme(legend.position = "bottom", 
           legend.box = "vertical",
-          legend.margin=margin(unit(c(0,0,0,0), "cm"))) +
+          legend.margin=margin(unit(0, "cm"))) +
     geom_line(data = plot_data[plot_data[['weight_type']] == "cumulative", ],
               aes(group = .data[['variable']], color = .data[['variable']]), linewidth = 1) +
     scale_color_brewer(palette = "Dark2") +
@@ -107,7 +107,7 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
     labs(x = "Studies", y = y_label,
          title = paste("Cumulative", y_label, "and", y_label, "per study"),
          subtitle = paste(x$type_ev, "Evidence Synthesis results"),
-         shape = "", color = "", linetype = "") +
+         shape = "", color = "") + 
     guides(color = guide_legend(order = 2),
            shape = guide_legend(order = 1)) 
   

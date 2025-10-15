@@ -18,8 +18,8 @@ comparable to the Akaike weights.
 \usage{goric(object, ...)
 
 \method{goric}{default}(object, ..., hypotheses = NULL,
-      comparison = NULL, 
-      VCOV = NULL, sample_nobs = NULL, type = "goric",
+      comparison = NULL, type = "goric",
+      VCOV = NULL, sample_nobs = NULL,
       penalty_factor = 2, Heq = FALSE, control = list(), debug = FALSE)
 
 \method{goric}{lm}(object, ..., hypotheses = NULL,
@@ -28,8 +28,8 @@ comparable to the Akaike weights.
       debug = FALSE)
 
 \method{goric}{numeric}(object, ..., hypotheses = NULL,
-      VCOV = NULL, comparison = NULL,
-      type = "gorica", sample_nobs = NULL,
+      comparison = NULL, type = "gorica", 
+      VCOV = NULL, sample_nobs = NULL,
       debug = FALSE)
 
 \method{goric}{lavaan}(object, ..., hypotheses = NULL,
@@ -41,8 +41,9 @@ comparable to the Akaike weights.
       sample_nobs = NULL, debug = FALSE)
 
 \method{goric}{rma}(object, ..., hypotheses = NULL,
-      VCOV = NULL, comparison = NULL, type = "gorica", 
-      sample_nobs = NULL, debug = FALSE)
+      comparison = NULL, type = "gorica",
+      VCOV = NULL, sample_nobs = NULL, 
+      debug = FALSE)
 
 
 \method{print}{con_goric}(x, digits = max(3, getOption("digits") - 4), \dots)
@@ -115,14 +116,6 @@ comparable to the Akaike weights.
   only be computed for one model/hypothesis at a time for now. If "\code{none}" 
   is chosen, the model is compared only against those provided by the user.}
   
-  \item{VCOV}{variance-coviance matrix. Only needed if object is of class numeric (and, therefore,
-  \code{type = "gorica"} or \code{type = "goricac"}).}
-  
-  \item{sample_nobs}{the number of observations, only needed if \code{type = "goricac"}. Note that, 
-  if \code{type = "goricc"}, the number of observations are inherited from the fitted
-  object.}
-  
-  % TO DO hierboven al 2x type genoemd en hier pas uitgelegd...
   \item{type}{if \code{"goric"}, the generalized order-restricted 
   information criterion value is computed. 
   If \code{"gorica"}, a proxi for the log-likihood is calculated by assuming that 
@@ -132,6 +125,20 @@ comparable to the Akaike weights.
   In the latter case, a corresponding message will be printed. 
   If \code{"goricc"} or \code{"goricac"}, 
   then the small-sample-size correction is applied.}
+  
+  \item{VCOV}{variance-covariance matrix. Only needed if object is of class 'numeric' (and, therefore,
+  \code{type = "gorica"} or \code{type = "goricac"}).
+  For many fit objects, one can use the function vcov() to obtain the VCOV. 
+  This renders the (biased) restricted sample covariance matrix and not the unbiased sample covariance matrix (based on 'N').
+  To obtain the unbiased one, one should make an adjustment based on samples size and the rank of the model (i.e., number of predictors including intercept); 
+  as shwon in an example below.
+  }
+  
+  \item{sample_nobs}{the number of observations, only needed if \code{type = "goricac"}. Note that, 
+  for many fit objects and/or if \code{type = "goricc"},
+  the number of observations are inherited from the fitted object.
+  In case a vector is given, it is assumed that those are group sizes; 
+  then, their sum is used as the number of observations.}
   
   \item{penalty_factor}{The penalty factor adjusts the penalty in the GORIC(A) formula
   (GORIC(A) = -2 x log-likelihood + penalty_factor x penalty). 
@@ -161,7 +168,9 @@ comparable to the Akaike weights.
   \item{emControl}{a list of control arguments for the \code{emnorm} function
   from the \pkg{norm} package.}
   
-  \item{standardized}{if TRUE, standardized parameter estimates are used.}
+  \item{standardized}{if TRUE, standardized parameter estimates are used.
+  % TO DO Only used for class lavaan?
+  }
   
   \item{digits}{the number of significant digits to use when printing.}
   
@@ -356,7 +365,12 @@ fit.lm <- lm(y ~ x1 + x2)
 # extract unconstrained estimates
 est <- coef(fit.lm)
 # unconstrained variance-covariance matrix
+#biased VCOV
 VCOV <- vcov(fit.lm)
+#unbiased VCOV
+N_min_k <- fit.lm$df.residual
+N <- N_min_k + fit.lm$rank
+VCOV_unbiased <- vcov(fit.lm) * N_min_k / N
 
 ## constraint syntax (character)
 h1 <- "x1 > 0"
@@ -364,6 +378,9 @@ h2 <- "x1 > 0; x2 > 0"
 # use fitted unconstrained linear model
 goric(fit.lm, hypotheses = list(h1 = h1, h2 = h2), type = "gorica")
 # use unconstrained estimates
+# unbiased VCOV - then same result as with fit object above
+goric(est, VCOV = VCOV_unbiased, hypotheses = list(h1 = h1, h2 = h2), type = "gorica")
+# biased VCOV
 goric(est, VCOV = VCOV, hypotheses = list(h1 = h1, h2 = h2), type = "gorica")
 
 ## constraint syntax (matrix notation)

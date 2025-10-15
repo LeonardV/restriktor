@@ -152,64 +152,17 @@ compute_cohens_f <- function(group_means, N, VCOV) {
 # }
 
 
-# Adjust the variance based on alternative group sizes
-adjust_variance <- function(var_e, N, alt_group_size, ngroups) {
-  # Possibly adjust var_e based on other sample size
-  if (length(alt_group_size) == 1) {
-    var_e <- var_e * (sum(N) - ngroups)
-    N <- rep(alt_group_size, ngroups)
-    var_e <- var_e / (sum(N) - ngroups)
-  } else if (length(alt_group_size) == ngroups) {
-    var_e <- var_e * (sum(N) - ngroups)
-    N <- alt_group_size
-    var_e <- var_e / (sum(N) - ngroups)
-  } else {
-    return(paste0("The argument alt_group_size should be of length 1 or ",
-                  ngroups, " (or NULL) but not of length ", length(alt_group_size)))
-  }
-  return(list(var_e = var_e, N = N))
-}
-
 generate_scaled_means <- function(group_means, target_f, N, VCOV) {
-  # TO DO evt delete:
-  #original_order <- order(group_means)
-  #sorted_means <- sort(group_means)
-  #min_value <- sorted_means[1]
-  #ratio_vector <- sorted_means / min_value  # Behoudt de verhoudingen
-  ##
-  #objective <- function(d) {
-  #  means_new <- ratio_vector * d
-  #  computed_f <- compute_cohens_f(means_new, N, VCOV)
-  #  # TO DO nu staan de means in andere volgorde en hoort het dus niet meer bij die VCOV (als ongelijke n's)
-  #  #       waarom volgorde eigenlijk aanpassen?
-  #  return(abs(computed_f - target_f))  # Minimaliseer het verschil tussen berekende en gewenste Cohen's f
-  #}
-  ##
-  #opt_result <- optimize(objective, interval = c(0, 100))
-  #d_optimal <- opt_result$minimum
-  ##
-  #new_means <- ratio_vector * d_optimal
-  #new_means_ordered <- new_means[original_order]  # Behoud de oorspronkelijke volgorde
-  ##
-  ## Debugging output
-  ##cat(sprintf("Gevonden d: %.5f voor target f: %.5f\n", d_optimal, target_f))
-  ##cat("Oude means:", group_means, "\n")
-  ##cat("Nieuwe means:", new_means_ordered, "\n")
-  ##
-  ##return(new_means_ordered)
-  ##
-  ##
-  # TO DO Suggestion RMK (works much better :-))
   if (target_f == 0) {
     # If targeted effect size f is 0, then set all the means to 0.
     new_means <- rep(0, length(group_means))
   } else {
-    ratio_vector <- group_means / min(group_means)  # Behoudt de verhoudingen
+    ratio_vector <- group_means / min(group_means)  # such that ratios remain the same
     #
     objective <- function(d) {
       means_new <- ratio_vector * d
       computed_f <- compute_cohens_f(means_new, N, VCOV)
-      return(abs(computed_f - target_f))  # Minimaliseer het verschil tussen berekende en gewenste Cohen's f
+      return(abs(computed_f - target_f))  # Minimize difference between calculated and desired Cohen's f
     }
     
     opt_result <- optimize(objective, interval = c(0, 100))
@@ -317,12 +270,12 @@ parallel_function_means <- function(i, N, var_e, means_pop,
     },
     error = function(e) {
       # error message
-      message(paste("Error in iteration", i, ":", e$message))
+      message(paste("\nrestriktor ERROR: Error in iteration", i, ":", e$message))
       return(NULL)
     },
     warning = function(w) {
       # warning message
-      message(paste("Warning in iteration", i, ":", w$message))
+      message(paste("\nrestriktor WARNING: Warning in iteration", i, ":", w$message))
       return(NULL)
     }
   )
@@ -365,12 +318,12 @@ parallel_function_asymp <- function(i, est, VCOV, hypos, pref_hypo, comparison,
     },
     error = function(e) {
       # error message 
-      message(paste("Error in iteration", i, ":", e$message))
+      message(paste("\nrestriktor ERROR: Error in iteration", i, ":", e$message))
       return(NULL)  
     },
     warning = function(w) {
       # warning message
-      message(paste("Warning in iteration", i, ":", w$message))
+      message(paste("\nrestriktor WARNING: Warning in iteration", i, ":", w$message))
       return(NULL)  
     }
   )
@@ -670,7 +623,7 @@ check_rhs_constants <- function(rhs_list) {
   })
   hypotheses_with_constants <- names(constants_check)[unlist(constants_check)]
   if (length(hypotheses_with_constants) > 0) {
-    warning_message <- paste0("Restriktor Warning: The following hypotheses contain constants",
+    warning_message <- paste0("\nrestriktor WARNING: The following hypotheses contain constants",
                               " greater or less than 0: ", 
                               paste(hypotheses_with_constants, collapse = ", "),
                               ". The default population estimates are likely incorrect.",

@@ -369,7 +369,10 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     }
   } 
   if (x$penalty_factor != 2) {
-    message(sprintf("\nNote that a penalty factor of %s (default is 2) is used in the calculation of the %s value, that is -2 x log-likelihood + penalty_factor x penalty",
+    message(sprintf("\nrestriktor Message: Note that a penalty factor of %s (default is 2) is used in the calculation of the %s value, that is -2 x log-likelihood + penalty_factor x penalty",
                     x$penalty_factor, x$type))
   }
 }
+
+# TO DO print ook de warnings hier nog eens, anders mis je die ms
+#       Kijk of messages en/of warnings en zag dan onderaan dat die er zijn en geef dan de code om die te zien!

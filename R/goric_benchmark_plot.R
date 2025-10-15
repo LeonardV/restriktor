@@ -5,7 +5,7 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   
   # Ensure the object is of class 'benchmark_means'
   if (!inherits(x, "benchmark")) {
-    stop("Invalid object. The object should be of class 'benchmark'.", call. = FALSE)
+    stop("\nrestriktor ERROR: Invalid object. The object should be of class 'benchmark'.", call. = FALSE)
   }
   
   # Check if the output_type is valid
@@ -289,7 +289,7 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
   if (!is.null(x_lim) && length(x_lim) == 2) {
     if (log_scale & !x_lim[1] > 0) {
       x_lim[1] <- .001
-      message(paste("Warning: log_scale is set to TRUE, but the lower bound of x_lim must be greater than 0.", 
+      warning(paste("\nrestriktor WARNING: log_scale is set to TRUE, but the lower bound of x_lim must be greater than 0.", 
               "Adjusting x_lim[1] to 0.001. You can manually specify a value greater than 0 for x_lim[1] if needed."))
     }
     p <- p + coord_cartesian(xlim = x_lim)

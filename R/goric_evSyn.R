@@ -59,7 +59,7 @@ evSyn <- function(object, input_type = NULL, ...) {
     } else if (input_type == "escalc") {
       return(evSyn_escalc(object, ...))
     } else {
-      stop(paste0("Restriktor ERROR: Unknown input_type ", sQuote(input_type), "."))
+      stop(paste0("\nrestriktor ERROR: Unknown input_type ", sQuote(input_type), "."))
     }
   }
   
@@ -72,7 +72,7 @@ evSyn <- function(object, input_type = NULL, ...) {
   } 
   
   if (!is.list(object) || !any(vapply(object, is.numeric, logical(1)))) {
-    stop("Restriktor ERROR: object must be a list of numeric vectors.")
+    stop("\nrestriktor ERROR: object must be a list of numeric vectors.")
     # TO DO
     # Laat evt volgende toe zodat namen hypos direct meegenomen kan worden:
     #df <- data.frame(myGORICs)
@@ -91,7 +91,7 @@ evSyn <- function(object, input_type = NULL, ...) {
   checkListContent(lst = PT, fun = is.numeric, msg = "PT must be a list of numeric vectors.")
   
   if (!is.null(VCOV) && !is.null(PT)) {
-    stop("Restriktor ERROR: both VCOV and PT are found, which confuses me.")
+    stop("\nrestriktor ERROR: both VCOV and PT are found, which confuses me.")
     # TO DO zeg wat je wel graag wilt, dus iets als 'een van de volgende twee opties: ...'
   }
   
@@ -106,26 +106,26 @@ evSyn <- function(object, input_type = NULL, ...) {
     return(evSyn_LL(object, ...))
   } else if (obj_isICweights) {
     if (!is.null(arguments$type_ev) && arguments$type_ev == "equal") {
-      messageAdded <- "When the input consists of weights, the equal-evidence approach is not possible; the added-evidence approach is taken instead."
+      messageAdded <- "\nrestriktor Message: When the input consists of weights, the equal-evidence approach is not possible; the added-evidence approach is taken instead."
       message(messageAdded)
     }
     return(evSyn_ICweights(object, ...))
   } else if (obj_isICratios) {
     if (!is.null(arguments$type_ev) && arguments$type_ev == "equal") {
-      messageAdded <- "When the input consists of ratios of weights, the equal-evidence approach is not possible; the added-evidence approach is taken instead."
+      messageAdded <- "\nrestriktor Message: When the input consists of ratios of weights, the equal-evidence approach is not possible; the added-evidence approach is taken instead."
       message(messageAdded)
     }
     return(evSyn_ICratios(object, ...))
   } else { # ICvalues
     if (!is.null(arguments$type_ev) && arguments$type_ev == "equal") {
-      messageAdded <- "When the input consists of IC values, the equal-evidence approach is not possible; the added-evidence approach is taken instead."
+      messageAdded <- "\nrestriktor Message: When the input consists of IC values, the equal-evidence approach is not possible; the added-evidence approach is taken instead."
       message(messageAdded)
     }
     return(evSyn_ICvalues(object, messageAdded, ...))
     # TO DO werkt niet, ook niet als messageAdded = messageAdded
     # TO DO doe dit dan ook voor bovenstaande!
   }
-  stop("Restriktor Error: I don't know how to handle the input.")
+  stop("\nrestriktor ERROR: I don't know how to handle the input.")
 }
 
 
@@ -154,15 +154,15 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   if (missing(type)) { type <- "gorica" }
   #
   if (type == "goric") {
-    message("\nRestriktor Message: Since the input is a list of estimates, the GORICA will be used, not the the GORIC")
+    message("\nrestriktor Message: Since the input is a list of estimates, the GORICA will be used, not the the GORIC.")
     type = "gorica"
   } else if (type == "goricc") {
-    message("\nRestriktor Message: Since the input is a list of estimates, the GORICAC will be used, not the the GORICC")
+    message("\nrestriktor Message: Since the input is a list of estimates, the GORICAC will be used, not the the GORICC.")
     type = "goricac"
   } 
   #
   if (type == "goricac" && is.null(study_sample_nobs)) {
-    stop("To calculate the GORICAC, the function needs the argument 'study_sample_nobs',",
+    stop("\nrestriktor ERROR: To calculate the GORICAC, the function needs the argument 'study_sample_nobs',",
     "which contains a vector of sample sizes for all the primary studies.")
   }
   type <- match.arg(type)
@@ -180,14 +180,14 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   V <- length(VCOV)
   
   if (S != V) {
-    stop("Restriktor ERROR: the number of items in the object list (i.e., number of (standardized) estimates) must equal the number of items in the VCOV list.", call. = FALSE)
+    stop("\nrestriktor ERROR: the number of items in the object list (i.e., number of (standardized) estimates) must equal the number of items in the VCOV list.", call. = FALSE)
   }
   
   if (type == "goricac" && length(study_sample_nobs) == 1) {
     study_sample_nobs <- rep(study_sample_nobs, S)
-    message("Restriktor message: the argument 'study_sample_nobs' consists of 1 number, thus all primary studies have the same sample size.")
+    message("\nrestriktor Message: the argument 'study_sample_nobs' consists of 1 number, thus all primary studies have the same sample size.")
   } else if (type == "goricac" && length(study_sample_nobs) != S) {
-    stop("Restriktor ERROR: the argument 'study_sample_nobs' should be a vector consisting of S = ", S, " numbers.")
+    stop("\nrestriktor ERROR: the argument 'study_sample_nobs' should be a vector consisting of S = ", S, " numbers.")
   }
   
   # Ensure hypotheses are nested
@@ -197,20 +197,20 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   
   # check if VCOV and hypotheses are both a non-empty list
   if ( !is.list(VCOV) && length(VCOV) == 0 ) {
-    stop("Restriktor ERROR: VCOV must be a list of covariance matrices of the (standardized) parameter estimates of interest.", call. = FALSE)  
+    stop("\nrestriktor ERROR: VCOV must be a list of covariance matrices of the (standardized) parameter estimates of interest.", call. = FALSE)  
   } 
   # TO DO check of square matrices in list, kan evt door nu fout in goric() te laten gebeuren, maar
   #       dan is het meegeven van study nr wel fijn!
 
   if ( !is.list(hypotheses) && length(hypotheses) == 0 ) {
-    stop("Restriktor ERROR: hypotheses must be a list.", call. = FALSE)  
+    stop("\nrestriktor ERROR: hypotheses must be a list.", call. = FALSE)  
   } 
   
   
   # check if the matrices are all symmetrical
   #VCOV_isSym <- vapply(VCOV, isSymmetric, logical(1), check.attributes = FALSE)
   #if (!all(VCOV_isSym)) {
-  #  stop(sprintf("Restriktor ERROR: the %sth covariance matrix in VCOV is not symmetric.", which(!VCOV_isSym)), call. = FALSE)  
+  #  stop(sprintf("\nrestriktor ERROR: the %sth covariance matrix in VCOV is not symmetric.", which(!VCOV_isSym)), call. = FALSE)  
   #}
 
   # number of hypotheses must be equal for each study. In each study a set of 
@@ -219,18 +219,18 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   NrHypos <- unique(len_H)
   
   if (length(unique(len_H)) > 1) {
-    stop("Restriktor ERROR: The number of hypotheses must be consistent across all studies.", call. = FALSE)
+    stop("\nrestriktor ERROR: The number of hypotheses must be consistent across all studies.", call. = FALSE)
   }
   
   if (length(object) != length(len_H)) {
-    stop("Restriktor ERROR: The number of hypothesis sets ", "(",length(len_H), ")", " does not match the number of studies (", S, ")",".", call. = FALSE)
+    stop("\nrestriktor ERROR: The number of hypothesis sets ", "(",length(len_H), ")", " does not match the number of studies (", S, ")",".", call. = FALSE)
   }
 
   complement_check <- all(len_H == 1)
   if (comparison == "complement") {
     #if ((sameHypo && !comp_check_same) | (!sameHypo && !comp_check_diff)) {
      if (!complement_check) {  
-      warning("Restriktor WARNING: Only one order-restricted hypothesis is allowed (for now) when comparison = 'complement'.",
+      warning("\nrestriktor WARNING: Only one order-restricted hypothesis is allowed (for now) when comparison = 'complement'.",
               " Setting comparison to 'unconstrained' instead.", call. = FALSE)
       comparison <- "unconstrained"
     }
@@ -247,7 +247,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     # this should trigger the WARNING: list(list(Ha = H11), list(Hb = H21))
     if (!is.null(element_hypo_names) && !all(unlist(check_name_in_list))) {
       l_hnames <- vapply(list_hypo_names, function(x) paste0("(", x, ")", collapse = ', '), character(1))
-      warning(sprintf("Restriktor WARNING: The hypothesis names %s in each hypothesis set must be identical and in the same order. Renaming hypotheses to H1, H2, ... instead.", paste(l_hnames, collapse = ' and ')))
+      warning(sprintf("\nrestriktor WARNING: The hypothesis names %s in each hypothesis set must be identical and in the same order. Renaming hypotheses to H1, H2, ... instead.", paste(l_hnames, collapse = ' and ')))
       element_hypo_names <- NULL
       # just to be sure that all names are removed
       #hypotheses <- lapply(hypotheses, function(x) { names(x) <- NULL; return(x) })
@@ -522,7 +522,7 @@ evSyn_LL <- function(object, ..., PT = list(),
   
   # check if PT is a non-empty list
   if ( !is.list(PT) && length(PT) == 0 ) {
-    stop("Restriktor ERROR: PT must be a list of penalty weights.", call. = FALSE)  
+    stop("\nrestriktor ERROR: PT must be a list of penalty weights.", call. = FALSE)  
   } 
   
   
@@ -1068,7 +1068,7 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
 
   # Check if all objects are of type "con_goric"
   if (!all(vapply(object, function(x) inherits(x, "con_goric"), logical(1)))) {
-    stop("Restriktor ERROR: the object must be a list with fitted objects from the goric() function", 
+    stop("\nrestriktor ERROR: the object must be a list with fitted objects from the goric() function", 
          call. = FALSE)
   }
   # TO DO check of allemaal gelijke type, alleen dan samennemen.

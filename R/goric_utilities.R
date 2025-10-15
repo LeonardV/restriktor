@@ -6,7 +6,6 @@ coef.gorica_est <- function(object, ...)  {
   return(object$b.restr)
 }
 
-# TO DO check iig messages
 coef.named.vector <- function(x, VCOV = NULL, ...)  {
   # TO DO wat als vcov niet bestaat of nog niet matrix (maar bijv dpo)?
   # ms zelfs suppressWarnings(vcov(...)) gebruiken dan
@@ -17,14 +16,14 @@ coef.named.vector <- function(x, VCOV = NULL, ...)  {
     if (is.null(VCOV)) {
       names(est) <- rownames(vcov(x))
       # TO DO dit werkt niet, er is niet alleen : maar ook _ en laatste mag ws niet (runt iig niet)
-      message("\nRestriktor Message: The estimates from the fit object -- i.e, coef(fit) -- are vectorized, ", 
+      message("\nrestriktor Message: The estimates from the fit object -- i.e, coef(fit) -- are vectorized, ", 
                     "and their names are based on the rownames used in vcov(). ",
                     "Hence, these names should be used in the hypotheses specification ",
                     "(where ':' should be replaced by '.'.")
     } else { 
       # TO DO eigenlijk nog checken of rownames bestaan
       names(est) <- rownames(VCOV)
-      message("\nRestriktor Message: The estimates from the fit object -- i.e, coef(fit) -- are vectorized, ", 
+      message("\nrestriktor Message: The estimates from the fit object -- i.e, coef(fit) -- are vectorized, ", 
               "and their names are based on the rownames from their covariance matrix. ",
               "Hence, these names should be used in the hypotheses specification ",
               "(where ':' should be replaced by '.'.")
@@ -35,15 +34,42 @@ coef.named.vector <- function(x, VCOV = NULL, ...)  {
   return(est)
 }
 
-VCOV.unbiased <- function(model.org, ...)  {
-  # TO DO Controleer of goede check en message 
+check_sample_nobs <- function(sample_nobs, ...)  {
   
+  if (length(sample_nobs) > 1) { 
+    # Probably group sizes, then sample size is sum of group sizes
+    sample_nobs <- sum(sample_nobs)
+    
+    # message
+    message(paste0("\nrestriktor Message: The argument 'sample_nobs' contains more than one value. ",
+                   "It is assumed that those are group sizes and that their sum, that is, ", sample_nobs,
+                   " is the number of observations."))
+  }
+  
+  return(sample_nobs)
+}
+
+check_N_with_sample_nobs <- function(N, sample_nobs, ...)  {
+  # Check on N
+  if (!is.null(sample_nobs) && sample_nobs != N) {
+    message(paste0("\nrestriktor Message: The value in 'sample_nobs' or sum(sample_nobs), that is, ", sample_nobs, ", does not ", 
+                   "resemble the sample size value determined from the fit object, that is, ", N, ". ",
+                   "The latter is used."))
+  }
+  return(N)
+}
+
+VCOV.unbiased <- function(model.org, sample_nobs = NULL, ...)  {
+  
+  sample_nobs <- check_sample_nobs(sample_nobs)
+   
+  N <- NULL 
   if (!is.na(model.org$df.residual) && !is.null(model.org$df.residual) && !is.null(model.org$rank)) {
     # Use cov.mx based on N not N-k, such that output goric and gorica are the same
     # Btw if est & VCOV are used instead of fitted object, then their gorica results differ...
     N_min_k <- model.org$df.residual
     N <- N_min_k + model.org$rank
-    VCOV <- vcov(model.org)*N_min_k/N
+    VCOV <- vcov(model.org) * N_min_k / N
   } else if (!is.null(model.org$x) && !is.null(model.org$rank)) { 
     # Note: In rlm object model.org$df.residual is NA
     # Use cov.mx based on N not N-k, such that output goric and gorica are the same
@@ -53,28 +79,47 @@ VCOV.unbiased <- function(model.org, ...)  {
     VCOV <- vcov(model.org)*N_min_k/N
   } else {
     VCOV <- vcov(model.org)
-    # TO DO Voor als dpo (kan dat hierboven ook?), dan ws:
-    #as.matrix(suppressWarnings(vcov(object))) # Behoud idt zijn namen ook?
-    message("Note: The covariance matrix of the estimates is obtained via the vcov function; therefore, 
-                it is the (biased) restricted sample covariance matrix and not the unbiased sample covariance matrix (based on 'N').")
+    # TO DO Voor als dpoMatrix (kan dat hierboven ook gebeuren?), dan ws:
+    #as.matrix(suppressWarnings(vcov(object))) # Behoud dit zijn namen ook?
+    message(paste0("\nrestriktor Message: The covariance matrix of the estimates is obtained via the vcov function; therefore", 
+                   "it is the (biased) restricted sample covariance matrix and not the unbiased sample covariance matrix (based on 'N')."))
+  }
+  #
+  # Check on N
+  if(!is.null(N) && sample_nobs != N) {
+    message(paste0("\nrestriktor Message: The value in 'sample_nobs' or sum(sample_nobs), that is, ", sample_nobs, ", does not ", 
+                   "resemble the sample size value determined from the fit object, that is, ", N, ". ",
+                   "The unbiased variance covariance matrix is based on the latter."))
   }
   
   return(VCOV)
 }
-  
 
-# TO DO check message
 message.VCOV <- function(...)  {
-  message("\nRestriktor Message: The covariance matrix of the estimates is obtained via the vcov function; ", 
+  message("\nrestriktor Message: The covariance matrix of the estimates is obtained via the vcov function; ", 
                        "therefore, it is the (biased) restricted sample covariance matrix and not the unbiased sample covariance matrix (based on 'N').")
 } 
 
-# TO DO check message
 message.VCOVvb <- function(...)  {
-  message("\nRestriktor Message: The covariance matrix of the estimates is obtained via the 'vb' argument from the metaforpackage.")
+  message("\nrestriktor Message: The covariance matrix of the estimates is obtained via the 'vb' argument from the metaforpackage.")
 }
 
-  
+check.type <- function(type, class, ...)  {
+  if (type == "goric") {
+    message("\nrestriktor Message: object of class ", class, " is only supported for",
+            "type = 'gorica(c)'. The GORICA will be used, not the the GORIC.")
+    type = "gorica"
+  } else if (type == "goricc") {
+    message("\nrestriktor Message: object of class ", class, " is only supported for", 
+            "type = 'gorica(c)'. The GORICAC will be used, not the the GORICC.")
+    type = "goricac"
+  } else if (!c(type %in% c("gorica", "goricac"))) {
+    message("\nrestriktor Message: object of class ", class, " is only supported for",
+            "type = 'gorica(c)'. The GORICA will be used.")
+    type = "gorica"
+  } 
+  return(type)
+}
 
 calculate_model_comparison_metrics <- function(x) {
   modelnames <- as.character(x$model)

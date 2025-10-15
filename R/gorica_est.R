@@ -159,7 +159,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
   if (mix_weights == "pmvnorm") {
     if (RREF$rank < nrow(PT_Amat) && RREF$rank != 0L) {
       messages$mix_weights_rank <- paste(
-        "Restriktor message: Since the constraint matrix is not full row-rank, the level probabilities", 
+        "\nrestriktor Message: Since the constraint matrix is not full row-rank, the level probabilities", 
         "are calculated using mix_weights = \"boot\" (the default is mix_weights = \"pmvnorm\").",
         "For more information see ?restriktor.\n"
       )

@@ -8,11 +8,11 @@ extract_est_vcov_outcomes <- function(data, outcome_col = NULL,
   cluster_col_length <- length(cluster_col)
   if (cluster_col_sum == 0 && cluster_col_length > 1) {
     # The data set does not contain a variable with one of the possible cluster column names
-    stop(paste("Restriktor ERROR: The data does not contain a variable with one of the following names", sQuote(cluster_col), 
+    stop(paste("\nrestriktor ERROR: The data does not contain a variable with one of the following names", sQuote(cluster_col), 
                ". Make sure to either match that or the specify the name using the cluster_col argument."))
   } else if (cluster_col_sum == 0 && cluster_col_length == 1) {
     # One specified column, which is not available in the data set
-    stop(paste("Restriktor ERROR: The specified cluster_col", sQuote(cluster_col), 
+    stop(paste("\nrestriktor ERROR: The specified cluster_col", sQuote(cluster_col), 
                "is not found in the data."))
   } else {
     # Thus, the data contains at least on of the cluster_col names;
@@ -20,17 +20,17 @@ extract_est_vcov_outcomes <- function(data, outcome_col = NULL,
     cluster_col <- cluster_col[cluster_col %in% names(data)][1]
     if (cluster_col_sum > 1) {
       # If there are more matches, then use the first one
-      message(paste("Restriktor message: The data contains multiple variables with a 'cluster_col' name, the following one is used:", sQuote(cluster_col)))
+      message(paste("\nrestriktor Message: The data contains multiple variables with a 'cluster_col' name, the following one is used:", sQuote(cluster_col)))
     }
   }
   
   if (!yi_col %in% names(data)) {
-    stop(paste("Restriktor ERROR: The yi_col", sQuote(yi_col), 
+    stop(paste("\nrestriktor ERROR: The yi_col", sQuote(yi_col), 
                "is not found in the data."))
   }
 
   if (all(!vi_cols %in% names(data))) {
-    stop(paste("Restriktor ERROR: The vi_cols", sQuote(vi_cols), 
+    stop(paste("\nrestriktor ERROR: The vi_cols", sQuote(vi_cols), 
                "are not found in the data."))
   }
   

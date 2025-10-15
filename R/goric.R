@@ -2,23 +2,23 @@ goric <- function(object, ...) { UseMethod("goric") }
 
 
 goric.default <- function(object, ..., hypotheses = NULL,
-                          comparison = NULL, 
+                          comparison = NULL, type = "goric", 
                           VCOV = NULL, sample_nobs = NULL,
-                          type = "goric", penalty_factor = 2,
+                          penalty_factor = 2,
                           Heq = FALSE, control = list(), debug = FALSE) {
   
   # the following classes are allowed (for now)
   obj_class <- class(object)
   classes <- c("aov", "lm", "glm", "mlm", "rlm", "numeric", "lavaan", "CTmeta", 
-               "rma.uni", "nlmerMod", "glmerMod", "merMod")
+               "rma.uni", "rma.mv", "lmerMod", "nlmerMod", "glmerMod", "merMod")
   check_class <- obj_class %in% classes
   if (!any(check_class)) {
-    stop(paste0("Objects of class", paste(obj_class, collapse = ", "), 
+    stop(paste0("\nrestriktor ERROR: Objects of class", paste(obj_class, collapse = ", "), 
                "are not supported. Supported classes are:", paste(classes, collapse = ", "),"."), call. = FALSE)
   }
   
   if (!is.list(hypotheses) || is.null(hypotheses)) {
-    stop(paste("Restriktor ERROR: The 'hypotheses' argument is missing or not a list.",
+    stop(paste("\nrestriktor ERROR: The 'hypotheses' argument is missing or not a list.",
          "Please make sure to provide a valid set of hypotheses, for example, hypotheses =",
          "list(h1 = 'x1 > x2 > x3')."), call. = FALSE)
   } 
@@ -38,25 +38,21 @@ goric.default <- function(object, ..., hypotheses = NULL,
   
   # Validate Heq
   if (Heq && (comparison != "complement" || num_hypotheses > 1)) {
-    stop("Restriktor ERROR: Heq = TRUE is only allowed when comparison = 'complement' and there is at most one hypothesis.", call. = FALSE)
+    stop("\nrestriktor ERROR: Heq = TRUE is only allowed when comparison = 'complement' and there is at most one hypothesis.", call. = FALSE)
   }
 
   # Adjust comparison if necessary based on hypotheses
   if (comparison == "complement" && num_hypotheses > 1) {
-    warning("Restritor WARNING: More than one hypothesis provided. 'comparison' set to 'unconstrained'.", call. = FALSE)
+    warning("\nrestriktor WARNING: More than one hypothesis provided. 'comparison' set to 'unconstrained'.", call. = FALSE)
     comparison <- "unconstrained"
   }
   
   # Ignore Heq for other comparisons
   if (comparison %in% c("unconstrained", "none") && Heq) {
-      warning("Restriktor Warning: The 'Heq' argument is ignored. The specified", 
+      warning("\nrestriktor WARNING: The 'Heq' argument is ignored. The specified", 
               " hypothesis is only valid when the order-restricted hypothesis is compared",
               " to its complement.", call. = FALSE)
       Heq <- FALSE
-  }
-
-  if (is.null(sample_nobs) && type %in% c("goricac")) {
-    stop(paste("Restriktor ERROR: the argument sample_nobs is not found."), call. = FALSE)
   }
   
   if (!is.null(VCOV)) {
@@ -69,22 +65,21 @@ goric.default <- function(object, ..., hypotheses = NULL,
       VCOV <- as.matrix(VCOV)
     }
     if (dim(VCOV)[1] != dim(VCOV)[2]) {
-      stop(paste("Restriktor ERROR: The covariance matrix (VCOV) should be a square matrix."), call. = FALSE)
+      stop(paste("\nrestriktor ERROR: The covariance matrix (VCOV) should be a square matrix."), call. = FALSE)
     }
     # check if it is of class matrix
     if (inherits(VCOV, "dpoMatrix")) {
       VCOV <- as.matrix(VCOV)
-      # TO DO Waarom niet juist ook hier suppress'en, dus iets als: as.matrix(suppressWarnings(vcov(object)))
-      #       of is er soms een andere melding ms? al halen we die hieronder dan net zo goed weg...
+      # as.matrix(suppressWarnings(vcov(object)))
     }
     if (any(is.na(VCOV))) {
-      stop(paste("Restriktor ERROR: The covariance matrix (VCOV) contains NA or NaN values.", 
+      stop(paste("\nrestriktor ERROR: The covariance matrix (VCOV) contains NA or NaN values.", 
            "Please check your data or model specification."), call. = FALSE)
     }
   }
   
   if (penalty_factor < 0) {
-    stop(paste("Restriktor ERROR: the penalty factor must be >= 0."), call. = FALSE)
+    stop(paste("\nrestriktor ERROR: the penalty factor must be >= 0."), call. = FALSE)
   }
   
   ldots <- list(...)
@@ -103,7 +98,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   # check for unkown arguments
   pm <- pmatch(names(ldots), goric_arguments, 0L)
   if (any(pm == 0)) {
-    stop("Restriktor ERROR: argument ", 
+    stop("\nrestriktor ERROR: argument ", 
          sQuote(paste(names(ldots)[pm == 0], collapse = ", ")), 
          " unknown.", call. = FALSE)
   }
@@ -158,12 +153,13 @@ goric.default <- function(object, ..., hypotheses = NULL,
   #   sample_nobs   <- nrow(model.frame(object[[1]]$model.org))
   #   # unrestricted VCOV
   #   #VCOV <- vcov(ans$model.org) 
-  #   VCOV <- VCOV.unbiased(ans$model.org)
+  #   VCOV <- VCOV.unbiased(ans$model.org, sample_nobs)
   # } else 
   if (any(object_class %in% c("aov","lm","rlm","glm","mlm")) && isConChar) { 
     # TO DO in mlm geeft coef() een matrix, je moet dan as.vector doen (coef.named.vector(...)).
     #       Maakt dat in dit deel nog uit? Ik zie het niet, graag ff checken of dat klopt.
     #       Dan ook in volgende 'if' evt.
+    # TO DO voor mlm krijg je  namen die niet werken in goric... Hoe dat aanpassen?
     
     # standard errors are not needed
     ldots$se <- "none"
@@ -198,8 +194,10 @@ goric.default <- function(object, ..., hypotheses = NULL,
     
     ans$hypotheses_usr <- lapply(conList, function(x) x$CON$constraints)
     ans$model.org <- object # add unrestricted object to output
-    VCOV <- VCOV.unbiased(ans$model.org) # unrestricted VCOV
-    sample_nobs <- nrow(model.frame(object)) 
+    if (is.null(sample_nobs)) {
+      sample_nobs <- nrow(model.frame(object)) # This is sample size N, not group sizes
+    } 
+    VCOV <- VCOV.unbiased(ans$model.org, sample_nobs) # unrestricted VCOV + check sample_nobs
     idx <- length(conList) 
     objectnames <- vector("character", idx)
   } else if (any(object_class %in% c("aov","lm","rlm","glm","mlm")) && !isConChar) {
@@ -207,7 +205,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     for (i in seq_along(constraints)) { 
       names(constraints[[i]]) <- tolower(names(constraints[[i]])) 
       if (any(!names(constraints[[i]]) %in% c("constraints", "rhs", "neq"))) { 
-        stop("Restriktor ERROR: The list objects must be named 'constraints', 'rhs' and 'neq', e.g.:
+        stop("\nrestriktor ERROR: The list objects must be named 'constraints', 'rhs' and 'neq', e.g.:
               h1 <- list(constraints = c(0,1,0))
               h2 <- list(constraints = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0)
               hypotheses = list(H1 = h1, H2 = h2).", 
@@ -243,12 +241,22 @@ goric.default <- function(object, ..., hypotheses = NULL,
     }
     
     ans$model.org <- object # add unrestricted object to output
-    VCOV <- VCOV.unbiased(ans$model.org) # unrestricted VCOV
-    sample_nobs <- nrow(model.frame(object))
+    if (is.null(sample_nobs)) {
+      sample_nobs <- nrow(model.frame(object)) # This is sample size N, not group sizes
+    } 
+    VCOV <- VCOV.unbiased(ans$model.org, sample_nobs) # unrestricted VCOV + check sample_nobs
     idx <- length(conList) 
     objectnames <- vector("character", idx)
     #CALL$object <- NULL
   } else if ("numeric" %in% object_class && isConChar) {
+    
+    if (is.null(sample_nobs) && type %in% c("goricac")) {
+      stop(paste("\nrestriktor ERROR: the argument sample_nobs is not found,",
+                 "which is needed when type = 'goricac'."), call. = FALSE)
+    } else if (type %in% c("goricac")) {
+      sample_nobs <- check_sample_nobs(sample_nobs) # take sum in case of group sizes
+    }
+    
     # fit restriktor object for each hypothesis
     conList <- lapply(constraints, function(constraint) {
       CALL.restr <- append(list(object      = object, 
@@ -266,35 +274,43 @@ goric.default <- function(object, ..., hypotheses = NULL,
                                                      type           = type,
                                                      sample.nobs    = sample_nobs,
                                                      penalty_factor = penalty_factor)) 
-    } else if ("numeric" %in% object_class && !isConChar) {
-      # tolower names Amat and rhs
-      for (i in seq_along(constraints)) { 
-        names(constraints[[i]]) <- tolower(names(constraints[[i]]))
-        if (any(!names(constraints[[i]]) %in% c("constraints", "rhs", "neq"))) {
-          stop("Restriktor ERROR: The list objects must be named 'constraints', 'rhs' and 'neq', e.g.:
-                h1 <- list(constraints = c(0,1,0))
-                h2 <- list(constraints = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0)
-                hypotheses = list(H1 = h1, H2 = h2).", 
-               call. = FALSE)
-        }
-      }
-      conList <- lapply(constraints, function(constraint) {
-        CALL.restr <- append(list(object      = object,
-                                  VCOV        = as.matrix(VCOV),
-                                  constraints = constraint$constraints,
-                                  rhs         = constraint$rhs,
-                                  neq         = constraint$neq), ldots)
-        do.call("con_gorica_est", CALL.restr)
-      })
-      names(conList) <- names(constraints)
-      
-      isSummary <- lapply(conList, function(x) summary(x, 
-                                                       type           = type,
-                                                       sample.nobs    = sample_nobs,
-                                                       penalty_factor = penalty_factor)) 
-    } else {
-      stop("Restriktor ERROR: I don't know how to handle an object of class ", paste0(class(object)[1]))
+  } else if ("numeric" %in% object_class && !isConChar) {
+    
+    if (is.null(sample_nobs) && type %in% c("goricac")) {
+      stop(paste("\nrestriktor ERROR: the argument sample_nobs is not found,",
+                 "which is needed when type = 'goricac'."), call. = FALSE)
+    } else if (type %in% c("goricac")) {
+      sample_nobs <- check_sample_nobs(sample_nobs) # take sum in case of group sizes
     }
+    
+    # tolower names Amat and rhs
+    for (i in seq_along(constraints)) { 
+      names(constraints[[i]]) <- tolower(names(constraints[[i]]))
+      if (any(!names(constraints[[i]]) %in% c("constraints", "rhs", "neq"))) {
+        stop("\nrestriktor ERROR: The list objects must be named 'constraints', 'rhs' and 'neq', e.g.:
+              h1 <- list(constraints = c(0,1,0))
+              h2 <- list(constraints = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0)
+              hypotheses = list(H1 = h1, H2 = h2).", 
+             call. = FALSE)
+      }
+    }
+    conList <- lapply(constraints, function(constraint) {
+      CALL.restr <- append(list(object      = object,
+                                VCOV        = as.matrix(VCOV),
+                                constraints = constraint$constraints,
+                                rhs         = constraint$rhs,
+                                neq         = constraint$neq), ldots)
+      do.call("con_gorica_est", CALL.restr)
+    })
+    names(conList) <- names(constraints)
+    
+    isSummary <- lapply(conList, function(x) summary(x, 
+                                                     type           = type,
+                                                     sample.nobs    = sample_nobs,
+                                                     penalty_factor = penalty_factor)) 
+  } else {
+    stop("\nrestriktor ERROR: I don't know how to handle an object of class ", paste0(class(object)[1]))
+  }
 
   
   ## add objectnames if not available
@@ -321,7 +337,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   if (comparison == "complement" && length(conList) == 1L && 
       nrow(conList[[1]]$constraints) == conList[[1]]$neq) {
     comparison  <- "unconstrained"
-    message("\nRestriktor Message: The complement of a hypothesis with only equality", 
+    message("\nrestriktor Message: The complement of a hypothesis with only equality", 
     " constraints is the unconstrained model. Comparison set to 'unconstrained' instead.")
   }
   
@@ -337,6 +353,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
       # TO DO Wat als object niet een vector is?
       #       NB Als: b.unrestr <- as.vector(object)
       #          dan heb je geen namen meer (die juist wel in hypo terug moeten komen)
+      #          Bij een matrix dan die col of row names uitlezen en gebruiken, of obv vcov!
     } else {
       b.unrestr <- coef.named.vector(ans$model.org)
     }
@@ -431,9 +448,12 @@ goric.default <- function(object, ..., hypotheses = NULL,
             if (type %in% c("goric", "gorica")) {
               PTu <- 1 + ncol(VCOV)
             } else if (type %in% c("goricc", "goricac")) {
+              
               if (is.null(sample_nobs)) {
-                stop("Restriktor ERROR: if type = \'goric(a)c\' the argument \'sample_nobs\' needs to be provided.",
-                     call. = FALSE)
+                stop(paste("\nrestriktor ERROR: the argument sample_nobs is not found,",
+                           "which is needed when type = type = \'goric(a)c\'."), call. = FALSE)
+              } else {
+                sample_nobs <- check_sample_nobs(sample_nobs) # take sum in case of group sizes
               }
               N <- sample_nobs
               # unconstrained penalty
@@ -446,7 +466,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
             }
             
             if (is.null(PTm)) {
-              stop("Restriktor ERROR: no chi-bar-square weights (a.k.a. level probabilities) are found. Use mix_weights = 'pmvnorm' (default) or 'boot'.", call. = FALSE)
+              stop("\nrestriktor ERROR: no chi-bar-square weights (a.k.a. level probabilities) are found. Use mix_weights = 'pmvnorm' (default) or 'boot'.", call. = FALSE)
             }
             
             goric.Hm <- -2*llm + penalty_factor*PTm #-2*(llm - PTm)
@@ -515,7 +535,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
             df$model <- as.character(df$model)
           }
         },
-          stop("Restriktor ERROR: I don't know how to compute the GORIC values.")
+          stop("\nrestriktor ERROR: I don't know how to compute the GORIC values.")
   )
 
   ans$objectList  <- conList
@@ -604,7 +624,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
 #   # hypotheses are inherited from the restriktor object
 #   
 #   if (!inherits(object, "restriktor")) {
-#     stop("Restriktor ERROR: the object must be of class restriktor.")
+#     stop("\nrestriktor ERROR: the object must be of class restriktor.")
 #   }
 #   
 #   objectList <- list(...)
@@ -670,24 +690,34 @@ goric.lm <- function(object, ..., hypotheses = NULL,
   isLm <- unlist(lapply(objectList, function(x) class(x)[1] %in% c("aov", "lm", "glm", "mlm", "rlm")))
   # TO DO werkte voor rlm niet, zie evt TO DOs in conRLM (wordt via restriktor functie in LL bepaling aangeroepen)
   if (sum(isLm) > 1L) {
-    stop(paste("Restriktor ERROR: multiple objects of class lm found, only 1 is allowed."), call. = FALSE)
+    stop(paste("\nrestriktor ERROR: multiple objects of class lm found, only 1 is allowed."), call. = FALSE)
   }
   
   if (missing == "two.stage") {
     if (family(object)$family != "gaussian") {
-      stop(paste("Restriktor ERROR: \"two.stage\" is not available in the categorical setting"), call. = FALSE)
+      stop(paste("\nrestriktor ERROR: \"two.stage\" is not available in the categorical setting"), call. = FALSE)
     }
+    #
+    # Check on type and possibly change
+    if (type == "goric") {
+      message("\nrestriktor Message: missing = \"two.stage\" is only (for now)", 
+              "available for type = 'gorica(c)'. The GORICA will be used, not the the GORIC.")
+      type = "gorica"
+    } else if (type == "goricc") {
+      message("\nrestriktor Message: missing = \"two.stage\" is only (for now)", 
+              "available for type = 'gorica(c)'. The GORICAC will be used, not the the GORICC.")
+      type = "goricac"
+    } else if (!c(type %in% c("gorica", "goricac"))) {
+      message("\nrestriktor Message: missing = \"two.stage\" is only (for now)", 
+              "available for type = 'gorica(c)'. The GORICA will be used.")
+      type = "gorica"
+    }
+    #
     tsm  <- two_stage_matrices(object, auxiliary = auxiliary, emControl = emControl)
     vcov <- two_stage_sandwich(tsm)
     est  <- coef.named.vector(tsm$fitTarget, VCOV = vcov)
     #N <- tsm$N
-    
-    if (!type %in% c("gorica", "goricac")) {
-      stop(paste("restriktor EROR: missing = \"two.stage\" is only (for now)", 
-           "available for type = 'gorica(c)'"), call. = FALSE)
-      # TO DO message kan alleen gorica / goricac ipv goric / goricc en dus daarmee gerund, ook in output melden.
-      # TO DO check overal waar dit zo is - ms standaard message maken en die op deze plekken neerzetten dan.
-    }
+    objectList$sample_nobs <- tsm$N
     objectList$object <- est
     objectList$VCOV   <- vcov
   } else {
@@ -714,21 +744,17 @@ goric.lm <- function(object, ..., hypotheses = NULL,
 
 # object of class numeric -------------------------------------------------
 goric.numeric <- function(object, ..., hypotheses = NULL,
+                          type = "gorica", 
                           VCOV = NULL,
                           comparison = NULL,
-                          type = "gorica", sample_nobs = NULL,
+                          sample_nobs = NULL,
                           debug = FALSE) {
   
-  if (!c(type %in% c("gorica", "goricac"))) {
-    # TO DO hierboven de check net anders uitgeschreven dan in functies hierboven
-    stop(paste("Restriktor ERROR: object of class numeric is only supported for", 
-         "type = 'gorica(c)'."), call. = FALSE)
-    # TO DO message kan alleen gorica / goricac ipv goric / goricc en dus daarmee gerund, ook in output melden.
-    # TO DO check overal waar dit zo is - ms standaard message maken en die op deze plekken neerzetten dan.
-  }
+  # Check on type and possibly change
+  check.type <- check.type(type, class = "numeric") 
   
   if (is.null(VCOV)) {
-    stop(paste("Restriktor ERROR: the argument VCOV is not found."), call. = FALSE)
+    stop(paste("\nrestriktor ERROR: the argument VCOV is not found."), call. = FALSE)
   } 
   
   #  if (!is.null(dim(object)) && dim(object)[1] == 1) {
@@ -758,68 +784,14 @@ goric.numeric <- function(object, ..., hypotheses = NULL,
 
 
 # object of class lavaan --------------------------------------------------
-# goric.lavaan <- function(object, ..., hypotheses = NULL,
-#                          comparison = NULL,
-#                          type = "gorica",
-#                          standardized = FALSE,
-#                          debug = FALSE) {
-#   
-#   if (!c(type %in% c("gorica", "goricac"))) {
-#     stop(paste("Restriktor ERROR: object of class lavaan is only supported for", 
-#          "type = 'gorica(c)'."), call. = FALSE)
-#   }
-#   
-#   parTable_list <- con_gorica_est_lav(object, standardized)
-#   parameter_table <- parTable_list$parameter_table
-#   
-#   # Only user-specified labels or "lhs-op-rhs"
-#   usr_specified_labels_idx <- parameter_table$label != "" & parameter_table$free != 0L
-#   # no user-specified labels
-#   if (all(!usr_specified_labels_idx)) {
-#     
-#   } else {
-#     parameter_table <- parameter_table[!duplicated(parameter_table$label), ]  
-#   } 
-#    
-#   
-#   #out$VCOV[parameter_table$label, parameter_table$label, drop = FALSE]
-#   
-#   objectList <- list(
-#     object = est$estimate,
-#     VCOV = est$VCOV,
-#     hypotheses = hypotheses,
-#     comparison = comparison,
-#     type = type,
-#     debug = debug
-#   )
-#   
-#   if (type == "goricac") {
-#     objectList$sample_nobs <- lavInspect(object, what = "ntotal")
-#   }
-#   
-#   # Voeg extra argumenten toe aan de objectList
-#   extraArgs <- list(...)
-#   objectList <- c(objectList, extraArgs)
-#   
-#   # Roep de goric.default functie aan met de samengestelde lijst
-#   res <- do.call(goric.default, objectList)
-#   
-#   res
-# }
-
-
 goric.lavaan <- function(object, ..., hypotheses = NULL,
                          comparison = NULL,
                          type = "gorica",
                          standardized = FALSE,
                          debug = FALSE) {
   
-  if (!c(type %in% c("gorica", "goricac"))) {
-    stop(paste("Restriktor ERROR: object of class lavaan is only supported for", 
-               "type = 'gorica(c)'."), call. = FALSE)
-    # TO DO message kan alleen gorica / goricac ipv goric / goricc en dus daarmee gerund, ook in output melden
-    # TO DO check overal waar dit zo is - ms standaard message maken en die op deze plekken neerzetten dan.
-  }
+  # Check on type and possibly change
+  check.type <- check.type(type, class = "lavaan") 
 
   # TO DO
   #Lavaan object 
@@ -860,18 +832,29 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
 # object of class CTmeta --------------------------------------------------
 goric.CTmeta <- function(object, ..., hypotheses = NULL,
                          comparison = NULL,
-                         type = "gorica", sample_nobs = NULL,
+                         type = "gorica", 
+                         sample_nobs = NULL,
                          debug = FALSE) {
   
-  if (!c(type %in% c("gorica", "goricac"))) {
-    stop(paste("Restriktor ERROR: object of class CTmeta is only supported for",
-               "type = 'gorica(c)'."), call. = FALSE)
-    # TO DO message kan alleen gorica / goricac ipv goric / goricc en dus daarmee gerund, ook in output melden.
-    # TO DO check overal waar dit zo is - ms standaard message maken en die op deze plekken neerzetten dan.
-  }
+  # Check on type and possibly change
+  check.type <- check.type(type, class = "CTmeta") 
   
   # message VCOV
   message.VCOVvb()
+  
+  
+  # sample_nobs (needed for type = "goricac")
+  #N <- sum(object$N) # or object$NrStudies
+  #sample_nobs <- check_N_with_sample_nobs(N, sample_nobs)
+  # TO DO
+  # Sample sizes for each study - of juist aantal studies!!!!
+  # dan delete:
+  if (is.null(sample_nobs) && type %in% c("goricac")) {
+    stop(paste("\nrestriktor ERROR: the argument sample_nobs is not found,",
+               "which is needed when type = 'goricac'."), call. = FALSE)
+  } else if (type %in% c("goricac")) {
+    sample_nobs <- check_sample_nobs(sample_nobs) # take sum in case of group sizes
+  }
   
   # Maak de objectList aan en voeg de vereiste elementen toe
   objectList <- list(
@@ -897,25 +880,34 @@ goric.CTmeta <- function(object, ..., hypotheses = NULL,
 
 # object of class rma -----------------------------------------------------
 goric.rma <- function(object, ..., hypotheses = NULL,
-                      VCOV = NULL,
                       comparison = NULL,
-                      type = "gorica", sample_nobs = NULL,
+                      type = "gorica", 
+                      VCOV = NULL,
+                      sample_nobs = NULL,
                       debug = FALSE) {
   
   if (!inherits(object, c("rma.uni", "rma.mv"))) {
-    stop(paste("Restriktor ERROR: the object must be of class 'rma.uni' or 'rma.mv'."), call. = FALSE)
-    # TO DO check of voor "rma.mv" het altijd goed gaat, bij mijn checks wel...
+    stop(paste("\nrestriktor ERROR: the object must be of class 'rma.uni' or 'rma.mv'."), call. = FALSE)
   }
   
-  if (!c(type %in% c("gorica", "goricac"))) {
-    stop(paste("Restriktor ERROR: object of class rma is only supported for type = 'gorica(c)'."), 
-         call. = FALSE)
-    # TO DO message kan alleen gorica / goricac ipv goric / goricc en dus daarmee gerund, ook in output melden.
-    # TO DO check overal waar dit zo is - ms standaard message maken en die op deze plekken neerzetten dan.
-  }
+  # Check on type and possibly change
+  check.type <- check.type(type, class = "rma (i.e., 'rma.uni' or 'rma.mv')") 
   
   # message VCOV
   message.VCOV()
+  
+  # sample_nobs (needed for type = "goricac")
+  #N <- sum(object$ni) # or length(object$ni)
+  #sample_nobs <- check_N_with_sample_nobs(N, sample_nobs)
+  # TO DO
+  # Sample sizes for each study - of juist aantal studies!!!!
+  # dan delete:
+  if (is.null(sample_nobs) && type %in% c("goricac")) {
+    stop(paste("\nrestriktor ERROR: the argument sample_nobs is not found,",
+               "which is needed when type = 'goricac'."), call. = FALSE)
+  } else if (type %in% c("goricac")) {
+    sample_nobs <- check_sample_nobs(sample_nobs) # take sum in case of group sizes
+  }
   
   # Maak de objectList aan en voeg de vereiste elementen toe
   objectList <- list(
@@ -942,23 +934,29 @@ goric.rma <- function(object, ..., hypotheses = NULL,
 
 ## lme4
 # glmerMod, lmerMod, nlmerMod
+# TO DO dit kan ws een functie worden toch? 
+#       Maar wellicht op termijn wel verschillen in de 3 (of nu ook al)?
 
 
 # object of class nlmerMod -----------------------------------------------------
 goric.nlmerMod <- function(object, ..., hypotheses = NULL,
-                           VCOV = NULL, comparison = NULL,
-                           type = "gorica", sample_nobs = NULL,
+                           comparison = NULL,
+                           type = "gorica", 
+                           VCOV = NULL, sample_nobs = NULL,
                            debug = FALSE) {
   
-  if (!c(type %in% c("gorica", "goricac"))) {
-    stop(paste("Restriktor ERROR: object of class nlmerMod is only supported for", 
-               "type = 'gorica(c)'."), call. = FALSE)
-    # TO DO message kan alleen gorica / goricac ipv goric / goricc en dus daarmee gerund, ook in output melden.
-    # TO DO check overal waar dit zo is - ms standaard message maken en die op deze plekken neerzetten dan.
-  }
+  # Check on type and possibly change
+  check.type <- check.type(type, class = "nlmerMod") 
   
   # message VCOV
   message.VCOV()
+  # Note We can get the Variance-Covariance matrix of the random effects (ranef()) 
+  # with VarCorr; see https://lmiratrix.github.io/MLM/lmer_extract.html
+  
+  # sample_nobs (needed for type = "goricac")
+  N <- nobs(object)
+  sample_nobs <- check_N_with_sample_nobs(N, sample_nobs)
+  
   
   # Maak de objectList aan en voeg de vereiste elementen toe
   objectList <- list(
@@ -988,23 +986,25 @@ goric.nlmerMod <- function(object, ..., hypotheses = NULL,
 
 # object of class glmerMod -----------------------------------------------------
 goric.glmerMod <- function(object, ..., hypotheses = NULL,
-                           VCOV = NULL, comparison = NULL,
-                           type = "gorica", sample_nobs = NULL,
+                           comparison = NULL,
+                           type = "gorica", 
+                           VCOV = NULL, sample_nobs = NULL,
                            debug = FALSE) {
   
-  if (!c(type %in% c("gorica", "goricac"))) {
-    stop(paste("Restriktor ERROR: object of class glmerMod is only supported for", 
-               "type = 'gorica(c)'."), call. = FALSE)
-    # TO DO message kan alleen gorica / goricac ipv goric / goricc en dus daarmee gerund, ook in output melden.
-    # TO DO check overal waar dit zo is - ms standaard message maken en die op deze plekken neerzetten dan.
-  }
+  # Check on type and possibly change
+  check.type <- check.type(type, class = "glmerMod") 
   
   # message VCOV
   message.VCOV()
   
+  # sample_nobs (needed for type = "goricac")
+  N <- nobs(object)
+  sample_nobs <- check_N_with_sample_nobs(N, sample_nobs)
+  
   # Maak de objectList aan en voeg de vereiste elementen toe
   objectList <- list(
     object = object@beta, 
+    # object@beta equals fixef(object); latter contains labels.
     VCOV = suppressWarnings(vcov(object)), 
     sample_nobs = sample_nobs,
     hypotheses = hypotheses,
@@ -1013,6 +1013,7 @@ goric.glmerMod <- function(object, ..., hypotheses = NULL,
     debug = debug
   )
   
+  # Label 'object = object@beta' (not needed when: 'object = fixef(object)')
   names(objectList$object) <- colnames(vcov(object))
   
   # Voeg extra argumenten toe aan de objectList
@@ -1026,25 +1027,26 @@ goric.glmerMod <- function(object, ..., hypotheses = NULL,
 }
 
 
-# object of class glmerMod -----------------------------------------------------
+# object of class lmerMod -----------------------------------------------------
 goric.lmerMod <- function(object, ..., hypotheses = NULL,
-                          VCOV = NULL, comparison = NULL,
-                          type = "gorica", sample_nobs = NULL,
+                          comparison = NULL, type = "gorica", 
+                          VCOV = NULL, sample_nobs = NULL,
                           debug = FALSE) {
   
-  if (!c(type %in% c("gorica", "goricac"))) {
-    stop(paste("Restriktor ERROR: object of class lmerMod is only supported for", 
-               "type = 'gorica(c)'."), call. = FALSE)
-    # TO DO message kan alleen gorica / goricac ipv goric / goricc en dus daarmee gerund, ook in output melden.
-    # TO DO check overal waar dit zo is - ms standaard message maken en die op deze plekken neerzetten dan.
-  }
+  # Check on type and possibly change
+  check.type <- check.type(type, class = "lmerMod") 
   
   # message VCOV
   message.VCOV()
   
+  # sample_nobs (needed for type = "goricac")
+  N <- nobs(object)
+  sample_nobs <- check_N_with_sample_nobs(N, sample_nobs)
+  
   # Maak de objectList aan en voeg de vereiste elementen toe
   objectList <- list(
     object = object@beta, 
+    # object@beta equals fixef(object); latter contains labels.
     VCOV = suppressWarnings(vcov(object)), 
     sample_nobs = sample_nobs,
     hypotheses = hypotheses,
@@ -1053,6 +1055,7 @@ goric.lmerMod <- function(object, ..., hypotheses = NULL,
     debug = debug
   )
   
+  # Label 'object = object@beta' (not needed when: 'object = fixef(object)')
   names(objectList$object) <- colnames(vcov(object))
   
   # Voeg extra argumenten toe aan de objectList
@@ -1064,37 +1067,3 @@ goric.lmerMod <- function(object, ..., hypotheses = NULL,
   
   res
 }
-
-
-# goric.nlmerMod <- function(object, ..., hypotheses = NULL,
-#                       VCOV = NULL,
-#                       comparison = NULL,
-#                       type = "gorica", sample_nobs = NULL,
-#                       debug = FALSE) {
-#   
-#   if (!c(type %in% c("gorica", "goricac"))) {
-#     stop(paste("Restriktor ERROR: object of class nlmerMod is only supported for", 
-#          "type = 'gorica(c)'."), call. = FALSE)
-#   }
-#   
-#   objectList <- list(...)
-#   objectList$VCOV <- suppressWarnings(vcov(object))
-#   cnames <- colnames(objectList$VCOV)
-#   objectList$object <- object@beta
-#   names(objectList$object) <- cnames
-#   objectList$hypotheses <- hypotheses
-#   objectList$comparison <- comparison
-#   objectList$type <- type
-#   objectList$debug <- debug
-#   
-#   if (type == "goricac") {
-#     objectList$sample_nobs <- sample_nobs
-#   }
-#   
-#   object_idx <- grepl("object", names(objectList))
-#   objectList <- append(list(object = objectList[object_idx]), objectList[!object_idx])  
-#   
-#   res <- do.call(goric.default, c(objectList[object_idx], objectList[!object_idx]))
-#   
-#   res
-# }

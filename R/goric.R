@@ -24,6 +24,9 @@ goric.default <- function(object, ..., hypotheses = NULL,
   } 
   
   num_hypotheses <- length(hypotheses)
+  if (!is.null(hypotheses$Heq)) { # can happen if it comes fromm benchmarks function
+    num_hypotheses <- length(hypotheses) - 1
+  }
   # Set default comparison if needed
   
   if (is.null(comparison)) {
@@ -842,18 +845,11 @@ goric.CTmeta <- function(object, ..., hypotheses = NULL,
   # message VCOV
   message.VCOVvb()
   
-  
   # sample_nobs (needed for type = "goricac")
-  #N <- sum(object$N) # or object$NrStudies
-  #sample_nobs <- check_N_with_sample_nobs(N, sample_nobs)
-  # TO DO
-  # Sample sizes for each study - of juist aantal studies!!!!
-  # dan delete:
-  if (is.null(sample_nobs) && type %in% c("goricac")) {
-    stop(paste("\nrestriktor ERROR: the argument sample_nobs is not found,",
-               "which is needed when type = 'goricac'."), call. = FALSE)
-  } else if (type %in% c("goricac")) {
-    sample_nobs <- check_sample_nobs(sample_nobs) # take sum in case of group sizes
+  if (type == "goricac") {
+    N <- sum(object$N) # or object$NrStudies # TO DO check:
+    # Sample sizes for each study - of juist aantal studies!!!!
+    sample_nobs <- check_N_with_sample_nobs(N, sample_nobs)
   }
   
   # Maak de objectList aan en voeg de vereiste elementen toe
@@ -897,16 +893,10 @@ goric.rma <- function(object, ..., hypotheses = NULL,
   message.VCOV()
   
   # sample_nobs (needed for type = "goricac")
-  #N <- sum(object$ni) # or length(object$ni)
-  #sample_nobs <- check_N_with_sample_nobs(N, sample_nobs)
-  # TO DO
-  # Sample sizes for each study - of juist aantal studies!!!!
-  # dan delete:
-  if (is.null(sample_nobs) && type %in% c("goricac")) {
-    stop(paste("\nrestriktor ERROR: the argument sample_nobs is not found,",
-               "which is needed when type = 'goricac'."), call. = FALSE)
-  } else if (type %in% c("goricac")) {
-    sample_nobs <- check_sample_nobs(sample_nobs) # take sum in case of group sizes
+  if (type == "goricac") {
+    N <- N <- sum(object$ni) # or length(object$ni) # TO DO check:
+    # Sample sizes for each study - of juist aantal studies!!!!
+    sample_nobs <- check_N_with_sample_nobs(N, sample_nobs)
   }
   
   # Maak de objectList aan en voeg de vereiste elementen toe
@@ -954,9 +944,10 @@ goric.nlmerMod <- function(object, ..., hypotheses = NULL,
   # with VarCorr; see https://lmiratrix.github.io/MLM/lmer_extract.html
   
   # sample_nobs (needed for type = "goricac")
-  N <- nobs(object)
-  sample_nobs <- check_N_with_sample_nobs(N, sample_nobs)
-  
+  if (type == "goricac") {
+    N <- nobs(object)
+    sample_nobs <- check_N_with_sample_nobs(N, sample_nobs)
+  }
   
   # Maak de objectList aan en voeg de vereiste elementen toe
   objectList <- list(
@@ -998,8 +989,10 @@ goric.glmerMod <- function(object, ..., hypotheses = NULL,
   message.VCOV()
   
   # sample_nobs (needed for type = "goricac")
-  N <- nobs(object)
-  sample_nobs <- check_N_with_sample_nobs(N, sample_nobs)
+  if (type == "goricac") {
+    N <- nobs(object)
+    sample_nobs <- check_N_with_sample_nobs(N, sample_nobs)
+  }
   
   # Maak de objectList aan en voeg de vereiste elementen toe
   objectList <- list(
@@ -1040,8 +1033,10 @@ goric.lmerMod <- function(object, ..., hypotheses = NULL,
   message.VCOV()
   
   # sample_nobs (needed for type = "goricac")
-  N <- nobs(object)
-  sample_nobs <- check_N_with_sample_nobs(N, sample_nobs)
+  if (type == "goricac") {
+    N <- nobs(object)
+    sample_nobs <- check_N_with_sample_nobs(N, sample_nobs)
+  }
   
   # Maak de objectList aan en voeg de vereiste elementen toe
   objectList <- list(

@@ -154,7 +154,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
       control = control,
       mix_weights = mix_weights,
       penalty_factor = penalty_factor,
-      Heq = FALSE, # TO DO Default keuze of kan deze dus nooit TRUE zijn, ook niet als in het origneel gebruikt?
+      #Heq = FALSE, # TO DO Default keuze of kan deze dus nooit TRUE zijn, ook niet als in het origneel gebruikt?
       ...
     )
   
@@ -230,7 +230,9 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
                                 #type = type,
                                 #sample_nobs = sample_nobs,
                                 control = control, mix_weights = mix_weights,
-                                penalty_factor = penalty_factor, Heq = FALSE, ...)
+                                penalty_factor = penalty_factor, 
+                                #Heq = FALSE,
+                                ...)
       }
 
       name <- paste0("pop_es = ", rnames[teller_es])
@@ -419,7 +421,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     control = control,
     mix_weights = mix_weights,
     penalty_factor = penalty_factor,
-    Heq = FALSE,
+    #Heq = FALSE,
     ...
   )
   
@@ -456,7 +458,9 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
                                 hypos = hypos, pref_hypo = pref_hypo, 
                                 comparison = comparison, type = "gorica",
                                 control = control, mix_weights = mix_weights, 
-                                penalty_factor = penalty_factor, Heq = FALSE, ...)
+                                penalty_factor = penalty_factor, 
+                                #Heq = FALSE,
+                                ...)
       }
       
       name <- paste0("pop_est = ", rnames[teller_es])

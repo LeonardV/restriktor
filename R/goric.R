@@ -23,12 +23,12 @@ goric.default <- function(object, ..., hypotheses = NULL,
          "list(h1 = 'x1 > x2 > x3')."), call. = FALSE)
   } 
   
-  num_hypotheses <- length(hypotheses)
-  if (!is.null(hypotheses$Heq)) { # can happen if it comes fromm benchmarks function
-    num_hypotheses <- length(hypotheses) - 1
+  if (Heq == T && !is.null(hypotheses$Heq)) { # can happen if it comes from benchmarks function
+    hypotheses <- hypotheses[-1]
   }
-  # Set default comparison if needed
+  num_hypotheses <- length(hypotheses)
   
+  # Set default comparison if needed
   if (is.null(comparison)) {
     if (num_hypotheses == 1) {
       comparison <- "complement"
@@ -40,13 +40,14 @@ goric.default <- function(object, ..., hypotheses = NULL,
   comparison <- match.arg(comparison, c("unconstrained", "complement", "none"))
   
   # Validate Heq
-  if (Heq && (comparison != "complement" || num_hypotheses > 1)) {
-    stop("\nrestriktor ERROR: Heq = TRUE is only allowed when comparison = 'complement' and there is at most one hypothesis.", call. = FALSE)
+  if (Heq && num_hypotheses > 1) {
+    stop(paste0("\nrestriktor ERROR: Heq = TRUE is only allowed when there is one order-restricted hypothesis. ",
+                "Now, there are ", num_hypotheses, " order-restricted hypotheses." ), call. = FALSE)
   }
 
   # Adjust comparison if necessary based on hypotheses
   if (comparison == "complement" && num_hypotheses > 1) {
-    warning("\nrestriktor WARNING: More than one hypothesis provided. 'comparison' set to 'unconstrained'.", call. = FALSE)
+    warning("\nrestriktor WARNING: More than one hypothesis provided. Therefore, 'comparison' set to 'unconstrained'.", call. = FALSE)
     comparison <- "unconstrained"
   }
   
@@ -57,6 +58,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
               " to its complement.", call. = FALSE)
       Heq <- FALSE
   }
+  # TO DO kan deze weg of gaat het dan fout in de code?
+
   
   if (!is.null(VCOV)) {
     # check if scalar
@@ -116,7 +119,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
     comparison <- tolower(comparison)
   }
   
-  if (length(hypotheses) == 1 & Heq & comparison == "complement") {
+  #if (length(hypotheses) == 1 & Heq & comparison == "complement") {
+  if (length(hypotheses) == 1 & Heq & comparison != "none") {
     Hceq <- gsub("<|>", "=", hypotheses[[1]])
     hypotheses <- append(list(Heq = Hceq), hypotheses)
   } 

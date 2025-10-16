@@ -81,6 +81,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   # Hypotheses
   hypos <- object$hypotheses_usr
   nr_hypos <- dim(object$result)[1]
+  Heq <- object$Heq
 
   # Unrestricted (adjusted) group_means
   group_means <- object$b.unrestr
@@ -154,9 +155,11 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
       control = control,
       mix_weights = mix_weights,
       penalty_factor = penalty_factor,
-      #Heq = FALSE, # TO DO Default keuze of kan deze dus nooit TRUE zijn, ook niet als in het origneel gebruikt?
+      #Heq = FALSE,
+      Heq = Heq,
       ...
     )
+  
   
 
   ## Compute observed Cohens f
@@ -231,9 +234,11 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
                                 #sample_nobs = sample_nobs,
                                 control = control, mix_weights = mix_weights,
                                 penalty_factor = penalty_factor, 
-                                #Heq = FALSE,
+                                Heq = Heq,
                                 ...)
       }
+      
+      
 
       name <- paste0("pop_es = ", rnames[teller_es])
       parallel_function_results[[name]] <- future_lapply(
@@ -341,6 +346,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   }
   
   nr_hypos <- dim(object$result)[1]
+  Heq <- object$Heq
   comparison <- object$comparison
   type <- object$type
   est_sample <- object$b.unrestr
@@ -421,9 +427,10 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     control = control,
     mix_weights = mix_weights,
     penalty_factor = penalty_factor,
-    #Heq = FALSE,
+    Heq = Heq,
     ...
   )
+  
   
   
   if (is.null(quant)) {
@@ -459,9 +466,11 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
                                 comparison = comparison, type = "gorica",
                                 control = control, mix_weights = mix_weights, 
                                 penalty_factor = penalty_factor, 
-                                #Heq = FALSE,
+                                Heq = Heq,
                                 ...)
       }
+      
+      
       
       name <- paste0("pop_est = ", rnames[teller_es])
       parallel_function_results[[name]] <- future_lapply(

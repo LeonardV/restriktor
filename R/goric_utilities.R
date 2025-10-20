@@ -16,18 +16,14 @@ coef.named.vector <- function(x, VCOV = NULL, ...)  {
     if (is.null(VCOV)) {
       names(est) <- rownames(vcov(x))
       # TO DO dit werkt niet, er is niet alleen : maar ook _ en laatste mag ws niet (runt iig niet)
-      message("\nrestriktor Message: The estimates from the fit object -- i.e, coef(fit) -- are vectorized, ", 
-                    "and their names are based on the rownames used in vcov(). ",
-                    "Hence, these names should be used in the hypotheses specification ",
-                    "(where ':' should be replaced by '.'.")
     } else { 
       # TO DO eigenlijk nog checken of rownames bestaan
       names(est) <- rownames(VCOV)
-      message("\nrestriktor Message: The estimates from the fit object -- i.e, coef(fit) -- are vectorized, ", 
-              "and their names are based on the rownames from their covariance matrix. ",
-              "Hence, these names should be used in the hypotheses specification ",
-              "(where ':' should be replaced by '.'.")
     }
+    message("\nrestriktor Message: The coefficients from the fitted model have been converted into a vector. ",
+            "The coefficient names are taken from the row names of the covariance matrix (vcov). ",
+            "Use these names when specifying hypotheses. ",
+            "Note: replace any ':' characters with '.' in hypothesis labels.")
   } else {
     est <- coef(x)
   }
@@ -35,34 +31,32 @@ coef.named.vector <- function(x, VCOV = NULL, ...)  {
 }
 
 check_sample_nobs <- function(sample_nobs, ...)  {
-  
   if (length(sample_nobs) > 1) { 
     # Probably group sizes, then sample size is sum of group sizes
     sample_nobs <- sum(sample_nobs)
-    
-    # message
-    message(paste0("\nrestriktor Message: The argument 'sample_nobs' contains more than one value. ",
-                   "It is assumed that those are group sizes and that their sum, that is, ", sample_nobs,
-                   " is the number of observations."))
+    message(paste0(
+      "\nrestriktor Message: The argument 'sample_nobs' contains more than one value. ",
+      "It is assumed that these represent group sizes; their total (", sample_nobs, 
+      ") is used as the overall sample size."
+    ))
   }
-  
   return(sample_nobs)
 }
 
 check_N_with_sample_nobs <- function(N, sample_nobs, ...)  {
   # Check on N
   if (!is.null(sample_nobs) && sample_nobs != N) {
-    message(paste0("\nrestriktor Message: The value in 'sample_nobs' or sum(sample_nobs), that is, ", sample_nobs, ", does not ", 
-                   "resemble the sample size value determined from the fit object, that is, ", N, ". ",
-                   "The latter is used."))
+    message(paste0(
+      "\nrestriktor Message: The specified 'sample_nobs' (or its sum = ", sample_nobs, 
+      ") differs from the sample size derived from the fitted model (", N, "). ",
+      "The model-based value is used instead."
+    ))
   }
   return(N)
 }
 
 VCOV.unbiased <- function(model.org, sample_nobs = NULL, ...)  {
-  
   sample_nobs <- check_sample_nobs(sample_nobs)
-   
   N <- NULL 
   if (!is.na(model.org$df.residual) && !is.null(model.org$df.residual) && !is.null(model.org$rank)) {
     # Use cov.mx based on N not N-k, such that output goric and gorica are the same
@@ -81,27 +75,31 @@ VCOV.unbiased <- function(model.org, sample_nobs = NULL, ...)  {
     VCOV <- vcov(model.org)
     # TO DO Voor als dpoMatrix (kan dat hierboven ook gebeuren?), dan ws:
     #as.matrix(suppressWarnings(vcov(object))) # Behoud dit zijn namen ook?
-    message(paste0("\nrestriktor Message: The covariance matrix of the estimates is obtained via the vcov function; therefore", 
-                   "it is the (biased) restricted sample covariance matrix and not the unbiased sample covariance matrix (based on 'N')."))
+    message("\nrestriktor Message: The covariance matrix of the estimates was obtained via 'vcov()'. ",
+            "This represents the biased (restricted) sample covariance matrix, ",
+            "not the unbiased version based on the full sample size ('N').")
   }
-  #
   # Check on N
   if(!is.null(N) && sample_nobs != N) {
-    message(paste0("\nrestriktor Message: The value in 'sample_nobs' or sum(sample_nobs), that is, ", sample_nobs, ", does not ", 
-                   "resemble the sample size value determined from the fit object, that is, ", N, ". ",
-                   "The unbiased variance covariance matrix is based on the latter."))
+    message(paste0(
+      "\nrestriktor Message: The specified 'sample_nobs' (or its sum = ", sample_nobs, 
+      ") differs from the sample size determined from the fitted model (", N, "). ",
+      "The unbiased covariance matrix is computed using the model-based value."
+    ))
   }
   
   return(VCOV)
 }
 
 message.VCOV <- function(...)  {
-  message("\nrestriktor Message: The covariance matrix of the estimates is obtained via the vcov function; ", 
-                       "therefore, it is the (biased) restricted sample covariance matrix and not the unbiased sample covariance matrix (based on 'N').")
+  message("\nrestriktor Message: The covariance matrix of the estimates was obtained via 'vcov()'. ",
+          "This is the biased (restricted) sample covariance matrix, ",
+          "not the unbiased version based on the total sample size ('N').")
 } 
 
 message.VCOVvb <- function(...)  {
-  message("\nrestriktor Message: The covariance matrix of the estimates is obtained via the 'vb' argument from the metaforpackage.")
+  message("\nrestriktor Message: The covariance matrix of the estimates was obtained via the 'vb' argument ",
+          "from the metafor package.")
 }
 
 check.type <- function(type, class, ...)  {

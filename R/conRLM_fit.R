@@ -1,11 +1,11 @@
-conRLM_fit <- function (x, y, weights, ..., w = rep(1, nrow(x)), init = "ls", 
-                        psi = psi.bisquare, scale.est = c("MAD", "Huber", "proposal 2"), 
-                        k2 = 1.345, method = c("M", "MM"), 
-                        wt.method = c("inv.var", "case"), 
-                        maxit = 20, acc = 1e-04, test.vec = "resid", 
+conRLM_fit <- function (x, y, weights, ..., w = rep(1, nrow(x)), init = "ls",
+                        psi = psi.bisquare, scale.est = c("MAD", "Huber", "proposal 2"),
+                        k2 = 1.345, method = c("M", "MM"),
+                        wt.method = c("inv.var", "case"),
+                        maxit = 20, acc = 1e-04, test.vec = "resid",
                         lqs.control = NULL, Amat, bvec, meq,
                         tol = sqrt(.Machine$double.eps)) {
-
+  
   irls.delta <- function(old, new) sqrt(sum((old - new)^2)/max(1e-20, 
                                                                sum(old^2)))
   irls.rrxwr <- function(x, w, r) {
@@ -62,9 +62,7 @@ conRLM_fit <- function (x, y, weights, ..., w = rep(1, nrow(x)), init = "ls",
     if (!is.function(psi)) {
       psi <- get(psi, mode = "function")
     }
-    #arguments <- list(...) # TO DO dit geeft bij mij bij een vb een error:
-                            #Error in conRLM.rlm(object, constraints, ...) : object 'rlm' not found
-    arguments <- NULL # TO DO
+    arguments <- list(...) 
     if (length(arguments)) {
       pm <- pmatch(names(arguments), names(formals(psi)), 
                    nomatch = 0L)
@@ -98,7 +96,7 @@ conRLM_fit <- function (x, y, weights, ..., w = rep(1, nrow(x)), init = "ls",
     psi <- psi.bisquare
     
     if (any(bvec != 0)) {
-      stop("Restriktor ERROR: the rhs may only contain zeros (for now).")
+      stop("Restriktor ERROR: the rhs may only contain zeros (for now).", call. = FALSE)
     }
     
     if (meq > 0L) {
@@ -111,25 +109,23 @@ conRLM_fit <- function (x, y, weights, ..., w = rep(1, nrow(x)), init = "ls",
       temp <- do.call(MASS::lqs,
                       c(list(x = x[ , idx.qp, drop = FALSE], y, intercept = FALSE, 
                              method = "S", k0 = 1.54764), lqs.control)) 
-      # TO DO default en hieronder k0 = 1.548, waarom hier 1.54764 (of anders waarom hieronder niet 1.54764)
       coef  <- temp$coefficients
       resid <- temp$residuals
       scale <- temp$scale  
     } else {
       temp <- do.call(MASS::lqs, c(list(x, y, intercept = FALSE, 
-                                    method = "S", k0 = 1.548), lqs.control))
+                                    method = "S", k0 = 1.54764), lqs.control))
       coef <- temp$coefficients
       resid <- temp$residuals
     }
-    # TO DO bij mij werkt list(...) dus niet, zie comment hierboven ook
-    #if (length(arguments <- list(...))) 
-    #    if (match("c", names(arguments), nomatch = 0L)) {
-    #      c0 <- arguments$c
-    #      if (c0 > 1.54764) 
-    #        formals(psi)$c <- c0
-    #      else warning("'c' must be at least 1.54764 and has been ignored")
-    #    }
-    #  scale <- temp$scale
+    if (length(arguments <- list(...)))
+       if (match("c", names(arguments), nomatch = 0L)) {
+         c0 <- arguments$c
+         if (c0 > 1.54764)
+           formals(psi)$c <- c0
+         else warning("'c' must be at least 1.54764 and has been ignored")
+       }
+    scale <- temp$scale
   } else {
     stop("'method' is unknown")
   }

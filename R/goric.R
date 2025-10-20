@@ -23,7 +23,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
          "list(h1 = 'x1 > x2 > x3')."), call. = FALSE)
   } 
   
-  if (Heq == T && !is.null(hypotheses$Heq)) { # can happen if it comes from benchmarks function
+  if (Heq == TRUE && !is.null(hypotheses$Heq)) { # can happen if it comes from benchmarks function
     hypotheses <- hypotheses[-1]
   }
   num_hypotheses <- length(hypotheses)
@@ -751,9 +751,9 @@ goric.lm <- function(object, ..., hypotheses = NULL,
 
 # object of class numeric -------------------------------------------------
 goric.numeric <- function(object, ..., hypotheses = NULL,
+                          comparison = NULL,
                           type = "gorica", 
                           VCOV = NULL,
-                          comparison = NULL,
                           sample_nobs = NULL,
                           debug = FALSE) {
   

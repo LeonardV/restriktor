@@ -28,6 +28,7 @@ Suggests:
     knitr,
     rmarkdown,
     bain,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    metadat
 VignetteBuilder: knitr
 Config/testthat/edition: 3

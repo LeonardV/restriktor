@@ -35,16 +35,11 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   # check (only tukey's bisquare supported)
   if (is.null(psi)) {
     if (object$call[["method"]] == "M") {
-      stop("Restriktor ERROR: only tukey's bisquare loss function is supported.")
-      # TO DO geef ook mee wat gebruiker wel moet runnen dan
-      # ws method = "MM", en evt dat psi = "psi.bisquare" opgeven ook al goed is (dan kan M en MM)....
+      stop("Restriktor ERROR: only tukey's bisquare loss function is supported, use method = \"MM\".", call. = FALSE)
     }
   } else {
     if (psi != "psi.bisquare") {
-      stop("Restriktor ERROR: only tukey's bisquare loss function is supported.")
-      # TO DO geef ook mee wat gebruiker wel moet runnen dan, 
-      # ws psi = "psi.bisquare" -- maar dan bij goric juist error: Error in conRLM.rlm(object, constraints, ...) : object 'rlm' not found
-      # ws zowel method als psi nodig dan! method = "MM" werkt niet....
+      stop("Restriktor ERROR: only tukey's bisquare loss function is supported, use method = \"MM\".", call. = FALSE)
     }
   }
   

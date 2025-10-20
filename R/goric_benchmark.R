@@ -39,6 +39,10 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
 # TO DO in asymp functie heet het niet group_size maar sample_size (dito sample_size) 
   #     en dat kan vervelend voor gebruiker zijn...
 #       als argument ms toch sample_size en dan direct hierna:
+  
+  # if exists
+  group_size <- object$sample_nobs
+  
   # group_size <- sample_size
   # alt_sample_size <- alt_group_size
   # Ws 'andersom' iets doen met sample_size <- sum(group_size)

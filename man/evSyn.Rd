@@ -26,26 +26,39 @@ evSyn(object, input_type = NULL, \ldots)
 evSyn_est(object, \ldots, VCOV = list(), hypotheses = list(),
           type_ev = c("added", "equal", "average"), 
           comparison = c("unconstrained", "complement", "none"),
-          hypo_names = c())
+          hypo_names = c(), type = c("gorica", "goricac"), 
+          order_studies = c("input_order", "ascending", "descending"),
+          study_names = c(), study_sample_nobs = NULL)
 
 # input: Log-likelihood and penalty values
 evSyn_LL(object, \ldots, PT = list(), type_ev = c("added", "equal", "average"),
-         hypo_names = c())
+         hypo_names = c(), 
+         order_studies = c("input_order", "ascending", "descending"),
+         study_names = c())
 
 # input: GORIC(A), ORIC, AIC values
-evSyn_ICvalues(object, \ldots, hypo_names = c())
+evSyn_ICvalues(object, \ldots, type_ev = c("added", "average"), hypo_names = c(), 
+               order_studies = c("input_order", "ascending", "descending"), 
+               study_names = c())
 
 # input: AIC or ORIC or GORIC or GORICA weights or (Bayesian) posterior 
 # model probabilities
-evSyn_ICweights(object, \ldots, priorWeights = NULL, hypo_names = c())
+evSyn_ICweights(object, \ldots, priorWeights = NULL, hypo_names = c(),
+                order_studies = c("input_order", "ascending", "descending"), 
+                study_names = c())
 
 # input: Ratio of AIC or ORIC or GORIC or GORICA weights or 
 # (Bayesian) posterior model probabilities
-evSyn_ICratios(object, \ldots, priorWeights = NULL, hypo_names = c())
+evSyn_ICratios(object, \ldots, priorWeights = NULL, hypo_names = c(),
+               order_studies = c("input_order", "ascending", "descending"), 
+               study_names = c())
 
 # input: result from the goric() function
 # Note that this is a wrapper function for evSyn_LL.
-evSyn_gorica(object, \dots, type_ev = c("added", "equal", "average"), hypo_names = c())
+evSyn_gorica(object, \dots, type_ev = c("added", "equal", "average"), 
+             hypo_names = c(), 
+             order_studies = c("input_order", "ascending", "descending"), 
+             study_names = c())
 
 # input: Result from the escalc() function from the metafor package. 
 # Note that this is a wrapper function for evSyn_est.
@@ -99,6 +112,13 @@ evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldo
   Average-evidence approach (\code{type_ev = "average"}). See details for more 
   information.}
 
+  \item{type}{If \code{"gorica"}, a proxi for the log-likihood is calculated by assuming that 
+  the parameter estimates (of interest) are multivariate normally distributed. 
+  Then, either the unbiased covariance matrix of the estimates (based on 'N'; e.g., for an lm object) is used
+  or the biased one obtained via the vcov function (e.g., for a lavaan object). 
+  In the latter case, a corresponding message will be printed. If \code{"goricac"}, 
+  then the small-sample-size correction is applied.}
+
   \item{hypotheses}{When applying the same set of hypotheses to each study, 
   the syntax structure should be as follows: "hypotheses = list(H1, H2, \ldots)". 
   However, if a different set of hypotheses is applied to each study, the syntax 
@@ -126,12 +146,27 @@ evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldo
   a plot with the cumulative log-likelihood weights and log-likelihood weights 
   per study is displayed.}
 
-  \item{order_studies}{if "\code{input_order}" (default), the order of the studies 
-  in the output (and thus plot) will not be changed; 
-  if "\code{ascending}" or "\code{descending}", the order of the studies will be based
-  on the ascending or decscening order, respectively, of the study-specific support
-  for the overall preffered hypothesis.}
+  \item{study_names}{
+  A character vector specifying the names or labels of the individual studies.
+  When provided, these names will be used throughout the output, including in 
+  tables, summaries, and plots (in place of numeric study indices).
+  If \code{NULL} (default), studies are automatically numbered 
+  (1, 2, ..., K) following the order determined by \code{order_studies}.}
 
+  \item{study_sample_nobs}{
+  A numeric vector specifying the sample size (\code{n}) for each study.
+  When provided, this information will be included in summaries and can be used 
+  for weighted averaging or diagnostic purposes in the evidence synthesis. 
+  If \code{NULL} (default), all studies are assumed to have equal weight 
+  with respect to sample size.}
+  
+  \item{order_studies}{
+  A character string that determines how studies are ordered in the output and plots. 
+  If \code{"input_order"} (default), studies are displayed in the order they were 
+  provided. If \code{"ascending"} or \code{"descending"}, studies are ordered based 
+  on the ascending or descending cumulative support for the preferred hypothesis, 
+  respectively.}
+  
   \item{xlab}{a vector specifying custom labels for the x-axis (be aware that 
   study ordering may be changed based on \code{order_studies}). The length of 
   the vector must match the number of studies in the dataset. If not provided, 
@@ -243,7 +278,8 @@ for the theory-based hypotheses.}
 # The hypotheses (i.e., constraints) have to be in a list. It is recommended to name
 # each hypothesis in the list. Otherwise, the hypotheses are named accordingly 'H1', 'H2', \ldots.
 
-# Example using text-based syntax (the labels x1, x2, and x3 are the names of coef(model) or names(vector))
+# Example using text-based syntax (the labels x1, x2, and x3 are the names of 
+# coef(model) or names(vector))
 H1 <- '(x1, x2, x3) > 0'
 H2 <- '(x1, x3) > 0; x2 < 0'
 H3 <- 'x1 > 0; x2 < 0; x3 = 0'
@@ -305,14 +341,12 @@ evS4_added <- evSyn(object = Param_studies, VCOV = CovMx_studies,
                     comparison = "none")
 evS4_added
 summary(evS4_added)
-
 plot(evS4_added)
 
 evS4_equal <- evSyn(object = Param_studies, VCOV = CovMx_studies, 
                     hypotheses = hypotheses,
                     type_ev = "equal", 
                     comparison = "none")
-
 evS4_equal
 summary(evS4_equal)
 plot(evS4_equal)
@@ -321,8 +355,7 @@ plot(evS4_equal)
 ## Example 2: based on (multiple) estimates and their covariance matrices
 # 2 studies
 
-#estimates and their covariance matrices (from the 2 primary studies)
-
+# estimates and their covariance matrices (from the 2 primary studies)
 est_1 <- c(1.88, 2.54, 0.02)
 names(est_1) <- c("group1", "group2", "group3")
 vcov_est_1 <- diag(c(0.2149074, 0.2149074, 0.1408014))
@@ -336,20 +369,16 @@ object <- list(est_1, est_2)
 # list of covariance matrices of the estimates
 VCOV <- CovMx_studies <- list(vcov_est_1, vcov_est_2)
 
-
 # Hypotheses (study-specific)
-
-#names(est_1) # Specify restrictions using those names
+# names(est_1) # Specify restrictions using those names
 H11 <- 'group1 = group2 > group3'
 H12 <- 'group2 > group1 > group3'
-
-#names(est_2) # Specify restrictions using those names
+# names(est_2) # Specify restrictions using those names
 H21 <- 'gr1 = gr2 > gr3'
 H22 <- 'gr2 > gr1 > gr3' 
 
-# lis of (competing) hypotheses
+# list of (competing) hypotheses
 hypotheses <- list(H1 = list(H11, H12), H2 = list(H21, H22))
-
 
 # Evidence synthesis (added-evidence)
 evS2_added <- evSyn(object, VCOV = VCOV, hypotheses = hypotheses,
@@ -359,7 +388,7 @@ plot(evS2_added)
 
 
 ## Example 3: based on (multiple) estimates and their covariance matrices
-#3 studies
+# 3 studies
 
 # generate data
 ratio <- c(1,1.1,1.2)
@@ -375,9 +404,9 @@ data <- cbind(x11, x12, x13)
 data1 <- as.data.frame(scale(data))
 y1 <- ratio[1]*data1$x11 + ratio[2]*data1$x12 + ratio[3]*data1$x13 + rnorm(n1)
 # Note: since there is one outcome, the outcome does not need to be standardized.
-
 fit.lm1 <- lm(y1 ~ 1 + x11 + x12 + x13, data = data1)
 
+# Generate data2
 n2 <- n[2]
 x21 <- rnorm(n2)
 x22 <- rnorm(n2)
@@ -443,14 +472,14 @@ penalty.values <- as.list(data.frame(t(myPTs)))
 #
 # Added-evidence
 evS_LL_added <- evSyn(object = LL, PT = penalty.values, 
-                          hypo_names = colnames(myLLs),
-                          type_ev = "added")
+                      hypo_names = colnames(myLLs),
+                      type_ev = "added")
 evS_LL_added
 #
 # Equal-evidence
 evS_LL_equal <- evSyn(object = LL, PT = penalty.values, 
-                          hypo_names = colnames(myLLs),
-                          type_ev = "equal")
+                      hypo_names = colnames(myLLs),
+                      type_ev = "equal")
 evS_LL_equal
 
 
@@ -461,66 +490,81 @@ goric.values <- as.list(data.frame(t(myGORICs)))
 
 # Evidence synthesis (added-evidence)
 evS_Gv <- evSyn(goric.values, 
-                    hypo_names = colnames(myGORICs))
+                hypo_names = colnames(myGORICs))
 evS_Gv
 
 
+## Example 6: based on an escalc object
 
-## Example 5: based on an escalc object
-if (!require("metafor")) install.packages("metafor")
-library(metafor)
-#
-## Example 5a: one outcome, default labeling
-data_a <- dat.berkey1998[dat.berkey1998$outcome=="PD",][,c(1:4, 6:7)]
-#View(data_a)
-# yi gives the estimates and vi their variances.
-# So, here:
-# cluster_col = "trial" # using the first variable with a cluster variable name (year and author are other possibilities)
-# outcome_col = NULL # No, 'outcome' variable, so 'theta' is used a labeling
-# yi_col = "yi"
-# vi_cols = "vi"
-#  
-# The hypothesis should thus now be based on the default labelling theta:
-H1 <- "abs(theta) > 0.5" 
-evS_escalc_a <- evSyn(data_a, 
-                    hypotheses = list(H1 = H1), type_ev = "equal",
-                    comparison = "complement")
-evS_escalc_a
-#
-## Example 5b: one outcome, default labeling coming from 'outcome' variable
-data_b <- dat.berkey1998[dat.berkey1998$outcome=="PD",][,c(1:7)]
-#View(data_b)
-# yi gives the estimates and vi their variances.
-# So, here:
-# cluster_col = "trial" # using the first variable with a cluster variable name (year and author are other possibilities)
-# outcome_col = "outcome" # was NULL, but found 'outcome' variable, so use that labeling, that is, "PD"
-# yi_col = "yi"
-# vi_cols = "vi"
-#  
-# The hypothesis should thus now be based on the labeling based on the 'outcome' variable:
-H1 <- "abs(PD) > 0.5" 
-evS_escalc_b <- evSyn(data_b, 
-                    hypotheses = list(H1 = H1), type_ev = "equal",
-                    comparison = "complement")
-evS_escalc_b
-#
-## Example 5c: 2 outcomes, default labeling coming from 'outcome' variable 
-data_c <- dat.berkey1998
-#View(data_c)
-# yi gives the estimates (for both outcomes), vi their variances,
-# and v1i & v2i combined their covariance matrices.
-# So, here:
-# cluster_col = "trial" # using the first variable with a cluster variable name (year and author are other possibilities)
-# outcome_col = "outcome" # was NULL, but found 'outcome' variable, so use that labeling, that is, "PD"
-# yi_col = "yi"
-# vi_cols = c("v1i", "v2i")
-#  
-# The hypothesis should thus now be based on the labeling based on the 'outcome' variable:
-H1 <- "abs(AL) > 0.5, abs(PD) > 0.5" 
-evS_escalc_c <- evSyn(data_c, 
-                    hypotheses = list(H1 = H1), type_ev = "equal",
-                    comparison = "complement")
-evS_escalc_c
+## Example 6a: one outcome, default labeling
+if (requireNamespace("metadat", quietly = TRUE)) {
+  # access data within metafor
+  data_a <- metadat::dat.berkey1998[metadat::dat.berkey1998$outcome == "PD", ][, c(1:4, 6:7)]
+
+  # yi gives the estimates and vi their variances.
+  # So, here:
+  # cluster_col = "trial" using the first variable with a cluster variable 
+  # name (year and author are other possibilities)
+  # outcome_col = NULL # No 'outcome' variable, so 'theta' is used as labeling
+  # yi_col = "yi"
+  # vi_cols = "vi"
+  #  
+
+  # The hypothesis should thus now be based on the default labelling theta:
+  H1 <- "abs(theta) > 0.5" 
+  evS_escalc_a <- evSyn(
+    data_a, 
+    hypotheses = list(H1 = H1), 
+    type_ev = "equal",
+    comparison = "complement"
+  )
+  evS_escalc_a
+}
+
+
+## Example 6b: one outcome, default labeling coming from 'outcome' variable
+if (requireNamespace("metadat", quietly = TRUE)) {
+  data_b <- metadat::dat.berkey1998[metadat::dat.berkey1998$outcome == "PD", ][, c(1:7)]
+  # yi gives the estimates and vi their variances.
+  # So, here:
+  # cluster_col = "trial" # using the first variable with a cluster variable 
+  # name (year and author are other possibilities)
+  # outcome_col = "outcome" # was NULL, but found 'outcome' variable, so use that 
+  # labeling, that is, "PD"
+  # yi_col = "yi"
+  # vi_cols = "vi"
+  #  
+  # The hypothesis should thus now be based on the labeling based on the 'outcome' variable:
+  H1 <- "abs(PD) > 0.5" 
+  evS_escalc_b <- evSyn(data_b, 
+                        hypotheses = list(H1 = H1), 
+                        type_ev = "equal",
+                        comparison = "complement")
+  evS_escalc_b
+}
+
+
+## Example 6c: 2 outcomes, default labeling coming from 'outcome' variable
+if (requireNamespace("metadat", quietly = TRUE)) {
+  data_c <- metadat::dat.berkey1998
+  # yi gives the estimates (for both outcomes), vi their variances,
+  # and v1i & v2i combined their covariance matrices.
+  # So, here:
+  # cluster_col = "trial" # using the first variable with a cluster variable 
+  # name (year and author are other possibilities)
+  # outcome_col = "outcome" # was NULL, but found 'outcome' variable, so use 
+  # that labeling, that is, "PD"
+  # yi_col = "yi"
+  # vi_cols = c("v1i", "v2i")
+  #  
+  # The hypothesis should thus now be based on the labeling based on the 'outcome' variable:
+  H1 <- "abs(AL) > 0.5, abs(PD) > 0.5" 
+  evS_escalc_c <- evSyn(data_c, 
+                        hypotheses = list(H1 = H1), 
+                        type_ev = "equal",
+                        comparison = "complement")
+  evS_escalc_c
+}
 
 }
 

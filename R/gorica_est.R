@@ -4,11 +4,11 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
                            debug = FALSE, ...) {
   
   if (is.null(VCOV)) {
-    stop("Restriktor ERROR: variance-covariance matrix VCOV must be provided.")
+    stop("restriktor ERROR: variance-covariance matrix VCOV must be provided.")
   }
   # check method to compute chi-square-bar weights
   if (!(mix_weights %in% c("pmvnorm", "boot", "none"))) {
-    stop("Restriktor ERROR: ", sQuote(mix_weights), " method unknow. Choose from \"pmvnorm\", \"boot\", or \"none\"")
+    stop("restriktor ERROR: ", sQuote(mix_weights), " method unknow. Choose from \"pmvnorm\", \"boot\", or \"none\"")
   }
   
   # timing
@@ -82,7 +82,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
   start.time <- proc.time()[3]
   
   if (ncol(Amat) != length(b.unrestr)) {
-    stop("Restriktor ERROR: length coefficients and the number of",
+    stop("restriktor ERROR: length coefficients and the number of",
          "\n       columns constraints-matrix must be identical")
   }
   

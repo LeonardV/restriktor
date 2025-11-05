@@ -10,7 +10,7 @@ con_weights <- function(cov, meq, tolerance, ridge_constant, ...) {
                              tolerance, ridge_constant, ...))
   }
   if (inherits(wt_bar, "try-error")) {
-    stop("Restriktor ERROR: the covariance matrix is too large. Try to set mix_weights = \"boot\".", call. = FALSE)
+    stop("restriktor ERROR: the covariance matrix is too large. Try to set mix_weights = \"boot\".", call. = FALSE)
   }  
   wt_bar
 }

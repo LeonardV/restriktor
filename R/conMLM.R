@@ -5,7 +5,7 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
   
   # check class
   if (!(class(object)[1] == "mlm")) {
-    stop("Restriktor ERROR: object must be of class mlm.")
+    stop("restriktor ERROR: object must be of class mlm.")
   }
   
   # not available yet.
@@ -13,7 +13,7 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
   
   # check method to compute chi-square-bar weights
   if (!(mix_weights %in% c("pmvnorm", "boot", "none"))) {
-    stop("Restriktor ERROR: ", sQuote(mix_weights), " method unknown. Choose from \"pmvnorm\", \"boot\", or \"none\"")
+    stop("restriktor ERROR: ", sQuote(mix_weights), " method unknown. Choose from \"pmvnorm\", \"boot\", or \"none\"")
   }
   
   # timing
@@ -104,7 +104,7 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
  #  if (mix_weights == "pmvnorm") {
  #    if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
  #      messages$mix_weights <- paste(
- #        "Restriktor message: Since the constraint matrix is not full row-rank, the level probabilities 
+ #        "restriktor Message: Since the constraint matrix is not full row-rank, the level probabilities 
  # are calculated using mix_weights = \"boot\" (the default is mix_weights = \"pmvnorm\").
  # For more information see ?restriktor.\n"
  #      )
@@ -126,7 +126,7 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
 
   ## some checks
   if (ncol(Amat) != length(b.unrestr)) {
-    stop(paste("Restriktor ERROR: length coefficients and the number of",
+    stop(paste("restriktor ERROR: length coefficients and the number of",
          "columns constraints-matrix must be identical"))
   }
   
@@ -272,7 +272,7 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
     } else if (se == "boot.model.based") {
 
       if (attr(object$terms, "intercept") && any(Amat[,1] == 1)) {
-        stop(paste("Restriktor ERROR: no restrictions on intercept possible",
+        stop(paste("restriktor ERROR: no restrictions on intercept possible",
              "for 'se = boot.model.based' bootstrap method."))
       }
 
@@ -326,7 +326,7 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
     if (mix_weights == "pmvnorm") {
       if (RREF$rank < nrow(PT_Amat) && RREF$rank != 0L) {
         messages$mix_weights_rank <- paste(
-          "Restriktor message: Since the constraint matrix is not full row-rank, the level probabilities", 
+          "restriktor Message: Since the constraint matrix is not full row-rank, the level probabilities", 
           "are calculated using mix_weights = \"boot\" (the default is mix_weights = \"pmvnorm\").",
           "For more information see ?restriktor.\n"
         )
@@ -341,7 +341,7 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
     if (mix_weights == "pmvnorm") {
       if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
         messages$mix_weights_rank <- paste(
-          "Restriktor message: Since the constraint matrix is not full row-rank, the level probabilities", 
+          "restriktor Message: Since the constraint matrix is not full row-rank, the level probabilities", 
           "are calculated using mix_weights = \"boot\" (the default is mix_weights = \"pmvnorm\").",
           "For more information see ?restriktor.\n"
         )

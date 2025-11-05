@@ -1,7 +1,8 @@
 plot.evSyn <- function(x, output_type = "gorica_weights", 
-                       xlab = NULL, ...) {
+                       xlab = NULL, 
+                       xlab_unordered = NULL, ...) {
   if (!output_type %in% c("gorica_weights", "ll_weights")) {
-    stop("Restriktor ERROR: output_type must be gorica_weights or ll_weights", call. = FALSE)
+    stop("restriktor ERROR: output_type must be gorica_weights or ll_weights", call. = FALSE)
   }
   
   if (inherits(x, "evSyn_est")) {
@@ -46,19 +47,42 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
   S <- nrow(weight_m[,,drop = FALSE])
   if (!is.null(xlab)) {
     if (length(xlab) != S) {
-      stop("Restriktor ERROR: Length of xlab must match the number of studies", call. = FALSE)
+      stop("restriktor ERROR: Length of xlab must match the number of studies.", call. = FALSE)
     }
+    if (!is.null(xlab_unordered)) {
+      message("restriktor Message: Both xlab and xlab_unordered are given, the plot will use xlab.")
+    }
+    if (!all(x$order_studies == 1:S)){
+      # Then, re-ordering happened and xlab should be the names of studies on current x-axis, so the ordered studies.
+      message("restriktor Message: It is assumed that xlab gives the names of the (re-ordered) studies. ",
+              "If re-ordering took place and you want to enter the names of the unordered studies, then use the xlab_unordered argument.")
+    }
+    
     Name_studies <- as.factor(xlab) 
     angle_x = 30
     vjust_x = 1 # 0: bottom-aligned to 1: is top-aligned
     hjust_x = 1 # right-aligned
   } else {
     #Name_studies <- as.factor(1:S)
-    Name_studies <- factor(x$orderStudies, levels = x$orderStudies)
-    angle_x = 0
-    vjust_x = 0.5 # centered vertically
-    hjust_x = 0.5 # centered horizontally
+    # Name_studies <- factor(x$order_studies, levels = x$order_studies)
+    # angle_x = 0
+    # vjust_x = 0.5 # centered vertically
+    # hjust_x = 0.5 # centered horizontally
+    Name_studies <- factor(x$study_names, levels = x$study_names)
+    angle_x = 30
+    vjust_x = 1 # 0: bottom-aligned to 1: is top-aligned
+    hjust_x = 1 # right-aligned
   }
+  if (!is.null(xlab_unordered) && is.null(xlab)) {
+    if (length(xlab_unordered) != S) {
+      stop("restriktor ERROR: Length of xlab_unordered must match the number of studies.", call. = FALSE)
+    }
+    Name_studies <- factor(xlab_unordered[x$order_studies], levels = xlab_unordered[x$order_studies]) 
+    angle_x = 30
+    vjust_x = 1 # 0: bottom-aligned to 1: is top-aligned
+    hjust_x = 1 # right-aligned
+  } 
+
 
   # Create data frames for individual and cumulative weights
   if (all(is.na(weight_m))) {
@@ -112,3 +136,9 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
            shape = guide_legend(order = 1)) 
   
 }
+
+
+# TO DO
+# ms kijken of er onzekerheid om de weights heen kan krijgen.
+# ms een grijze lijn bij 0.5 als het om weights gaat en twee hypo's 
+#                    en bij 1 als ratio van weights

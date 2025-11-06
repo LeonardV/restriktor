@@ -48,6 +48,9 @@ extract_est_vcov_outcomes <- function(data, outcome_col = NULL,
     # Extract outcomes and yi values for each trial
     if (is.null(outcome_col)) {
       outcomes <- "theta" # "yi"
+      message("\nrestriktor Message: By default (i.e., if 'outcome_col' is null), ", 
+              "the function assumes that the parameter labelused in the hypothesis ",
+              "is 'theta' (one outcome variable).")
       yi_vals <- setNames(cluster_data[[yi_col]], outcomes)
       yi_list[[paste(cluster_col, cluster_id)]] <- yi_vals
     } else {

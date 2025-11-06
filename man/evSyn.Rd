@@ -185,7 +185,8 @@ evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldo
   \item{outcome_col}{a column name in \code{data} containing the outcome 
   identifiers/labels for each observation within a cluster/study. 
   The hypothesis/-es should be based on this labelling.
-  By default (i.e., if 'outcome_col' is null), the function assumes the label is 
+  By default (i.e., if 'outcome_col' is null), the function assumes that the 
+  parameter label used in the hypothesis is 
   "theta" 
   % ms juist via deze de labels voor de hypo opgeven!
   (one outcome variable); 

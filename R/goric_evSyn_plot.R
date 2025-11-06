@@ -112,6 +112,8 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
           legend.margin=margin(unit(0, "cm"))) +
     geom_line(data = plot_data[plot_data[['weight_type']] == "cumulative", ],
               aes(group = .data[['variable']], color = .data[['variable']]), linewidth = 1) +
+    { if (NrHypos_incl == 2) geom_hline(yintercept = .5, linetype = "dashed", color = "gray", linewidth = .5) } +
+    # TO DO add to legend (if it is there), label/name = "Equal support".
     scale_color_brewer(palette = "Dark2") +
     theme(
       plot.margin = unit(c(1,1,1,1), "cm"),
@@ -134,11 +136,4 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
          shape = "", color = "") + 
     guides(color = guide_legend(order = 2),
            shape = guide_legend(order = 1)) 
-  
 }
-
-
-# TO DO
-# ms kijken of er onzekerheid om de weights heen kan krijgen.
-# ms een grijze lijn bij 0.5 als het om weights gaat en twee hypo's 
-#                    en bij 1 als ratio van weights

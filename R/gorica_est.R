@@ -287,6 +287,8 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
     }
   # remove not used columns of VCOV
   out$VCOV <- out$VCOV[parameter_table$label, parameter_table$label, drop = FALSE]
+  # TO DO Als zowel labeled als defined, dan message die ongecorr als beide in hypo, beter om die undefined ook als defined op te nemen. 
+  # TO DO Sowieso moet wel de juiste dubbele weg, anders mis je de covarianties!!!
   
   out$rhs <- parameter_table$rhs
   

@@ -145,26 +145,32 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   overlap_hypo <- unique(unlist(overlap_hypo))
   overlap_hypo <- overlap_hypo[overlap_hypo != ""]
   
+  best_hypo <- which.max(x$result[, 7])
+  best_hypo_name <- x$result$model[best_hypo]
+  best_hypo_overlap <- best_hypo_name %in% overlap_hypo
+  
   # check if the log-likelihood of models are equal, this means that the hypotheses overlap (i.e., subset)
   if (length(overlap_hypo) > 0 & !x$Heq) {
     message("---\nNote: Hypotheses ", paste0(sQuote(overlap_hypo), collapse = " and "), 
             " have equal log-likelihood values. This indicates that they overlap and",
-            " that the ratio of their GORIC(A) weights reached its maximum. If of", 
-            " interest, we recommend evaluating the overlap versus its complement.", 
-            " Run vignette(\"Guidelines_GORIC_output\") in your console for more", 
-            " information and an example.")
+            " that the ratio of their GORIC(A) weights reached its maximum.")
+  }
+  if (best_hypo_overlap) {
+    message("Since the best hypothesis overlaps with one or more other hypotheses,", 
+" we recommend evaluating the overlap (or best hypothesis) vs. its complement.", 
+          " Run vignette(\"Guidelines_GORIC_output\") in your console for more", 
+          " information and an example.")
   }
 
   if (comparison == "unconstrained" && length(df$model) == 2 && 
       # If comparison = "complement" and ceq only, than comparison is set to unconstrained internally.
       nrow(x$objectList[[1]]$constraints) != x$objectList[[1]]$neq) { 
     message("---\nAdvise: Are you certain you wish to assess the order-restricted hypothesis", 
-            " in comparison to the unconstrained one, rather than its complement?")
+            " in comparison to the unconstrained one, rather than its complement?", 
+            " Note that the order-restricted hypothesis overlaps (is contained in) the unconstrained,",
+            " while it does not overlap with its complement (except for their boundary).")
   }
 
-  best_hypo <- which.max(x$result[, 7])
-  best_hypo_name <- x$result$model[best_hypo]
-  best_hypo_overlap <- best_hypo_name %in% overlap_hypo
   
   if (length(df$model) > 1) {
     cat("\nConclusion:\n")
@@ -278,7 +284,7 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       " the other order-restricted hypotheses:")
       
       for (i in seq_along(best_hypos_rest)) {
-        if (best_hypos_rest[i] %in% overlap_hypo) {
+        if (best_hypo_overlap & best_hypos_rest[i] %in% overlap_hypo) {
           # Als er overlap is, voeg toe dat de relatieve support zijn maximum heeft bereikt
           message <- paste0(message, "\n  * ", sQuote(best_hypo_name), " is ", 
                             goric_rw_without_unc_best_hypo[i], 

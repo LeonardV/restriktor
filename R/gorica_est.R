@@ -230,6 +230,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
 con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
   # create empty list
   out <- list()
+  
   # get parameter table
   #
   # TO DO do we have labels from hypotheses?
@@ -238,30 +239,30 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
   # then we can also allow for default labeling!
   #
   # 
-  unstandardized_parTable <- parTable(x) # parameterEstimates(x)
+  parameter_table <- parTable(x) # parameterEstimates(x)
   #Not next code: since that excludes the defined parameters
-  #unstandardized_parTable <- unstandardized_parTable[unstandardized_parTable[, "plabel"] != "", ]
-  standardized_parTable   <- standardizedSolution(x, ci = FALSE, zstat = FALSE, se = FALSE)$est.std
-  
-  # combine unstandardized and standardized parameter estimates  
-  parameter_table <- cbind(unstandardized_parTable, est.std = standardized_parTable)
-  
-  # Only user-specified labels
+  #est_parTable <- est_parTable[est_parTable[, "plabel"] != "", ]
+  # Select output w.r.t. labelled estimates
   # TO DO dus gorica kan nooit obv lavaan labels?
   parameter_table_nonfree <- parameter_table[parameter_table$label != "" & parameter_table$free != 0L, ]
   parameter_table_defined <- parameter_table[parameter_table$label != "" & parameter_table$op == ":=", ]
-  #parameter_table_defined <- NULL
   parameter_table <- rbind(parameter_table_nonfree, parameter_table_defined)
-  # remove any duplicate labels
+  ## remove any duplicate labels
   parameter_table <- parameter_table[!duplicated(parameter_table$label), ]
-  # use (un)standardized parameter estimates
-  out$estimate <- 
-    if (standardized) {
-      parameter_table$est.std
-    } else { 
-      parameter_table$est
-    }
-  names(out$estimate) <- parameter_table$label
+  
+  # Extract estimates
+  label_names <- parameter_table$label 
+  if (standardized) {
+    est <- as.vector(standardizedSolution(x)['est.std'])$est.std
+    names(est) <- standardizedSolution(x)$label
+    out$estimate <- est[label_names]
+  } else { # so, if unstandardized
+    # Note: sometimes stand. and unstand. not of same size, 
+    #       so, if not needed, then do not add stand. estimates.
+    out$estimate <- parameter_table$est
+  }
+  names(out$estimate) <- label_names
+  
   ## extract (un)standardized VCOV
   #out$VCOV <- 
     if (standardized) {

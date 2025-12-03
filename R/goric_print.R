@@ -185,7 +185,9 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
                  " has ", support_ratio, " times more support than its complement."))
     } else if (as.numeric(numbers[1]) / as.numeric(numbers[2]) < 1) {
       result <- paste(numbers[1], "/", numbers[2], "< 1", sep = " ")
-      cat("The order-restricted hypothesis", sQuote(objectnames[1]), "has", result, "times more support than its complement.",
+      cat("The order-restricted hypothesis", sQuote(objectnames[1]), 
+          "has less support (namely, ", result, 
+          "times more support) than its complement.",
       "That is, the complement has", sprintf("%.2f", as.numeric(numbers[2]) / as.numeric(numbers[1])), "times more support than", sQuote(objectnames[1]))      
     } else {
       result <- paste(numbers[1], "/", numbers[2], "= 1", sep = " ")
@@ -255,7 +257,9 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       cat("The order-restricted hypothesis", sQuote(objectnames[1]), "has", result, "times more support than the unconstrained.\n\n")
     } else if (as.numeric(numbers[1]) / as.numeric(numbers[2]) < 1) {
       result <- paste(numbers[1], "/", numbers[2], "< 1", sep = " ")
-      cat("The order-restricted hypothesis", sQuote(objectnames[1]), "has", result, "times more support than the unconstrained.\n\n")      
+      cat("The order-restricted hypothesis", sQuote(objectnames[1]), 
+          "has less support (namely, ", result, 
+          "times more support) than the unconstrained.\n\n")
     } else {
       result <- paste(numbers[1], "/", numbers[2], "= 1", sep = " ")
       cat("The order-restricted hypothesis", sQuote(objectnames[1]), "and the unconstrained have equal support:", result, "\n\n")      
@@ -382,3 +386,7 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
 
 # TO DO print ook de warnings hier nog eens, anders mis je die ms
 #       Kijk of messages en/of warnings en zag dan onderaan dat die er zijn en geef dan de code om die te zien!
+# Ws zeg dat er messgaes zijn en zeg hoe die in te zien.
+# vang ze dus op en geef ze niet direct (niet tijdens runnen en niet bij print).
+#
+# TO DO veel output (bvb warnings, conclusion) is doorlopende tekst zonder 'line breaks' en dus in de pdf zie je maar de helft; het is beter om line breaks toe te voegen, zodat de output nooit meer is dan 76 karakters.

@@ -57,6 +57,39 @@ print.goric_ICw <- function(x, digits = max(3, getOption("digits") - 4),
   formatted_df <- format(df, digits = digits, nsmall = digits, scientific = use_scientific)
   print(formatted_df, print.gap = 2, quote = FALSE)
 }
+# TO DO werkt niet naar behoren
+#use_scientific = FALSE
+#digits = 3
+# vooral digits dacht ik.
+# Sommig eblijven die 7 (= getOption("digits"))
+# Komt omdat dan sommige getallen nul lijken te zijn ws.
+# Ms dan alleen die wel scientific maken en dan met gevraagde aantal digits?
+# Dus check ws of in de column een getal zit dat kleiner is dan 0,0...1 met aantal 0en afh van digits,
+# als, dan scientific maken met die digits (evt +1?)
 
-
-
+# Voorbeeld:
+# library(lavaan)
+# # specify the model
+# HS.model_mgcfa <- "
+# visual =~ x1 + x2 + x3
+# textual =~ x4 + x5 + x6
+# speed =~ x7 + x8 + x9
+# "
+# # configural invariance
+# fit_ci <- cfa(HS.model_mgcfa, data = HolzingerSwineford1939, group = "school")
+# # weak invariance
+# fit_wi <- cfa(HS.model_mgcfa, data = HolzingerSwineford1939, group = "school", group.equal = "loadings")
+# # strong invariance
+# fit_si <- cfa(HS.model_mgcfa, data = HolzingerSwineford1939, group = "school", group.equal = c("intercepts",
+#                                                                                                "loadings"))
+# # strict invariance
+# fit_strict <- cfa(HS.model_mgcfa, data = HolzingerSwineford1939, group = "school",
+#                   group.equal = c("intercepts", "loadings", "residuals"))
+# # model comparison with AIC
+# AIC_meas.invar <- lavTestLRT(fit_ci, fit_wi, fit_si, fit_strict)$AIC
+# hypo.names <- c("configural", "weak", "strong", "strict")
+# AIC_weights <- calc_ICweights(AIC_meas.invar, hypo.names)
+# AIC_weights$ratio_IC_weights
+# AIC_weights$ratio_IC_weights["weak", ]
+# #
+# print(AIC_weights, use_scientific = FALSE, digits = 1)

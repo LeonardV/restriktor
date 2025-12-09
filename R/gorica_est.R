@@ -48,6 +48,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
                                  mix_weights = mix_weights,
                                  se          = "none",
                                  debug       = debug)  
+    
     # a list with useful information about the restrictions.
     CON <- restr.OUT$CON
     # a parameter table with information about the observed variables in the object 
@@ -59,6 +60,17 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
     bvec <- restr.OUT$bvec
     # neq
     meq <- restr.OUT$meq
+    #
+    #
+    # TO DO gaat het zo goed?
+    # Estimates and their VCOV for the parameters in hypotheses
+    param_names <- restr.OUT$param_names
+    indices <- which(names(b.unrestr) %in% param_names)
+    b.unrestr <- b.unrestr[indices]
+    p <- length(b.unrestr)
+    VCOV <- VCOV[indices, indices]
+    ll.unrestr <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE)
+    Amat <- Amat[,indices]
   } else if (is.null(constraints)) { 
     # no constraints specified - needed for GORIC to include unconstrained model
     CON <- NULL
@@ -134,7 +146,8 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
                 b.unrestr   = b.unrestr,
                 b.restr     = b.restr,
                 loglik      = ll.restr, 
-                Sigma       = VCOV,
+                Sigma       = VCOV, # TO DO Ergens Sigma nodig?
+                VCOV        = VCOV,
                 constraints = Amat, 
                 rhs         = bvec, 
                 neq         = meq, 
@@ -275,6 +288,10 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
       # TO DO now separate cov matrices... Which I combine as if they are independent, which is not per se true!
       # TO DO Rerun analysis with labelled param also as defined ones.
       # Note that some may be the same, but the filter on corr = exact one.
+      #
+      # TO DO als bijv variantie gelabelled, dan stand 1 met geen cov, 
+      #       dan probleem ook als niet var in hypo!!!
+      #
       #lavInspect(x, "vcov.def.std.all")
     } else {
       #lavInspect(x, "vcov")

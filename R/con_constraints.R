@@ -23,6 +23,8 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     # in the fitted object of class lavaan. 
     operators <- c("=~", "<~", "~*~", "~~", "~", "\\|", "%")
     
+    # TO DO bouw ook 'sd' in en dan kan je hypo obv zeg 0.2*sd specificeren
+    
     # check for user input error
     if (grepl(paste(operators, collapse = "|"), constraints) || all(grepl("[><]{2,}", constraints))) {
       stop(
@@ -76,15 +78,19 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     lhs <- unlist(lapply(CON_FLAT, "[[", "lhs"))
     op  <- unlist(lapply(CON_FLAT, "[[", "op"))
     rhs <- unlist(lapply(CON_FLAT, "[[", "rhs"))
-    LIST$lhs <- lhs
+    LIST$lhs <- lhs # names parameters used in hypotheses
     LIST$op  <- op
     LIST$rhs <- c(LIST$rhs, rhs) 
     
+    # parameters used in hypotheses
+    param_names <- LIST$lhs
+    
+    # TO DO waarom onderstaande nodig?
     parTable$lhs   <- c(parTable$lhs, LIST$lhs)
     parTable$op    <- c(parTable$op, LIST$op)
     parTable$rhs   <- c(parTable$rhs, LIST$rhs)
     parTable$label <- c(parTable$label, rep("", length(lhs)))
-    
+
     # equality constraints
     meq  <- nrow(con_constraints_ceq_amat(model, constraints = constraints))
     # right-hand-side
@@ -107,13 +113,16 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     ## Here, we remove the abs() from the constraint function which is redundant 
     ## for determining if the constraints are linear. 
     
-    # check if any abs() functie exists in string. 
+    # check if any abs() function exists in string. 
     if (any(grepl("abs\\(.*\\)", c(LIST$lhs, LIST$rhs)))) {
       LIST2 <- LIST
       
       # remove abs( and ) from string
       LIST2$lhs <- gsub("abs\\(|\\)", "", LIST2$lhs)
       LIST2$rhs <- gsub("abs\\(|\\)", "", LIST2$rhs)
+      
+      # parameters used in hypotheses
+      param_names <- LIST2$lhs
       
       parTable_org$free <- seq_len(length(parTable_org$lhs))
       cin.function <- lav_partable_constraints_ciq(partable = parTable_org, con = LIST2)
@@ -132,8 +141,9 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     Amat <- constraints
     bvec <- if (is.null(bvec)) { rep(0L, nrow(Amat)) } else { bvec }
     meq  <- if (is.null(meq)) { 0L } else { meq }
+    param_names <- NULL
   } else { 
-    stop("no restrictions were specified.") 
+    stop("restriktor ERROR: No restrictions were specified.") 
   }
   
   # correct user errors, like x1 < 2 & x1 < 1, x1 < 2 is removed to get a 
@@ -143,7 +153,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
   bvec <- rrc$rhs
   
   if (!(nrow(Amat) == length(bvec))) {
-    warning(paste("Restriktor WARNING: The number of constraints does not match", 
+    warning(paste("restriktor WARNING: The number of constraints does not match", 
                   "the \'rhs\' (nrow(Amat) != length(rhs))."))
   }
   
@@ -164,7 +174,8 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
               parTable = parTable,
               Amat     = Amat,
               bvec     = bvec, 
-              meq      = meq)
+              meq      = meq,
+              param_names = param_names)
   
   OUT
 }

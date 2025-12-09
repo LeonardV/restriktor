@@ -355,8 +355,12 @@ goric.default <- function(object, ..., hypotheses = NULL,
     Hm <- setdiff(names(conList), "Heq")  
      
     # unrestricted estimates
-    if (inherits(object, "numeric")) {
-      b.unrestr <- object
+    #if (inherits(object, "numeric")) {
+    if (inherits(conList[[Hm]]$b.unrestr, "numeric")) {
+      #b.unrestr <- object
+      # TO DO hier gaat het fout als selectie param in hypo
+      b.unrestr <- conList[[Hm]]$b.unrestr
+      #
       # TO DO Wat als object niet een vector is?
       #       NB Als: b.unrestr <- as.vector(object)
       #          dan heb je geen namen meer (die juist wel in hypo terug moeten komen)
@@ -364,6 +368,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
     } else {
       b.unrestr <- coef.named.vector(ans$model.org)
     }
+    # VCOV
+    VCOV <- conList[[Hm]]$VCOV
     # restricted estimates
     b.restr <- conList[[Hm]]$b.restr
     # level probabilities
@@ -390,7 +396,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   }
   
   # compute log-likelihood for complement
-  # moet dit obv PT_Amat en PT_meq?
+  # moet dit obv PT_Amat en PT_meq? TO DO
   LL_c <- compute_complement_likelihood(ans$model.org, VCOV,
                                         Amat, Amat.ciq, Amat.ceq, 
                                         bvec, bvec.ciq, bvec.ceq, 

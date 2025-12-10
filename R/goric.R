@@ -806,29 +806,28 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
   # Check on type and possibly change
   check.type <- check.type(type, class = "lavaan") 
 
-  # TO DO
-  #Lavaan object 
-  #Zelf gemaakte parameters zoals indirect effect. 
-  #Dan in coef en vcov die niet. 
-  #Kan wel opvragen, maar voor cov mx nodig om andere estimates ook toe te voegen.... 
-  #Check of ze er zijn en in hypo zit ook? Dan model uitbreiden met andere est in hypo. 
-  #Dat runnen, maar kan dat, zit data (ws cov mx en evt means) in object (naast mdoel specificatie)? 
-  # Nb wel oppassen voor singuliere vcov, bijv in mediatie indirect product is van twee directe!
-  # En dit kan natuurlijk bij andere modellen ook... eerst op checken dan?!
-  
   est <- con_gorica_est_lav(object, standardized)
   # Function is defined in 'gorica_est'.
   
-  param_names <- con_constraints(model = est$estimate, VCOV = est$VCOV, 
-                                 constraints = hypotheses)$param_names
-  
+  Amat <- con_constraints(model = est$estimate, VCOV = est$VCOV, 
+                          constraints = hypotheses)$Amat
+  involved_params <- colSums(abs(Amat)) != 0
+  # Check whether all parameters are either all defined or all labelled (undefined) ones:
+  if (any(est$defined[involved_params] == 1) & any(est$defined[involved_params] == 0)) {
+    # Then mix of defined and regular (labelled) parameters
+    message("Now, mix and then no covariance, when define also labbelled ",
+    "param then also cov. See manual die je hier kan vinden",
+    "Het gaat nu verder met geen cov tussen die type variableen, wat ws niet klopt!")
+    #TO DO
+    # TO DO deze moet sowieso geprint, ik ga nl verder met cov = 0!
+  } 
   
   # message VCOV
   message.VCOV()
   
   objectList <- list(
-    object = est$estimate[param_names],                 
-    VCOV = est$VCOV[param_names, param_names],          
+    object = est$estimate[involved_params],                 
+    VCOV = est$VCOV[involved_params, involved_params],
     sample_nobs = lavInspect(object, what = "ntotal"),
     hypotheses = hypotheses,
     comparison = comparison,

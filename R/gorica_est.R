@@ -237,13 +237,6 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
   out <- list()
   
   # get parameter table
-  #
-  # TO DO do we have labels from hypotheses?
-  # Then filter directly on that.
-  # Possible first make from lhs & op & rhs labels if no label yet,
-  # then we can also allow for default labeling!
-  #
-  # 
   parameter_table <- parTable(x) # parameterEstimates(x)
   #Not next code: since that excludes the defined parameters
   #est_parTable <- est_parTable[est_parTable[, "plabel"] != "", ]
@@ -252,9 +245,14 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
   parameter_table_nonfree <- parameter_table[parameter_table$label != "" & parameter_table$free != 0L, ]
   parameter_table_defined <- parameter_table[parameter_table$label != "" & parameter_table$op == ":=", ]
   parameter_table <- rbind(parameter_table_nonfree, parameter_table_defined)
+  nr_nonfree <- dim(parameter_table_nonfree)[1]
+  nr_defined <- dim(parameter_table_defined)[1]
+  parameter_table$defined <- c(rep(0, nr_nonfree), rep(1, nr_defined))
   ## remove any duplicate labels
   parameter_table <- parameter_table[!duplicated(parameter_table$label), ]
-  
+  out$defined <- parameter_table$defined
+  # TO DO check wat als labels dubbel, maar verschil defined en niet, dan evt foutmelding die niet klopt...
+    
   # Extract estimates
   label_names <- parameter_table$label 
   if (standardized) {
@@ -277,13 +275,9 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
       out$VCOV <- rbind(cbind(a, matrix(0, nrow=nrow(a), ncol=ncol(b))),
             cbind(matrix(0, nrow=nrow(b), ncol=ncol(a)), b))
       colnames(out$VCOV) <- rownames(out$VCOV)
-      # TO DO now separate cov matrices... Which I combine as if they are independent, which is not per se true!
-      # TO DO Rerun analysis with labelled param also as defined ones.
-      # Note that some may be the same, but the filter on corr = exact one.
-      #
-      # TO DO als bijv variantie gelabelled, dan stand 1 met geen cov, 
-      #       dan probleem ook als niet var in hypo!!!
-      #
+      # Note: Now separate covariance matrices,
+      # which I combine as if they are independent, which is not per se true!
+      # Later on, a message wrt: Rerun analysis with labelled param also as defined ones.
       #lavInspect(x, "vcov.def.std.all")
     } else {
       #lavInspect(x, "vcov")
@@ -292,14 +286,12 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
       out$VCOV <- rbind(cbind(a, matrix(0, nrow=nrow(a), ncol=ncol(b))),
                         cbind(matrix(0, nrow=nrow(b), ncol=ncol(a)), b))
       colnames(out$VCOV) <- rownames(out$VCOV)
-      # TO DO dito
+      # See note above.
       #lavInspect(x, "vcov.def")
     }
   # remove not used columns of VCOV
   out$VCOV <- out$VCOV[parameter_table$label, parameter_table$label, drop = FALSE]
-  # TO DO Als zowel labeled als defined, dan message die ongecorr als beide in hypo, beter om die undefined ook als defined op te nemen. 
-  # TO DO Sowieso moet wel de juiste dubbele weg, anders mis je de covarianties!!!
-  
+
   out$rhs <- parameter_table$rhs
   
   out

@@ -38,7 +38,6 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     
     # Initialize output
     OUT <- vector("list", length(constraints))
-    param_names <- NULL
       
     # Process constraints
     for (i in seq_along(constraints)) {
@@ -83,9 +82,6 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     LIST$op  <- op
     LIST$rhs <- c(LIST$rhs, rhs) 
     
-    # parameters used in hypotheses
-    param_names_1 <- c(param_names, LIST$lhs)
-    
     # TO DO waarom onderstaande nodig?
     parTable$lhs   <- c(parTable$lhs, LIST$lhs)
     parTable$op    <- c(parTable$op, LIST$op)
@@ -122,9 +118,6 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       LIST2$lhs <- gsub("abs\\(|\\)", "", LIST2$lhs)
       LIST2$rhs <- gsub("abs\\(|\\)", "", LIST2$rhs)
       
-      # parameters used in hypotheses
-      param_names <- c(param_names, LIST2$lhs)
-      
       parTable_org$free <- seq_len(length(parTable_org$lhs))
       cin.function <- lav_partable_constraints_ciq(partable = parTable_org, con = LIST2)
       ceq.function <- lav_partable_constraints_ceq(partable = parTable_org, con = LIST2)
@@ -133,8 +126,6 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
                                                              npar = length(parTable_org$est))
       CON$ceq.nonlinear.idx <- lav_constraints_nonlinear_idx(func = ceq.function, 
                                                              npar = length(parTable_org$est))
-    } else {
-      param_names <- param_names_1
     }
   } else if (!is.character(constraints) && !is.null(constraints)) {
     if (is.vector(constraints) ) {
@@ -144,7 +135,6 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     Amat <- constraints
     bvec <- if (is.null(bvec)) { rep(0L, nrow(Amat)) } else { bvec }
     meq  <- if (is.null(meq)) { 0L } else { meq }
-    param_names <- NULL
   } else { 
     stop("restriktor ERROR: No restrictions were specified.") 
   }
@@ -177,8 +167,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
               parTable = parTable,
               Amat     = Amat,
               bvec     = bvec, 
-              meq      = meq,
-              param_names = param_names)
+              meq      = meq)
   
   OUT
 }

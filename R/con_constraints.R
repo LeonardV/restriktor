@@ -38,7 +38,8 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     
     # Initialize output
     OUT <- vector("list", length(constraints))
-    
+    param_names <- NULL
+      
     # Process constraints
     for (i in seq_along(constraints)) {
       # Clean up the constraints
@@ -83,7 +84,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     LIST$rhs <- c(LIST$rhs, rhs) 
     
     # parameters used in hypotheses
-    param_names <- LIST$lhs
+    param_names_1 <- c(param_names, LIST$lhs)
     
     # TO DO waarom onderstaande nodig?
     parTable$lhs   <- c(parTable$lhs, LIST$lhs)
@@ -122,7 +123,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       LIST2$rhs <- gsub("abs\\(|\\)", "", LIST2$rhs)
       
       # parameters used in hypotheses
-      param_names <- LIST2$lhs
+      param_names <- c(param_names, LIST2$lhs)
       
       parTable_org$free <- seq_len(length(parTable_org$lhs))
       cin.function <- lav_partable_constraints_ciq(partable = parTable_org, con = LIST2)
@@ -132,6 +133,8 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
                                                              npar = length(parTable_org$est))
       CON$ceq.nonlinear.idx <- lav_constraints_nonlinear_idx(func = ceq.function, 
                                                              npar = length(parTable_org$est))
+    } else {
+      param_names <- param_names_1
     }
   } else if (!is.character(constraints) && !is.null(constraints)) {
     if (is.vector(constraints) ) {

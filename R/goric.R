@@ -815,16 +815,20 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
   #Dat runnen, maar kan dat, zit data (ws cov mx en evt means) in object (naast mdoel specificatie)? 
   # Nb wel oppassen voor singuliere vcov, bijv in mediatie indirect product is van twee directe!
   # En dit kan natuurlijk bij andere modellen ook... eerst op checken dan?!
-    
+  
   est <- con_gorica_est_lav(object, standardized)
   # Function is defined in 'gorica_est'.
+  
+  param_names <- con_constraints(model = est$estimate, VCOV = est$VCOV, 
+                                 constraints = hypotheses)$param_names
+  
   
   # message VCOV
   message.VCOV()
   
   objectList <- list(
-    object = est$estimate,
-    VCOV = est$VCOV,
+    object = est$estimate[param_names],                 
+    VCOV = est$VCOV[param_names, param_names],          
     sample_nobs = lavInspect(object, what = "ntotal"),
     hypotheses = hypotheses,
     comparison = comparison,

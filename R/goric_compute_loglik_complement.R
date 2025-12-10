@@ -56,7 +56,6 @@ compute_complement_likelihood <- function(model.org, VCOV,
         betas[[l]] <- Hc.restr$b.restr
         ll[[l]]    <- dmvnorm(c(b.unrestr - Hc.restr$b.restr), 
                               sigma = VCOV, log = TRUE) 
-        # TO DO gaat hier fout!
       }
     }
     if (debug) {

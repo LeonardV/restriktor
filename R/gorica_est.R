@@ -62,15 +62,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
     meq <- restr.OUT$meq
     #
     #
-    # TO DO gaat het zo goed?
-    # Estimates and their VCOV for the parameters in hypotheses
-    param_names <- restr.OUT$param_names
-    indices <- which(names(b.unrestr) %in% param_names)
-    b.unrestr <- b.unrestr[indices]
-    p <- length(b.unrestr)
-    VCOV <- VCOV[indices, indices]
     ll.unrestr <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE)
-    Amat <- Amat[,indices]
   } else if (is.null(constraints)) { 
     # no constraints specified - needed for GORIC to include unconstrained model
     CON <- NULL

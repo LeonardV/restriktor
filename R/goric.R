@@ -815,11 +815,20 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
   # Check whether all parameters are either all defined or all labelled (undefined) ones:
   if (any(est$defined[involved_params] == 1) & any(est$defined[involved_params] == 0)) {
     # Then mix of defined and regular (labelled) parameters
-    message("Now, mix and then no covariance, when define also labbelled ",
-    "param then also cov. See manual die je hier kan vinden",
-    "Het gaat nu verder met geen cov tussen die type variableen, wat ws niet klopt!")
-    #TO DO
-    # TO DO deze moet sowieso geprint, ik ga nl verder met cov = 0!
+    message(
+"restriktor Message: The hypotheses contain labelled and defined parameters. ",
+"To account for their covariances, you should also define the labelled ones: ",
+"\n", names(est$estimate[involved_params][est$defined[involved_params] == 0]), ".\n",
+"For example, if 'c' is the label for the direct effect in a mediaton model, ",
+"you could add 'direct := c' to the model syntax.",
+# TO DO: "Example code can be found on \url[https://github.com/rebeccakuiper/Tutorials/tree/main/GORICA%20for%20mediation]."
+"\n",
+"Press [Enter] to continue without covariances ",  
+"between the labelled and defined parameters. ",
+"Press [Esc] to stop and define the labelled parameters of interest as well.")
+    # NOTE: This message needs to be printed
+    # so also when other messages are gathered in a list or so
+   readline(prompt = "Press [Enter] to continue without covariances. ")
   } 
   
   # message VCOV

@@ -60,9 +60,6 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
     bvec <- restr.OUT$bvec
     # neq
     meq <- restr.OUT$meq
-    #
-    #
-    ll.unrestr <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE)
   } else if (is.null(constraints)) { 
     # no constraints specified - needed for GORIC to include unconstrained model
     CON <- NULL

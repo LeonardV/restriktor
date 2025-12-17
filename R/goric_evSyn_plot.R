@@ -1,6 +1,8 @@
 plot.evSyn <- function(x, output_type = "gorica_weights", 
-                       xlab = NULL, 
-                       xlab_unordered = NULL, ...) {
+                       xlab = NULL, # TO DO deze gaan dan op alfabetische volgorde en houden dus niet de opgegeven oredering aan!!! Aanpassen en anders iig melden.
+                       xlab_unordered = NULL, 
+                       angle_x = 30, # TO DO Sometimes the labels do not fit, then adjusting the angle can help.
+                       ...) {
   if (!output_type %in% c("gorica_weights", "ll_weights")) {
     stop("restriktor ERROR: output_type must be gorica_weights or ll_weights", call. = FALSE)
   }

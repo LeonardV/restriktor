@@ -210,7 +210,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 df.residual = so$df[2],
                 loglik      = ll.unrestr, 
                 Sigma       = Sigma, 
-                VCOV        = Sigma, # TO DO bijgevoegd ivm goric code
+                #VCOV        = Sigma, # TO DO bijgevoegd ivm goric code
                 constraints = Amat, 
                 rhs         = bvec, 
                 neq         = meq, 
@@ -291,7 +291,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 df.residual = so$df[2], 
                 loglik      = ll.restr, 
                 Sigma       = Sigma, 
-                VCOV        = Sigma, # TO DO bijgevoegd ivm goric code                             
+                #VCOV        = Sigma, # TO DO bijgevoegd ivm goric code                             
                 constraints = Amat, 
                 rhs         = bvec, 
                 neq         = meq, 

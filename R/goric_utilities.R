@@ -6,7 +6,7 @@ coef.gorica_est <- function(object, ...)  {
   return(object$b.restr)
 }
 
-coef.named.vector <- function(x, VCOV = NULL, ...)  {
+coef_named_vector <- function(x, VCOV = NULL, ...)  {
   # TO DO wat als vcov niet bestaat of nog niet matrix (maar bijv dpo)?
   # ms zelfs suppressWarnings(vcov(...)) gebruiken dan
   if (!is.vector(coef(x))) {

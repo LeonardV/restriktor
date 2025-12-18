@@ -55,7 +55,7 @@ compute_complement_likelihood <- function(model.org, VCOV,
         Hc.restr   <- do.call("con_gorica_est", CALL.restr) 
         betas[[l]] <- Hc.restr$b.restr
         ll[[l]]    <- dmvnorm(c(b.unrestr - Hc.restr$b.restr), 
-                              sigma = VCOV, log = TRUE)            
+                              sigma = VCOV, log = TRUE) 
       }
     }
     if (debug) {
@@ -77,9 +77,9 @@ compute_complement_likelihood <- function(model.org, VCOV,
       cat("log-likelihood_c value =", llc, "\n")
     }
   } else if (all(c(Amat) == 0L)) {
-    stop("Restriktor ERROR: no complement exists for an unconstrained hypothesis.")
+    stop("restriktor ERROR: no complement exists for an unconstrained hypothesis.")
   } else {
-    stop("Restriktor ERROR: you might have found a bug, please contact me at: info@restriktor.org!")
+    stop("restriktor ERROR: you might have found a bug, please contact me at: info@restriktor.org!")
   }
   
   return(list(llc = llc, betasc = betasc))

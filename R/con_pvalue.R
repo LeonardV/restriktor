@@ -30,7 +30,7 @@ con_pvalue_Fbar <- function(wt.bar, Ts.org, df.residual, type = "A",
     #   pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
     #                       wt.bar = wt.bar)
     # } else {
-    #   stop("Restriktor ERROR: mix_weights method ", sQuote(wt.method), " unknown.")
+    #   stop("restriktor ERROR: mix_weights method ", sQuote(wt.method), " unknown.")
     # }
   } else if(type == "A") {
     # compute df
@@ -46,7 +46,7 @@ con_pvalue_Fbar <- function(wt.bar, Ts.org, df.residual, type = "A",
     #   pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
     #                       wt.bar = wt.bar)
     # } else {
-    #   stop("Restriktor ERROR: mix_weights method ", sQuote(wt.method), " unknown.")
+    #   stop("restriktor ERROR: mix_weights method ", sQuote(wt.method), " unknown.")
     # }
   } else if (type == "B") {
     # compute df
@@ -62,7 +62,7 @@ con_pvalue_Fbar <- function(wt.bar, Ts.org, df.residual, type = "A",
     #   pvalue <- 1 - pfbar(Ts.org, df1 = df.bar, df2 = df.residual,
     #                       wt.bar = rev(wt.bar))
     # } else {
-    #   stop("Restriktor ERROR: mix_weights method ", sQuote(wt.method), " unknown.")
+    #   stop("restriktor ERROR: mix_weights method ", sQuote(wt.method), " unknown.")
     # }
   } else  {
     stop("hypothesis test type ", sQuote(type), " unknown.")
@@ -82,7 +82,7 @@ con_pvalue_Fbar <- function(wt.bar, Ts.org, df.residual, type = "A",
 #                               Amat, bvec, meq = 0L, meq.alt = 0L) {
 #   #check
 #   #if ((qr(Amat)$rank < nrow(Amat))) {
-#   #  stop("Restriktor ERROR: restriktions matrix must have full row-rank")
+#   #  stop("restriktor ERROR: restriktions matrix must have full row-rank")
 #   #}
 #   
 #   if (type == "global") {
@@ -148,7 +148,7 @@ con_pvalue_boot_parametric <- function(model, Ts.org,
   ## shift y by q to relocate the vertex to its origin.
   if (!all(bvec == 0)) {
     if (!(fam$family %in% c("gaussian"))) {
-      stop("Restriktor ERROR: for the ", sQuote(fam$family), " family, relocated cones are not supported (yet).")
+      stop("restriktor ERROR: for the ", sQuote(fam$family), " family, relocated cones are not supported (yet).")
     }
     #q <- t(R) %*% solve(R%*%t(R)) %*% bvec
     shift.q <- MASS::ginv(Amat) %*% bvec
@@ -159,9 +159,9 @@ con_pvalue_boot_parametric <- function(model, Ts.org,
     if (fam$family == "gaussian") {
       ystar.shift <- (X %*% -shift.q)
     } else if (fam$family == "binomial") {
-      stop("Restriktor ERROR: for the ", sQuote(fam$family), " family, relocated cones are not supported (yet).")
+      stop("restriktor ERROR: for the ", sQuote(fam$family), " family, relocated cones are not supported (yet).")
     } else if (fam$family == "poission") {
-      stop("Restriktor ERROR: for the ", sQuote(fam$family), " family, relocated cones are not supported (yet).")
+      stop("restriktor ERROR: for the ", sQuote(fam$family), " family, relocated cones are not supported (yet).")
     }
     # </FIXME>
   } else {

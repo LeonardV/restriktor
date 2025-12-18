@@ -72,7 +72,7 @@ importFrom("graphics", abline, axis, box, hist, par)
 
 importFrom("norm", em.norm, prelim.norm, imp.norm, rngseed)
 
-importFrom("ggplot2", ggplot, aes, .data, geom_point, geom_line, theme, unit, margin,
+importFrom("ggplot2", ggplot, aes, .data, geom_point, geom_line, geom_hline,theme, unit, margin,
            element_blank, element_text, element_line, scale_y_continuous, 
            scale_x_discrete, labs, guides, guide_legend, scale_color_brewer,
            geom_density, geom_segment, ggtitle, xlab, ylab, element_rect, 

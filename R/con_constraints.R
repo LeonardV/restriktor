@@ -23,11 +23,13 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     # in the fitted object of class lavaan. 
     operators <- c("=~", "<~", "~*~", "~~", "~", "\\|", "%")
     
+    # TO DO bouw ook 'sd' in en dan kan je hypo obv zeg 0.2*sd specificeren
+    
     # check for user input error
     if (grepl(paste(operators, collapse = "|"), constraints) || all(grepl("[><]{2,}", constraints))) {
       stop(
         paste(
-          "Restriktor ERROR: error in constraint syntax.",
+          "restriktor ERROR: error in constraint syntax.",
            "Only the operators \'<, >, ==, =, :=\' are allowed.",
            "See ?restriktor for details or check the website:",
            "https://restriktor.org/tutorial/syntax.html."
@@ -36,7 +38,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     
     # Initialize output
     OUT <- vector("list", length(constraints))
-    
+      
     # Process constraints
     for (i in seq_along(constraints)) {
       # Clean up the constraints
@@ -76,15 +78,16 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     lhs <- unlist(lapply(CON_FLAT, "[[", "lhs"))
     op  <- unlist(lapply(CON_FLAT, "[[", "op"))
     rhs <- unlist(lapply(CON_FLAT, "[[", "rhs"))
-    LIST$lhs <- lhs
+    LIST$lhs <- lhs # names parameters used in hypotheses
     LIST$op  <- op
     LIST$rhs <- c(LIST$rhs, rhs) 
     
+    # TO DO waarom onderstaande nodig?
     parTable$lhs   <- c(parTable$lhs, LIST$lhs)
     parTable$op    <- c(parTable$op, LIST$op)
     parTable$rhs   <- c(parTable$rhs, LIST$rhs)
     parTable$label <- c(parTable$label, rep("", length(lhs)))
-    
+
     # equality constraints
     meq  <- nrow(con_constraints_ceq_amat(model, constraints = constraints))
     # right-hand-side
@@ -97,7 +100,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     nsc_rhs.idx <- sum(grepl("<|>|=", parTable$rhs))
     
     if (all(Amat == 0) || nsc_lhs.idx > 0 || nsc_rhs.idx > 0) {
-      stop(paste("Restriktor ERROR: I have no idea how to deal with this constraint syntax.",
+      stop(paste("restriktor ERROR: I have no idea how to deal with this constraint syntax.",
            "See ?restriktor for details on how to specify the constraint syntax or check the website", 
             "https://restriktor.org/tutorial/syntax.html."), sep = "", call. = FALSE
       )
@@ -107,7 +110,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     ## Here, we remove the abs() from the constraint function which is redundant 
     ## for determining if the constraints are linear. 
     
-    # check if any abs() functie exists in string. 
+    # check if any abs() function exists in string. 
     if (any(grepl("abs\\(.*\\)", c(LIST$lhs, LIST$rhs)))) {
       LIST2 <- LIST
       
@@ -133,7 +136,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     bvec <- if (is.null(bvec)) { rep(0L, nrow(Amat)) } else { bvec }
     meq  <- if (is.null(meq)) { 0L } else { meq }
   } else { 
-    stop("no restrictions were specified.") 
+    stop("restriktor ERROR: No restrictions were specified.") 
   }
   
   # correct user errors, like x1 < 2 & x1 < 1, x1 < 2 is removed to get a 
@@ -143,16 +146,16 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
   bvec <- rrc$rhs
   
   if (!(nrow(Amat) == length(bvec))) {
-    warning(paste("Restriktor WARNING: The number of constraints does not match", 
+    warning(paste("restriktor WARNING: The number of constraints does not match", 
                   "the \'rhs\' (nrow(Amat) != length(rhs))."))
   }
   
   if (meq > nrow(Amat)) { 
-    stop("Restriktor ERROR: The maximum number of equality constraints = ", nrow(Amat), "\n")
+    stop("restriktor ERROR: The maximum number of equality constraints = ", nrow(Amat), "\n")
   }
   
   if (length(CON$ceq.nonlinear.idx) > 0L || length(CON$cin.nonlinear.idx) > 0L) {
-    stop(paste("Restriktor ERROR: can not handle (yet) nonlinear (in)equality restriktions"))
+    stop(paste("restriktor ERROR: can not handle (yet) nonlinear (in)equality restriktions"))
   }
   
   if (debug && is.character(constraints)) {

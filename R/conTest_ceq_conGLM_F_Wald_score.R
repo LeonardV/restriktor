@@ -76,7 +76,7 @@ conTest_ceq.conGLM <- function(object, test = "F", boot = "no",
       OUT$b.restr   <- object$b.restr
       OUT$b.unrestr <- object$b.unrestr
     } else {
-      stop("Restriktor ERROR: test ", sQuote(test), " not (yet) implemented.")
+      stop("restriktor ERROR: test ", sQuote(test), " not (yet) implemented.")
     }
   } else if (#length(CON$ceq.nonlinear.idx) == 0L &&
     #length(CON$cin.linear.idx)     > 0L && # some inequalities restr.
@@ -112,7 +112,7 @@ conTest_ceq.conGLM <- function(object, test = "F", boot = "no",
                                              seed     = seed,
                                              verbose  = verbose)
   } else if (boot == "model.based") {
-    stop("Restriktor ERROR: the model-based bootstrap is not implemented.")
+    stop("restriktor ERROR: the model-based bootstrap is not implemented.")
   } 
   
   OUT$model.org <- object$model.org

@@ -355,8 +355,12 @@ goric.default <- function(object, ..., hypotheses = NULL,
     Hm <- setdiff(names(conList), "Heq")  
      
     # unrestricted estimates
-    if (inherits(object, "numeric")) {
-      b.unrestr <- object
+    #if (inherits(object, "numeric")) {
+    if (inherits(conList[[Hm]]$b.unrestr, "numeric")) {
+      #b.unrestr <- object
+      # TO DO hier gaat het fout als selectie param in hypo
+      b.unrestr <- conList[[Hm]]$b.unrestr
+      #
       # TO DO Wat als object niet een vector is?
       #       NB Als: b.unrestr <- as.vector(object)
       #          dan heb je geen namen meer (die juist wel in hypo terug moeten komen)
@@ -364,6 +368,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
     } else {
       b.unrestr <- coef.named.vector(ans$model.org)
     }
+    # VCOV
+    VCOV <- conList[[Hm]]$VCOV
     # restricted estimates
     b.restr <- conList[[Hm]]$b.restr
     # level probabilities
@@ -390,7 +396,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   }
   
   # compute log-likelihood for complement
-  # moet dit obv PT_Amat en PT_meq?
+  # moet dit obv PT_Amat en PT_meq? TO DO
   LL_c <- compute_complement_likelihood(ans$model.org, VCOV,
                                         Amat, Amat.ciq, Amat.ceq, 
                                         bvec, bvec.ciq, bvec.ceq, 
@@ -800,25 +806,37 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
   # Check on type and possibly change
   check.type <- check.type(type, class = "lavaan") 
 
-  # TO DO
-  #Lavaan object 
-  #Zelf gemaakte parameters zoals indirect effect. 
-  #Dan in coef en vcov die niet. 
-  #Kan wel opvragen, maar voor cov mx nodig om andere estimates ook toe te voegen.... 
-  #Check of ze er zijn en in hypo zit ook? Dan model uitbreiden met andere est in hypo. 
-  #Dat runnen, maar kan dat, zit data (ws cov mx en evt means) in object (naast mdoel specificatie)? 
-  # Nb wel oppassen voor singuliere vcov, bijv in mediatie indirect product is van twee directe!
-  # En dit kan natuurlijk bij andere modellen ook... eerst op checken dan?!
-    
   est <- con_gorica_est_lav(object, standardized)
   # Function is defined in 'gorica_est'.
+  
+  Amat <- con_constraints(model = est$estimate, VCOV = est$VCOV, 
+                          constraints = hypotheses)$Amat
+  involved_params <- colSums(abs(Amat)) != 0
+  # Check whether all parameters are either all defined or all labelled (undefined) ones:
+  if (any(est$defined[involved_params] == 1) & any(est$defined[involved_params] == 0)) {
+    # Then mix of defined and regular (labelled) parameters
+    message(
+"restriktor Message: The hypotheses contain labelled and defined parameters. ",
+"To account for their covariances, you should also define the labelled ones: ",
+"\n", names(est$estimate[involved_params][est$defined[involved_params] == 0]), ".\n",
+"For example, if 'c' is the label for the direct effect in a mediaton model, ",
+"you could add 'direct := c' to the model syntax.",
+# TO DO: "Example code can be found on \url[https://github.com/rebeccakuiper/Tutorials/tree/main/GORICA%20for%20mediation]."
+"\n",
+"Press [Enter] to continue without covariances ",  
+"between the labelled and defined parameters. ",
+"Press [Esc] to stop and define the labelled parameters of interest as well.")
+    # NOTE: This message needs to be printed
+    # so also when other messages are gathered in a list or so
+   readline(prompt = "Press [Enter] to continue without covariances. ")
+  } 
   
   # message VCOV
   message.VCOV()
   
   objectList <- list(
-    object = est$estimate,
-    VCOV = est$VCOV,
+    object = est$estimate[involved_params],                 
+    VCOV = est$VCOV[involved_params, involved_params],
     sample_nobs = lavInspect(object, what = "ntotal"),
     hypotheses = hypotheses,
     comparison = comparison,

@@ -4,7 +4,7 @@ con_partable <- function(object, est = FALSE, label = FALSE,
 
     #  we first check the class of object
     if (!(class(object)[1] %in% c("lm", "aov", "rlm", "glm", "mlm"))) {
-       stop("Restriktor ERROR: It only works for lm, mlm, rlm and glm")
+       stop("restriktor ERROR: It only works for lm, mlm, rlm and glm")
      }
 
     objectTerms <- terms(object)
@@ -71,7 +71,7 @@ con_partable_est <- function(object, label = FALSE, est = FALSE,
   
   #  we first check the class of object
   if (!inherits(object, "numeric")) {#!(class(object)[1] == "numeric")) {
-    stop("Restriktor ERROR: It only works objects of class numeric")
+    stop("restriktor ERROR: It only works objects of class numeric")
   }
   
   responseName <- "y"

@@ -162,5 +162,3 @@ con_solver_gorica <- function(est, VCOV, Amat, bvec, meq) {
     
     out
 }
-
-

@@ -1,13 +1,13 @@
 conTest_summary.restriktor <- function(object, test = "F", ...) {
   
   if (!(inherits(object, "restriktor"))) {
-    stop("Restriktor ERROR: object must be of class restriktor")
+    stop("restriktor ERROR: object must be of class restriktor")
   }
   
   Amat <- object$constraints
   meq  <- object$neq
   if (meq == nrow(Amat)) {
-    stop("Restriktor ERROR: test not applicable for object with equality restrictions only.")
+    stop("restriktor ERROR: test not applicable for object with equality restrictions only.")
   }
   
   ldots <- list(...)

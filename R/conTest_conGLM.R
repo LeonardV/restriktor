@@ -10,16 +10,16 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   
   # checks
   if (!inherits(object, "conGLM")) {
-    stop("Restriktor ERROR: object must be of class conGLM.")
+    stop("restriktor ERROR: object must be of class conGLM.")
   }
   if (type != "global") {
     type <- toupper(type)
   }    
   if(!(type %in% c("A","B","global"))) {
-    stop("Restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
+    stop("restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
   }
   if(!(boot %in% c("no","residual","model.based","parametric"))) {
-    stop("Restriktor ERROR: boot method unknown.")
+    stop("restriktor ERROR: boot method unknown.")
   }
   if (boot == "residual") {
     boot <- "model.based"
@@ -60,7 +60,7 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   
   # check for equalities only
   if (meq == nrow(Amat)) {
-    stop("Restriktor ERROR: test not applicable for object with equality restrictions only.")
+    stop("restriktor ERROR: test not applicable for object with equality restrictions only.")
   }
   
   # check for intercept                                          
@@ -127,7 +127,7 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
         
         Ts <- c( t(b.restr - b.restr.alt) %*% solve(Sigma, b.restr - b.restr.alt) ) 
       } else {
-        stop("Restriktor ERROR: neq.alt must not be larger than neq.")
+        stop("restriktor ERROR: neq.alt must not be larger than neq.")
       }
     }
   } 
@@ -187,7 +187,7 @@ conTestF.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   } else if (boot == "model.based") {
     
     if (!(family(model.org)$family %in% c("gaussian","gamma"))) {
-      stop("Restriktor ERROR: the model.based bootstrap is not available for the ", family(model.org)$family, " family.")
+      stop("restriktor ERROR: the model.based bootstrap is not available for the ", family(model.org)$family, " family.")
     }
     
     pvalue <- con_pvalue_boot_model_based(object, 
@@ -245,16 +245,16 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
   
   # checks
   if (!inherits(object, "conGLM")) {
-    stop("Restriktor ERROR: object must be of class conGLM.")
+    stop("restriktor ERROR: object must be of class conGLM.")
   }
   if (type != "global") {
     type <- toupper(type)
   }  
   if(!(type %in% c("A","B","global"))) {
-    stop("Restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
+    stop("restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
   }
   if(!(boot %in% c("no", "residual", "model.based", "parametric"))) {
-    stop("Restriktor ERROR: boot method unknown.")
+    stop("restriktor ERROR: boot method unknown.")
   }
   if (boot == "residual") {
     boot <- "model.based"
@@ -293,7 +293,7 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
   
   # check for equalities only
   if (meq == nrow(Amat)) {
-    stop("Restriktor ERROR: test not applicable for object with equality restrictions only.")
+    stop("restriktor ERROR: test not applicable for object with equality restrictions only.")
   }
   
   # check for intercept                                          
@@ -365,7 +365,7 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
         Ts <- -2*(ll0 - ll1)
       }
       else {
-        stop("Restriktor ERROR: neq.alt must not be larger than neq.")
+        stop("restriktor ERROR: neq.alt must not be larger than neq.")
       }
     }
   } 
@@ -419,7 +419,7 @@ conTestLRT.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 
   } else if (boot == "model.based") {
     
     if (!(family(model.org)$family %in% c("gaussian","gamma"))) {
-      stop("Restriktor ERROR: the model.based bootstrap is not available for the ", family(model.org)$family, " family.")
+      stop("restriktor ERROR: the model.based bootstrap is not available for the ", family(model.org)$family, " family.")
     }
     
     pvalue <- con_pvalue_boot_model_based(object, 
@@ -478,16 +478,16 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
 
   # checks
   if (!("conGLM" %in% class(object))) {
-    stop("Restriktor ERROR: object must be of class conGLM.")
+    stop("restriktor ERROR: object must be of class conGLM.")
   }
   if (type != "global") {
     type <- toupper(type)
   }
   if(!(type %in% c("A","B","global"))) {
-    stop("Restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
+    stop("restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
   }
   if(!(boot %in% c("no", "residual", "model.based", "parametric", "mix_weights"))) {
-    stop("Restriktor ERROR: boot method unknown.")
+    stop("restriktor ERROR: boot method unknown.")
   }
   if (boot == "residual") {
     boot <- "model.based"
@@ -536,7 +536,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   
   # check for equalities only
   if (meq == nrow(Amat)) {
-    stop("Restriktor ERROR: test not applicable for object with equality restrictions only.")
+    stop("restriktor ERROR: test not applicable for object with equality restrictions only.")
   }
 
   # check for intercept
@@ -692,7 +692,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
         Ts <- c((G0 - G1) %*% solve(I0 , (G0 - G1)))
       }
       else {
-        stop("Restriktor ERROR: neq.alt must not be larger than neq.")
+        stop("restriktor ERROR: neq.alt must not be larger than neq.")
       }
     }
   }
@@ -744,7 +744,7 @@ conTestScore.conGLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                                          seed     = seed,
                                          verbose  = verbose)
   } else if (boot == "model.based") {
-    stop("Restriktor ERROR: model.based bootstrap is not implemented yet.")
+    stop("restriktor ERROR: model.based bootstrap is not implemented yet.")
     pvalue <- con_pvalue_boot_model_based(object,
                                           Ts.org   = Ts,
                                           type     = type,

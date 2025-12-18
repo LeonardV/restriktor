@@ -271,7 +271,7 @@ is returned with the relative GORIC(A) weights.
 Kuiper, R.M., Hoijtink, H., and Silvapulle, M.J. (2011). An Akaike-type
 information criterion for model selection under inequality constraints.
 \emph{Biometrika}, 98, 2, 495--501.
-\url{https://doi.org/10.1093/biomet/asr002}
+\doi{10.1093/biomet/asr002}
 
 Vanbrabant, L. and Kuiper, R. (2020). Evaluating a theory-based hypothesis against 
 its complement using an AIC-type information criterion with an application to 
@@ -279,7 +279,7 @@ facial burn injury. Psychological Methods.
 Vanbrabant, L., Van Loey, N., and Kuiper, R. M. (2020). 
 Evaluating a Theory-Based Hypothesis Against Its Complement Using an AIC-Type Information Criterion With an Application to Facial Burn Injury. 
 \emph{Psychological Methods}, 25(2), 129-142. 
-\url{https://doi.org/10.1037/met0000238}
+\doi{10.1037/met0000238}
 
 Victoria Savalei and Peter M. Bentler (2009) A Two-Stage Approach to
 Missing Data: Theory and Application to Auxiliary Variables, Structural Equation 

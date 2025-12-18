@@ -48,6 +48,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
                                  mix_weights = mix_weights,
                                  se          = "none",
                                  debug       = debug)  
+    
     # a list with useful information about the restrictions.
     CON <- restr.OUT$CON
     # a parameter table with information about the observed variables in the object 
@@ -134,7 +135,8 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
                 b.unrestr   = b.unrestr,
                 b.restr     = b.restr,
                 loglik      = ll.restr, 
-                Sigma       = VCOV,
+                #Sigma       = VCOV, # TO DO Ergens Sigma nodig?
+                VCOV        = VCOV,
                 constraints = Amat, 
                 rhs         = bvec, 
                 neq         = meq, 
@@ -230,38 +232,37 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
 con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
   # create empty list
   out <- list()
+  
   # get parameter table
-  #
-  # TO DO do we have labels from hypotheses?
-  # Then filter directly on that.
-  # Possible first make from lhs & op & rhs labels if no label yet,
-  # then we can also allow for default labeling!
-  #
-  # 
-  unstandardized_parTable <- parTable(x) # parameterEstimates(x)
+  parameter_table <- parTable(x) # parameterEstimates(x)
   #Not next code: since that excludes the defined parameters
-  #unstandardized_parTable <- unstandardized_parTable[unstandardized_parTable[, "plabel"] != "", ]
-  standardized_parTable   <- standardizedSolution(x, ci = FALSE, zstat = FALSE, se = FALSE)$est.std
-  
-  # combine unstandardized and standardized parameter estimates  
-  parameter_table <- cbind(unstandardized_parTable, est.std = standardized_parTable)
-  
-  # Only user-specified labels
+  #est_parTable <- est_parTable[est_parTable[, "plabel"] != "", ]
+  # Select output w.r.t. labelled estimates
   # TO DO dus gorica kan nooit obv lavaan labels?
   parameter_table_nonfree <- parameter_table[parameter_table$label != "" & parameter_table$free != 0L, ]
   parameter_table_defined <- parameter_table[parameter_table$label != "" & parameter_table$op == ":=", ]
-  #parameter_table_defined <- NULL
   parameter_table <- rbind(parameter_table_nonfree, parameter_table_defined)
-  # remove any duplicate labels
+  nr_nonfree <- dim(parameter_table_nonfree)[1]
+  nr_defined <- dim(parameter_table_defined)[1]
+  parameter_table$defined <- c(rep(0, nr_nonfree), rep(1, nr_defined))
+  ## remove any duplicate labels
   parameter_table <- parameter_table[!duplicated(parameter_table$label), ]
-  # use (un)standardized parameter estimates
-  out$estimate <- 
-    if (standardized) {
-      parameter_table$est.std
-    } else { 
-      parameter_table$est
-    }
-  names(out$estimate) <- parameter_table$label
+  out$defined <- parameter_table$defined
+  # TO DO check wat als labels dubbel, maar verschil defined en niet, dan evt foutmelding die niet klopt...
+    
+  # Extract estimates
+  label_names <- parameter_table$label 
+  if (standardized) {
+    est <- as.vector(standardizedSolution(x)['est.std'])$est.std
+    names(est) <- standardizedSolution(x)$label
+    out$estimate <- est[label_names]
+  } else { # so, if unstandardized
+    # Note: sometimes stand. and unstand. not of same size, 
+    #       so, if not needed, then do not add stand. estimates.
+    out$estimate <- parameter_table$est
+  }
+  names(out$estimate) <- label_names
+  
   ## extract (un)standardized VCOV
   #out$VCOV <- 
     if (standardized) {
@@ -271,9 +272,9 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
       out$VCOV <- rbind(cbind(a, matrix(0, nrow=nrow(a), ncol=ncol(b))),
             cbind(matrix(0, nrow=nrow(b), ncol=ncol(a)), b))
       colnames(out$VCOV) <- rownames(out$VCOV)
-      # TO DO now separate cov matrices... Which I combine as if they are independent, which is not per se true!
-      # TO DO Rerun analysis with labelled param also as defined ones.
-      # Note that some may be the same, but the filter on corr = exact one.
+      # Note: Now separate covariance matrices,
+      # which I combine as if they are independent, which is not per se true!
+      # Later on, a message wrt: Rerun analysis with labelled param also as defined ones.
       #lavInspect(x, "vcov.def.std.all")
     } else {
       #lavInspect(x, "vcov")
@@ -282,12 +283,12 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
       out$VCOV <- rbind(cbind(a, matrix(0, nrow=nrow(a), ncol=ncol(b))),
                         cbind(matrix(0, nrow=nrow(b), ncol=ncol(a)), b))
       colnames(out$VCOV) <- rownames(out$VCOV)
-      # TO DO dito
+      # See note above.
       #lavInspect(x, "vcov.def")
     }
   # remove not used columns of VCOV
   out$VCOV <- out$VCOV[parameter_table$label, parameter_table$label, drop = FALSE]
-  
+
   out$rhs <- parameter_table$rhs
   
   out

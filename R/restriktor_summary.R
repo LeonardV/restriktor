@@ -18,7 +18,7 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
   # bty = "stud" needs bootstrap variances
   if (bootCIs && !(bty %in% c("norm", "basic", "perc", "bca"))) {
     if (bty == "stud") {
-      stop("Restriktor ERROR: studentized intervals not implemented.")
+      stop("restriktor ERROR: studentized intervals not implemented.")
     } else {
       stop("bty is invalid.")
     }
@@ -125,7 +125,7 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
       ans$coefficients <- cbind(c(b.restr, b.def))
       colnames(ans$coefficients) <- "Estimate"
   } else {
-      stop("Restriktor ERROR: you may have found a bug, please contact me at info@restriktor.org")
+      stop("restriktor ERROR: you may have found a bug, please contact me at info@restriktor.org")
     }
   
   ny <- ncol(coef(object$model.org))
@@ -206,7 +206,7 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
         PT <- PT - 1 
       }
     } else {
-      stop("Restriktor ERROR: ", sQuote(goric), ": unknown goric method.")  
+      stop("restriktor ERROR: ", sQuote(goric), ": unknown goric method.")  
     }
     
     # compute log-likelihood value

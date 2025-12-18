@@ -96,7 +96,7 @@ conRLM_fit <- function (x, y, weights, ..., w = rep(1, nrow(x)), init = "ls",
     psi <- psi.bisquare
     
     if (any(bvec != 0)) {
-      stop("Restriktor ERROR: the rhs may only contain zeros (for now).", call. = FALSE)
+      stop("restriktor ERROR: the rhs may only contain zeros (for now).", call. = FALSE)
     }
     
     if (meq > 0L) {

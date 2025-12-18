@@ -6,7 +6,7 @@ coef.gorica_est <- function(object, ...)  {
   return(object$b.restr)
 }
 
-coef.named.vector <- function(x, VCOV = NULL, ...)  {
+coef_named_vector <- function(x, VCOV = NULL, ...)  {
   # TO DO wat als vcov niet bestaat of nog niet matrix (maar bijv dpo)?
   # ms zelfs suppressWarnings(vcov(...)) gebruiken dan
   if (!is.vector(coef(x))) {
@@ -75,16 +75,19 @@ VCOV.unbiased <- function(model.org, sample_nobs = NULL, ...)  {
     VCOV <- vcov(model.org)
     # TO DO Voor als dpoMatrix (kan dat hierboven ook gebeuren?), dan ws:
     #as.matrix(suppressWarnings(vcov(object))) # Behoud dit zijn namen ook?
-    message("\nrestriktor Message: The covariance matrix of the estimates was obtained via 'vcov()'. ",
-            "This represents the biased (restricted) sample covariance matrix, ",
-            "not the unbiased version based on the full sample size ('N').")
-  }
+    message(
+"\nrestriktor Message: The covariance matrix of the estimates was obtained via ",
+"'vcov()'. This represents the biased (restricted) sample covariance matrix, ",
+"not the unbiased version based on the full sample size ('N').")
+# TO DO als pdf van Rmd file maak, dan loopt dit door....
+    # is dan ms toch een Rmd instelling....
+    }
   # Check on N
   if(!is.null(N) && sample_nobs != N) {
     message(paste0(
-      "\nrestriktor Message: The specified 'sample_nobs' (or its sum = ", sample_nobs, 
-      ") differs from the sample size determined from the fitted model (", N, "). ",
-      "The unbiased covariance matrix is computed using the model-based value."
+"\nrestriktor Message: The specified 'sample_nobs' (or its sum = ", sample_nobs, 
+") differs from the sample size determined from the fitted model (", N, "). ",
+"The unbiased covariance matrix is computed using the model-based value."
     ))
   }
   
@@ -92,14 +95,16 @@ VCOV.unbiased <- function(model.org, sample_nobs = NULL, ...)  {
 }
 
 message.VCOV <- function(...)  {
-  message("\nrestriktor Message: The covariance matrix of the estimates was obtained via 'vcov()'. ",
-          "This is the biased (restricted) sample covariance matrix, ",
-          "not the unbiased version based on the total sample size ('N').")
+  message(
+"\nrestriktor Message: The covariance matrix of the estimates was obtained via ",
+"'vcov()'. This is the biased (restricted) sample covariance matrix, ",
+"not the unbiased version based on the total sample size ('N').")
 } 
 
 message.VCOVvb <- function(...)  {
-  message("\nrestriktor Message: The covariance matrix of the estimates was obtained via the 'vb' argument ",
-          "from the metafor package.")
+  message(
+"\nrestriktor Message: The covariance matrix of the estimates was obtained via ",
+"the 'vb' argument from the metafor package.")
 }
 
 check.type <- function(type, class, ...)  {

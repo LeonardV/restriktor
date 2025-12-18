@@ -45,6 +45,11 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     cat("---\n")
   }
   
+  # TO DO
+  # In 'Final results:' geen rijnamen... 
+  # Die namen zijn ook handig als headers in per study results en cum results/
+  # In argumenten van output object niet zoiets als 'Final results', wel 'Final_ratio_GORICA_weights'  
+  
   if (x$type == "gorica") {
     cat("\nRatio final GORICA weights:\n")  
   } else if (x$type == "goricac") {

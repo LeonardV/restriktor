@@ -83,7 +83,7 @@ evSyn <- function(object, input_type = NULL, ...) {
   
   checkListContent <- function(lst, fun, msg) {
     if (!is.null(lst) && (!is.list(lst) || !any(vapply(lst, fun, logical(1))))) {
-      stop("Restriktor ERROR: ", msg, call. = FALSE)
+      stop("restriktor ERROR: ", msg, call. = FALSE)
     }
   }
   
@@ -397,7 +397,9 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   } else {
     # If suggested study_names:
     # Check if length correct
-    # TO DO check
+    if (length(study_names) != S) {
+      stop("restriktor ERROR: Length of study_names must match the number of studies.", call. = FALSE)
+    }
     #
     # Re-order
     study_names <- study_names[orderStudies]
@@ -494,7 +496,8 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   out <- list(type = type,
               type_ev = type_ev,
               hypotheses = hypotheses,
-              orderStudies = orderStudies,
+              order_studies = orderStudies,
+              study_names = study_names,
               PT_m = PT,
               GORICA_weight_m = GORICA_weight_m, 
               LL_weights_m = LL_weights_m,
@@ -689,7 +692,8 @@ evSyn_LL <- function(object, ..., PT = list(),
   colnames(Final.ratio.LL.weights) <- colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hnames)
   
   out <- list(type_ev = type_ev,
-              orderStudies = orderStudies,
+              order_studies = orderStudies,
+              study_names = study_names,
               PT_m = PT, 
               GORICA_weight_m = GORICA_weight_m,
               LL_weights_m = LL_weights_m,
@@ -827,7 +831,8 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hnames)
   
   out <- list(type_ev           = type_ev,
-              orderStudies      = orderStudies,
+              order_studies     = orderStudies,
+              study_names       = study_names,
               GORICA_m          = IC, 
               GORICA_weight_m   = GORICA_weight_m,
               Cumulative_GORICA = CumulativeGorica, 
@@ -1063,7 +1068,8 @@ evSyn_ICratios <- function(object, ..., priorWeights = NULL, hypo_names = c(),
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hypo_names)
   
   out <- list(type_ev                    = type_ev,
-              orderStudies               = orderStudies,
+              order_studies              = orderStudies,
+              study_names                = study_names,
               GORICA_weight_m            = Weights,
               Cumulative_GORICA_weights  = CumulativeWeights,
               Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)

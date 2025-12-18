@@ -7,23 +7,20 @@ goric.default <- function(object, ..., hypotheses = NULL,
                           penalty_factor = 2,
                           Heq = FALSE, control = list(), debug = FALSE) {
   
-  # the following classes are allowed (for now)
-  obj_class <- class(object)
-  classes <- c("aov", "lm", "glm", "mlm", "rlm", "numeric", "lavaan", "CTmeta", 
-               "rma.uni", "rma.mv", "lmerMod", "nlmerMod", "glmerMod", "merMod")
-  check_class <- obj_class %in% classes
-  if (!any(check_class)) {
-    stop(paste0("\nrestriktor ERROR: Objects of class", paste(obj_class, collapse = ", "), 
-               "are not supported. Supported classes are:", paste(classes, collapse = ", "),"."), call. = FALSE)
-  }
-  
+
   if (!is.list(hypotheses) || is.null(hypotheses)) {
     stop(paste("\nrestriktor ERROR: The 'hypotheses' argument is missing or not a list.",
          "Please make sure to provide a valid set of hypotheses, for example, hypotheses =",
          "list(h1 = 'x1 > x2 > x3')."), call. = FALSE)
   } 
   
-  if (Heq == TRUE && !is.null(hypotheses$Heq)) { # can happen if it comes from benchmarks function
+  if (!is.numeric(penalty_factor) || length(penalty_factor) != 1L || is.na(penalty_factor) || penalty_factor < 0) {
+    stop("\nrestriktor ERROR: the penalty factor must be a single number >= 0.", call. = FALSE)
+  }
+  
+  
+  # Heq kan uit benchmarks komen met hypotheses$Heq al aanwezig
+  if (isTRUE(Heq) && !is.null(hypotheses$Heq)) {
     hypotheses <- hypotheses[-1]
   }
   num_hypotheses <- length(hypotheses)
@@ -36,30 +33,32 @@ goric.default <- function(object, ..., hypotheses = NULL,
       comparison <- "unconstrained"
     }
   }
- 
   comparison <- match.arg(comparison, c("unconstrained", "complement", "none"))
   
-  # Validate Heq
-  if (Heq && num_hypotheses > 1) {
-    stop(paste0("\nrestriktor ERROR: Heq = TRUE is only allowed when there is one order-restricted hypothesis. ",
-                "Now, there are ", num_hypotheses, " order-restricted hypotheses." ), call. = FALSE)
+  # Heq validatie
+  if (isTRUE(Heq) && num_hypotheses > 1L) {
+    stop(paste0(
+      "\nrestriktor ERROR: Heq = TRUE is only allowed when there is one order-restricted hypothesis. ",
+      "Now, there are ", num_hypotheses, " order-restricted hypotheses."
+    ), call. = FALSE)
   }
-
-  # Adjust comparison if necessary based on hypotheses
-  if (comparison == "complement" && num_hypotheses > 1) {
-    warning("\nrestriktor WARNING: More than one hypothesis provided. Therefore, 'comparison' set to 'unconstrained'.", call. = FALSE)
+  
+  # complement met meerdere hypotheses => forceren naar unconstrained
+  if (comparison == "complement" && num_hypotheses > 1L) {
+    warning("\nrestriktor WARNING: More than one hypothesis provided. Therefore, 'comparison' set to 'unconstrained'.",
+            call. = FALSE)
     comparison <- "unconstrained"
   }
   
-  # Ignore Heq for other comparisons
-  if (comparison %in% c("unconstrained", "none") && Heq) {
-      warning("\nrestriktor WARNING: The 'Heq' argument is ignored. The specified", 
-              " hypothesis is only valid when the order-restricted hypothesis is compared",
-              " to its complement.", call. = FALSE)
-      Heq <- FALSE
+  # Heq alleen zinvol bij complement; anders negeren
+  if (comparison %in% c("unconstrained", "none") && isTRUE(Heq)) {
+    warning(paste(
+      "\nrestriktor WARNING: The 'Heq' argument is ignored.",
+      "The specified hypothesis is only valid when the order-restricted hypothesis is compared to its complement."
+    ), call. = FALSE)
+    Heq <- FALSE
   }
-  # TO DO kan deze weg of gaat het dan fout in de code?
-
+  
   
   if (!is.null(VCOV)) {
     # check if scalar
@@ -84,10 +83,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     }
   }
   
-  if (penalty_factor < 0) {
-    stop(paste("\nrestriktor ERROR: the penalty factor must be >= 0."), call. = FALSE)
-  }
-  
+
   ldots <- list(...)
   ldots$missing <- NULL
   ldots$control <- control
@@ -119,49 +115,23 @@ goric.default <- function(object, ..., hypotheses = NULL,
     comparison <- tolower(comparison)
   }
   
-  #if (length(hypotheses) == 1 & Heq & comparison == "complement") {
-  if (length(hypotheses) == 1 & Heq & comparison != "none") {
+  if (length(hypotheses) == 1L && isTRUE(Heq) && comparison != "none") {
     Hceq <- gsub("<|>", "=", hypotheses[[1]])
     hypotheses <- append(list(Heq = Hceq), hypotheses)
-  } 
-    
+  }
+
   constraints <- hypotheses
-  # class objects
-  object_class <- obj_class
-
-  type <- tolower(type)
-  type <- match.arg(type, c("goric", "goricc", "gorica", "goricac"))
+  type <- match.arg(tolower(type), c("goric", "goricc", "gorica", "goricac"))
   
-  conChar <- sapply(constraints, function(x) inherits(x, "character"))
+  conChar   <- vapply(constraints, function(x) inherits(x, "character"), logical(1))
   isConChar <- all(conChar)
-
+  
 # -------------------------------------------------------------------------
   # create output list
   ans <- list()
   
-  ## deal with objects of different classes
-  # if ("restriktor" %in% object_class) {   
-  #   # if all objects are of class restriktor
-  #   conList   <- object
-  #   isSummary <- lapply(conList, function(x) summary(x, 
-  #                                                    goric       = type,
-  #                                                    sample.nobs = sample_nobs))
-  #   
-  #   PT_Amat <- lapply(isSummary, function(x) x$PT_Amat)
-  #   PT_meq  <- lapply(isSummary, function(x) x$PT_meq)
-  #   
-  #   for (lnames in names(conList)) {
-  #     conList[[lnames]]$PT_Amat <- PT_Amat[[lnames]]
-  #     conList[[lnames]]$PT_meq <- PT_meq[[lnames]]
-  #   }
-  #   
-  #   ans$hypotheses_usr <- lapply(conList, function(x) x$CON$constraints)
-  #   ans$model.org <- object[[1]]$model.org
-  #   sample_nobs   <- nrow(model.frame(object[[1]]$model.org))
-  #   # unrestricted VCOV
-  #   #VCOV <- vcov(ans$model.org) 
-  #   VCOV <- VCOV.unbiased(ans$model.org, sample_nobs)
-  # } else 
+  object_class <- class(object)
+  
   if (any(object_class %in% c("aov","lm","rlm","glm","mlm")) && isConChar) { 
     # TO DO in mlm geeft coef() een matrix, je moet dan as.vector doen (coef.named.vector(...)).
     #       Maakt dat in dit deel nog uit? Ik zie het niet, graag ff checken of dat klopt.
@@ -355,15 +325,21 @@ goric.default <- function(object, ..., hypotheses = NULL,
     Hm <- setdiff(names(conList), "Heq")  
      
     # unrestricted estimates
-    if (inherits(object, "numeric")) {
-      b.unrestr <- object
+    #if (inherits(object, "numeric")) {
+    if (inherits(conList[[Hm]]$b.unrestr, "numeric")) {
+      #b.unrestr <- object
+      # TO DO hier gaat het fout als selectie param in hypo
+      b.unrestr <- conList[[Hm]]$b.unrestr
+      #
       # TO DO Wat als object niet een vector is?
       #       NB Als: b.unrestr <- as.vector(object)
       #          dan heb je geen namen meer (die juist wel in hypo terug moeten komen)
       #          Bij een matrix dan die col of row names uitlezen en gebruiken, of obv vcov!
     } else {
-      b.unrestr <- coef.named.vector(ans$model.org)
+      b.unrestr <- coef_named_vector(ans$model.org)
     }
+    # VCOV
+    #VCOV <- conList[[Hm]]$Sigma
     # restricted estimates
     b.restr <- conList[[Hm]]$b.restr
     # level probabilities
@@ -390,7 +366,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   }
   
   # compute log-likelihood for complement
-  # moet dit obv PT_Amat en PT_meq?
+  # moet dit obv PT_Amat en PT_meq? TO DO
   LL_c <- compute_complement_likelihood(ans$model.org, VCOV,
                                         Amat, Amat.ciq, Amat.ceq, 
                                         bvec, bvec.ciq, bvec.ceq, 
@@ -622,55 +598,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
 
 
 
-# object of class restriktor ----------------------------------------------
-# goric.restriktor <- function(object, ..., hypotheses = NULL,
-#                              comparison = "unconstrained",
-#                              type = "goric",
-#                              debug = FALSE) {
-#   
-#   # hypotheses are inherited from the restriktor object
-#   
-#   if (!inherits(object, "restriktor")) {
-#     stop("\nrestriktor ERROR: the object must be of class restriktor.")
-#   }
-#   
-#   objectList <- list(...)
-#   
-#   mcList <- as.list(match.call())
-#   mcList <- mcList[-c(1)]
-#   
-#   mcnames <- names(mcList) == ""
-#   lnames <- as.character(mcList[mcnames])
-#   names(mcList)[mcnames] <- lnames
-#   objectList <- mcList  
-#   
-#   objectList$hypotheses  <- hypotheses
-#   objectList$comparison  <- comparison
-#   objectList$type        <- type
-#   objectList$debug       <- debug
-#   objectList$VCOV        <- NULL
-#   
-#   if (type == "goricac") {
-#     objectList$sample.nobs <- length(residuals(object))
-#   }
-#   
-#   objectList <- sapply(objectList, function(x) eval(x))
-#   
-#   # multiple objects of class restriktor are allowed
-#   isRestr <- unlist(lapply(objectList, function(x) class(x)[1] == "restriktor"))
-# 
-#   restr_objectList <- list(object = objectList[isRestr])
-#   arguments_objectList <- objectList[!isRestr]
-#   
-#   # put all objects of class restriktor in one list
-#   #objectList <- append(list(object = objectList[isRestr]), objectList[!isRestr])
-#   
-#   res <- do.call(goric.default, c(restr_objectList, arguments_objectList)) 
-#   
-#   res
-# }
-
-
 
 # object of class lm ------------------------------------------------------
 goric.lm <- function(object, ..., hypotheses = NULL,
@@ -684,15 +611,7 @@ goric.lm <- function(object, ..., hypotheses = NULL,
   } 
   
   objectList <- list(...)
-  
-  #mcList <- as.list(match.call())
-  #mcList <- mcList[-c(1)]
-  
-  #mcnames <- names(mcList) == ""
-  #lnames <- as.character(mcList[mcnames])
-  #names(mcList)[mcnames] <- lnames
-  #objectList <- mcList  
-  
+
   # only one object of class lm is allowed
   isLm <- unlist(lapply(objectList, function(x) class(x)[1] %in% c("aov", "lm", "glm", "mlm", "rlm")))
   # TO DO werkte voor rlm niet, zie evt TO DOs in conRLM (wordt via restriktor functie in LL bepaling aangeroepen)
@@ -722,7 +641,7 @@ goric.lm <- function(object, ..., hypotheses = NULL,
     #
     tsm  <- two_stage_matrices(object, auxiliary = auxiliary, emControl = emControl)
     vcov <- two_stage_sandwich(tsm)
-    est  <- coef.named.vector(tsm$fitTarget, VCOV = vcov)
+    est  <- coef_named_vector(tsm$fitTarget, VCOV = vcov)
     #N <- tsm$N
     objectList$sample_nobs <- tsm$N
     objectList$object <- est
@@ -764,10 +683,6 @@ goric.numeric <- function(object, ..., hypotheses = NULL,
     stop(paste("\nrestriktor ERROR: the argument VCOV is not found."), call. = FALSE)
   } 
   
-  #  if (!is.null(dim(object)) && dim(object)[1] == 1) {
-  #  object <- c(object)
-  #}
-  
   # Maak de objectList aan en voeg de vereiste elementen toe
   objectList <- list(
     object = c(object),
@@ -797,28 +712,46 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
                          standardized = FALSE,
                          debug = FALSE) {
   
-  # Check on type and possibly change
-  check.type <- check.type(type, class = "lavaan") 
-
-  # TO DO
-  #Lavaan object 
-  #Zelf gemaakte parameters zoals indirect effect. 
-  #Dan in coef en vcov die niet. 
-  #Kan wel opvragen, maar voor cov mx nodig om andere estimates ook toe te voegen.... 
-  #Check of ze er zijn en in hypo zit ook? Dan model uitbreiden met andere est in hypo. 
-  #Dat runnen, maar kan dat, zit data (ws cov mx en evt means) in object (naast mdoel specificatie)? 
-  # Nb wel oppassen voor singuliere vcov, bijv in mediatie indirect product is van twee directe!
-  # En dit kan natuurlijk bij andere modellen ook... eerst op checken dan?!
-    
   est <- con_gorica_est_lav(object, standardized)
-  # Function is defined in 'gorica_est'.
+  
+  if (is.null(hypotheses)) {
+    stop("`hypotheses` must be supplied.", call. = FALSE)
+  }
+  
+  constr <- con_constraints(
+    model       = est$estimate,
+    VCOV        = est$VCOV,
+    constraints = hypotheses
+  )
+  
+  Amat <- constr$Amat
+  involved <- colSums(abs(Amat)) != 0
+  
+  if (!any(involved)) {
+    stop("No parameters involved in the hypotheses.", call. = FALSE)
+  }
+  
+  # Check whether all parameters are either all defined or all labelled (undefined) ones:
+  defined <- est$defined[involved]
+  
+  if (any(defined == 1) && any(defined == 0)) {
+    msg <- paste0(
+      "restriktor Message: The hypotheses contain both defined and labelled parameters.\n",
+      "To account for their covariances, define the labelled parameters as well.\n\n",
+      "Labelled parameters involved:\n  ",
+      paste(names(est$estimate[involved][defined == 0]), collapse = ", "),
+      "\n\nExample: add `direct := c` to the lavaan syntax."
+    )
+    
+    message(msg)
+  }
   
   # message VCOV
   message.VCOV()
   
   objectList <- list(
-    object = est$estimate,
-    VCOV = est$VCOV,
+    object = est$estimate[involved],                 
+    VCOV = est$VCOV[involved, involved],
     sample_nobs = lavInspect(object, what = "ntotal"),
     hypotheses = hypotheses,
     comparison = comparison,

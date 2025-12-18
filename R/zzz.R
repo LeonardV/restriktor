@@ -8,5 +8,6 @@
 utils::globalVariables(c("green", "reset", "Value", 
                          "Group_hypo_comparison", "Group_pop_values", 
                          "sample_value", "percentile_value",
-                         "percentile_label", "Group"
+                         "percentile_label", "Group", "OverallGoric",
+                         "GORICA_weight_m"
                          ))

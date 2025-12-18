@@ -22,7 +22,7 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
     meq  <- object$neq
     
     if (all(Amat == 0)) {
-      stop("Restriktor ERROR: no constraints specified!")
+      stop("restriktor ERROR: no constraints specified!")
     } else if (nrow(Amat) > meq) {
       boot <- ldots$boot
       if (!is.null(boot) && boot == "no") {
@@ -43,7 +43,7 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
       if (type %in% c("a","b","global")) {
         if (class(object)[2] %in% "conLM") {
           if (!(test %in% c("f","lrt","score"))) {
-            stop("Restriktor ERROR: test ", sQuote(test), " unknown. Choose F, LRT or score.")  
+            stop("restriktor ERROR: test ", sQuote(test), " unknown. Choose F, LRT or score.")  
           } 
           if (test == "f") {
             conTestF(object, type = type, ...)
@@ -54,7 +54,7 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
           } 
         } else if (class(object)[2] %in% "conRLM") { 
           if (!(test %in% c("f","wald","score"))) {
-            stop("Restriktor ERROR: test ", sQuote(test), " unknown. Choose F, Wald or score.")  
+            stop("restriktor ERROR: test ", sQuote(test), " unknown. Choose F, Wald or score.")  
           } 
           if (test == "f") {
             conTestF(object, type = type, ...)
@@ -65,7 +65,7 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
           } 
         } else if (class(object)[2] %in% "conGLM") {
           if (!(test %in% c("f","lrt","score"))) {
-            stop("Restriktor ERROR: test ", sQuote(test), " unknown. Choose Wald, LRT or score.")  
+            stop("restriktor ERROR: test ", sQuote(test), " unknown. Choose Wald, LRT or score.")  
           } 
           if (test == "f") {
             conTestF(object, type = type, ...)
@@ -76,7 +76,7 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
           } 
         } else if (class(object)[2] %in% "conMLM") {
           if (!(test %in% c("lrt"))) {
-            stop("Restriktor ERROR: test ", sQuote(test), " unknown. Only LRT available for now.")  
+            stop("restriktor ERROR: test ", sQuote(test), " unknown. Only LRT available for now.")  
           }
           if (test == "lrt") {
             conTestLRT(object, type = type, ...)
@@ -84,7 +84,7 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
         }
       } else if (type == "c" && (inherits(object, c("conLM","conRLM","conGLM","conMLM")))) {
         if (inherits(object, "conMLM")) {
-          stop("Restriktor ERROR: hypothesis test type c not available (yet).")
+          stop("restriktor ERROR: hypothesis test type c not available (yet).")
         }
         conTestC(object, ...)
       } else if (type == "summary" && (inherits(object, c("conLM","conRLM","conGLM","conMLM")))) {
@@ -95,7 +95,7 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
     } else if (nrow(Amat) == meq) {
       conTest_ceq(object, ...) 
     } else {
-      stop("Restriktor ERROR: constraints and neq do not match.")
+      stop("restriktor ERROR: constraints and neq do not match.")
     }
   } else if (inherits(object, c("lm","mlm","rlm","glm")) && !is.null(constraints)) {
     ldots <- list(...)
@@ -126,10 +126,10 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
   # } 
   else if (is.null(constraints)) {
     if (class(object)[1] == "conTest") { 
-      stop("Restriktor ERROR: object is already of class conTest.")
+      stop("restriktor ERROR: object is already of class conTest.")
     } 
     else {
-      stop("Restriktor ERROR: no constraints found.")
+      stop("restriktor ERROR: no constraints found.")
     }
   }
 }  

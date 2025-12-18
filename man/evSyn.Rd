@@ -70,7 +70,8 @@ evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldo
 
 \method{print}{summary.evSyn}(x, digits = max(3, getOption("digits") - 4), \dots)  
 
-\method{plot}{evSyn}(x, output_type = "gorica_weights", xlab = NULL, \dots)
+\method{plot}{evSyn}(x, output_type = "gorica_weights", xlab = NULL, 
+xlab_unordered = NULL, angle_x = 30, \dots)
 }
 
 \arguments{
@@ -145,7 +146,15 @@ evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldo
   weights and goric(a) weights per study is displayed. If "\code{ll_weights}",
   a plot with the cumulative log-likelihood weights and log-likelihood weights 
   per study is displayed.}
-
+  
+  \item{xlab_unordered}{A character vector specifying the original (unordered) 
+  study labels. This argument should be used when studies have been re-ordered using
+  \code{order_studies}. The labels will be reordered internally to match the 
+  plotting order.}
+  
+  \item{angle_x}{Numeric value specifying the angle (in degrees) of the x-axis 
+  labels. Useful when labels are long and overlap.}
+  
   \item{study_names}{
   A character vector specifying the names or labels of the individual studies.
   When provided, these names will be used throughout the output, including in 
@@ -185,7 +194,8 @@ evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldo
   \item{outcome_col}{a column name in \code{data} containing the outcome 
   identifiers/labels for each observation within a cluster/study. 
   The hypothesis/-es should be based on this labelling.
-  By default (i.e., if 'outcome_col' is null), the function assumes the label is 
+  By default (i.e., if 'outcome_col' is null), the function assumes that the 
+  parameter label used in the hypothesis is 
   "theta" 
   % ms juist via deze de labels voor de hypo opgeven!
   (one outcome variable); 

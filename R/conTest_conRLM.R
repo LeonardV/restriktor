@@ -9,16 +9,16 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   
   # checks
   if (!("conRLM" %in% class(object))) {
-    stop("Restriktor ERROR: object must be of class conRLM.")
+    stop("restriktor ERROR: object must be of class conRLM.")
   }
   if (type != "global") {
     type <- toupper(type)
   }  
   if(!(type %in% c("A","B","global"))) {
-    stop("Restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
+    stop("restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
   }
   if(!(boot %in% c("no", "residual", "model.based", "parametric"))) {
-    stop("Restriktor ERROR: boot method unknown.")
+    stop("restriktor ERROR: boot method unknown.")
   }
   if (boot == "residual") {
     boot <- "model.based"
@@ -59,7 +59,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
   
   # check for equalities only
   if (meq == nrow(Amat)) {
-    stop("Restriktor ERROR: test not applicable for object with equality restriktions only.")
+    stop("restriktor ERROR: test not applicable for object with equality restriktions only.")
   }
   
   call.org$formula <- call.org$data <- call.org$weights <- 
@@ -158,7 +158,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
                        scale     = scale, 
                        cc        = ifelse(is.null(call.org$c), 4.685061, call.org$c))$Ts
       } else {
-        stop("Restriktor ERROR: neq.alt must not be larger than neq.")
+        stop("restriktor ERROR: neq.alt must not be larger than neq.")
       }
     }
   } 
@@ -270,16 +270,16 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   
   # checks
   if (!("conRLM" %in% class(object))) {
-    stop("Restriktor ERROR: object must be of class conRLM.")
+    stop("restriktor ERROR: object must be of class conRLM.")
   }
   if (type != "global") {
     type <- toupper(type)
   }  
   if(!(type %in% c("A","B","global"))) {
-    stop("Restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
+    stop("restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
   }
   if(!(boot %in% c("no", "residual", "model.based", "parametric"))) {
-    stop("Restriktor ERROR: boot method unknown.")
+    stop("restriktor ERROR: boot method unknown.")
   }
   if (boot == "residual") {
     boot <- "model.based"
@@ -320,7 +320,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
   
   # check for equalities only
   if (meq == nrow(Amat)) {
-    stop("Restriktor ERROR: test not applicable for object with equality restriktions only.")
+    stop("restriktor ERROR: test not applicable for object with equality restriktions only.")
   }
   
   call.org$formula <- call.org$data <- call.org$weights <- 
@@ -424,7 +424,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
                          scale     = scale,
                          cc        = ifelse(is.null(call.org$c), 4.685061, call.org$c))$Ts
       } else {
-        stop("Restriktor ERROR: neq.alt must not be larger than neq.")
+        stop("restriktor ERROR: neq.alt must not be larger than neq.")
       }
     }
   } 
@@ -533,16 +533,16 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   
   # checks
   if (!("conRLM" %in% class(object))) {
-    stop("Restriktor ERROR: object must be of class conRLM.")
+    stop("restriktor ERROR: object must be of class conRLM.")
   }
   if (type != "global") {
     type <- toupper(type)
   }  
   if(!(type %in% c("A","B","global"))) {
-    stop("Restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
+    stop("restriktor ERROR: type must be \"A\", \"B\", or \"global\"")
   }  
   if(!(boot %in% c("no", "residual", "model.based", "parametric"))) {
-    stop("Restriktor ERROR: boot method unknown.")
+    stop("restriktor ERROR: boot method unknown.")
   }  
   if (boot == "residual") {
     boot <- "model.based"
@@ -582,7 +582,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
   
   # check for equalities only
   if (meq == nrow(Amat)) {
-    stop("Restriktor ERROR: test not applicable for object with equality restriktions only.")
+    stop("restriktor ERROR: test not applicable for object with equality restriktions only.")
   }
   
   call.org$formula <- call.org$data <- call.org$weights <- 
@@ -698,7 +698,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
         Ts <- out3$Ts
         V <- out3$V
       } else {
-        stop("Restriktor ERROR: neq.alt must not be larger than neq.")
+        stop("restriktor ERROR: neq.alt must not be larger than neq.")
       }
     }
   } 

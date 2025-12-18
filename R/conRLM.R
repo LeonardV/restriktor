@@ -6,7 +6,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   
   # check class
   if (!(class(object)[1] == "rlm")) {
-    stop("Restriktor ERROR: object must be of class rlm.")
+    stop("restriktor ERROR: object must be of class rlm.")
   }
   # standard error methods
   if (se == "default") {
@@ -16,11 +16,11 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   }
   if (!(se %in% c("none","standard","const","boot.model.based","boot.standard","HC","HC0",
                   "HC1","HC2","HC3","HC4","HC4m","HC5"))) {
-    stop("Restriktor ERROR: standard error method ", sQuote(se), " unknown.")
+    stop("restriktor ERROR: standard error method ", sQuote(se), " unknown.")
   }
   # check method to compute chi-square-bar weights
   if (!(mix_weights %in% c("pmvnorm", "boot", "none"))) {
-    stop("Restriktor ERROR: ", sQuote(mix_weights), " method unknown. Choose from \"pmvnorm\", \"boot\", or \"none\"")
+    stop("restriktor ERROR: ", sQuote(mix_weights), " method unknown. Choose from \"pmvnorm\", \"boot\", or \"none\"")
   }
   
   # original model function call
@@ -35,11 +35,11 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
   # check (only tukey's bisquare supported)
   if (is.null(psi)) {
     if (object$call[["method"]] == "M") {
-      stop("Restriktor ERROR: only tukey's bisquare loss function is supported, use method = \"MM\".", call. = FALSE)
+      stop("restriktor ERROR: only tukey's bisquare loss function is supported, use method = \"MM\".", call. = FALSE)
     }
   } else {
     if (psi != "psi.bisquare") {
-      stop("Restriktor ERROR: only tukey's bisquare loss function is supported, use method = \"MM\".", call. = FALSE)
+      stop("restriktor ERROR: only tukey's bisquare loss function is supported, use method = \"MM\".", call. = FALSE)
     }
   }
   
@@ -138,7 +138,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
  #  if (mix_weights == "pmvnorm") {
  #    if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
  #      messages$mix_weights <- paste(
- #        "Restriktor message: Since the constraint matrix is not full row-rank, the level probabilities 
+ #        "restriktor Message: Since the constraint matrix is not full row-rank, the level probabilities 
  # are calculated using mix_weights = \"boot\" (the default is mix_weights = \"pmvnorm\").
  # For more information see ?restriktor.\n"
  #      )
@@ -160,7 +160,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
 
   ## some checks
   if (ncol(Amat) != length(b.unrestr)) {
-    stop(paste("Restriktor ERROR: the columns of constraints does not", 
+    stop(paste("restriktor ERROR: the columns of constraints does not", 
          "match with the number of parameters."))
   }
   
@@ -210,7 +210,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 df.residual = so$df[2],
                 loglik      = ll.unrestr, 
                 Sigma       = Sigma, 
-                VCOV        = Sigma, # TO DO bijgevoegd ivm goric code
+                #VCOV        = Sigma, # TO DO bijgevoegd ivm goric code
                 constraints = Amat, 
                 rhs         = bvec, 
                 neq         = meq, 
@@ -291,7 +291,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
                 df.residual = so$df[2], 
                 loglik      = ll.restr, 
                 Sigma       = Sigma, 
-                VCOV        = Sigma, # TO DO bijgevoegd ivm goric code                             
+                #VCOV        = Sigma, # TO DO bijgevoegd ivm goric code                             
                 constraints = Amat, 
                 rhs         = bvec, 
                 neq         = meq, 
@@ -383,7 +383,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     if (mix_weights == "pmvnorm") {
       if (RREF$rank < nrow(PT_Amat) && RREF$rank != 0L) {
         messages$mix_weights_rank <- paste(
-          "Restriktor message: Since the constraint matrix is not full row-rank, the level probabilities", 
+          "restriktor Message: Since the constraint matrix is not full row-rank, the level probabilities", 
           "are calculated using mix_weights = \"boot\" (the default is mix_weights = \"pmvnorm\").",
           "For more information see ?restriktor.\n"
         )
@@ -398,7 +398,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     if (mix_weights == "pmvnorm") {
       if (rAmat$rank < nrow(Amat) && rAmat$rank != 0L) {
         messages$mix_weights_rank <- paste(
-          "Restriktor message: Since the constraint matrix is not full row-rank, the level probabilities", 
+          "restriktor Message: Since the constraint matrix is not full row-rank, the level probabilities", 
           "are calculated using mix_weights = \"boot\" (the default is mix_weights = \"pmvnorm\").",
           "For more information see ?restriktor.\n"
         )

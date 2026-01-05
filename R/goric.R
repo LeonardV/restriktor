@@ -733,23 +733,9 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
     stop("No parameters involved in the hypotheses.", call. = FALSE)
   }
   
-  # Check whether all parameters are either all defined or all labelled (undefined) ones:
-  defined <- est$defined[involved]
-  
-  if (any(defined == 1) && any(defined == 0)) {
-    msg <- paste0(
-      "restriktor Message: The hypotheses contain both defined and labelled parameters.\n",
-      "To account for their covariances, define the labelled parameters as well.\n\n",
-      "Labelled parameters involved:\n  ",
-      paste(names(est$estimate[involved][defined == 0]), collapse = ", "),
-      "\n\nExample: add `direct := c` to the lavaan syntax."
-    )
-    
-    message(msg)
-  }
-  
   # message VCOV
   message.VCOV()
+  # TO DO opvangen in algemeen message list oid
   
   objectList <- list(
     object = est$estimate[involved],                 

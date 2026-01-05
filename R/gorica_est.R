@@ -234,21 +234,36 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
   out <- list()
   
   # get parameter table
-  parameter_table <- parTable(x) # parameterEstimates(x)
+  parameter_table_all <- parTable(x) # parameterEstimates(x)
   #Not next code: since that excludes the defined parameters
   #est_parTable <- est_parTable[est_parTable[, "plabel"] != "", ]
-  # Select output w.r.t. labelled estimates
+  # Select output w.r.t. labelled & defined estimates
+  #
   # TO DO dus gorica kan nooit obv lavaan labels?
-  parameter_table_nonfree <- parameter_table[parameter_table$label != "" & parameter_table$free != 0L, ]
-  parameter_table_defined <- parameter_table[parameter_table$label != "" & parameter_table$op == ":=", ]
-  parameter_table <- rbind(parameter_table_nonfree, parameter_table_defined)
-  nr_nonfree <- dim(parameter_table_nonfree)[1]
-  nr_defined <- dim(parameter_table_defined)[1]
+  #
+  # Parameter table without non-free (free = 0) but not-defined parameters
+  parameter_table_nonfree_undefined <- parameter_table_all[parameter_table_all$free != 0L, ]
+  parameter_table_defined <- parameter_table_all[parameter_table_all$label != "" & parameter_table_all$op == ":=", ]
+  parameter_table <- rbind(parameter_table_nonfree_undefined, parameter_table_defined)
+  #
+  # TO DO check onderstaande wat als geen labelled of wat als geen defined
+  # Which are labeled and what are their labels:
+  which_labeled <- which(parameter_table$label != "" & parameter_table$free != 0)
+  labels_labeled <- parameter_table$label[which_labeled]
+  # Which are defined and what are their labels
+  which_defined <- which(parameter_table$label != "" & parameter_table$op == ":=")
+  labels_defined <- parameter_table$label[which_defined]
+  #
+  # Select labeled and defined parameters
+  parameter_table <- parameter_table[c(which_labeled, which_defined),]
+  nr_nonfree <- length(which_labeled)
+  nr_defined <- length(which_defined)
   parameter_table$defined <- c(rep(0, nr_nonfree), rep(1, nr_defined))
+  out$defined <- parameter_table$defined
+  #
   ## remove any duplicate labels
   parameter_table <- parameter_table[!duplicated(parameter_table$label), ]
-  out$defined <- parameter_table$defined
-  # TO DO check wat als labels dubbel, maar verschil defined en niet, dan evt foutmelding die niet klopt...
+  # TO DO check wat als labels dubbel, maar een is defined en ander niet-defined, dan evt foutmelding die niet klopt...
     
   # Extract estimates
   label_names <- parameter_table$label 
@@ -264,30 +279,15 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
   names(out$estimate) <- label_names
   
   ## extract (un)standardized VCOV
-  #out$VCOV <- 
-    if (standardized) {
-      #lavInspect(x, "vcov.std.all")
-      a <- lavInspect(x, "vcov.std.all")
-      b <- lavInspect(x, "vcov.def.std.all")
-      out$VCOV <- rbind(cbind(a, matrix(0, nrow=nrow(a), ncol=ncol(b))),
-            cbind(matrix(0, nrow=nrow(b), ncol=ncol(a)), b))
-      colnames(out$VCOV) <- rownames(out$VCOV)
-      # Note: Now separate covariance matrices,
-      # which I combine as if they are independent, which is not per se true!
-      # Later on, a message wrt: Rerun analysis with labelled param also as defined ones.
-      #lavInspect(x, "vcov.def.std.all")
-    } else {
-      #lavInspect(x, "vcov")
-      a <- lavInspect(x, "vcov")
-      b <- lavInspect(x, "vcov.def")
-      out$VCOV <- rbind(cbind(a, matrix(0, nrow=nrow(a), ncol=ncol(b))),
-                        cbind(matrix(0, nrow=nrow(b), ncol=ncol(a)), b))
-      colnames(out$VCOV) <- rownames(out$VCOV)
-      # See note above.
-      #lavInspect(x, "vcov.def")
-    }
-  # remove not used columns of VCOV
-  out$VCOV <- out$VCOV[parameter_table$label, parameter_table$label, drop = FALSE]
+  if (standardized) {
+    out$VCOV <- lavInspect(x, "vcov.def.joint.std.all")[c(which_labeled, which_defined),c(which_labeled, which_defined)]
+    colnames(out$VCOV) <- rownames(out$VCOV) <- c(labels_labeled, labels_defined)
+    # Matrix containing the joint variance covariance matrix of both the standardized model parameters and the user-defined parameters. 
+    # Standardization is done with respect to both observed and latent variables.
+  } else {
+    out$VCOV <- lavInspect(x, "vcov.def.joint")[c(which_labeled, which_defined),c(which_labeled, which_defined)]
+    colnames(out$VCOV) <- rownames(out$VCOV) <- c(labels_labeled, labels_defined)
+  }
 
   out$rhs <- parameter_table$rhs
   

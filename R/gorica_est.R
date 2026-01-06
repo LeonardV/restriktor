@@ -253,9 +253,12 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
   # Which are defined and what are their labels
   which_defined <- which(parameter_table$label != "" & parameter_table$op == ":=")
   labels_defined <- parameter_table$label[which_defined]
+  # together:
+  which_together <- c(which_labeled, which_defined)
+  labels_together <- c(labels_labeled, labels_defined)
   #
   # Select labeled and defined parameters
-  parameter_table <- parameter_table[c(which_labeled, which_defined),]
+  parameter_table <- parameter_table[which_together,]
   nr_nonfree <- length(which_labeled)
   nr_defined <- length(which_defined)
   parameter_table$defined <- c(rep(0, nr_nonfree), rep(1, nr_defined))
@@ -279,14 +282,35 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
   names(out$estimate) <- label_names
   
   ## extract (un)standardized VCOV
+  error_message <- paste0(
+    "\nrestriktor ERROR: Labeled and/or defined parameters are needed to proceed. \n", 
+    "The names/labels should correspond to those used in the hypothesis/-es."
+  )
   if (standardized) {
-    out$VCOV <- lavInspect(x, "vcov.def.joint.std.all")[c(which_labeled, which_defined),c(which_labeled, which_defined)]
-    colnames(out$VCOV) <- rownames(out$VCOV) <- c(labels_labeled, labels_defined)
+    if (nr_nonfree > 0 & nr_defined > 0) {
+      out$VCOV <- lavInspect(x, "vcov.def.joint.std.all")[which_together, which_together]
+    } else if (nr_nonfree > 0 & nr_defined == 0) {
+      out$VCOV <- lavInspect(x, "vcov.std.all")[which_together, which_together]
+    } else if (nr_nonfree == 0 & nr_defined > 0) {
+      out$VCOV <- lavInspect(x, "vcov.def.std.all")[which_together, which_together]
+    } else {
+      stop(error_message)
+    }
+    #Matrix containing the joint variance covariance matrix of both the estimated model parameters and the defined (using the := operator) parameters.
+    colnames(out$VCOV) <- rownames(out$VCOV) <- labels_together
     # Matrix containing the joint variance covariance matrix of both the standardized model parameters and the user-defined parameters. 
     # Standardization is done with respect to both observed and latent variables.
   } else {
-    out$VCOV <- lavInspect(x, "vcov.def.joint")[c(which_labeled, which_defined),c(which_labeled, which_defined)]
-    colnames(out$VCOV) <- rownames(out$VCOV) <- c(labels_labeled, labels_defined)
+    if (nr_nonfree > 0 & nr_defined > 0) {
+      out$VCOV <- lavInspect(x, "vcov.def.joint")[which_together, which_together]
+    } else if (nr_nonfree > 0 & nr_defined == 0) {
+      out$VCOV <- lavInspect(x, "vcov")[which_together, which_together]
+    } else if (nr_nonfree == 0 & nr_defined > 0) {
+      out$VCOV <- lavInspect(x, "vcov.def")[which_together, which_together]
+    } else {
+      stop(error_message)
+    }
+    colnames(out$VCOV) <- rownames(out$VCOV) <- labels_together
   }
 
   out$rhs <- parameter_table$rhs

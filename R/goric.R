@@ -81,8 +81,18 @@ goric.default <- function(object, ..., hypotheses = NULL,
       stop(paste("\nrestriktor ERROR: The covariance matrix (VCOV) contains NA or NaN values.", 
            "Please check your data or model specification."), call. = FALSE)
     }
+    # Check if VCOV singular (or if scalar, then not 0; is included in check)
+    if (any(abs(eigen(VCOV)$values) < 1e-08)) {
+      stop(paste(
+"\nrestriktor ERROR: The covariance matrix of the estimates (VCOV) is singular.\n",
+"Probably, a parameter is included using two names/labels in the hypothesis/-es.\n",
+# TO DO evt volgend stukje alleen als er een lavaan model als input was 
+#      (al kan je ook zelf est & vcov doen natuurlijk).
+"In a lavaan model, one could have included, say, the labeled parameter 'c' and",
+"and the defined parameter 'direct', where 'direct := c'.")
+           , call. = FALSE)
+    }
   }
-  
 
   ldots <- list(...)
   ldots$missing <- NULL
@@ -730,7 +740,7 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
   involved <- colSums(abs(Amat)) != 0
   
   if (!any(involved)) {
-    stop("No parameters involved in the hypotheses.", call. = FALSE)
+    stop("restriktor ERROR: No parameters involved in the hypotheses.", call. = FALSE)
   }
   
   # message VCOV

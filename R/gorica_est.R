@@ -233,84 +233,65 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
   # create empty list
   out <- list()
   
+  # TO DO gorica obv lavaan labels?
+
+  
   # get parameter table
-  parameter_table_all <- parTable(x) # parameterEstimates(x)
-  #Not next code: since that excludes the defined parameters
-  #est_parTable <- est_parTable[est_parTable[, "plabel"] != "", ]
-  # Select output w.r.t. labelled & defined estimates
+  paramTable <- parTable(x)
+  if (standardized) {
+    # Note: sometimes stand. and unstand. not of same size, 
+    #       so, if not needed, then do not add stand. estimates.
+    paramTable$est.std <- standardizedSolution(x)['est.std']$est.std
+  }
+  indices_fixed <- which(paramTable$free == 0L & paramTable$op != ":=")
+  paramTable <- paramTable[-indices_fixed,]
   #
-  # TO DO dus gorica kan nooit obv lavaan labels?
-  #
-  # Parameter table without non-free (free = 0) but not-defined parameters
-  parameter_table_nonfree_undefined <- parameter_table_all[parameter_table_all$free != 0L, ]
-  parameter_table_defined <- parameter_table_all[parameter_table_all$label != "" & parameter_table_all$op == ":=", ]
-  parameter_table <- rbind(parameter_table_nonfree_undefined, parameter_table_defined)
-  #
-  # TO DO check onderstaande wat als geen labelled of wat als geen defined
-  # Which are labeled and what are their labels:
-  which_labeled <- which(parameter_table$label != "" & parameter_table$free != 0)
-  labels_labeled <- parameter_table$label[which_labeled]
-  # Which are defined and what are their labels
-  which_defined <- which(parameter_table$label != "" & parameter_table$op == ":=")
-  labels_defined <- parameter_table$label[which_defined]
-  # together:
-  which_together <- c(which_labeled, which_defined)
-  labels_together <- c(labels_labeled, labels_defined)
-  #
-  # Select labeled and defined parameters
-  parameter_table <- parameter_table[which_together,]
-  nr_nonfree <- length(which_labeled)
-  nr_defined <- length(which_defined)
-  parameter_table$defined <- c(rep(0, nr_nonfree), rep(1, nr_defined))
-  out$defined <- parameter_table$defined
+  # Determine output w.r.t. labeled & defined estimates
+  labels_free <- paramTable$label
+  # Check
+  if (length(labels_free) == 0) {
+    error_message <- paste0(
+      "\nrestriktor ERROR: Labeled and/or defined parameters are needed to proceed. \n", 
+      "The names/labels should correspond to those used in the hypothesis/-es."
+    )
+    stop(error_message)
+  }
+  nr_defined <- sum(paramTable$op == ":=")
+  # Note that defined parameters are always based on labeled parameters.
   #
   ## remove any duplicate labels
-  parameter_table <- parameter_table[!duplicated(parameter_table$label), ]
-  # TO DO check wat als labels dubbel, maar een is defined en ander niet-defined, dan evt foutmelding die niet klopt...
-    
-  # Extract estimates
-  label_names <- parameter_table$label 
+  # TO DO When does this happen - is it needed?
+
+  
+  # Extract (un)standardized estimates
   if (standardized) {
-    est <- as.vector(standardizedSolution(x)['est.std'])$est.std
-    names(est) <- standardizedSolution(x)$label
-    out$estimate <- est[label_names]
+    out$estimate <- paramTable$est.std
   } else { # so, if unstandardized
     # Note: sometimes stand. and unstand. not of same size, 
     #       so, if not needed, then do not add stand. estimates.
-    out$estimate <- parameter_table$est
+    out$estimate <- paramTable$est
   }
-  names(out$estimate) <- label_names
+  names(out$estimate) <- labels_free
+  
   
   ## extract (un)standardized VCOV
-  error_message <- paste0(
-    "\nrestriktor ERROR: Labeled and/or defined parameters are needed to proceed. \n", 
-    "The names/labels should correspond to those used in the hypothesis/-es."
-  )
   if (standardized) {
-    if (nr_nonfree > 0 & nr_defined > 0) {
-      out$VCOV <- lavInspect(x, "vcov.def.joint.std.all")[which_together, which_together]
-    } else if (nr_nonfree > 0 & nr_defined == 0) {
-      out$VCOV <- lavInspect(x, "vcov.std.all")[which_together, which_together]
-    } else if (nr_nonfree == 0 & nr_defined > 0) {
-      out$VCOV <- lavInspect(x, "vcov.def.std.all")[which_together, which_together]
-    } else {
-      stop(error_message)
-    }
-    #Matrix containing the joint variance covariance matrix of both the estimated model parameters and the defined (using the := operator) parameters.
-    colnames(out$VCOV) <- rownames(out$VCOV) <- labels_together
-    # Matrix containing the joint variance covariance matrix of both the standardized model parameters and the user-defined parameters. 
-    # Standardization is done with respect to both observed and latent variables.
+    if (nr_defined > 0) {
+      # Matrix containing the joint variance covariance matrix of both the standardized estimated model parameters and the user-defined parameters (using the := operator). 
+      # Standardization is done with respect to both observed and latent variables.
+      out$VCOV <- lavInspect(x, "vcov.def.joint.std.all")
+      colnames(out$VCOV) <- rownames(out$VCOV) <- labels_free
+    } else { # if (nr_defined == 0) {
+      out$VCOV <- lavInspect(x, "vcov.std.all")[labels_free, labels_free]
+    } 
   } else {
-    if (nr_nonfree > 0 & nr_defined > 0) {
-      out$VCOV <- lavInspect(x, "vcov.def.joint")[which_together, which_together]
-    } else if (nr_nonfree > 0 & nr_defined == 0) {
-      out$VCOV <- lavInspect(x, "vcov")[which_together, which_together]
-    } else if (nr_nonfree == 0 & nr_defined > 0) {
-      out$VCOV <- lavInspect(x, "vcov.def")[which_together, which_together]
-    } else {
-      stop(error_message)
+    if (nr_defined > 0) {
+      # Matrix containing the joint variance covariance matrix of both the estimated model parameters and the user-defined parameters (using the := operator). 
+      out$VCOV <- lavInspect(x, "vcov.def.joint")
+      colnames(out$VCOV) <- rownames(out$VCOV) <- labels_free
+    } else { # if (nr_defined == 0) {
+      out$VCOV <- lavInspect(x, "vcov")[labels_free, labels_free]
     }
-    colnames(out$VCOV) <- rownames(out$VCOV) <- labels_together
   }
 
   out$rhs <- parameter_table$rhs

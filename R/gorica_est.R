@@ -13,8 +13,6 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
   
   # timing
   start.time0 <- start.time <- proc.time()[3]; timing <- list()
-  # store call
-  #mc <- match.call()
   # rename for internal use
   Amat <- constraints
   bvec <- rhs 

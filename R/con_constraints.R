@@ -1,9 +1,15 @@
 con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L, 
                             debug = FALSE, ...) {
   
+  # VCOV en est worden momenteel niet gebruikt
+  
+  if (!is.character(constraints) && !is.matrix(constraints) && !is.vector(constraints)) {
+    stop("restriktor ERROR: 'constraints' must be character or a constraint matrix.", call. = FALSE)
+  }
+  
   ## build a bare-bones parameter table for this model
   # if model is a numeric vector
-  if ("numeric" %in% class(model)) {
+  if (is.numeric(model)) {
     parTable <- con_partable_est(model, est = TRUE, label = TRUE)
     parTable_org <- parTable
   } else {
@@ -13,11 +19,12 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
   }
   
   # unlist constraints
-  constraints <- unlist(constraints)
-  # for summary function
-  constraints_usr <- constraints
+  constraints <- unlist(constraints, use.names = FALSE)
   
   if (is.character(constraints)) {
+    
+    constraints_usr <- constraints
+    
     # these operators are typical lavaan operators and are not allowed in the
     # restriktor syntax. If a lavaan model is fitted, the constraints are already
     # in the fitted object of class lavaan. 
@@ -140,7 +147,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     bvec <- if (is.null(bvec)) { rep(0L, nrow(Amat)) } else { bvec }
     meq  <- if (is.null(meq)) { 0L } else { meq }
   } else { 
-    stop("restriktor ERROR: No restrictions were specified.") 
+    stop("restriktor ERROR: No restrictions were specified.", call. = FALSE) 
   }
   
   # correct user errors, like x1 < 2 & x1 < 1, x1 < 2 is removed to get a 
@@ -155,11 +162,11 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
   }
   
   if (meq > nrow(Amat)) { 
-    stop("restriktor ERROR: The maximum number of equality constraints = ", nrow(Amat), "\n")
+    stop(sprintf("restriktor ERROR: meq (%d) cannot exceed nrow(Amat) (%d).", meq, nrow(Amat)), call. = FALSE)
   }
   
   if (length(CON$ceq.nonlinear.idx) > 0L || length(CON$cin.nonlinear.idx) > 0L) {
-    stop(paste("restriktor ERROR: can not handle (yet) nonlinear (in)equality restriktions"))
+    stop("restriktor ERROR: nonlinear (in)equality restrictions are not supported.", call. = FALSE)
   }
   
   if (debug && is.character(constraints)) {

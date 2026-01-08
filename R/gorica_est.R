@@ -280,21 +280,20 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
       # Matrix containing the joint variance covariance matrix of both the standardized estimated model parameters and the user-defined parameters (using the := operator). 
       # Standardization is done with respect to both observed and latent variables.
       out$VCOV <- lavInspect(x, "vcov.def.joint.std.all")
-      colnames(out$VCOV) <- rownames(out$VCOV) <- labels_free
     } else { # if (nr_defined == 0) {
-      out$VCOV <- lavInspect(x, "vcov.std.all")[labels_free, labels_free]
+      out$VCOV <- lavInspect(x, "vcov.std.all")
     } 
   } else {
     if (nr_defined > 0) {
       # Matrix containing the joint variance covariance matrix of both the estimated model parameters and the user-defined parameters (using the := operator). 
       out$VCOV <- lavInspect(x, "vcov.def.joint")
-      colnames(out$VCOV) <- rownames(out$VCOV) <- labels_free
     } else { # if (nr_defined == 0) {
-      out$VCOV <- lavInspect(x, "vcov")[labels_free, labels_free]
+      out$VCOV <- lavInspect(x, "vcov")
     }
   }
+  colnames(out$VCOV) <- rownames(out$VCOV) <- labels_free
 
-  out$rhs <- parameter_table$rhs
+  out$rhs <- paramTable$rhs
   
   out
 }

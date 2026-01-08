@@ -31,12 +31,6 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     operators <- c("=~", "<~", "~*~", "~~", "~", "\\|", "%")
     
     # TO DO bouw ook 'sd' in en dan kan je hypo obv zeg 0.2*sd specificeren
-    
-    # check for user input error
-    #if (grepl(paste(operators, collapse = "|"), constraints) || all(grepl("[><]{2,}", constraints))) {
-    # TO DO gaat bij mij ineens fout, gek toch? Of recent nog aangepast dan??
-    #if (any(grepl(paste(operators, collapse = "|"), constraints)) || all(grepl("[><]{2,}", constraints))) {
-    # TO DO moet all() niet ook any() zijn?? Nl als een TRUE dan al stoppen toch? Dan:
     if (any(grepl(paste(operators, collapse = "|"), constraints)) || any(grepl("[><]{2,}", constraints))) {
         stop(
         paste(

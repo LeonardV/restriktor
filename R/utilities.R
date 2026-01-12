@@ -135,23 +135,84 @@ expand_compound_constraints <- function(hyp_list) {
 }
 
 
+# coef.restriktor <- function(object, ...)  {
+#   
+#   b.def <- c()
+#   b.restr <- object$b.restr
+#   
+#   if (any(object$parTable$op == ":=")) {
+#     b.def <- object$CON$def.function(object$b.restr)
+#   }
+#   
+#   if (inherits(object, "conMLM")) {
+#     OUT <- rbind(b.restr, b.def)
+#   } else {
+#     OUT <- c(b.restr, b.def)
+#   }
+#   return(OUT)
+# }
 
-coef.restriktor <- function(object, ...)  {
+
+coef.restriktor <- function(object, ..., which = c("restr", "unrestr"))  {
+  which <- match.arg(which)
   
-  b.def <- c()
-  b.restr <- object$b.restr
+  # kies basis coefs
+  b_name <- if (which == "restr") "b.restr" else "b.unrestr"
+  if (is.null(object[[b_name]])) {
+    stop(sprintf("Object heeft geen '%s'.", b_name), call. = FALSE)
+  }
+  b_base <- object[[b_name]]
   
-  if (any(object$parTable$op == ":=")) {
-    b.def <- object$CON$def.function(object$b.restr)
+  # definities (:=) toepassen op dezelfde basisvector
+  b_def <- NULL
+  has_defs <- !is.null(object$parTable$op) && any(object$parTable$op == ":=")
+  if (has_defs) {
+    if (is.null(object$CON$def.function) || !is.function(object$CON$def.function)) {
+      stop("Definitie-parameters (':=') aanwezig, maar object$CON$def.function ontbreekt.", call. = FALSE)
+    }
+    b_def <- object$CON$def.function(b_base)
   }
   
   if (inherits(object, "conMLM")) {
-    OUT <- rbind(b.restr, b.def)
+    OUT <- rbind(b_base, b_def)
   } else {
-    OUT <- c(b.restr, b.def)
+    OUT <- c(b_base, b_def)
   }
-  return(OUT)
+  
+  OUT
 }
+
+
+
+list_to_df_rows <- function(x) {
+  stopifnot(is.list(x), length(x) > 0L)
+  all_names <- unique(unlist(lapply(x, names), use.names = FALSE))
+  
+  mat <- do.call(rbind, lapply(x, function(v) {
+    out <- setNames(rep(NA_real_, length(all_names)), all_names)
+    out[names(v)] <- as.numeric(v)
+    out
+  }))
+  
+  as.data.frame(mat, check.names = FALSE)
+}
+
+# get_defs <- function(obj, b) {
+#   f <- obj$CON$def.function
+#   if (!is.function(f)) return(numeric(0))
+#   
+#   bd <- body(f)
+#   if (is.null(bd) || identical(bd, quote(NULL))) return(numeric(0))
+#   
+#   res <- tryCatch(
+#     {
+#       if (length(formals(f)) == 0L) f() else f(b)
+#     },
+#     error = function(e) NULL
+#   )
+#   
+#   if (is.null(res) || length(res) == 0L) numeric(0) else res
+# }
 
 
 logLik.restriktor <- function(object, ...) {

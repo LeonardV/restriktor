@@ -559,20 +559,25 @@ goric.default <- function(object, ..., hypotheses = NULL,
   ans$ratio.lw <- model_comparison_metrics$loglik_rw
 
   
+  
   # list all object estimates
-  coefs <- lapply(conList, FUN = function(x) { coef(x) } )
-  # TO DO hier ook aanpassing nodig (nb ws wel namen nodig dan ook)?
-  max.length <- max(sapply(coefs, length))
-  coefs <- lapply(coefs, function(v) { c(v, rep(NA, max.length - length(v)))})
-  coefs <- as.data.frame(do.call("rbind", coefs))
+  coefs_list <- lapply(conList, function(x) coef(x, which = "restr"))
+  coefs <- list_to_df_rows(coefs_list)
+  
   if (comparison == "complement") {
-    coefs <- rbind(coefs, betasc)
+    one_vec <- betasc
+    one_vec <- one_vec[!duplicated(names(one_vec))]
+    one_vec_full <- c(one_vec, rep(NA_real_, ncol(coefs) - length(one_vec)))
+    coefs <- rbind(coefs, one_vec_full)
     rownames(coefs) <- c(objectnames, "complement")
   } else if (comparison == "unconstrained") {
-    coefs <- rbind(coefs, conList[[1]]$b.unrestr)
+    one_vec <- conList[[1]]$b.unrestr
+    one_vec <- one_vec[!duplicated(names(one_vec))]
+    one_vec_full <- c(one_vec, rep(NA_real_, ncol(coefs) - length(one_vec)))
+    coefs <- rbind(coefs, one_vec_full)
     rownames(coefs) <- c(objectnames, "unconstrained")
   } else {
-    rownames(coefs) <- objectnames    
+    rownames(coefs) <- objectnames
   }
   
   # Extracting and naming in one step for each attribute

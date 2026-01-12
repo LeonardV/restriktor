@@ -21,7 +21,7 @@
 \method{print}{summary.restriktor}(x, digits = max(3, getOption("digits") - 2),
               signif.stars = getOption("show.signif.stars"), \dots)     
 
-\method{coef}{restriktor}(object, \dots)
+\method{coef}{restriktor}(object, \dots, which = c("restr", "unrestr"))
 
 \method{model.matrix}{restriktor}(object, \dots)
 
@@ -49,6 +49,12 @@
   log-likihood is computed using the multivariate normal distribution 
   function. If \code{"goricc" or "goricca"}, a small sample version
   of the \code{"goric" or "gorica"} is computed.}
+  
+  \item{which}{
+    Character string indicating which coefficient vector to return:
+    \code{"restr"} for restricted coefficients (\code{object$b.restr}) or
+    \code{"unrestr"} for unrestricted coefficients (\code{object$b.unrestr}).
+  }
   
   \item{digits}{the number of significant digits to use when printing.}
   

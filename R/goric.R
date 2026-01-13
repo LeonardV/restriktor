@@ -83,10 +83,9 @@ goric.default <- function(object, ..., hypotheses = NULL,
     tol_pd   <- max(abs(ev)) * 1e-12   # for negative eigenvalues
   
     if (min(ev) < -tol_pd) {
-      stop(
-        "\nrestriktor ERROR: VCOV is not positive (semi-)definite ", 
-        "(i.e., negative eigenvalues are detected).\n",
-        "Please check whether the supplied VCOV is a valid covariance matrix.",
+      stop("\nrestriktor ERROR: VCOV is not positive (semi-)definite ", 
+           "(i.e., negative eigenvalues are detected).\n",
+           "Please check whether the supplied VCOV is a valid covariance matrix.",
         call. = FALSE
       )
     }
@@ -97,16 +96,14 @@ goric.default <- function(object, ..., hypotheses = NULL,
         "(near-)singular. Probably, a parameter is included using two different ",
         "names/labels in the hypothesis/-es."
       )
-      
+
       class_org <- attr(object, "class_org", exact = TRUE)
-      if (identical(class_org, "lavaan") || inherits(object, "lavaan")) {
-        msg <- c(
-          msg,
-          "In a lavaan model, one could have included, for example, the labeled parameter ",
-          "'c' and the defined parameter 'direct', where 'direct := c'."
+      if (identical(class_org, "lavaan")) { 
+        msg <- c(msg, 
+                 "In a lavaan model, one could have included, for example, the labeled parameter ", 
+                 "'c' and the defined parameter 'direct', where 'direct := c'."
         )
       }
-      
       stop(paste(msg, collapse = "\n"), call. = FALSE)
     }
   }
@@ -816,6 +813,8 @@ goric.CTmeta <- function(object, ..., hypotheses = NULL,
     type = type,
     debug = debug
   )
+
+  attr(objectList$object, "class_org") <- "CTmeta"
   
   attr(objectList$object, "class_org") <- "CTmeta"
   
@@ -865,6 +864,8 @@ goric.rma <- function(object, ..., hypotheses = NULL,
     type = type,
     debug = debug
   )
+
+  attr(objectList$object, "class_org") <- "rma"
   
   attr(objectList$object, "class_org") <- "rma"
   
@@ -918,6 +919,8 @@ goric.nlmerMod <- function(object, ..., hypotheses = NULL,
     type = type,
     debug = debug
   )
+
+  attr(objectList$object, "class_org") <- "nlmerMod"
   
   attr(objectList$object, "class_org") <- "nlmerMod"
   
@@ -965,6 +968,8 @@ goric.glmerMod <- function(object, ..., hypotheses = NULL,
     type = type,
     debug = debug
   )
+
+  attr(objectList$object, "class_org") <- "glmerMod"
   
   attr(objectList$object, "class_org") <- "glmerMod"
   
@@ -1011,6 +1016,8 @@ goric.lmerMod <- function(object, ..., hypotheses = NULL,
     type = type,
     debug = debug
   )
+
+  attr(objectList$object, "class_org") <- "lmerMod"
   
   attr(objectList$object, "class_org") <- "lmerMod"
   

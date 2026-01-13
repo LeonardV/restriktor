@@ -32,10 +32,11 @@
 
 # -------------------------------------------------------------------------
 
-evSyn <- function(object, input_type = NULL, type_ev, ...) {
+evSyn <- function(object, input_type = NULL, ...) {
   
   arguments <- list(...)
   
+  type_ev <- arguments$type_ev
   VCOV <- arguments$VCOV
   PT   <- arguments$PT
   
@@ -110,21 +111,21 @@ evSyn <- function(object, input_type = NULL, type_ev, ...) {
       message(messageAdded)
       type_ev <- "added"
     }
-    return(evSyn_ICweights(object, type_ev, ...))
+    return(evSyn_ICweights(object, ...))
   } else if (obj_isICratios) {
     if (!is.null(type_ev) && type_ev == "equal") {
       messageAdded <- "\nrestriktor Message: When the input consists of ratios of weights, the equal-evidence approach is not applicable. The added-evidence approach is used instead."
       message(messageAdded)
       type_ev <- "added"
     }
-    return(evSyn_ICratios(object, type_ev, ...))
+    return(evSyn_ICratios(object, ...))
   } else { # ICvalues
     if (!is.null(type_ev) && type_ev == "equal") {
       messageAdded <- "\nrestriktor Message: When the input consists of IC values, the equal-evidence approach is not applicable. The added-evidence approach is used instead."
       message(messageAdded)
       type_ev <- "added"
     }
-    return(evSyn_ICvalues(object, type_ev, ...))
+    return(evSyn_ICvalues(object, ...))
     # TO DO werkt niet, ook niet als messageAdded = messageAdded
     # TO DO doe dit dan ook voor bovenstaande!
   }

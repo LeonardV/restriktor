@@ -323,6 +323,11 @@ plot_all_groups <- function(plot_df, groups, title, xlabel, x_lim = NULL,
   # then: groups gives for example [1] "H1_sesam "
   # daardoor title in regel 161 niet goed.
   # Het lijkt alleen niet door de code te gaan waar groups aangemaakt wordt... maar dat ligt vast aan mij :-)
+  #
+  # TO DO
+  #headers en notes plots soms niet mooi (iig als “gw”) en, 
+  #als meer dan 1 hypo en als Heq=T, de titels/headers ook verkeerd (zegt dan bijv H1 vs H1).
+  #
   plot_list <- list()
   for (group in groups) {
     plot <- create_density_plot(plot_df, group, title, xlabel, x_lim, alpha, 

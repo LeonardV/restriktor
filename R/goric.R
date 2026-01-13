@@ -824,8 +824,6 @@ goric.CTmeta <- function(object, ..., hypotheses = NULL,
 
   attr(objectList$object, "class_org") <- "CTmeta"
   
-  attr(objectList$object, "class_org") <- "CTmeta"
-  
   # Voeg extra argumenten toe aan de objectList
   extraArgs <- list(...)
   objectList <- c(objectList, extraArgs)
@@ -873,8 +871,6 @@ goric.rma <- function(object, ..., hypotheses = NULL,
     debug = debug
   )
 
-  attr(objectList$object, "class_org") <- "rma"
-  
   attr(objectList$object, "class_org") <- "rma"
   
   # Voeg extra argumenten toe aan de objectList
@@ -930,8 +926,6 @@ goric.nlmerMod <- function(object, ..., hypotheses = NULL,
 
   attr(objectList$object, "class_org") <- "nlmerMod"
   
-  attr(objectList$object, "class_org") <- "nlmerMod"
-  
   # Label 'object = object@beta' (not needed when: 'object = fixef(object)')
   names(objectList$object) <- colnames(vcov(object))
   
@@ -979,8 +973,6 @@ goric.glmerMod <- function(object, ..., hypotheses = NULL,
 
   attr(objectList$object, "class_org") <- "glmerMod"
   
-  attr(objectList$object, "class_org") <- "glmerMod"
-  
   # Label 'object = object@beta' (not needed when: 'object = fixef(object)')
   names(objectList$object) <- colnames(vcov(object))
   
@@ -1025,8 +1017,6 @@ goric.lmerMod <- function(object, ..., hypotheses = NULL,
     debug = debug
   )
 
-  attr(objectList$object, "class_org") <- "lmerMod"
-  
   attr(objectList$object, "class_org") <- "lmerMod"
   
   # Label 'object = object@beta' (not needed when: 'object = fixef(object)')

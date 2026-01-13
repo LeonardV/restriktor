@@ -79,28 +79,28 @@ goric.default <- function(object, ..., hypotheses = NULL,
     }
     # Check if VCOV singular (or if scalar, then not 0; is included in check)
     ev <- eigen(VCOV, symmetric = TRUE, only.values = TRUE)$values
-    tol_sing <- max(abs(ev)) * 1e-12   # voor (near-)singular
-    tol_pd   <- max(abs(ev)) * 1e-12   # voor negative eigenvalues
+    tol_sing <- max(abs(ev)) * 1e-12   # for (near-)singular
+    tol_pd   <- max(abs(ev)) * 1e-12   # for negative eigenvalues
   
     if (min(ev) < -tol_pd) {
-      stop(
-        "\nrestriktor ERROR: VCOV is not positive (semi-)definite (negative eigenvalues detected).\n",
-        "Please check whether the supplied VCOV is a valid covariance matrix.",
+      stop("\nrestriktor ERROR: VCOV is not positive (semi-)definite ", 
+           "(i.e., negative eigenvalues are detected).\n",
+           "Please check whether the supplied VCOV is a valid covariance matrix.",
         call. = FALSE
       )
     }
     
     if (min(ev) < tol_sing) {
-      msg <- c(
-        "\nrestriktor ERROR: The covariance matrix of the estimates (VCOV) is (near-)singular.",
-        "Probably, a parameter is included using two names/labels in the hypothesis/-es."
+      msg <- c("\nrestriktor ERROR: The covariance matrix of the estimates (VCOV) is ", 
+               "(near-)singular. Probably, a parameter is included using two different ", 
+               "names/labels in the hypothesis/-es."
       )
       
-      if (inherits(object, "lavaan")) {
-        msg <- c(
-          msg,
-          "In a lavaan model, one could have included, for example, the labeled parameter 'c'",
-          "and the defined parameter 'direct', where 'direct := c'."
+      class_org <- attr(object, "class_org", exact = TRUE)
+      if (identical(class_org, "lavaan")) { 
+        msg <- c(msg, 
+                 "In a lavaan model, one could have included, for example, the labeled parameter ", 
+                 "'c' and the defined parameter 'direct', where 'direct := c'."
         )
       }
       
@@ -650,11 +650,11 @@ goric.lm <- function(object, ..., hypotheses = NULL,
     # Check on type and possibly change
     if (type == "goric") {
       message("\nrestriktor Message: missing = \"two.stage\" is only (for now)", 
-              "available for type = 'gorica(c)'. The GORICA will be used, not the the GORIC.")
+              "available for type = 'gorica(c)'. The GORICA will be used, not the GORIC.")
       type = "gorica"
     } else if (type == "goricc") {
       message("\nrestriktor Message: missing = \"two.stage\" is only (for now)", 
-              "available for type = 'gorica(c)'. The GORICAC will be used, not the the GORICC.")
+              "available for type = 'gorica(c)'. The GORICAC will be used, not the GORICC.")
       type = "goricac"
     } else if (!c(type %in% c("gorica", "goricac"))) {
       message("\nrestriktor Message: missing = \"two.stage\" is only (for now)", 
@@ -700,7 +700,7 @@ goric.numeric <- function(object, ..., hypotheses = NULL,
                           debug = FALSE) {
   
   # Check on type and possibly change
-  check.type <- check.type(type, class = "numeric") 
+  type <- check.type(type, class = "numeric") 
   
   if (is.null(VCOV)) {
     stop(paste("\nrestriktor ERROR: the argument VCOV is not found."), call. = FALSE)
@@ -736,7 +736,7 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
                          debug = FALSE) {
   
   # Check on type and possibly change
-  check.type <- check.type(type, class = "lavaan") 
+  type <- check.type(type, class = "lavaan") 
 
   est <- con_gorica_est_lav(object, standardized)
   
@@ -771,6 +771,8 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
     debug = debug
   )
   
+  attr(objectList$object, "class_org") <- "lavaan"
+  
   # Voeg extra argumenten toe aan de objectList
   extraArgs <- list(...)
   objectList <- c(objectList, extraArgs)
@@ -789,7 +791,7 @@ goric.CTmeta <- function(object, ..., hypotheses = NULL,
                          debug = FALSE) {
   
   # Check on type and possibly change
-  check.type <- check.type(type, class = "CTmeta") 
+  type <- check.type(type, class = "CTmeta") 
   
   # message VCOV
   message.VCOVvb()
@@ -811,6 +813,8 @@ goric.CTmeta <- function(object, ..., hypotheses = NULL,
     type = type,
     debug = debug
   )
+
+  attr(objectList$object, "class_org") <- "CTmeta"
   
   # Voeg extra argumenten toe aan de objectList
   extraArgs <- list(...)
@@ -836,7 +840,7 @@ goric.rma <- function(object, ..., hypotheses = NULL,
   }
   
   # Check on type and possibly change
-  check.type <- check.type(type, class = "rma (i.e., 'rma.uni' or 'rma.mv')") 
+  type <- check.type(type, class = "rma (i.e., 'rma.uni' or 'rma.mv')") 
   
   # message VCOV
   message.VCOV()
@@ -858,6 +862,8 @@ goric.rma <- function(object, ..., hypotheses = NULL,
     type = type,
     debug = debug
   )
+
+  attr(objectList$object, "class_org") <- "rma"
   
   # Voeg extra argumenten toe aan de objectList
   extraArgs <- list(...)
@@ -885,7 +891,7 @@ goric.nlmerMod <- function(object, ..., hypotheses = NULL,
                            debug = FALSE) {
   
   # Check on type and possibly change
-  check.type <- check.type(type, class = "nlmerMod") 
+  type <- check.type(type, class = "nlmerMod") 
   
   # message VCOV
   message.VCOV()
@@ -909,6 +915,8 @@ goric.nlmerMod <- function(object, ..., hypotheses = NULL,
     type = type,
     debug = debug
   )
+
+  attr(objectList$object, "class_org") <- "nlmerMod"
   
   # Label 'object = object@beta' (not needed when: 'object = fixef(object)')
   names(objectList$object) <- colnames(vcov(object))
@@ -932,7 +940,7 @@ goric.glmerMod <- function(object, ..., hypotheses = NULL,
                            debug = FALSE) {
   
   # Check on type and possibly change
-  check.type <- check.type(type, class = "glmerMod") 
+  type <- check.type(type, class = "glmerMod") 
   
   # message VCOV
   message.VCOV()
@@ -954,6 +962,8 @@ goric.glmerMod <- function(object, ..., hypotheses = NULL,
     type = type,
     debug = debug
   )
+
+  attr(objectList$object, "class_org") <- "glmerMod"
   
   # Label 'object = object@beta' (not needed when: 'object = fixef(object)')
   names(objectList$object) <- colnames(vcov(object))
@@ -976,7 +986,7 @@ goric.lmerMod <- function(object, ..., hypotheses = NULL,
                           debug = FALSE) {
   
   # Check on type and possibly change
-  check.type <- check.type(type, class = "lmerMod") 
+  type <- check.type(type, class = "lmerMod") 
   
   # message VCOV
   message.VCOV()
@@ -998,6 +1008,8 @@ goric.lmerMod <- function(object, ..., hypotheses = NULL,
     type = type,
     debug = debug
   )
+
+  attr(objectList$object, "class_org") <- "lmerMod"
   
   # Label 'object = object@beta' (not needed when: 'object = fixef(object)')
   names(objectList$object) <- colnames(vcov(object))

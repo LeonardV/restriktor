@@ -112,6 +112,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
         )
       }
       stop(paste(msg, collapse = "\n"), call. = FALSE)
+      }
     }
   }
 

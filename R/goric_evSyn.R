@@ -32,7 +32,7 @@
 
 # -------------------------------------------------------------------------
 
-evSyn <- function(object, input_type = NULL, ...) {
+evSyn <- function(object, input_type = NULL, type_ev, ...) {
   
   arguments <- list(...)
   
@@ -105,23 +105,26 @@ evSyn <- function(object, input_type = NULL, ...) {
   } else if (!is.null(PT)) {
     return(evSyn_LL(object, ...))
   } else if (obj_isICweights) {
-    if (!is.null(arguments$type_ev) && arguments$type_ev == "equal") {
+    if (!is.null(type_ev) && type_ev == "equal") {
       messageAdded <- "\nrestriktor Message: When the input consists of weights, the equal-evidence approach is not applicable. The added-evidence approach is used instead."
       message(messageAdded)
+      type_ev <- "added"
     }
-    return(evSyn_ICweights(object, ...))
+    return(evSyn_ICweights(object, type_ev, ...))
   } else if (obj_isICratios) {
-    if (!is.null(arguments$type_ev) && arguments$type_ev == "equal") {
+    if (!is.null(type_ev) && type_ev == "equal") {
       messageAdded <- "\nrestriktor Message: When the input consists of ratios of weights, the equal-evidence approach is not applicable. The added-evidence approach is used instead."
       message(messageAdded)
+      type_ev <- "added"
     }
-    return(evSyn_ICratios(object, ...))
+    return(evSyn_ICratios(object, type_ev, ...))
   } else { # ICvalues
-    if (!is.null(arguments$type_ev) && arguments$type_ev == "equal") {
+    if (!is.null(type_ev) && type_ev == "equal") {
       messageAdded <- "\nrestriktor Message: When the input consists of IC values, the equal-evidence approach is not applicable. The added-evidence approach is used instead."
       message(messageAdded)
+      type_ev <- "added"
     }
-    return(evSyn_ICvalues(object, ...))
+    return(evSyn_ICvalues(object, type_ev, ...))
     # TO DO werkt niet, ook niet als messageAdded = messageAdded
     # TO DO doe dit dan ook voor bovenstaande!
   }
@@ -154,10 +157,10 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   if (missing(type)) { type <- "gorica" }
   #
   if (type == "goric") {
-    message("\nrestriktor Message: Since the input is a list of estimates, the GORICA will be used, not the the GORIC.")
+    message("\nrestriktor Message: Since the input is a list of estimates, the GORICA will be used, not the GORIC.")
     type = "gorica"
   } else if (type == "goricc") {
-    message("\nrestriktor Message: Since the input is a list of estimates, the GORICAC will be used, not the the GORICC.")
+    message("\nrestriktor Message: Since the input is a list of estimates, the GORICAC will be used, not the GORICC.")
     type = "goricac"
   } 
   #
@@ -1119,6 +1122,12 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
 evSyn_escalc <- function(data, yi_col = "yi", vi_cols = "vi", 
                          cluster_col = c("trial", "study", "author", "authors", "Trial", "Study", "Author", "Authors"),
                          outcome_col = NULL, ...) {
+  
+  if (is.null(outcome_col)) {
+    message("\nrestriktor Message: By default (i.e., if 'outcome_col' is null), ", 
+            "the function assumes that the parameter label used in the hypothesis ",
+            "is 'theta' (one outcome variable).")
+  }
   
   results <- extract_est_vcov_outcomes(
     data = data,

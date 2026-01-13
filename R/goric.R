@@ -103,14 +103,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
                  "In a lavaan model, one could have included, for example, the labeled parameter ", 
                  "'c' and the defined parameter 'direct', where 'direct := c'."
       )
-      
-      if (inherits(object, "lavaan")) { # TO DO dit werkt nu niet
-        msg <- c(
-          msg,
-          "In a lavaan model, one could have included, for example, the labeled parameter ",
-          "'c' and the defined parameter 'direct', where 'direct := c'."
-        )
-      }
       stop(paste(msg, collapse = "\n"), call. = FALSE)
       }
     }

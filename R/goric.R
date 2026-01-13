@@ -7,22 +7,21 @@ goric.default <- function(object, ..., hypotheses = NULL,
                           penalty_factor = 2,
                           Heq = FALSE, control = list(), debug = FALSE) {
   
-
-  if (!is.list(hypotheses) || is.null(hypotheses)) {
+  if (is.null(hypotheses) || !is.list(hypotheses)) {
     stop(paste("\nrestriktor ERROR: The 'hypotheses' argument is missing or not a list.",
          "Please make sure to provide a valid set of hypotheses, for example, hypotheses =",
-         "list(h1 = 'x1 > x2 > x3')."), call. = FALSE)
+         "list(h1 = 'x1 > x2 > x3', h2 = 'x1 > x2 < x3')."), call. = FALSE)
   } 
   
   if (!is.numeric(penalty_factor) || length(penalty_factor) != 1L || is.na(penalty_factor) || penalty_factor < 0) {
     stop("\nrestriktor ERROR: the penalty factor must be a single number >= 0.", call. = FALSE)
   }
   
-  
-  # Heq kan uit benchmarks komen met hypotheses$Heq al aanwezig
+  # Heq kan uit benchmarks komen met hypotheses$Heq al aanwezig. Staat altijd als eerste.
   if (isTRUE(Heq) && !is.null(hypotheses$Heq)) {
     hypotheses <- hypotheses[-1]
   }
+  
   num_hypotheses <- length(hypotheses)
   
   # Set default comparison if needed
@@ -33,6 +32,11 @@ goric.default <- function(object, ..., hypotheses = NULL,
       comparison <- "unconstrained"
     }
   }
+  
+  if (!is.null(comparison)) {
+    comparison <- tolower(comparison)
+  }
+  
   comparison <- match.arg(comparison, c("unconstrained", "complement", "none"))
   
   # Heq validatie
@@ -62,57 +66,67 @@ goric.default <- function(object, ..., hypotheses = NULL,
   
   if (!is.null(VCOV)) {
     # check if scalar
-    if (length(VCOV) == 1) {
-      VCOV <- as.matrix(VCOV)
-    }
+    if (length(VCOV) == 1) VCOV <- as.matrix(VCOV)
     # check if matrix and whether p times p matrix
-    if (!is.matrix(VCOV)) {
-      VCOV <- as.matrix(VCOV)
-    }
+    if (!is.matrix(VCOV)) VCOV <- as.matrix(VCOV)
     if (dim(VCOV)[1] != dim(VCOV)[2]) {
       stop(paste("\nrestriktor ERROR: The covariance matrix (VCOV) should be a square matrix."), call. = FALSE)
     }
-    # check if it is of class matrix
-    if (inherits(VCOV, "dpoMatrix")) {
-      VCOV <- as.matrix(VCOV)
-      # as.matrix(suppressWarnings(vcov(object)))
-    }
+    if (inherits(VCOV, "dpoMatrix")) VCOV <- as.matrix(VCOV)
     if (any(is.na(VCOV))) {
       stop(paste("\nrestriktor ERROR: The covariance matrix (VCOV) contains NA or NaN values.", 
            "Please check your data or model specification."), call. = FALSE)
     }
     # Check if VCOV singular (or if scalar, then not 0; is included in check)
-    if (any(abs(eigen(VCOV)$values) < 1e-08)) {
-      stop(paste(
-"\nrestriktor ERROR: The covariance matrix of the estimates (VCOV) is singular.\n",
-"Probably, a parameter is included using two names/labels in the hypothesis/-es.\n",
-# TO DO evt volgend stukje alleen als er een lavaan model als input was 
-#      (al kan je ook zelf est & vcov doen natuurlijk).
-"In a lavaan model, one could have included, say, the labeled parameter 'c' and",
-"and the defined parameter 'direct', where 'direct := c'.")
-           , call. = FALSE)
+    ev <- eigen(VCOV, symmetric = TRUE, only.values = TRUE)$values
+    tol_sing <- max(abs(ev)) * 1e-12   # voor (near-)singular
+    tol_pd   <- max(abs(ev)) * 1e-12   # voor negative eigenvalues
+  
+    if (min(ev) < -tol_pd) {
+      stop(
+        "\nrestriktor ERROR: VCOV is not positive (semi-)definite (negative eigenvalues detected).\n",
+        "Please check whether the supplied VCOV is a valid covariance matrix.",
+        call. = FALSE
+      )
+    }
+    
+    if (min(ev) < tol_sing) {
+      msg <- c(
+        "\nrestriktor ERROR: The covariance matrix of the estimates (VCOV) is (near-)singular.",
+        "Probably, a parameter is included using two names/labels in the hypothesis/-es."
+      )
+      
+      if (inherits(object, "lavaan")) {
+        msg <- c(
+          msg,
+          "In a lavaan model, one could have included, for example, the labeled parameter 'c'",
+          "and the defined parameter 'direct', where 'direct := c'."
+        )
+      }
+      
+      stop(paste(msg, collapse = "\n"), call. = FALSE)
     }
   }
 
   ldots <- list(...)
+  
+  if (is.null(names(ldots)) && length(ldots)) {
+    stop("restriktor ERROR: All arguments in ... must be named.", call. = FALSE)
+  }
+  
   ldots$missing <- NULL
   ldots$control <- control
   
-  # which arguments are allowed
-  goric_arguments <- c("B", "mix_weights", "parallel", 
-                       "ncpus", "cl", "seed", "control", "verbose", "debug", 
-                       "comparison", "type", "hypotheses", "auxiliary",
-                       "VCOV", "sample_nobs", "object",
-                       # for rtmvnorm() function
-                       "lower", "upper", "algorithm",
-                       "burn.in.samples", "start.values", "thinning")
+  # which arguments are allowed 
+  allowed <- c(
+    "B","mix_weights","parallel","ncpus","cl","seed","control","verbose","debug",
+    "comparison","type","hypotheses","auxiliary","VCOV","sample_nobs","object",
+    "lower","upper","algorithm","burn.in.samples","start.values","thinning"
+  )
   
-  # check for unkown arguments
-  pm <- pmatch(names(ldots), goric_arguments, 0L)
-  if (any(pm == 0)) {
-    stop("\nrestriktor ERROR: argument ", 
-         sQuote(paste(names(ldots)[pm == 0], collapse = ", ")), 
-         " unknown.", call. = FALSE)
+  unknown <- setdiff(names(ldots), allowed)
+  if (length(unknown)) {
+    stop("Unknown argument(s): ", paste(unknown, collapse = ", "), call. = FALSE)
   }
   
   if (any(c("lower", "upper", "algorithm", "burn.in.samples", "start.values", 
@@ -120,11 +134,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
     ldots$mix_weights <- "boot"
   }
 
-  # some checks
-  if (!is.null(comparison)) {
-    comparison <- tolower(comparison)
-  }
-  
   if (length(hypotheses) == 1L && isTRUE(Heq) && comparison != "none") {
     Hceq <- gsub("<|>", "=", hypotheses[[1]])
     hypotheses <- append(list(Heq = Hceq), hypotheses)
@@ -133,7 +142,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   constraints <- hypotheses
   type <- match.arg(tolower(type), c("goric", "goricc", "gorica", "goricac"))
   
-  conChar   <- vapply(constraints, function(x) inherits(x, "character"), logical(1))
+  conChar <- vapply(constraints, function(x) inherits(x, "character"), logical(1))
   isConChar <- all(conChar)
   
 # -------------------------------------------------------------------------

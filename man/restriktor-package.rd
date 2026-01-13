@@ -11,7 +11,7 @@ normal models and generalized linear models.}
   Package: \tab restriktor\cr
   Type: \tab Package\cr
   Version: \tab 0.6-30\cr
-  Date: \tab 2025-12-18\cr
+  Date: \tab 2026-01-13\cr
   License: \tab GPL (>=2)\cr
   LazyLoad: \tab yes\cr
   }

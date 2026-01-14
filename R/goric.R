@@ -574,16 +574,33 @@ goric.default <- function(object, ..., hypotheses = NULL,
   coefs <- list_to_df_rows(coefs_list)
   
   if (comparison == "complement") {
-    one_vec <- betasc
-    one_vec <- one_vec[!duplicated(names(one_vec))]
-    one_vec_full <- c(one_vec, rep(NA_real_, ncol(coefs) - length(one_vec)))
-    coefs <- rbind(coefs, one_vec_full)
+    # does def function exists
+    if (!is.null(body(conList[[1]]$CON$def.function))) {
+      betasc_def <- conList[[1]]$CON$def.function(betasc)  
+      one_vec <- betasc
+      one_vec <- one_vec[!duplicated(names(one_vec))]
+      one_vec_full <- c(one_vec, betasc_def)
+      coefs <- rbind(coefs, one_vec_full)
+    } else {
+      one_vec <- betasc
+      one_vec <- one_vec[!duplicated(names(one_vec))]
+      one_vec_full <- c(one_vec, rep(NA_real_, ncol(coefs) - length(one_vec)))
+      coefs <- rbind(coefs, one_vec_full)
+    }
     rownames(coefs) <- c(objectnames, "complement")
   } else if (comparison == "unconstrained") {
-    one_vec <- conList[[1]]$b.unrestr
+    b_unrestr <- conList[[1]]$b.unrestr
+    exists_def <- sapply(conList, FUN = function(x) !is.null(body(x$CON$def.function)))
+    one_vec <- b_unrestr
     one_vec <- one_vec[!duplicated(names(one_vec))]
-    one_vec_full <- c(one_vec, rep(NA_real_, ncol(coefs) - length(one_vec)))
-    coefs <- rbind(coefs, one_vec_full)
+    
+    if (any(exists_def)) {
+      betas_unc_def <- sapply(conList[exists_def], FUN = function(x) x$CON$def.function(b_unrestr))
+      one_vec_full <- c(one_vec, betas_unc_def)
+      coefs <- rbind(coefs, one_vec_full)
+    } else {
+      coefs <- rbind(coefs, one_vec)
+    }
     rownames(coefs) <- c(objectnames, "unconstrained")
   } else {
     rownames(coefs) <- objectnames
@@ -636,7 +653,7 @@ goric.lm <- function(object, ..., hypotheses = NULL,
   objectList <- list(...)
 
   # only one object of class lm is allowed
-  isLm <- unlist(lapply(objectList, function(x) class(x)[1] %in% c("aov", "lm", "glm", "mlm", "rlm")))
+  isLm <- unlist(lapply(objectList, function(x) class(x)[1] %in% c("aov", "lm", "glm", "rlm")))
   # TO DO werkte voor rlm niet, zie evt TO DOs in conRLM (wordt via restriktor functie in LL bepaling aangeroepen)
   if (sum(isLm) > 1L) {
     stop(paste("\nrestriktor ERROR: multiple objects of class lm found, only 1 is allowed."), call. = FALSE)

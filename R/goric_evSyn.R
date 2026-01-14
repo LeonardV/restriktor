@@ -110,24 +110,21 @@ evSyn <- function(object, input_type = NULL, ...) {
   } else if (obj_isICweights) {
     if (!is.null(type_ev) && identical(type_ev, "equal")) {
       message("\nrestriktor Message: When the input consists of weights, the equal-evidence approach is not applicable. The added-evidence approach is used instead.")
-      type_ev <- "added"
-      args$type_ev <- type_ev   
+      args$type_ev <- "added"  
     }
     return(call_sub(evSyn_ICweights, args, object))
     
   } else if (obj_isICratios) {
     if (!is.null(type_ev) && identical(type_ev, "equal")) {
       message("\nrestriktor Message: When the input consists of ratios of weights, the equal-evidence approach is not applicable. The added-evidence approach is used instead.")
-      type_ev <- "added"
-      args$type_ev <- type_ev   
+      args$type_ev <- "added"   
     }
     return(call_sub(evSyn_ICratios, args, object))
     
   } else { # ICvalues
     if (!is.null(type_ev) && identical(type_ev, "equal")) {
       message("\nrestriktor Message: When the input consists of IC values, the equal-evidence approach is not applicable. The added-evidence approach is used instead.")
-      type_ev <- "added"
-      args$type_ev <- type_ev   
+      args$type_ev <- "added"  
     }
     return(call_sub(evSyn_ICvalues, args, object))
   }
@@ -196,7 +193,8 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     study_sample_nobs <- rep(study_sample_nobs, S)
     message("\nrestriktor Message: The argument 'study_sample_nobs' contains a single value; all primary studies are assumed to have the same sample size.")
   } else if (type == "goricac" && length(study_sample_nobs) != S) {
-    stop("\nrestriktor ERROR: The argument 'study_sample_nobs' must be a numeric vector containing S = ", S, " values (one for each study).",
+    stop("\nrestriktor ERROR: The argument 'study_sample_nobs' must be a numeric vector containing S = ", S, " values (one for each study). \n",
+         "Alternatively, 'study_sample_nobs' can be a scalar if all studies have the same sample size.",
          call. = FALSE)
   }
   
@@ -503,6 +501,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   out <- list(type = type,
               type_ev = type_ev,
               hypotheses = hypotheses,
+              n_studies = S,
               order_studies = orderStudies,
               study_names = study_names,
               PT_m = PT,
@@ -698,7 +697,10 @@ evSyn_LL <- function(object, ..., PT = list(),
   rownames(Final.ratio.LL.weights) <- rownames(Final.ratio.GORICA.weights) <- hnames
   colnames(Final.ratio.LL.weights) <- colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hnames)
   
-  out <- list(type_ev = type_ev,
+  out <- list(#type = type,
+              type_ev = type_ev,
+              #hypotheses = hypo_names,
+              n_studies = S,
               order_studies = orderStudies,
               study_names = study_names,
               PT_m = PT, 
@@ -837,7 +839,10 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
   rownames(Final.ratio.GORICA.weights) <- hnames
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hnames)
   
-  out <- list(type_ev           = type_ev,
+  out <- list(#type             = type,
+              type_ev           = type_ev,
+              #hypotheses       = hypo_names,
+              n_studies         = S,
               order_studies     = orderStudies,
               study_names       = study_names,
               GORICA_m          = IC, 
@@ -961,7 +966,12 @@ evSyn_ICweights <- function(object, ..., priorWeights = NULL, hypo_names = c(),
   rownames(Final.ratio.GORICA.weights) <- hypo_names
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hypo_names)
   
-  out <- list(type_ev                    = type_ev,
+  out <- list(#type             = type,
+              type_ev           = type_ev,
+              #hypotheses       = hypo_names,
+              n_studies         = S,
+              order_studies     = orderStudies,
+              study_names       = study_names,
               GORICA_weight_m            = Weights,
               Cumulative_GORICA_weights  = CumulativeWeights,
               Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
@@ -1074,9 +1084,12 @@ evSyn_ICratios <- function(object, ..., priorWeights = NULL, hypo_names = c(),
   rownames(Final.ratio.GORICA.weights) <- hypo_names
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hypo_names)
   
-  out <- list(type_ev                    = type_ev,
-              order_studies              = orderStudies,
-              study_names                = study_names,
+  out <- list(#type             = type,
+              type_ev           = type_ev,
+              #hypotheses       = hypo_names,
+              n_studies         = S,
+              order_studies     = orderStudies,
+              study_names       = study_names,
               GORICA_weight_m            = Weights,
               Cumulative_GORICA_weights  = CumulativeWeights,
               Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)

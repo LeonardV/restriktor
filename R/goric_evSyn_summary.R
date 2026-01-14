@@ -5,7 +5,8 @@ summary.evSyn <- function(object, ...) {
   ans <- list(
     type = x$type,
     type_ev = x$type_ev,
-    n_studies = nrow(x$GORICA_weight_m[,, drop = FALSE]),
+    #n_studies = nrow(x$GORICA_weight_m[,, drop = FALSE]),
+    n_studies = x$n_studies, 
     hypotheses = x$hypotheses,
     GORICA_weight_m = x$GORICA_weight_m,
     GORICA_m = x$GORICA_m,

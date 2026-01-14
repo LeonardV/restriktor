@@ -1,8 +1,7 @@
 extract_est_vcov_outcomes <- function(data, outcome_col = NULL, 
                                       yi_col = "yi", 
                                       vi_cols = "vi", 
-                                      cluster_col = c("trial", "study", "author", "authors", "Trial", "Study", "Author", "Authors")
-) {
+                                      cluster_col = c("trial", "study", "author", "authors", "Trial", "Study", "Author", "Authors")) {
   
   cluster_col_sum <- sum(cluster_col %in% names(data))
   cluster_col_length <- length(cluster_col)

@@ -31,55 +31,57 @@
 ## object = Ratio IC weights
 
 # -------------------------------------------------------------------------
-
 evSyn <- function(object, input_type = NULL, ...) {
   
-  arguments <- list(...)
+  args <- list(...)
   
-  type_ev <- arguments$type_ev
-  VCOV <- arguments$VCOV
-  PT   <- arguments$PT
+  VCOV <- args$VCOV
+  PT   <- args$PT
   
-  isGoric <- vapply(object, function(x) inherits(x, "con_goric"), logical(1))
+  type_ev <- args$type_ev
+  
+  call_sub <- function(fun, args, object) {
+    do.call(fun, c(list(object), args))
+  }
+  
+  isGoric <- if (is.list(object)) {
+    vapply(object, function(x) inherits(x, "con_goric"), logical(1))
+  } else {
+    FALSE
+  }
   
   # Handle input_type explicitly if provided
   if (!is.null(input_type)) {
-    input_type <- tolower(input_type)
-    if (input_type == "est_vcov") {
-      return(evSyn_est(object, ...))
-    } else if (input_type == "ll_pt") {
-      return(evSyn_LL(object, ...))
-    } else if (input_type == "icweights") {
-      return(evSyn_ICweights(object, ...))
-    } else if (input_type == "icratios") {
-      return(evSyn_ICratios(object, ...))
-    } else if (input_type == "icvalues") {
-      return(evSyn_ICvalues(object, ...))
-    } else if (input_type %in% c("goric", "gorica", "goricc", "goricac")) {
-      return(evSyn_gorica(object, ...))
-    } else if (input_type == "escalc") {
-      return(evSyn_escalc(object, ...))
+    it <- tolower(input_type)
+    if (it == "est_vcov") {
+      return(call_sub(evSyn_est, args, object))
+    } else if (it == "ll_pt") {
+      return(call_sub(evSyn_LL, args, object))
+    } else if (it == "icweights") {
+      return(call_sub(evSyn_ICweights, args, object))
+    } else if (it == "icratios") {
+      return(call_sub(evSyn_ICratios, args, object))
+    } else if (it == "icvalues") {
+      return(call_sub(evSyn_ICvalues, args, object))
+    } else if (it %in% c("goric", "gorica", "goricc", "goricac")) {
+      return(call_sub(evSyn_gorica, args, object))
+    } else if (it == "escalc") {
+      return(call_sub(evSyn_escalc, args, object))
     } else {
       stop(paste0("\nrestriktor ERROR: Unknown input_type ", sQuote(input_type), "."))
     }
   }
   
   if (all(isGoric)) {
-    return(evSyn_gorica(object, ...))
+    return(call_sub(evSyn_gorica, args, object))
   }
   
   if (inherits(object, "escalc")) {
-    return(evSyn_escalc(object, ...))
+    return(call_sub(evSyn_escalc, args, object))
   } 
   
   if (!is.list(object) || !any(vapply(object, is.numeric, logical(1)))) {
     stop("\nrestriktor ERROR: object must be a list of numeric vectors.", call. = FALSE)
-    # TO DO
-    # Laat evt volgende toe zodat namen hypos direct meegenomen kan worden:
-    #df <- data.frame(myGORICs)
-    #goric.values <- lapply(as.list(1:dim(df)[1]), function(x) df[x[1],])
-    # Met volgende nl geen namen maar wel numeric vector: goric.values <- as.list(data.frame(t(myGORICs)))
-    # Dito als LL & PT input zijn
   }
   
   checkListContent <- function(lst, fun, msg) {
@@ -88,12 +90,10 @@ evSyn <- function(object, input_type = NULL, ...) {
     }
   }
   
-  #checkListContent(lst = VCOV, fun = is.matrix, msg = "VCOV must be a list of matrices.")
   checkListContent(lst = PT, fun = is.numeric, msg = "PT must be a list of numeric vectors.")
   
   if (!is.null(VCOV) && !is.null(PT)) {
     stop("\nrestriktor ERROR: both VCOV and PT are found, which confuses me.", call. = FALSE)
-    # TO DO zeg wat je wel graag wilt, dus iets als 'een van de volgende twee opties: ...'
   }
   
   # if they are weights, the sum of all vectors must be 1.
@@ -102,33 +102,36 @@ evSyn <- function(object, input_type = NULL, ...) {
   obj_isICratios <- all(vapply(object, function(x) tail(x, n = 1) == 1, logical(1)))
   
   if (!is.null(VCOV)) {
-    return(evSyn_est(object, ...))
+    return(call_sub(evSyn_est, args, object))
+    
   } else if (!is.null(PT)) {
-    return(evSyn_LL(object, ...))
+    return(call_sub(evSyn_LL, args, object))
+    
   } else if (obj_isICweights) {
-    if (!is.null(type_ev) && type_ev == "equal") {
-      messageAdded <- "\nrestriktor Message: When the input consists of weights, the equal-evidence approach is not applicable. The added-evidence approach is used instead."
-      message(messageAdded)
+    if (!is.null(type_ev) && identical(type_ev, "equal")) {
+      message("\nrestriktor Message: When the input consists of weights, the equal-evidence approach is not applicable. The added-evidence approach is used instead.")
       type_ev <- "added"
+      args$type_ev <- type_ev   
     }
-    return(evSyn_ICweights(object, ...))
+    return(call_sub(evSyn_ICweights, args, object))
+    
   } else if (obj_isICratios) {
-    if (!is.null(type_ev) && type_ev == "equal") {
-      messageAdded <- "\nrestriktor Message: When the input consists of ratios of weights, the equal-evidence approach is not applicable. The added-evidence approach is used instead."
-      message(messageAdded)
+    if (!is.null(type_ev) && identical(type_ev, "equal")) {
+      message("\nrestriktor Message: When the input consists of ratios of weights, the equal-evidence approach is not applicable. The added-evidence approach is used instead.")
       type_ev <- "added"
+      args$type_ev <- type_ev   
     }
-    return(evSyn_ICratios(object, ...))
+    return(call_sub(evSyn_ICratios, args, object))
+    
   } else { # ICvalues
-    if (!is.null(type_ev) && type_ev == "equal") {
-      messageAdded <- "\nrestriktor Message: When the input consists of IC values, the equal-evidence approach is not applicable. The added-evidence approach is used instead."
-      message(messageAdded)
+    if (!is.null(type_ev) && identical(type_ev, "equal")) {
+      message("\nrestriktor Message: When the input consists of IC values, the equal-evidence approach is not applicable. The added-evidence approach is used instead.")
       type_ev <- "added"
+      args$type_ev <- type_ev   
     }
-    return(evSyn_ICvalues(object, ...))
-    # TO DO werkt niet, ook niet als messageAdded = messageAdded
-    # TO DO doe dit dan ook voor bovenstaande!
+    return(call_sub(evSyn_ICvalues, args, object))
   }
+  
   stop("\nrestriktor ERROR: I don't know how to handle the input.", call. = FALSE)
 }
 

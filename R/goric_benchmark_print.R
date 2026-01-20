@@ -88,6 +88,7 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"),
   #cat(strrep("=", 70), "\n")
   cat(paste0(blue, "Benchmark Results", reset), "\n")
   cat(strrep("-", 70), "\n")
+  # TO DO Geef ook het aantal iteraties (iter) wat gebruikt is.
   cat(sprintf("Preferred Hypothesis: %s%s%s\n", green, pref_hypo, reset))
   cat(sprintf("Error probability Preferred Hypothesis vs. Complement: %s%s%s\n", green, error_prob_pref_hypo, reset))
   if (inherits(x, "benchmark_means")) {

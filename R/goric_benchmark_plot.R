@@ -325,7 +325,7 @@ plot_all_groups <- function(plot_df, groups, title, xlabel, x_lim = NULL,
   # Het lijkt alleen niet door de code te gaan waar groups aangemaakt wordt... maar dat ligt vast aan mij :-)
   #
   # TO DO
-  #headers en notes plots soms niet mooi (iig als “gw”) en, 
+  #headers en notes plots soms niet mooi (iig als "gw") en, 
   #als meer dan 1 hypo en als Heq=T, de titels/headers ook verkeerd (zegt dan bijv H1 vs H1).
   #
   plot_list <- list()

@@ -35,9 +35,9 @@ check_sample_nobs <- function(sample_nobs, ...)  {
     # Probably group sizes, then sample size is sum of group sizes
     sample_nobs <- sum(sample_nobs)
     message(paste0(
-      "\nrestriktor Message: The argument 'sample_nobs' contains more than one value. ",
-      "It is assumed that these represent group sizes; their total (", sample_nobs, 
-      ") is used as the overall sample size."
+    "\nrestriktor Message: The argument 'sample_nobs' contains more than one value. ",
+    "It is assumed that these represent group sizes; their total (", sample_nobs, 
+    ") is used as the overall sample size."
     ))
   }
   return(sample_nobs)
@@ -47,9 +47,9 @@ check_N_with_sample_nobs <- function(N, sample_nobs, ...)  {
   # Check on N
   if (!is.null(sample_nobs) && sample_nobs != N) {
     message(paste0(
-      "\nrestriktor Message: The specified 'sample_nobs' (or its sum = ", sample_nobs, 
-      ") differs from the sample size derived from the fitted model (", N, "). ",
-      "The model-based value is used instead."
+    "\nrestriktor Message: The specified 'sample_nobs' (or its sum = ", sample_nobs, 
+    ") differs from the sample size derived from the fitted model (", N, "). ",
+    "The model-based value is used instead."
     ))
   }
   return(N)
@@ -76,18 +76,19 @@ VCOV.unbiased <- function(model.org, sample_nobs = NULL, ...)  {
     # TO DO Voor als dpoMatrix (kan dat hierboven ook gebeuren?), dan ws:
     #as.matrix(suppressWarnings(vcov(object))) # Behoud dit zijn namen ook?
     message(
-"\nrestriktor Message: The covariance matrix of the estimates was obtained via ",
-"'vcov()'. This represents the biased (restricted) sample covariance matrix, ",
-"not the unbiased version based on the full sample size ('N').")
+    "\nrestriktor Message: The covariance matrix of the estimates was obtained via ",
+    "'vcov()'. This represents the biased (restricted) sample covariance matrix, ",
+    "not the unbiased version based on the full sample size ('N')."
+    )
 # TO DO als pdf van Rmd file maak, dan loopt dit door....
     # is dan ms toch een Rmd instelling....
     }
   # Check on N
   if(!is.null(N) && sample_nobs != N) {
     message(paste0(
-"\nrestriktor Message: The specified 'sample_nobs' (or its sum = ", sample_nobs, 
-") differs from the sample size determined from the fitted model (", N, "). ",
-"The unbiased covariance matrix is computed using the model-based value."
+    "\nrestriktor Message: The specified 'sample_nobs' (or its sum = ", sample_nobs, 
+    ") differs from the sample size determined from the fitted model (", N, "). ",
+    "The unbiased covariance matrix is computed using the model-based value."
     ))
   }
   
@@ -96,15 +97,17 @@ VCOV.unbiased <- function(model.org, sample_nobs = NULL, ...)  {
 
 message.VCOV <- function(...)  {
   message(
-"\nrestriktor Message: The covariance matrix of the estimates was obtained via ",
-"'vcov()'. This is the biased (restricted) sample covariance matrix, ",
-"not the unbiased version based on the total sample size ('N').")
+  "\nrestriktor Message: The covariance matrix of the estimates was obtained via ",
+  "'vcov()'. This is the biased (restricted) sample covariance matrix, ",
+  "not the unbiased version based on the total sample size ('N')."
+  )
 } 
 
 message.VCOVvb <- function(...)  {
   message(
-"\nrestriktor Message: The covariance matrix of the estimates was obtained via ",
-"the 'vb' argument from the metafor package.")
+  "\nrestriktor Message: The covariance matrix of the estimates was obtained via ",
+  "the 'vb' argument from the metafor package."
+  )
 }
 
 check.type <- function(type, class, ...)  {

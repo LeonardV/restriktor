@@ -252,7 +252,7 @@ This is demonstrated and explained next.
 ```{r, message = F, warning = FALSE}
 # Benchmarks based on null
 set.seed(123) # set seed: to obtain same results when you re-run it
-benchmarks_1c <- benchmark(results_1c, iter = 400)
+benchmarks_1c <- benchmark(results_1c, iter = 200)
 #benchmarks_1c # use in R file
 print(benchmarks_1c, color = FALSE) # use in Rmd file, since Rmd cannot deal with colored text
 #plot(benchmarks_1c) 
@@ -538,7 +538,7 @@ pop_est <- matrix(c(
 rownames(pop_est) <- c("PE_123eq", "PE_12eq", "PE_13eq", "PE_23eq", "Observed")
 #
 set.seed(123) 
-benchmarks_1c_border_allpos <- benchmark(results_1c_border, pop_est = pop_est, iter = 400)
+benchmarks_1c_border_allpos <- benchmark(results_1c_border, pop_est = pop_est, iter = 200)
 #
 # loglik difference
 #print(benchmarks_1c_border_allpos, output_type = "ld") # R file
@@ -647,7 +647,7 @@ pop_est <- matrix(c(
 rownames(pop_est) <- c("PE_123eq", "PE_12eq", "PE_13eq", "PE_23eq", "Observed")
 #
 set.seed(123) 
-benchmarks_1c_border_allpos_200 <- benchmark(results_1c_border_200, pop_est = pop_est, iter = 400)
+benchmarks_1c_border_allpos_200 <- benchmark(results_1c_border_200, pop_est = pop_est, iter = 200)
 #
 # loglik difference
 #print(benchmarks_1c_border_allpos_200, output_type = "ld") # R file
@@ -688,7 +688,7 @@ pop_est <- matrix(c(
 rownames(pop_est) <- c("PE_123eq", "PE_12eq", "PE_13eq", "PE_23eq", "Observed")
 #
 set.seed(123) 
-benchmarks_1c_allpos <- benchmark(results_1c, pop_est = pop_est, iter = 400)
+benchmarks_1c_allpos <- benchmark(results_1c, pop_est = pop_est, iter = 200)
 #
 # loglik difference
 #print(benchmarks_1c_allpos, output_type = "ld") # R file
@@ -790,7 +790,7 @@ pop_est <- matrix(c(
 rownames(pop_est) <- c("PE_123eq", "PE_12eq", "PE_13eq", "PE_23eq", "Observed")
 #
 set.seed(123) 
-benchmarks_1c_allpos_200 <- benchmark(results_1c_200, pop_est = pop_est, iter = 400)
+benchmarks_1c_allpos_200 <- benchmark(results_1c_200, pop_est = pop_est, iter = 200)
 #
 # loglik difference
 #print(benchmarks_1c_allpos, output_type = "ld") # R file

@@ -128,18 +128,21 @@ By default, two populations are used: i) a null population in which the populati
 ### General R code
 ```{r, warning=F, message=F, eval=FALSE}
 # If ANOVA model:
-benchmarks_means <- benchmark(goric_object, model_type = "means", ncpus = 8)
+
+# In practise you may want to increase the number of iter, say 2000, and use parallel computing
+# future::plan(multisession, workers = 8) # windows machines
+# future::plan(multicore, workers = 8) # unix machines
+benchmarks_means <- benchmark(goric_object, model_type = "means", iter = 400)
 benchmarks_means 
 plot(benchmarks_means) 
 # Use 'pop_es' to specify own null population(s).	
 #
 ## If ANOVA or other model:
-benchmarks_asymp <- benchmark(goric_object, ncpus = 8)
+benchmarks_asymp <- benchmark(goric_object, iter = 400)
 # 'model_type = "asymp"', the default
 benchmarks_asymp
 plot(benchmarks_asymp) 
 # Use 'pop_est' to specify own null population(s).
-#
 # 
 # print() options:
 # output_type = c("rgw", "gw", "rlw", "ld", "all")
@@ -249,8 +252,7 @@ This is demonstrated and explained next.
 ```{r, message = F, warning = FALSE}
 # Benchmarks based on null
 set.seed(123) # set seed: to obtain same results when you re-run it
-#benchmarks_1c <- benchmark(results_1c, model_type = "means", ncpus = 8)
-benchmarks_1c <- benchmark(results_1c, ncpus = 8)
+benchmarks_1c <- benchmark(results_1c, iter = 400)
 #benchmarks_1c # use in R file
 print(benchmarks_1c, color = FALSE) # use in Rmd file, since Rmd cannot deal with colored text
 #plot(benchmarks_1c) 
@@ -354,7 +356,7 @@ round(results_12u$ratio.gw, 3)
 ```{r, message = F, warning = FALSE}
 # Benchmarks
 set.seed(123) 
-benchmarks_12u <- benchmark(results_12u, model_type = "means", ncpus = 8)
+benchmarks_12u <- benchmark(results_12u, model_type = "means", iter = 400)
 #benchmarks_12u # R file
 print(benchmarks_12u, color = FALSE) # Rmd file
 #
@@ -502,7 +504,7 @@ Next, you find code for using the default; here, the default null population whe
 # Loglik benchmarks based on default null / no effect sizes, that is,
 # setting all three means equal in the population
 set.seed(123) 
-benchmarks_1c_border <- benchmark(results_1c_border, model_type = "means", ncpus = 8)
+benchmarks_1c_border <- benchmark(results_1c_border, model_type = "means", iter = 400)
 # loglik diff
 #print(benchmarks_1c_border, output_type = "ld") # in R file
 print(benchmarks_1c_border, output_type = "ld", color = FALSE) # in Rmd file
@@ -536,7 +538,7 @@ pop_est <- matrix(c(
 rownames(pop_est) <- c("PE_123eq", "PE_12eq", "PE_13eq", "PE_23eq", "Observed")
 #
 set.seed(123) 
-benchmarks_1c_border_allpos <- benchmark(results_1c_border, pop_est = pop_est, ncpus = 8)
+benchmarks_1c_border_allpos <- benchmark(results_1c_border, pop_est = pop_est, iter = 400)
 #
 # loglik difference
 #print(benchmarks_1c_border_allpos, output_type = "ld") # R file
@@ -645,7 +647,7 @@ pop_est <- matrix(c(
 rownames(pop_est) <- c("PE_123eq", "PE_12eq", "PE_13eq", "PE_23eq", "Observed")
 #
 set.seed(123) 
-benchmarks_1c_border_allpos_200 <- benchmark(results_1c_border_200, pop_est = pop_est, ncpus = 8)
+benchmarks_1c_border_allpos_200 <- benchmark(results_1c_border_200, pop_est = pop_est, iter = 400)
 #
 # loglik difference
 #print(benchmarks_1c_border_allpos_200, output_type = "ld") # R file
@@ -686,7 +688,7 @@ pop_est <- matrix(c(
 rownames(pop_est) <- c("PE_123eq", "PE_12eq", "PE_13eq", "PE_23eq", "Observed")
 #
 set.seed(123) 
-benchmarks_1c_allpos <- benchmark(results_1c, pop_est = pop_est, ncpus = 8)
+benchmarks_1c_allpos <- benchmark(results_1c, pop_est = pop_est, iter = 400)
 #
 # loglik difference
 #print(benchmarks_1c_allpos, output_type = "ld") # R file
@@ -788,7 +790,7 @@ pop_est <- matrix(c(
 rownames(pop_est) <- c("PE_123eq", "PE_12eq", "PE_13eq", "PE_23eq", "Observed")
 #
 set.seed(123) 
-benchmarks_1c_allpos_200 <- benchmark(results_1c_200, pop_est = pop_est, ncpus = 8)
+benchmarks_1c_allpos_200 <- benchmark(results_1c_200, pop_est = pop_est, iter = 400)
 #
 # loglik difference
 #print(benchmarks_1c_allpos, output_type = "ld") # R file

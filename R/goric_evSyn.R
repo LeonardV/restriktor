@@ -110,7 +110,7 @@ evSyn <- function(object, input_type = NULL, ...) {
   } else if (obj_isICweights) {
     if (!is.null(type_ev) && identical(type_ev, "equal")) {
       message("\nrestriktor Message: When the input consists of weights, the equal-evidence approach is not applicable. The added-evidence approach is used instead.")
-      args$type_ev <- "added"  
+      args$type_ev <- "added"
     }
     return(call_sub(evSyn_ICweights, args, object))
     
@@ -867,9 +867,14 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on AIC or ORIC or GORIC or GORICA weights or 
 # (Bayesian) posterior model probabilities
-evSyn_ICweights <- function(object, ..., priorWeights = NULL, hypo_names = c(),
+evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"), 
+                            priorWeights = NULL, hypo_names = c(),
                             order_studies = c("input_order", "ascending", "descending"),
                             study_names = c()) {
+  
+  if (missing(type_ev)) 
+    type_ev <- "added"
+  type_ev <- match.arg(type_ev)
   
   Weights <- object
   S <- length(Weights)
@@ -985,9 +990,14 @@ evSyn_ICweights <- function(object, ..., priorWeights = NULL, hypo_names = c(),
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on the ratio of AIC or ORIC or GORIC or GORICA 
 # weights or (Bayesian) posterior model probabilities
-evSyn_ICratios <- function(object, ..., priorWeights = NULL, hypo_names = c(),
+evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"), 
+                           priorWeights = NULL, hypo_names = c(),
                            order_studies = c("input_order", "ascending", "descending"),
                            study_names = c()) {
+  
+  if (missing(type_ev)) 
+    type_ev <- "added"
+  type_ev <- match.arg(type_ev)
   
   Weights <- object # Now, ratio of weights # TO DO check of onderstaande dan wel goed gaat
   S <- length(Weights)
@@ -1110,6 +1120,10 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
                          order_studies = c("input_order", "ascending", "descending"),
                          study_names = c()) {
 
+  if (missing(type_ev)) 
+    type_ev <- "added"
+  type_ev <- match.arg(type_ev)
+  
   # Check if all objects are of type "con_goric"
   if (!all(vapply(object, function(x) inherits(x, "con_goric"), logical(1)))) {
     stop("\nrestriktor ERROR: the object must be a list with fitted objects from the goric() function", 

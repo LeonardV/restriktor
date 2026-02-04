@@ -1,31 +1,34 @@
 ---
 title: "Tutorial for GORIC(A) evidence aggregation"
 author: "Rebecca M. Kuiper"
-date: "`r format(Sys.time(), '%d %B %Y')`"
+date: "`r format(Sys.Date(), '%Y-%m-%d')`"
 output:
-  #pdf_document:
-  #  toc: yes
-  html_document:
-    toc: yes
-    toc_float: yes
-    number_sections: yes
-fontsize: 14pt
-editor_options:
-  chunk_output_type: console
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+vignette: >
+  %\VignetteIndexEntry{Tutorial for GORIC(A) evidence aggregation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
-<style>
-body {
-  width: 100%;
-  margin: 0 auto;
-}
-</style>
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  warning = FALSE,
+  message = FALSE,
+  tidy = FALSE,
+  fig.width  = 8,
+  fig.height = 5,
+  dpi        = 150,
+  fig.retina = 2,
+  fig.align  = "center",
+  out.width  = "100%",
+  out.extra  = 'style="height:auto;"'
+)
 
-```{r setup, include = FALSE}
-knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 80), tidy = TRUE)
-knitr::opts_chunk$set(comment = NA, warning = FALSE)
-options(width = 1200) # width console output
+options(width = 200) 
 ```
 
 
@@ -65,17 +68,13 @@ This example uses data from four studies that investigate whether buyer's trust 
 The central theory is that previous experience is positively related to trust.
 The (study-specific) hypothesis that reflect this central theory is $H_{+}: \beta_{past} > 0$, in all four studies. 
 
-In each study, the GORICA weights denote the support for the hypothesis of interest and thus the study-specific support for the central theory.
-Using GORICA evidence aggregation, the combined/aggregated/synthesized support/evidence for the central theory over all four diverse studies is obtained. 
-Next, the corresponding R code is given.
+In each study, the GORICA weights denote the support for the hypothesis of interest and thus the study-specific support for the central theory. Using GORICA evidence aggregation, the combined/aggregated/synthesized support/evidence for the central theory over all four diverse studies is obtained. Next, the corresponding R code is given.
 
 
 ### Data preparation
 Load the data and inspect it.
 ```{r, message=FALSE, warning=FALSE}
-dat <- read.table('data/Kuiper2012estimates.txt', 
-                  header = TRUE, sep = '\t')
-dat
+data(Kuiper2012estimates)
 ```
 The data consists of four rows and four columns. Each row represents a study. The columns are: `study`: the authors of the study, `year`: the year the study was published, `estimate`: the estimate of $\beta_{past}$, `se`: the standard error of the estimate.
 
@@ -101,11 +100,11 @@ library(restriktor) # for the goric function
 The `evSyn` function requires some pre-processing of the data. Namely, it needs the estimates and their variances as a list of named vectors and as a list of (unnamed) covariance matrices, respectively. Each element in the list must represent a single study.
 ```{r, message=FALSE, warning=FALSE}
 # set estimates as named vectors and store in list.
-estimates <- lapply(dat$estimate, setNames, "beta_past")
+estimates <- lapply(Kuiper2012estimates$estimate, setNames, "beta_past")
 
 # store variances (i.e., the square of the standard errors) 
 # in list of matrices.
-covmats <- lapply(dat$se^2, as.matrix)
+covmats <- lapply(Kuiper2012estimates$se^2, as.matrix)
 ```
 
 ### Hypotheses
@@ -148,7 +147,7 @@ The effect sizes to be aggregated are the (raw) mean differences, where non-surg
 
 First, install and call the `metafor` library to load data from Berkey (1998) and the `restriktor` library to load the `evSyn` function. If needed, it is possible to view the description of the data set and function with the `?` operator or the `help` command. 
 
-```{r, results='hide', message=FALSE, warning=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 # To install the packages in R:
 #if (!require("restriktor")) install.packages("restriktor")
 
@@ -162,7 +161,7 @@ library(restriktor)
 #?evSyn
 
 # Data
-library(metafor)
+library(metadat)
 dat <- dat.berkey1998
 #
 # print docs in the help-tab to view explanations for the data set

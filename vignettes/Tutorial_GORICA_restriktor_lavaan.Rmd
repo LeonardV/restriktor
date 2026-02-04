@@ -1,36 +1,36 @@
 ---
 title: "How to evaluate theory-based hypotheses in a lavaan model using the GORICA"
 author: "Rebecca M. Kuiper and Yves Rosseel"
-date: "`r format(Sys.time(), '%d %B %Y')`"
-output: 
-  #pdf_document: # of print html als pdf file!
-  #  toc: true
-    #pandoc_args: --listings # Is nu niet mooi!
-    #includes:
-    #  in_header: preamble.tex # Is nu niet mooi!
-  html_document:
+date: "`r format(Sys.Date(), '%Y-%m-%d')`"
+output:
+  rmarkdown::html_vignette:
     toc: true
-    toc_float: true
+    toc_depth: 2
     number_sections: true
-fontsize: 14pt
-editor_options:
-  chunk_output_type: console
+vignette: >
+  %\VignetteIndexEntry{How to evaluate theory-based hypotheses in a lavaan model using the GORICA}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
-<style>
-body {
-  width: 100%;
-  margin: 0 auto;
-}
-</style>
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  warning = FALSE,
+  message = FALSE,
+  tidy = FALSE,
+  # figuren: leesbaar + responsive
+  fig.width  = 8,
+  fig.height = 5,
+  dpi        = 150,
+  fig.retina = 2,
+  fig.align  = "center",
+  out.width  = "100%",
+  out.extra  = 'style="height:auto;"'
+)
 
-```{r setup, include = FALSE}
-knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 80), tidy = TRUE)
-knitr::opts_chunk$set(comment = NA, warning = FALSE)
-options(width = 1200) # width console output
+options(width = 200) 
 ```
-
 
 <!-- # Tutorial GORICA on SEM -->
 This is a tutorial for applying the AIC-type criterion GORICA, using the `goric` function, to a `lavaan` object. The GORICA is an information criterion that can be used to evaluate theory-driven, informative, order-restricted hypotheses. The GORICA selects the best hypothesis out of a given set.
@@ -65,9 +65,11 @@ To specify your hypotheses in terms of model parameters, you should give your ow
 
 ```{r}
 # specify the model, using own labeling
-HS.model <- ' visual  =~ lambda_v1*x1 + lambda_v2*x2 + lambda_v3*x3      
-              textual =~ lambda_t1*x4 + lambda_t2*x5 + lambda_t3*x6
-              speed   =~ lambda_s1*x7 + lambda_s2*x8 + lambda_s3*x9 '
+HS.model <- ' 
+  visual  =~ lambda_v1*x1 + lambda_v2*x2 + lambda_v3*x3      
+  textual =~ lambda_t1*x4 + lambda_t2*x5 + lambda_t3*x6
+  speed   =~ lambda_s1*x7 + lambda_s2*x8 + lambda_s3*x9 
+'
 ```
 
 Next, we need to formulate the hypothesis of interest. Let us say that the hypothesis is that all standardized factor loadings are at least (in absolute sense) .6.
@@ -77,11 +79,11 @@ Since we are interested in one theory-based hypothesis, we compare it to its com
 
 ```{r}
 # Hypotheses
-H1_cfa <- "
-abs(lambda_v1) > .6; abs(lambda_v2) > .6; abs(lambda_v3) > .6; 
-abs(lambda_t1) > .6; abs(lambda_t2) > .6; abs(lambda_t3) > .6; 
-abs(lambda_s1) > .6; abs(lambda_s2) > .6; abs(lambda_s3) > .6; 
-"
+H1_cfa <- '
+  abs(lambda_v1) > .6; abs(lambda_v2) > .6; abs(lambda_v3) > .6; 
+  abs(lambda_t1) > .6; abs(lambda_t2) > .6; abs(lambda_t3) > .6; 
+  abs(lambda_s1) > .6; abs(lambda_s2) > .6; abs(lambda_s3) > .6; 
+'
 # vs its complement (default)
 ```
 
@@ -126,9 +128,9 @@ Note that we compare parameters across groups, so they are already on a comparab
 ```{r}
 # specify the model
 HS.model_mgcfa <- ' 
-              visual  =~ x1 + x2 + x3
-              textual =~ x4 + x5 + x6
-              speed   =~ x7 + x8 + x9 
+  visual  =~ x1 + x2 + x3
+  textual =~ x4 + x5 + x6
+  speed   =~ x7 + x8 + x9 
 '
 
 # configural invariance
@@ -439,7 +441,11 @@ set.seed(100) # Needed for reproducibility & sensitivity check
 results_med <- goric(fit_med,
                      hypotheses = list(H_part = H_part, H_full = H_full),
                      standardized = TRUE)
+```
 
+<div style="font-size: 0.85em;">
+
+```{r, echo = TRUE, eval = TRUE}
 #summary(results_med)
 results_med
 #
@@ -461,6 +467,9 @@ results_med
 # #summary(results_med)
 # results_med
 ```
+
+</div>
+
 
 <!-- Conclusion: -->
 <!-- - The order-restricted hypothesis ‘H_full’ is the best in the set, as it has the highest GORIC(A) weight. -->

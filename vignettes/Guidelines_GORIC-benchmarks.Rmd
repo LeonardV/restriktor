@@ -1,42 +1,35 @@
 ---
 title: "Guidelines interpretation GORIC(A) benchmark output"
 author: "Rebecca M. Kuiper and Leonard Vanbrabant"
-date: "`r format(Sys.time(), '%d %B %Y')`"
+date: "`r format(Sys.Date(), '%Y-%m-%d')`"
 output:
-  pdf_document:
+  rmarkdown::html_vignette:
     toc: true
-  html_document:
-    toc: true
-    toc_float: true
+    toc_depth: 2
     number_sections: true
-    code_folding: show
-fontsize: 14pt
-editor_options:
-  chunk_output_type: console
-number_sections: true
+vignette: >
+  %\VignetteIndexEntry{Guidelines interpretation GORIC(A) benchmark output}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+#remotes::install_local(build_vignettes = TRUE, force = TRUE) # run in console
 ---
 
 
-<style>
-body {
-  width: 100%;
-  margin: 0 auto;
-}
-</style>
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  warning = FALSE,
+  message = FALSE,
+  tidy = FALSE,
+  fig.width  = 8,
+  fig.height = 5,
+  dpi        = 150,
+  fig.retina = 2,
+  fig.align  = "center",
+  out.width  = "100%",
+  out.extra  = 'style="height:auto;"'
+)
 
-<style>
-/* Zorg ervoor dat afbeeldingen gecentreerd zijn en tekst eronder komt */
-img {
-  display: block;
-  margin: 0 auto;
-}
-</style>
-
-```{r setup, include = FALSE}
-knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 80), tidy = TRUE)
-knitr::opts_chunk$set(comment = NA, warning = FALSE)
-knitr::opts_chunk$set(fig.width = 8, fig.height = 7)
-options(width = 1200) # width console output
+options(width = 120) # width console output
 
 
 ## First, install the packages, if you have not done this already:
@@ -313,6 +306,7 @@ One can, for visibility, apply a log10 transformation to the x-axis, by using `l
 ```{r, message = TRUE, warning = FALSE}
 plot(benchmarks_1c, log_scale = TRUE)  
 ```
+
 Notably, the x-axis is transformed, not the ratio values themselves.
 In this way, the distribution of the ratios is probably less skewed, since ratios of 0 to 1 have the same space on the x-axis as 1 to infinity does.
 
@@ -345,9 +339,19 @@ H2 <- "D1 > D2" # H2: D1 > D2, D3  # mu1 > mu2,  mu3
 # Apply GORIC #
 set.seed(123) 
 results_12u <- goric(fit, hypotheses = list(H1, H2))
-results_12u
-round(results_12u$ratio.gw, 3)
+```
 
+<div style="font-size: 0.85em;">
+```{r, message = F, warning = FALSE}
+results_12u
+```
+</div>
+
+```{r, message = F, warning = FALSE}
+round(results_12u$ratio.gw, 3)
+```
+
+```{r, message = F, warning = FALSE}
 # Benchmarks
 set.seed(123) 
 benchmarks_12u <- benchmark(results_12u, model_type = "means", ncpus = 8)
@@ -356,7 +360,7 @@ print(benchmarks_12u, color = FALSE) # Rmd file
 #
 # Plots of benchmarks
 #plot(benchmarks_12u, output_type = "rgw") 
-plot(benchmarks_12u, output_type = "rgw", log_scale = T)
+#plot(benchmarks_12u, output_type = "rgw", log_scale = TRUE)
 #
 #plot_out <- plot(benchmarks_12u) # save all plots in object plot_out
 #plot(plot_out$grobs$`H1 vs. H2`) # call separate plot
@@ -364,6 +368,31 @@ plot(benchmarks_12u, output_type = "rgw", log_scale = T)
 ## Plots of benchmarks with log10 transformation of x-axis
 #plot_out_log <- plot(benchmarks_12u, output_type = "rgw", log_scale = TRUE) # save all plots in object plot_out -->
 #plot(plot_out_log$grobs$`H1 vs. H2`) # call separate plot
+```
+
+```{r, message = F, warning = FALSE, eval = FALSE}
+#plot(benchmarks_12u, output_type = "rgw", log_scale = TRUE)
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=12, fig.height=10, dpi=200, out.width="100%"}
+bp <- plot(benchmarks_12u, output_type = "rgw", log_scale = TRUE)
+
+bp$plots <- lapply(bp$plots, function(g) {
+  g +
+    #@ggplot2::labs(title = NULL) +
+    ggplot2::theme_bw(base_size = 13) +
+    ggplot2::theme(
+      legend.position = "bottom",
+      legend.box      = "vertical",
+      legend.title    = ggplot2::element_text(size = 12),
+      legend.text     = ggplot2::element_text(size = 11),
+      axis.title      = ggplot2::element_text(size = 13),
+      axis.text       = ggplot2::element_text(size = 11)
+    )
+})
+
+bp
+
 ```
 <!-- TO DO titel loopt door legend -->
 <!-- TO DO plot_out <- plot(benchmarks_12u) geeft direct al de plots. Heb ik liever pas als ik er expliciet om vraag. -->
@@ -482,9 +511,10 @@ plot(benchmarks_1c_border, output_type = "ld")
 #print(benchmarks_1c_border, output_type = "rlw") # in R file
 print(benchmarks_1c_border, output_type = "rlw", color = FALSE) # in Rmd file
 #plot(benchmarks_1c_border, output_type = "rlw", x_lim = c(0, 2.5))
-plot(benchmarks_1c_border, output_type = "rlw", log_scale = T)
+plot(benchmarks_1c_border, output_type = "rlw", log_scale = TRUE)
 ```
-Notably, `'log_scale = T'` can be helpful when looking at ratios of weights (either GORICA or log-likelihood weights). In that case, the x-axis is transformed (not the ratio values themselves).
+
+Notably, `'log_scale = TRUE'` can be helpful when looking at ratios of weights (either GORICA or log-likelihood weights). In that case, the x-axis is transformed (not the ratio values themselves).
 In this way, the distribution of the ratios is probably less skewed, since ratios of 0 to 1 have the same space on the x-axis as 1 to infinity does.
 <!-- ms de optie om meerdere output types tegelijkertijd op te geven en die geef je dan steeds apart weer; dus hier dan bijv: c("ld", "rlw"). Dus: plot(benchmarks_1c_border, output_type = c("ld", "rlw")). Is blijkbaar niet makkelijk om te doen, dus doen we niet. -->
 
@@ -521,6 +551,7 @@ print(benchmarks_1c_border_allpos, output_type = "rlw", color = FALSE) # Rmd fil
 #plot(benchmarks_1c_border_allpos, output_type = "rlw", x_lim = c(0.950, 1.025))
 plot(benchmarks_1c_border_allpos, output_type = "rlw", log_scale = TRUE)
 ```
+
 In this example -- as can be seen from both the tables and the plots -- the difference in log-likelihood values and the ratio of log-likelihood weights lies between the 5th and the 95th percentile of the corresponding benchmarks (for all null populations).
 Based on this, we conclude that the log-likelihood values of $H_1$ and its complement are close (i.e., their loglik weights ratio is close to 1 and their difference is close to 0). Possibly, one can also conclude that there is a bit more support for a boundary hypothesis in which either the first two or the last means are the same (because the sample value is less extreme for those orderings, that is, the sample value is the closest to the 50th percentile of those null distributions).
 
@@ -627,8 +658,8 @@ print(benchmarks_1c_border_allpos_200, output_type = "rlw", color = FALSE) # Rmd
 #plot(benchmarks_1c_border_allpos_200, output_type = "rlw") # x_lim = c(<min>, <max>)
 plot(benchmarks_1c_border_allpos_200, output_type = "rlw", log_scale = T)
 ```
-Also in this example, with a much higher sample size, the sample difference in log-likelihood values and the sample ratio of log-likelihood weights lies between the 5th and the 95th percentiles of the corresponding benchmarks (for all null populations).
-Based on this, we conclude that the log-likelihood values of $H_1$ and its complement are close (i.e., their loglik weights ratio is close to 1 and their loglik difference is close to 0).   Additionally, one can argue that there is more support for a boundary hypothesis in which group means 1 and 2 are the same, since the sample value is the closest to the 50th percentile of that null distribution.
+
+Also in this example, with a much higher sample size, the sample difference in log-likelihood values and the sample ratio of log-likelihood weights lies between the 5th and the 95th percentiles of the corresponding benchmarks (for all null populations). Based on this, we conclude that the log-likelihood values of $H_1$ and its complement are close (i.e., their loglik weights ratio is close to 1 and their loglik difference is close to 0).   Additionally, one can argue that there is more support for a boundary hypothesis in which group means 1 and 2 are the same, since the sample value is the closest to the 50th percentile of that null distribution.
 
 
 
@@ -668,8 +699,8 @@ print(benchmarks_1c_allpos, output_type = "rlw", color = FALSE) # Rmd file
 #plot(benchmarks_1c_allpos, output_type = "rlw") # x_lim = c(<min>, <max>)
 plot(benchmarks_1c_allpos, output_type = "rlw", log_scale = T)
 ```
-In this example, the sample difference in log-likelihood values and the sample ratio of log-likelihood weights are larger than the 95th percentile of the benchmarks for the null distributions 'PE_123eq' and 'PE_13eq' (see the benchmarks output table). For the other two null distributions -- 'PE_12eq' and 'PE_23eq', where the means of groups 1 and 2 and that of 2 and 3, respectively, are set equal -- the sample value is in between the 65th and 95th percentile.  
-When looking at the distributions, the sample value seems more plausible to come from the non-null population ('Observed'). Nevertheless, it could also fit in the null distributions  'PE_12eq' and 'PE_23eq'. Hence, we cannot rule out that the log-likelihood values are close, indicating support for the means of groups 1 and 2 or that of 2 and 3 being the same.
+
+In this example, the sample difference in log-likelihood values and the sample ratio of log-likelihood weights are larger than the 95th percentile of the benchmarks for the null distributions 'PE_123eq' and 'PE_13eq' (see the benchmarks output table). For the other two null distributions -- 'PE_12eq' and 'PE_23eq', where the means of groups 1 and 2 and that of 2 and 3, respectively, are set equal -- the sample value is in between the 65th and 95th percentile. When looking at the distributions, the sample value seems more plausible to come from the non-null population ('Observed'). Nevertheless, it could also fit in the null distributions  'PE_12eq' and 'PE_23eq'. Hence, we cannot rule out that the log-likelihood values are close, indicating support for the means of groups 1 and 2 or that of 2 and 3 being the same.
 
 Next, we will inspect the case where we have a higher sample size.
 
@@ -768,8 +799,9 @@ plot(benchmarks_1c_allpos_200, output_type = "ld") # x_lim = c(<min>, <max>)
 #print(benchmarks_1c_allpos_200, output_type = "rlw") # R file
 print(benchmarks_1c_allpos_200, output_type = "rlw", color = FALSE) # Rmd file
 #plot(benchmarks_1c_allpos_200, output_type = "rlw") # x_lim = c(<min>, <max>)
-plot(benchmarks_1c_allpos_200, output_type = "rlw", log_scale = T)
+plot(benchmarks_1c_allpos_200, output_type = "rlw", log_scale = TRUE)
 ```
+
 In this example with a higher sample size, the sample difference in log-likelihood values and the sample ratio of log-likelihood weights are higher than the 95th percentile of the corresponding benchmarks (for all null populations; see the benchmarks output table).
 Based on this, we conclude that the log-likelihood values of $H_1$ and its complement are not close. Thus, there is no support for a boundary hypothesis, only for $H_1$. In that case, we can inspect the height of the support via the GORIC(A) benchmarks (as was done in a previous section).
 

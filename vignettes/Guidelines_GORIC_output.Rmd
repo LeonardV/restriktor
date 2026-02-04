@@ -1,42 +1,52 @@
 ---
-title: 'Guidelines interpretation GORIC(A) output'
-author: "Rebecca M. Kuiper and Leonard Vanbrabant"
-date: "`r format(Sys.time(), '%d %B %Y')`"
-#fontsize: 14pt
-output: 
+title: "Guidelines for Interpreting GORIC(A) Output"
+author:
+  - "Rebecca M. Kuiper"
+  - "Leonard Vanbrabant"
+date: "`r format(Sys.Date(), '%Y-%m-%d')`"
+output:
   rmarkdown::html_vignette:
-  #pdf_document:
-  #toc: true
-  #toc_float: true
+    toc: true
+    toc_depth: 2
+    number_sections: true
 vignette: >
-  %\VignetteIndexEntry{Guidelines interpretation GORIC(A) output}
+  %\VignetteIndexEntry{Guidelines for Interpreting GORIC(A) Output}
   %\VignetteEngine{knitr::rmarkdown}
-  #%\\VignetteDepends{restriktor, bain, rmarkdown}
-  \usepackage[utf8]{inputenc}
-number_sections: true
-
-#remotes::install_local(build_vignettes = TRUE, force = TRUE) # run in console
+  %\VignetteEncoding{UTF-8}
 ---
 
-<style>
-body {
-  width: 100%;
-  max-width: 60%; /* Change this value to adjust the width */
-  margin: 0 auto;
-}
-</style>
 
 
-```{r setup, include = FALSE}
-knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 80), tidy = TRUE)
-knitr::opts_chunk$set(comment = NA, warning = FALSE)
-options(width = 2000) # width console output
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  warning = FALSE,
+  message = FALSE,
+  tidy = FALSE,
+  fig.width  = 8,
+  fig.height = 5,
+  dpi        = 150,
+  fig.retina = 2,
+  fig.align  = "center",
+  out.width  = "100%",
+  out.extra  = 'style="height:auto;"'
+)
+
+options(width = 200) 
+```
+
+
+
+```{r packages, include=FALSE}
+# Zorgt dat de vignette ook buiten jouw dev-setup draait
+stopifnot(requireNamespace("restriktor", quietly = TRUE))
+stopifnot(requireNamespace("bain", quietly = TRUE))
+
 library(restriktor)
 library(bain)
 ```
 
-```{r, echo=FALSE, results = FALSE, message = FALSE, warning = FALSE}
 
+```{r, echo=FALSE, results = FALSE, message = FALSE, warning = FALSE}
 n.coef <- 3 # Number of dummy variables (model without intercept)
 
 mu <- rep(0, n.coef)
@@ -282,7 +292,15 @@ H2 <- "D1 < D2 < D3" # mu1 < mu2 < mu3
 # Apply GORIC #
 set.seed(123) 
 results_12u <- goric(fit, hypotheses = list(H1 = H1, H2 = H2))
+```
+
+<div style="font-size: 0.85em;">
+```{r, message = FALSE, warning = FALSE}
 results_12u
+```
+</div>
+
+```{r, message = FALSE, warning = FALSE}
 round(results_12u$ratio.gw, 3)
 ```
 From this, you can conclude that $H_1: \mu_1 > \mu_2 > \mu_3$ is not a weak hypothesis, since it is $.763/.237 > 1$ times more supported than the unconstrained.
@@ -527,9 +545,18 @@ H2 <- "D1 > D2" # H2: D1 > D2, D3  # mu1 > mu2,  mu3
 # Apply GORIC #
 set.seed(123) 
 results_12u <- goric(fit, hypotheses = list(H1, H2))
+```
+
+<div style="font-size: 0.85em;">
+```{r, message = TRUE, warning = FALSE}
 results_12u
+```
+</div>
+
+```{r, message = TRUE, warning = FALSE}
 round(results_12u$ratio.gw, 3)
 ```
+
 From this, you can conclude that $H_1: \mu_1 > \mu_2 > \mu_3$ and $H_2: \mu_1 > \mu_2, \ \mu_3$ are not weak, since they are $.548/.171 > 1$ and $.281/.171 > 1$, respectively, times more supported than the unconstrained.
 Therefore, $H_1$ and $H_2$ can be compared. 
 <!-- From the GORIC weights goric.weights (or their ratios in results_12u\$ratio.gw - H1 vs. H2), you can conclude that $H_1$ is $.548/.281$ times (or $1.95$ times) more supported than $H_2$. -->
@@ -607,9 +634,18 @@ H2 <- "D1 > D2" # H2: D1 > D2, D3  # mu1 > mu2,  mu3
 # Apply GORIC #
 set.seed(123) 
 results_12u <- goric(fit, hypotheses = list(H1, H2))
+```
+
+<div style="font-size: 0.85em;">
+```{r, message = TRUE, warning = FALSE}
 results_12u
+```
+</div>
+
+```{r, message = TRUE, warning = FALSE}
 round(results_12u$ratio.gw, 3)
 ```
+
 From this, you can conclude that $H_1: \mu_1 > \mu_2 > \mu_3$ and $H_2: \mu_1 > \mu_2, \ \mu_3$ are not weak, since since they are $.323/.255 > 1$ and $.421/.255 > 1$, respectively, times more supported than the unconstrained.
 Therefore, $H_1$ and $H_2$ can be compared. 
 
@@ -734,8 +770,14 @@ Hb3 <- "D1 = D2 = D3" # mu1 = mu2 = mu3
 # Apply GORIC #
 set.seed(123) 
 results_b123 <- goric(fit, hypotheses = list(Hb1 = Hb1, Hb2 = Hb2, Hb3 = Hb3))
+```
+
+<div style="font-size: 0.85em;">
+```{r, message = TRUE, warning = FALSE}
 results_b123
 ```
+</div>
+
 
 
 #### Example: $H_1$, $H_2$, and the unconstrained
@@ -747,10 +789,21 @@ H2 <- "D1 > D2 < D3" # mu1 > mu2 < mu3
 # Apply GORIC #
 set.seed(123) 
 results_12u <- goric(fit, hypotheses = list(H1, H2))
+```
+
+<div style="font-size: 0.85em;">
+```{r, message = TRUE, warning = FALSE}
 results_12u
+```
+</div>
+
+
+```{r, message = TRUE, warning = FALSE}
 round(results_12u$ratio.gw, 3)
 round(results_12u$ratio.pw, 3)
 ```
+
+
 From this, you can conclude that $H_1: \mu_1 > \mu_2 > \mu_3$ and $H_2: \mu_1 > \mu_2 < \mu_3$ are not weak, since since they are $.477/.159 > 1$ and $.364/.159 > 1$, respectively, times more supported than the unconstrained.
 Therefore, $H_1$ and $H_2$ can be compared. 
 <!-- From the GORIC weights goric.weights (or their ratios in results_12u\$ratio.gw - H1 vs. H2), you can conclude that $H_1$ is $.477/.364$ times (or $1.31$ times) more supported than $H_1$. -->

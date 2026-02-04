@@ -71,16 +71,24 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   if (!is.null(seed)) set.seed(seed)
   if (!exists(".Random.seed", envir = .GlobalEnv)) runif(1)
 
-  # keep current plan
-  current_plan <- plan()
-  on.exit(plan(current_plan), add = TRUE)
-  if (inherits(current_plan, "sequential")) {
-    if (.Platform$OS.type == "windows") {
-      plan(future::multisession, workers = ncpus)
-    } else {
-      plan(future::multicore, workers = ncpus)
-    }
+  if (ncpus > 1 && inherits(future::plan(), "sequential")) {
+    message(
+      "restriktor: ncpus > 1, but the current future plan is sequential. ",
+      "To enable parallel computation, set e.g. ",
+      "future::plan(multisession, workers = ", ncpus, ")."
+    )
   }
+  
+  # keep current plan
+  #current_plan <- plan()
+  #on.exit(plan(current_plan), add = TRUE)
+  #if (inherits(current_plan, "sequential")) {
+  #  if (.Platform$OS.type == "windows") {
+  #    plan(future::multisession, workers = ncpus)
+  #  } else {
+  #    plan(future::multicore, workers = ncpus)
+  #  }
+  #}
 
   # Hypotheses
   hypos <- object$hypotheses_usr
@@ -329,16 +337,24 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   if (!is.null(seed)) set.seed(seed)
   if (!exists(".Random.seed", envir = .GlobalEnv)) runif(1)
   
-  # keep current plan 
-  current_plan <- plan()  
-  on.exit(plan(current_plan), add = TRUE)
-  if (inherits(current_plan, "sequential")) {
-    if (.Platform$OS.type == "windows") {
-      plan(future::multisession, workers = ncpus)
-    } else {
-      plan(future::multicore, workers = ncpus)
-    }
+  if (ncpus > 1 && inherits(future::plan(), "sequential")) {
+    message(
+      "restriktor: ncpus > 1, but the current future plan is sequential. ",
+      "To enable parallel computation, set e.g. ",
+      "future::plan(multisession, workers = ", ncpus, ")."
+    )
   }
+  
+  # keep current plan 
+  # current_plan <- plan()  
+  # on.exit(plan(current_plan), add = TRUE)
+  # if (inherits(current_plan, "sequential")) {
+  #   if (.Platform$OS.type == "windows") {
+  #     plan(future::multisession, workers = ncpus)
+  #   } else {
+  #     plan(future::multicore, workers = ncpus)
+  #   }
+  # }
   
   VCOV <- object$VCOV
   # Note that -- assuming an lm object was used -- VCOV is the unbiased cov.mx estimate.

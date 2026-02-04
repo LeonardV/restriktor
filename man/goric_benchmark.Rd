@@ -176,7 +176,9 @@ fit_goric <- goric(anova_result, hypotheses = list(H1 = h1, H2 = h2),
 # In practice you want to increase the number of iterations (default = 1000).
 \donttest{
 # multisession supports windows machines
-# future::plan(future::multisession, workers = ncpus)
+# future::plan(future::multisession, workers = 8)
+# multicore supports unix machines
+# future::plan(future::multicore, workers = 8)
 benchmark_results_mean <- benchmark(fit_goric, iter = 10, model_type = "means")
 print(benchmark_results_mean)
 }

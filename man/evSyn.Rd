@@ -43,13 +43,15 @@ evSyn_ICvalues(object, \ldots, type_ev = c("added", "average"), hypo_names = c()
 
 # input: AIC or ORIC or GORIC or GORICA weights or (Bayesian) posterior 
 # model probabilities
-evSyn_ICweights(object, \ldots, priorWeights = NULL, hypo_names = c(),
+evSyn_ICweights(object, \ldots, type_ev = c("added", "average"), 
+                priorWeights = NULL, hypo_names = c(),
                 order_studies = c("input_order", "ascending", "descending"), 
                 study_names = c())
 
 # input: Ratio of AIC or ORIC or GORIC or GORICA weights or 
 # (Bayesian) posterior model probabilities
-evSyn_ICratios(object, \ldots, priorWeights = NULL, hypo_names = c(),
+evSyn_ICratios(object, \ldots, type_ev = c("added", "average"), 
+               priorWeights = NULL, hypo_names = c(),
                order_studies = c("input_order", "ascending", "descending"), 
                study_names = c())
 

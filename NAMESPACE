@@ -163,6 +163,7 @@ S3method(goric, rma)
 S3method(goric, nlmerMod)
 S3method(goric, glmerMod)
 S3method(goric, lmerMod)
+S3method(goric, effectlite)
 
 S3method(plot, evSyn)
 S3method(print, evSyn)

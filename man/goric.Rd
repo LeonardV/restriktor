@@ -6,6 +6,7 @@
 \alias{goric.lavaan}
 \alias{goric.CTmeta}
 \alias{goric.rma}
+\alias{goric.ELR}
 \alias{print.con_goric}
 \alias{summary.con_goric}
 \alias{coef.con_goric}
@@ -45,6 +46,10 @@ comparable to the Akaike weights.
       VCOV = NULL, sample_nobs = NULL, 
       debug = FALSE)
 
+\method{goric}{effectlite}(object, ..., hypotheses = NULL,
+      comparison = NULL, type = "gorica", 
+      sample_nobs = NULL, debug = FALSE)
+      
 
 \method{print}{con_goric}(x, digits = max(3, getOption("digits") - 4), \dots)
 
@@ -66,6 +71,7 @@ comparable to the Akaike weights.
     \item a fitted object of class \code{nlmerMod}.
     \item a fitted object of class \code{glmerMod}.
     \item a fitted object of class \code{lmerMod}.
+    \item a fitted object of class \code{effectlite}.
   }
   }
   

@@ -71,7 +71,7 @@ comparable to the Akaike weights.
     \item a fitted object of class \code{nlmerMod}.
     \item a fitted object of class \code{glmerMod}.
     \item a fitted object of class \code{lmerMod}.
-    \item a fitted object of class \code{effectlite}.
+    \item a fitted object of class \code{effectlite}. # TO DO Hier ms refereren naar vignette / tutorial
   }
   }
   

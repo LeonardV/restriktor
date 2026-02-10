@@ -1042,8 +1042,6 @@ goric.lmerMod <- function(object, ..., hypotheses = NULL,
 }
 
 
-
-# TO DO 
 # object of class effectlite --------------------------------------------------
 goric.effectlite <- function(object, ..., hypotheses = NULL,
                          comparison = NULL,
@@ -1065,7 +1063,11 @@ goric.effectlite <- function(object, ..., hypotheses = NULL,
   involved <- colSums(abs(Amat)) != 0
   
   if (!any(involved)) {
-    stop("restriktor ERROR: No parameters involved in the hypotheses.", call. = FALSE)
+    # TO DO al eerder is er de melding "unknown label(s)..." daar al toevoegen dat het uit 'die opties' moet komen....
+    ELR_message <- paste0("restriktor ERROR: No parameters involved in the hypotheses. \n",
+         "The hypotheses should be specified using the effectlite parameter names; \n",
+         "that is, one or more parameter names from ", colnames(object@results@vcov.def), ".")
+    stop(ELR_message, call. = FALSE)
   }
   
   # message VCOV

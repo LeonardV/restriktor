@@ -1048,7 +1048,11 @@ goric.effectlite <- function(object, ..., hypotheses = NULL,
                          type = "gorica", 
                          sample_nobs = NULL,
                          debug = FALSE) {
-  
+   
+  #TO DO 
+  #In Rd file: Bij effectlite ms refereren naar vignette / tutorial of ook een example.
+
+    
   # Check on type and possibly change
   type <- check.type(type, class = "effectlite") # "EffectLiteR") 
   

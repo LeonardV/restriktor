@@ -11,6 +11,7 @@
 \alias{summary.con_goric}
 \alias{coef.con_goric}
 
+
 \title{Generalized Order-Restricted Information Criterion (Approximation) Weights}
 \description{The \code{goric} function computes GORIC(A) weights, which are 
 comparable to the Akaike weights. 
@@ -71,7 +72,7 @@ comparable to the Akaike weights.
     \item a fitted object of class \code{nlmerMod}.
     \item a fitted object of class \code{glmerMod}.
     \item a fitted object of class \code{lmerMod}.
-    \item a fitted object of class \code{effectlite}. # TO DO Hier ms refereren naar vignette / tutorial
+    \item a fitted object of class \code{effectlite}. 
   }
   }
   

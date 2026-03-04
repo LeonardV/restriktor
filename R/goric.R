@@ -1040,3 +1040,67 @@ goric.lmerMod <- function(object, ..., hypotheses = NULL,
   
   res
 }
+
+
+# object of class effectlite --------------------------------------------------
+goric.effectlite <- function(object, ..., hypotheses = NULL,
+                             comparison = NULL, type = "gorica", 
+                             sample_nobs = NULL, debug = FALSE) {
+   
+  #TO DO 
+  #In Rd file: Bij effectlite ms refereren naar vignette / tutorial of ook een example.
+
+    
+  # Check on type and possibly change
+  type <- check.type(type, class = "effectlite") # "EffectLiteR") 
+  
+  est <- object@results@est[colnames(object@results@vcov.def)]
+  constr <- con_constraints(
+    model       = est, #object@results@est, #[colnames(object@results@vcov.def)],
+    VCOV        = object@results@vcov.def,
+    constraints = hypotheses
+  )
+  
+  Amat <- constr$Amat
+  involved <- colSums(abs(Amat)) != 0
+  
+  if (!any(involved)) {
+    # TO DO al eerder is er de melding "unknown label(s)..." daar al toevoegen dat het uit 'die opties' moet komen....
+    ELR_message <- paste0("restriktor ERROR: No parameters involved in the hypotheses. \n",
+         "The hypotheses should be specified using the effectlite parameter names; \n",
+         "that is, one or more parameter names from ", colnames(object@results@vcov.def), ".")
+    stop(ELR_message, call. = FALSE)
+  }
+  
+  # message VCOV
+  message.VCOV()
+  # TO DO opvangen in algemeen message list oid
+  
+  # sample_nobs (needed for type = "goricac")
+  if (type == "goricac") {
+    N <- sum(object@results@est$N) # TO DO check:
+    sample_nobs <- check_N_with_sample_nobs(N, sample_nobs)
+  }
+  
+  # Maak de objectList aan en voeg de vereiste elementen toe
+  objectList <- list(
+    object = est[involved], #object@results@est[involved],                 
+    VCOV = object@results@vcov.def[involved, involved],
+    sample_nobs = sample_nobs,
+    hypotheses = hypotheses,
+    comparison = comparison,
+    type = type,
+    debug = debug
+  )
+  
+  attr(objectList$object, "class_org") <- "effectlite" #"EffectLiteR"
+  
+  # Voeg extra argumenten toe aan de objectList
+  extraArgs <- list(...)
+  objectList <- c(objectList, extraArgs)
+  
+  # Roep de goric.default functie aan met de samengestelde lijst
+  res <- do.call(goric.default, objectList)
+  
+  res
+}

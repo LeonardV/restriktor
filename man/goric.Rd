@@ -7,6 +7,7 @@
 \alias{goric.CTmeta}
 \alias{goric.rma}
 \alias{goric.ELR}
+\alias{goric.effectlite}
 \alias{print.con_goric}
 \alias{summary.con_goric}
 \alias{coef.con_goric}

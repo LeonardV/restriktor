@@ -1044,10 +1044,8 @@ goric.lmerMod <- function(object, ..., hypotheses = NULL,
 
 # object of class effectlite --------------------------------------------------
 goric.effectlite <- function(object, ..., hypotheses = NULL,
-                         comparison = NULL,
-                         type = "gorica", 
-                         sample_nobs = NULL,
-                         debug = FALSE) {
+                             comparison = NULL, type = "gorica", 
+                             sample_nobs = NULL, debug = FALSE) {
    
   #TO DO 
   #In Rd file: Bij effectlite ms refereren naar vignette / tutorial of ook een example.

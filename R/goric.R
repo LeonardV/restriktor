@@ -401,7 +401,15 @@ goric.default <- function(object, ..., hypotheses = NULL,
     #llm <- mnormt::dmnorm(c(b.unrestr - b.restr), varcov = VCOV, log = FALSE) 
   }
 
-  # compute complement penalty term value 
+  # compute complement penalty term value
+  # compute complement penalty term value
+  if (is.null(conList[[Hm]]$PT_Amat)) {
+    stop(paste("\nrestriktor ERROR: the penalty term for the complement cannot be computed.",
+               "This is likely because mix_weights = 'none'.",
+               "Please use mix_weights = 'pmvnorm' (default) or 'boot'."),
+         call. = FALSE)
+  }
+  
   PTc <- penalty_complement_goric(Amat = conList[[Hm]]$PT_Amat, 
                                   meq  = conList[[Hm]]$PT_meq, 
                                   type, wt.bar, 

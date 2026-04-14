@@ -16,7 +16,7 @@ validate_parentheses <- function(hyp) {
 
 # Functie om constraints op te schonen
 clean_constraints <- function(constraints) {
-  constraints <- gsub("[#!].*(?=\n)", "", constraints, perl = TRUE) # Verwijder opmerkingen
+  constraints <- gsub("[#!].*(?=\n|$)", "", constraints, perl = TRUE) # Verwijder opmerkingen
   constraints <- gsub("[;|&]", "\n", constraints, perl = TRUE) # Normaliseer delimiters naar \n
   constraints <- gsub("[ \t]+", "", constraints, perl = TRUE) # Verwijder extra spaties
   constraints <- gsub("\n{2,}", "\n", constraints, perl = TRUE) # Verwijder extra nieuwe regels
@@ -51,10 +51,17 @@ expand_parentheses <- function(hyp) {
   parenth_locations <- gregexpr("[\\(\\)]", hyp)[[1]]
   
   if (parenth_locations[1] != -1) {
-    expanded_contents <- strsplit(
-      substring(hyp, parenth_locations[1] + 1, parenth_locations[2] - 1), 
-      ",\\s*"
-    )[[1]]
+    # Haal de inhoud tussen de eerste set haakjes op
+    inner_content <- substring(hyp, parenth_locations[1] + 1, parenth_locations[2] - 1)
+    
+    # Controleer of er komma's in de inhoud staan
+    # Geen komma = rekenkundige groepering -> niet uitbreiden
+    if (!grepl(",", inner_content)) {
+      return(hyp)
+    }
+    
+    # Komma aanwezig = bain-stijl uitbreiding
+    expanded_contents <- strsplit(inner_content, ",\\s*")[[1]]
     
     expanded_strings <- sapply(expanded_contents, function(content) {
       paste0(
@@ -74,9 +81,10 @@ expand_parentheses <- function(hyp) {
   }
 }
 
+
 # Functie om abs() en haakjes correct te verwerken
 process_abs_and_expand <- function(hyp) {
-  abs_matches <- gregexpr("abs\\([^)]+\\)", hyp)[[1]]
+  abs_matches <- gregexpr("abs\\((?:[^()]*+|\\((?:[^()]*+|\\([^()]*\\))*\\))*\\)", hyp, perl = TRUE)[[1]]
   
   if (abs_matches[1] != -1) {
     abs_substrings <- regmatches(hyp, list(abs_matches))[[1]]

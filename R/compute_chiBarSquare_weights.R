@@ -129,98 +129,103 @@ con_weights_boot <- function(VCOV, Amat, meq, R = 1e5L,
   if (!is.null(seed)) set.seed(seed)
   if (!exists(".Random.seed", envir = .GlobalEnv)) runif(1)
   
-  fn <- function(b, verbose) {
+  ldots <- list(...)
+  p <- ncol(VCOV)
+  
+  bvec   <- rep(0L, nrow(Amat)) # weights do not depend on bvec.
+  invW   <- solve(VCOV)
+  Dmat   <- 2 * invW
+  tAmat  <- t(Amat)             # pre-compute transpose once
+  mu_vec <- rep(0, p)
+  
+  # inner function: returns number of active constraints, or NA on error
+  fn <- function(b) {
     QP <- try(quadprog::solve.QP(Dmat = Dmat,
                                  dvec = dvec[b, ],
-                                 Amat = t(Amat),
+                                 Amat = tAmat,
                                  bvec = bvec,
                                  meq  = meq), silent = TRUE)
     
     if (inherits(QP, "try-error")) {
       if (verbose) cat("quadprog FAILED\n")
-      return(NULL)
-    } else {
-      if (verbose) {
-        cat(" ...active inequality constraints =", QP$iact, "\n")
-      }
+      return(NA_integer_)
+    } else if (verbose) {
+      cat(" ...active inequality constraints =", QP$iact, "\n")
     }
     
-    if (QP$iact[1] == 0L) {
-      return(0L)
-    } else {
-      return(length(QP$iact))
-    }
+    if (QP$iact[1] == 0L) 0L else length(QP$iact)
   }
   
-  ldots <- list(...)
   prev_wt_bar    <- NULL
   chunk_wt_bar   <- NULL
-  prev_res       <- NULL
-  prev_error_idx <- NULL
   has_converged  <- FALSE
   chunk_size_org <- chunk_size
   
-  bvec <- rep(0L, nrow(Amat)) # weights do not depend on bvec.
-  invW <- solve(VCOV)
-  Dmat <- 2*invW
-  #Z <- mvtnorm::rmvnorm(n = R, mean = rep(0, ncol(VCOV)), sigma = VCOV)
-  # truncated, the default (lower = -Inf and upper = Inf) is not truncated.
-  Z <- tmvtnorm::rtmvnorm(n = R, mean = rep(0, ncol(VCOV)), sigma = VCOV, ...)
-  dvec <- 2 * (Z %*% invW)
-  RR <- sum(R)
+  # incremental level counts instead of storing all results
+  level_counts   <- integer(p + 1)  # counts for levels 0:p
+  n_valid        <- 0L
+  error_idx_all  <- integer(0)
+  total_generated <- 0L
   
-  wt_bar <- numeric(ncol(VCOV) + 1)
+  RR <- as.integer(R)
   total_chunks <- ceiling(RR / chunk_size_org)
-  chunk_iter <- 1
+  chunk_iter   <- 1L
   
   while (chunk_iter <= total_chunks) { 
-    start <- 1 + chunk_size_org * (chunk_iter - 1)
-    end <- min(chunk_size_org * chunk_iter, RR)
-    res <- lapply(start:end, fn, verbose = verbose)
+    current_n <- min(chunk_size_org, RR - total_generated)
     
-    # Calculate wt_bar
-    prev_res <- append(prev_res, res)
-    iact <- sapply(prev_res, function(x) ifelse(is.null(x), NA, x))
-    error_idx <- which(is.na(iact))
-    if (length(error_idx) > 0) {
-      dimL <- ncol(VCOV) - iact[-error_idx]
-    } else {
-      dimL <- ncol(VCOV) - iact
+    # lazy sample generation: only generate what this chunk needs
+    Z    <- tmvtnorm::rtmvnorm(n = current_n, mean = mu_vec, sigma = VCOV, ...)
+    dvec <- 2 * (Z %*% invW)
+    
+    # process chunk with vapply (faster than lapply + sapply post-processing)
+    chunk_iact <- vapply(seq_len(current_n), fn, integer(1))
+    
+    # update running counts incrementally (no need to recompute from scratch)
+    valid_mask   <- !is.na(chunk_iact)
+    n_chunk_err  <- sum(!valid_mask)
+    
+    if (n_chunk_err > 0L) {
+      error_idx_all <- c(error_idx_all, which(!valid_mask) + total_generated)
     }
-    wt_bar <- sapply(0:ncol(VCOV), function(x) sum(x == dimL)) / length(dimL)
-  
+    
+    valid_iact <- chunk_iact[valid_mask]
+    dimL_chunk <- p - valid_iact  # values in 0:p
+    
+    # tabulate is O(n) vs sapply+sum which is O(n*p)
+    if (length(dimL_chunk) > 0L) {
+      level_counts <- level_counts + tabulate(dimL_chunk + 1L, nbins = p + 1)
+    }
+    n_valid         <- n_valid + sum(valid_mask)
+    total_generated <- total_generated + current_n
+    
+    wt_bar <- level_counts / n_valid
+    
     # Check for convergence
     if (!is.null(prev_wt_bar)) { 
       if (all(abs(wt_bar - prev_wt_bar) < convergence_crit)) {
-        has_converged  <- TRUE
-        chunk_wt_bar   <- rbind(chunk_wt_bar, wt_bar)
-        prev_error_idx <- c(error_idx, prev_error_idx)
-        
+        has_converged <- TRUE
+        chunk_wt_bar  <- rbind(chunk_wt_bar, wt_bar)
         break
       }
     }
     
-    # aanpassen argumenten namen in handleidingen
-    prev_wt_bar    <- wt_bar
-    chunk_wt_bar   <- rbind(chunk_wt_bar, wt_bar)
-    prev_error_idx <- c(error_idx, prev_error_idx)
-    chunk_iter     <- chunk_iter + 1L
-    chunk_size     <- chunk_size + chunk_size_org
+    prev_wt_bar  <- wt_bar
+    chunk_wt_bar <- rbind(chunk_wt_bar, wt_bar)
+    chunk_iter   <- chunk_iter + 1L
   }
-
+  
   rownames(chunk_wt_bar) <- paste0("chunk_iter_", seq_len(nrow(chunk_wt_bar)))
   
-  attr(wt_bar, "total_bootstrap_draws") <- length(iact)
+  attr(wt_bar, "total_bootstrap_draws") <- total_generated
   attr(wt_bar, "converged"            ) <- has_converged
   attr(wt_bar, "convergence_crit"     ) <- convergence_crit
   attr(wt_bar, "wt_bar_chunk"         ) <- chunk_wt_bar
   attr(wt_bar, "chunk_size"           ) <- chunk_size_org
   attr(wt_bar, "total_chunks"         ) <- total_chunks
   attr(wt_bar, "chunk_iter"           ) <- chunk_iter 
-  attr(wt_bar, "error.idx"            ) <- prev_error_idx
+  attr(wt_bar, "error.idx"            ) <- error_idx_all
   attr(wt_bar, "mvtnorm"              ) <- ldots
   
   return(wt_bar)
 }
-
-

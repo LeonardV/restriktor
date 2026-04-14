@@ -10,8 +10,8 @@ con_loglik_lm <- function(object, ...) {
   } else {
     excl <- w == 0
     if (any(excl)) {
-      res <- res[!excl]
-      n <- length(res)
+      res <- res[!excl, , drop = FALSE]
+      n <- nrow(res)
       w <- w[!excl]
     }
   }
@@ -23,7 +23,7 @@ con_loglik_lm <- function(object, ...) {
     # mlm
     OUT <- (-n/2)*log(2*pi) + (-1/2)*(nrow(res)*log(det(s2)) + ncol(res)*log(1)) - (1/2)*n
   }
-    
+  
   OUT
 }
 

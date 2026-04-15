@@ -62,7 +62,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       
       # Handle definitions and reformat equality
       def.idx <- grepl(":=", unLIST)
-      unLIST[!def.idx] <- gsub("=", "==", unLIST[!def.idx])
+      unLIST[!def.idx] <- gsub("(?<![=:!])=(?!=)", "==",  unLIST[!def.idx], perl = TRUE) #gsub("=", "==", unLIST[!def.idx])
       
       # Store in output
       OUT[[i]] <- paste(unLIST, collapse = "\n")
@@ -85,7 +85,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     rhs <- unlist(lapply(CON_FLAT, "[[", "rhs"))
     LIST$lhs <- lhs # names parameters used in hypotheses
     LIST$op  <- op
-    LIST$rhs <- c(LIST$rhs, rhs) 
+    LIST$rhs <- rhs #c(LIST$rhs, rhs) 
     
     # TO DO waarom onderstaande nodig?
     parTable$lhs   <- c(parTable$lhs, LIST$lhs)

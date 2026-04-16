@@ -28,7 +28,9 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"),
   pref_hypo <- x$pref_hypo_name
   error_prob_pref_hypo <- x$error_prob_pref_hypo
   error_prob_pref_hypo <- 
-    if (error_prob_pref_hypo < 0.001) {
+    if (!is.numeric(error_prob_pref_hypo)) {
+      "The unconstrained is preferred and has no complement, it contains all possible orderings."
+    } else if (error_prob_pref_hypo < 0.001) {
       "<.001"
     } else {
       sprintf("%.3f", error_prob_pref_hypo)

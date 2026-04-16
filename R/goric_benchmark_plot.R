@@ -11,7 +11,7 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   # Check if the output_type is valid
   output_type <- match.arg(output_type, c("rgw", "rlw", "gw", "ld"))
   
-  legend_lab <- names(x$benchmarks_goric_weights)
+  #legend_lab <- names(x$benchmarks_goric_weights)
   # first letter to upper-case
   #paste0(toupper(substring(x$type, 1, 1)), substring(x$type, 2))
   goric_type <- toupper(x$type) 
@@ -78,7 +78,7 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   } 
   
   # Rename the Group column to replace triple dots with equals sign
-  df_long$Group <- factor(df_long$Group)
+  df_long$Group <- factor(df_long$Group, levels = unique(df_long$Group))
   
   percentile_df <- aggregate(Value ~ Group, data = df_long, function(x) {
     quantile(x, probs = percentiles, names = TRUE, na.rm = TRUE)
@@ -89,7 +89,7 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   n_plots <- nrow(x$benchmarks_ratio_goric_weights[[1]])
   first_group <- levels(factor(df_long$Group))[1:n_plots]
   first_group_data <- subset(df_long, Group %in% first_group)
-  # first groups are the ones with no-effect or ES = 0
+  # first groups are the ones with no-effect or ES = 0 (at least when the default is used)
   percentile_first_group <- percentile_df[percentile_df$Group %in% first_group, ]
   rownames(percentile_first_group) <- NULL
   
@@ -109,16 +109,35 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
       stringsAsFactors = FALSE
     )
     sample_value_df <- cbind(sample_value_df, percentile_first_group[-1])
+    df_long$id_Pop <- 1:dim(df_long)[1]
     df_long <- merge(df_long, sample_value_df, by = "Group_hypo_comparison", all.x = TRUE)
+    # Re-order because of legend for Populations
+    df_long <- df_long[order(df_long$id_Pop), ]
   } else {
-    df_long$Group <- paste(df_long$Group, "()")
+    df_long$Group <- paste(df_long$Group, "()") 
     df_long$Group_pop_values <- sub("\\s*\\(.*\\)", "", df_long$Group)
     df_long$Group_hypo_comparison <- gsub("\\(|\\)", "",  extract_in_parentheses(df_long$Group))
     sample_value <- as.vector(sample_value)
     df_long <- suppressWarnings(cbind(df_long, sample_value, 
                                       percentile_first_group,
-                                      first_group_color = first_group_color)
-    )
+                                      first_group_color = first_group_color))
+    # TO DO Dit gaat fout (altijd al??)
+    # TO DO Ms iets doen als (moet ik nog checken):
+    # df_long$GroupH <- paste(df_long$Group, "()") 
+    # df_long$Group_pop_values <- sub("\\s*\\(.*\\)", "", df_long$GroupH)
+    # df_long$Group_hypo_comparison <- gsub("\\(|\\)", "",  extract_in_parentheses(df_long$Group))
+    # sample_value <- as.vector(sample_value)
+    # sample_value_df <- data.frame(
+    #   Group = unique(df_long$Group)[-(length(unique(df_long$Group)))], # TO DO waarom is die laatste er niet?
+    #   sample_value = as.numeric(sample_value),
+    #   first_group_color = first_group_color,
+    #   stringsAsFactors = FALSE
+    # )
+    # df <- merge(percentile_first_group, sample_value_df, by = "Group", all.x = TRUE)
+    # df_long$id_Pop <- 1:dim(df_long)[1]
+    # df_long <- merge(df_long, df, by = "Group", all.x = TRUE)
+    # # Re-order because of legend for Populations
+    # df_long <- df_long[order(df_long$id_Pop), ]
   }
   
   attr(df_long, "output_type") <- output_type
@@ -289,8 +308,9 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
   if (!is.null(x_lim) && length(x_lim) == 2) {
     if (log_scale & !x_lim[1] > 0) {
       x_lim[1] <- .001
-      warning(paste("\nrestriktor WARNING: log_scale is set to TRUE, but the lower bound of x_lim must be greater than 0.", 
-              "Adjusting x_lim[1] to 0.001. You can manually specify a value greater than 0 for x_lim[1] if needed."))
+      warning(paste("\nrestriktor Message: log_scale is set to TRUE, then the lower bound of x_lim must be greater than 0.", 
+              "The lower bound of x_lim is adjusted to 0.001.", 
+              "You can manually specify a value greater than 0 if needed."))
     }
     p <- p + coord_cartesian(xlim = x_lim)
    } 

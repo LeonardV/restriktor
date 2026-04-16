@@ -72,10 +72,10 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                                  bvec        = bvec, 
                                  meq         = meq,
                                  debug       = debug)  
-    # a list with useful information about the restriktions.}
+    # a list with useful information about the restrictions.}
     CON <- restr.OUT$CON
     # a parameter table with information about the observed variables in the object 
-    # and the imposed restriktions.}
+    # and the imposed restrictions.}
     parTable <- restr.OUT$parTable
     # constraints matrix
     Amat <- restr.OUT$Amat

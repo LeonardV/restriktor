@@ -327,13 +327,17 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     
     goric_rw <- x$ratio.gw
     goric_rw_best_hypo <- goric_rw[best_hypo, ]
-    goric_rw_best_hypo <- goric_rw_best_hypo[goric_rw_best_hypo != 1]
+    #goric_rw_best_hypo <- goric_rw_best_hypo[goric_rw_best_hypo != 1]
+    # Should not filter on the value 1, but on the name 'best_hypo_name':
+    filterout_best <- names(goric_rw[best_hypo, ]) != paste0("vs. ", best_hypo_name)
+    goric_rw_best_hypo <- goric_rw_best_hypo[filterout_best]
+    # 
     goric_rw_best_hypo <- sapply(goric_rw_best_hypo, format_value)
     best_hypos_rest <- paste(df$model[!df$model %in% best_hypo_name])
     
     message <- ""
     for (i in seq_along(best_hypos_rest)) {
-      if (best_hypos_rest[i] %in% overlap_hypo) {
+      if (best_hypo_overlap & best_hypos_rest[i] %in% overlap_hypo) {
         # Als er overlap is, voeg toe dat de relatieve support zijn maximum heeft bereikt
         message <- paste0(message, "  * ", sQuote(best_hypo_name), " is ", 
                           goric_rw_best_hypo[i], 

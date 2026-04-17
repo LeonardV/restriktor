@@ -1,7 +1,7 @@
 plot.evSyn <- function(x, output_type = "gorica_weights", 
-                       xlab = NULL, # TO DO deze gaan dan op alfabetische volgorde en houden dus niet de opgegeven oredering aan!!! Aanpassen en anders iig melden.
+                       xlab = NULL, 
                        xlab_unordered = NULL, 
-                       angle_x = 30, # TO DO Sometimes the labels do not fit, then adjusting the angle can help.
+                       angle_x = 30, # Sometimes the labels do not fit, then adjusting the angle can help.
                        ...) {
   if (!output_type %in% c("gorica_weights", "ll_weights")) {
     stop("restriktor ERROR: output_type must be gorica_weights or ll_weights", call. = FALSE)
@@ -60,8 +60,8 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
               "If re-ordering took place and you want to enter the names of the unordered studies, then use the xlab_unordered argument.")
     }
     
-    Name_studies <- as.factor(xlab) 
-    angle_x = 30
+    Name_studies <- factor(xlab, levels = xlab) 
+    #angle_x = 30
     vjust_x = 1 # 0: bottom-aligned to 1: is top-aligned
     hjust_x = 1 # right-aligned
   } else {
@@ -71,7 +71,7 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
     # vjust_x = 0.5 # centered vertically
     # hjust_x = 0.5 # centered horizontally
     Name_studies <- factor(x$study_names, levels = x$study_names)
-    angle_x = 30
+    #angle_x = 30
     vjust_x = 1 # 0: bottom-aligned to 1: is top-aligned
     hjust_x = 1 # right-aligned
   }
@@ -80,7 +80,7 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
       stop("restriktor ERROR: Length of xlab_unordered must match the number of studies.", call. = FALSE)
     }
     Name_studies <- factor(xlab_unordered[x$order_studies], levels = xlab_unordered[x$order_studies]) 
-    angle_x = 30
+    #angle_x = 30
     vjust_x = 1 # 0: bottom-aligned to 1: is top-aligned
     hjust_x = 1 # right-aligned
   } 

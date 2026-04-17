@@ -78,6 +78,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
       "future::plan(multisession, workers = ", ncpus, ")."
     )
   }
+  # TO DO Kan je dit niet voor de gebruiker intern/hier aanpassen?
   
   # keep current plan
   #current_plan <- plan()

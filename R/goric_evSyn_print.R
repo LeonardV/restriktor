@@ -13,8 +13,8 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     cat(paste("\nInput type 'gorica' detected: "))
     cat("Parameter estimates and covariance matrix inherited from gorica object\n")
   } else if (inherits(x, "evSyn_escalc")) {
-    cat(paste("\nInput type 'escalc' detected: "))
-    cat("Parameter estimates and covariance matrix inherited from escalc object\n")
+    cat(paste("\nInput type 'escalc' (or data.frame) detected: "))
+    cat("Parameter estimates and covariance matrix inherited from escalc object (or data.frame)\n")
   } else if (inherits(x, "evSyn_est")) {
     cat(paste("\nInput type 'est_vcov' detected: "))
     cat("Parameter estimates and covariance matrix\n")

@@ -766,7 +766,7 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
   est <- con_gorica_est_lav(object, standardized)
   
   if (is.null(hypotheses)) {
-    stop("`hypotheses` must be supplied.", call. = FALSE)
+    stop("restriktor ERROR: The argument `hypotheses` must be supplied.", call. = FALSE)
   }
   
   constr <- con_constraints(

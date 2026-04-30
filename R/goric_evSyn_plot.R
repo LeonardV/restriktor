@@ -106,9 +106,9 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
   # Combine the data frames
   plot_data <- rbind(per_study_df, cumulative_df)
   plot_data$variable <- rep(rep(namesH, each = S), times = times)
-  
+    
   # Plot
-  ggplot(plot_data, aes(x = .data[['study']],
+  evSynPlot <- ggplot(plot_data, aes(x = .data[['study']],
                         y = .data[['weight']])) +
     geom_point(size = 3, aes(color = factor(.data[['variable']], levels = namesH), shape = .data[['weight_type']])) + 
     theme(legend.position = "bottom", 
@@ -116,9 +116,11 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
           legend.margin=margin(unit(0, "cm"))) +
     geom_line(data = plot_data[plot_data[['weight_type']] == "cumulative", ],
               aes(group = .data[['variable']], color = .data[['variable']]), linewidth = 1) +
-    { if (NrHypos_incl == 2) geom_hline(yintercept = .5, linetype = "dashed", color = "gray", linewidth = .5) } +
-    # TO DO add to legend (if it is there), label/name = "Equal support".
-    scale_color_brewer(palette = "Dark2") +
+    # Set colors:
+    # ColorBrewer's most colorblind-friendly qualitative palette is "Set2". 
+    #"Dark2" is also good for print.
+    # Reverse colors such that unc or compl always has the same color
+    #scale_color_brewer(type = 'qual', direction = -1, palette = 'Dark2') +
     theme(
       plot.margin = unit(c(1,1,1,1), "cm"),
       legend.text = element_text(size = 12),
@@ -140,4 +142,28 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
          shape = "", color = "") + 
     guides(color = guide_legend(order = 2),
            shape = guide_legend(order = 1)) 
+  
+  evSynPlot_col <- evSynPlot +
+    # Set colors:
+    # ColorBrewer's most colorblind-friendly qualitative palette is "Set2". 
+    #"Dark2" is also good for print.
+    # Reverse colors such that unc or compl always has the same color
+    scale_color_brewer(type = 'qual', direction = -1, palette = 'Dark2') 
+    
+
+  if (NrHypos_incl == 2) {
+    # Add line at 0.5, which denotes Equal support
+    #
+    # Extract colors used
+    cols <- unique(ggplot_build(evSynPlot_col)$data[[1]]$colour)
+    #
+    # Add 0.5 line in gray to plot and add also (in gray) to legend
+    evSynPlot_col <- evSynPlot +
+      geom_hline(aes(yintercept = .5, color = "Both 0.5 denotes equal support"),
+                               linetype = "dashed", linewidth = 0.5) + 
+                    scale_colour_manual(values = c(cols, "gray"))
+  } 
+  
+  evSynPlot_col
+    
 }

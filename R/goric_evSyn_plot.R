@@ -116,11 +116,6 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
           legend.margin=margin(unit(0, "cm"))) +
     geom_line(data = plot_data[plot_data[['weight_type']] == "cumulative", ],
               aes(group = .data[['variable']], color = .data[['variable']]), linewidth = 1) +
-    # Set colors:
-    # ColorBrewer's most colorblind-friendly qualitative palette is "Set2". 
-    #"Dark2" is also good for print.
-    # Reverse colors such that unc or compl always has the same color
-    #scale_color_brewer(type = 'qual', direction = -1, palette = 'Dark2') +
     theme(
       plot.margin = unit(c(1,1,1,1), "cm"),
       legend.text = element_text(size = 12),

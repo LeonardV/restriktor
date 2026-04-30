@@ -12,6 +12,7 @@
 \alias{print.summary.evSyn}
 \alias{summary.evSyn}
 \alias{plot.evSyn}
+\alias{leave1out.evSyn}
 
 \title{GORIC(A) Evidence synthesis}
 \description{GORIC(A) evidence synthesis aggregates the evidence for theory-based 

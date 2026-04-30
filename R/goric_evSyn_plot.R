@@ -7,6 +7,9 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
     stop("restriktor ERROR: output_type must be gorica_weights or ll_weights", call. = FALSE)
   }
   
+  # TO DO adjust code when output changes to (method) type specific output names
+  # TO DO then also adjust the Title and y-axis label accordingly
+  
   if (inherits(x, "evSyn_est")) {
     data_list <- switch(output_type,
                         "gorica_weights" = list(weight_m = x$GORICA_weight_m, 
@@ -131,7 +134,7 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
     ) +
     scale_y_continuous(limits = c(0, 1), n.breaks = 10) +
     scale_x_discrete(expand = c(0, 0.05)) +
-    labs(x = "Studies", y = y_label,
+    labs(x = "Studies\n", y = y_label,
          title = paste("Cumulative", y_label, "and", y_label, "per study"),
          subtitle = paste(x$type_ev, "Evidence Synthesis results"),
          shape = "", color = "") + 

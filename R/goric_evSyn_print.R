@@ -32,31 +32,70 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     cat("Ratio of information criteria weights (each vector ends with 1)\n")
   } 
   
-  if (!is.null(x$Cumulative_GORICA_weights)) {
-    if (x$type == "gorica") {
-      cat("\nFinal GORICA weights:\n")
-    } else if (x$type == "goricac") {
-      cat("\nFinal GORICAC weights:\n") 
+
+  #if (exists(x$type)) {
+  if (x$type %in% c("goric", "goricc", "gorica", "goricac")) {
+    type <- x$type
+    type_missing <- FALSE
+  } else {
+    type <- "gorica" 
+    type_missing <- TRUE
+  }
+  if (type == "goric") {
+    if (!is.null(x$Cumulative_GORIC_weights)) {
+      cat("\nFinal GORIC weights:\n")
+      cgw <- sapply(x$Cumulative_GORIC_weights["Final", , drop = FALSE], 
+                    FUN = function(x) format_numeric(x, digits = digits))
+      names(cgw) <- colnames(x$Cumulative_GORIC_weights)
+      print(cgw, print.gap = 2, quote = FALSE, right = TRUE)
+      cat("---\n")
     }
-    cgw <- sapply(x$Cumulative_GORICA_weights["Final", , drop = FALSE], 
-                  FUN = function(x) format_numeric(x, digits = digits))
-    names(cgw) <- colnames(x$Cumulative_GORICA_weights)
-    print(cgw, print.gap = 2, quote = FALSE, right = TRUE)
-    cat("---\n")
+  } else if (type == "goricc") {
+    if (!is.null(x$Cumulative_GORICC_weights)) {
+      cat("\nFinal GORICC weights:\n") 
+      cgw <- sapply(x$Cumulative_GORICC_weights["Final", , drop = FALSE], 
+                    FUN = function(x) format_numeric(x, digits = digits))
+      names(cgw) <- colnames(x$Cumulative_GORICC_weights)
+      print(cgw, print.gap = 2, quote = FALSE, right = TRUE)
+      cat("---\n")
+    }
+  } else if (type == "gorica") {
+    if (!is.null(x$Cumulative_GORICA_weights)) {
+      cat("\nFinal GORICA weights:\n")
+      cgw <- sapply(x$Cumulative_GORICA_weights["Final", , drop = FALSE], 
+                    FUN = function(x) format_numeric(x, digits = digits))
+      names(cgw) <- colnames(x$Cumulative_GORICA_weights)
+      print(cgw, print.gap = 2, quote = FALSE, right = TRUE)
+      cat("---\n")
+    }
+  } else if (type == "goricac") {
+    if (!is.null(x$Cumulative_GORICAC_weights)) {
+      cat("\nFinal GORICAC weights:\n") 
+      cgw <- sapply(x$Cumulative_GORICAC_weights["Final", , drop = FALSE], 
+                    FUN = function(x) format_numeric(x, digits = digits))
+      names(cgw) <- colnames(x$Cumulative_GORICAC_weights)
+      print(cgw, print.gap = 2, quote = FALSE, right = TRUE)
+      cat("---\n")
+    }
   }
   
-  # TO DO
-  # In 'Final results:' geen rijnamen... 
-  # Die namen zijn ook handig als headers in per study results en cum results/
-  # In argumenten van output object niet zoiets als 'Final results', wel 'Final_ratio_GORICA_weights'  
-  
-  if (x$type == "gorica") {
+  if (type == "goric") {
+    cat("\nRatio final GORIC weights:\n")  
+    formatted_weights <- apply(x$Final_ratio_GORIC_weights, c(1, 2), 
+                               function(val) format_numeric(val, digits = digits))
+  } else if (type == "goricc") {
+    cat("\nRatio final GORICC weights:\n")  
+    formatted_weights <- apply(x$Final_ratio_GORICC_weights, c(1, 2), 
+                               function(val) format_numeric(val, digits = digits))
+  } else if (type == "gorica") {
     cat("\nRatio final GORICA weights:\n")  
-  } else if (x$type == "goricac") {
+    formatted_weights <- apply(x$Final_ratio_GORICA_weights, c(1, 2), 
+                               function(val) format_numeric(val, digits = digits))
+  } else if (type == "goricac") {
     cat("\nRatio final GORICAC weights:\n")  
+    formatted_weights <- apply(x$Final_ratio_GORICAC_weights, c(1, 2), 
+                               function(val) format_numeric(val, digits = digits))
   }
-  formatted_weights <- apply(x$Final_ratio_GORICA_weights, c(1, 2), 
-                             function(val) format_numeric(val, digits = digits))
   print(formatted_weights, print.gap = 2, quote = FALSE, right = TRUE)
   cat("\n")
   

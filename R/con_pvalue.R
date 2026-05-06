@@ -160,7 +160,7 @@ con_pvalue_boot_parametric <- function(model, Ts.org,
       ystar.shift <- (X %*% -shift.q)
     } else if (fam$family == "binomial") {
       stop("restriktor ERROR: for the ", sQuote(fam$family), " family, relocated cones are not supported (yet).")
-    } else if (fam$family == "poission") {
+    } else if (fam$family == "poisson") {
       stop("restriktor ERROR: for the ", sQuote(fam$family), " family, relocated cones are not supported (yet).")
     }
     # </FIXME>

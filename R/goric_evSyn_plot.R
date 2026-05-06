@@ -1,11 +1,14 @@
 plot.evSyn <- function(x, output_type = "gorica_weights", 
-                       xlab = NULL, # TO DO deze gaan dan op alfabetische volgorde en houden dus niet de opgegeven oredering aan!!! Aanpassen en anders iig melden.
+                       xlab = NULL, 
                        xlab_unordered = NULL, 
-                       angle_x = 30, # TO DO Sometimes the labels do not fit, then adjusting the angle can help.
+                       angle_x = 30, # Sometimes the labels do not fit, then adjusting the angle can help.
                        ...) {
   if (!output_type %in% c("gorica_weights", "ll_weights")) {
     stop("restriktor ERROR: output_type must be gorica_weights or ll_weights", call. = FALSE)
   }
+  
+  # TO DO adjust code when output changes to (method) type specific output names
+  # TO DO then also adjust the Title and y-axis label accordingly
   
   if (inherits(x, "evSyn_est")) {
     data_list <- switch(output_type,
@@ -49,19 +52,21 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
   S <- nrow(weight_m[,,drop = FALSE])
   if (!is.null(xlab)) {
     if (length(xlab) != S) {
-      stop("restriktor ERROR: Length of xlab must match the number of studies.", call. = FALSE)
+      stop("restriktor ERROR: Length of xlab (", length(xlab), ") must match the number of studies (", S, ").", call. = FALSE)
     }
     if (!is.null(xlab_unordered)) {
-      message("restriktor Message: Both xlab and xlab_unordered are given, the plot will use xlab.")
+      message("restriktor Message: Both xlab and xlab_unordered are given, the plot will use xlab.",
+              "Notably, it is assumed that xlab gives the names of the re-ordered studies.")
     }
     if (!all(x$order_studies == 1:S)){
       # Then, re-ordering happened and xlab should be the names of studies on current x-axis, so the ordered studies.
-      message("restriktor Message: It is assumed that xlab gives the names of the (re-ordered) studies. ",
-              "If re-ordering took place and you want to enter the names of the unordered studies, then use the xlab_unordered argument.")
+      message("restriktor Message: It is assumed that xlab gives the names of the re-ordered studies. ",
+              "If re-ordering took place and you want to enter the names of the unordered studies, then use the xlab_unordered argument.",
+              "The order of the studies can be found via $order_studies.")
     }
     
-    Name_studies <- as.factor(xlab) 
-    angle_x = 30
+    Name_studies <- factor(xlab, levels = xlab) 
+    #angle_x = 30
     vjust_x = 1 # 0: bottom-aligned to 1: is top-aligned
     hjust_x = 1 # right-aligned
   } else {
@@ -71,16 +76,16 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
     # vjust_x = 0.5 # centered vertically
     # hjust_x = 0.5 # centered horizontally
     Name_studies <- factor(x$study_names, levels = x$study_names)
-    angle_x = 30
+    #angle_x = 30
     vjust_x = 1 # 0: bottom-aligned to 1: is top-aligned
     hjust_x = 1 # right-aligned
   }
   if (!is.null(xlab_unordered) && is.null(xlab)) {
     if (length(xlab_unordered) != S) {
-      stop("restriktor ERROR: Length of xlab_unordered must match the number of studies.", call. = FALSE)
+      stop("restriktor ERROR: Length of xlab_unordered (", length(xlab_unordered), ") must match the number of studies (", S, ").", call. = FALSE)
     }
     Name_studies <- factor(xlab_unordered[x$order_studies], levels = xlab_unordered[x$order_studies]) 
-    angle_x = 30
+    #angle_x = 30
     vjust_x = 1 # 0: bottom-aligned to 1: is top-aligned
     hjust_x = 1 # right-aligned
   } 
@@ -104,9 +109,9 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
   # Combine the data frames
   plot_data <- rbind(per_study_df, cumulative_df)
   plot_data$variable <- rep(rep(namesH, each = S), times = times)
-  
+    
   # Plot
-  ggplot(plot_data, aes(x = .data[['study']],
+  evSynPlot <- ggplot(plot_data, aes(x = .data[['study']],
                         y = .data[['weight']])) +
     geom_point(size = 3, aes(color = factor(.data[['variable']], levels = namesH), shape = .data[['weight_type']])) + 
     theme(legend.position = "bottom", 
@@ -114,9 +119,6 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
           legend.margin=margin(unit(0, "cm"))) +
     geom_line(data = plot_data[plot_data[['weight_type']] == "cumulative", ],
               aes(group = .data[['variable']], color = .data[['variable']]), linewidth = 1) +
-    { if (NrHypos_incl == 2) geom_hline(yintercept = .5, linetype = "dashed", color = "gray", linewidth = .5) } +
-    # TO DO add to legend (if it is there), label/name = "Equal support".
-    scale_color_brewer(palette = "Dark2") +
     theme(
       plot.margin = unit(c(1,1,1,1), "cm"),
       legend.text = element_text(size = 12),
@@ -132,10 +134,34 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
     ) +
     scale_y_continuous(limits = c(0, 1), n.breaks = 10) +
     scale_x_discrete(expand = c(0, 0.05)) +
-    labs(x = "Studies", y = y_label,
+    labs(x = "Studies\n", y = y_label,
          title = paste("Cumulative", y_label, "and", y_label, "per study"),
          subtitle = paste(x$type_ev, "Evidence Synthesis results"),
          shape = "", color = "") + 
     guides(color = guide_legend(order = 2),
            shape = guide_legend(order = 1)) 
+  
+  evSynPlot_col <- evSynPlot +
+    # Set colors:
+    # ColorBrewer's most colorblind-friendly qualitative palette is "Set2". 
+    #"Dark2" is also good for print.
+    # Reverse colors such that unc or compl always has the same color
+    scale_color_brewer(type = 'qual', direction = -1, palette = 'Dark2') 
+    
+
+  if (NrHypos_incl == 2) {
+    # Add line at 0.5, which denotes Equal support
+    #
+    # Extract colors used
+    cols <- unique(ggplot_build(evSynPlot_col)$data[[1]]$colour)
+    #
+    # Add 0.5 line in gray to plot and add also (in gray) to legend
+    evSynPlot_col <- evSynPlot +
+      geom_hline(aes(yintercept = .5, color = "Both 0.5 denotes equal support"),
+                               linetype = "dashed", linewidth = 0.5) + 
+                    scale_colour_manual(values = c(cols, "gray"))
+  } 
+  
+  evSynPlot_col
+    
 }

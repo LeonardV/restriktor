@@ -11,7 +11,7 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   # Check if the output_type is valid
   output_type <- match.arg(output_type, c("rgw", "rlw", "gw", "ld"))
   
-  legend_lab <- names(x$benchmarks_goric_weights)
+  #legend_lab <- names(x$benchmarks_goric_weights)
   # first letter to upper-case
   #paste0(toupper(substring(x$type, 1, 1)), substring(x$type, 2))
   goric_type <- toupper(x$type) 
@@ -56,10 +56,7 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
     DATA[[list_name]]
   })
   
-  DATA <- new_combined_values
-  
-
-  df <- combine_matrices_cbind(DATA)
+  df <- combine_matrices_cbind(new_combined_values)
   # -------------------------------------------------------------------------
   
   # Reshape the dataframe 
@@ -78,7 +75,7 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   } 
   
   # Rename the Group column to replace triple dots with equals sign
-  df_long$Group <- factor(df_long$Group)
+  df_long$Group <- factor(df_long$Group, levels = unique(df_long$Group))
   
   percentile_df <- aggregate(Value ~ Group, data = df_long, function(x) {
     quantile(x, probs = percentiles, names = TRUE, na.rm = TRUE)
@@ -86,10 +83,10 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   
   percentile_df <- data.frame(Group = percentile_df$Group, percentile_df$Value, check.names = FALSE)
   
-  n_plots <- nrow(x$benchmarks_ratio_goric_weights[[1]])
+  n_plots <- ncol(DATA[[1]])
   first_group <- levels(factor(df_long$Group))[1:n_plots]
   first_group_data <- subset(df_long, Group %in% first_group)
-  # first groups are the ones with no-effect or ES = 0
+  # first groups are the ones with no-effect or ES = 0 (at least when the default is used, otherwise the first population est./size)
   percentile_first_group <- percentile_df[percentile_df$Group %in% first_group, ]
   rownames(percentile_first_group) <- NULL
   
@@ -109,16 +106,18 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
       stringsAsFactors = FALSE
     )
     sample_value_df <- cbind(sample_value_df, percentile_first_group[-1])
+    df_long$id_Pop <- 1:dim(df_long)[1]
     df_long <- merge(df_long, sample_value_df, by = "Group_hypo_comparison", all.x = TRUE)
+    # Re-order because of legend for Populations
+    df_long <- df_long[order(df_long$id_Pop), ]
   } else {
-    df_long$Group <- paste(df_long$Group, "()")
+    df_long$Group <- paste(df_long$Group, "()") 
     df_long$Group_pop_values <- sub("\\s*\\(.*\\)", "", df_long$Group)
     df_long$Group_hypo_comparison <- gsub("\\(|\\)", "",  extract_in_parentheses(df_long$Group))
     sample_value <- as.vector(sample_value)
     df_long <- suppressWarnings(cbind(df_long, sample_value, 
                                       percentile_first_group,
-                                      first_group_color = first_group_color)
-    )
+                                      first_group_color = first_group_color))
   }
   
   attr(df_long, "output_type") <- output_type
@@ -157,7 +156,7 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
   output_type <- attr(plot_df, "output_type")
   df_subset <- subset(plot_df, Group_hypo_comparison == group_comparison)
   
-  if (!is.null(df_subset$Group_hypo_comparison)) {
+  if (!is.null(df_subset$Group_hypo_comparison) & output_type != "gw") {
     title <- paste(title, "vs.", sub(".*vs\\. ", "", unique(df_subset$Group_hypo_comparison)))
   }
   
@@ -289,8 +288,9 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
   if (!is.null(x_lim) && length(x_lim) == 2) {
     if (log_scale & !x_lim[1] > 0) {
       x_lim[1] <- .001
-      warning(paste("\nrestriktor WARNING: log_scale is set to TRUE, but the lower bound of x_lim must be greater than 0.", 
-              "Adjusting x_lim[1] to 0.001. You can manually specify a value greater than 0 for x_lim[1] if needed."))
+      warning(paste("\nrestriktor Message: log_scale is set to TRUE, then the lower bound of x_lim must be greater than 0.", 
+              "The lower bound of x_lim is adjusted to 0.001.", 
+              "You can manually specify a value greater than 0 if needed."))
     }
     p <- p + coord_cartesian(xlim = x_lim)
    } 
@@ -319,15 +319,7 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
 plot_all_groups <- function(plot_df, groups, title, xlabel, x_lim = NULL, 
                             alpha = 0.5, distr_grid = FALSE, 
                             percentiles = NULL, log_scale = FALSE) {
-  # TO DO this goes wrong when multiple hypotheses and plot(goric.object, output_type = "gw")
-  # then: groups gives for example [1] "H1_sesam "
-  # daardoor title in regel 161 niet goed.
-  # Het lijkt alleen niet door de code te gaan waar groups aangemaakt wordt... maar dat ligt vast aan mij :-)
-  #
-  # TO DO
-  #headers en notes plots soms niet mooi (iig als "gw") en, 
-  #als meer dan 1 hypo en als Heq=T, de titels/headers ook verkeerd (zegt dan bijv H1 vs H1).
-  #
+  
   plot_list <- list()
   for (group in groups) {
     plot <- create_density_plot(plot_df, group, title, xlabel, x_lim, alpha, 

@@ -12,6 +12,7 @@
 \alias{print.summary.evSyn}
 \alias{summary.evSyn}
 \alias{plot.evSyn}
+\alias{leave1out.evSyn}
 
 \title{GORIC(A) Evidence synthesis}
 \description{GORIC(A) evidence synthesis aggregates the evidence for theory-based 
@@ -62,8 +63,9 @@ evSyn_gorica(object, \dots, type_ev = c("added", "equal", "average"),
              order_studies = c("input_order", "ascending", "descending"), 
              study_names = c())
 
-# input: Result from the escalc() function from the metafor package. 
-# Note that this is a wrapper function for evSyn_est.
+# input: Result from the escalc() function from the metafor package (or a 
+# regular data.frame using the same labelling). Note that this is a wrapper 
+# function for evSyn_est.
 evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldots)
 
 \method{print}{evSyn}(x, digits = max(3, getOption("digits") - 4), \dots)
@@ -85,7 +87,7 @@ xlab_unordered = NULL, angle_x = 30, \dots)
       \item a list of vectors with ratio of GORIC(A) weights;
       \item a list of vectors with GORIC(A) values;
       \item a list of objects of class goric;
-      \item a data.frame of class escalc from the \pkg{metafor} package;
+      \item a data.frame of class escalc from the \pkg{metafor} package or a regular data.frame using the same labelling;
     }
   }
   
@@ -98,7 +100,7 @@ xlab_unordered = NULL, angle_x = 30, \dots)
     \item{\code{"icratios"}}{Indicates that the input consists of IC weights ratios. Invokes the \code{evSyn_ICratios()} function.}
     \item{\code{"icvalues"}}{Indicates that the input consists of IC values. Invokes the \code{evSyn_ICvalues()} function.}
     \item{\code{"gorica"}}{Indicates that the input is of class goric from the \code{goric} function. Invokes the \code{evSyn_gorica()} function.}
-    \item{\code{"escalc"}}{Indicates that the input is of class escalc from the \pkg{metafor} package. Invokes the \code{evSyn_escalc()} function.}
+    \item{\code{"escalc"}}{Indicates that the input is of class escalc from the \pkg{metafor} package (or a regular data.frame using the same labelling). Invokes the \code{evSyn_escalc()} function.}
   }
   If \code{input_type} is \code{NULL}, the function attempts to infer the input type based on the structure of the \code{object} and other arguments.
 }
@@ -149,34 +151,39 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   a plot with the cumulative log-likelihood weights and log-likelihood weights 
   per study is displayed.}
   
-  \item{xlab_unordered}{A character vector specifying the original (unordered) 
+  \item{xlab_unordered}{a character vector specifying the original (unordered) 
   study labels. This argument should be used when studies have been re-ordered using
   \code{order_studies}. The labels will be reordered internally to match the 
   plotting order.}
   
-  \item{angle_x}{Numeric value specifying the angle (in degrees) of the x-axis 
-  labels. Useful when labels are long and overlap.}
+  \item{angle_x}{numeric value specifying the angle (in degrees) of the x-axis 
+  labels; by default, angle_x = 30. Useful when labels are long and overlap.}
   
   \item{study_names}{
-  A character vector specifying the names or labels of the individual studies.
+  a character vector specifying the names or labels of the individual studies.
   When provided, these names will be used throughout the output, including in 
   tables, summaries, and plots (in place of numeric study indices).
   If \code{NULL} (default), studies are automatically numbered 
   (1, 2, ..., K) following the order determined by \code{order_studies}.}
 
   \item{study_sample_nobs}{
-  A numeric vector specifying the sample size (\code{n}) for each study.
+  a numeric vector specifying the sample size (\code{n}) for each study.
   When provided, this information will be included in summaries and can be used 
   for weighted averaging or diagnostic purposes in the evidence synthesis. 
   If \code{NULL} (default), all studies are assumed to have equal weight 
   with respect to sample size.}
   
   \item{order_studies}{
-  A character string that determines how studies are ordered in the output and plots. 
+  either a i) character string or ii) numeric vector:
+  i) A character string that determines how studies are ordered in the output and plots. 
   If \code{"input_order"} (default), studies are displayed in the order they were 
   provided. If \code{"ascending"} or \code{"descending"}, studies are ordered based 
-  on the ascending or descending cumulative support for the preferred hypothesis, 
-  respectively.}
+  on the ascending or descending support for the preferred hypothesis, 
+  respectively. 
+  ii) A numeric vector with length the number of studies (S). 
+  This vector then gives the ordering of studies to be used, which one could base on, 
+  say, year of the study.
+  Notably, when order_studies equals "input_order", the ordering 1:S is used.}
   
   \item{xlab}{a vector specifying custom labels for the x-axis (be aware that 
   study ordering may be changed based on \code{order_studies}). The length of 
@@ -184,7 +191,7 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   the x-axis labels default to a sequence from 1 to the number of studies 
   (possibly re-ordered based on \code{order_studies}).}
 
-  \item{data}{an object of class "escalc" from the \pkg{metafor} package.}
+  \item{data}{an object of class "escalc" from the \pkg{metafor} package or a regular data.frame using the same labelling.}
 
   \item{cluster_col}{a character string specifying the column in \code{data} that 
   contains the cluster/study identifier. Observations within the same cluster/study should 

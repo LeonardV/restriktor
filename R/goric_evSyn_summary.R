@@ -2,9 +2,9 @@ summary.evSyn <- function(object, ...) {
   x <- object
   class(x) <- NULL
   
-  if (type == "gorica") {
+  if (x$type == "gorica") {
     ans <- list(
-      type = type,
+      type = "gorica",
       type_ev = x$type_ev,
       #n_studies = nrow(x$GORICA_weight_m[,, drop = FALSE]),
       n_studies = x$n_studies,
@@ -20,9 +20,9 @@ summary.evSyn <- function(object, ...) {
       Cumulative_GORICA_weights = x$Cumulative_GORICA_weights,
       Cumulative_GORICA = x$Cumulative_GORICA
     )
-  } else if (type == "goricac") {
+  } else if (x$type == "goricac") {
     ans <- list(
-      type = type,
+      type = "goricac",
       type_ev = x$type_ev,
       #n_studies = nrow(x$GORICA_weight_m[,, drop = FALSE]),
       n_studies = x$n_studies,
@@ -54,14 +54,14 @@ summary.evSyn <- function(object, ...) {
   
   final <- c()
   
-  if (type == "gorica") {
+  if (x$type == "gorica") {
     #if (!is.null(x[["Cumulative_GORICA_weights"]])) {
     fcgw <- t(x[["Cumulative_GORICA_weights"]]["Final", ])
     colnames(fcgw)  <- colnames(x[["Cumulative_GORICA_weights"]])
     rownames(fcgw) <- "GORICA weights"
     final <- rbind(final, fcgw)
     #}
-  } else if (type == "goricac") {
+  } else if (x$type == "goricac") {
     #if (!is.null(x[["Cumulative_GORICAC_weights"]])) {
     fcgw <- t(x[["Cumulative_GORICAC_weights"]]["Final", ])
     colnames(fcgw)  <- colnames(x[["Cumulative_GORICAC_weights"]])
@@ -70,13 +70,13 @@ summary.evSyn <- function(object, ...) {
     #}
   }
   
-  if (type == "gorica") {
+  if (x$type == "gorica") {
     #if (!is.null(x[["Cumulative_GORICA"]])) {
     fcgv <- t(x[["Cumulative_GORICA"]]["Final", ])
     rownames(fcgv) <- "GORICA values"
     final <- rbind(final, fcgv)
     #}
-  } else if (type == "goricac") {
+  } else if (x$type == "goricac") {
     #if (!is.null(x[["Cumulative_GORICAC"]])) {
     fcgv <- t(x[["Cumulative_GORICAC"]]["Final", ])
     rownames(fcgv) <- "GORICAC values"

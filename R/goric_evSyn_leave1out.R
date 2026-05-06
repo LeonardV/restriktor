@@ -40,7 +40,7 @@ leave1out.evSyn <- function(object) {
       OverallGoric[s,] <- colSums(IC_m[-s,])
     } else if (type_ev == "equal") { 
       # equal-evidence approach
-      OverallGoric[s,] <- colSums(-LL_m[-s,]) + colMeans(PT[-s,])
+      OverallGoric[s,] <- colSums(-LL_m[-s,]) + colMeans(PT_m[-s,])
     } else if (type_ev == "average") { 
       # average-evidence approach
       OverallGoric[s,] <- colMeans(IC_m[-s,])

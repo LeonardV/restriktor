@@ -63,8 +63,9 @@ evSyn_gorica(object, \dots, type_ev = c("added", "equal", "average"),
              order_studies = c("input_order", "ascending", "descending"), 
              study_names = c())
 
-# input: Result from the escalc() function from the metafor package ( or a regular data.frame using the same labelling). 
-# Note that this is a wrapper function for evSyn_est.
+# input: Result from the escalc() function from the metafor package (or a 
+# regular data.frame using the same labelling). Note that this is a wrapper 
+# function for evSyn_est.
 evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldots)
 
 \method{print}{evSyn}(x, digits = max(3, getOption("digits") - 4), \dots)

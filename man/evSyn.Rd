@@ -12,14 +12,17 @@
 \alias{print.summary.evSyn}
 \alias{summary.evSyn}
 \alias{plot.evSyn}
+\alias{evSyn}
+\alias{leave1out}
 \alias{leave1out.evSyn}
+\alias{leave1out.default}
 
 \title{GORIC(A) Evidence synthesis}
 \description{GORIC(A) evidence synthesis aggregates the evidence for theory-based 
 hypotheses from multiple studies that may use diverse designs to investigate the 
 same central theory.
 
-The function \code{leave1out.evSyn} performs a leave-one-out sensitivity analysis 
+The function \code{leave1out} performs a leave-one-out sensitivity analysis 
 on a fitted \code{evSyn} object: it re-runs the evidence synthesis S times, each 
 time omitting one study, and reports which hypothesis is preferred in each 
 reduced set.
@@ -291,7 +294,7 @@ aiming to determine the robustness of results across various model specification
 applied to the same dataset.
 
 \strong{Leave-one-out sensitivity analysis.}
-\code{leave1out.evSyn} repeats the evidence synthesis S times, each time dropping 
+\code{leave1out} repeats the evidence synthesis S times, each time dropping 
 one of the S studies. For each reduced set the aggregated IC values per hypothesis 
 are computed using the same \code{type_ev} as in the original \code{evSyn} call:
 \itemize{

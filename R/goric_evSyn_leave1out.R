@@ -2,6 +2,12 @@ leave1out <- function(object, ...) {
   UseMethod("leave1out")
 }
 
+leave1out.default <- function(object, ...) {
+  stop(
+    "restriktor ERROR: leave1out() takes an 'evSyn' or 'evSyn_est' object as input.",
+    call. = FALSE
+  )
+}
 
 leave1out.evSyn <- function(object, ...) {
   

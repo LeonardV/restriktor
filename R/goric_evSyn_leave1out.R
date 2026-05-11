@@ -1,83 +1,118 @@
-leave1out.evSyn <- function(object) {
+leave1out <- function(object, ...) {
+  UseMethod("leave1out")
+}
+
+
+leave1out.evSyn <- function(object, ...) {
   
-  if (!any(class(object) %in% c("evSyn_est", "evSyn"))) {
-    stop("restriktor ERROR: The leave1out function takes an 'evSyn' (or 'evSyn_est') object as input.")
-  }
+  type <- object$type
   
-  #if (exists(object$type)) {
-  if (object$type %in% c("goric", "goricc", "gorica", "goricac")) {
-    type <- object$type
+  if (!is.null(type) && type %in% c("goric", "goricc", "gorica", "goricac")) {
     type_missing <- FALSE
   } else {
-    type <- "gorica" 
+    type <- "gorica"
     type_missing <- TRUE
   }
+  
   type_ev <- object$type_ev
   S <- object$n_studies
   
-  # IC values needed 
-  if(type == "goric") {
-    IC_m <- object$GORIC_m
-  } else if(type == "goricc") {
-    IC_m <- object$GORICC_m
-  } else if(type == "gorica") {
-    IC_m <- object$GORICA_m
-  } else if(type == "goricac") {
-    IC_m <- object$GORICAC_m
-  } 
-  if (type_ev == "equal") { 
-    # equal-evidence approach
-    # Then LL and PT needed and available
+  IC_m <- switch(
+    type,
+    goric   = object$GORIC_m,
+    goricc  = object$GORICC_m,
+    gorica  = object$GORICA_m,
+    goricac = object$GORICAC_m
+  )
+  
+  if (is.null(IC_m)) {
+    stop("restriktor ERROR: IC matrix is missing from the evSyn object.")
+  }
+  
+  if (!type_ev %in% c("added", "equal", "average")) {
+    stop("restriktor ERROR: unknown evidence-synthesis type in 'type_ev'.")
+  }
+  
+  if (S < 2L) {
+    stop("restriktor ERROR: leave1out() requires at least two studies.")
+  }
+  
+  if (type_ev == "equal") {
     LL_m <- object$LL_m
     PT_m <- object$PT_m
-  }
-  
-  OverallGoric <- matrix(NA, nrow = S, ncol = dim(IC_m)[2])
-  OverallPrefHypo <- matrix(NA, nrow = S, ncol = 1) # rep(NA, S)
-  for (s in 1:S) {
-    if (type_ev == "added") { 
-      # added-evidence approach
-      OverallGoric[s,] <- colSums(IC_m[-s,])
-    } else if (type_ev == "equal") { 
-      # equal-evidence approach
-      OverallGoric[s,] <- colSums(-LL_m[-s,]) + colMeans(PT_m[-s,])
-    } else if (type_ev == "average") { 
-      # average-evidence approach
-      OverallGoric[s,] <- colMeans(IC_m[-s,])
+    
+    if (is.null(LL_m) || is.null(PT_m)) {
+      stop("restriktor ERROR: LL_m and PT_m are required for type_ev = 'equal'.")
     }
-    which <- which(OverallGoric[s,] == min(OverallGoric[s,]))
-    OverallPrefHypo[s] <- colnames(IC_m)[which]
   }
-
-  colnames(OverallGoric) <- colnames(IC_m)
-  names <- paste0("Leave Study ", object$order_studies, " out:")
-  rownames(OverallGoric) <- names
-  #names(OverallPrefHypo) <- names
-  rownames(OverallPrefHypo) <- names
-  colnames(OverallPrefHypo) <- ""
   
-  # Output
-  if(type == "goric") {
-    resultIC <- list(OverallGoric = OverallGoric)
-  } else if(type == "goricc") {
-    resultIC <- list(OverallGoricc = OverallGoric)
-  } else if(type == "gorica") {
-    resultIC <- list(OverallGorica = OverallGoric)
-  } else if(type == "goricac") {
-    resultIC <- list(OverallGoricac = OverallGoric)
-  } 
-  result <- append(resultIC, 
-                   list(OverallPrefHypo = OverallPrefHypo,
-                        type_ev = type_ev)
-                   )
-  if (!type_missing) {
-    result <- append(result, 
-                     list(type = type)
+  OverallGoric <- matrix(
+    NA_real_,
+    nrow = S,
+    ncol = ncol(IC_m),
+    dimnames = list(
+      paste0("Leave Study ", object$order_studies, " out:"),
+      colnames(IC_m)
     )
+  )
+  
+  OverallPrefHypo <- matrix(
+    NA_character_,
+    nrow = S,
+    ncol = 1L,
+    dimnames = list(rownames(OverallGoric), "")
+  )
+  
+  for (s in seq_len(S)) {
+    
+    keep <- seq_len(S) != s
+    
+    OverallGoric[s, ] <- switch(
+      type_ev,
+      added   = colSums(IC_m[keep, , drop = FALSE]),
+      equal   = colSums(-LL_m[keep, , drop = FALSE]) +
+        colMeans(PT_m[keep, , drop = FALSE]),
+      average = colMeans(IC_m[keep, , drop = FALSE])
+    )
+    
+    best <- which(OverallGoric[s, ] == min(OverallGoric[s, ], na.rm = TRUE))
+    OverallPrefHypo[s, 1L] <- paste(colnames(IC_m)[best], collapse = ", ")
   }
   
-  #class(result) <- c("leave1out.evSyn")
+  resultIC <- switch(
+    type,
+    goric   = list(OverallGoric = OverallGoric),
+    goricc  = list(OverallGoricc = OverallGoric),
+    gorica  = list(OverallGorica = OverallGoric),
+    goricac = list(OverallGoricac = OverallGoric)
+  )
   
-  return(result)
+  result <- c(
+    resultIC,
+    list(
+      OverallPrefHypo = OverallPrefHypo,
+      type_ev = type_ev
+    )
+  )
   
+  if (!type_missing) {
+    result$type <- type
+  }
+  
+  class(result) <- "leave1out.evSyn"
+  
+  result
+}
+
+
+leave1out.evSyn_est <- function(object, ...) {
+  leave1out.evSyn(object, ...)
+}
+
+
+leave1out.default <- function(object, ...) {
+  stop(
+    "restriktor ERROR: leave1out() takes an 'evSyn' or 'evSyn_est' object as input.",
+    call. = FALSE
+  )
 }

@@ -17,7 +17,14 @@
 \title{GORIC(A) Evidence synthesis}
 \description{GORIC(A) evidence synthesis aggregates the evidence for theory-based 
 hypotheses from multiple studies that may use diverse designs to investigate the 
-same central theory.}
+same central theory.
+
+The function \code{leave1out.evSyn} performs a leave-one-out sensitivity analysis 
+on a fitted \code{evSyn} object: it re-runs the evidence synthesis S times, each 
+time omitting one study, and reports which hypothesis is preferred in each 
+reduced set.
+}
+
 
 \usage{
 # I try to guess the input type.
@@ -76,6 +83,8 @@ evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldo
 
 \method{plot}{evSyn}(x, output_type = "gorica_weights", xlab = NULL, 
 xlab_unordered = NULL, angle_x = 30, \dots)
+
+\method{leave1out}{evSyn}(object, \dots)
 }
 
 \arguments{
@@ -280,12 +289,43 @@ Opt for the average-evidence approach when you wish to gauge the central tendenc
 of evidence across multiple analytical choices. It's especially beneficial when 
 aiming to determine the robustness of results across various model specifications 
 applied to the same dataset.
+
+\strong{Leave-one-out sensitivity analysis.}
+\code{leave1out.evSyn} repeats the evidence synthesis S times, each time dropping 
+one of the S studies. For each reduced set the aggregated IC values per hypothesis 
+are computed using the same \code{type_ev} as in the original \code{evSyn} call:
+\itemize{
+  \item \code{"added"}: column sums of the IC matrix with study \emph{s} removed.
+  \item \code{"equal"}: \eqn{-} column sums of the LL matrix with study \emph{s}
+    removed, plus the column means of the PT matrix with study \emph{s} removed.
+  \item \code{"average"}: column means of the IC matrix with study \emph{s} removed.
+}
+The hypothesis with the lowest aggregated IC value is identified as the preferred 
+hypothesis for that reduced set. This analysis can be used to detect influential 
+studies and to assess the robustness of the overall conclusion.
+
 }
 
 
 \value{An object of class evSyn for which a print, summary and plot function is available. 
 The output comprises, among other things, the cumulative and final evidence 
-for the theory-based hypotheses.}
+for the theory-based hypotheses.
+
+\code{leave1out.evSyn} returns a named list with the following components:
+\describe{
+  \item{\code{OverallGorica} (or \code{OverallGoric}, \code{OverallGoricc}, 
+    \code{OverallGoricac})}{a numeric matrix of dimension S x H (studies by 
+    hypotheses) containing the aggregated IC values when the corresponding study 
+    is left out. Row names are of the form \code{"Leave Study k out:"}.}
+  \item{\code{OverallPrefHypo}}{a character matrix of dimension S x 1 giving the 
+    name of the preferred hypothesis (i.e., the one with the lowest aggregated IC 
+    value) for each leave-one-out set.}
+  \item{\code{type_ev}}{the evidence-synthesis approach used, inherited from the 
+    input \code{evSyn} object.}
+  \item{\code{type}}{the IC type used (\code{"goric"}, \code{"goricc"}, 
+    \code{"gorica"}, or \code{"goricac"}), if available in the input object.}
+}
+}
 
 
 \author{Leonard Vanbrabant and Rebecca M. Kuiper}

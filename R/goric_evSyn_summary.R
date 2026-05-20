@@ -41,7 +41,7 @@ summary.evSyn <- function(object, ...) {
   }
   
   if (!is.null(x$PT_m)) {
-    sequence    <- paste0("Studies 1-", 1:ans$n_studies)
+    sequence    <- paste0("Studies 1-", 1:x$n_studies)
     sequence[1] <- "Studies 1"
     Cumulative_PT <- apply(x$PT_m[,, drop = FALSE], 2, cumsum)  
     Cumulative_PT <- matrix(Cumulative_PT, nrow = nrow(x$PT_m), 
@@ -92,13 +92,13 @@ summary.evSyn <- function(object, ...) {
   }
   
   if (!is.null(x[["Cumulative_LL"]])) {
-    fcllv <- t(x[["Cumulative_LL"]][ans$n_studies, ])
+    fcllv <- t(x[["Cumulative_LL"]][x$n_studies, ])
     rownames(fcllv) <- "Log-likelihood values"
     final <- rbind(final, fcllv)
   }
   
   if (!is.null(ans$Cumulative_PT)) { 
-    fcptv <- t(ans$Cumulative_PT[ans$n_studies, ])
+    fcptv <- t(ans$Cumulative_PT[x$n_studies, ])
     rownames(fcptv) <- "Penalty term values"
     final <- rbind(final, fcptv)
   }
@@ -143,7 +143,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   }
   
   #if (exists(x$type)) {
-  if (x$type %in% c("goric", "goricc", "gorica", "goricac")) {
+  if (!is.null(x$type) && x$type %in% c("goric", "goricc", "gorica", "goricac")) {
     type <- x$type
     type_missing <- FALSE
   } else {
@@ -280,17 +280,16 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
     cat("    ---\n")
   }
   
-  
-  cat("\nFinal results:\n")
-  formatted_final <- apply(x$Final_Cumulative_results[,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
-  captured_output <- capture.output(print(formatted_final, row.names = TRUE, right = TRUE, quote = "FALSE"))
-  adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
-  cat(paste0(adjusted_output, "\n"), sep = "")
-  
-  
-  cat("\nFinal ratios:\n")
+  if (!is.null(x$Final_Cumulative_results)) {
+    cat("\nFinal results:\n")
+    formatted_final <- apply(x$Final_Cumulative_results[,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
+    captured_output <- capture.output(print(formatted_final, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+  }
   
   if (!is.null(x$Final_ratio_GORICA_weights)) {
+    cat("\nFinal ratios:\n")
     if (type == "gorica") {
       cat("\n    GORICA weights:\n")
     } else if (type == "goricac") {

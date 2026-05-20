@@ -34,13 +34,14 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   
 
   #if (exists(x$type)) {
-  if (x$type %in% c("goric", "goricc", "gorica", "goricac")) {
+  if (!is.null(x$type) && x$type %in% c("goric", "goricc", "gorica", "goricac")) {
     type <- x$type
     type_missing <- FALSE
   } else {
     type <- "gorica" 
     type_missing <- TRUE
   }
+  
   if (type == "goric") {
     if (!is.null(x$Cumulative_GORIC_weights)) {
       cat("\nFinal GORIC weights:\n")

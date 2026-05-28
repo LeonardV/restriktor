@@ -14,10 +14,15 @@ VCOV3 <- diag(c(0.12, 0.12))
 
 H1 <- list(H1 = "x1 > x2")
 
-# Goric objecten
+# Goric objecten (type = "gorica")
 g1 <- goric(est1, VCOV = VCOV1, type = "gorica", hypotheses = H1)
 g2 <- goric(est2, VCOV = VCOV2, type = "gorica", hypotheses = H1)
 g3 <- goric(est3, VCOV = VCOV3, type = "gorica", hypotheses = H1)
+
+# Goric objecten (type = "goricac")
+g1c <- goric(est1, VCOV = VCOV1, type = "goricac", hypotheses = H1, sample_nobs = 50)
+g2c <- goric(est2, VCOV = VCOV2, type = "goricac", hypotheses = H1, sample_nobs = 50)
+g3c <- goric(est3, VCOV = VCOV3, type = "goricac", hypotheses = H1, sample_nobs = 50)
 
 # LL en PT uit de goric objecten
 LL_list <- list(g1$result$loglik, g2$result$loglik, g3$result$loglik)
@@ -443,4 +448,222 @@ test_that("evSyn_LL: custom hypo_names werken met print en summary", {
               hypo_names = c("Hypothese1", "Unconstrained"))
   out <- capture.output(print(summary(es)))
   expect_true(any(grepl("Hypothese1", out)))
+})
+
+
+# =============================================================================
+# 13. Type doorgifte: evSyn_gorica geeft type correct door
+# =============================================================================
+
+test_that("evSyn_gorica: type = 'gorica' wordt doorgegeven in het resultaat", {
+  es <- evSyn(object = list(g1, g2, g3))
+  expect_equal(es[["type"]], "gorica")
+})
+
+test_that("evSyn_gorica: type = 'goricac' wordt doorgegeven in het resultaat", {
+  es <- evSyn(object = list(g1c, g2c, g3c))
+  expect_equal(es[["type"]], "goricac")
+})
+
+test_that("evSyn_est: type = 'gorica' is aanwezig in het resultaat", {
+  es <- evSyn(object = list(est1, est2, est3), VCOV = list(VCOV1, VCOV2, VCOV3),
+              hypotheses = H1)
+  expect_equal(es[["type"]], "gorica")
+})
+
+test_that("evSyn_est: type = 'goricac' is aanwezig in het resultaat", {
+  es <- evSyn(object = list(est1, est2, est3), VCOV = list(VCOV1, VCOV2, VCOV3),
+              hypotheses = H1, type = "goricac", study_sample_nobs = c(50, 50, 50))
+  expect_equal(es[["type"]], "goricac")
+})
+
+test_that("evSyn_LL: type is NULL (niet beschikbaar vanuit LL+PT input)", {
+  es <- evSyn(object = LL_list, PT = PT_list)
+  expect_null(es[["type"]])
+})
+
+test_that("evSyn_ICvalues: type is NULL (niet beschikbaar vanuit IC values input)", {
+  es <- evSyn(object = IC_list)
+  expect_null(es[["type"]])
+})
+
+test_that("evSyn_ICweights: type is NULL (niet beschikbaar vanuit IC weights input)", {
+  es <- evSyn(object = W_list)
+  expect_null(es[["type"]])
+})
+
+test_that("evSyn_ICratios: type is NULL (niet beschikbaar vanuit IC ratios input)", {
+  es <- evSyn(object = R_list)
+  expect_null(es[["type"]])
+})
+
+
+# =============================================================================
+# 14. Type label in print/summary output: GORICA vs GORICAC
+# =============================================================================
+
+test_that("evSyn_gorica (gorica): print toont 'GORICA' label", {
+  es <- evSyn(object = list(g1, g2, g3))
+  out <- capture.output(print(es))
+  expect_true(any(grepl("GORICA", out)))
+  # Mag geen GORICAC bevatten
+  expect_false(any(grepl("GORICAC", out)))
+})
+
+test_that("evSyn_gorica (goricac): print toont 'GORICAC' label", {
+  es <- evSyn(object = list(g1c, g2c, g3c))
+  out <- capture.output(print(es))
+  expect_true(any(grepl("GORICAC", out)))
+})
+
+test_that("evSyn_gorica (gorica): summary toont 'GORICA' label", {
+  es <- evSyn(object = list(g1, g2, g3))
+  out <- capture.output(print(summary(es)))
+  expect_true(any(grepl("GORICA", out)))
+  expect_false(any(grepl("GORICAC", out)))
+})
+
+test_that("evSyn_gorica (goricac): summary toont 'GORICAC' label", {
+  es <- evSyn(object = list(g1c, g2c, g3c))
+  out <- capture.output(print(summary(es)))
+  expect_true(any(grepl("GORICAC", out)))
+})
+
+test_that("evSyn_est (gorica): print toont 'GORICA' label", {
+  es <- evSyn(object = list(est1, est2, est3), VCOV = list(VCOV1, VCOV2, VCOV3),
+              hypotheses = H1)
+  out <- capture.output(print(es))
+  expect_true(any(grepl("GORICA", out)))
+  expect_false(any(grepl("GORICAC", out)))
+})
+
+test_that("evSyn_est (goricac): print toont 'GORICAC' label", {
+  es <- evSyn(object = list(est1, est2, est3), VCOV = list(VCOV1, VCOV2, VCOV3),
+              hypotheses = H1, type = "goricac", study_sample_nobs = c(50, 50, 50))
+  out <- capture.output(print(es))
+  expect_true(any(grepl("GORICAC", out)))
+})
+
+
+# =============================================================================
+# 15. Type afwezig: default naar 'GORICA' label (geen crash)
+# =============================================================================
+
+test_that("evSyn_LL: print gebruikt 'GORICA' als default label (type is NULL)", {
+  es <- evSyn(object = LL_list, PT = PT_list)
+  out <- capture.output(print(es))
+  # Moet GORICA tonen ondanks dat type NULL is
+  expect_true(any(grepl("GORICA", out)))
+  expect_false(any(grepl("GORICAC", out)))
+})
+
+test_that("evSyn_LL: summary gebruikt 'GORICA' als default label (type is NULL)", {
+  es <- evSyn(object = LL_list, PT = PT_list)
+  out <- capture.output(print(summary(es)))
+  expect_true(any(grepl("GORICA", out)))
+  expect_false(any(grepl("GORICAC", out)))
+})
+
+test_that("evSyn_ICvalues: print gebruikt 'GORICA' als default label (type is NULL)", {
+  es <- evSyn(object = IC_list)
+  out <- capture.output(print(es))
+  expect_true(any(grepl("GORICA", out)))
+  expect_false(any(grepl("GORICAC", out)))
+})
+
+test_that("evSyn_ICvalues: summary gebruikt 'GORICA' als default label (type is NULL)", {
+  es <- evSyn(object = IC_list)
+  out <- capture.output(print(summary(es)))
+  expect_true(any(grepl("GORICA", out)))
+  expect_false(any(grepl("GORICAC", out)))
+})
+
+test_that("evSyn_ICweights: print gebruikt 'GORICA' als default label (type is NULL)", {
+  es <- evSyn(object = W_list)
+  out <- capture.output(print(es))
+  expect_true(any(grepl("GORICA", out)))
+  expect_false(any(grepl("GORICAC", out)))
+})
+
+test_that("evSyn_ICweights: summary gebruikt 'GORICA' als default label (type is NULL)", {
+  es <- evSyn(object = W_list)
+  out <- capture.output(print(summary(es)))
+  expect_true(any(grepl("GORICA", out)))
+  expect_false(any(grepl("GORICAC", out)))
+})
+
+test_that("evSyn_ICratios: print gebruikt 'GORICA' als default label (type is NULL)", {
+  es <- evSyn(object = R_list)
+  out <- capture.output(print(es))
+  expect_true(any(grepl("GORICA", out)))
+  expect_false(any(grepl("GORICAC", out)))
+})
+
+test_that("evSyn_ICratios: summary gebruikt 'GORICA' als default label (type is NULL)", {
+  es <- evSyn(object = R_list)
+  out <- capture.output(print(summary(es)))
+  expect_true(any(grepl("GORICA", out)))
+  expect_false(any(grepl("GORICAC", out)))
+})
+
+
+# =============================================================================
+# 16. Aanwezigheid van verwachte output-elementen per input type
+# =============================================================================
+
+test_that("evSyn_LL: summary toont LL weights, LL values, PT values en GORICA weights", {
+  es <- evSyn(object = LL_list, PT = PT_list)
+  out <- capture.output(print(summary(es)))
+  expect_true(any(grepl("Log-likelihood weights", out)))
+  expect_true(any(grepl("Log-likelihood values", out)))
+  expect_true(any(grepl("Penalty term values", out)))
+  expect_true(any(grepl("GORICA weights", out)))
+})
+
+test_that("evSyn_ICvalues: summary toont GORICA weights en GORICA values, geen LL/PT", {
+  es <- evSyn(object = IC_list)
+  out <- capture.output(print(summary(es)))
+  expect_true(any(grepl("GORICA weights", out)))
+  expect_true(any(grepl("GORICA values", out)))
+  # ICvalues heeft geen LL_m of PT_m
+  expect_false(any(grepl("Log-likelihood values", out)))
+  expect_false(any(grepl("Penalty term values", out)))
+})
+
+test_that("evSyn_ICweights: summary toont GORICA weights, geen LL/PT/GORICA values", {
+  es <- evSyn(object = W_list)
+  out <- capture.output(print(summary(es)))
+  expect_true(any(grepl("GORICA weights", out)))
+  # ICweights heeft geen GORICA_m, LL_m of PT_m
+  expect_false(any(grepl("GORICA values", out)))
+  expect_false(any(grepl("Log-likelihood values", out)))
+  expect_false(any(grepl("Penalty term values", out)))
+})
+
+test_that("evSyn_ICratios: summary toont GORICA weights, geen LL/PT/GORICA values", {
+  es <- evSyn(object = R_list)
+  out <- capture.output(print(summary(es)))
+  expect_true(any(grepl("GORICA weights", out)))
+  expect_false(any(grepl("GORICA values", out)))
+  expect_false(any(grepl("Log-likelihood values", out)))
+  expect_false(any(grepl("Penalty term values", out)))
+})
+
+test_that("evSyn_est: summary toont LL weights, LL values, PT values en GORICA weights", {
+  es <- evSyn(object = list(est1, est2, est3), VCOV = list(VCOV1, VCOV2, VCOV3),
+              hypotheses = H1)
+  out <- capture.output(print(summary(es)))
+  expect_true(any(grepl("Log-likelihood weights", out)))
+  expect_true(any(grepl("Log-likelihood values", out)))
+  expect_true(any(grepl("Penalty term values", out)))
+  expect_true(any(grepl("GORICA weights", out)))
+})
+
+test_that("evSyn_gorica: summary toont LL weights, LL values, PT values en GORICA weights", {
+  es <- evSyn(object = list(g1, g2, g3))
+  out <- capture.output(print(summary(es)))
+  expect_true(any(grepl("Log-likelihood weights", out)))
+  expect_true(any(grepl("Log-likelihood values", out)))
+  expect_true(any(grepl("Penalty term values", out)))
+  expect_true(any(grepl("GORICA weights", out)))
 })

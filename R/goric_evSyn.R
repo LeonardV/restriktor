@@ -4,7 +4,7 @@
 # 3. IC values (AIC, ORIC, GORIC, GORICA)
 # 4. IC weights or (Bayesian) posterior model probs. 
 # 5. Output from gorica function
-# 6. Output from escalc (metafor package) or a data.frame
+# 6. Output from escalc (metafor package)
 
 # In case of an equal-evidence approach, aggregating evidence from, say, 5 studies 
 # with n=100 observations is the same as obtaining evidence from 1 study 
@@ -65,7 +65,7 @@ evSyn <- function(object, input_type = NULL, ...) {
       return(call_sub(evSyn_ICvalues, args, object))
     } else if (it %in% c("goric", "gorica", "goricc", "goricac")) {
       return(call_sub(evSyn_gorica, args, object))
-    } else if (it == "escalc" | "data.frame") {
+    } else if (it == "escalc") {
       return(call_sub(evSyn_escalc, args, object))
     } else {
       stop(paste0("\nrestriktor ERROR: Unknown input_type ", sQuote(input_type), "."))
@@ -76,7 +76,7 @@ evSyn <- function(object, input_type = NULL, ...) {
     return(call_sub(evSyn_gorica, args, object))
   }
   
-  if (any(inherits(object, c("escalc", "data.frame")))) {
+  if (inherits(object, "escalc")) {
     return(call_sub(evSyn_escalc, args, object))
   } 
   
@@ -144,7 +144,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
                       order_studies = c("input_order", "ascending", "descending"),
                       study_names = c(),
                       study_sample_nobs = NULL
-                      ) {
+) {
   
   if (missing(comparison)) {
     if (length(hypotheses) == 1) {
@@ -154,7 +154,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     }
   }
   comparison <- match.arg(comparison)
-
+  
   if (missing(type)) { type <- "gorica" }
   #
   if (type == "goric") {
@@ -176,30 +176,16 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     type_ev <- "added"
   type_ev <- match.arg(type_ev)
   
-  # number of primary studies
-  S <- length(object)
-  
   if (missing(order_studies)) 
     order_studies <- "input_order"
-  # Check
-  if (is.character(order_studies)) {
-    order_studies <- match.arg(order_studies)
-  } else {
-    if (!is.numeric(order_studies)) {
-      stop("\nrestriktor ERROR: The argument 'order_studies' should either match one of the pre-assigned character names, or it should be a numeric vector of length ", S, ".",
-           call. = FALSE)
-    }
-    if (length(order_studies) != S) {
-      stop("\nrestriktor ERROR: The number of elements 'order_studies' (", length(order_studies), ") should equal the number of studies (", S, ").",
-           call. = FALSE)
-    }
-  }
-
-  # Check on input cov.matrix
+  order_studies <- match.arg(order_studies)
+  
+  # number of primary studies
+  S <- length(object)
   V <- length(VCOV)
   
   if (S != V) {
-    stop("\nrestriktor ERROR: The number of elements in the 'object' list (i.e., the number of (standardized) estimates: ", S, ") must match the number of elements in the 'VCOV' list (", V, ").",
+    stop("\nrestriktor ERROR: The number of elements in the 'object' list (i.e., the number of (standardized) estimates) must match the number of elements in the 'VCOV' list.",
          call. = FALSE)
   }
   
@@ -224,7 +210,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   } 
   # TO DO check of square matrices in list, kan evt door nu fout in goric() te laten gebeuren, maar
   #       dan is het meegeven van study nr wel fijn!
-
+  
   if ( !is.list(hypotheses) && length(hypotheses) == 0 ) {
     stop("\nrestriktor ERROR: hypotheses must be a list.", call. = FALSE)  
   } 
@@ -235,7 +221,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   #if (!all(VCOV_isSym)) {
   #  stop(sprintf("\nrestriktor ERROR: the %sth covariance matrix in VCOV is not symmetric.", which(!VCOV_isSym)), call. = FALSE)  
   #}
-
+  
   # number of hypotheses must be equal for each study. In each study a set of 
   # shared theories (i.e., hypotheses) are compared.
   len_H <- vapply(hypotheses, length, integer(1))
@@ -251,22 +237,21 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
          ") does not match the number of studies (", S, ").",
          call. = FALSE)
   }
-
+  
   complement_check <- all(len_H == 1)
   if (comparison == "complement") {
     #if ((sameHypo && !comp_check_same) | (!sameHypo && !comp_check_diff)) {
-     if (!complement_check) {  
-       warning("\nrestriktor WARNING: Only one order-restricted hypothesis is currently supported when comparison = 'complement'. ",
-               "The comparison type has been set to 'unconstrained' instead.",
-               "Notably, the relative support between informative hypotheses is independent from this choice.",
-               call. = FALSE)
-       comparison <- "unconstrained"
+    if (!complement_check) {  
+      warning("\nrestriktor WARNING: Only one order-restricted hypothesis is currently supported when comparison = 'complement'. ",
+              "The comparison type has been set to 'unconstrained' instead.",
+              call. = FALSE)
+      comparison <- "unconstrained"
     }
   }
-
+  
   if (is.null(hypo_names)) {
     list_hypo_names <- lapply(hypotheses, names)
-    # each study must have the same hypotheses names
+    # each study must have the same hypotheses namen
     element_hypo_names <- list_hypo_names[[1]]
     # check if it is similar is the other lists, but also if the same order is used. 
     # else try to fix the order if the same names are used, but in a different order.
@@ -290,12 +275,12 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     #       doe ws op meer plekken dan, nl in andere functies ook
     element_hypo_names <- hypo_names
   }
- 
+  
   NrHypos_incl <- NrHypos + 1
   if (comparison == "none") {
     NrHypos_incl <- NrHypos
   }
-
+  
   if (NrHypos == 1 && comparison == "complement") {
     if (!is.null(element_hypo_names)) {
       element_hypo_names <- c(element_hypo_names, "Complement")
@@ -342,7 +327,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     hnames_idx <- element_hypo_names != ""
     element_hypo_names[!hnames_idx] <- hnames[!hnames_idx]
     hnames <- element_hypo_names
-
+    
     hypotheses <- lapply(hypotheses, function(h) {
       names(h)[1:(length(hnames) - 1L)] <- hnames[-max(length(hnames))]
       return(h)
@@ -356,37 +341,12 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   # rownames are set after determining the order of the studies
   #
   for (s in 1:S) {
-    res_goric <- tryCatch({
-      # Code that might fail
-      goric(object[[s]], VCOV = VCOV[[s]],
-            hypotheses = hypotheses[[s]],
-            type = type, comparison = comparison,
-            sample_nobs = study_sample_nobs[s],
-            ...)
-    }, error = function(e) {
-      # What to do when an error occurs
-      #stop("\nrestriktor ERROR: Most probably the names of the estimates and the ones in the hypotheses do not match. \n",
-      #     "Notably, by default (i.e., if 'outcome_col' is null), ", 
-      #     "the function assumes that the parameter label used in the hypothesis ",
-      #     "is 'theta' (in the case one outcome variable).")
-      txt_error <- "restriktor ERROR:"
-      cat(paste0("\033[0;", 31, "m", txt_error,"\033[0m","\n"))
-      stop("\nrestriktor ERROR: Most probably the names of the estimates and the ones in the hypotheses do not match. \n",
-                    "Notably, by default (i.e., if 'outcome_col' is null), ", 
-                    "the function assumes that the parameter label used in the hypothesis ",
-                    "is 'theta' (in the case one outcome variable).")
-    })
-    # TO DO: Ik zou liever uitlezen welke namen er in de hypotheses worden gebruikt 
-    #        en kijken of die matchen met de labels van de parameters.
-    #        Als niet, dan kan je ook beide teruggeven en dus nog informatiever zijn.
-    # TO DO: Als eerst laten zoals het is: Haal "Error in value[[3L]](cond) : " weg?
-    #        Als dat weg is, dan kan "\nrestriktor ERROR: " ms ook weer weg in de stop functie
-    # TO DO: kunnen we aan restriktor ERROR en Message ook een kleur geven? Dan allemaal doen!
-    #txt_error <- "restriktor ERROR:"
-    #cat(paste0("\033[0;", 31, "m", txt_error,"\033[0m","\n"))
-    #txt_mess <- "restriktor Message:"
-    #cat(paste0("\033[0;", 32, "m", txt_error,"\033[0m","\n"))
-    #
+    res_goric <- goric(object[[s]], VCOV = VCOV[[s]],
+                       hypotheses = hypotheses[[s]],
+                       type = type, comparison = comparison,
+                       sample_nobs = study_sample_nobs[s],
+                       ...)
+    
     if (comparison == "unconstrained") {
       ratio.weight_mu[s, ] <- res_goric$ratio.gw[, NrHypos_incl]
     } else if (comparison == "complement") {
@@ -400,20 +360,11 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     PT[s, ] <- res_goric$result$penalty
   }
   
+  orderStudies <- 1:S
   # Check if order of studies should be changed.
   #if (order_studies != "input_order"){
   # Order needs to be changed.
-  if (!is.character(order_studies)) {
-    orderStudies <- order_studies
-    #
-    LL_m <- LL_m[orderStudies,]
-    LL_weights_m <- LL_weights_m[orderStudies,]
-    GORICA_m <- GORICA_m[orderStudies,]
-    GORICA_weight_m <- GORICA_weight_m[orderStudies,]
-    PT <- PT[orderStudies,]
-  } else if (order_studies == "input_order") {
-    orderStudies <- 1:S
-  } else if (order_studies %in% c("ascending", "descending")) {
+  if (order_studies %in% c("ascending", "descending")) {
     # Order needs to be changed based on the overall preferred hypothesis.
     # Determine what the overall preferred hypothesis is.
     if (type_ev == "added") { 
@@ -547,27 +498,6 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     colnames(Final.ratio.LL.weights) <- colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(CumulativeGorica)))
   }
   
-  if (type == "gorica") {
-    out <- list(type = type,
-                type_ev = type_ev,
-                hypotheses = hypotheses,
-                n_studies = S,
-                order_studies = orderStudies,
-                study_names = study_names,
-                PT_m = PT,
-                GORICA_weight_m = GORICA_weight_m, 
-                LL_weights_m = LL_weights_m,
-                GORICA_m = GORICA_m, 
-                LL_m = LL_m, 
-                Cumulative_GORICA = CumulativeGorica, 
-                Cumulative_LL = Cumulative_LL,
-                Cumulative_GORICA_weights = CumulativeGoricaWeights,
-                Cumulative_LL_weights = CumulativeLLWeights,                  
-                ratio_GORICA_weight_mu = ratio.weight_mu, 
-                Final_ratio_GORICA_weights = Final.ratio.GORICA.weights,
-                Final_ratio_LL_weights = Final.ratio.LL.weights
-    )
-  } else if (type == "goricac") {
   out <- list(type = type,
               type_ev = type_ev,
               hypotheses = hypotheses,
@@ -575,19 +505,18 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
               order_studies = orderStudies,
               study_names = study_names,
               PT_m = PT,
-              GORICAC_weight_m = GORICA_weight_m, 
+              GORICA_weight_m = GORICA_weight_m, 
               LL_weights_m = LL_weights_m,
-              GORICAC_m = GORICA_m, 
+              GORICA_m = GORICA_m, 
               LL_m = LL_m, 
-              Cumulative_GORICAC = CumulativeGorica, 
+              Cumulative_GORICA = CumulativeGorica, 
               Cumulative_LL = Cumulative_LL,
-              Cumulative_GORICAC_weights = CumulativeGoricaWeights,
+              Cumulative_GORICA_weights = CumulativeGoricaWeights,
               Cumulative_LL_weights = CumulativeLLWeights,                  
-              ratio_GORICAC_weight_mu = ratio.weight_mu, 
-              Final_ratio_GORICAC_weights = Final.ratio.GORICA.weights,
+              ratio_GORICA_weight_mu = ratio.weight_mu, 
+              Final_ratio_GORICA_weights = Final.ratio.GORICA.weights,
               Final_ratio_LL_weights = Final.ratio.LL.weights
-              )
-  }
+  )
   # TO DO welke volgorde en dan in alle functies zo gelijk mogelijk maken ook
   
   class(out) <- c("evSyn_est", "evSyn")
@@ -600,7 +529,6 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
 # GORIC(A) evidence synthesis based on log likelihood and penalty values
 evSyn_LL <- function(object, ..., PT = list(), 
                      type_ev = c("added", "equal", "average"),
-                     #type = c("goric", "goricc", "gorica", "goricac"),
                      hypo_names = c(),
                      order_studies = c("input_order", "ascending", "descending"),
                      study_names = c()) {
@@ -609,30 +537,9 @@ evSyn_LL <- function(object, ..., PT = list(),
     type_ev <- "added"
   type_ev <- match.arg(type_ev)
   
-  # TO DO We could change labels in output based on input type method, then use following
-  # TO DO Then do for all functions below as well (ctrl + F 'function(object' )
-  # if (missing(type)) 
-  #   type <- "gorica"
-  # type <- match.arg(type)
-  
-  # number of primary studies
-  S <- length(object)
-  
   if (missing(order_studies)) 
     order_studies <- "input_order"
-  # Check
-  if (is.character(order_studies)) {
-    order_studies <- match.arg(order_studies)
-  } else {
-    if (!is.numeric(order_studies)) {
-      stop("\nrestriktor ERROR: The argument 'order_studies' should either match one of the pre-assigned character names, or it should be a numeric vector of length ", S, ".",
-           call. = FALSE)
-    }
-    if (length(order_studies) != S) {
-      stop("\nrestriktor ERROR: The number of elements 'order_studies' (", length(order_studies), ") should equal the number of studies (", S, ").",
-           call. = FALSE)
-    }
-  }
+  order_studies <- match.arg(order_studies)
   
   # check if PT is a non-empty list
   if ( !is.list(PT) && length(PT) == 0 ) {
@@ -640,6 +547,7 @@ evSyn_LL <- function(object, ..., PT = list(),
   } 
   
   LL_m <- object
+  S <- length(LL_m)
   NrHypos <- length(LL_m[[1]]) - 1
   if (is.null(hypo_names)) {
     hnames <- paste0("H", 1:(NrHypos + 1))
@@ -656,20 +564,12 @@ evSyn_LL <- function(object, ..., PT = list(),
     minIC <- min(IC[s, ])
     GORICA_weight_m[s, ] <- exp(-0.5*(IC[s, ]-minIC)) / sum(exp(-0.5*(IC[s, ]-minIC)))
   }
-    
+  
+  orderStudies <- 1:S
   # Check if order of studies should be changed.
   #if (order_studies != "input_order"){
   # Order needs to be changed.
-  if (!is.character(order_studies)) {
-    orderStudies <- order_studies
-    #
-    LL_m <- LL_m[orderStudies,]
-    PT <- PT[orderStudies,]
-    IC <- IC[orderStudies,]
-    GORICA_weight_m <- GORICA_weight_m[orderStudies,]
-  } else if (order_studies == "input_order") {
-    orderStudies <- 1:S
-  } else if (order_studies %in% c("ascending", "descending")) {
+  if (order_studies %in% c("ascending", "descending")) {
     # Order needs to be changed based on the overall preferred hypothesis.
     # Determine what the overall preferred hypothesis is.
     if (type_ev == "added") { 
@@ -684,7 +584,7 @@ evSyn_LL <- function(object, ..., PT = list(),
       # average-evidence approach
       OverallGoric <- colMeans(-LL_m) + colMeans(PT)
       OverallPrefHypo <- which(OverallGoric == min(OverallGoric))
-    } #else {}
+    } # else {}
     if (order_studies == "descending") {
       decreasing = TRUE
     } else {
@@ -784,38 +684,38 @@ evSyn_LL <- function(object, ..., PT = list(),
     }
     
   } # else {}
-
+  
   # fill in the final row  
   CumulativeGorica[(S+1), ] <- CumulativeGorica[S, ]
   CumulativeGoricaWeights[(S+1), ] <- CumulativeGoricaWeights[S, ]
-
+  
   CumulativeLLWeights[(S+1), ] <- CumulativeLLWeights[S, ]
   
   Final.GORICA.weights <- CumulativeGoricaWeights[S, ]
   Final.ratio.GORICA.weights <- Final.GORICA.weights %*% t(1/Final.GORICA.weights)
-
+  
   rownames(Final.ratio.LL.weights) <- rownames(Final.ratio.GORICA.weights) <- hnames
   colnames(Final.ratio.LL.weights) <- colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hnames)
   
   out <- list(#type = type,
-              type_ev = type_ev,
-              #hypotheses = hypo_names,
-              n_studies = S,
-              order_studies = orderStudies,
-              study_names = study_names,
-              PT_m = PT, 
-              GORICA_weight_m = GORICA_weight_m,
-              LL_weights_m = LL_weights_m,
-              GORICA_m = IC, 
-              LL_m = LL_m, 
-              Cumulative_GORICA_weights = CumulativeGoricaWeights,
-              Cumulative_LL_weights = CumulativeLLWeights,
-              Cumulative_GORICA = CumulativeGorica, 
-              Cumulative_LL = Cumulative_LL,
-              Final_ratio_GORICA_weights = Final.ratio.GORICA.weights,
-              Final_ratio_LL_weights = Final.ratio.LL.weights
-              )
-
+    type_ev = type_ev,
+    #hypotheses = hypo_names,
+    n_studies = S,
+    order_studies = orderStudies,
+    study_names = study_names,
+    PT_m = PT, 
+    GORICA_weight_m = GORICA_weight_m,
+    LL_weights_m = LL_weights_m,
+    GORICA_m = IC, 
+    LL_m = LL_m, 
+    Cumulative_GORICA_weights = CumulativeGoricaWeights,
+    Cumulative_LL_weights = CumulativeLLWeights,
+    Cumulative_GORICA = CumulativeGorica, 
+    Cumulative_LL = Cumulative_LL,
+    Final_ratio_GORICA_weights = Final.ratio.GORICA.weights,
+    Final_ratio_LL_weights = Final.ratio.LL.weights
+  )
+  
   class(out) <- c("evSyn_LL", "evSyn")
   
   return(out)
@@ -825,8 +725,7 @@ evSyn_LL <- function(object, ..., PT = list(),
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on AIC or ORIC or GORIC or GORICA values
-evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
-                           #type = c("goric", "goricc", "gorica", "goricac"), 
+evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"), 
                            hypo_names = c(),
                            order_studies = c("input_order", "ascending", "descending"),
                            study_names = c()) {
@@ -835,30 +734,8 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
     type_ev <- "added"
   type_ev <- match.arg(type_ev)
   
-  # if (missing(type)) 
-  #   type <- "gorica"
-  # type <- match.arg(type)
-  
-  # number of primary studies
-  S <- length(object)
-  
-  if (missing(order_studies)) 
-    order_studies <- "input_order"
-  # Check
-  if (is.character(order_studies)) {
-    order_studies <- match.arg(order_studies)
-  } else {
-    if (!is.numeric(order_studies)) {
-      stop("\nrestriktor ERROR: The argument 'order_studies' should either match one of the pre-assigned character names, or it should be a numeric vector of length ", S, ".",
-           call. = FALSE)
-    }
-    if (length(order_studies) != S) {
-      stop("\nrestriktor ERROR: The number of elements 'order_studies' (", length(order_studies), ") should equal the number of studies (", S, ").",
-           call. = FALSE)
-    }
-  }
-  
   IC <- object
+  S  <- length(IC)
   NrHypos <- length(IC[[1]]) - 1
   GORICA_weight_m <- matrix(NA, nrow = S, ncol = (NrHypos + 1))
   
@@ -868,6 +745,10 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
     hnames <- hypo_names
   }
   
+  if (missing(order_studies)) 
+    order_studies <- "input_order"
+  order_studies <- match.arg(order_studies)
+  
   IC <- do.call(rbind, IC)
   #
   GORICA_weight_m <- matrix(NA, nrow = S, ncol = (NrHypos + 1))
@@ -876,17 +757,11 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
     GORICA_weight_m[s, ] <- exp(-0.5*(IC[s, ]-minIC)) / sum(exp(-0.5*(IC[s, ]-minIC)))
   }
   
+  orderStudies <- 1:S
   # Check if order of studies should be changed.
   #if (order_studies != "input_order"){
   # Order needs to be changed.
-  if (!is.character(order_studies)) {
-    orderStudies <- order_studies
-    #
-    IC <- IC[orderStudies,]
-    GORICA_weight_m <- GORICA_weight_m[orderStudies,]
-  } else if (order_studies == "input_order") {
-    orderStudies <- 1:S
-  } else if (order_studies %in% c("ascending", "descending")) {
+  if (order_studies %in% c("ascending", "descending")) {
     # Order needs to be changed based on the overall preferred hypothesis.
     # Determine what the overall preferred hypothesis is.
     if (type_ev == "average") { 
@@ -954,7 +829,7 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
         sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
     }
   }
-
+  
   CumulativeGorica[(S+1), ] <- CumulativeGorica[S, ]
   CumulativeGoricaWeights[(S+1), ] <- CumulativeGoricaWeights[S, ]
   
@@ -965,16 +840,16 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hnames)
   
   out <- list(#type             = type,
-              type_ev           = type_ev,
-              #hypotheses       = hypo_names,
-              n_studies         = S,
-              order_studies     = orderStudies,
-              study_names       = study_names,
-              GORICA_m          = IC, 
-              GORICA_weight_m   = GORICA_weight_m,
-              Cumulative_GORICA = CumulativeGorica, 
-              Cumulative_GORICA_weights  = CumulativeGoricaWeights,
-              Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
+    type_ev           = type_ev,
+    #hypotheses       = hypo_names,
+    n_studies         = S,
+    order_studies     = orderStudies,
+    study_names       = study_names,
+    GORICA_m          = IC, 
+    GORICA_weight_m   = GORICA_weight_m,
+    Cumulative_GORICA = CumulativeGorica, 
+    Cumulative_GORICA_weights  = CumulativeGoricaWeights,
+    Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
   
   # if (!is.null(messageAdded)) {
   #   out <- append(out, messageAdded)
@@ -985,15 +860,14 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
   
   return(out)
   
-  }
+}
 
 
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on AIC or ORIC or GORIC or GORICA weights or 
 # (Bayesian) posterior model probabilities
-evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
-                            #type = c("goric", "goricc", "gorica", "goricac"), 
+evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"), 
                             priorWeights = NULL, hypo_names = c(),
                             order_studies = c("input_order", "ascending", "descending"),
                             study_names = c()) {
@@ -1002,30 +876,8 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
     type_ev <- "added"
   type_ev <- match.arg(type_ev)
   
-  # if (missing(type)) 
-  #   type <- "gorica"
-  # type <- match.arg(type)
-  
-  # number of primary studies
-  S <- length(object)
-  
-  if (missing(order_studies)) 
-    order_studies <- "input_order"
-  # Check
-  if (is.character(order_studies)) {
-    order_studies <- match.arg(order_studies)
-  } else {
-    if (!is.numeric(order_studies)) {
-      stop("\nrestriktor ERROR: The argument 'order_studies' should either match one of the pre-assigned character names, or it should be a numeric vector of length ", S, ".",
-           call. = FALSE)
-    }
-    if (length(order_studies) != S) {
-      stop("\nrestriktor ERROR: The number of elements 'order_studies' (", length(order_studies), ") should equal the number of studies (", S, ").",
-           call. = FALSE)
-    }
-  }
-  
   Weights <- object
+  S <- length(Weights)
   Weights <- do.call(rbind, Weights)
   NrHypos <- ncol(Weights)
   
@@ -1040,16 +892,15 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
     hypo_names <- paste0("H", 1:(NrHypos)) 
   }
   
+  if (missing(order_studies)) 
+    order_studies <- "input_order"
+  order_studies <- match.arg(order_studies)
+  
+  orderStudies <- 1:S
   # Check if order of studies should be changed.
   #if (order_studies != "input_order"){
   # Order needs to be changed.
-  if (!is.character(order_studies)) {
-    orderStudies <- order_studies
-    #
-    Weights <- Weights[orderStudies,]
-  } else if (order_studies == "input_order") {
-    orderStudies <- 1:S
-  } else if (order_studies %in% c("ascending", "descending")) {
+  if (order_studies %in% c("ascending", "descending")) {
     # Order needs to be changed based on the overall preferred hypothesis.
     # Determine what the overall preferred hypothesis is.
     if (type_ev == "average") { 
@@ -1073,7 +924,7 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
     #
     Weights <- Weights[orderStudies,]
   }
-  
+  #
   # Set colnames
   colnames(Weights) <- hypo_names
   # Set rownames (after determining the order of the studies)
@@ -1121,14 +972,14 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hypo_names)
   
   out <- list(#type             = type,
-              type_ev           = type_ev,
-              #hypotheses       = hypo_names,
-              n_studies         = S,
-              order_studies     = orderStudies,
-              study_names       = study_names,
-              GORICA_weight_m            = Weights,
-              Cumulative_GORICA_weights  = CumulativeWeights,
-              Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
+    type_ev           = type_ev,
+    #hypotheses       = hypo_names,
+    n_studies         = S,
+    order_studies     = orderStudies,
+    study_names       = study_names,
+    GORICA_weight_m            = Weights,
+    Cumulative_GORICA_weights  = CumulativeWeights,
+    Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
   
   class(out) <- c("evSyn_ICweights", "evSyn")
   
@@ -1139,8 +990,7 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on the ratio of AIC or ORIC or GORIC or GORICA 
 # weights or (Bayesian) posterior model probabilities
-evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
-                           #type = c("goric", "goricc", "gorica", "goricac"), 
+evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"), 
                            priorWeights = NULL, hypo_names = c(),
                            order_studies = c("input_order", "ascending", "descending"),
                            study_names = c()) {
@@ -1149,30 +999,8 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
     type_ev <- "added"
   type_ev <- match.arg(type_ev)
   
-  # if (missing(type)) 
-  #   type <- "gorica"
-  # type <- match.arg(type)
-  
-  # number of primary studies
-  S <- length(object)
-  
-  if (missing(order_studies)) 
-    order_studies <- "input_order"
-  # Check
-  if (is.character(order_studies)) {
-    order_studies <- match.arg(order_studies)
-  } else {
-    if (!is.numeric(order_studies)) {
-      stop("\nrestriktor ERROR: The argument 'order_studies' should either match one of the pre-assigned character names, or it should be a numeric vector of length ", S, ".",
-           call. = FALSE)
-    }
-    if (length(order_studies) != S) {
-      stop("\nrestriktor ERROR: The number of elements 'order_studies' (", length(order_studies), ") should equal the number of studies (", S, ").",
-           call. = FALSE)
-    }
-  }
-  
   Weights <- object # Now, ratio of weights # TO DO check of onderstaande dan wel goed gaat
+  S <- length(Weights)
   Weights <- do.call(rbind, Weights)
   NrHypos <- ncol(Weights)
   
@@ -1187,16 +1015,15 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
     hypo_names <- paste0("H", 1:(NrHypos)) 
   }
   
+  if (missing(order_studies)) 
+    order_studies <- "input_order"
+  order_studies <- match.arg(order_studies)
+  
+  orderStudies <- 1:S
   # Check if order of studies should be changed.
   #if (order_studies != "input_order"){
   # Order needs to be changed.
-  if (!is.character(order_studies)) {
-    orderStudies <- order_studies
-    #
-    Weights <- Weights[orderStudies,]
-  } else if (order_studies == "input_order") {
-    orderStudies <- 1:S
-  } else if (order_studies %in% c("ascending", "descending")) {
+  if (order_studies %in% c("ascending", "descending")) {
     # Order needs to be changed based on the overall preferred hypothesis.
     # Determine what the overall preferred hypothesis is.
     if (type_ev == "average") { 
@@ -1220,7 +1047,7 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
     #
     Weights <- Weights[orderStudies,]
   }
-  
+  #
   # Set colnames
   colnames(Weights) <- hypo_names
   # Set rownames (after determining the order of the studies)
@@ -1268,14 +1095,14 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hypo_names)
   
   out <- list(#type             = type,
-              type_ev           = type_ev,
-              #hypotheses       = hypo_names,
-              n_studies         = S,
-              order_studies     = orderStudies,
-              study_names       = study_names,
-              GORICA_weight_m            = Weights,
-              Cumulative_GORICA_weights  = CumulativeWeights,
-              Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
+    type_ev           = type_ev,
+    #hypotheses       = hypo_names,
+    n_studies         = S,
+    order_studies     = orderStudies,
+    study_names       = study_names,
+    GORICA_weight_m            = Weights,
+    Cumulative_GORICA_weights  = CumulativeWeights,
+    Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
   # TO DO dit klopt dan toch niet qua naamgeving!
   #       Ms direct al WeightRatios noemen, dat helpt ms.
   
@@ -1288,26 +1115,27 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
 
 # -------------------------------------------------------------------------
 # list with goric objects
-evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
-                         #type = c("goric", "goricc", "gorica", "goricac"), 
+evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"), 
                          hypo_names = c(),
                          order_studies = c("input_order", "ascending", "descending"),
                          study_names = c()) {
-
+  
   if (missing(type_ev)) 
     type_ev <- "added"
   type_ev <- match.arg(type_ev)
-  
-  # if (missing(type)) 
-  #   type <- "gorica"
-  # type <- match.arg(type)
   
   # Check if all objects are of type "con_goric"
   if (!all(vapply(object, function(x) inherits(x, "con_goric"), logical(1)))) {
     stop("\nrestriktor ERROR: the object must be a list with fitted objects from the goric() function", 
          call. = FALSE)
   }
-  # TO DO check of allemaal gelijke type, alleen dan samennemen.
+  # Check if all objects have the same type (e.g., gorica, goric, goricc, goricac)
+  object_types <- vapply(object, function(x) x$type, character(1))
+  if (length(unique(object_types)) > 1) {
+    stop("\nrestriktor ERROR: All goric objects must be of the same type. Found types: ",
+         paste(sQuote(unique(object_types)), collapse = ", "), ".",
+         call. = FALSE)
+  }
   # TO DO als small sample, dan ook sample_nobs nodig of kan het zonder?
   # TO DO check of in elke zelfde aantal hypotheses (met evt controle of failsafe ook - dit als message dan), anders werkt het ook niet
   
@@ -1316,6 +1144,7 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
     object = lapply(object, function(x) x$result$loglik),
     PT = lapply(object, function(x) x$result$penalty),
     type_ev = type_ev,
+    type = object[[1]]$type,
     hypo_names = hypo_names,
     study_names = study_names
   )
@@ -1332,13 +1161,11 @@ evSyn_escalc <- function(data, yi_col = "yi", vi_cols = "vi",
                          cluster_col = c("trial", "study", "author", "authors", "Trial", "Study", "Author", "Authors"),
                          outcome_col = NULL, ...) {
   
-  #if (is.null(outcome_col)) {
-  #  message("\nrestriktor Message: By default (i.e., if 'outcome_col' is null), ", 
-  #          "the function assumes that the parameter label used in the hypothesis ",
-  #          "is 'theta' (one outcome variable).")
-  #}
-  # Preferably, this is not a general message, but an error when it is a problem.
-  # I made a (more general) error message below.
+  if (is.null(outcome_col)) {
+    message("\nrestriktor Message: By default (i.e., if 'outcome_col' is null), ", 
+            "the function assumes that the parameter label used in the hypothesis ",
+            "is 'theta' (one outcome variable).")
+  }
   
   results <- extract_est_vcov_outcomes(
     data = data,

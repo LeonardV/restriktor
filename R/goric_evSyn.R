@@ -1144,13 +1144,14 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
     object = lapply(object, function(x) x$result$loglik),
     PT = lapply(object, function(x) x$result$penalty),
     type_ev = type_ev,
-    type = object[[1]]$type,
     hypo_names = hypo_names,
     study_names = study_names
   )
   
   # Call the evSyn_LL.list function and return the result
   result <- do.call(evSyn_LL, append(conList, list(...)))
+  # Add the type from the goric objects (evSyn_LL does not carry type)
+  result$type <- object[[1]]$type
   class(result) <- c(class(result), "evSyn_gorica")
   
   return(result)

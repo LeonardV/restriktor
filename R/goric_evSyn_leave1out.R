@@ -4,7 +4,7 @@ leave1out <- function(object, ...) {
 
 leave1out.default <- function(object, ...) {
   stop(
-    "restriktor ERROR: leave1out() takes an 'evSyn' or 'evSyn_est' object as input.",
+    "restriktor ERROR: leave1out() takes an 'evSyn' object as input.",
     call. = FALSE
   )
 }
@@ -111,14 +111,3 @@ leave1out.evSyn <- function(object, ...) {
 }
 
 
-leave1out.evSyn_est <- function(object, ...) {
-  leave1out.evSyn(object, ...)
-}
-
-
-leave1out.default <- function(object, ...) {
-  stop(
-    "restriktor ERROR: leave1out() takes an 'evSyn' or 'evSyn_est' object as input.",
-    call. = FALSE
-  )
-}

@@ -30,6 +30,27 @@
 ## object = IC values
 ## object = Ratio IC weights
 
+
+# -------------------------------------------------------------------------
+# Helper: validate and process order_studies argument.
+# Accepts a character string ("input_order", "ascending", "descending") or a
+# numeric vector specifying a custom study order (must be a permutation of 1:S).
+.validate_order_studies <- function(order_studies, S) {
+  if (is.numeric(order_studies)) {
+    if (length(order_studies) != S) {
+      stop("\nrestriktor ERROR: When 'order_studies' is a numeric vector, ",
+           "its length must equal the number of studies (", S, ").",
+           call. = FALSE)
+    }
+    if (!setequal(order_studies, 1:S)) {
+      stop("\nrestriktor ERROR: When 'order_studies' is a numeric vector, ",
+           "it must be a permutation of 1:", S, ".",
+           call. = FALSE)
+    }
+  }
+  invisible(NULL)
+}
+
 # -------------------------------------------------------------------------
 evSyn <- function(object, input_type = NULL, ...) {
   
@@ -178,7 +199,9 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   
   if (missing(order_studies)) 
     order_studies <- "input_order"
-  order_studies <- match.arg(order_studies)
+  if (!is.numeric(order_studies)) {
+    order_studies <- match.arg(order_studies)
+  }
   
   # number of primary studies
   S <- length(object)
@@ -362,9 +385,16 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   
   orderStudies <- 1:S
   # Check if order of studies should be changed.
-  #if (order_studies != "input_order"){
-  # Order needs to be changed.
-  if (order_studies %in% c("ascending", "descending")) {
+  if (is.numeric(order_studies)) {
+    # User-specified numeric order vector
+    .validate_order_studies(order_studies, S)
+    orderStudies <- as.integer(order_studies)
+    LL_m <- LL_m[orderStudies,]
+    LL_weights_m <- LL_weights_m[orderStudies,]
+    GORICA_m <- GORICA_m[orderStudies,]
+    GORICA_weight_m <- GORICA_weight_m[orderStudies,]
+    PT <- PT[orderStudies,]
+  } else if (order_studies %in% c("ascending", "descending")) {
     # Order needs to be changed based on the overall preferred hypothesis.
     # Determine what the overall preferred hypothesis is.
     if (type_ev == "added") { 
@@ -539,7 +569,9 @@ evSyn_LL <- function(object, ..., PT = list(),
   
   if (missing(order_studies)) 
     order_studies <- "input_order"
-  order_studies <- match.arg(order_studies)
+  if (!is.numeric(order_studies)) {
+    order_studies <- match.arg(order_studies)
+  }
   
   # check if PT is a non-empty list
   if ( !is.list(PT) && length(PT) == 0 ) {
@@ -567,9 +599,15 @@ evSyn_LL <- function(object, ..., PT = list(),
   
   orderStudies <- 1:S
   # Check if order of studies should be changed.
-  #if (order_studies != "input_order"){
-  # Order needs to be changed.
-  if (order_studies %in% c("ascending", "descending")) {
+  if (is.numeric(order_studies)) {
+    # User-specified numeric order vector
+    .validate_order_studies(order_studies, S)
+    orderStudies <- as.integer(order_studies)
+    LL_m <- LL_m[orderStudies,]
+    PT <- PT[orderStudies,]
+    IC <- IC[orderStudies,]
+    GORICA_weight_m <- GORICA_weight_m[orderStudies,]
+  } else if (order_studies %in% c("ascending", "descending")) {
     # Order needs to be changed based on the overall preferred hypothesis.
     # Determine what the overall preferred hypothesis is.
     if (type_ev == "added") { 
@@ -747,7 +785,9 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
   
   if (missing(order_studies)) 
     order_studies <- "input_order"
-  order_studies <- match.arg(order_studies)
+  if (!is.numeric(order_studies)) {
+    order_studies <- match.arg(order_studies)
+  }
   
   IC <- do.call(rbind, IC)
   #
@@ -759,9 +799,13 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
   
   orderStudies <- 1:S
   # Check if order of studies should be changed.
-  #if (order_studies != "input_order"){
-  # Order needs to be changed.
-  if (order_studies %in% c("ascending", "descending")) {
+  if (is.numeric(order_studies)) {
+    # User-specified numeric order vector
+    .validate_order_studies(order_studies, S)
+    orderStudies <- as.integer(order_studies)
+    IC <- IC[orderStudies,]
+    GORICA_weight_m <- GORICA_weight_m[orderStudies,]
+  } else if (order_studies %in% c("ascending", "descending")) {
     # Order needs to be changed based on the overall preferred hypothesis.
     # Determine what the overall preferred hypothesis is.
     if (type_ev == "average") { 
@@ -894,13 +938,18 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
   
   if (missing(order_studies)) 
     order_studies <- "input_order"
-  order_studies <- match.arg(order_studies)
+  if (!is.numeric(order_studies)) {
+    order_studies <- match.arg(order_studies)
+  }
   
   orderStudies <- 1:S
   # Check if order of studies should be changed.
-  #if (order_studies != "input_order"){
-  # Order needs to be changed.
-  if (order_studies %in% c("ascending", "descending")) {
+  if (is.numeric(order_studies)) {
+    # User-specified numeric order vector
+    .validate_order_studies(order_studies, S)
+    orderStudies <- as.integer(order_studies)
+    Weights <- Weights[orderStudies,]
+  } else if (order_studies %in% c("ascending", "descending")) {
     # Order needs to be changed based on the overall preferred hypothesis.
     # Determine what the overall preferred hypothesis is.
     if (type_ev == "average") { 
@@ -1017,13 +1066,18 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
   
   if (missing(order_studies)) 
     order_studies <- "input_order"
-  order_studies <- match.arg(order_studies)
+  if (!is.numeric(order_studies)) {
+    order_studies <- match.arg(order_studies)
+  }
   
   orderStudies <- 1:S
   # Check if order of studies should be changed.
-  #if (order_studies != "input_order"){
-  # Order needs to be changed.
-  if (order_studies %in% c("ascending", "descending")) {
+  if (is.numeric(order_studies)) {
+    # User-specified numeric order vector
+    .validate_order_studies(order_studies, S)
+    orderStudies <- as.integer(order_studies)
+    Weights <- Weights[orderStudies,]
+  } else if (order_studies %in% c("ascending", "descending")) {
     # Order needs to be changed based on the overall preferred hypothesis.
     # Determine what the overall preferred hypothesis is.
     if (type_ev == "average") { 
@@ -1145,6 +1199,7 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
     PT = lapply(object, function(x) x$result$penalty),
     type_ev = type_ev,
     hypo_names = hypo_names,
+    order_studies = order_studies,
     study_names = study_names
   )
   

@@ -176,7 +176,13 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   }
   comparison <- match.arg(comparison)
   
-  if (missing(type)) { type <- "gorica" }
+  #if (missing(type)) { type <- "gorica" }
+  if (!is.null(type) && type %in% c("goric", "goricc", "gorica", "goricac")) {
+    type_missing <- FALSE
+  } else {
+    type <- "gorica"
+    type_missing <- TRUE
+  }
   #
   if (type == "goric") {
     message("\nrestriktor Message: Since the input is a list of estimates, the GORICA will be used, not the GORIC.")
@@ -186,6 +192,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     type = "goricac"
   } 
   #
+  #if (missing(study_sample_nobs)) { study_sample_nobs <- NULL } 
   if (type == "goricac" && is.null(study_sample_nobs)) {
     stop("\nrestriktor ERROR: To compute the GORICAC, the argument 'study_sample_nobs' is required. ",
          "Please provide a numeric vector with the sample sizes of all primary studies.",

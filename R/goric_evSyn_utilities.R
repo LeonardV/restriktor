@@ -2,6 +2,7 @@ extract_est_vcov_outcomes <- function(data, outcome_col = NULL,
                                       yi_col = "yi", 
                                       vi_cols = "vi", 
                                       type = NULL,
+                                      #type = c("gorica", "goricac"),
                                       study_sample_nobs = "ni",
                                       cluster_col = c("trial", "study", "author", "authors", "Trial", "Study", "Author", "Authors")) {
   
@@ -30,7 +31,14 @@ extract_est_vcov_outcomes <- function(data, outcome_col = NULL,
                "is not found in the data."))
   }
   
-  if (type %in% c('goricc', 'goricac') & !study_sample_nobs %in% names(data)) {
+  if (!is.null(type) && type %in% c("goric", "goricc", "gorica", "goricac")) {
+    type_missing <- FALSE
+  } else {
+    type <- "gorica"
+    type_missing <- TRUE
+  }
+  #
+  if (type %in% c("goricc", "goricac") && !(study_sample_nobs %in% names(data))) {
     stop(paste("\nrestriktor ERROR: The study_sample_nobs column called", sQuote(study_sample_nobs), 
                "is not found in the data. \n",
                "This is required to compute the GORICAC."))
@@ -48,7 +56,7 @@ extract_est_vcov_outcomes <- function(data, outcome_col = NULL,
   }
   
   yi_list <- list()
-  if (type %in% c('goricc', 'goricac')) {
+  if (type %in% c("goricc", "goricac")) {
     ni_list <- list()
   } else {
     ni_list <- NULL
@@ -70,8 +78,8 @@ extract_est_vcov_outcomes <- function(data, outcome_col = NULL,
     }
     
     # If type == 'goricac' or 'goricc': Extract ni values for each trial
-    if (type %in% c('goricc', 'goricac')) {
-      ni_list[[paste(cluster_col, cluster_id)]] <- cluster_data$ni[1]
+    if (type %in% c("goricc", "goricac")) {
+      ni_list[[paste(cluster_col, cluster_id)]] <- cluster_data[[study_sample_nobs]][1]
     }
       
     # Determine the number of outcomes for this trial

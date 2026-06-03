@@ -2,9 +2,19 @@ summary.evSyn <- function(object, ...) {
   x <- object
   class(x) <- NULL
   
-  # Determine label: default to "GORICA" unless type is explicitly "goricac"
+  # Determine label: default to "GORICA" unless type is explicitly given
   # Use [[ ]] to avoid partial matching (e.g., $type matching $type_ev)
-  type_label <- if (!is.null(x[["type"]]) && x[["type"]] == "goricac") "GORICAC" else "GORICA"
+  if (!is.null(x[["type"]])) {
+    type_label <- switch(
+      x$type,
+      goric   = "GORIC",
+      goricc  = "GORICC",
+      gorica  = "GORICA",
+      goricac = "GORICAC"
+    )
+  } else {
+    type_label <- "GORICA"
+  }
   
   ans <- list(
     type = x[["type"]],
@@ -24,8 +34,8 @@ summary.evSyn <- function(object, ...) {
   )
   
   if (!is.null(x[["PT_m"]])) {
-    sequence    <- paste0("Studies 1-", 1:ans$n_studies)
-    sequence[1] <- "Studies 1"
+    sequence <- paste0("Study nr.s 1-", 1:ans$n_studies, "   ")
+    sequence[1] <- "Study nr.  1   "
     Cumulative_PT <- apply(x[["PT_m"]][,, drop = FALSE], 2, cumsum)  
     Cumulative_PT <- matrix(Cumulative_PT, nrow = nrow(x[["PT_m"]]), 
                             dimnames = list(sequence, colnames(x[["PT_m"]])))
@@ -95,8 +105,19 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   # number of studies
   S <- x[["n_studies"]]
   
-  # Determine label: default to "GORICA" unless type is explicitly "goricac"
-  type_label <- if (!is.null(x[["type"]]) && x[["type"]] == "goricac") "GORICAC" else "GORICA"
+  # Determine label: default to "GORICA" unless type is explicitly given
+  # Use [[ ]] to avoid partial matching (e.g., $type matching $type_ev)
+  if (!is.null(x[["type"]])) {
+    type_label <- switch(
+      x$type,
+      goric   = "GORIC",
+      goricc  = "GORICC",
+      gorica  = "GORICA",
+      goricac = "GORICAC"
+    )
+  } else {
+    type_label <- "GORICA"
+  }
   
   cat(sprintf("restriktor (%s): ", packageDescription("restriktor", fields = "Version")))
   cat(paste(type_ev, "Evidence Synthesis results:\n"), sep = "")
@@ -108,7 +129,9 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   if (!is.null(x[["GORICA_weight_m"]])) {
     cat(paste0("\n    ", type_label, " weights:\n"))
     formatted_gw <- apply(x[["GORICA_weight_m"]][,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
-    captured_output <- capture.output(print(formatted_gw, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    input_gw <- cbind(1:S, formatted_gw)
+    colnames(input_gw)[1] <- "   Study nr."
+    captured_output <- capture.output(print(input_gw, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
     cat(paste0(adjusted_output, "\n"), sep = "")
     cat("    ---\n")
@@ -117,7 +140,9 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   if (!is.null(x[["GORICA_m"]])) {
     cat(paste0("\n    ", type_label, " values:\n"))
     formatted_gv <- apply(x[["GORICA_m"]][,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
-    captured_output <- capture.output(print(formatted_gv, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    input_gv <- cbind(1:S, formatted_gv)
+    colnames(input_gv)[1] <- "   Study nr."
+    captured_output <- capture.output(print(input_gv, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
     cat(paste0(adjusted_output, "\n"), sep = "")
     cat("    ---\n")
@@ -126,7 +151,9 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   if (!is.null(x[["LL_weights_m"]])) {
     cat("\n    Log-likelihood weights:\n")  
     formatted_llw <- apply(x[["LL_weights_m"]][,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
-    captured_output <- capture.output(print(formatted_llw, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    input_llw <- cbind(1:S, formatted_llw)
+    colnames(input_llw)[1] <- "   Study nr."
+    captured_output <- capture.output(print(input_llw, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
     cat(paste0(adjusted_output, "\n"), sep = "")
     cat("    ---\n")
@@ -135,7 +162,9 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   if (!is.null(x[["LL_m"]])) {
     cat("\n    Log-likelihood values:\n")  
     formatted_llv <- apply(x[["LL_m"]][,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
-    captured_output <- capture.output(print(formatted_llv, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    input_llv <- cbind(1:S, formatted_llv)
+    colnames(input_llv)[1] <- "   Study nr."
+    captured_output <- capture.output(print(input_llv, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
     cat(paste0(adjusted_output, "\n"), sep = "")
     cat("    ---\n")
@@ -144,7 +173,9 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   if (!is.null(x[["PT_m"]])) {
     cat("\n    Penalty term values:\n")  
     formatted_ptv <- apply(x[["PT_m"]][,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
-    captured_output <- capture.output(print(formatted_ptv, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    input_ptv <- cbind(1:S, formatted_ptv)
+    colnames(input_ptv)[1] <- "   Study nr."
+    captured_output <- capture.output(print(input_ptv, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
     cat(paste0(adjusted_output, "\n"), sep = "")
     cat("    ---\n")

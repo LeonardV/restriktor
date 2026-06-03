@@ -23,13 +23,17 @@ leave1out.evSyn <- function(object, ...) {
   type_ev <- object$type_ev
   S <- object$n_studies
   
-  IC_m <- switch(
-    type,
-    goric   = object$GORIC_m,
-    goricc  = object$GORICC_m,
-    gorica  = object$GORICA_m,
-    goricac = object$GORICAC_m
-  )
+  if (is.null(object$GORICA_m)) {
+    IC_m <- switch(
+      type,
+      goric   = object$GORIC_m,
+      goricc  = object$GORICC_m,
+      gorica  = object$GORICA_m,
+      goricac = object$GORICAC_m
+    )
+  } else {
+    IC_m <- object$GORICA_m
+  }
   
   if (is.null(IC_m)) {
     stop("restriktor ERROR: IC matrix is missing from the evSyn object.")
@@ -57,7 +61,19 @@ leave1out.evSyn <- function(object, ...) {
     nrow = S,
     ncol = ncol(IC_m),
     dimnames = list(
-      paste0("Leave Study ", object$order_studies, " out:"),
+      #paste0("Leave Study ", object$order_studies, " out:"),
+      paste0("Leave '", object$study_names, "' out:"),
+      colnames(IC_m)
+    )
+  )
+  
+  OverallGoricWeights <- matrix(
+    NA_real_,
+    nrow = S,
+    ncol = ncol(IC_m),
+    dimnames = list(
+      #paste0("Leave Study ", object$order_studies, " out:"),
+      paste0("Leave '", object$study_names, "' out:"),
       colnames(IC_m)
     )
   )
@@ -83,6 +99,7 @@ leave1out.evSyn <- function(object, ...) {
     
     best <- which(OverallGoric[s, ] == min(OverallGoric[s, ], na.rm = TRUE))
     OverallPrefHypo[s, 1L] <- paste(colnames(IC_m)[best], collapse = ", ")
+    OverallGoricWeights[s, ] <- calc_ICweights(OverallGoric[s, ], hypo_names = colnames(IC_m))$IC_weights
   }
   
   resultIC <- switch(
@@ -93,8 +110,17 @@ leave1out.evSyn <- function(object, ...) {
     goricac = list(OverallGoricac = OverallGoric)
   )
   
+  resultICw <- switch(
+    type,
+    goric   = list(OverallGoricWeights = OverallGoricWeights),
+    goricc  = list(OverallGoriccWeights = OverallGoricWeights),
+    gorica  = list(OverallGoricaWeights = OverallGoricWeights),
+    goricac = list(OverallGoricacWeights = OverallGoricWeights)
+  )
+  
   result <- c(
     resultIC,
+    resultICw,
     list(
       OverallPrefHypo = OverallPrefHypo,
       type_ev = type_ev

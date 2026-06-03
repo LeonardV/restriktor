@@ -172,14 +172,19 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   labels; by default, angle_x = 30. Useful when labels are long and overlap.}
   
   \item{study_names}{
-  a character vector specifying the names or labels of the individual studies.
+  a character vector specifying the names or labels of the individual (unordered) studies.
   When provided, these names will be used throughout the output, including in 
   tables, summaries, and plots (in place of numeric study indices).
   If \code{NULL} (default), studies are automatically numbered 
   (1, 2, ..., K) following the order determined by \code{order_studies}.}
 
-  \item{study_sample_nobs}{
-  a numeric vector specifying the sample size (\code{n}) for each study.
+  \item{study_sample_nobs}{a numeric vector specifying the sample size (\code{n}) 
+  for each study; only needed if \code{type = "goricac"}. 
+  In case the input is a escalc object (or a dataframe), it is inherited from the 
+  'study_sample_nobs' column, which by default is labelled "ni".}
+  
+  \item{study_weights}{Not available yet! 
+  a numeric vector specifying the weight for each study.
   When provided, this information will be included in summaries and can be used 
   for weighted averaging or diagnostic purposes in the evidence synthesis. 
   If \code{NULL} (default), all studies are assumed to have equal weight 
@@ -319,7 +324,11 @@ for the theory-based hypotheses.
   \item{\code{OverallGorica} (or \code{OverallGoric}, \code{OverallGoricc}, 
     \code{OverallGoricac})}{a numeric matrix of dimension S x H (studies by 
     hypotheses) containing the aggregated IC values when the corresponding study 
-    is left out. Row names are of the form \code{"Leave Study k out:"}.}
+    is left out. Row names are of the form \code{"Leave '<study name>' out:"}.}
+  \item{\code{OverallGoricaWeights} (or \code{OverallGoricWeights}, \code{OverallGoriccWeights}, 
+    \code{OverallGoricacWeights})}{a numeric matrix of dimension S x H (studies by 
+    hypotheses) containing the aggregated IC weights when the corresponding study 
+    is left out. Row names are of the form \code{"Leave '<study name>' out:"}.}
   \item{\code{OverallPrefHypo}}{a character matrix of dimension S x 1 giving the 
     name of the preferred hypothesis (i.e., the one with the lowest aggregated IC 
     value) for each leave-one-out set.}

@@ -1,8 +1,18 @@
 print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   
-  # Determine label: default to "GORICA" unless type is explicitly "goricac"
+  # Determine label: default to "GORICA" unless type is explicitly given
   # Use [[ ]] to avoid partial matching (e.g., $type matching $type_ev)
-  type_label <- if (!is.null(x[["type"]]) && x[["type"]] == "goricac") "GORICAC" else "GORICA"
+  if (!is.null(x[["type"]])) {
+    type_label <- switch(
+      x$type,
+      goric   = "GORIC",
+      goricc  = "GORICC",
+      gorica  = "GORICA",
+      goricac = "GORICAC"
+    )
+  } else {
+    type_label <- "GORICA"
+  }
   
   cat(sprintf("restriktor (%s): %s Evidence Synthesis results:\n", 
               packageDescription("restriktor", fields = "Version"), x[["type_ev"]]))
@@ -44,11 +54,6 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     print(cgw, print.gap = 2, quote = FALSE, right = TRUE)
     cat("---\n")
   }
-  
-  # TO DO
-  # In 'Final results:' geen rijnamen... 
-  # Die namen zijn ook handig als headers in per study results en cum results/
-  # In argumenten van output object niet zoiets als 'Final results', wel 'Final_ratio_GORICA_weights'  
   
   cat(paste0("\nRatio final ", type_label, " weights:\n"))
   formatted_weights <- apply(x[["Final_ratio_GORICA_weights"]], c(1, 2), 

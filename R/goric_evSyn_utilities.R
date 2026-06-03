@@ -1,6 +1,8 @@
 extract_est_vcov_outcomes <- function(data, outcome_col = NULL, 
                                       yi_col = "yi", 
                                       vi_cols = "vi", 
+                                      type = NULL,
+                                      study_sample_nobs = "ni",
                                       cluster_col = c("trial", "study", "author", "authors", "Trial", "Study", "Author", "Authors")) {
   
   cluster_col_sum <- sum(cluster_col %in% names(data))
@@ -24,12 +26,19 @@ extract_est_vcov_outcomes <- function(data, outcome_col = NULL,
   }
   
   if (!yi_col %in% names(data)) {
-    stop(paste("\nrestriktor ERROR: The yi_col", sQuote(yi_col), 
+    stop(paste("\nrestriktor ERROR: The yi_col column called", sQuote(yi_col), 
                "is not found in the data."))
   }
   
+  if (type %in% c('goricc', 'goricac') & !study_sample_nobs %in% names(data)) {
+    stop(paste("\nrestriktor ERROR: The study_sample_nobs column called", sQuote(study_sample_nobs), 
+               "is not found in the data. \n",
+               "This is required to compute the GORICAC."))
+  }
+  # Note that later on 'goricc' will be changed to 'goricac'.
+  
   if (all(!vi_cols %in% names(data))) {
-    stop(paste("\nrestriktor ERROR: The vi_cols", sQuote(vi_cols), 
+    stop(paste("\nrestriktor ERROR: The vi_cols column called", sQuote(vi_cols), 
                "are not found in the data."))
   }
   
@@ -39,6 +48,11 @@ extract_est_vcov_outcomes <- function(data, outcome_col = NULL,
   }
   
   yi_list <- list()
+  if (type %in% c('goricc', 'goricac')) {
+    ni_list <- list()
+  } else {
+    ni_list <- NULL
+  }
   vcov_blocks <- list()
   
   for (cluster_id in unique(data[[cluster_col]])) {
@@ -55,6 +69,11 @@ extract_est_vcov_outcomes <- function(data, outcome_col = NULL,
       yi_list[[paste(cluster_col, cluster_id)]] <- yi_vals
     }
     
+    # If type == 'goricac' or 'goricc': Extract ni values for each trial
+    if (type %in% c('goricc', 'goricac')) {
+      ni_list[[paste(cluster_col, cluster_id)]] <- cluster_data$ni[1]
+    }
+      
     # Determine the number of outcomes for this trial
     num_outcomes <- nrow(cluster_data)
     if (num_outcomes > 1) {
@@ -77,5 +96,5 @@ extract_est_vcov_outcomes <- function(data, outcome_col = NULL,
   }
   
   # Return both lists as a named list
-  return(list(yi_list = yi_list, vcov_blocks = vcov_blocks))
+  return(list(yi_list = yi_list, vcov_blocks = vcov_blocks, ni_list = ni_list))
 }

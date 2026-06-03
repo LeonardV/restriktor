@@ -39,7 +39,7 @@
   if (is.numeric(order_studies)) {
     if (length(order_studies) != S) {
       stop("\nrestriktor ERROR: When 'order_studies' is a numeric vector, ",
-           "its length must equal the number of studies (", S, ").",
+           "its length (now, ", length(order_studies), ") must equal the number of studies (i.e., ", S, ").",
            call. = FALSE)
     }
     if (!setequal(order_studies, 1:S)) {
@@ -267,6 +267,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     if (!complement_check) {  
       warning("\nrestriktor WARNING: Only one order-restricted hypothesis is currently supported when comparison = 'complement'. ",
               "The comparison type has been set to 'unconstrained' instead.",
+              "Notably, the relative support between informative hypotheses is independent from this choice.",
               call. = FALSE)
       comparison <- "unconstrained"
     }
@@ -363,6 +364,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   colnames(LL_m) <- colnames(LL_weights_m) <- colnames(GORICA_m) <- colnames(GORICA_weight_m) <- colnames(PT) <- hnames
   # rownames are set after determining the order of the studies
   #
+  study_sample_nobs <- unlist(study_sample_nobs) # when it comes from escalc, then it is a list
   for (s in 1:S) {
     res_goric <- goric(object[[s]], VCOV = VCOV[[s]],
                        hypotheses = hypotheses[[s]],
@@ -444,8 +446,8 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   
   CumulativeLLWeights <- CumulativeGoricaWeights <- CumulativeGorica <- matrix(NA, nrow = S+1, ncol = NrHypos_incl)
   colnames(CumulativeLLWeights) <- colnames(CumulativeGorica) <- colnames(CumulativeGoricaWeights) <- hnames
-  sequence <- paste0("Studies 1-", 1:S)
-  sequence[1] <- "Study 1"
+  sequence <- paste0("Study nr.s 1-", 1:S, "   ")
+  sequence[1] <- "Study nr.  1   "
   rownames(CumulativeLLWeights) <- rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(sequence, "Final")
   #
   sumPT <- sumLL <- 0
@@ -534,6 +536,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
               n_studies = S,
               order_studies = orderStudies,
               study_names = study_names,
+              study_sample_nobs = study_sample_nobs,
               PT_m = PT,
               GORICA_weight_m = GORICA_weight_m, 
               LL_weights_m = LL_weights_m,
@@ -560,12 +563,17 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
 evSyn_LL <- function(object, ..., PT = list(), 
                      type_ev = c("added", "equal", "average"),
                      hypo_names = c(),
+                     type = c("goric", "goricc", "gorica", "goricac"),
                      order_studies = c("input_order", "ascending", "descending"),
                      study_names = c()) {
   
   if (missing(type_ev)) 
     type_ev <- "added"
   type_ev <- match.arg(type_ev)
+  
+  if (missing(type)) 
+    type <- "gorica"
+  type <- match.arg(type)
   
   if (missing(order_studies)) 
     order_studies <- "input_order"
@@ -653,8 +661,8 @@ evSyn_LL <- function(object, ..., PT = list(),
   # Set colnames
   colnames(LL_m) <- colnames(PT) <- colnames(IC) <- colnames(GORICA_weight_m) <- hnames
   
-  sequence <- paste0("Studies 1-", 1:S)
-  sequence[1] <- "Study 1"
+  sequence <- paste0("Study nr.s 1-", 1:S, "   ")
+  sequence[1] <- "Study nr.  1   "
   #
   # cumulative log-likelihood values
   Cumulative_LL <- apply(LL_m, 2, cumsum)
@@ -735,12 +743,13 @@ evSyn_LL <- function(object, ..., PT = list(),
   rownames(Final.ratio.LL.weights) <- rownames(Final.ratio.GORICA.weights) <- hnames
   colnames(Final.ratio.LL.weights) <- colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hnames)
   
-  out <- list(#type = type,
+  out <- list(type = type,
     type_ev = type_ev,
     #hypotheses = hypo_names,
     n_studies = S,
     order_studies = orderStudies,
     study_names = study_names,
+    #study_sample_nobs = study_sample_nobs,
     PT_m = PT, 
     GORICA_weight_m = GORICA_weight_m,
     LL_weights_m = LL_weights_m,
@@ -765,12 +774,17 @@ evSyn_LL <- function(object, ..., PT = list(),
 # GORIC(A) evidence synthesis based on AIC or ORIC or GORIC or GORICA values
 evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"), 
                            hypo_names = c(),
+                           type = c("goric", "goricc", "gorica", "goricac"),
                            order_studies = c("input_order", "ascending", "descending"),
                            study_names = c()) {
   
   if (missing(type_ev)) 
     type_ev <- "added"
   type_ev <- match.arg(type_ev)
+  
+  if (missing(type)) 
+    type <- "gorica"
+  type <- match.arg(type)
   
   IC <- object
   S  <- length(IC)
@@ -848,8 +862,8 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
     study_names <- study_names[orderStudies]
   }
   rownames(IC) <- rownames(GORICA_weight_m) <- study_names
-  sequence <- paste0("Studies 1-", 1:S)
-  sequence[1] <- "Study 1"
+  sequence <- paste0("Study nr.s 1-", 1:S, "   ")
+  sequence[1] <- "Study nr.  1   "
   rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(sequence, "Final")
   #
   if (type_ev == "average") { 
@@ -883,12 +897,13 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
   rownames(Final.ratio.GORICA.weights) <- hnames
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hnames)
   
-  out <- list(#type             = type,
+  out <- list(type             = type,
     type_ev           = type_ev,
     #hypotheses       = hypo_names,
     n_studies         = S,
     order_studies     = orderStudies,
     study_names       = study_names,
+    #study_sample_nobs = study_sample_nobs,
     GORICA_m          = IC, 
     GORICA_weight_m   = GORICA_weight_m,
     Cumulative_GORICA = CumulativeGorica, 
@@ -913,12 +928,17 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
 # (Bayesian) posterior model probabilities
 evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"), 
                             priorWeights = NULL, hypo_names = c(),
+                            type = c("goric", "goricc", "gorica", "goricac"),
                             order_studies = c("input_order", "ascending", "descending"),
                             study_names = c()) {
   
   if (missing(type_ev)) 
     type_ev <- "added"
   type_ev <- match.arg(type_ev)
+  
+  if (missing(type)) 
+    type <- "gorica"
+  type <- match.arg(type)
   
   Weights <- object
   S <- length(Weights)
@@ -993,8 +1013,8 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
   
   CumulativeWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos))
   colnames(CumulativeWeights) <- hypo_names
-  sequence <- paste0("Studies 1-", 1:S)
-  sequence[1] <- "Study 1"
+  sequence <- paste0("Study nr.s 1-", 1:S, "   ")
+  sequence[1] <- "Study nr.  1   "
   rownames(CumulativeWeights) <- c(sequence, "Final")
   #
   if (type_ev == "average") { 
@@ -1020,12 +1040,13 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
   rownames(Final.ratio.GORICA.weights) <- hypo_names
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hypo_names)
   
-  out <- list(#type             = type,
+  out <- list(type             = type,
     type_ev           = type_ev,
     #hypotheses       = hypo_names,
     n_studies         = S,
     order_studies     = orderStudies,
     study_names       = study_names,
+    #study_sample_nobs = study_sample_nobs,
     GORICA_weight_m            = Weights,
     Cumulative_GORICA_weights  = CumulativeWeights,
     Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
@@ -1041,12 +1062,17 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
 # weights or (Bayesian) posterior model probabilities
 evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"), 
                            priorWeights = NULL, hypo_names = c(),
+                           type = c("goric", "goricc", "gorica", "goricac"),
                            order_studies = c("input_order", "ascending", "descending"),
                            study_names = c()) {
   
   if (missing(type_ev)) 
     type_ev <- "added"
   type_ev <- match.arg(type_ev)
+  
+  if (missing(type)) 
+    type <- "gorica"
+  type <- match.arg(type)
   
   Weights <- object # Now, ratio of weights # TO DO check of onderstaande dan wel goed gaat
   S <- length(Weights)
@@ -1121,8 +1147,8 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
   
   CumulativeWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos))
   colnames(CumulativeWeights) <- hypo_names
-  sequence <- paste0("Studies 1-", 1:S)
-  sequence[1] <- "Study 1"
+  sequence <- paste0("Study nr.s 1-", 1:S, "   ")
+  sequence[1] <- "Study nr.  1   "
   rownames(CumulativeWeights) <- c(sequence, "Final")
   #
   if (type_ev == "average") { 
@@ -1148,17 +1174,16 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
   rownames(Final.ratio.GORICA.weights) <- hypo_names
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hypo_names)
   
-  out <- list(#type             = type,
+  out <- list(type             = type,
     type_ev           = type_ev,
     #hypotheses       = hypo_names,
     n_studies         = S,
     order_studies     = orderStudies,
     study_names       = study_names,
+    #study_sample_nobs = study_sample_nobs,
     GORICA_weight_m            = Weights,
     Cumulative_GORICA_weights  = CumulativeWeights,
     Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
-  # TO DO dit klopt dan toch niet qua naamgeving!
-  #       Ms direct al WeightRatios noemen, dat helpt ms.
   
   class(out) <- c("evSyn_ICratios", "evSyn")
   
@@ -1177,7 +1202,7 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
   if (missing(type_ev)) 
     type_ev <- "added"
   type_ev <- match.arg(type_ev)
-  
+
   # Check if all objects are of type "con_goric"
   if (!all(vapply(object, function(x) inherits(x, "con_goric"), logical(1)))) {
     stop("\nrestriktor ERROR: the object must be a list with fitted objects from the goric() function", 
@@ -1195,6 +1220,7 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
   
   # Create a list for the evSyn_LL.list function
   conList <- list(
+    type = x$type,
     object = lapply(object, function(x) x$result$loglik),
     PT = lapply(object, function(x) x$result$penalty),
     type_ev = type_ev,
@@ -1214,6 +1240,8 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
 
 
 evSyn_escalc <- function(data, yi_col = "yi", vi_cols = "vi", 
+                         study_sample_nobs = "ni",
+                         type = NULL,
                          cluster_col = c("trial", "study", "author", "authors", "Trial", "Study", "Author", "Authors"),
                          outcome_col = NULL, ...) {
   
@@ -1228,17 +1256,21 @@ evSyn_escalc <- function(data, yi_col = "yi", vi_cols = "vi",
     outcome_col = outcome_col,
     yi_col = yi_col,
     vi_cols = vi_cols,
-    cluster_col = cluster_col
+    cluster_col = cluster_col,
+    type = type,
+    study_sample_nobs = study_sample_nobs
   )
   
   # Access the parameter estimates and vcov blocks
   yi_list <- results$yi_list
   vcov_blocks <- results$vcov_blocks
-  
+  ni_list <- results$ni_list
   
   conList <- list(
     object = yi_list,
-    VCOV = vcov_blocks
+    VCOV = vcov_blocks,
+    type = type,
+    study_sample_nobs = ni_list
   )
   
   # Call the evSyn_LL.list function and return the result

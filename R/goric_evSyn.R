@@ -164,8 +164,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
                       type = c("gorica", "goricac"),
                       order_studies = c("input_order", "ascending", "descending"),
                       study_names = c(),
-                      study_sample_nobs = NULL
-) {
+                      study_sample_nobs = NULL) {
   
   if (missing(comparison)) {
     if (length(hypotheses) == 1) {
@@ -174,7 +173,9 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
       comparison <- "unconstrained"
     }
   }
+  
   comparison <- match.arg(comparison)
+  type <- match.arg(type)
   
   #if (missing(type)) { type <- "gorica" }
   if (!is.null(type) && type %in% c("goric", "goricc", "gorica", "goricac")) {
@@ -1227,7 +1228,7 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
   
   # Create a list for the evSyn_LL.list function
   conList <- list(
-    type = x$type,
+    type = object[[1]]$type,
     object = lapply(object, function(x) x$result$loglik),
     PT = lapply(object, function(x) x$result$penalty),
     type_ev = type_ev,

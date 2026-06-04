@@ -304,8 +304,8 @@ one of the S studies. For each reduced set the aggregated IC values per hypothes
 are computed using the same \code{type_ev} as in the original \code{evSyn} call:
 \itemize{
   \item \code{"added"}: column sums of the IC matrix with study \emph{s} removed.
-  \item \code{"equal"}: \eqn{-} column sums of the LL matrix with study \emph{s}
-    removed, plus the column means of the PT matrix with study \emph{s} removed.
+  \item \code{"equal"}: the column means of the PT matrix minus column sums of the LL matrix with study \emph{s}
+    removed.
   \item \code{"average"}: column means of the IC matrix with study \emph{s} removed.
 }
 The hypothesis with the lowest aggregated IC value is identified as the preferred 

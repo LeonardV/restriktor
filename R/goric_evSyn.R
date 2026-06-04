@@ -97,7 +97,7 @@ evSyn <- function(object, input_type = NULL, ...) {
     return(call_sub(evSyn_gorica, args, object))
   }
   
-  if (inherits(object, "escalc")) {
+  if (any(inherits(object, c("escalc", "data.frame")))) {
     return(call_sub(evSyn_escalc, args, object))
   } 
   
@@ -121,6 +121,8 @@ evSyn <- function(object, input_type = NULL, ...) {
   obj_isICweights <- all(abs(vapply(object, sum, numeric(1)) - 1) <= sqrt(.Machine$double.eps))
   # Check if they are IC ratios: each vector should end with 1.
   obj_isICratios <- all(vapply(object, function(x) tail(x, n = 1) == 1, logical(1)))
+  # TO DO laatste hoeft niet een te zijn, kan ook andere zijn
+  # TO DO kan ook per study verschillen, dan moeten we het alleen wel nog gelijk maken...
   
   if (!is.null(VCOV)) {
     return(call_sub(evSyn_est, args, object))
@@ -175,14 +177,23 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   }
   
   comparison <- match.arg(comparison)
-  type <- match.arg(type)
+  #type <- match.arg(type) 
+  # I want to all for c("goric", "goricc", "gorica", "goricac"), which
+  # may be overwritten next, so these should not be shown as the options
   
-  #if (missing(type)) { type <- "gorica" }
-  if (!is.null(type) && type %in% c("goric", "goricc", "gorica", "goricac")) {
+  if (missing(type)) { 
+    type <- "gorica" 
+    type_missing <- TRUE
+  } else if (!is.null(type) && type %in% c("goric", "goricc", "gorica", "goricac")) {
     type_missing <- FALSE
-  } else {
+  } else if (is.null(type)) {
     type <- "gorica"
     type_missing <- TRUE
+  } else {
+    message(paste0("\nrestriktor Message: The value for the argument type (i.e., '", type, "') is not valid. \n", 
+            "Since the input is a list of estimates, the GORICA will be used."))
+    type <- "gorica"
+    type_missing <- NULL
   }
   #
   if (type == "goric") {

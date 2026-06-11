@@ -145,7 +145,7 @@ test_that("print.evSyn: werkt", {
   g2 <- goric(est2, VCOV = VCOV2, type = "gorica",
                hypotheses = list(H1 = "x1 > x2"))
 
-  es <- evSyn(object = list(g1, g2), type = "added")
+  es <- evSyn(object = list(g1, g2), type_ev = "added")
   expect_output(print(es), "evidence|Evidence|synthesis|Synthesis")
 })
 

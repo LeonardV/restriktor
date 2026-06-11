@@ -7,14 +7,26 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
     stop("restriktor ERROR: output_type must be gorica_weights or ll_weights", call. = FALSE)
   }
   
-  # TO DO adjust code when output changes to (method) type specific output names
-  # TO DO then also adjust the Title and y-axis label accordingly
+  
+  # Adjust code when output changes to (method) type specific output names
+  # also adjust the Title and y-axis label accordingly
+  
+  type <- x$type
+  
+  ylabel_IC <- switch(
+    type,
+    goric   = "GORIC weights",
+    goricc  = "GORICC weights",
+    gorica  = "GORICA weights",
+    goricac = "GORICAC weights"
+  )
+  
   
   if (inherits(x, "evSyn_est")) {
     data_list <- switch(output_type,
                         "gorica_weights" = list(weight_m = x$GORICA_weight_m, 
                                                 cumulative_weights = x$Cumulative_GORICA_weights,
-                                                y_label = "GORIC(A) weights"),
+                                                y_label = ylabel_IC),
                         "ll_weights" = list(weight_m = x$LL_weights_m, 
                                             cumulative_weights = x$Cumulative_LL_weights,
                                             y_label = "Log-Likelihood weights")
@@ -23,7 +35,7 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
     data_list <- switch(output_type,
                         "gorica_weights" = list(weight_m = x$GORICA_weight_m, 
                                                 cumulative_weights = x$Cumulative_GORICA_weights,
-                                                y_label = "GORIC(A) weights"),
+                                                y_label = ylabel_IC),
                         "ll_weights" = list(weight_m = x$LL_weights_m, 
                                             cumulative_weights = x$Cumulative_LL_weights,
                                             y_label = "Log-Likelihood weights")
@@ -32,13 +44,13 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
     data_list <- switch(output_type,
                         "gorica_weights" = list(weight_m = x$GORICA_weight_m, 
                                                 cumulative_weights = x$Cumulative_GORICA_weights,
-                                                y_label = "GORIC(A) weights")
+                                                y_label = ylabel_IC)
     )
   } else if (inherits(x, "evSyn_ICweights")) {
     data_list <- switch(output_type,
                         "gorica_weights" = list(weight_m = x$GORICA_weight_m, 
                                                 cumulative_weights = x$Cumulative_GORICA_weights,
-                                                y_label = "GORIC(A) weights"))
+                                                y_label = ylabel_IC))
   } 
   
   # Base data and labels for the plot on selected data_list

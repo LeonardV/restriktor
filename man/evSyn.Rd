@@ -12,12 +12,22 @@
 \alias{print.summary.evSyn}
 \alias{summary.evSyn}
 \alias{plot.evSyn}
-\alias{leave1out.evSyn}
+\alias{evSyn}
+\alias{leave1studyout}
+\alias{leave1studyout.evSyn}
+\alias{leave1studyout.default}
 
 \title{GORIC(A) Evidence synthesis}
 \description{GORIC(A) evidence synthesis aggregates the evidence for theory-based 
 hypotheses from multiple studies that may use diverse designs to investigate the 
-same central theory.}
+same central theory.
+
+The function \code{leave1studyout} performs a leave-one-out sensitivity analysis 
+on a fitted \code{evSyn} object: it re-runs the evidence synthesis S times, each 
+time omitting one study, and reports which hypothesis is preferred in each 
+reduced set.
+}
+
 
 \usage{
 # I try to guess the input type.
@@ -33,12 +43,13 @@ evSyn_est(object, \ldots, VCOV = list(), hypotheses = list(),
 
 # input: Log-likelihood and penalty values
 evSyn_LL(object, \ldots, PT = list(), type_ev = c("added", "equal", "average"),
-         hypo_names = c(), 
+         hypo_names = c(), type = c("goric", "goricc", "gorica", "goricac"),
          order_studies = c("input_order", "ascending", "descending"),
          study_names = c())
 
 # input: GORIC(A), ORIC, AIC values
 evSyn_ICvalues(object, \ldots, type_ev = c("added", "average"), hypo_names = c(), 
+               type = c("goric", "goricc", "gorica", "goricac"), 
                order_studies = c("input_order", "ascending", "descending"), 
                study_names = c())
 
@@ -46,6 +57,7 @@ evSyn_ICvalues(object, \ldots, type_ev = c("added", "average"), hypo_names = c()
 # model probabilities
 evSyn_ICweights(object, \ldots, type_ev = c("added", "average"), 
                 priorWeights = NULL, hypo_names = c(),
+                type = c("goric", "goricc", "gorica", "goricac"),
                 order_studies = c("input_order", "ascending", "descending"), 
                 study_names = c())
 
@@ -53,6 +65,7 @@ evSyn_ICweights(object, \ldots, type_ev = c("added", "average"),
 # (Bayesian) posterior model probabilities
 evSyn_ICratios(object, \ldots, type_ev = c("added", "average"), 
                priorWeights = NULL, hypo_names = c(),
+               type = c("goric", "goricc", "gorica", "goricac"),
                order_studies = c("input_order", "ascending", "descending"), 
                study_names = c())
 
@@ -66,7 +79,9 @@ evSyn_gorica(object, \dots, type_ev = c("added", "equal", "average"),
 # input: Result from the escalc() function from the metafor package (or a 
 # regular data.frame using the same labelling). Note that this is a wrapper 
 # function for evSyn_est.
-evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldots)
+evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", study_sample_nobs = "ni", 
+             type = NULL, cluster_col = c("trial", "study", "author", "authors", 
+             "Trial", "Study", "Author", "Authors"), outcome_col = NULL, \ldots)
 
 \method{print}{evSyn}(x, digits = max(3, getOption("digits") - 4), \dots)
 
@@ -76,6 +91,8 @@ evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldo
 
 \method{plot}{evSyn}(x, output_type = "gorica_weights", xlab = NULL, 
 xlab_unordered = NULL, angle_x = 30, \dots)
+
+\method{leave1studyout}{evSyn}(object, \dots)
 }
 
 \arguments{
@@ -160,18 +177,23 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   labels; by default, angle_x = 30. Useful when labels are long and overlap.}
   
   \item{study_names}{
-  a character vector specifying the names or labels of the individual studies.
+  a character vector specifying the names or labels of the individual (unordered) studies.
   When provided, these names will be used throughout the output, including in 
   tables, summaries, and plots (in place of numeric study indices).
   If \code{NULL} (default), studies are automatically numbered 
   (1, 2, ..., K) following the order determined by \code{order_studies}.}
 
-  \item{study_sample_nobs}{
-  a numeric vector specifying the sample size (\code{n}) for each study.
-  When provided, this information will be included in summaries and can be used 
-  for weighted averaging or diagnostic purposes in the evidence synthesis. 
-  If \code{NULL} (default), all studies are assumed to have equal weight 
-  with respect to sample size.}
+  \item{study_sample_nobs}{a numeric vector specifying the sample size (\code{n}) 
+  for each study; only needed if \code{type = "goricac"}. 
+  In case the input is a escalc object (or a dataframe), it is inherited from the 
+  'study_sample_nobs' column, which by default is labelled "ni".}
+  
+%  \item{study_weights}{Not available yet! 
+%  a numeric vector specifying the weight for each study.
+%  When provided, this information will be included in summaries and can be used 
+%  for weighted averaging or diagnostic purposes in the evidence synthesis. 
+%  If \code{NULL} (default), all studies are assumed to have equal weight 
+%  with respect to sample size.}
   
   \item{order_studies}{
   either a i) character string or ii) numeric vector:
@@ -280,12 +302,47 @@ Opt for the average-evidence approach when you wish to gauge the central tendenc
 of evidence across multiple analytical choices. It's especially beneficial when 
 aiming to determine the robustness of results across various model specifications 
 applied to the same dataset.
+
+\strong{Leave-one-out sensitivity analysis.}
+\code{leave1studyout} repeats the evidence synthesis S times, each time dropping 
+one of the S studies. For each reduced set the aggregated IC values per hypothesis 
+are computed using the same \code{type_ev} as in the original \code{evSyn} call:
+\itemize{
+  \item \code{"added"}: column sums of the IC matrix with study \emph{s} removed.
+  \item \code{"equal"}: the column means of the PT matrix minus column sums of the LL matrix with study \emph{s}
+    removed.
+  \item \code{"average"}: column means of the IC matrix with study \emph{s} removed.
+}
+The hypothesis with the lowest aggregated IC value is identified as the preferred 
+hypothesis for that reduced set. This analysis can be used to detect influential 
+studies and to assess the robustness of the overall conclusion.
+
 }
 
 
 \value{An object of class evSyn for which a print, summary and plot function is available. 
 The output comprises, among other things, the cumulative and final evidence 
-for the theory-based hypotheses.}
+for the theory-based hypotheses.
+
+\code{leave1studyout.evSyn} returns a named list with the following components:
+\describe{
+  \item{\code{OverallGorica} (or \code{OverallGoric}, \code{OverallGoricc}, 
+    \code{OverallGoricac})}{a numeric matrix of dimension S x H (studies by 
+    hypotheses) containing the aggregated IC values when the corresponding study 
+    is left out. Row names are of the form \code{"Leave '<study name>' out:"}.}
+  \item{\code{OverallGoricaWeights} (or \code{OverallGoricWeights}, \code{OverallGoriccWeights}, 
+    \code{OverallGoricacWeights})}{a numeric matrix of dimension S x H (studies by 
+    hypotheses) containing the aggregated IC weights when the corresponding study 
+    is left out. Row names are of the form \code{"Leave '<study name>' out:"}.}
+  \item{\code{OverallPrefHypo}}{a character matrix of dimension S x 1 giving the 
+    name of the preferred hypothesis (i.e., the one with the lowest aggregated IC 
+    value) for each leave-one-out set.}
+  \item{\code{type_ev}}{the evidence-synthesis approach used, inherited from the 
+    input \code{evSyn} object.}
+  \item{\code{type}}{the IC type used (\code{"goric"}, \code{"goricc"}, 
+    \code{"gorica"}, or \code{"goricac"}), if available in the input object.}
+}
+}
 
 
 \author{Leonard Vanbrabant and Rebecca M. Kuiper}

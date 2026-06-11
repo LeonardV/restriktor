@@ -161,7 +161,7 @@ calculate_model_comparison_metrics <- function(x) {
   mn_heq_idx <- grep("Heq", modelnames)
   if (length(modelnames) > 2 && length(mn_heq_idx) > 0 && 
       which.max(goric_weights) != mn_heq_idx) {
-    delta_goric = x$goric[-mn_heq_idx] - min(x$goric[mn_heq_idx])
+    delta_goric = x$goric[-mn_heq_idx] - min(x$goric[-mn_heq_idx])
     goric_weights_without_heq = exp(0.5 * -delta_goric) / 
       sum(exp(0.5 * -delta_goric))
     goric_weights_without_heq <- c(NA, goric_weights_without_heq)

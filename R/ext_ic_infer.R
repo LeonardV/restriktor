@@ -7,7 +7,7 @@
 
 make_positive_definite <- function(mat, tolerance = 1e-15, 
                                    ridge_constant = 1e-05) {
-  ev <- eigen(mat)
+  ev <- eigen(mat, symmetric = TRUE)
   ev$values[ev$values <= tolerance] <- 0  
   ev_matrix <- diag(ev$values, nrow = length(ev$values))
   corr <- ev$vectors %*% ev_matrix %*% t(ev$vectors)

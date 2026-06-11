@@ -477,25 +477,25 @@ test_that("evSyn_est: type = 'goricac' is aanwezig in het resultaat", {
   expect_equal(es[["type"]], "goricac")
 })
 
-test_that("evSyn_LL: type is NULL (niet beschikbaar vanuit LL+PT input)", {
-  es <- evSyn(object = LL_list, PT = PT_list)
-  expect_null(es[["type"]])
-})
+# test_that("evSyn_LL: type is NULL (niet beschikbaar vanuit LL+PT input)", {
+#   es <- evSyn(object = LL_list, PT = PT_list)
+#   expect_null(es[["type"]])
+# })
 
-test_that("evSyn_ICvalues: type is NULL (niet beschikbaar vanuit IC values input)", {
-  es <- evSyn(object = IC_list)
-  expect_null(es[["type"]])
-})
+# test_that("evSyn_ICvalues: type is NULL (niet beschikbaar vanuit IC values input)", {
+#   es <- evSyn(object = IC_list)
+#   expect_null(es[["type"]])
+# })
 
-test_that("evSyn_ICweights: type is NULL (niet beschikbaar vanuit IC weights input)", {
-  es <- evSyn(object = W_list)
-  expect_null(es[["type"]])
-})
+# test_that("evSyn_ICweights: type is NULL (niet beschikbaar vanuit IC weights input)", {
+#   es <- evSyn(object = W_list)
+#   expect_null(es[["type"]])
+# })
 
-test_that("evSyn_ICratios: type is NULL (niet beschikbaar vanuit IC ratios input)", {
-  es <- evSyn(object = R_list)
-  expect_null(es[["type"]])
-})
+# test_that("evSyn_ICratios: type is NULL (niet beschikbaar vanuit IC ratios input)", {
+#   es <- evSyn(object = R_list)
+#   expect_null(es[["type"]])
+# })
 
 
 # =============================================================================

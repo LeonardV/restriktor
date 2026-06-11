@@ -43,12 +43,13 @@ evSyn_est(object, \ldots, VCOV = list(), hypotheses = list(),
 
 # input: Log-likelihood and penalty values
 evSyn_LL(object, \ldots, PT = list(), type_ev = c("added", "equal", "average"),
-         hypo_names = c(), 
+         hypo_names = c(), type = c("goric", "goricc", "gorica", "goricac"),
          order_studies = c("input_order", "ascending", "descending"),
          study_names = c())
 
 # input: GORIC(A), ORIC, AIC values
 evSyn_ICvalues(object, \ldots, type_ev = c("added", "average"), hypo_names = c(), 
+               type = c("goric", "goricc", "gorica", "goricac"), 
                order_studies = c("input_order", "ascending", "descending"), 
                study_names = c())
 
@@ -56,6 +57,7 @@ evSyn_ICvalues(object, \ldots, type_ev = c("added", "average"), hypo_names = c()
 # model probabilities
 evSyn_ICweights(object, \ldots, type_ev = c("added", "average"), 
                 priorWeights = NULL, hypo_names = c(),
+                type = c("goric", "goricc", "gorica", "goricac"),
                 order_studies = c("input_order", "ascending", "descending"), 
                 study_names = c())
 
@@ -63,6 +65,7 @@ evSyn_ICweights(object, \ldots, type_ev = c("added", "average"),
 # (Bayesian) posterior model probabilities
 evSyn_ICratios(object, \ldots, type_ev = c("added", "average"), 
                priorWeights = NULL, hypo_names = c(),
+               type = c("goric", "goricc", "gorica", "goricac"),
                order_studies = c("input_order", "ascending", "descending"), 
                study_names = c())
 
@@ -76,7 +79,9 @@ evSyn_gorica(object, \dots, type_ev = c("added", "equal", "average"),
 # input: Result from the escalc() function from the metafor package (or a 
 # regular data.frame using the same labelling). Note that this is a wrapper 
 # function for evSyn_est.
-evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", cluster_col, outcome_col, \ldots)
+evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", study_sample_nobs = "ni", 
+             type = NULL, cluster_col = c("trial", "study", "author", "authors", 
+             "Trial", "Study", "Author", "Authors"), outcome_col = NULL, \ldots)
 
 \method{print}{evSyn}(x, digits = max(3, getOption("digits") - 4), \dots)
 
@@ -183,12 +188,12 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   In case the input is a escalc object (or a dataframe), it is inherited from the 
   'study_sample_nobs' column, which by default is labelled "ni".}
   
-  \item{study_weights}{Not available yet! 
-  a numeric vector specifying the weight for each study.
-  When provided, this information will be included in summaries and can be used 
-  for weighted averaging or diagnostic purposes in the evidence synthesis. 
-  If \code{NULL} (default), all studies are assumed to have equal weight 
-  with respect to sample size.}
+%  \item{study_weights}{Not available yet! 
+%  a numeric vector specifying the weight for each study.
+%  When provided, this information will be included in summaries and can be used 
+%  for weighted averaging or diagnostic purposes in the evidence synthesis. 
+%  If \code{NULL} (default), all studies are assumed to have equal weight 
+%  with respect to sample size.}
   
   \item{order_studies}{
   either a i) character string or ii) numeric vector:

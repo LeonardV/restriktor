@@ -21,6 +21,7 @@ summary.evSyn <- function(object, ...) {
     type_ev = x[["type_ev"]],
     #n_studies = nrow(x[["GORICA_weight_m"]][,, drop = FALSE]),
     n_studies = x[["n_studies"]], 
+    study_weights = x[["study_weights"]],
     hypotheses = x[["hypotheses"]],
     GORICA_weight_m = x[["GORICA_weight_m"]],
     GORICA_m = x[["GORICA_m"]],

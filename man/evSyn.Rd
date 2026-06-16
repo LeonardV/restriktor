@@ -159,7 +159,7 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   weights do not sum to 1, it will be rescaled such that it does; which implies that
   relative importance can be used and not per se weights.}
   
-  \item{hypo_names}{character vector for labelling the hypotheses. By default the
+  \item{hypo_names}{character vector for labelling the hypotheses. By default, the
   names are set to H1, H2, \ldots}
 
   \item{output_type}{a plot options. If "\code{gorica_weights}" (default), 
@@ -181,7 +181,7 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   When provided, these names will be used throughout the output, including in 
   tables, summaries, and plots (in place of numeric study indices).
   If \code{NULL} (default), studies are automatically numbered 
-  (1, 2, ..., K) following the order determined by \code{order_studies}.}
+  (1, 2, ..., S) following the order determined by \code{order_studies}.}
 
   \item{study_sample_nobs}{a numeric vector specifying the sample size (\code{n}) 
   for each study; only needed if \code{type = "goricac"}. 
@@ -189,11 +189,15 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   'study_sample_nobs' column, which by default is labelled "ni".}
   
 %  \item{study_weights}{Not available yet! 
-%  a numeric vector specifying the weight for each study.
+%  a numeric vector specifying the weight for each study, which should sum to 1.
 %  When provided, this information will be included in summaries and can be used 
-%  for weighted averaging or diagnostic purposes in the evidence synthesis. 
+%  for weighted evidence synthesis. 
 %  If \code{NULL} (default), all studies are assumed to have equal weight 
-%  with respect to sample size.}
+%  (i.e., 1/S, with S the number of studies). 
+%  Note that sample size is taken into account via 'VCOV'.
+%  The weigts will be used in the cumulative and final results of evidence synthesis.
+%  They will not be used in ordering the studies with 'order_studies' = \code{"ascending"} or \code{"descending"}; 
+%  this will be based on the height of support for each study.}
   
   \item{order_studies}{
   either a i) character string or ii) numeric vector:

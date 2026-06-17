@@ -189,15 +189,14 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   'study_sample_nobs' column, which by default is labelled "ni".}
   
   \item{study_weights}{ 
-  a numeric vector specifying the weight for each study, which should sum to 1.
-  If \code{NULL} (default), all studies are assumed to have equal weight 
-  (i.e., 1/S, with S the number of studies). 
-  Note that study-specific sample size is taken into account via 'VCOV'.
+  a numeric vector specifying the weight for each study, which should sum to 1 or S, with S the number of studies.
+  If \code{NULL} (default), all studies are assumed to have equal weight. 
+  Note that study-specific sample size is already taken into account via 'VCOV'.
   When provided, the study weights will be used to conduct weighted evidence synthesis.
-  Weighted evidence synthesis is possible when the GORIC(A) values can be calculated.
-  That is, it is not possible when the input consists of IC weights or IC weights ratios
-  (i.e., 'input_type' = \code{"icweights"} or \code{"icratios"});
-  then, the study weights cancel out.
+  %Weighted evidence synthesis is possible when the GORIC(A) values can be calculated.
+  %That is, it is not possible when the input consists of IC weights or IC weights ratios
+  %(i.e., 'input_type' = \code{"icweights"} or \code{"icratios"});
+  %then, the study weights cancel out.
   Notably, the weights will be used in the cumulative and final results of evidence synthesis.
   They will not be used in ordering the studies with 'order_studies' = \code{"ascending"} or \code{"descending"}; 
   this will be based on the height of support for each study.}

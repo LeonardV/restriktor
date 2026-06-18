@@ -1136,14 +1136,20 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
       # IC: Average of IC values, possibly weighted using study weights.
       # ICweights: based on IC values, but take into account possible prior hypothesis weights.
       # Notably, not possible to calculate IC values. Thus:
-      # ICweights: product of IC weights, where the study and prior weights are now 'powers'
+      # ICweights: product of IC weights, where the study and prior weights are now 'powers'.
+      #            Btw Here the study weights sum to 1, because of taking the average IC values.
       #OverallGoric <- # cannot be determined now.
       # TO DO neem ook prior weights mee!!! overal dan doen
       # TO DO HIER
-      OverallWeight <- apply(Weights, 2, prod)^(1/S) # TO DO check dit, hie rmoeten study_weights komen, maar ook prior hypo weights!
+      OverallWeight <- apply(Weights, 2, prod)^(1/S) # TO DO check dit, hier moeten study_weights komen, maar ook prior hypo weights!
       OverallPrefHypo <- which(OverallGoric == max(OverallWeight))
     } else {
       # type_ev == "added" (or when "equal", because then it is overruled to be "added")
+      # IC: Sum of IC values, possibly weighted using study weights.
+      # ICweights: based on IC values, but take into account possible prior hypothesis weights.
+      # Notably, not possible to calculate IC values. Thus:
+      # ICweights: product of IC weights, where the study and prior weights are now 'powers'.
+      #            Btw Here the study weights sum to S, because of taking the average IC values.
       type_ev = "added"
       #OverallGoric <- # cannot be determined now.
       OverallWeight <- apply(Weights, 2, prod)

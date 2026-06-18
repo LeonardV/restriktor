@@ -37,18 +37,21 @@ evSyn(object, input_type = NULL, \ldots)
 evSyn_est(object, \ldots, VCOV = list(), hypotheses = list(),
           type_ev = c("added", "equal", "average"), 
           comparison = c("unconstrained", "complement", "none"),
-          hypo_names = c(), type = c("gorica", "goricac"), 
+          hypo_names = c(), priorWeights = NULL, 
+          type = c("gorica", "goricac"), 
           order_studies = c("input_order", "ascending", "descending"),
           study_names = c(), study_sample_nobs = NULL)
 
 # input: Log-likelihood and penalty values
 evSyn_LL(object, \ldots, PT = list(), type_ev = c("added", "equal", "average"),
-         hypo_names = c(), type = c("goric", "goricc", "gorica", "goricac"),
+         hypo_names = c(), priorWeights = NULL, 
+         type = c("goric", "goricc", "gorica", "goricac"),
          order_studies = c("input_order", "ascending", "descending"),
          study_names = c())
 
 # input: GORIC(A), ORIC, AIC values
-evSyn_ICvalues(object, \ldots, type_ev = c("added", "average"), hypo_names = c(), 
+evSyn_ICvalues(object, \ldots, type_ev = c("added", "average"), 
+               hypo_names = c(), priorWeights = NULL, 
                type = c("goric", "goricc", "gorica", "goricac"), 
                order_studies = c("input_order", "ascending", "descending"), 
                study_names = c())
@@ -56,7 +59,7 @@ evSyn_ICvalues(object, \ldots, type_ev = c("added", "average"), hypo_names = c()
 # input: AIC or ORIC or GORIC or GORICA weights or (Bayesian) posterior 
 # model probabilities
 evSyn_ICweights(object, \ldots, type_ev = c("added", "average"), 
-                priorWeights = NULL, hypo_names = c(),
+                hypo_names = c(), priorWeights = NULL, 
                 type = c("goric", "goricc", "gorica", "goricac"),
                 order_studies = c("input_order", "ascending", "descending"), 
                 study_names = c())
@@ -64,7 +67,7 @@ evSyn_ICweights(object, \ldots, type_ev = c("added", "average"),
 # input: Ratio of AIC or ORIC or GORIC or GORICA weights or 
 # (Bayesian) posterior model probabilities
 evSyn_ICratios(object, \ldots, type_ev = c("added", "average"), 
-               priorWeights = NULL, hypo_names = c(),
+               hypo_names = c(), priorWeights = NULL, 
                type = c("goric", "goricc", "gorica", "goricac"),
                order_studies = c("input_order", "ascending", "descending"), 
                study_names = c())
@@ -72,13 +75,13 @@ evSyn_ICratios(object, \ldots, type_ev = c("added", "average"),
 # input: result from the goric() function
 # Note that this is a wrapper function for evSyn_LL.
 evSyn_gorica(object, \dots, type_ev = c("added", "equal", "average"), 
-             hypo_names = c(), 
+             hypo_names = c(), priorWeights = NULL, 
              order_studies = c("input_order", "ascending", "descending"), 
              study_names = c())
 
 # input: Result from the escalc() function from the metafor package (or a 
-# regular data.frame using the same labelling). Note that this is a wrapper 
-# function for evSyn_est.
+# regular data.frame using the same labelling). 
+# Note that this is a wrapper function for evSyn_est.
 evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", study_sample_nobs = "ni", 
              type = NULL, cluster_col = c("trial", "study", "author", "authors", 
              "Trial", "Study", "Author", "Authors"), outcome_col = NULL, \ldots)
@@ -153,15 +156,18 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   By default, if one user-specified hypothesis, "\code{comparison = 'complement'}"; 
   if multiple user-specified hypotheses, "\code{comparison = 'unconstrained'}".
   Note that the complement can only be computed for one model/hypothesis at a time.} 
-  
-  \item{priorWeights}{vector that represents the prior belief for this model. By default,
-  equal prior weights are used (i.e., 1/(#hypotheses)). Notably, in case the prior
-  weights do not sum to 1, it will be rescaled such that it does; which implies that
-  relative importance can be used and not per se weights.}
-  
+
   \item{hypo_names}{character vector for labelling the hypotheses. By default, the
   names are set to H1, H2, \ldots}
 
+  \item{priorWeights}{vector that represents the prior belief for the specified hypotheses. 
+  By default,  equal prior weights are used (i.e., 1/(#hypotheses)). 
+  Notably, in case the prior weights do not sum to 1, it will be rescaled such that it does; 
+  the prior weights thus reflect relative a priori likeliness of the hypotheses.
+  In the case of ratios of IC weights ('icratios'), the ratio of prior weights should be given.
+  In that case, they do not sum to 1; and 
+  the ratio of weights for the reference hypothesis equals 1.}
+  
   \item{output_type}{a plot options. If "\code{gorica_weights}" (default), 
   a plot with the cumulative goric(a)
   weights and goric(a) weights per study is displayed. If "\code{ll_weights}",

@@ -164,9 +164,13 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   By default,  equal prior weights are used (i.e., 1/(#hypotheses)). 
   Notably, in case the prior weights do not sum to 1, it will be rescaled such that it does; 
   the prior weights thus reflect relative a priori likeliness of the hypotheses.
-  In the case of ratios of IC weights ('icratios'), the ratio of prior weights should be given.
-  In that case, they do not sum to 1; and 
-  the ratio of weights for the reference hypothesis equals 1.}
+  %% For now, like this; if code changes, then perhaps:
+  %In the case of ratios of IC weights ('icratios'), the ratio of prior weights should be given.
+  %In that case, they do not sum to 1; and 
+  %the ratio of weights for the reference hypothesis equals 1.
+  Notably, the priorWeights will be used in the cumulative and final results of evidence synthesis.
+  They will not be used in ordering the studies with 'order_studies' = \code{"ascending"} or \code{"descending"}; 
+  this will be based equal a priori likeliness of the hypotheses.}
   
   \item{output_type}{a plot options. If "\code{gorica_weights}" (default), 
   a plot with the cumulative goric(a)
@@ -203,9 +207,9 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   %That is, it is not possible when the input consists of IC weights or IC weights ratios
   %(i.e., 'input_type' = \code{"icweights"} or \code{"icratios"});
   %then, the study weights cancel out.
-  Notably, the weights will be used in the cumulative and final results of evidence synthesis.
+  Notably, the study weights will be used in the cumulative and final results of evidence synthesis.
   They will not be used in ordering the studies with 'order_studies' = \code{"ascending"} or \code{"descending"}; 
-  this will be based on the height of support for each study.}
+  this will be based on the height of support for each study assuming equal study weights.}
   
   \item{order_studies}{
   either a i) character string or ii) numeric vector:
@@ -214,6 +218,8 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   provided. If \code{"ascending"} or \code{"descending"}, studies are ordered based 
   on the ascending or descending support for the preferred hypothesis, 
   respectively. 
+  In this case, the order will be determined using equal a priori likeliness of the hypotheses
+  and equal study weights.
   ii) A numeric vector with length the number of studies (S). 
   This vector then gives the ordering of studies to be used, which one could base on, 
   say, year of the study.

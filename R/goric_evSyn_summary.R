@@ -31,7 +31,12 @@ summary.evSyn <- function(object, ...) {
     LL_m = x[["LL_m"]],
     PT_m = x[["PT_m"]],
     Cumulative_GORICA_weights = x[["Cumulative_GORICA_weights"]],
-    Cumulative_GORICA = x[["Cumulative_GORICA"]]
+    Cumulative_GORICA = x[["Cumulative_GORICA"]],
+    #
+    # If icratios
+    ICdiff_m    = x[["ICdiff_m"]], # diff in IC values versus reference hypo
+    GwRatio_m   = x[["GwRatio_m"]], # ratio of IC weights!
+    Cumulative_ICdiff = x[["Cumulative_ICdiff"]] # cum diff in IC values versus reference hypo
   )
   
   if (!is.null(x[["PT_m"]])) {
@@ -78,6 +83,14 @@ summary.evSyn <- function(object, ...) {
     fcptv <- t(ans$Cumulative_PT[ans$n_studies, ])
     rownames(fcptv) <- "Penalty term values"
     final <- rbind(final, fcptv)
+  }
+  
+  # If icratios
+  if (!is.null(x[["Cumulative_ICdiff"]])) {
+    f_cumICdiff <- t(x[["Cumulative_ICdiff"]]["Final", ])
+    rownames(f_cumICdiff) <- paste0("Diff. in ", type_label, " values")
+                #paste0("Difference in ", type_label, " values \n", "(versus reference hypothesis)")
+    final <- rbind(final, f_cumICdiff)
   }
   
   ans$Final_Cumulative_results <- final
@@ -182,6 +195,31 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
     cat("    ---\n")
   }
   
+  # If icratios
+  if (!is.null(x[["GwRatio_m"]])) {
+    cat(paste0("\n    ", "Ratio of ", type_label, " weights",
+               "\n    ", "(versus reference hypothesis):\n"))
+    formatted_gw <- apply(x[["GwRatio_m"]][,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
+    input_gw <- cbind(1:S, formatted_gw)
+    colnames(input_gw)[1] <- "   Study nr."
+    captured_output <- capture.output(print(input_gw, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+    cat("    ---\n")
+  }
+  if (!is.null(x[["ICdiff_m"]])) {
+    cat(paste0("\n    ", "Difference in ", type_label, " values",
+               "\n    ", "(versus reference hypothesis):\n"))
+    formatted_gv <- apply(x[["ICdiff_m"]][,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
+    input_gv <- cbind(1:S, formatted_gv)
+    colnames(input_gv)[1] <- "   Study nr."
+    captured_output <- capture.output(print(input_gv, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+    cat("    ---\n")
+  }
+
+  
   cat("\nCumulative results:\n")
   
   if (!is.null(x[["Cumulative_GORICA_weights"]])) {
@@ -224,6 +262,17 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
     cat("\n    Penalty term values:\n")  
     formatted_cptv <- apply(x[["Cumulative_PT"]][,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     captured_output <- capture.output(print(formatted_cptv, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+    cat("    ---\n")
+  }
+  
+  # If icratios
+  if (!is.null(x[["Cumulative_ICdiff"]])) {
+    cat(paste0("\n    ", "Difference in ", type_label, " values",
+               "\n    ", "(versus reference hypothesis):\n"))
+    formatted_cgv <- apply(x[["Cumulative_ICdiff"]][1:S, , drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
+    captured_output <- capture.output(print(formatted_cgv, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
     cat(paste0(adjusted_output, "\n"), sep = "")
     cat("    ---\n")

@@ -120,12 +120,18 @@ evSyn <- function(object, input_type = NULL, ...) {
   # if they are weights, the sum of all vectors must be 1.
   obj_isICweights <- all(abs(vapply(object, sum, numeric(1)) - 1) <= sqrt(.Machine$double.eps))
   #
-  # Check if they are IC ratios: each vector should end with 1.
-  obj_isICratios <- all(vapply(object, function(x) tail(x, n = 1) == 1, logical(1)))
-  # TO DO laatste hoeft niet een te zijn, kan ook andere zijn
-  # TO DO kan ook per study verschillen, dan moeten we het alleen wel nog gelijk maken...
-  # TO DO in theorie kan in alle studies de weights 0en met een 1 zijn... Maar dan is obj_isICweights TRUE
-  # TO DO HIER
+  # Check if they are IC ratios: 
+  ## each vector should end with 1. # Note: not necessary!
+  #obj_isICratios <- all(vapply(object, function(x) tail(x, n = 1) == 1, logical(1)))
+  # There should be a (ratio) value of 1 in each study, so for all studies:
+  # The one then denotes the reference hypothesis.
+  # Later, it is check whether the same ref. hypo is used for all studies
+  #        and if needed altered the input such that it is the same (with a warning).
+  list_check <- lapply(object, function(x){any(x == 1)})
+  obj_isICratios <- all(unlist(list_check))
+  # All the other values should not all be zero;
+  # then, the input probably consists of weights.
+  # This is already checked above in obj_isICweights
 
   if (!is.null(VCOV)) {
     return(call_sub(evSyn_est, args, object))
@@ -601,6 +607,8 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   
   Final.GORICA.weights <- CumulativeGoricaWeights[S, ]
   Final.ratio.GORICA.weights <- Final.GORICA.weights %*% t(1/Final.GORICA.weights)
+  diag(Final.ratio.GORICA.weights) <- 1 # If a weight is zero, then you get Inf and NaN; this way you get Inf and 1.
+  
   rownames(Final.ratio.GORICA.weights) <- hnames
   
   
@@ -895,6 +903,7 @@ evSyn_LL <- function(object, ..., PT = list(),
   
   Final.GORICA.weights <- CumulativeGoricaWeights[S, ]
   Final.ratio.GORICA.weights <- Final.GORICA.weights %*% t(1/Final.GORICA.weights)
+  diag(Final.ratio.GORICA.weights) <- 1 # If a weight is zero, then you get Inf and NaN; this way you get Inf and 1.
   
   rownames(Final.ratio.LL.weights) <- rownames(Final.ratio.GORICA.weights) <- hnames
   colnames(Final.ratio.LL.weights) <- colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hnames)
@@ -947,14 +956,17 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
   
   IC <- object
   S  <- length(IC)
-  NrHypos <- length(IC[[1]]) - 1
+  NrHypos <- length(IC[[1]]) - 1 # We assume that the last one is the failsafe Hunc
+  # If not, users can specify the hypotheses names as well (in 'hypo_names').
   NrHypos_incl <- NrHypos + 1
   GORICA_weight_m <- matrix(NA, nrow = S, ncol = (NrHypos + 1))
   
   if (is.null(hypo_names)) {
-    hnames <- paste0("H", 1:NrHypos)
+    #hnames <- paste0("H", 1:NrHypos)
+    #hnames <- c(hnames, "unconstrained")
+    hnames <- paste0("H", 1:NrHypos_incl)
   } else {
-    if (length(hypo_names) != NrHypos) {
+    if (length(hypo_names) != NrHypos_incl) {
       stop("\nrestriktor ERROR: The argument 'hypo_names' should consist of ", NrHypos, " names, \n",
            "namely one for each specified hypothesis. It now consists of ", length(hypo_names), ".",
            call. = FALSE)
@@ -1108,6 +1120,7 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
   
   Final.GORICA.weights <- CumulativeGoricaWeights[S, ]
   Final.ratio.GORICA.weights <- Final.GORICA.weights %*% t(1/Final.GORICA.weights)
+  diag(Final.ratio.GORICA.weights) <- 1 # If a weight is zero, then you get Inf and NaN; this way you get Inf and 1.
   
   rownames(Final.ratio.GORICA.weights) <- hnames
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hnames)
@@ -1197,8 +1210,6 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
          "It now consists of ", length(priorWeights), ".",
          call. = FALSE)
   }
-  # TO DO Wat als Heq true en priorweigths. 
-  # TO DO Check ook without unc en heq
   
   
   if (is.null(study_weights)) {
@@ -1325,6 +1336,8 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
   
   Final.weights <- CumulativeWeights[S, ]
   Final.ratio.GORICA.weights <- Final.weights %*% t(1/Final.weights)
+  diag(Final.ratio.GORICA.weights) <- 1 # If a weight is zero, then you get Inf and NaN; this way you get Inf and 1.
+  
   rownames(Final.ratio.GORICA.weights) <- hypo_names
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hypo_names)
   
@@ -1389,9 +1402,38 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
     }
   }
   
-  # Determine reference hypothesis -- use in output
-  # TO DO - beide!
-  # Href <- ....
+  # Determine reference hypothesis -- use in output headers
+  # Which hypothesis is the best, for each study
+  #
+  # Note that because of a previous step, each study will have at least one 1
+  # So, for each study, determine for which hypothesis/-es there is a one:
+  refHypo_s <- lapply(object, function(x){which(x == 1)})
+  Href <- refHypo_s[[1]][1] # first candidate
+  Href_All <- lapply(refHypo_s, function(x){any(x == Href)})
+  test_All <- all(unlist(Href_All))
+  # If not all the same (!test_All), 
+  # then first check other options for Href:
+  if (!test_All && length(refHypo_s[[1]]) > 1) { 
+    # If length(refHypo_s[[1]]) > 1, then there could be other candidate Href's as well
+    teller <- 1
+    while(!test_All && teller <= length(refHypo_s[[1]])){
+      teller <- teller + 1
+      Href <- refHypo_s[[1]][teller]
+      Href_All <- lapply(refHypo_s, function(x){any(x == Href)})
+      test_All <- all(unlist(Href_All))
+    }
+  }
+  # If did not find a Href for which all studies have a one,
+  # transform the input such that all have the same Href:
+  if (!test_All) {
+    #Href <- Mode(as.data.frame(refHypo_s)) # not base function
+    Href <- refHypo_s[[1]][1]
+    object <- lapply(object, function(x){x / x[Href]})
+    message("\nrestriktor Message: Not all studies used the same reference hypothesis. \n",
+            "Now, evidence synthesis is done using Href = ", Href, " as the reference hypothesis. \n",
+            "Note that the choice for Href does not affect the ratio of final IC weights.")
+  }
+  
   
   if (is.null(priorWeights)) {
     priorWeights <- rep(1/(NrHypos_incl), (NrHypos_incl))
@@ -1580,6 +1622,8 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
   Final.weights <- CumulativeWeights[S, ]
   # The Final.weights are the ratios of weights vs the reference hypothesis
   Final.ratio.GORICA.weights <- Final.weights %*% t(1/Final.weights) 
+  diag(Final.ratio.GORICA.weights) <- 1 # If a weight is zero, then you get Inf and NaN; this way you get Inf and 1.
+  
   rownames(Final.ratio.GORICA.weights) <- hypo_names
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hypo_names)
   
@@ -1587,7 +1631,7 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
     type_ev           = type_ev,
     ##hypotheses       = hypo_names,
     priorWeights = priorWeights,
-    #Href = Href, TO DO 
+    Href = Href, 
     n_studies         = S,
     order_studies     = orderStudies,
     study_names       = study_names,
@@ -1602,7 +1646,6 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
     Cumulative_GORICA_weights  = CumulativeWeights, # This is cum GORICA weights (so, not cum ratios!)
     Final_ratio_GORICA_weights = Final.ratio.GORICA.weights) # These are the ratios, and all versus all (as usual)
   # TO DO in output goede namen gebruiken en elt toevoegen! zie hierboven
-  #Final_Cumulative_results
   
   class(out) <- c("evSyn_ICratios", "evSyn")
   

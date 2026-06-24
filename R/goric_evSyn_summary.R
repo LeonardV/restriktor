@@ -34,6 +34,7 @@ summary.evSyn <- function(object, ...) {
     Cumulative_GORICA = x[["Cumulative_GORICA"]],
     #
     # If icratios
+    Href        = x[["Href"]],
     ICdiff_m    = x[["ICdiff_m"]], # diff in IC values versus reference hypo
     GwRatio_m   = x[["GwRatio_m"]], # ratio of IC weights!
     Cumulative_ICdiff = x[["Cumulative_ICdiff"]] # cum diff in IC values versus reference hypo
@@ -89,7 +90,7 @@ summary.evSyn <- function(object, ...) {
   if (!is.null(x[["Cumulative_ICdiff"]])) {
     f_cumICdiff <- t(x[["Cumulative_ICdiff"]]["Final", ])
     rownames(f_cumICdiff) <- paste0("Diff. in ", type_label, " values")
-                #paste0("Difference in ", type_label, " values \n", "(versus reference hypothesis)")
+                #paste0("Difference in ", type_label, " values \n", "(versus reference hypothesis ", names(x[["Href"]]), ")")
     final <- rbind(final, f_cumICdiff)
   }
   
@@ -198,7 +199,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   # If icratios
   if (!is.null(x[["GwRatio_m"]])) {
     cat(paste0("\n    ", "Ratio of ", type_label, " weights",
-               "\n    ", "(versus reference hypothesis):\n"))
+               "\n    ", "(versus reference hypothesis ", names(x[["Href"]]), "):\n"))
     formatted_gw <- apply(x[["GwRatio_m"]][,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     input_gw <- cbind(1:S, formatted_gw)
     colnames(input_gw)[1] <- "   Study nr."
@@ -209,7 +210,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   }
   if (!is.null(x[["ICdiff_m"]])) {
     cat(paste0("\n    ", "Difference in ", type_label, " values",
-               "\n    ", "(versus reference hypothesis):\n"))
+               "\n    ", "(versus reference hypothesis ", names(x[["Href"]]), "):\n"))
     formatted_gv <- apply(x[["ICdiff_m"]][,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     input_gv <- cbind(1:S, formatted_gv)
     colnames(input_gv)[1] <- "   Study nr."
@@ -270,7 +271,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   # If icratios
   if (!is.null(x[["Cumulative_ICdiff"]])) {
     cat(paste0("\n    ", "Difference in ", type_label, " values",
-               "\n    ", "(versus reference hypothesis):\n"))
+               "\n    ", "(versus reference hypothesis ", names(x[["Href"]]), "):\n"))
     formatted_cgv <- apply(x[["Cumulative_ICdiff"]][1:S, , drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     captured_output <- capture.output(print(formatted_cgv, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)

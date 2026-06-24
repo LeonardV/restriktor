@@ -6,6 +6,13 @@ goric.default <- function(object, ..., hypotheses = NULL,
                           VCOV = NULL, sample_nobs = NULL,
                           penalty_factor = 2,
                           Heq = FALSE, control = list(), debug = FALSE) {
+
+  # TO DO
+  # Add option of priorWeights -- see evSyn
+  # Is then used for goric weights and ratios of goric weights -- not the other stuff.
+  # If, then also give for Heq -- Nr Hypos variable will include this, so easily checked and error message
+  # Do make sure that of output without Heq or without Hunc, 
+  # then change priorWeights (so leave that weight out and divide by sum of remaining weights)
   
   if (is.null(hypotheses) || !is.list(hypotheses)) {
     stop(paste("\nrestriktor ERROR: The 'hypotheses' argument is missing or not a list.",

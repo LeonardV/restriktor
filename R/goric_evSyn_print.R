@@ -43,8 +43,8 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     cat("Information criteria weights (summing to 1)\n")
   } else if (inherits(x, "evSyn_ICratios")) {
     cat(paste("\nInput type 'icratios' detected: "))
-    cat("Ratio of information criteria weights (each vector ends with 1)\n")
-  # TO DO dit aanpassen, want het hoeft niet op 1 te eindigen!
+    #cat("Ratio of information criteria weights (each vector ends with 1)\n") # Note: not necessary!
+    cat("Ratio of information criteria weights (each study has at least one 1)\n")
   } 
   
   if (!is.null(x[["Cumulative_GORICA_weights"]])) {

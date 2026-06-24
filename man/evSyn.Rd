@@ -161,7 +161,7 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   names are set to H1, H2, \ldots}
 
   \item{priorWeights}{vector that represents the prior belief for the specified hypotheses. 
-  By default,  equal prior weights are used (i.e., 1/(#hypotheses)). 
+  By default, equal prior weights are used (i.e., 1/(#hypotheses)). 
   Notably, in case the prior weights do not sum to 1, it will be rescaled such that it does; 
   the prior weights thus reflect relative a priori likeliness of the hypotheses.
   %% For now, like this; if code changes, then perhaps:

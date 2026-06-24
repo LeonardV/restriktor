@@ -372,7 +372,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   if (length(priorWeights) != NrHypos_incl) {
     stop("\nrestriktor ERROR: The argument 'priorWeights' should consist of ", NrHypos_incl, " elements, \n",
          "namely one for each hypothesis including a possible failsafe hypothesis. \n", 
-         "It now consists of ", length(priorWeights), ".",
+         "It now consists of ", length(priorWeights), " elements.",
          call. = FALSE)
   }
   
@@ -717,7 +717,7 @@ evSyn_LL <- function(object, ..., PT = list(),
   if (length(priorWeights) != NrHypos_incl) {
     stop("\nrestriktor ERROR: The argument 'priorWeights' should consist of ", NrHypos_incl, " elements, \n",
          "namely one for each hypothesis including a possible failsafe hypothesis. \n", 
-         "It now consists of ", length(priorWeights), ".",
+         "It now consists of ", length(priorWeights), " elements.",
          call. = FALSE)
   }
   
@@ -991,7 +991,7 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
   if (length(priorWeights) != NrHypos_incl) {
     stop("\nrestriktor ERROR: The argument 'priorWeights' should consist of ", NrHypos_incl, " elements, \n",
          "namely one for each hypothesis including a possible failsafe hypothesis. \n", 
-         "It now consists of ", length(priorWeights), ".",
+         "It now consists of ", length(priorWeights), " elements.",
          call. = FALSE)
   }
   
@@ -1207,7 +1207,7 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
   if (length(priorWeights) != NrHypos_incl) {
     stop("\nrestriktor ERROR: The argument 'priorWeights' should consist of ", NrHypos_incl, " elements, \n",
          "namely one for each hypothesis including a possible failsafe hypothesis. \n", 
-         "It now consists of ", length(priorWeights), ".",
+         "It now consists of ", length(priorWeights), " elements.",
          call. = FALSE)
   }
   
@@ -1447,7 +1447,7 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
   if (length(priorWeights) != NrHypos_incl) {
     stop("\nrestriktor ERROR: The argument 'priorWeights' should consist of ", NrHypos_incl, " elements, \n",
          "namely one for each hypothesis including a possible failsafe hypothesis. \n", 
-         "It now consists of ", length(priorWeights), ".",
+         "It now consists of ", length(priorWeights), " elements.",
          call. = FALSE)
   }
   # # If using ratios:

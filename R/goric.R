@@ -5,15 +5,11 @@ goric.default <- function(object, ..., hypotheses = NULL,
                           comparison = NULL, type = "goric", 
                           VCOV = NULL, sample_nobs = NULL,
                           penalty_factor = 2,
-                          Heq = FALSE, control = list(), debug = FALSE) {
+                          Heq = FALSE, 
+                          priorWeights = NULL,
+                          control = list(), debug = FALSE) {
 
-  # TO DO
-  # Add option of priorWeights -- see evSyn
-  # Is then used for goric weights and ratios of goric weights -- not the other stuff.
-  # If, then also give for Heq -- Nr Hypos variable will include this, so easily checked and error message
-  # Do make sure that of output without Heq or without Hunc, 
-  # then change priorWeights (so leave that weight out and divide by sum of remaining weights)
-  
+
   if (is.null(hypotheses) || !is.list(hypotheses)) {
     stop(paste("\nrestriktor ERROR: The 'hypotheses' argument is missing or not a list.",
          "Please make sure to provide a valid set of hypotheses, for example, hypotheses =",
@@ -46,15 +42,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   
   comparison <- match.arg(comparison, c("unconstrained", "complement", "none"))
   
-  # Heq validatie
-  if (isTRUE(Heq) && num_hypotheses > 1L) {
-    stop(paste0(
-      "\nrestriktor ERROR: Heq = TRUE is only allowed when there is one order-restricted hypothesis. ",
-      "Now, there are ", num_hypotheses, " order-restricted hypotheses."
-    ), call. = FALSE)
-  }
-  
-  # complement met meerdere hypotheses => forceren naar unconstrained
+    # complement met meerdere hypotheses => forceren naar unconstrained
   if (comparison == "complement" && num_hypotheses > 1L) {
     warning("\nrestriktor WARNING: More than one hypothesis provided. Therefore, 'comparison' set to 'unconstrained'.",
             call. = FALSE)
@@ -68,6 +56,45 @@ goric.default <- function(object, ..., hypotheses = NULL,
       "The specified hypothesis is only valid when the order-restricted hypothesis is compared to its complement."
     ), call. = FALSE)
     Heq <- FALSE
+  }
+  
+  # Heq validatie
+  if (isTRUE(Heq) && num_hypotheses > 1L) {
+    stop(paste0(
+      "\nrestriktor ERROR: Heq = TRUE is only allowed when there is one order-restricted hypothesis. ",
+      "Now, there are ", num_hypotheses, " order-restricted hypotheses."
+    ), call. = FALSE)
+  } else {
+    num_hypotheses <- num_hypotheses + 1 # nl, also Heq itself
+  }
+  
+  
+  if (is.null(priorWeights)) {
+    priorWeights <- rep(1/(num_hypotheses), (num_hypotheses))
+  }
+  # To make it sum to 1 (if it not already did)
+  if (sum(priorWeights) != 1) {
+    priorWeights <- priorWeights / sum(priorWeights) 
+    message("\nrestriktor Message: The argument 'priorWeights' should add up to 1. It has been rescaled accordingly.")
+  }
+  # Check if length is number of hypotheses in the set
+  if (length(priorWeights) != num_hypotheses) {
+    if (isTRUE(Heq)) {
+      stop("\nrestriktor ERROR: The argument 'priorWeights' should consist of ", num_hypotheses, " elements, \n",
+           "namely one for Heq, one for the informative hypothesis, and one for its comlement. \n", 
+           "It now consists of ", length(priorWeights), " elements.",
+           call. = FALSE)
+    } else if (comparison %in% c("unconstrained", "complement") ) {
+    stop("\nrestriktor ERROR: The argument 'priorWeights' should consist of ", num_hypotheses, " elements, \n",
+         "namely one for each informative hypothesis and a failsafe hypothesis. \n", 
+         "It now consists of ", length(priorWeights), " elements.",
+         call. = FALSE)
+    } else if (comparison %in% c("none") ) {
+      stop("\nrestriktor ERROR: The argument 'priorWeights' should consist of ", num_hypotheses, " elements, \n",
+           "namely one for each informative hypothesis. \n", 
+           "It now consists of ", length(priorWeights), " elements.",
+           call. = FALSE)
+    }
   }
   
   
@@ -185,7 +212,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
     isSummary <- lapply(conList, function(x) summary(x, 
                                                      goric          = type,
                                                      sample.nobs    = sample_nobs,
-                                                     penalty_factor = penalty_factor))
+                                                     penalty_factor = penalty_factor,
+                                                     priorWeights   = priorWeights))
     
     PT_Amat <- lapply(isSummary, function(x) x$PT_Amat)
     PT_meq  <- lapply(isSummary, function(x) x$PT_meq)
@@ -233,7 +261,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
     isSummary <- lapply(conList, function(x) summary(x, 
                                                      goric          = type,
                                                      sample.nobs    = sample_nobs,
-                                                     penalty_factor = penalty_factor))
+                                                     penalty_factor = penalty_factor,
+                                                     priorWeights   = priorWeights))
     
     PT_Amat <- lapply(isSummary, function(x) x$PT_Amat)
     PT_meq  <- lapply(isSummary, function(x) x$PT_meq)
@@ -276,7 +305,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
     isSummary <- lapply(conList, function(x) summary(x, 
                                                      type           = type,
                                                      sample.nobs    = sample_nobs,
-                                                     penalty_factor = penalty_factor)) 
+                                                     penalty_factor = penalty_factor,
+                                                     priorWeights   = priorWeights)) 
   } else if ("numeric" %in% object_class && !isConChar) {
     
     if (is.null(sample_nobs) && type %in% c("goricac")) {
@@ -310,7 +340,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
     isSummary <- lapply(conList, function(x) summary(x, 
                                                      type           = type,
                                                      sample.nobs    = sample_nobs,
-                                                     penalty_factor = penalty_factor)) 
+                                                     penalty_factor = penalty_factor,
+                                                     priorWeights   = priorWeights)) 
   } else {
     stop("\nrestriktor ERROR: I don't know how to handle an object of class ", paste0(class(object)[1]))
   }
@@ -354,7 +385,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     #if (inherits(object, "numeric")) {
     if (inherits(conList[[Hm]]$b.unrestr, "numeric")) {
       #b.unrestr <- object
-      # TO DO hier gaat het fout als selectie param in hypo
+      # TO DO - hier gaat het fout als selectie param in hypo
       b.unrestr <- conList[[Hm]]$b.unrestr
       #
       # TO DO Wat als object niet een vector is?
@@ -558,7 +589,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   ans$objectNames <- objectnames
   
   # calculate LL, PT, goric weights and ratios
-  model_comparison_metrics <- calculate_model_comparison_metrics(df)
+  model_comparison_metrics <- calculate_model_comparison_metrics(df, priorWeights)
   
   df$loglik.weights  <- model_comparison_metrics$loglik_weights
   df$penalty.weights <- model_comparison_metrics$penalty_weights
@@ -581,7 +612,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
   ans$ratio.gw <- model_comparison_metrics$goric_rw
   ans$ratio.pw <- model_comparison_metrics$penalty_rw
   ans$ratio.lw <- model_comparison_metrics$loglik_rw
-
   
   
   # list all object estimates
@@ -637,6 +667,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   ans$type <- type
   ans$penalty_factor <- penalty_factor
   ans$Heq <- Heq
+  ans$priorWeights <- priorWeights
 
   # Assign class based on type\
   classMappings <- list(

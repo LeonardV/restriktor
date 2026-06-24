@@ -127,7 +127,7 @@ check.type <- function(type, class, ...)  {
   return(type)
 }
 
-calculate_model_comparison_metrics <- function(x) {
+calculate_model_comparison_metrics <- function(x, priorWeights) {
   modelnames <- as.character(x$model)
   ## Log-likelihood
   LL = -2 * x$loglik
@@ -143,7 +143,7 @@ calculate_model_comparison_metrics <- function(x) {
   
   ## goric
   delta_goric = x$goric - min(x$goric)
-  goric_weights = exp(0.5 * -delta_goric) / sum(exp(0.5 * -delta_goric))
+  goric_weights = priorWeights * exp(0.5 * -delta_goric) / sum(priorWeights * exp(0.5 * -delta_goric))
   goric_rw = goric_weights %*% t(1/goric_weights)
   diag(goric_rw) = 1
   
@@ -153,8 +153,9 @@ calculate_model_comparison_metrics <- function(x) {
   if (length(modelnames) > 2 && length(mn_unc_idx) > 0 && 
       which.max(goric_weights) != mn_unc_idx) {
     delta_goric = x$goric[-mn_unc_idx] - min(x$goric[mn_unc_idx])
-    goric_weights_without_unc = exp(0.5 * -delta_goric) / 
-      sum(exp(0.5 * -delta_goric))
+    priorWeights_adj <- priorWeights[-mn_unc_idx] / sum(priorWeights[-mn_unc_idx])
+    goric_weights_without_unc = priorWeights_adj * exp(0.5 * -delta_goric) / 
+      sum(priorWeights_adj * exp(0.5 * -delta_goric))
     goric_weights_without_unc <- c(goric_weights_without_unc, NA)
   } else { goric_weights_without_unc <- NULL }
   
@@ -162,8 +163,9 @@ calculate_model_comparison_metrics <- function(x) {
   if (length(modelnames) > 2 && length(mn_heq_idx) > 0 && 
       which.max(goric_weights) != mn_heq_idx) {
     delta_goric = x$goric[-mn_heq_idx] - min(x$goric[-mn_heq_idx])
-    goric_weights_without_heq = exp(0.5 * -delta_goric) / 
-      sum(exp(0.5 * -delta_goric))
+    priorWeights_adj <- priorWeights[-mn_unc_idx] / sum(priorWeights[-mn_unc_idx])
+    goric_weights_without_heq = priorWeights_adj * exp(0.5 * -delta_goric) / 
+      sum(priorWeights_adj * exp(0.5 * -delta_goric))
     goric_weights_without_heq <- c(NA, goric_weights_without_heq)
   } else { goric_weights_without_heq <- NULL }
   
@@ -181,7 +183,8 @@ calculate_model_comparison_metrics <- function(x) {
               goric_weights_without_heq = goric_weights_without_heq,
               loglik_rw = loglik_rw,
               penalty_rw = penalty_rw,
-              goric_rw = goric_rw)
+              goric_rw = goric_rw,
+              priorWeights = priorWeights)
   
   return(out)
 }

@@ -37,21 +37,21 @@ evSyn(object, input_type = NULL, \ldots)
 evSyn_est(object, \ldots, VCOV = list(), hypotheses = list(),
           type_ev = c("added", "equal", "average"), 
           comparison = c("unconstrained", "complement", "none"),
-          hypo_names = c(), priorWeights = NULL, 
+          hypo_names = c(), priorICweights = NULL, 
           type = c("gorica", "goricac"), 
           order_studies = c("input_order", "ascending", "descending"),
           study_names = c(), study_sample_nobs = NULL)
 
 # input: Log-likelihood and penalty values
 evSyn_LL(object, \ldots, PT = list(), type_ev = c("added", "equal", "average"),
-         hypo_names = c(), priorWeights = NULL, 
+         hypo_names = c(), priorICweights = NULL, 
          type = c("goric", "goricc", "gorica", "goricac"),
          order_studies = c("input_order", "ascending", "descending"),
          study_names = c())
 
 # input: GORIC(A), ORIC, AIC values
 evSyn_ICvalues(object, \ldots, type_ev = c("added", "average"), 
-               hypo_names = c(), priorWeights = NULL, 
+               hypo_names = c(), priorICweights = NULL, 
                type = c("goric", "goricc", "gorica", "goricac"), 
                order_studies = c("input_order", "ascending", "descending"), 
                study_names = c())
@@ -59,7 +59,7 @@ evSyn_ICvalues(object, \ldots, type_ev = c("added", "average"),
 # input: AIC or ORIC or GORIC or GORICA weights or (Bayesian) posterior 
 # model probabilities
 evSyn_ICweights(object, \ldots, type_ev = c("added", "average"), 
-                hypo_names = c(), priorWeights = NULL, 
+                hypo_names = c(), priorICweights = NULL, 
                 type = c("goric", "goricc", "gorica", "goricac"),
                 order_studies = c("input_order", "ascending", "descending"), 
                 study_names = c())
@@ -67,7 +67,7 @@ evSyn_ICweights(object, \ldots, type_ev = c("added", "average"),
 # input: Ratio of AIC or ORIC or GORIC or GORICA weights or 
 # (Bayesian) posterior model probabilities
 evSyn_ICratios(object, \ldots, type_ev = c("added", "average"), 
-               hypo_names = c(), priorWeights = NULL, 
+               hypo_names = c(), priorICweights = NULL, 
                type = c("goric", "goricc", "gorica", "goricac"),
                order_studies = c("input_order", "ascending", "descending"), 
                study_names = c())
@@ -75,7 +75,7 @@ evSyn_ICratios(object, \ldots, type_ev = c("added", "average"),
 # input: result from the goric() function
 # Note that this is a wrapper function for evSyn_LL.
 evSyn_gorica(object, \dots, type_ev = c("added", "equal", "average"), 
-             hypo_names = c(), priorWeights = NULL, 
+             hypo_names = c(), priorICweights = NULL, 
              order_studies = c("input_order", "ascending", "descending"), 
              study_names = c())
 
@@ -160,7 +160,7 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   \item{hypo_names}{character vector for labelling the hypotheses. By default, the
   names are set to H1, H2, \ldots}
 
-  \item{priorWeights}{vector that represents the prior belief for the specified hypotheses. 
+  \item{priorICweights}{vector that represents the prior belief for the specified hypotheses. 
   By default, equal prior weights are used (i.e., 1/(#hypotheses)). 
   Notably, in case the prior weights do not sum to 1, it will be rescaled such that it does; 
   the prior weights thus reflect relative a priori likeliness of the hypotheses.
@@ -168,11 +168,11 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   %In the case of ratios of IC weights ('icratios'), the ratio of prior weights should be given.
   %In that case, they do not sum to 1; and 
   %the ratio of weights for the reference hypothesis equals 1.
-  Notably, the priorWeights will be used in the cumulative and final results of evidence synthesis.
+  Notably, the priorICweights will be used in the cumulative and final results of evidence synthesis.
   They will not be used in ordering the studies with 'order_studies' = \code{"ascending"} or \code{"descending"}; 
   this will be based equal a priori likeliness of the hypotheses.}
   
-  \item{output_type}{a plot options. If "\code{gorica_weights}" (default), 
+  \item{output_type}{a plot option. If "\code{gorica_weights}" (default), 
   a plot with the cumulative goric(a)
   weights and goric(a) weights per study is displayed. If "\code{ll_weights}",
   a plot with the cumulative log-likelihood weights and log-likelihood weights 
@@ -436,6 +436,7 @@ evS4_added <- evSyn(object = Param_studies, VCOV = CovMx_studies,
 evS4_added
 summary(evS4_added)
 plot(evS4_added)
+# Note that this renders a ggplot whhicg you can change accordingly, as done below.
 
 evS4_equal <- evSyn(object = Param_studies, VCOV = CovMx_studies, 
                     hypotheses = hypotheses,
@@ -569,12 +570,14 @@ evS_LL_added <- evSyn(object = LL, PT = penalty.values,
                       hypo_names = colnames(myLLs),
                       type_ev = "added")
 evS_LL_added
+plot(evS_LL_added)
 #
 # Equal-evidence
 evS_LL_equal <- evSyn(object = LL, PT = penalty.values, 
                       hypo_names = colnames(myLLs),
                       type_ev = "equal")
 evS_LL_equal
+plot(evS_LL_equal)
 
 
 ## Example 5: based on AIC, ORIC, GORIC(A) values
@@ -586,6 +589,7 @@ goric.values <- as.list(data.frame(t(myGORICs)))
 evS_Gv <- evSyn(goric.values, 
                 hypo_names = colnames(myGORICs))
 evS_Gv
+plot(evS_Gv)
 
 
 ## Example 6: based on an escalc object
@@ -613,6 +617,13 @@ if (requireNamespace("metadat", quietly = TRUE)) {
     comparison = "complement"
   )
   evS_escalc_a
+  plot(evS_escalc_a)
+  
+  evSynplot <- plot(evS_escalc_a)
+  cols_subset <- ifelse(data_a$year < 1983, "darkgray", "black")
+  library(ggplot2)
+  evSynplot + theme(axis.text.x = element_text(colour = cols_subset))
+
 }
 
 
@@ -635,6 +646,7 @@ if (requireNamespace("metadat", quietly = TRUE)) {
                         type_ev = "equal",
                         comparison = "complement")
   evS_escalc_b
+  plot(evS_escalc_b)
 }
 
 
@@ -658,6 +670,13 @@ if (requireNamespace("metadat", quietly = TRUE)) {
                         type_ev = "equal",
                         comparison = "complement")
   evS_escalc_c
+  plot(evS_escalc_c)
+  
+  evSynplot <- plot(evS_escalc_c)
+  cols_subset <- ifelse(data_a$year < 1983, "darkgray", "black")
+  library(ggplot2)
+  evSynplot + theme(axis.text.x = element_text(colour = cols_subset))
+
 }
 
 }

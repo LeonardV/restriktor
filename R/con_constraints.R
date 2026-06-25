@@ -93,11 +93,12 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     parTable$rhs   <- c(parTable$rhs, LIST$rhs)
     parTable$label <- c(parTable$label, rep("", length(lhs)))
 
-    # equality constraints
+    # nr of equality constraints
     meq  <- nrow(con_constraints_ceq_amat(model, constraints = constraints))
     # right-hand-side
     bvec <- con_constraints_rhs_bvec(model, constraints = constraints)
-    # inequality constraints
+    # Matrix with all (in)equality constraints,
+    # with first meq rows are the equality contraints
     Amat <- con_constraints_con_amat(model, constraints = constraints)
     
     # check for not supported constraint syntax or an empty matrix
@@ -111,6 +112,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
       )
     }
     
+  
     ## In case of abs() the constraints may incorrectly be considered as non-linear. 
     ## Here, we remove the abs() from the constraint function which is redundant 
     ## for determining if the constraints are linear. 
@@ -144,30 +146,31 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     stop("restriktor ERROR: No restrictions were specified.", call. = FALSE) 
   }
   
+  # Check before deleting redundant constraints
+  if (meq > nrow(Amat)) { 
+    stop(sprintf("restriktor ERROR: The number of equality restrictions (meq = %d) cannot exceed the number of constraints (nrow(Amat) = %d).", meq, nrow(Amat)),
+         "\n There might be conflicting and perhaps redundant constraints. \n",
+         "When deleting those, goric() should be able to evaluated the adjusted set of hypotheses.", call. = FALSE)
+  }
+  
   # correct user errors, like x1 < 2 & x1 < 1, x1 < 2 is removed to get a 
   # full row-rank matrix.
-  rrc <- remove_redundant_constraints(Amat, bvec)
+  # Note: this only deletes duplicated restrictions; 
+  # so, not all redundant restrictions.
+  rrc <- remove_redundant_constraints(Amat, bvec, meq)
   Amat <- rrc$constraints
   bvec <- rrc$rhs
+  meq <- rrc$meq
   
   if (!(nrow(Amat) == length(bvec))) {
     warning(paste("restriktor WARNING: The number of constraints does not match", 
                   "the \'rhs\' (nrow(Amat) != length(rhs))."))
   }
-  
   if (meq > nrow(Amat)) { 
-    stop(sprintf("restriktor ERROR: meq (%d) cannot exceed nrow(Amat) (%d).", meq, nrow(Amat)), call. = FALSE)
+    stop(sprintf("restriktor ERROR: The number of equality restrictions (meq = %d) cannot exceed the number of constraints (nrow(Amat) = %d).", meq, nrow(Amat)),
+         "\n There might be conflicting and perhaps redundant constraints. \n",
+         "When deleting those, goric() should be able to evaluated the adjusted set of hypotheses.", call. = FALSE)
   }
-  # TO DO 
-  #DATA <- subset(ZelazoKolb1972, Group != "Control")
-  #fit1.lm <- lm(Age ~ Group, data = DATA)
-  #H1 <- "GroupPassive > 0; GroupPassive < GroupNo; new1 := GroupPassive + 0.5 > 0.9" 
-  #& Heq = T, dus:
-  #goric(fit1.lm, hypotheses = list(H1 = H1), Heq = T)
-  # then this error: meq (3) cannot exceed nrow(Amat) (2).
-  # Het gaat goed als in set of zonder Heq, 
-  # maar er zit een reduncancy in die er met Heq=T niet uitgaat blijkbaar
-  
   
   if (length(CON$ceq.nonlinear.idx) > 0L || length(CON$cin.nonlinear.idx) > 0L) {
     stop("restriktor ERROR: nonlinear (in)equality restrictions are not supported.", call. = FALSE)

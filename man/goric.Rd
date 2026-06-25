@@ -160,11 +160,11 @@ comparable to the Akaike weights.
   effectively testing the hypothesis that the parameters satisfy exact equality 
   rather than inequality. Defaults to \code{FALSE}.}
   
-  \item{priorWeights}{vector that represents the prior belief for the specified hypotheses. 
+  \item{priorICweights}{vector that represents the prior belief for the specified hypotheses. 
   By default, equal prior weights are used (i.e., 1/(#hypotheses)). 
   Notably, in case the prior weights do not sum to 1, it will be rescaled such that it does; 
   the prior weights thus reflect relative a priori likeliness of the hypotheses.
-  Notably, the priorWeights will be used in the determining the (ratios of) IC weights;
+  Notably, the priorICweights will be used in the determining the (ratios of) IC weights;
   so, not in the other output, like the IC values but also not the log likelihood weights or penalty weights.}
   
   \item{missing}{the default setting for objects of class "lm" is listwise:

@@ -352,13 +352,20 @@ detect_range_restrictions <- function(Amat) {
 # correct misspecified constraints of format e.g., x1 < 1 & x1 < 2.
 # x1 < 2 is removed since it is redundant. It has no impact on the LPs, but
 # since the redundant matrix is not full row-rank the slower boot method is used. 
-remove_redundant_constraints <- function(constraints, rhs) {
-  df <- data.frame(constraints, rhs)
-  df <- df[order(df$rhs, decreasing = TRUE),]  
-  unique_constraints <- !duplicated(df[, -ncol(df)])
-  df_reduced <- df[unique_constraints,]
+remove_redundant_constraints <- function(constraints, rhs, meq) {
+  df_orig <- data.frame(constraints, rhs)
+  df_orig$eq <- 0
+  if (meq > 0) {
+    df_orig$eq <- rep(1, meq)
+  }
+  df <- df_orig[order(df_orig$rhs, decreasing = TRUE),] 
+  Dupl <- duplicated(df[, -c((ncol(df)-1), ncol(df))])
+  df_reduced <- df[!Dupl,] # unique constraints
   rhs <- df_reduced$rhs
+  meq <- sum(df_reduced$eq)
   row.names(df_reduced) <- NULL
   colnames(df_reduced) <- NULL
-  list(constraints = as.matrix(df_reduced[, -ncol(df_reduced)]), rhs = rhs) 
+  minWhichCol <- c((ncol(df_reduced)-1), ncol(df_reduced))
+  list(constraints = as.matrix(df_reduced[, -minWhichCol]), 
+       rhs = rhs, meq = meq) 
 }

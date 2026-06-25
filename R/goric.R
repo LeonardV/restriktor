@@ -6,7 +6,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
                           VCOV = NULL, sample_nobs = NULL,
                           penalty_factor = 2,
                           Heq = FALSE, 
-                          priorWeights = NULL,
+                          priorICweights = NULL,
                           control = list(), debug = FALSE) {
 
 
@@ -53,7 +53,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   if (comparison %in% c("unconstrained", "none") && isTRUE(Heq)) {
     warning(paste(
       "\nrestriktor WARNING: The 'Heq' argument is ignored.",
-      "The specified hypothesis is only valid when the order-restricted hypothesis is compared to its complement."
+      "The 'Heq' option is only valid when the order-restricted hypothesis is compared to its complement."
     ), call. = FALSE)
     Heq <- FALSE
   }
@@ -64,36 +64,50 @@ goric.default <- function(object, ..., hypotheses = NULL,
       "\nrestriktor ERROR: Heq = TRUE is only allowed when there is one order-restricted hypothesis. ",
       "Now, there are ", num_hypotheses, " order-restricted hypotheses."
     ), call. = FALSE)
+  }
+  
+  NrHypos_incl <- num_hypotheses
+  if (comparison %in% c("unconstrained", "complement")) {
+    NrHypos_incl <- NrHypos_incl + 1
+  }
+  if (isTRUE(Heq)) {
+    NrHypos_incl <- NrHypos_incl + 1 # nl, also Heq itself
+  }
+  
+  if (is.null(priorICweights)) {
+    priorICweights <- rep(1/(NrHypos_incl), (NrHypos_incl))
   } else {
-    num_hypotheses <- num_hypotheses + 1 # nl, also Heq itself
-  }
-  
-  
-  if (is.null(priorWeights)) {
-    priorWeights <- rep(1/(num_hypotheses), (num_hypotheses))
-  }
-  # To make it sum to 1 (if it not already did)
-  if (sum(priorWeights) != 1) {
-    priorWeights <- priorWeights / sum(priorWeights) 
-    message("\nrestriktor Message: The argument 'priorWeights' should add up to 1. It has been rescaled accordingly.")
-  }
-  # Check if length is number of hypotheses in the set
-  if (length(priorWeights) != num_hypotheses) {
-    if (isTRUE(Heq)) {
-      stop("\nrestriktor ERROR: The argument 'priorWeights' should consist of ", num_hypotheses, " elements, \n",
-           "namely one for Heq, one for the informative hypothesis, and one for its comlement. \n", 
-           "It now consists of ", length(priorWeights), " elements.",
+    # # Check all values in between 0 and 1 - not done:
+    # # Since we rescale the following check is not needed;
+    # # This allows users to specify the weights in a different manner.
+    # if (any(priorICweights < 0) || any(priorICweights > 0)) {
+    #   stop("\nrestriktor ERROR: The argument 'priorICweights' should consist of ", NrHypos_incl, " elements, \n",
+    #        "where each element is in between 0 and 1 (and they sum to 1).",
+    #        call. = FALSE)
+    # }
+    # To make it sum to 1 (if it not already did)
+    if (sum(priorICweights) != 1) {
+      priorICweights <- priorICweights / sum(priorICweights) 
+      message("\nrestriktor Message: The argument 'priorICweights' should add up to 1. It has been rescaled accordingly.")
+    }
+    # Check if length is number of hypotheses in the set
+    if (length(priorICweights) != NrHypos_incl) {
+      if (isTRUE(Heq)) {
+        stop("\nrestriktor ERROR: The argument 'priorICweights' should consist of ", NrHypos_incl, " elements, \n",
+             "namely one for Heq, one for the informative hypothesis, and one for its comlement. \n", 
+             "It now consists of ", length(priorICweights), " elements.",
+             call. = FALSE)
+      } else if (comparison %in% c("unconstrained", "complement") ) {
+      stop("\nrestriktor ERROR: The argument 'priorICweights' should consist of ", NrHypos_incl, " elements, \n",
+           "namely one for each informative hypothesis and a failsafe hypothesis. \n", 
+           "It now consists of ", length(priorICweights), " elements.",
            call. = FALSE)
-    } else if (comparison %in% c("unconstrained", "complement") ) {
-    stop("\nrestriktor ERROR: The argument 'priorWeights' should consist of ", num_hypotheses, " elements, \n",
-         "namely one for each informative hypothesis and a failsafe hypothesis. \n", 
-         "It now consists of ", length(priorWeights), " elements.",
-         call. = FALSE)
-    } else if (comparison %in% c("none") ) {
-      stop("\nrestriktor ERROR: The argument 'priorWeights' should consist of ", num_hypotheses, " elements, \n",
-           "namely one for each informative hypothesis. \n", 
-           "It now consists of ", length(priorWeights), " elements.",
-           call. = FALSE)
+      } else if (comparison %in% c("none") ) {
+        stop("\nrestriktor ERROR: The argument 'priorICweights' should consist of ", NrHypos_incl, " elements, \n",
+             "namely one for each informative hypothesis. \n", 
+             "It now consists of ", length(priorICweights), " elements.",
+             call. = FALSE)
+      }
     }
   }
   
@@ -190,6 +204,12 @@ goric.default <- function(object, ..., hypotheses = NULL,
     #       Maakt dat in dit deel nog uit? Ik zie het niet, graag ff checken of dat klopt.
     #       Dan ook in volgende 'if' evt.
     # TO DO voor mlm krijg je  namen die niet werken in goric... Hoe dat aanpassen?
+    # TO DO maak geschikt voor mlm!
+    #class(fit)
+    #[1] "mlm" "lm" 
+    #c(coef(fit)) # per DV de param
+    #c(t(coef(fit))) # per param de waardes voor de DVs
+    #vcov(fit) # per DV de param
     
     # standard errors are not needed
     ldots$se <- "none"
@@ -213,7 +233,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
                                                      goric          = type,
                                                      sample.nobs    = sample_nobs,
                                                      penalty_factor = penalty_factor,
-                                                     priorWeights   = priorWeights))
+                                                     priorICweights   = priorICweights))
     
     PT_Amat <- lapply(isSummary, function(x) x$PT_Amat)
     PT_meq  <- lapply(isSummary, function(x) x$PT_meq)
@@ -262,7 +282,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
                                                      goric          = type,
                                                      sample.nobs    = sample_nobs,
                                                      penalty_factor = penalty_factor,
-                                                     priorWeights   = priorWeights))
+                                                     priorICweights   = priorICweights))
     
     PT_Amat <- lapply(isSummary, function(x) x$PT_Amat)
     PT_meq  <- lapply(isSummary, function(x) x$PT_meq)
@@ -306,7 +326,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
                                                      type           = type,
                                                      sample.nobs    = sample_nobs,
                                                      penalty_factor = penalty_factor,
-                                                     priorWeights   = priorWeights)) 
+                                                     priorICweights   = priorICweights)) 
   } else if ("numeric" %in% object_class && !isConChar) {
     
     if (is.null(sample_nobs) && type %in% c("goricac")) {
@@ -341,7 +361,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
                                                      type           = type,
                                                      sample.nobs    = sample_nobs,
                                                      penalty_factor = penalty_factor,
-                                                     priorWeights   = priorWeights)) 
+                                                     priorICweights   = priorICweights)) 
   } else {
     stop("\nrestriktor ERROR: I don't know how to handle an object of class ", paste0(class(object)[1]))
   }
@@ -589,7 +609,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   ans$objectNames <- objectnames
   
   # calculate LL, PT, goric weights and ratios
-  model_comparison_metrics <- calculate_model_comparison_metrics(df, priorWeights)
+  model_comparison_metrics <- calculate_model_comparison_metrics(df, priorICweights)
   
   df$loglik.weights  <- model_comparison_metrics$loglik_weights
   df$penalty.weights <- model_comparison_metrics$penalty_weights
@@ -667,7 +687,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   ans$type <- type
   ans$penalty_factor <- penalty_factor
   ans$Heq <- Heq
-  ans$priorWeights <- priorWeights
+  ans$priorICweights <- priorICweights
 
   # Assign class based on type\
   classMappings <- list(

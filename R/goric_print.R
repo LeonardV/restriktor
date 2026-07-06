@@ -39,6 +39,11 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   # TO DO HIER Verwerk bovenstaande in output (print en summary)
   # print: dan had dit ms al eerder gedaan moeten worden?
   # summary: hieronder poging, maar niet mooi nog.
+  # Gedachte (maar ws niet): Ms ook onderdeel van 'goric_object$result' laten zijn, 
+  #                          al wordt die tabel dan wel nog weer langer... dus ws niet doen, 
+  #                          dan ook minder duidelijk dat het posthoc is...
+  #          Wel opvraagbaar laten zijn!
+  
   
   dig <- paste0("%6.", digits, "f")
   #x2 <- lapply(x$result[-1], sprintf, fmt = dig)

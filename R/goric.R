@@ -41,6 +41,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   }
   
   comparison <- match.arg(comparison, c("unconstrained", "complement", "none"))
+  # TO DO add: complement_1stHypo oid
   
     # complement met meerdere hypotheses => forceren naar unconstrained
   if (comparison == "complement" && num_hypotheses > 1L) {
@@ -460,7 +461,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
   }
 
   # compute complement penalty term value
-  # compute complement penalty term value
   if (is.null(conList[[Hm]]$PT_Amat)) {
     stop(paste("\nrestriktor ERROR: the penalty term for the complement cannot be computed.",
                "This is likely because mix_weights = 'none'.",
@@ -701,6 +701,33 @@ goric.default <- function(object, ..., hypotheses = NULL,
   
   return(ans)
 }
+
+# TO DO HIER
+# maak obv onderstaande code de mogelijkheid tot comparison = compl_1stHypo oid.
+# Geeft wel message dat dit alleen zinnig is als andere gespecificeerd hypo's in 1e hypo vallen;
+# dan is compl van 1e hypo nl compl van set en dat ws liever dan dan de unc.
+# Dan 2x goric runnen en dan samennemen:
+#
+# # Evaluate all hypotheses with unconstrained (default):
+# set.seed(123)
+# goric_allHunc <- goric(..., hypotheses = list(...)))
+# # Also evaluate 1st hypo vs its complement (default):
+# set.seed(123)
+# goric_H1Hc <- goric(..., hypotheses = list(H... = H...))
+# # Combine these results:
+# goric_all <- matrix(NA, nrow = 4, ncol = 6)
+# nameCompl <- paste0("complement of ", goric_H1Hc$result$model[1])
+# rownames(goric_all) <- c(goric_allHunc$result$model[1:3], nameCompl)
+# colnames(goric_all) <- colnames(goric_allHunc$result[2:7])
+# goric_all[,1] <- c(goric_allHunc$result$loglik[1:3], goric_H1Hc$result$loglik[2])
+# goric_all[,2] <- c(goric_allHunc$result$penalty[1:3], goric_H1Hc$result$penalty[2])
+# goric_all[,3] <- c(goric_allHunc$result$gorica[1:3], goric_H1Hc$result$gorica[2])
+# goric_all[,4] <- calc_ICweights(-2*c(goric_allHunc$result$loglik[1:3], goric_H1Hc$result$loglik[2]))$IC_weights
+# goric_all[,5] <- calc_ICweights(2*c(goric_allHunc$result$penalty[1:3], goric_H1Hc$result$penalty[2]))$IC_weights
+# goric_all[,6] <- calc_ICweights(c(goric_allHunc$result$gorica[1:3], goric_H1Hc$result$gorica[2]))$IC_weights
+# # Ratio of GORICA weights:
+# GWs <- calc_ICweights(c(goric_allHunc$result$gorica[1:3], goric_H1Hc$result$gorica[2]))
+# GWs$ratio_IC_weights
 
 
 

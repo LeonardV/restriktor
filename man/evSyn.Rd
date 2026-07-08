@@ -22,7 +22,7 @@
 hypotheses from multiple studies that may use diverse designs to investigate the 
 same central theory.
 
-The function \code{leave1studyout} performs a leave-one-out sensitivity analysis 
+The function \code{leave1studyout} performs a leave-one-study-out sensitivity (outlier) analysis 
 on a fitted \code{evSyn} object: it re-runs the evidence synthesis S times, each 
 time omitting one study, and reports which hypothesis is preferred in each 
 reduced set.

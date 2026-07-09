@@ -119,43 +119,75 @@ con_weights <- function(cov, meq, tolerance, ridge_constant, ...) {
 # }
 
 
-## to avoid unnecessary runs we add samples of 'chunk_size' until 
-## convergence is reached or the maximum number of bootstrap draws (R) is reached. 
-## By default the rtmvnorm function is equal to the rmvnorm function (lower = -Inf, upper = Inf)
-con_weights_boot <- function(VCOV, Amat, meq, R = 1e5L, 
-                             chunk_size = 5000L, convergence_crit = 1e-03, 
+## to avoid unnecessary runs we add samples of 'chunk_size' until
+## convergence is reached or the maximum number of bootstrap draws (R) is reached.
+##
+## Each draw projects z ~ N(0, VCOV) onto the cone {theta: Amat theta >= 0}
+## (first meq rows treated as equalities) and counts the active constraints.
+## The dual of this projection is a nonnegative least-squares problem with a
+## fixed design matrix D = chol(VCOV) %*% t(Amat):
+##
+##    min_{lambda >= 0} || z_tilde - D lambda ||^2,   z_tilde ~ N(0, I_p),
+##
+## solved by Lawson-Hanson (nnls). The number of positive multipliers equals
+## the number of active inequality constraints (what solve.QP reports as
+## length(iact)), so dimL = p - meq - #positive. This is much faster per draw
+## than solve.QP + rtmvnorm and, unlike the primal form based on
+## chol(Amat VCOV t(Amat)), also works when Amat has more rows than columns
+## or contains redundant rows. Equality rows get an unconstrained multiplier:
+## their columns are projected out of D and z_tilde (QR residualization)
+## before the NNLS solve.
+##
+## Arguments passed through ... are meant for rtmvnorm (truncation bounds);
+## truncated sampling is not expressible in the NNLS reformulation, so in
+## that case the original quadprog engine is used.
+con_weights_boot <- function(VCOV, Amat, meq, R = 1e5L,
+                             chunk_size = 5000L, convergence_crit = 1e-03,
                              seed = NULL, verbose = FALSE, ...) {
-  
+
+  ldots <- list(...)
+  if (length(ldots) > 0L) {
+    return(con_weights_boot_quadprog(VCOV = VCOV, Amat = Amat, meq = meq,
+                                     R = R, chunk_size = chunk_size,
+                                     convergence_crit = convergence_crit,
+                                     seed = seed, verbose = verbose, ...))
+  }
+
   if (!is.null(seed)) set.seed(seed)
   if (!exists(".Random.seed", envir = .GlobalEnv)) runif(1)
-  
-  ldots <- list(...)
+
+  Amat <- rbind(Amat)          # allow a vector in case of one constraint
+  meq <- as.integer(meq)
   p <- ncol(VCOV)
-  
-  bvec   <- rep(0L, nrow(Amat)) # weights do not depend on bvec.
-  invW   <- solve(VCOV)
-  Dmat   <- 2 * invW
-  tAmat  <- t(Amat)             # pre-compute transpose once
-  mu_vec <- rep(0, p)
-  
+  g <- nrow(Amat)
+  tol_active <- 1e-10          # threshold for counting a multiplier as positive
+
+  U <- chol(VCOV)              # VCOV = U'U; PD required, as for solve.QP
+  D <- U %*% t(Amat)           # p x g; crossprod(D) = Amat VCOV t(Amat)
+
+  qr_eq  <- NULL
+  D_ineq <- D
+  if (meq > 0L) {
+    qr_eq  <- qr(D[, seq_len(meq), drop = FALSE])
+    D_ineq <- qr.resid(qr_eq, D[, -seq_len(meq), drop = FALSE])
+  }
+  n_ineq <- g - meq
+
   # inner function: returns number of active constraints, or NA on error
   fn <- function(b) {
-    QP <- try(quadprog::solve.QP(Dmat = Dmat,
-                                 dvec = dvec[b, ],
-                                 Amat = tAmat,
-                                 bvec = bvec,
-                                 meq  = meq), silent = TRUE)
-    
-    if (inherits(QP, "try-error")) {
-      if (verbose) cat("quadprog FAILED\n")
+    fit <- try(nnls::nnls(D_ineq, Z[, b]), silent = TRUE)
+
+    if (inherits(fit, "try-error")) {
+      if (verbose) cat("nnls FAILED\n")
       return(NA_integer_)
-    } else if (verbose) {
-      cat(" ...active inequality constraints =", QP$iact, "\n")
     }
-    
-    if (QP$iact[1] == 0L) 0L else length(QP$iact)
+    iact <- meq + sum(fit$x > tol_active)
+    if (verbose) {
+      cat(" ...number of active constraints =", iact, "\n")
+    }
+    iact
   }
-  
+
   prev_wt_bar    <- NULL
   chunk_wt_bar   <- NULL
   has_converged  <- FALSE
@@ -171,15 +203,25 @@ con_weights_boot <- function(VCOV, Amat, meq, R = 1e5L,
   total_chunks <- ceiling(RR / chunk_size_org)
   chunk_iter   <- 1L
   
-  while (chunk_iter <= total_chunks) { 
+  while (chunk_iter <= total_chunks) {
     current_n <- min(chunk_size_org, RR - total_generated)
-    
-    # lazy sample generation: only generate what this chunk needs
-    Z    <- tmvtnorm::rtmvnorm(n = current_n, mean = mu_vec, sigma = VCOV, ...)
-    dvec <- 2 * (Z %*% invW)
-    
+
+    # lazy sample generation: only generate what this chunk needs.
+    # antithetic pairs (z, -z): the active-constraint count is not symmetric
+    # in z, so mirrored draws reduce the Monte Carlo variance at no extra cost
+    half <- ceiling(current_n / 2)
+    Z <- matrix(rnorm(p * half), nrow = p)
+    Z <- cbind(Z, -Z)[, seq_len(current_n), drop = FALSE]
+    if (meq > 0L) {
+      Z <- qr.resid(qr_eq, Z)
+    }
+
     # process chunk with vapply (faster than lapply + sapply post-processing)
-    chunk_iact <- vapply(seq_len(current_n), fn, integer(1))
+    chunk_iact <- if (n_ineq == 0L) {
+      rep(as.integer(g), current_n)
+    } else {
+      vapply(seq_len(current_n), fn, integer(1))
+    }
     
     # update running counts incrementally (no need to recompute from scratch)
     valid_mask   <- !is.na(chunk_iact)
@@ -226,6 +268,121 @@ con_weights_boot <- function(VCOV, Amat, meq, R = 1e5L,
   attr(wt_bar, "chunk_iter"           ) <- chunk_iter 
   attr(wt_bar, "error.idx"            ) <- error_idx_all
   attr(wt_bar, "mvtnorm"              ) <- ldots
-  
+  attr(wt_bar, "engine"               ) <- "nnls"
+
+  return(wt_bar)
+}
+
+
+## original simulation engine (rtmvnorm + solve.QP in theta-space). Kept for
+## the case that truncation arguments are passed through ... to rtmvnorm,
+## which the NNLS reformulation cannot express.
+con_weights_boot_quadprog <- function(VCOV, Amat, meq, R = 1e5L,
+                                      chunk_size = 5000L, convergence_crit = 1e-03,
+                                      seed = NULL, verbose = FALSE, ...) {
+
+  if (!is.null(seed)) set.seed(seed)
+  if (!exists(".Random.seed", envir = .GlobalEnv)) runif(1)
+
+  ldots <- list(...)
+  Amat <- rbind(Amat) # allow a vector in case of one constraint
+  p <- ncol(VCOV)
+
+  bvec   <- rep(0L, nrow(Amat)) # weights do not depend on bvec.
+  invW   <- solve(VCOV)
+  Dmat   <- 2 * invW
+  tAmat  <- t(Amat)             # pre-compute transpose once
+  mu_vec <- rep(0, p)
+
+  # inner function: returns number of active constraints, or NA on error
+  fn <- function(b) {
+    QP <- try(quadprog::solve.QP(Dmat = Dmat,
+                                 dvec = dvec[b, ],
+                                 Amat = tAmat,
+                                 bvec = bvec,
+                                 meq  = meq), silent = TRUE)
+
+    if (inherits(QP, "try-error")) {
+      if (verbose) cat("quadprog FAILED\n")
+      return(NA_integer_)
+    } else if (verbose) {
+      cat(" ...active inequality constraints =", QP$iact, "\n")
+    }
+
+    if (QP$iact[1] == 0L) 0L else length(QP$iact)
+  }
+
+  prev_wt_bar    <- NULL
+  chunk_wt_bar   <- NULL
+  has_converged  <- FALSE
+  chunk_size_org <- chunk_size
+
+  # incremental level counts instead of storing all results
+  level_counts   <- integer(p + 1)  # counts for levels 0:p
+  n_valid        <- 0L
+  error_idx_all  <- integer(0)
+  total_generated <- 0L
+
+  RR <- as.integer(R)
+  total_chunks <- ceiling(RR / chunk_size_org)
+  chunk_iter   <- 1L
+
+  while (chunk_iter <= total_chunks) {
+    current_n <- min(chunk_size_org, RR - total_generated)
+
+    # lazy sample generation: only generate what this chunk needs
+    Z    <- tmvtnorm::rtmvnorm(n = current_n, mean = mu_vec, sigma = VCOV, ...)
+    dvec <- 2 * (Z %*% invW)
+
+    # process chunk with vapply (faster than lapply + sapply post-processing)
+    chunk_iact <- vapply(seq_len(current_n), fn, integer(1))
+
+    # update running counts incrementally (no need to recompute from scratch)
+    valid_mask   <- !is.na(chunk_iact)
+    n_chunk_err  <- sum(!valid_mask)
+
+    if (n_chunk_err > 0L) {
+      error_idx_all <- c(error_idx_all, which(!valid_mask) + total_generated)
+    }
+
+    valid_iact <- chunk_iact[valid_mask]
+    dimL_chunk <- p - valid_iact  # values in 0:p
+
+    # tabulate is O(n) vs sapply+sum which is O(n*p)
+    if (length(dimL_chunk) > 0L) {
+      level_counts <- level_counts + tabulate(dimL_chunk + 1L, nbins = p + 1)
+    }
+    n_valid         <- n_valid + sum(valid_mask)
+    total_generated <- total_generated + current_n
+
+    wt_bar <- level_counts / n_valid
+
+    # Check for convergence
+    if (!is.null(prev_wt_bar)) {
+      if (all(abs(wt_bar - prev_wt_bar) < convergence_crit)) {
+        has_converged <- TRUE
+        chunk_wt_bar  <- rbind(chunk_wt_bar, wt_bar)
+        break
+      }
+    }
+
+    prev_wt_bar  <- wt_bar
+    chunk_wt_bar <- rbind(chunk_wt_bar, wt_bar)
+    chunk_iter   <- chunk_iter + 1L
+  }
+
+  rownames(chunk_wt_bar) <- paste0("chunk_iter_", seq_len(nrow(chunk_wt_bar)))
+
+  attr(wt_bar, "total_bootstrap_draws") <- total_generated
+  attr(wt_bar, "converged"            ) <- has_converged
+  attr(wt_bar, "convergence_crit"     ) <- convergence_crit
+  attr(wt_bar, "wt_bar_chunk"         ) <- chunk_wt_bar
+  attr(wt_bar, "chunk_size"           ) <- chunk_size_org
+  attr(wt_bar, "total_chunks"         ) <- total_chunks
+  attr(wt_bar, "chunk_iter"           ) <- chunk_iter
+  attr(wt_bar, "error.idx"            ) <- error_idx_all
+  attr(wt_bar, "mvtnorm"              ) <- ldots
+  attr(wt_bar, "engine"               ) <- "quadprog"
+
   return(wt_bar)
 }

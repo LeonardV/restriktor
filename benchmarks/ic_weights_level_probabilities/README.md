@@ -134,6 +134,11 @@ Aandachtspunten bij een echte vervanging:
 5. `nnls` faalt in de praktijk niet (geen `error.idx`-mechanisme nodig), maar
    de teldrempel (`x > tol`) verdient een vaste, gedocumenteerde tolerantie.
 
+> **Status:** de duale NNLS-motor is inmiddels geïmplementeerd als standaard
+> engine in `con_weights_boot()` (`R/compute_chiBarSquare_weights.R`), met het
+> oude rtmvnorm + quadprog-pad als fallback wanneer truncatie-argumenten via
+> `...` worden meegegeven. Zie `tests/testthat/test-con_weights_boot.R`.
+
 ## 4. Aanbeveling
 
 - Houd de exacte route voor **g ≤ 10 à 12** (daar is hij sneller dan MC en

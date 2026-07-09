@@ -1,6 +1,6 @@
 con_boot_lm <- function(object, B = 999, fixed = FALSE, Amat, 
                         bvec, meq, se = "none", mix_weights = "none", 
-                        parallel = parallel, ncpus = ncpus, cl = cl) { 
+                        parallel = "no", ncpus = 1L, cl = NULL) { 
     
   DATA <- as.data.frame(object$model)
   if (!fixed) { 

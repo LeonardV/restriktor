@@ -229,10 +229,19 @@ comparable to the Akaike weights.
   specified in two ways, see \code{\link{restriktor}}. For examples, see below.
   
   To determine the penalty term values, the chi-bar-square weights (a.k.a. level
-  probabilities) must be computed. If \code{"mix_weights = "pmvnorm" "} (default), 
-  the chi-bar-square weights are computed based on the multivariate normal distribution 
-  function with additional Monte Carlo steps. If \code{"mix_weights = "boot" "}, the 
+  probabilities) must be computed. If \code{"mix_weights = "pmvnorm" "} (default),
+  the chi-bar-square weights are computed based on the multivariate normal distribution
+  function with additional Monte Carlo steps. If \code{"mix_weights = "boot" "}, the
   chi-bar-square weights are computed using parametric bootstrapping (see \code{\link{restriktor}}).
+
+  For \code{"mix_weights = "pmvnorm" "} with about ten or more (in)equality
+  constraints, the computation can be sped up by enabling a parallel
+  \code{future} plan, e.g., \code{future::plan(multisession, workers = 4)}
+  (on Linux/macOS \code{future::plan(multicore, workers = 4)} is more
+  efficient). With the default sequential plan the results are unchanged;
+  under a parallel plan the results are reproducible for a given seed and
+  differ from the sequential results only within the Monte Carlo error of
+  the multivariate normal probabilities.
   
   
   The "two.stage" approach for missing data uses the EM algorithm from the 

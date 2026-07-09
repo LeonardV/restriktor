@@ -92,7 +92,49 @@ herhalingen):
 Een fout van ~0.005 op de penalty is verwaarloosbaar op GORIC-schaal
 (vergelijkbaar met de MC-fout die `pmvnorm` (GenzBretz) zelf al introduceert).
 
-## 3. Aanbeveling
+## 3. Kan `con_weights_boot()` (quadprog) veilig vervangen worden?
+
+Ja — mits de **duale vorm** wordt gebruikt (zie `check_edge_cases.R`). De
+primale vorm hierboven vereist `chol(W)` en faalt als W = A·V·Aᵀ singulier is
+(meer constraints dan parameters, of redundante constraints). De duale vorm
+van hetzelfde projectieprobleem,
+
+```
+min_{λ ≥ 0} ‖ z̃ − D·λ ‖²,   D = Lᵀ·Aᵀ (p × g),  V = L·Lᵀ,  z̃ ~ N(0, I_p)
+```
+
+is óók een standaard NNLS-probleem, vereist alleen dat V positief-definiet is
+(zoals quadprog nu ook al eist), en telt via het aantal positieve λ's exact
+hetzelfde als `solve.QP`: dimL = p − #actieve ongelijkheden. Empirisch
+gevalideerd:
+
+- **meq = 0, W regulier**: duaal = primaal = exact (max. verschil ~0.001).
+- **g > p (W singulier)**: `chol(W)` faalt; duaal en boot geven identieke
+  verdelingen (max. verschil 0.0016 = MC-fout van twee onafhankelijke runs).
+- **meq > 0**: reductie `solve(solve(W)[−(1:meq), −(1:meq)])` (zoals in
+  `con_weights()`) matcht zowel exact als boot; de boot-massa ligt precies op
+  levels (p−g):(p−meq) zoals verwacht.
+
+Aandachtspunten bij een echte vervanging:
+
+1. **Output-contract behouden**: boot levert p+1 gewichten (levels 0:p) met
+   `attr(method) = "boot"`; `penalty_goric()` en `penalty_complement_goric()`
+   indexeren per methode verschillend. De duale telling levert dit formaat
+   direct.
+2. **meq > 0 in de duale vorm**: equality-multipliers zijn vrij (niet ≥ 0);
+   oplosbaar door de equality-kolommen uit D en z̃ weg te projecteren en NNLS
+   op de rest te doen, of door de reductie-route te nemen als W regulier is.
+3. **`...` naar `rtmvnorm`**: `con_weights_boot()` geeft `...` door aan
+   `rtmvnorm` (truncatie via lower/upper). Wordt dat gebruikt, dan is de
+   NNLS-schatter met standaardnormale draws niet equivalent — quadprog-pad
+   als fallback behouden.
+4. **Reproduceerbaarheid**: zelfde seed geeft andere (even geldige) getallen
+   dan de oude boot; snapshot-tests met hardgecodeerde waarden moeten worden
+   bijgewerkt.
+5. `nnls` faalt in de praktijk niet (geen `error.idx`-mechanisme nodig), maar
+   de teldrempel (`x > tol`) verdient een vaste, gedocumenteerde tolerantie.
+
+## 4. Aanbeveling
 
 - Houd de exacte route voor **g ≤ 10 à 12** (daar is hij sneller dan MC en
   exact); de analytische shortcuts voor dim 1–3 blijven zoals ze zijn.

@@ -37,16 +37,17 @@ con_solver_lm <- function(X, y, w = NULL, Amat, bvec, meq,
     
     b.restr <- out.qp$solution
 
-    if (abs(out.qp$value - val) <= absval) {
+    diff <- abs(out.qp$value - val)
+    val <- out.qp$value
+
+    if (diff <= absval) {
       break
-    } else {
-      val <- out.qp$value
     }
-    
-    if (i == maxit && abs(out.qp$value - val) > absval) {
-      warning(gettextf("'quadprog' failed to converge in %d steps", maxit), 
+
+    if (i == maxit && diff > absval) {
+      warning(gettextf("'quadprog' failed to converge in %d steps", maxit),
               domain = NA)
-    }  
+    }
   }
 
   out <- list(qp = out.qp, s2 = s2, Niter = i)
@@ -74,20 +75,21 @@ con_solver_rlm <- function(X, y, Amat, bvec, meq,
                        bvec = bvec, 
                        meq  = meq)
       
-    if (abs(out.qp$value - val) <= absval) {
-      break
-    } else {
-      val <- out.qp$value
-    }
-    
     b.restr <- out.qp$solution
-    
-    if (i == maxit && abs(out.qp$value - val) > absval) {
-      warning(gettextf("'quadprog' failed to converge in %d steps", maxit), 
+
+    diff <- abs(out.qp$value - val)
+    val <- out.qp$value
+
+    if (diff <= absval) {
+      break
+    }
+
+    if (i == maxit && diff > absval) {
+      warning(gettextf("'quadprog' failed to converge in %d steps", maxit),
               domain = NA)
-    }  
+    }
   }
-  
+
   out <- out.qp
   out$iact <- iact
   
@@ -123,21 +125,22 @@ con_solver_glm <- function(X, y, Amat, bvec, meq,
                        meq  = meq)
     
     b.restr <- out.qp$solution
-    
-    if (abs(out.qp$value - val) <= epsilon) {
+
+    diff <- abs(out.qp$value - val)
+    val <- out.qp$value
+
+    if (diff <= epsilon) {
       break
-    } else {
-      val <- out.qp$value
     }
-    
-    if (i == maxit && abs(out.qp$value - val) > epsilon) {
-      warning(gettextf("'quadprog' failed to converge in %d steps", maxit), 
+
+    if (i == maxit && diff > epsilon) {
+      warning(gettextf("'quadprog' failed to converge in %d steps", maxit),
               domain = NA)
     }
   }
-  
+
   out <- out.qp
-  
+
   out
 }
 

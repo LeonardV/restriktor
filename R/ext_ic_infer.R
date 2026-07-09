@@ -102,47 +102,71 @@ ic_weights <- function(corr, tolerance, ridge_constant, ...) {
       bounds_cache[[size]] <- list(lower = rep(0, size), upper = rep(Inf, size))
     }
     
-    for (k in 1:half_floor) {
-      jetzt <- nchoosek(g, k)
-      n_combinations <- ncol(jetzt)
-      wjetzt <- matrix(0, n_combinations, 2)
-      
+    # flatten all (k, combination) pairs into one task list, so that with an
+    # active (non-sequential) future plan a single future_lapply round
+    # distributes all pmvnorm calls over the workers. Sequentially the task
+    # order is identical to the original nested loops, so the RNG stream and
+    # hence the result are unchanged. For small g the parallel overhead
+    # exceeds the gain.
+    jetzt_list <- lapply(1:half_floor, function(k) nchoosek(g, k))
+    task_k <- rep(1:half_floor, vapply(jetzt_list, ncol, integer(1)))
+    task_j <- unlist(lapply(jetzt_list, function(m) seq_len(ncol(m))))
+
+    combination_weights <- function(i) {
+      k <- task_k[i]
+      diese <- jetzt_list[[k]][, task_j[i]]
+      andere <- setdiff(liste, diese)
+
       lower_k <- bounds_cache[[k]]$lower
       upper_k <- bounds_cache[[k]]$upper
       gk <- g - k
       lower_gk <- bounds_cache[[gk]]$lower
       upper_gk <- bounds_cache[[gk]]$upper
-      
-      is_symmetric <- (k == (g - 2) / 2)
-      
-      for (j in 1:n_combinations) {
-        diese <- jetzt[, j]
-        andere <- setdiff(liste, diese)
-        
-        corr_diese_inv <- solve(corr[diese, diese, drop = FALSE])
-        
-        corr_andere_diese <- corr[andere, diese, drop = FALSE]
-        corr_diese_andere <- corr[diese, andere, drop = FALSE]
-        corr_andere <- corr[andere, andere, drop = FALSE]
-        
-        hilf1 <- corr_andere - corr_andere_diese %*% (corr_diese_inv %*% corr_diese_andere)
-        
-        wjetzt[j, 1] <- .orthant_prob(corr_diese_inv, lower_k, upper_k, ...) * 
-          .orthant_prob(hilf1, lower_gk, upper_gk, ...)
-        
-        if (!is_symmetric) {
-          corr_andere_inv <- solve(corr[andere, andere, drop = FALSE])
-          
-          hilf2 <- corr[diese, diese, drop = FALSE] - 
-            corr_diese_andere %*% (corr_andere_inv %*% corr_andere_diese)
-          
-          wjetzt[j, 2] <- .orthant_prob(corr_andere_inv, lower_gk, upper_gk, ...) * 
-            .orthant_prob(hilf2, lower_k, upper_k, ...)
-        }
+
+      corr_diese_inv <- solve(corr[diese, diese, drop = FALSE])
+
+      corr_andere_diese <- corr[andere, diese, drop = FALSE]
+      corr_diese_andere <- corr[diese, andere, drop = FALSE]
+      corr_andere <- corr[andere, andere, drop = FALSE]
+
+      hilf1 <- corr_andere - corr_andere_diese %*% (corr_diese_inv %*% corr_diese_andere)
+
+      w1 <- .orthant_prob(corr_diese_inv, lower_k, upper_k, ...) *
+        .orthant_prob(hilf1, lower_gk, upper_gk, ...)
+
+      w2 <- 0
+      if (k != (g - 2) / 2) {
+        corr_andere_inv <- solve(corr[andere, andere, drop = FALSE])
+
+        hilf2 <- corr[diese, diese, drop = FALSE] -
+          corr_diese_andere %*% (corr_andere_inv %*% corr_andere_diese)
+
+        w2 <- .orthant_prob(corr_andere_inv, lower_gk, upper_gk, ...) *
+          .orthant_prob(hilf2, lower_k, upper_k, ...)
       }
-      
-      weights[k + 1] <- sum(wjetzt[, 1])
-      weights[g + 1 - k] <- sum(wjetzt[, 2])
+      c(w1, w2)
+    }
+
+    # forked workers (multicore) have little overhead and pay off from g = 10;
+    # multisession/cluster workers pay serialization per chunk and only win
+    # for larger problems
+    active_plan <- future::plan()
+    min_g <- if (inherits(active_plan, "multicore")) 10L else 12L
+    use_future <- !inherits(active_plan, "sequential") && g >= min_g
+    res <- if (use_future) {
+      # future.seed: pmvnorm (GenzBretz) draws random numbers.
+      # future.scheduling > 1: tasks differ in cost (the symmetric-k tasks
+      # skip half the work), finer chunks avoid load imbalance.
+      future_lapply(seq_along(task_k), combination_weights,
+                    future.seed = TRUE, future.scheduling = 4)
+    } else {
+      lapply(seq_along(task_k), combination_weights)
+    }
+    wjetzt <- do.call(rbind, res)
+
+    for (k in 1:half_floor) {
+      weights[k + 1] <- sum(wjetzt[task_k == k, 1])
+      weights[g + 1 - k] <- sum(wjetzt[task_k == k, 2])
     }
     
     if (g %% 2 == 0) {

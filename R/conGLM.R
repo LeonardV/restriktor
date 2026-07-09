@@ -198,7 +198,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
     # weights
     weights <- weights(fit.glmc, "working")
     # compute restricted dispersion
-    df.residual <- n - (p - qr(Amat[0:meq,])$rank)
+    df.residual <- n - (p - qr(Amat[seq_len(meq), , drop = FALSE])$rank)
     
     if (fit.glmc$family$family %in% c("poisson", "binomial")) {
       dispersion <- 1

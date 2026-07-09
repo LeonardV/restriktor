@@ -131,7 +131,8 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   start.time <- proc.time()[3]
   
   # compute residual degreees of freedom, corrected for equality constraints.
-  df.residual <- n - (p - qr(Amat[0:meq, ])$rank)
+  df.residual <- n - (p - qr(Amat[seq_len(meq), , drop = FALSE])$rank)
+  
   
   # check if the constraints are not in line with the data, else skip optimization
   if (all(Amat %*% c(b.unrestr) - bvec >= 0 * bvec) && meq == 0) {

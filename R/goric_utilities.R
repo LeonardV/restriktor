@@ -84,7 +84,8 @@ VCOV.unbiased <- function(model.org, sample_nobs = NULL, ...)  {
     # is dan ms toch een Rmd instelling....
     }
   # Check on N
-  if(!is.null(N) && sample_nobs != N) {
+  #if(!is.null(N) && sample_nobs != N) {
+  if (!is.null(N) && !is.null(sample_nobs) && sample_nobs != N) {
     message(paste0(
     "\nrestriktor Message: The specified 'sample_nobs' (or its sum = ", sample_nobs, 
     ") differs from the sample size determined from the fitted model (", N, "). ",

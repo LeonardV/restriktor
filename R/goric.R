@@ -212,6 +212,15 @@ goric.default <- function(object, ..., hypotheses = NULL,
     #c(t(coef(fit))) # per param de waardes voor de DVs
     #vcov(fit) # per DV de param
     
+    # TO DO CHECK
+    # als lm en dan multivariate (dus cbind(Y1, Y2) ~ x1 + x2 oid)
+    # Dan werkt het volgens mij niet.
+    # Komt iig door naamgeving van parameters 
+    # (dan ook geen vector van estimates met coef() en dus gorica ook niet makkelijk)
+    # Als we namen zouden toestaan (evt iets aangepast zoals bij intercept en interactie),
+    # zou het dan wel werken? Kortom, multivar wel ingebouwd? (goric wel voor afgeleid...)
+    
+    
     # standard errors are not needed
     ldots$se <- "none"
     

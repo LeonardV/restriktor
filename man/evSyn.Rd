@@ -109,6 +109,7 @@ xlab_unordered = NULL, angle_x = 30, \dots)
       \item a list of objects of class goric;
       \item a data.frame of class escalc from the \pkg{metafor} package or a regular data.frame using the same labelling;
     }
+    In the case of the first or last option, \code{evSyn} will calculate the GORICA (incl. log-likelihood and penalty) for each study using \code{goric}.
   }
   
   \item{input_type}{

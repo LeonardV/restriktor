@@ -720,7 +720,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
                                  R        = attr(object$wt.bar, "mix_weights_bootstrap_limit"),
                                  seed     = seed,
                                  convergence_crit = ifelse(is.null(control$convergence_crit), 
-                                                           1e-03, control$convergence_crit),
+                                                           5e-03, control$convergence_crit),
                                  chunk_size = ifelse(is.null(control$chunk_size), 
                                                            5000L, control$chunk_size),
                                  verbose = verbose)

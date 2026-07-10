@@ -134,10 +134,35 @@ Aandachtspunten bij een echte vervanging:
 5. `nnls` faalt in de praktijk niet (geen `error.idx`-mechanisme nodig), maar
    de teldrempel (`x > tol`) verdient een vaste, gedocumenteerde tolerantie.
 
-> **Status:** de duale NNLS-motor is inmiddels geïmplementeerd als standaard
-> engine in `con_weights_boot()` (`R/compute_chiBarSquare_weights.R`), met het
-> oude rtmvnorm + quadprog-pad als fallback wanneer truncatie-argumenten via
-> `...` worden meegegeven. Zie `tests/testthat/test-con_weights_boot.R`.
+> **Status:** de duale NNLS-motor is geïmplementeerd als standaard engine in
+> `con_weights_boot()` (`R/compute_chiBarSquare_weights.R`), met het oude
+> rtmvnorm + quadprog-pad als fallback wanneer truncatie-argumenten via `...`
+> worden meegegeven. Zie `tests/testthat/test-con_weights_boot.R`.
+>
+> Naar aanleiding van review is bovendien:
+>
+> - de **per-draw equivalentie** met `solve.QP` aangetoond met gedeelde
+>   trekkingen: 100% overeenstemming in vijf scenario's × 20.000 draws,
+>   inclusief meq > 0, bijna-afhankelijke rijen, exact gedupliceerde rijen en
+>   veel simultaan actieve restricties (`check_shared_draws.R`; let op de
+>   tekenconventie z ↔ −Uᵀz̃ die daar wordt toegelicht);
+> - de **stopregel vervangen**: de oude regel vergeleek opeenvolgende
+>   cumulatieve gewichten (die convergeren vanzelf, ongeacht de werkelijke
+>   MC-fout — empirisch: stop bij crit 1e-3 met werkelijke fout 0.0057).
+>   De nieuwe regel stopt zodra de 95%-CI-halfbreedte (1.96 × MC-SE) van elk
+>   gewicht onder `convergence_crit` ligt, met de SE geschat uit de
+>   between-pair variantie van de antithetische paren (nnls-engine) dan wel
+>   de binomiale variantie (quadprog-engine). De default is herijkt naar
+>   5e-3 (vergelijkbare runtime, maar nu een echte precisiegarantie —
+>   gemeten: claim 0.0050, werkelijke fout 0.0014). Het attribuut `mc_se`
+>   rapporteert de SE per gewicht;
+> - **antithetic sampling genuanceerd**: de variantiereductie is groot voor
+>   de penalty (sd-ratio ~1.6 = variantiefactor ~2.6) maar per afzonderlijk
+>   gewicht wisselend; daarom schat de stopregel de SE's empirisch in plaats
+>   van onafhankelijkheid aan te nemen;
+> - **inputvalidatie** toegevoegd (dimensies, symmetrie, PD via chol, meq/R/
+>   chunk_size/convergence_crit), plus een rank-check op de equality-rijen en
+>   een guard tegen `n_valid == 0`.
 
 ## 4. Aanbeveling
 

@@ -8,8 +8,8 @@ inequality constraints takes the form of mixtures of F-distributions.
 This function computes these mixing weights (a.k.a chi-bar-square weights
 and level probabilities). 
 }
-\usage{con_weights_boot(VCOV, Amat, meq, R = 1e5L, 
-                 chunk_size = 5000L, convergence_crit = 1e-03, 
+\usage{con_weights_boot(VCOV, Amat, meq, R = 1e5L,
+                 chunk_size = 5000L, convergence_crit = 5e-03,
                  seed = NULL, verbose = FALSE, ...)
 }
 
@@ -41,8 +41,11 @@ and level probabilities).
   weights converges (see \code{convergenge_crit}) or the maximum is reached, i.e.,
   mix_weights_bootstrap_limit.}
   
-  \item{convergence_crit}{the convergence criterion for the iterative process. 
-  The default is 1e-03. See details for more information.}
+  \item{convergence_crit}{the target Monte Carlo precision of the weights:
+  the function stops adding chunks once the 95\% confidence half-width
+  (1.96 times the Monte Carlo standard error) of every weight is below
+  \code{convergence_crit}. The default is 5e-03. Set to 0 to always use all
+  \code{R} draws. See details for more information.}
 
   \item{seed}{seed value.}
 
@@ -63,28 +66,29 @@ projection is computed through its dual formulation: a nonnegative
 least-squares problem with a fixed design matrix, solved by the
 Lawson-Hanson algorithm (\code{nnls}). This is considerably faster per draw
 than solving the quadratic program directly and its cost does not grow with
-the number of parameters. Antithetic pairs are used to reduce the Monte
-Carlo variance. When additional arguments for \code{rtmvnorm} are supplied
-through \ldots, the original \code{rtmvnorm} + \code{solve.QP} engine is
-used instead. The attribute \code{engine} reports which engine produced the
-weights.
+the number of parameters. The draws are generated in antithetic pairs
+(z, -z), which reduces the Monte Carlo variance of the resulting penalty.
+When additional arguments for \code{rtmvnorm} are supplied through \ldots,
+the original \code{rtmvnorm} + \code{solve.QP} engine is used instead. The
+attribute \code{engine} reports which engine produced the weights.
 
 ## Iterative Weight Updating and Convergence Checking ##
-The function adds in each run chunks of 5000 samples (default) to compute 
-the chi-bar-square weights. After each iteration, the function checks if the 
-weights have converged. This is determined by the convergence_crit parameter.
+The function adds in each run chunks of 5000 samples (default) to compute
+the chi-bar-square weights. After each chunk, the Monte Carlo standard
+error of each weight is estimated: from the between-pair variance of the
+antithetic pairs (default engine), or from the binomial variance
+(\code{rtmvnorm} + \code{solve.QP} engine, independent draws). The
+function stops when 1.96 times the largest standard error -- the 95\%
+confidence half-width of the least precise weight -- falls below
+\code{convergence_crit}, so the criterion directly bounds the Monte Carlo
+uncertainty of the reported weights.
 
-Convergence is assessed by comparing the absolute difference between the 
-current and previous iteration's weights against the convergence_crit. If the 
-change in weights is smaller than the convergence criterion, it indicates that 
-the weights have stabilized, suggesting convergence.
-
-If the weights have not converged and the \code{mix_weights_bootstrap_limit} has 
-not been reached, the function proceeds with adding another set of 5000 samples 
-and updates the weights accordingly.If the maximum number of iterations is 
-reached without convergence, the function returns the (non-converged) weights. 
-In this situation, it is advisible to increase the number of 
-\code{mix_weights_bootstrap_limit}.
+If this precision has not been reached and the
+\code{mix_weights_bootstrap_limit} has not been reached, the function
+proceeds with adding another set of 5000 samples and updates the weights
+accordingly. If the maximum number of draws is reached without convergence,
+the function returns the (non-converged) weights. In this situation, it is
+advisible to increase the number of \code{mix_weights_bootstrap_limit}.
 }
 
 
@@ -101,6 +105,9 @@ weights with the following attributes:
 \item{chunk_iter}{number of iterations run}
 \item{error.idx}{which bootstrap samples were not succesful}
 \item{mix_weights_bootstrap_limit}{the maximum number of bootstrap draws}
+\item{engine}{which computational engine produced the weights: "nnls"
+(default) or "quadprog"}
+\item{mc_se}{the estimated Monte Carlo standard error of each weight}
 }
 
 \references{

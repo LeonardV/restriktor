@@ -621,9 +621,9 @@ if (requireNamespace("metadat", quietly = TRUE)) {
   plot(evS_escalc_a)
   
   evSynplot <- plot(evS_escalc_a)
-  cols_subset <- ifelse(data_a$year < 1983, "darkgray", "black")
+  cols_subgroup <- ifelse(data_a$year < 1983, "darkgray", "black")
   library(ggplot2)
-  evSynplot + theme(axis.text.x = element_text(colour = cols_subset))
+  evSynplot + theme(axis.text.x = element_text(colour = cols_subgroup))
 
 }
 
@@ -673,10 +673,14 @@ if (requireNamespace("metadat", quietly = TRUE)) {
   evS_escalc_c
   plot(evS_escalc_c)
   
+  #Plot option
+  #The evSyn plot is a ggplot and can be changed as such. 
+  #As an example, one could change the x-axis colors based on the value(s) of another variable (in a way, looking at subgroups).
+  #Next, we set the colors based on two subgroups of studies, those published before 1983 (dark-gray) and those published that year or later (black):
   evSynplot <- plot(evS_escalc_c)
-  cols_subset <- ifelse(data_a$year < 1983, "darkgray", "black")
+  cols_subgroup <- ifelse(data_a$year < 1983, "darkgray", "black")
   library(ggplot2)
-  evSynplot + theme(axis.text.x = element_text(colour = cols_subset))
+  evSynplot + theme(axis.text.x = element_text(colour = cols_subgroup))
 
 }
 

@@ -111,10 +111,14 @@ leave1studyout.evSyn <- function(object, ...) {
     
     keep <- seq_len(S) != s
     
+    # Evt moet hier dan ook nog penalty_factor in verwerlt worden:
+    # -2 * colSums(LL_m[keep,]) + penalty_factor * colMeans(PT_m[keep,])  
+    # Of hebben we die term alleen in goric() ms
+    
     OverallGoric[s, ] <- switch(
       type_ev,
       added   = colSums(IC_m[keep, , drop = FALSE]),
-      equal   = colSums(-LL_m[keep, , drop = FALSE]) + colMeans(PT_m[keep, , drop = FALSE]),
+      equal   = -2 * colSums(LL_m[keep, , drop = FALSE]) + 2 * colMeans(PT_m[keep, , drop = FALSE]),
       average = colMeans(IC_m[keep, , drop = FALSE])
     )
     

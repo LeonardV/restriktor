@@ -6,11 +6,11 @@ conTestD <- function(model = NULL, data = NULL, constraints = NULL,
                      parallel = c("no", "multicore", "snow"), 
                      ncpus = 1L, cl = NULL, verbose = FALSE, ...) {
 
+  stopifnot(!is.null(constraints), all(type %in% c("A", "B")))
+
   # fit unrestricted model
   fit.h2 <- sem(model, ..., data = data, test = "standard") #se = "none"
-  
-  stopifnot(!is.null(constraints))
-  
+
   ## fit null-model
   # add constraints to parameter table
   CON <- attr(lavParseModelString(constraints), "constraints")
@@ -27,12 +27,13 @@ conTestD <- function(model = NULL, data = NULL, constraints = NULL,
       this.op  <- CON[[con]]$op
       this.rhs <- CON[[con]]$rhs
       
-      # find this line in user.equal@ParTable
-      idx <- which(user.equal$lhs == this.lhs,
-                   user.equal$op  == this.op,
+      # find this line in user.equal
+      idx <- which(user.equal$lhs == this.lhs &
+                   user.equal$op  == this.op &
                    user.equal$rhs == this.rhs)
-      if (length(idx) == 0L) { # not found, give warning?
-        stop("lavaan ERROR: no inequality constraints (<, >) found.")
+      if (length(idx) == 0L) {
+        stop("restriktor ERROR: constraint ", this.lhs, " ", this.op, " ",
+             this.rhs, " not found in the parameter table.")
       }
       
       # change operator to ==
@@ -68,8 +69,8 @@ conTestD <- function(model = NULL, data = NULL, constraints = NULL,
   output <- list(fit.h0 = fit.h0, fit.h2 = fit.h2,
                  double.bootstrap = double.bootstrap, 
                  double.bootstrap.alpha = double.bootstrap.alpha, 
-                 return.test = return.test, 
-                 type = bootstrap.type)
+                 return.test = return.test,
+                 bootstrap.type = bootstrap.type)
   
   if ("A" %in% type) {
     output$bootA <- bootA

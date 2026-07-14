@@ -257,7 +257,7 @@ print.conTestLavaan <- function(x, digits = max(3, getOption("digits") - 2), ...
   cat("  Total sample size               :", sum(unlist(object$fit.h2@Data@norig)), "\n\n")
   cat("  Estimator                       :", object$fit.h2@Options$estimator, "\n")
   cat("  Missing data                    :", object$fit.h2@Options$missing, "\n")
-  cat("  Bootstrap method                :", object$type, "\n")
+  cat("  Bootstrap method                :", object$bootstrap.type, "\n")
   cat("  Double bootstrap method         :", object$double.bootstrap, "\n")
   
   dbtype <- object$double.bootstrap

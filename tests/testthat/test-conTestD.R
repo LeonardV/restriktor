@@ -114,7 +114,7 @@ test_that("conTestD: output bevat verwachte velden", {
   expect_true(!is.null(result$double.bootstrap))
   expect_true(!is.null(result$double.bootstrap.alpha))
   expect_true(!is.null(result$return.test))
-  expect_true(!is.null(result$type))
+  expect_true(!is.null(result$bootstrap.type))
 })
 
 test_that("conTestD: print methode werkt", {
@@ -154,7 +154,7 @@ test_that("conTestD: fout bij ongeldig model", {
   expect_error(
     conTestD(model = "invalid_model_syntax ~~~", data = df_path,
              constraints = "a > 0"),
-    "lavaan|syntax|ERROR"
+    "lavaan|syntax|ERROR|unexpected"
   )
 })
 

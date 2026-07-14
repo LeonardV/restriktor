@@ -1,56 +1,122 @@
-## restrikor ##
-Restriktor is a free, open source R package for linear equality and inequality 
-constrained statistical estimation, inference and evaluation for linear models. 
+# restriktor
 
+**Restricted statistical estimation and inference for linear models**
 
-#### Install R ####
-Restriktor is implemented as an R package. This means that before installing
-restriktor, you should have installed a recent version (>= 4.0.0) of R. You can
-download the latest version of R from the
-[R-project website](https://www.r-project.org).
+[![CRAN status](https://www.r-pkg.org/badges/version/restriktor)](https://CRAN.R-project.org/package=restriktor)
+[![License: GPL v2+](https://img.shields.io/badge/License-GPL%20v2%2B-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 
-#### Install Graphical User Interface (GUI) ####
-R is a command line driven program. This means that it does not have a graphical
-user interface (GUI). Luckily, there are many good GUI's to make life easier, for
-example Rstudio, R Commander and RKWard.
+`restriktor` is a free, open-source R package for estimating, testing, and
+evaluating linear equality and inequality constraints on parameters in linear
+models. Typical applications are informative (theory-based) hypotheses such as
+`mu1 < mu2 < mu3`, where the substantive theory predicts an ordering of means,
+effects, or regression coefficients.
 
-#### Install restriktor ####
-Once you have installed R, the next step is to install restriktor. This can be
-done by typing in R:
+Website: [restriktor.org](https://restriktor.org) · CRAN:
+[restriktor](https://CRAN.R-project.org/package=restriktor)
 
-`install.packages("restriktor", dependencies = TRUE)`
+## Features
 
-To check if the installation was successful, you can load the restriktor package
-and try for example:
+- **Restricted estimation** — maximum likelihood estimates of linear model
+  parameters subject to equality and/or inequality constraints, for `lm`,
+  `glm`, `rlm` (robust), and `mlm` (multivariate) models, with a user-friendly
+  text-based constraint syntax.
+- **Informative hypothesis testing (IHT)** — F-bar, LR-bar, score-bar, and
+  Wald-bar tests (`iht()` / `conTest()`), including standard-error types for
+  heteroskedasticity (HC) and mixtures of F-distributions for the
+  null-distribution (chi-bar-square weights).
+- **GORIC and GORICA** — the Generalized Order-Restricted Information
+  Criterion (`goric()`) and its approximation for model selection among
+  informative hypotheses, including comparison against the complement or the
+  unconstrained model, and support for `lavaan` structural equation models.
+- **Evidence synthesis** — aggregate GORIC(A) evidence for a central theory
+  over multiple, possibly heterogeneous studies (`evSyn()`), with
+  leave-one-study-out sensitivity analysis (`leave1studyout()`).
+- **Benchmarks** — put GORIC(A) weights into perspective using
+  simulation-based benchmarks (`benchmark()`).
+- **Utilities** — IC weights from any information criterion
+  (`calc_ICweights()`), chi-bar-square weights via simulation
+  (`con_weights_boot()`), and parametric bootstrap tests for `lavaan` models
+  (`conTestD()`).
 
+## Installation
+
+Install the released version from CRAN:
+
+```r
+install.packages("restriktor", dependencies = TRUE)
 ```
+
+Or install the development version from GitHub:
+
+```r
+# install.packages("remotes")
+remotes::install_github("LeonardV/restriktor")
+```
+
+`restriktor` requires R >= 4.0.0.
+
+## Getting started
+
+The example below uses the built-in `ZelazoKolb1972` data: the age (in months)
+at which infants started walking, for four treatment groups. The theory states
+that the active training group walks first, followed by the passive training
+group, the control group, and the no-exercise group.
+
+```r
 library(restriktor)
 
-# construct constraint syntax based on the factor level names
+# fit the unrestricted ANOVA model (cell means: -1 removes the intercept)
+fit <- lm(Age ~ -1 + Group, data = ZelazoKolb1972)
+
+# constraint syntax based on the factor-level names
 constraints <- 'GroupActive < GroupPassive < GroupControl < GroupNo'
+
+# restricted estimation
+rfit <- restriktor(fit, constraints = constraints)
+summary(rfit)
+
+# informative hypothesis test (F-bar test)
+iht(rfit)
+
+# GORIC: compare the order-restricted hypothesis against its complement
+goric(fit, hypotheses = list(H1 = constraints), comparison = "complement")
 ```
 
-Fit the unrestricted linear model, where "Age" is the response
-variable and `"Group"` a factor with four treatment groups.
+The constraint syntax also supports equalities (`==`), linear combinations
+(e.g. `2*x1 + x2 > 0`), and matrix notation for full control. See
+`?restriktor` and `?goric` for details.
 
-`fit.ANOVA <- lm(Age ~ -1 + Group, data = ZelazoKolb1972)`
+## Documentation
 
-```
-# fit the restricted model
-restr.ANOVA <- restriktor(fit.ANOVA, constraints = constraints)
+- [restriktor.org](https://restriktor.org) — tutorials, examples, and
+  background on informative hypothesis testing and the GORIC(A).
+- Package vignettes — GORIC(A) tutorials, evidence-synthesis workflows, and
+  guidelines for interpreting GORIC(A) output and benchmarks:
+  `browseVignettes("restriktor")`.
 
+## Citing restriktor
 
-# summary of the restricted parameter estimates
-summary(restr.ANOVA)
+If you use `restriktor` in your work, please cite it. Run
+`citation("restriktor")` in R for the preferred reference.
 
+Key methodological references:
 
-# informative hypothesis tests
-iht(restr.ANOVA)
+- Silvapulle, M. J., & Sen, P. K. (2005). *Constrained Statistical Inference:
+  Order, Inequality, and Shape Constraints.* Wiley.
+- Kuiper, R. M., Hoijtink, H., & Silvapulle, M. J. (2011). An Akaike-type
+  information criterion for model selection under inequality constraints.
+  *Biometrika, 98*(2), 495–501.
+- Vanbrabant, L., Van de Schoot, R., & Rosseel, Y. (2015). Constrained
+  statistical inference: sample-size tables for ANOVA and regression.
+  *Frontiers in Psychology, 5*, 1565.
 
-# Generalized Order-Restricted Information Criterion (GORIC)
-goric(restr.ANOVA, comparison = "complement")
-```
+## Getting help and contributing
 
-If you can see the output, everything is set up and ready.
+- Questions and bug reports: [GitHub issues](https://github.com/LeonardV/restriktor/issues)
+  or info@restriktor.org.
+- Contributions are welcome — please open an issue first to discuss what you
+  would like to change.
 
-For more information see [the restriktor website](https://restriktor.org/).
+## License
+
+GPL (>= 2)

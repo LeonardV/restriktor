@@ -123,8 +123,9 @@ restriktor(object, constraints = NULL, \dots)
       \item \code{mix_weights_bootstrap_limit} integer; maximum number of bootstrap draws.
       The default value is set to 1e5.
       
-      \item \code{convergence_crit} the convergence criterion for the iterative bootstrap
-      process. Default is 1e-03.
+      \item \code{convergence_crit} the target Monte Carlo precision of the
+      chi-bar-square weights: sampling stops once the 95\% confidence
+      half-width of every weight is below this value. Default is 5e-03.
     }
   }
   \item{verbose}{logical; if TRUE, information is shown at each bootstrap draw.}

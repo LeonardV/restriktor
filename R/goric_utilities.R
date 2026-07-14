@@ -84,7 +84,8 @@ VCOV.unbiased <- function(model.org, sample_nobs = NULL, ...)  {
     # is dan ms toch een Rmd instelling....
     }
   # Check on N
-  if(!is.null(N) && sample_nobs != N) {
+  #if(!is.null(N) && sample_nobs != N) {
+  if (!is.null(N) && !is.null(sample_nobs) && sample_nobs != N) {
     message(paste0(
     "\nrestriktor Message: The specified 'sample_nobs' (or its sum = ", sample_nobs, 
     ") differs from the sample size determined from the fitted model (", N, "). ",
@@ -252,7 +253,7 @@ calculate_weight_bar <- function(Amat, meq, VCOV, mix_weights, seed, control,
                                              1e5L, control$mix_weights_bootstrap_limit),
                                seed = seed,
                                convergence_crit = ifelse(is.null(control$convergence_crit), 
-                                                         1e-03, control$convergence_crit),
+                                                         5e-03, control$convergence_crit),
                                chunk_size = ifelse(is.null(control$chunk_size), 
                                                    5000L, control$chunk_size),
                                verbose = verbose, ...)
@@ -274,7 +275,7 @@ calculate_weight_bar <- function(Amat, meq, VCOV, mix_weights, seed, control,
                                                1e5L, control$mix_weights_bootstrap_limit),
                                  seed = seed,
                                  convergence_crit = ifelse(is.null(control$convergence_crit), 
-                                                           1e-03, control$convergence_crit),
+                                                           5e-03, control$convergence_crit),
                                  chunk_size = ifelse(is.null(control$chunk_size), 
                                                      5000L, control$chunk_size),
                                  verbose = verbose, ...)

@@ -37,6 +37,10 @@ importFrom("tmvtnorm",
 importFrom("quadprog",
            solve.QP)
 
+# nonnegative least squares (Lawson-Hanson), engine for con_weights_boot
+importFrom("nnls",
+           nnls)
+
 importFrom("boot",
            boot,
            boot.ci)

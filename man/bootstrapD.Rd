@@ -28,9 +28,9 @@
   \item{R}{Integer. The number of bootstrap draws.}
   \item{return.D}{Logical; if \code{TRUE}, the function returns bootstrapped         
     D-values.}
-  \item{double.bootstrap}{If \code{"standard"} (default) the genuine double bootstrap is 
-    used to compute an additional set of plug-in p-values for each bootstrap       
-    sample. If \code{"no"}, no double bootstrap is used. If \code{"FDB"}, 
+  \item{double.bootstrap}{If \code{"standard"} the genuine double bootstrap is
+    used to compute an additional set of plug-in p-values for each bootstrap
+    sample. If \code{"no"} (default), no double bootstrap is used. If \code{"FDB"},
     the fast double bootstrap is used to compute second level LRT-values for 
     each bootstrap sample. Note that the \code{"FDB"} is experimental and should 
     not be used by inexperienced users.}    
@@ -71,7 +71,9 @@
 }
 
 \value{
- A bootstrap p value, calculated as the proportion of bootstrap samples with a D statistic at least as large as the D statistic for the original data.
+ A bootstrap p value, calculated as \eqn{(1 + s) / (1 + R)}, where \eqn{s} is
+ the number of successful bootstrap samples with a D statistic at least as
+ large as the D statistic for the original data.
 }
 
 \examples{

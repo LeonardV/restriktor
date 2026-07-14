@@ -100,8 +100,9 @@ used directly and is called by the \code{conTest} function if \code{test = "LRT"
       of size \code{chunk_size = 5000L}. This process is repeated iteratively 
       until the weights converges (see \code{convergenge_crit}) or the maximum 
       is reached, i.e., mix_weights_bootstrap_limit.
-      \item \code{convergence_crit} the convergence criterion for the iterative 
-     process. The default is 1e-03.}
+      \item \code{convergence_crit} the target Monte Carlo precision of the
+     chi-bar-square weights: sampling stops once the 95\% confidence
+     half-width of every weight is below this value. The default is 5e-03.}
     }
   
   \item{\dots}{Additional arguments that can be passed to the p.distr function, 

@@ -208,7 +208,7 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
     R2.reduced <- mss / (mss + rss)
     
     # compute residual degreees of freedom, corrected for equality constraints.
-    df.residual <- df.residual + qr(Amat[0:meq,])$rank
+    df.residual <- df.residual + qr(Amat[seq_len(meq), , drop = FALSE])$rank
    
     OUT <- list(CON         = CON,
                 call        = mc,

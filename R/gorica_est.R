@@ -43,8 +43,8 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
                                  constraints = Amat, 
                                  bvec        = bvec, 
                                  meq         = meq, 
-                                 mix_weights = mix_weights,
-                                 se          = "none",
+                                 #mix_weights = mix_weights,
+                                 #se          = "none",
                                  debug       = debug)  
     
     # a list with useful information about the restrictions.

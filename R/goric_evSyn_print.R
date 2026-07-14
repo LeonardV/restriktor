@@ -47,12 +47,34 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     cat("Ratio of information criteria weights (each study has at least one 1)\n")
   } 
   
-  if (!is.null(x[["Cumulative_GORICA_weights"]])) {
+  
+  if (!is.null(x[["Cumulative_LL_weights"]]) && !is.null(x[["Cumulative_GORICA_weights"]])) {
+    cat(paste0("\nFinal log-likelihood & ", type_label,  " weights:\n"))
+    clw <- sapply(x[["Cumulative_LL_weights"]]["Final", , drop = FALSE], 
+                  FUN = function(x) format_numeric(x, digits = digits))
+    cgw <- sapply(x[["Cumulative_GORICA_weights"]]["Final", , drop = FALSE], 
+                  FUN = function(x) format_numeric(x, digits = digits))
+    cw <- t(rbind(clw, cgw))
+    rownames(cw) <- colnames(x[["Cumulative_LL_weights"]])
+    colnames(cw) <- c("log-likelihood", type_label)
+    print(cw, print.gap = 2, quote = FALSE, right = TRUE)
+    cat("---\n")
+    #cat("\n")
+  } else if (!is.null(x[["Cumulative_LL_weights"]])) {
+    cat(paste0("\nFinal ", "log-likelihood", " weights:\n"))
+    clw <- sapply(x[["Cumulative_LL_weights"]]["Final", , drop = FALSE], 
+                  FUN = function(x) format_numeric(x, digits = digits))
+    names(clw) <- colnames(x[["Cumulative_LL_weights"]])
+    print(clw, print.gap = 2, quote = FALSE, right = TRUE)
+    #cat("---\n")
+    cat("\n")
+  } else if (!is.null(x[["Cumulative_GORICA_weights"]])) {
     cat(paste0("\nFinal ", type_label, " weights:\n"))
     cgw <- sapply(x[["Cumulative_GORICA_weights"]]["Final", , drop = FALSE], 
                   FUN = function(x) format_numeric(x, digits = digits))
     names(cgw) <- colnames(x[["Cumulative_GORICA_weights"]])
     print(cgw, print.gap = 2, quote = FALSE, right = TRUE)
+    cat("\n")
     cat("---\n")
   }
   
@@ -61,6 +83,8 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
                              function(val) format_numeric(val, digits = digits))
   print(formatted_weights, print.gap = 2, quote = FALSE, right = TRUE)
   cat("\n")
+  
+
   
   message(x[["messages"]]$mix_weights)
 }

@@ -183,6 +183,10 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
       comparison <- "complement"
     } else {
       comparison <- "unconstrained"
+      # Note: in the case of a list in a list,
+      # and only one hypothesis in the sub-lists, then:
+      # comparison <- "complement"
+      # which is done below.
     }
   }
   
@@ -306,6 +310,13 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     stop("\nrestriktor ERROR: The number of hypothesis sets (", length(len_H), 
          ") does not match the number of studies (", S, ").",
          call. = FALSE)
+  }
+  
+  # Note: in the case of a list in a list, 
+  # and only one hypothesis in the sub-lists, then:
+  # comparison <- "complement"
+  if (all(len_H == 1)) {
+    comparison <- "complement"
   }
   
   complement_check <- all(len_H == 1)

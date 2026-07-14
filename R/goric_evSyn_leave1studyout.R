@@ -114,8 +114,7 @@ leave1studyout.evSyn <- function(object, ...) {
     OverallGoric[s, ] <- switch(
       type_ev,
       added   = colSums(IC_m[keep, , drop = FALSE]),
-      equal   = colSums(-LL_m[keep, , drop = FALSE]) +
-        colMeans(PT_m[keep, , drop = FALSE]),
+      equal   = colSums(-LL_m[keep, , drop = FALSE]) + colMeans(PT_m[keep, , drop = FALSE]),
       average = colMeans(IC_m[keep, , drop = FALSE])
     )
     

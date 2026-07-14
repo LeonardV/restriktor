@@ -1,4 +1,3 @@
-
 plot.conTestLavaan <- function(x, ...,
                                type       = c("test", "ppv"),
                                main       = "main",
@@ -32,6 +31,8 @@ plot.conTestLavaan <- function(x, ...,
   if (length(type) == 2) {
     par(mfrow = c(2, 2))
   }
+  
+  type <- match.arg(type)
   
   if (return.test && (type == "test" || length(type) == 2)) {
     D.obs  <- c(attr(object$bootA, "D.original"),

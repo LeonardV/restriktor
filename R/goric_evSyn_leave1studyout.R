@@ -62,9 +62,17 @@ leave1studyout.evSyn <- function(object, ...) {
   if (type_ev == "equal") {
     LL_m <- object$LL_m
     PT_m <- object$PT_m
-    
+
     if (is.null(LL_m) || is.null(PT_m)) {
       stop("restriktor ERROR: LL_m and PT_m are required for type_ev = 'equal'.")
+    }
+
+    # Use the same penalty factor as in the original evSyn call, so that the
+    # leave-one-out ICs are consistent with the study-specific ICs.
+    # Default to 2 for (older) evSyn objects that do not store it.
+    penalty_factor <- object$penalty_factor
+    if (is.null(penalty_factor)) {
+      penalty_factor <- 2
     }
   }
   
@@ -111,14 +119,13 @@ leave1studyout.evSyn <- function(object, ...) {
     
     keep <- seq_len(S) != s
     
-    # Evt moet hier dan ook nog penalty_factor in verwerlt worden:
-    # -2 * colSums(LL_m[keep,]) + penalty_factor * colMeans(PT_m[keep,])  
-    # Of hebben we die term alleen in goric() ms
-    
+    # For "added" and "average" the IC values already contain the penalty
+    # factor used per study; only "equal" recombines LL and PT and thus needs
+    # the penalty factor explicitly.
     OverallGoric[s, ] <- switch(
       type_ev,
       added   = colSums(IC_m[keep, , drop = FALSE]),
-      equal   = -2 * colSums(LL_m[keep, , drop = FALSE]) + 2 * colMeans(PT_m[keep, , drop = FALSE]),
+      equal   = -2 * colSums(LL_m[keep, , drop = FALSE]) + penalty_factor * colMeans(PT_m[keep, , drop = FALSE]),
       average = colMeans(IC_m[keep, , drop = FALSE])
     )
     

@@ -160,13 +160,20 @@ evSyn <- function(object, input_type = NULL, ...) {
 # GORIC(A) evidence synthesis based on the (standardized) parameter estimates and 
 # the covariance matrix
 evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
-                      type_ev = c("added", "equal", "average"), 
+                      type_ev = c("added", "equal", "average"),
                       comparison = c("unconstrained", "complement", "none"),
                       hypo_names = c(),
                       type = c("gorica", "goricac"),
                       order_studies = c("input_order", "ascending", "descending"),
                       study_names = c(),
-                      study_sample_nobs = NULL) {
+                      study_sample_nobs = NULL,
+                      penalty_factor = 2) {
+
+  if (!is.numeric(penalty_factor) || length(penalty_factor) != 1L ||
+      is.na(penalty_factor) || penalty_factor < 0) {
+    stop("restriktor ERROR: penalty_factor must be a single non-negative numeric value.",
+         call. = FALSE)
+  }
   
   if (missing(comparison)) {
     if (length(hypotheses) == 1) {
@@ -389,6 +396,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
                        hypotheses = hypotheses[[s]],
                        type = type, comparison = comparison,
                        sample_nobs = study_sample_nobs[s],
+                       penalty_factor = penalty_factor,
                        ...)
     
     if (comparison == "unconstrained") {
@@ -420,15 +428,15 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     # Determine what the overall preferred hypothesis is.
     if (type_ev == "added") { 
       # added-evidence approach
-      OverallGoric <- colSums(-LL_m) + colSums(PT)
+      OverallGoric <- -2 * colSums(LL_m) + penalty_factor * colSums(PT)
       OverallPrefHypo <- which(OverallGoric == min(OverallGoric))
     } else if (type_ev == "equal") { 
       # equal-evidence approach
-      OverallGoric <- colSums(-LL_m) + colMeans(PT)
+      OverallGoric <- -2 * colSums(LL_m) + penalty_factor * colMeans(PT)
       OverallPrefHypo <- which(OverallGoric == min(OverallGoric))
     } else if (type_ev == "average") { 
       # average-evidence approach
-      OverallGoric <- colMeans(-LL_m) + colMeans(PT)
+      OverallGoric <- -2 * colMeans(LL_m) + penalty_factor * colMeans(PT)
       OverallPrefHypo <- which(OverallGoric == min(OverallGoric))
     } #else {}
     if (order_studies == "descending") {
@@ -475,7 +483,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     for(s in 1:S) {
       sumLL <- sumLL + LL_m[s, ]
       sumPT <- sumPT + PT[s, ]
-      CumulativeGorica[s,] <- -2 * sumLL + 2 * sumPT
+      CumulativeGorica[s,] <- -2 * sumLL + penalty_factor * sumPT
       minGoric <- min(CumulativeGorica[s, ])
       CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / 
         sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
@@ -485,7 +493,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     for(s in 1:S) {
       sumLL <- sumLL + LL_m[s, ]
       sumPT <- sumPT + PT[s, ]
-      CumulativeGorica[s,] <- -2 * sumLL + 2 * sumPT/s
+      CumulativeGorica[s,] <- -2 * sumLL + penalty_factor * sumPT/s
       minGoric <- min(CumulativeGorica[s, ])
       CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / 
         sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
@@ -495,7 +503,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     for(s in 1:S) {
       sumLL <- sumLL + LL_m[s, ]
       sumPT <- sumPT + PT[s, ]
-      CumulativeGorica[s,] <- -2 * sumLL/s + 2 * sumPT/s
+      CumulativeGorica[s,] <- -2 * sumLL/s + penalty_factor * sumPT/s
       minGoric <- min(CumulativeGorica[s, ])
       CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / 
         sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
@@ -556,6 +564,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
               order_studies = orderStudies,
               study_names = study_names,
               study_sample_nobs = study_sample_nobs,
+              penalty_factor = penalty_factor,
               PT_m = PT,
               GORICA_weight_m = GORICA_weight_m, 
               LL_weights_m = LL_weights_m,
@@ -579,14 +588,21 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
 
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on log likelihood and penalty values
-evSyn_LL <- function(object, ..., PT = list(), 
+evSyn_LL <- function(object, ..., PT = list(),
                      type_ev = c("added", "equal", "average"),
                      hypo_names = c(),
                      type = c("goric", "goricc", "gorica", "goricac"),
                      order_studies = c("input_order", "ascending", "descending"),
-                     study_names = c()) {
-  
-  if (missing(type_ev)) 
+                     study_names = c(),
+                     penalty_factor = 2) {
+
+  if (!is.numeric(penalty_factor) || length(penalty_factor) != 1L ||
+      is.na(penalty_factor) || penalty_factor < 0) {
+    stop("restriktor ERROR: penalty_factor must be a single non-negative numeric value.",
+         call. = FALSE)
+  }
+
+  if (missing(type_ev))
     type_ev <- "added"
   type_ev <- match.arg(type_ev)
   
@@ -616,7 +632,7 @@ evSyn_LL <- function(object, ..., PT = list(),
   
   LL_m <- do.call(rbind, LL_m)
   PT <- do.call(rbind, PT)
-  IC <- -2 * LL_m + 2 * PT
+  IC <- -2 * LL_m + penalty_factor * PT
   #
   GORICA_weight_m <- matrix(NA, nrow = S, ncol = (NrHypos + 1))
   for(s in 1:S) {
@@ -639,15 +655,15 @@ evSyn_LL <- function(object, ..., PT = list(),
     # Determine what the overall preferred hypothesis is.
     if (type_ev == "added") { 
       # added-evidence approach
-      OverallGoric <- colSums(-LL_m) + colSums(PT)
+      OverallGoric <- -2 * colSums(LL_m) + penalty_factor * colSums(PT)
       OverallPrefHypo <- which(OverallGoric == min(OverallGoric))
     } else if (type_ev == "equal") { 
       # equal-evidence approach
-      OverallGoric <- colSums(-LL_m) + colMeans(PT)
+      OverallGoric <- -2 * colSums(LL_m) + penalty_factor * colMeans(PT)
       OverallPrefHypo <- which(OverallGoric == min(OverallGoric))
     } else if (type_ev == "average") { 
       # average-evidence approach
-      OverallGoric <- colMeans(-LL_m) + colMeans(PT)
+      OverallGoric <- -2 * colMeans(LL_m) + penalty_factor * colMeans(PT)
       OverallPrefHypo <- which(OverallGoric == min(OverallGoric))
     } # else {}
     if (order_studies == "descending") {
@@ -722,7 +738,7 @@ evSyn_LL <- function(object, ..., PT = list(),
     for(s in 1:S) {
       sumLL <- sumLL + LL_m[s, ]
       sumPT <- sumPT + PT[s, ]
-      CumulativeGorica[s, ] <- -2 * sumLL + 2 * sumPT
+      CumulativeGorica[s, ] <- -2 * sumLL + penalty_factor * sumPT
       minGoric <- min(CumulativeGorica[s, ])
       CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / 
         sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
@@ -732,7 +748,7 @@ evSyn_LL <- function(object, ..., PT = list(),
     for (s in 1:S) {
       sumLL <- sumLL + LL_m[s, ]
       sumPT <- sumPT + PT[s, ]
-      CumulativeGorica[s, ] <- -2 * sumLL + 2 * sumPT/s
+      CumulativeGorica[s, ] <- -2 * sumLL + penalty_factor * sumPT/s
       minGoric <- min(CumulativeGorica[s, ])
       CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / 
         sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
@@ -742,7 +758,7 @@ evSyn_LL <- function(object, ..., PT = list(),
     for (s in 1:S) {
       sumLL <- sumLL + LL_m[s, ]
       sumPT <- sumPT + PT[s, ]
-      CumulativeGorica[s, ] <- -2 * sumLL/s + 2 * sumPT/s
+      CumulativeGorica[s, ] <- -2 * sumLL/s + penalty_factor * sumPT/s
       minGoric <- min(CumulativeGorica[s, ])
       CumulativeGoricaWeights[s, ] <- exp(-0.5*(CumulativeGorica[s, ]-minGoric)) / 
         sum(exp(-0.5*(CumulativeGorica[s, ]-minGoric)))
@@ -769,7 +785,8 @@ evSyn_LL <- function(object, ..., PT = list(),
     order_studies = orderStudies,
     study_names = study_names,
     #study_sample_nobs = study_sample_nobs,
-    PT_m = PT, 
+    penalty_factor = penalty_factor,
+    PT_m = PT,
     GORICA_weight_m = GORICA_weight_m,
     LL_weights_m = LL_weights_m,
     GORICA_m = IC, 
@@ -1236,7 +1253,18 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
   }
   # TO DO als small sample, dan ook sample_nobs nodig of kan het zonder?
   # TO DO check of in elke zelfde aantal hypotheses (met evt controle of failsafe ook - dit als message dan), anders werkt het ook niet
-  
+
+  # Check if all objects use the same penalty factor; it is needed to aggregate
+  # the study-specific LL and PT values consistently with the study-specific ICs.
+  object_pfs <- vapply(object, function(x) {
+    if (is.null(x$penalty_factor)) 2 else x$penalty_factor
+  }, numeric(1))
+  if (length(unique(object_pfs)) > 1) {
+    stop("\nrestriktor ERROR: All goric objects must use the same penalty_factor. Found: ",
+         paste(unique(object_pfs), collapse = ", "), ".",
+         call. = FALSE)
+  }
+
   # Create a list for the evSyn_LL.list function
   conList <- list(
     type = object[[1]]$type,
@@ -1245,11 +1273,21 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
     type_ev = type_ev,
     hypo_names = hypo_names,
     order_studies = order_studies,
-    study_names = study_names
+    study_names = study_names,
+    penalty_factor = object_pfs[1]
   )
-  
+
+  # The penalty factor stored in the goric objects is authoritative.
+  dots <- list(...)
+  if (!is.null(dots$penalty_factor) && dots$penalty_factor != object_pfs[1]) {
+    message("\nrestriktor Message: The 'penalty_factor' argument is ignored; ",
+            "the penalty factor stored in the goric objects (", object_pfs[1],
+            ") is used.")
+  }
+  dots$penalty_factor <- NULL
+
   # Call the evSyn_LL.list function and return the result
-  result <- do.call(evSyn_LL, append(conList, list(...)))
+  result <- do.call(evSyn_LL, append(conList, dots))
   # Add the type from the goric objects (evSyn_LL does not carry type)
   result$type <- object[[1]]$type
   class(result) <- c(class(result), "evSyn_gorica")

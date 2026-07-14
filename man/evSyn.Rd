@@ -35,17 +35,17 @@ evSyn(object, input_type = NULL, \ldots)
 
 # input: Parameter estimates and covariance matrix
 evSyn_est(object, \ldots, VCOV = list(), hypotheses = list(),
-          type_ev = c("added", "equal", "average"), 
+          type_ev = c("added", "equal", "average"),
           comparison = c("unconstrained", "complement", "none"),
-          hypo_names = c(), type = c("gorica", "goricac"), 
+          hypo_names = c(), type = c("gorica", "goricac"),
           order_studies = c("input_order", "ascending", "descending"),
-          study_names = c(), study_sample_nobs = NULL)
+          study_names = c(), study_sample_nobs = NULL, penalty_factor = 2)
 
 # input: Log-likelihood and penalty values
 evSyn_LL(object, \ldots, PT = list(), type_ev = c("added", "equal", "average"),
          hypo_names = c(), type = c("goric", "goricc", "gorica", "goricac"),
          order_studies = c("input_order", "ascending", "descending"),
-         study_names = c())
+         study_names = c(), penalty_factor = 2)
 
 # input: GORIC(A), ORIC, AIC values
 evSyn_ICvalues(object, \ldots, type_ev = c("added", "average"), hypo_names = c(), 
@@ -183,10 +183,18 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   If \code{NULL} (default), studies are automatically numbered 
   (1, 2, ..., K) following the order determined by \code{order_studies}.}
 
-  \item{study_sample_nobs}{a numeric vector specifying the sample size (\code{n}) 
-  for each study; only needed if \code{type = "goricac"}. 
-  In case the input is a escalc object (or a dataframe), it is inherited from the 
+  \item{study_sample_nobs}{a numeric vector specifying the sample size (\code{n})
+  for each study; only needed if \code{type = "goricac"}.
+  In case the input is a escalc object (or a dataframe), it is inherited from the
   'study_sample_nobs' column, which by default is labelled "ni".}
+
+  \item{penalty_factor}{The penalty factor adjusts the penalty in the GORIC(A) formula
+  (GORIC(A) = -2 x log-likelihood + penalty_factor x penalty). By default,
+  \code{penalty_factor = 2}, the standard for AIC-type criteria. The same penalty
+  factor is used when aggregating the evidence over the studies (and in
+  \code{leave1studyout}). When the input is a list of goric objects, the penalty
+  factor stored in those objects is used (and they must all use the same one).
+  See \code{\link{goric}} for more information.}
   
 %  \item{study_weights}{Not available yet! 
 %  a numeric vector specifying the weight for each study.
@@ -309,8 +317,9 @@ one of the S studies. For each reduced set the aggregated IC values per hypothes
 are computed using the same \code{type_ev} as in the original \code{evSyn} call:
 \itemize{
   \item \code{"added"}: column sums of the IC matrix with study \emph{s} removed.
-  \item \code{"equal"}: the column means of the PT matrix minus column sums of the LL matrix with study \emph{s}
-    removed.
+  \item \code{"equal"}: -2 times the column sums of the LL matrix plus
+    \code{penalty_factor} times the column means of the PT matrix, with study
+    \emph{s} removed (using the penalty factor from the original \code{evSyn} call).
   \item \code{"average"}: column means of the IC matrix with study \emph{s} removed.
 }
 The hypothesis with the lowest aggregated IC value is identified as the preferred 

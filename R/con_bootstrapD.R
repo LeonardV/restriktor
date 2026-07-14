@@ -7,11 +7,12 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, type = "A",
                        seed = NULL) {
   
   bootstrap.type <- tolower(bootstrap.type)
-  stopifnot(inherits(h1, "lavaan"), 
-            bootstrap.type %in% c("bollen.stine", "parametric", 
-                                  "yuan", "nonparametric", "ordinary"), 
+  stopifnot(inherits(h0, "lavaan"),
+            inherits(h1, "lavaan"),
+            bootstrap.type %in% c("bollen.stine", "parametric",
+                                  "yuan", "nonparametric", "ordinary"),
             double.bootstrap %in% c("no", "FDB", "standard"),
-            type %in% c("A", "B"))
+            length(type) == 1L, type %in% c("A", "B"))
   
   if (bootstrap.type == "nonparametric") {
     bootstrap.type <- "ordinary"
@@ -20,22 +21,19 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, type = "A",
     stop("lavaan ERROR: this function is not (yet) available if conditional.x = TRUE")
   }
   
-  old_options <- options()
-  on.exit(options(old_options))
-  options(warn = warn)
-  
   D <- rep(as.numeric(NA), R)
-  
+
   if (double.bootstrap == "FDB") {
     D.2 <- numeric(R)
   }
   else if (double.bootstrap == "standard") {
     plugin.pvalues <- numeric(R)
   }
-  if (missing(parallel)) 
+  if (missing(parallel)) {
     parallel <- "no"
-    parallel <- match.arg(parallel)
-    have_mc <- have_snow <- FALSE
+  }
+  parallel <- match.arg(parallel)
+  have_mc <- have_snow <- FALSE
   if (parallel != "no" && ncpus > 1L) {
     if (parallel == "multicore") 
       have_mc <- .Platform$OS.type != "windows"
@@ -123,8 +121,14 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, type = "A",
   ## compute original D value
   # create constraint matrix based on the character string containing the constraints.
   parTable <- as.list(parTable(h1)) 
-  conInfo  <- lav_constraints_parse(parTable, constraints = constraints, 
+  conInfo  <- lav_constraints_parse(parTable, constraints = constraints,
                                             theta = lavaan::coef(h1))
+  if (isTRUE(conInfo$ceq.nonlinear.flag) || isTRUE(conInfo$cin.nonlinear.flag)) {
+    warning("restriktor WARNING: nonlinear constraints detected. The ",
+            "constraints are linearized around the original parameter ",
+            "estimates and this linearization is reused in all bootstrap ",
+            "draws; results may be inaccurate.")
+  }
   # equality constraints
   Amat.ceq <- conInfo$ceq.JAC
   # inequality constraints
@@ -141,32 +145,36 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, type = "A",
   I.hat <- lavInspect(h1, "information")
   N <- lavaan::nobs(h1) 
   
-  if ("A" %in% type) {
+  if (type == "A") {
   ## hypothesis test Type A
   # fit equality constraint model.
     out.eq <- solve.QP(Dmat = I.hat, dvec = theta.hat %*% I.hat, Amat = t(Amat),
                        bvec = rhs, meq = nrow(Amat))
-    # fit inequality constraint model, some equality constraints may be preserved.
+    # fit inequality constraint model, equality constraints are preserved.
     out.ineq <- solve.QP(Dmat = I.hat, dvec = theta.hat %*% I.hat, Amat = t(Amat),
-                         bvec = rhs, meq = nrow(Amat.ceq)) 
-    
+                         bvec = rhs, meq = nrow(Amat.ceq))
+
     D.original <- N * 2 * (out.eq$value - out.ineq$value)
-  }
-  
-  if ("B" %in% type) {
+  } else {
   ## hypothesis test Type B
-    # fit inequality constraint model, some equality constraints may be preserved.
+    # fit inequality constraint model, equality constraints are preserved.
     out.ineq <- solve.QP(Dmat = I.hat, dvec = theta.hat %*% I.hat, Amat = t(Amat),
-                         bvec = rhs, meq = nrow(Amat.ceq)) 
-    
-    # fit unconstraint model, some equality constraints may be preserved.         FIXME
-    out.un <- solve.QP(Dmat = I.hat, dvec = theta.hat %*% I.hat, 
-                       Amat = t(matrix(0, nrow = dim(Amat)[1], ncol = dim(Amat)[2])),
-                       bvec = rep(0, length(rhs)), meq = 0)
-    
-    D.original <- N * 2 * (out.ineq$value - out.un$value)
+                         bvec = rhs, meq = nrow(Amat.ceq))
+
+    # fit unconstrained model, equality constraints are preserved.
+    if (nrow(Amat.ceq) > 0L) {
+      out.un <- solve.QP(Dmat = I.hat, dvec = theta.hat %*% I.hat,
+                         Amat = t(Amat.ceq), bvec = rhs.ceq,
+                         meq = nrow(Amat.ceq))
+      value.un <- out.un$value
+    } else {
+      # without any constraints the minimum lies at theta.hat
+      value.un <- -0.5 * c(theta.hat %*% I.hat %*% theta.hat)
+    }
+
+    D.original <- N * 2 * (out.ineq$value - value.un)
   }
-  
+
   
   fn <- function(b) {
     if (bootstrap.type == "bollen.stine" || bootstrap.type == "ordinary" || 
@@ -253,33 +261,44 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, type = "A",
     I.hat.boot <- lavInspect(fit.boot.h1, "information")
     
 
-    if ("A" %in% type) {
-    # hypothesis test Type A
-      out.eq.boot   <- solve.QP(Dmat = I.hat.boot, dvec = theta.hat.boot %*% I.hat.boot, Amat = t(Amat),
-                                bvec = rhs, meq = nrow(Amat))
-      out.ineq.boot <- solve.QP(Dmat = I.hat.boot, dvec = theta.hat.boot %*% I.hat.boot, Amat = t(Amat),
-                                bvec = rhs, meq = nrow(Amat.ceq))
-      
-      D.boot <- N * 2 * (out.eq.boot$value - out.ineq.boot$value)
+    D.boot <- try({
+      if (type == "A") {
+      # hypothesis test Type A
+        out.eq.boot   <- solve.QP(Dmat = I.hat.boot, dvec = theta.hat.boot %*% I.hat.boot, Amat = t(Amat),
+                                  bvec = rhs, meq = nrow(Amat))
+        out.ineq.boot <- solve.QP(Dmat = I.hat.boot, dvec = theta.hat.boot %*% I.hat.boot, Amat = t(Amat),
+                                  bvec = rhs, meq = nrow(Amat.ceq))
+
+        N * 2 * (out.eq.boot$value - out.ineq.boot$value)
+      } else {
+        # hypothesis test Type B
+        out.ineq.boot <- solve.QP(Dmat = I.hat.boot, dvec = theta.hat.boot %*% I.hat.boot, Amat = t(Amat),
+                                  bvec = rhs, meq = nrow(Amat.ceq))
+        # unconstrained model, equality constraints are preserved.
+        if (nrow(Amat.ceq) > 0L) {
+          out.un.boot <- solve.QP(Dmat = I.hat.boot, dvec = theta.hat.boot %*% I.hat.boot,
+                                  Amat = t(Amat.ceq), bvec = rhs.ceq,
+                                  meq = nrow(Amat.ceq))
+          value.un.boot <- out.un.boot$value
+        } else {
+          value.un.boot <- -0.5 * c(theta.hat.boot %*% I.hat.boot %*% theta.hat.boot)
+        }
+
+        N * 2 * (out.ineq.boot$value - value.un.boot)
+      }
+    }, silent = TRUE)
+    if (inherits(D.boot, "try-error")) {
+      if (verbose)
+        cat("     FAILED: solve.QP\n")
+      return(NULL)
     }
-    
-    if ("B" %in% type) {
-      # hypothesis test Type B
-      out.ineq.boot <- solve.QP(Dmat = I.hat.boot, dvec = theta.hat.boot %*% I.hat.boot, Amat = t(Amat),
-                                bvec = rhs, meq = nrow(Amat.ceq))
-      out.un.boot <- solve.QP(Dmat = I.hat.boot, dvec = theta.hat.boot %*% I.hat.boot, 
-                              Amat = t(matrix(0, nrow = dim(Amat)[1], ncol = dim(Amat)[2])),
-                              bvec = rep(0, length(rhs)), meq = 0)
-      
-      D.boot <- N * 2 * (out.ineq.boot$value - out.un.boot$value)
-    }
-    
-    
+
+
     if (double.bootstrap == "standard") {
       if (verbose)
         cat("  ... ... calibrating p.value - ")
       plugin.pvalue <- bootstrapD(h0 = fit.boot.h0, h1 = fit.boot.h1,
-                                  constraints = constraints,
+                                  constraints = constraints, type = type,
                                   R = double.bootstrap.R,
                                   bootstrap.type = bootstrap.type, verbose = FALSE,
                                   return.D = FALSE,
@@ -290,8 +309,8 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, type = "A",
       attr(D.boot, "plugin.pvalue") <- plugin.pvalue
     } else if (double.bootstrap == "FDB") {
       plugin.pvalue <- bootstrapD(h0 = fit.boot.h0, h1 = fit.boot.h1,
-                                  constraints = constraints,
-                                  R = 1L, bootstrap.type = bootstrap.type, 
+                                  constraints = constraints, type = type,
+                                  R = 1L, bootstrap.type = bootstrap.type,
                                   verbose = FALSE, warn = warn,
                                   return.D = TRUE, parallel = parallel, ncpus = ncpus,
                                   cl = cl, double.bootstrap = "no")
@@ -305,6 +324,13 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, type = "A",
   
   
   
+  if (!is.null(seed))
+    set.seed(seed)
+
+  old_options <- options()
+  on.exit(options(old_options))
+  options(warn = warn)
+
   RR <- sum(R)
   res <- if (ncpus > 1L && (have_mc || have_snow)) {
     if (have_mc) {
@@ -340,14 +366,14 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, type = "A",
     }
   }
   if (length(error.idx) > 0L) {
-    warning("lavaan WARNING: only ", (R - length(error.idx)), 
+    warning("restriktor WARNING: only ", (RR - length(error.idx)),
             " bootstrap draws were successful")
     D <- D[-error.idx]
-    if (length(D) == 0) 
+    if (length(D) == 0)
       D <- as.numeric(NA)
+    attr(D, "error.idx") <- error.idx
     if (double.bootstrap == "standard") {
       plugin.pvalues <- plugin.pvalues[-error.idx]
-      attr(D, "error.idx") <- error.idx
     }
     if (double.bootstrap == "FDB") {
       D.2 <- D.2[-error.idx]
@@ -356,35 +382,42 @@ bootstrapD <- function(h0 = NULL, h1 = NULL, constraints, type = "A",
   }
   else {
     if (verbose) {
-      cat("Number of successful bootstrap draws:", 
-          (R - length(error.idx)), "\n")
+      cat("Number of successful bootstrap draws:",
+          (RR - length(error.idx)), "\n")
     }
   }
-  pvalue <- sum(D > D.original) / length(D)
+
+  if (all(is.na(D))) {
+    warning("restriktor WARNING: no successful bootstrap draws; ",
+            "p-value cannot be computed.")
+    pvalue <- as.numeric(NA)
+  } else {
+    # smoothed bootstrap p-value (Davison & Hinkley, 1997, eq. 4.12)
+    pvalue <- (1 + sum(D >= D.original)) / (1 + length(D))
+  }
+
+  attr(pvalue, "D.original") <- D.original
   if (return.D) {
-    attr(pvalue, "D.original") <- D.original
     attr(pvalue, "D") <- D
   }
-  if (double.bootstrap == "FDB") {
+  if (double.bootstrap == "FDB" && !is.na(pvalue)) {
     Q <- (1 - pvalue)
     d.q <- quantile(D.2, Q, na.rm = TRUE)
-    adj.pvalue <- sum(D > d.q)/length(D)
+    adj.pvalue <- (1 + sum(D >= d.q)) / (1 + length(D))
     attr(pvalue, "D.q") <- d.q
     attr(pvalue, "adj.pvalue") <- adj.pvalue
     if (return.D) {
-      attr(pvalue, "D.original") <- D.original
-      attr(pvalue, "D") <- D
       attr(pvalue, "D2") <- D.2
     }
-  } else if (double.bootstrap == "standard") {
-    adj.alpha <- quantile(plugin.pvalues, double.bootstrap.alpha, 
+  } else if (double.bootstrap == "standard" && !is.na(pvalue)) {
+    adj.alpha <- quantile(plugin.pvalues, double.bootstrap.alpha,
                           na.rm = TRUE)
     attr(pvalue, "adj.alpha") <- adj.alpha
     adj.pvalue <- sum(plugin.pvalues < pvalue)/length(plugin.pvalues)
     attr(pvalue, "plugin.pvalues") <- plugin.pvalues
     attr(pvalue, "adj.pvalue") <- adj.pvalue
   }
-  
+
   attr(pvalue, "Amat") <- Amat
   pvalue
 }

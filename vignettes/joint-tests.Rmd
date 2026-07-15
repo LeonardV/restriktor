@@ -1,0 +1,158 @@
+---
+title: "Joint Type A and Type B Testing (Wolak, 1989)"
+author:
+  - "Leonard Vanbrabant"
+date: "`r format(Sys.Date(), '%Y-%m-%d')`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+vignette: >
+  %\VignetteIndexEntry{Joint Type A and Type B Testing (Wolak, 1989)}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  warning = FALSE,
+  message = FALSE,
+  tidy = FALSE
+)
+library(restriktor)
+```
+
+# When do you need a joint test?
+
+A common research claim with order restrictions is: *"there is demonstrable
+development in the predicted direction"*. With `iht()` this claim rests on
+**two** hypothesis tests for the same set of restrictions
+$R\theta \ge rhs$:
+
+- **Type A** — H0: $R\theta = rhs$ vs. HA: $R\theta \ge rhs$. Rejecting H0
+  shows there is *some* effect in the restricted direction. The test
+  statistic is $T_A = (\tilde{\theta} - \bar{\theta})'
+  \Sigma^{-1} (\tilde{\theta} - \bar{\theta})$ (EI), the distance between
+  the equality-restricted and the order-restricted estimate.
+- **Type B** — H0: $R\theta \ge rhs$ vs. an unrestricted alternative.
+  *Not* rejecting H0 shows the data do not contradict the predicted
+  direction. The test statistic is $T_B = (\hat{\theta} - \tilde{\theta})'
+  \Sigma^{-1} (\hat{\theta} - \tilde{\theta})$ (IU), the distance between
+  the unrestricted and the order-restricted estimate.
+
+The substantive conclusion "development in the predicted direction" requires
+type A to reject *and* type B not to reject — a statement about the **pair**
+of outcomes. Reporting two separate p-values does not quantify how likely
+that pair is under the shared null hypothesis, and multiplying the two
+marginal levels ($\alpha_A \cdot \alpha_B$) is wrong: the two statistics are
+computed from the same data and are *dependent*.
+
+Wolak (1989, Theorem 1) derived the joint distribution of $(T_B, T_A)$ under
+the least favorable null configuration $R\theta = rhs$, which both
+hypotheses share:
+
+$$
+\Pr[T_B \ge c_1,\; T_A \ge c_2] \;=\; \sum_{k=0}^{L} w(L, k, \Omega)\,
+\Pr[\chi^2_{q-k} \ge c_1]\, \Pr[\chi^2_k \ge c_2],
+$$
+
+where $q$ is the total number of constraints, $L$ the number of inequality
+constraints, and $w(L, k, \Omega)$ the chi-bar-square weights that
+restriktor already uses for the marginal p-values. Conditional on $k$ the
+two statistics are independent, but marginally they are not. For linear
+models with an estimated error variance, both statistics share the same
+variance estimate and the exact finite-sample version replaces the
+chi-square tails by an F-type mixture (Wolak, 1987); `iht_joint()` uses
+that version, consistent with the marginal p-values of `iht()`.
+
+# Example: ordered group means
+
+The `ZelazoKolb1972` data contain ages (in months) at which infants started
+to walk. The hypothesis is that walking exercises do not *increase* the mean
+age: active exercises should give the lowest mean age, no exercises the
+highest.
+
+```{r}
+DATA <- subset(ZelazoKolb1972, Group != "Control")
+fit.lm <- lm(Age ~ -1 + Group, data = DATA)
+coef(fit.lm)
+```
+
+The predicted order is a set of sign restrictions on differences:
+
+```{r}
+myConstraints <- ' GroupActive < GroupPassive < GroupNo '
+out <- iht_joint(fit.lm, constraints = myConstraints)
+out
+```
+
+The output shows the two marginal tests (identical to
+`iht(..., type = "A")` and `iht(..., type = "B")`), the joint tail
+probability $\Pr[T_B \ge t_B, T_A \ge t_A]$ under the shared null, and the
+combined decision at the chosen `alpha`:
+
+- region **(a)**: type A does not reject — H0: $R\theta = rhs$ is retained;
+- region **(b)**: type A rejects, type B does not — support for
+  $R\theta \ge rhs$ with $R\theta \ne rhs$: "development in the predicted
+  direction";
+- region **(c)**: type B rejects — the order restrictions themselves are
+  rejected.
+
+The joint tail probability is the single number that expresses how
+exceptional the observed *pair* of statistics is if in truth
+$R\theta = rhs$: it replaces the informal combination of two separate
+p-values with one statistically correct measure.
+
+# Why the product of two p-values is wrong
+
+The dependence between $T_A$ and $T_B$ makes the naive product of marginal
+levels systematically wrong. A small numerical demonstration with the
+components of the Wolak formula:
+
+```{r}
+fit.con <- restriktor(fit.lm, constraints = myConstraints)
+wt <- iht_joint(fit.con)$wt.bar    # chi-bar-square weights
+q  <- nrow(fit.con$constraints)    # number of constraints
+df2 <- fit.con$df.residual
+
+# marginal 5% critical values for both tests: setting one argument of
+# pfbar_joint() to 0 gives the marginal tail probability of the other test
+cA <- uniroot(function(c) {
+  pfbar_joint(0, c, df_total = q, df2 = df2, wt.bar = wt) - 0.05
+}, c(1e-8, 500))$root
+cB <- uniroot(function(c) {
+  pfbar_joint(c, 0, df_total = q, df2 = df2, wt.bar = wt) - 0.05
+}, c(1e-8, 500))$root
+
+# joint probability of exceeding BOTH critical values under Rb = r:
+pfbar_joint(cB, cA, df_total = q, df2 = df2, wt.bar = wt)
+
+# the naive product suggests:
+0.05 * 0.05
+```
+
+The exact joint probability differs clearly from $0.05^2 = 0.0025$. The
+reason is visible in the Wolak formula: conditional on $k$, large values of
+$T_A$ (which favor $\chi^2_k$ components with large $k$) go together with
+*small* values of $T_B$ (which then has few degrees of freedom left,
+$\chi^2_{q-k}$), so the two statistics are negatively related under the
+null. Treating them as independent misstates the joint error rate — which is
+exactly the rate that matters for the combined claim "type A rejects and
+type B does not".
+
+# References
+
+Kudo, A. (1963). A multivariate analogue of the one-sided test.
+*Biometrika*, 50, 403--418.
+
+Silvapulle, M.J., and Sen, P.K. (2005). *Constrained Statistical
+Inference*. Wiley, New York.
+
+Wolak, F. (1987). An exact test for multiple inequality and equality
+constraints in the linear regression model. *Journal of the American
+Statistical Association*, 82, 782--793.
+
+Wolak, F. (1989). Local and global testing of linear and nonlinear
+inequality constraints in nonlinear econometric models. *Journal of
+Econometrics*, 41, 205--235.

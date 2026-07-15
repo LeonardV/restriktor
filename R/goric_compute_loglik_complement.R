@@ -1,11 +1,12 @@
-compute_complement_likelihood <- function(model.org, VCOV, 
-                                          Amat, Amat.ciq, Amat.ceq, 
-                                          bvec, bvec.ciq, bvec.ceq, 
+compute_complement_likelihood <- function(model.org, VCOV,
+                                          Amat, Amat.ciq, Amat.ceq,
+                                          bvec, bvec.ciq, bvec.ceq,
                                           meq, b.unrestr, type, ldots,
+                                          ll.unrestr = NULL,
                                           debug = FALSE) {
-  
+
   # construeer zelf Amat.ceq en Amat.ciq obv Amat en meq.
-  
+
   # check if any equality constraint is violated
   check.ceq <- !(all(c(Amat.ceq %*% c(b.unrestr)) - bvec.ceq == 0))
   if (nrow(Amat) > meq) {
@@ -14,13 +15,15 @@ compute_complement_likelihood <- function(model.org, VCOV,
   } else {
     check.ciq <- FALSE
   }
-  
+
   # number of parameters
   p <- length(b.unrestr)
-  
-  if (check.ciq || check.ceq) {    
-    if (type %in% c("goric", "goricc")) { 
-      llc <- logLik(model.org)
+
+  if (check.ciq || check.ceq) {
+    if (type %in% c("goric", "goricc")) {
+      # for missing = "fiml" the unrestricted observed-data log-likelihood is
+      # supplied via ll.unrestr; logLik(model.org) would be the listwise value
+      llc <- if (!is.null(ll.unrestr)) ll.unrestr else logLik(model.org)
       betasc <- b.unrestr
     } else if (type %in% c("gorica", "goricac")) {
       llc <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE)
@@ -38,10 +41,15 @@ compute_complement_likelihood <- function(model.org, VCOV,
     for (l in seq_len(length(nr))) {
       idx <- c(nr[l], nr[-l])
       Amatx <- Amat[idx, , drop = FALSE]
-      if (type %in% c("goric", "goricc")) {          
-        Hc.restr <- restriktor(model.org, constraints = Amatx, 
-                               neq = 1, rhs = bvec[idx], 
-                               mix_weights = "none", se = "none")
+      if (type %in% c("goric", "goricc")) {
+        # pass the missing-data settings (e.g., missing = "fiml" and the
+        # auxiliary variables) on to restriktor()
+        CALL.restr <- append(list(object = model.org, constraints = Amatx,
+                                  neq = 1, rhs = bvec[idx],
+                                  mix_weights = "none", se = "none"),
+                             ldots[intersect(names(ldots),
+                                             c("missing", "auxiliary", "control"))])
+        Hc.restr <- do.call("restriktor", CALL.restr)
         betas[[l]] <- coef(Hc.restr)
         ll[[l]]    <- logLik(Hc.restr)
       } else if (type %in% c("gorica", "goricac")) {
@@ -65,9 +73,9 @@ compute_complement_likelihood <- function(model.org, VCOV,
     ll.idx <- which.max(ll.unlist)
     llc <- max(ll.unlist)
     betasc <- betas[[ll.idx]]
-  } else if (nrow(Amat) == meq) { 
+  } else if (nrow(Amat) == meq) {
     if (type %in% c("goric", "goricc")) {
-      llc <- logLik(model.org)
+      llc <- if (!is.null(ll.unrestr)) ll.unrestr else logLik(model.org)
       betasc <- b.unrestr
     } else if (type %in% c("gorica", "goricac")) {
       llc <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE)

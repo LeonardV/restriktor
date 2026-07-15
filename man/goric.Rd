@@ -168,9 +168,7 @@ comparable to the Akaike weights.
   is valid if the data are missing at random (MAR). All variables are assumed
   to be jointly normal. The restriktor objects underlying the GORIC values are
   fitted with order-restricted FIML (an ECM algorithm), so both the
-  log-likelihood based GORIC(C) and the GORICA(C) are available. The former
-  \code{missing = "two.stage"} option is deprecated and mapped onto
-  \code{"fiml"}.}
+  log-likelihood based GORIC(C) and the GORICA(C) are available.}
 
   \item{auxiliary}{Vector with variable names. Auxiliary variables are
   (numeric) variables that are not part of the target model, but that are

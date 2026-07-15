@@ -61,8 +61,8 @@ importFrom("MASS",
 
 importFrom("utils", packageDescription, capture.output, tail)
 
-importFrom("stats", coef, df.residual, dnorm, fitted,
-           formula, frequency, median, model.matrix,
+importFrom("stats", coef, df.residual, dchisq, dnorm, fitted,
+           formula, frequency, integrate, median, model.matrix,
            naresid, pchisq, pf, pnorm, printCoefmat, pt,
            quantile, rchisq, residuals, rnorm, rt, runif,
            sd, start, terms, update, var, vcov, density,
@@ -98,6 +98,8 @@ importFrom("progressr", progressor, with_progress, handlers)
 export(restriktor)
 export(conLM.lm, conRLM.rlm, conGLM.glm, conMLM.mlm)
 export(conTest, iht)
+export(iht_joint)
+export(pchibar_joint, pfbar_joint)
 export(conTest_summary)
 export(conTest_ceq)
 export(conTestC)
@@ -130,6 +132,7 @@ S3method(model.matrix, restriktor)
 S3method(logLik, restriktor)
 S3method(print, restriktor)
 S3method(print, conTest)
+S3method(print, conTestJoint)
 S3method(print, conTestLavaan)
 S3method(print, summary.restriktor)
 S3method(summary, restriktor)

@@ -11,7 +11,7 @@ the amount of study hours and anxiety scores.
 
 \usage{data(Exam)}
 \format{
-  A data frame of 20 observations of 4 variables.
+  A data frame of 20 observations on 4 variables.
   \describe{
     \item{\code{Scores}}{exam scores}
     \item{\code{Hours}}{study hours}

@@ -18,7 +18,7 @@
 restriktor(object, constraints = NULL, \dots)
 
 \method{conLM}{lm}(object, constraints = NULL, se = "standard",
-      B = 999, rhs = NULL, neq = 0L, mix_weights = "pmvnorm",
+      B = 999L, rhs = NULL, neq = 0L, mix_weights = "pmvnorm",
       missing = "none", auxiliary = c(),
       parallel = "no", ncpus = 1L, cl = NULL, seed = NULL,
       control = list(), verbose = FALSE, debug = FALSE, \dots)
@@ -29,7 +29,7 @@ restriktor(object, constraints = NULL, \dots)
        control = list(), verbose = FALSE, debug = FALSE, \dots)
        
 \method{conGLM}{glm}(object, constraints = NULL, se = "standard", 
-       B = 999, rhs = NULL, neq = 0L, mix_weights = "pmvnorm", 
+       B = 999L, rhs = NULL, neq = 0L, mix_weights = "pmvnorm", 
        parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
        control = list(), verbose = FALSE, debug = FALSE, \dots)
 
@@ -140,7 +140,7 @@ restriktor(object, constraints = NULL, \dots)
     \itemize{
       \item \code{chunk_size} integer; the chi-bar-square weights are computed for samples
       of size \code{chunk_size = 5000L}. This process is repeated iteratively until the 
-      weights converges (see \code{convergenge_crit}) or the maximum is reached, i.e., 
+      weights converges (see \code{convergence_crit}) or the maximum is reached, i.e., 
       \code{mix_weights_bootstrap_limit}.
       
       \item \code{mix_weights_bootstrap_limit} integer; maximum number of bootstrap draws.
@@ -159,9 +159,9 @@ restriktor(object, constraints = NULL, \dots)
   \item{\ldots}{parameters passed to the truncated multivariate normal distribution.
       By default, restriktor (i.e. \code{con_weights_boot} function) uses no 
       truncation points for calculating the chi-bar-square weights, which renders 
-      to the multivariate normal distribution. See the manual page of the 
-      \code{rtmvnorm} function from the \pkg{rtmvnorm} to see how to specify a 
-      truncated mvnorm distribution and the possible arguments.}
+      to the multivariate normal distribution. See the manual page of the
+      \code{rtmvnorm} function from the \pkg{tmvtnorm} package to see how to
+      specify a truncated mvnorm distribution and the possible arguments.}
 }
 
 \details{
@@ -183,7 +183,7 @@ restriktor(object, constraints = NULL, \dots)
       x3 = x4 = x5'
   }
   The variable names x1 to x5 refer to the corresponding regression
-  coefficient. Thus, constraints are impose on regression coefficients
+  coefficient. Thus, constraints are imposed on regression coefficients
   and not on the data.
   
   Second, the above constraints syntax can also be written in 
@@ -212,7 +212,7 @@ line if they are separated by a semicolon (;), a comma (,) or the "&" sign.
 
 In addition compound constraints can be stated via one or more longer equality 
 or inequality sentences e.g., 'x1 > x2 > x3; x3 < 4 < x4' or 
-'x1 == x2 == x3 & x4 = 1'. Alternatively, the constrains can be specifies 
+'x1 == x2 == x3 & x4 = 1'. Alternatively, the constraints can be specified
 as '(x1, x2) > (x3, x4)' which is equivalent to 'x1 > x3; x1 > x4; x2 > x3; x2 > x4'.
 
 There can be three types of text-based descriptions in the constraints 
@@ -235,11 +235,11 @@ syntax:
       computed by using the so-called Delta method.
   }
 
-  Variable names of interaction effects in objects of class lm, 
-  rlm and glm contain a semi-colon (:) between the variables. To impose 
-  constraints on parameters of interaction effects, the semi-colon 
-  must be replaced by a dot (.) (e.g., \code{x3:x4} becomes 
-  \code{x3.x4}). In addition, the intercept variable names is shown 
+  Variable names of interaction effects in objects of class lm,
+  rlm and glm contain a colon (:) between the variables. To impose
+  constraints on parameters of interaction effects, the colon
+  must be replaced by a dot (.) (e.g., \code{x3:x4} becomes
+  \code{x3.x4}). In addition, the intercept variable name is shown
   as "\code{(Intercept)}". To impose restrictions on the intercept 
   both parentheses must be replaced by a dot "\code{.Intercept.}" 
   (e.g.,\code{.Intercept. > 10}). Note: in most practical situations 
@@ -258,10 +258,10 @@ syntax:
   
   If the restriction matrix is not of full row-rank, this means one of the following:
   \itemize{
-   \item There is at least one redundant restriction. Then, either 
+   \item There is at least one redundant restriction. Then, either
     \itemize{
-      \item[a] Leave the redundant one out 
-      \item[b] Use another (more time-consuming) way of obtaining the level probabilities 
+      \item Leave the redundant one out, or
+      \item Use another (more time-consuming) way of obtaining the level probabilities
       for the penalty term (goric function does this by default): Bootstrapping, as discussed above.
       }
    \item There is at least one range restriction (e.g., -2 < group1 < 2). 
@@ -443,7 +443,7 @@ myConstraints5 <- ' group1  = group2
 # fit restricted model and compute model-based bootstrapped 
 # standard errors. We only generate 9 bootstrap samples in this 
 # example; in practice you may wish to use a much higher number.
-fit5.con <- restriktor(fit3.rlm, constraints = myConstraints4, 
+fit5.con <- restriktor(fit3.rlm, constraints = myConstraints5,
                        se = "boot.model.based", B = 9)
 # an error is probably thrown, due to a too low number of bootstrap draws.
 summary(fit5.con)

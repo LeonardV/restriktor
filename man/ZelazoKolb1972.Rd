@@ -12,7 +12,7 @@ Passive-exercise, 8 week Control, No-exercise).
 
 \usage{data(ZelazoKolb1972)}
 \format{
-  A data frame of 23 observations of 4 treatment variables.
+  A data frame of 24 observations on 2 variables.
   \describe{
     \item{\code{Age}}{Age in months}
     \item{\code{Group}}{Active-exercise, Passive-exercise, 8-week Control group, No-exercise}

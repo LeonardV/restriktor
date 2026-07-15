@@ -63,7 +63,7 @@ importFrom("utils", packageDescription, capture.output, tail)
 
 importFrom("stats", coef, df.residual, dchisq, dnorm, fitted,
            formula, frequency, integrate, median, model.matrix,
-           naresid, pchisq, pf, pnorm, printCoefmat, pt,
+           naresid, pchisq, pf, pnorm, printCoefmat, pt, qchisq,
            quantile, rchisq, residuals, rnorm, rt, runif,
            sd, start, terms, update, var, vcov, density,
            weighted.residuals, weights, gaussian, lm.fit,

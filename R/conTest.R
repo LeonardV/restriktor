@@ -13,10 +13,15 @@ conTest <- function(object, constraints = NULL, type = "summary", test = "F",
   
   
   if (inherits(object, "restriktor")) {
+    if (!is.null(object$missing) && object$missing == "fiml") {
+      stop(paste("restriktor ERROR: informative hypothesis tests are not (yet) available",
+                 "for models fitted with missing = \"fiml\". Use goric() instead."),
+           call. = FALSE)
+    }
     test <- tolower(test)
     type <- tolower(type)
     stopifnot(type %in% c("global","a","b","c","summary"))
-    
+
     ldots <- list(...)
     Amat <- object$constraints
     meq  <- object$neq

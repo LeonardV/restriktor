@@ -126,10 +126,10 @@ comparable to the Akaike weights.
   
   \item{type}{if \code{"goric"}, the generalized order-restricted 
   information criterion value is computed. 
-  If \code{"gorica"}, a proxi for the log-likihood is calculated by assuming that 
+  If \code{"gorica"}, a proxy for the log-likihood is calculated by assuming that 
   the parameter estimates (of interest) are multivariate normally distributed. 
   Then, either the unbiased covariance matrix of the estimates (based on 'N'; e.g., for an lm object) is used
-  or the biased one obtained via the vcov function (e.g., for a lavaan object). 
+  or the biased one obtained via the vcov function (e.g., for a \code{lavaan} object). 
   In the latter case, a corresponding message will be printed. 
   If \code{"goricc"} or \code{"goricac"}, 
   then the small-sample-size correction is applied.}
@@ -139,7 +139,7 @@ comparable to the Akaike weights.
   For many fit objects, one can use the function vcov() to obtain the VCOV. 
   This renders the (biased) restricted sample covariance matrix and not the unbiased sample covariance matrix (based on 'N').
   To obtain the unbiased one, one should make an adjustment based on samples size and the rank of the model (i.e., number of predictors including intercept); 
-  as shwon in an example below.
+  as shown in an example below.
   }
   
   \item{sample_nobs}{the number of observations, only needed if \code{type = "goricac"}. Note that, 
@@ -167,24 +167,29 @@ comparable to the Akaike weights.
   Notably, the priorICweights will be used in the determining the (ratios of) IC weights;
   so, not in the other output, like the IC values but also not the log likelihood weights or penalty weights.}
   
-  \item{missing}{the default setting for objects of class "lm" is listwise:
-  all cases with missing values are removed from the data before the analysis. This
-  is only valid if the data are missing completely at random (MCAR). Another 
-  option is to use "two.stage". In this approach, missing data are imputed using 
-  an EM algorithm. However, we cannot use the complete data as input for futher 
-  analyses, because the resulting complete data variance-covariance matrix will 
-  not be correct. Therefore, we compute the correct aymptotic covariance (Savalei and Bentler, 2009)
-  and use it as input for the \code{goric.numeric} function to compute a GORICA(C)
-  value. Note that, the parameter estimates are also recomputed using the complete data.} 
-  
-  \item{auxiliary}{Vector. The inclusion of auxiliary variables can improve the
-  imputation model. These auxiliary variables are not part of the target model.}
-  
-  \item{emControl}{a list of control arguments for the \code{emnorm} function
-  from the \pkg{norm} package.}
+  \item{missing}{the default setting for objects of class "lm" is \code{"none"}
+  (listwise deletion): all cases with missing values are removed from the data
+  before the analysis. This is only valid if the data are missing completely at
+  random (MCAR). The alternative is \code{missing = "fiml"}: the model
+  parameters are then estimated by full information maximum likelihood, which
+  is valid if the data are missing at random (MAR). All variables are assumed
+  to be jointly normal. The restriktor objects underlying the GORIC values are
+  fitted with order-restricted FIML (an ECM algorithm), so both the
+  log-likelihood based GORIC(C) and the GORICA(C) are available.}
+
+  \item{auxiliary}{Vector with variable names. Auxiliary variables are
+  (numeric) variables that are not part of the target model, but that are
+  correlated with the model variables and/or their missingness. Including them
+  improves the missing-data handling (the saturated-correlates approach); the
+  target model itself is unchanged. Only used when \code{missing = "fiml"}.}
+
+  \item{emControl}{a named list of control arguments for the EM/ECM algorithm
+  used when \code{missing = "fiml"}: \code{max.iter} (default 5000) and
+  \code{tol} (default 1e-09), the convergence tolerance for the relative
+  parameter change.}
   
   \item{standardized}{if TRUE, standardized parameter estimates are used.
-  % TO DO Only used for class lavaan?
+    Only used for objects of class \code{lavaan}.}
   }
   
   \item{digits}{the number of significant digits to use when printing.}
@@ -237,12 +242,12 @@ comparable to the Akaike weights.
   specified in two ways, see \code{\link{restriktor}}. For examples, see below.
   
   To determine the penalty term values, the chi-bar-square weights (a.k.a. level
-  probabilities) must be computed. If \code{"mix_weights = "pmvnorm" "} (default),
+  probabilities) must be computed. If \code{mix_weights = "pmvnorm"} (default),
   the chi-bar-square weights are computed based on the multivariate normal distribution
-  function with additional Monte Carlo steps. If \code{"mix_weights = "boot" "}, the
+  function with additional Monte Carlo steps. If \code{mix_weights = "boot"}, the
   chi-bar-square weights are computed using parametric bootstrapping (see \code{\link{restriktor}}).
 
-  For \code{"mix_weights = "pmvnorm" "} with about ten or more (in)equality
+  For \code{mix_weights = "pmvnorm"} with about ten or more (in)equality
   constraints, the computation can be sped up by enabling a parallel
   \code{future} plan, e.g., \code{future::plan(multisession, workers = 4)}
   (on Linux/macOS \code{future::plan(multicore, workers = 4)} is more
@@ -252,19 +257,20 @@ comparable to the Akaike weights.
   the multivariate normal probabilities.
   
   
-  The "two.stage" approach for missing data uses the EM algorithm from the 
-  \code{norm} package. The response variables are assumed to be jointly 
-  normal. In practice, missing-data procedures designed for variables that are 
-  normal are sometimes applied to variables that are not. Binary and ordinal 
-  variables are sometimes imputed under a normal model, and the imputed values 
-  may be classified or rounded. This is also how restriktor handles (ordered)
-  factors for now. 
-  
-  A better strategy (not implemented yet) would be to convert (ordered) factors 
-  into a pair of dummy variables. If the (ordered) factors have missing values, 
-  the dummy variables could be included as columns of Y and imputed, but then you 
-  have to decide how to convert the continuously distributed imputed values for 
-  these dummy codes back into categories. 
+  The \code{missing = "fiml"} approach estimates the joint distribution of the
+  response and the predictors (plus any auxiliary variables) under a
+  multivariate normal model, using an EM algorithm for the saturated model.
+  The unrestricted regression estimates and their covariance matrix follow
+  directly from the saturated estimates (with standard errors based on the
+  observed information matrix); the order-restricted estimates are computed by
+  maximizing the observed-data log-likelihood under the constraints with an
+  ECM algorithm. This is valid when the data are missing at random (MAR) and
+  the joint normality assumption is reasonable. Factor variables are
+  dummy-coded and treated as jointly normal with the other variables, which is
+  a common pragmatic strategy (the dummy variables are not rounded or
+  re-categorized). Interaction terms are treated as just another variable.
+  Note that models with weights or an offset, and models without an intercept,
+  are not supported with \code{missing = "fiml"}.
   
   ### Note on not full row-rank ###
   
@@ -272,8 +278,8 @@ comparable to the Akaike weights.
   \itemize{
    \item There is at least one redundant restriction specified in the hypothesis. Then, either 
     \itemize{
-      \item[a] Leave the redundant one out 
-      \item[b] Use another (more time-consuming) way of obtaining the level probabilities 
+      \item Leave the redundant one out, or 
+      \item Use another (more time-consuming) way of obtaining the level probabilities 
       for the penalty term (goric function does this by default): Bootstrapping, as discussed above.
       }
    \item There is at least one range restriction (e.g., -2 < group1 < 2). 
@@ -286,9 +292,11 @@ comparable to the Akaike weights.
     To prevent this type of error delete the one that is incorrect.
 }
 
-\value{The function returns a dataframe with the log-likelihood,
-penalty term, GORIC(A) values and the GORIC(A) weights. Furthermore, a dataframe
-is returned with the relative GORIC(A) weights. 
+\value{\value{The function returns an object of class \code{con_goric}, for
+which print, summary and coef methods are available. The object contains,
+among other things, a dataframe (\code{$result}) with the log-likelihood,
+penalty term, GORIC(A) values and the GORIC(A) weights, and a dataframe
+(\code{$ratio.gw}) with the relative GORIC(A) weights.
 }
 
 
@@ -298,17 +306,19 @@ information criterion for model selection under inequality constraints.
 \emph{Biometrika}, 98, 2, 495--501.
 \doi{10.1093/biomet/asr002}
 
-Vanbrabant, L. and Kuiper, R. (2020). Evaluating a theory-based hypothesis against 
-its complement using an AIC-type information criterion with an application to 
-facial burn injury. Psychological Methods.
 Vanbrabant, L., Van Loey, N., and Kuiper, R. M. (2020). 
 Evaluating a Theory-Based Hypothesis Against Its Complement Using an AIC-Type Information Criterion With an Application to Facial Burn Injury. 
 \emph{Psychological Methods}, 25(2), 129-142. 
 \doi{10.1037/met0000238}
 
-Victoria Savalei and Peter M. Bentler (2009) A Two-Stage Approach to
-Missing Data: Theory and Application to Auxiliary Variables, Structural Equation 
-Modeling: A Multidisciplinary Journal, 16:3, 477-497, DOI: 10.1080/10705510903008238
+Arbuckle, J. L. (1996). Full information estimation in the presence of
+incomplete data. In G. A. Marcoulides and R. E. Schumacker (Eds.),
+\emph{Advanced structural equation modeling: Issues and techniques}
+(pp. 243-277). Mahwah, NJ: Erlbaum.
+
+Graham, J. W. (2003). Adding missing-data-relevant variables to FIML-based
+structural equation models. \emph{Structural Equation Modeling}, 10(1), 80-100.
+\doi{10.1207/S15328007SEM1001_4}
 }
 
 \author{Leonard Vanbrabant and Rebecca M. Kuiper}
@@ -357,7 +367,7 @@ library(MASS)
 # prepare data
 DATA <- subset(ZelazoKolb1972, Group != "Control")
   
-# fit unrestrikted linear model
+# fit unrestricted linear model
 fit1.lm <- lm(Age ~ Group, data = DATA)
 
 # some artificial restrictions

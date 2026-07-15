@@ -158,3 +158,27 @@ test_that("conTest conRLM fout bij LRT (niet beschikbaar)", {
   expect_error(conTest(con_rlm, type = "A", test = "LRT"), "unknown")
 })
 
+
+test_that("iht p-waarden met mix_weights = 'boot' komen overeen met 'pmvnorm'", {
+  # regression test: the boot engine stores level probabilities for the
+  # dimensions 0:p (p + 1 weights), while the F-bar mixture needs the
+  # window that corresponds to k = 0 ... q - meq. Before the fix in
+  # con_pvalue_Fbar the weights were recycled, yielding wrong p-values.
+  set.seed(3)
+  n <- 150
+  x1 <- rnorm(n); x2 <- rnorm(n); x3 <- rnorm(n)
+  y <- 1 + 0.3*x1 + 0.2*x2 + rnorm(n)
+  fit <- lm(y ~ x1 + x2 + x3, data = data.frame(y, x1, x2, x3))
+
+  for (constr in c("x1 > 0; x2 > 0; x3 > 0", "x1 == 0.3; x2 > 0; x3 > 0")) {
+    r_pmv  <- restriktor(fit, constraints = constr)
+    r_boot <- restriktor(fit, constraints = constr, mix_weights = "boot",
+                         seed = 7)
+    for (tp in c("A", "B")) {
+      p_pmv  <- iht(r_pmv,  type = tp)$pvalue
+      p_boot <- expect_no_warning(iht(r_boot, type = tp)$pvalue)
+      # boot weights carry Monte Carlo error; agreement within 0.01 suffices
+      expect_equal(as.numeric(p_boot), as.numeric(p_pmv), tolerance = 1e-2)
+    }
+  }
+})

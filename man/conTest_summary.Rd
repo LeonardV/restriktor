@@ -7,9 +7,16 @@
 
 }
 \description{conTest_summary computes all available hypothesis tests and returns
-and object of class \code{conTest} for which a print function is available. The 
-\code{conTest_summary} can be used directly and is called by the \code{conTest} 
-function if \code{type = "summary"}. 
+and object of class \code{conTest} for which a print function is available. The
+\code{conTest_summary} can be used directly and is called by the \code{conTest}
+function if \code{type = "summary"}.
+
+In addition to the marginal tests, the summary reports the joint tail
+probability of the type B and type A statistics under the shared (least
+favorable) null hypothesis \eqn{R\theta = rhs} (Wolak, 1989, Theorem 1; see
+\code{\link{iht_joint}}). The joint element is only included when the
+marginal p-values are based on the chi-bar-square weights (i.e., no
+bootstrap, \code{neq.alt = 0}, and \code{mix_weights} not \code{"none"}).
 }
 
 \usage{

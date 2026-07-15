@@ -61,20 +61,18 @@ importFrom("MASS",
 
 importFrom("utils", packageDescription, capture.output, tail)
 
-importFrom("stats", coef, df.residual, dnorm, fitted,
-           formula, frequency, median, model.matrix,
-           naresid, pchisq, pf, pnorm, printCoefmat, pt,
+importFrom("stats", coef, df.residual, dchisq, dnorm, fitted,
+           formula, frequency, integrate, median, model.matrix,
+           naresid, pchisq, pf, pnorm, printCoefmat, pt, qchisq,
            quantile, rchisq, residuals, rnorm, rt, runif,
            sd, start, terms, update, var, vcov, density,
            weighted.residuals, weights, gaussian, lm.fit,
            lm.wfit, mad, coefficients, family, logLik,
-           model.frame, anova, optimize, sigma, cov, dist, 
+           model.frame, anova, optimize, sigma, cov, dist,
            lm, uniroot, reshape, aggregate, setNames, as.formula,
-           nobs) 
+           nobs, complete.cases, na.pass, delete.response, getCall)
 
 importFrom("graphics", abline, axis, box, hist, par)
-
-importFrom("norm", em.norm, prelim.norm, imp.norm, rngseed)
 
 importFrom("ggplot2", ggplot, aes, .data, geom_point, geom_line, geom_hline,theme, unit, margin,
            element_blank, element_text, element_line, scale_y_continuous, 
@@ -98,6 +96,8 @@ importFrom("progressr", progressor, with_progress, handlers)
 export(restriktor)
 export(conLM.lm, conRLM.rlm, conGLM.glm, conMLM.mlm)
 export(conTest, iht)
+export(iht_joint)
+export(pchibar_joint, pfbar_joint)
 export(conTest_summary)
 export(conTest_ceq)
 export(conTestC)
@@ -130,6 +130,7 @@ S3method(model.matrix, restriktor)
 S3method(logLik, restriktor)
 S3method(print, restriktor)
 S3method(print, conTest)
+S3method(print, conTestJoint)
 S3method(print, conTestLavaan)
 S3method(print, summary.restriktor)
 S3method(summary, restriktor)

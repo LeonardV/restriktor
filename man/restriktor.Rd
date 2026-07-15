@@ -17,9 +17,10 @@
 \usage{
 restriktor(object, constraints = NULL, \dots)
 
-\method{conLM}{lm}(object, constraints = NULL, se = "standard", 
-      B = 999, rhs = NULL, neq = 0L, mix_weights = "pmvnorm", 
-      parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
+\method{conLM}{lm}(object, constraints = NULL, se = "standard",
+      B = 999, rhs = NULL, neq = 0L, mix_weights = "pmvnorm",
+      missing = "none", auxiliary = c(),
+      parallel = "no", ncpus = 1L, cl = NULL, seed = NULL,
       control = list(), verbose = FALSE, debug = FALSE, \dots)
       
 \method{conRLM}{rlm}(object, constraints = NULL, se = "standard", 
@@ -95,7 +96,29 @@ restriktor(object, constraints = NULL, \dots)
   for computing the GORIC. Moreover, the weights are re-used in the 
   \code{\link{iht}} function for computing the p-value for the 
   test-statistic, unless the p-value is computed directly via bootstrapping.}
-  \item{parallel}{the type of parallel operation to be used (if any). 
+  \item{missing}{the default setting for objects of class "lm" is \code{"none"}
+  (listwise deletion): all cases with missing values are removed from the data
+  before the analysis. This is only valid if the data are missing completely
+  at random (MCAR). If \code{"fiml"}, the unrestricted and order-restricted
+  estimates are obtained by full information maximum likelihood (valid under
+  missing at random, MAR), assuming joint normality of the response and the
+  predictors. The unrestricted estimates and standard errors are based on an
+  EM algorithm for the saturated model and the observed information matrix;
+  the order-restricted estimates maximize the observed-data log-likelihood
+  under the constraints (ECM algorithm). Only available for objects of class
+  "lm" (gaussian) with an intercept, without weights or offset, and with
+  \code{se = "standard"} or \code{se = "none"}. The reported log-likelihood is
+  the observed-data log-likelihood of the joint normal model; fitted values
+  and residuals are only available for the cases with completely observed
+  model variables (NA otherwise). The EM/ECM algorithm can be controlled via
+  \code{control = list(fiml = list(max.iter = 5000, tol = 1e-09))}.}
+  \item{auxiliary}{Vector with variable names. Auxiliary variables are
+  (numeric) variables that are not part of the target model, but that are
+  correlated with the model variables and/or their missingness. Including
+  them improves the missing-data handling (the saturated-correlates
+  approach); the target model itself is unchanged. Only used when
+  \code{missing = "fiml"}.}
+  \item{parallel}{the type of parallel operation to be used (if any).
   If missing, the default is set "no".}
   \item{ncpus}{integer: number of processes to be used in parallel 
   operation: typically one would chose this to the number of 

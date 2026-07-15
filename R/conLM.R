@@ -1,8 +1,9 @@
-conLM.lm <- function(object, constraints = NULL, se = "standard", 
-                     B = 999L, rhs = NULL, neq = 0L, mix_weights = "pmvnorm", 
-                     parallel = "no", ncpus = 1L, cl = NULL, seed = NULL, 
+conLM.lm <- function(object, constraints = NULL, se = "standard",
+                     B = 999L, rhs = NULL, neq = 0L, mix_weights = "pmvnorm",
+                     missing = "none", auxiliary = c(),
+                     parallel = "no", ncpus = 1L, cl = NULL, seed = NULL,
                      control = list(), verbose = FALSE, debug = FALSE, ...) {
-  
+
   # check class
   if (!(class(object)[1] %in% c("lm", "aov"))) {
     stop("restriktor ERROR: object must be of class lm.")
@@ -21,7 +22,34 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   if (!(mix_weights %in% c("pmvnorm", "boot", "none"))) {
     stop("restriktor ERROR: ", sQuote(mix_weights), " method unknown. Choose from \"pmvnorm\", \"boot\", or \"none\".", call. = FALSE)
   }
-  
+
+  # missing data handling
+  missing <- tolower(missing)
+  if (missing %in% c("em", "two.stage", "twostage")) {
+    # the former two-stage EM approach has been replaced by direct FIML
+    missing <- "fiml"
+  }
+  if (!(missing %in% c("none", "listwise", "fiml"))) {
+    stop("restriktor ERROR: missing method ", sQuote(missing),
+         " unknown. Choose from \"none\" (listwise deletion) or \"fiml\".", call. = FALSE)
+  }
+  if (missing == "listwise") {
+    missing <- "none"
+  }
+
+  fiml <- NULL
+  if (missing == "fiml") {
+    if (!(se %in% c("standard", "none"))) {
+      stop("restriktor ERROR: missing = \"fiml\" is only available with se = \"standard\" or se = \"none\".",
+           call. = FALSE)
+    }
+    # unrestricted FIML fit (EM on the saturated model + delta method)
+    fiml <- con_fiml_lm(object, auxiliary = auxiliary, control = control$fiml)
+  } else if (length(auxiliary) > 0L) {
+    stop("restriktor ERROR: auxiliary variables are only used when missing = \"fiml\".",
+         call. = FALSE)
+  }
+
   # timing
   start.time0 <- start.time <- proc.time()[3]; timing <- list()
   # store call
@@ -55,7 +83,32 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   residuals    <- object$residuals
   object.restr <- list(residuals = residuals, weights = weights)
   ll.unrestr   <- con_loglik_lm(object.restr)
-  
+
+  # defaults for the output list; replaced by their FIML counterparts below
+  fitted.unrestr <- object$fitted.values
+  R2.unrestr     <- so$r.squared
+  df.resid.out   <- object$df.residual
+
+  if (missing == "fiml") {
+    # replace the complete-case quantities by their FIML counterparts
+    b.unrestr <- fiml$est
+    b.unrestr[abs(b.unrestr) < ifelse(is.null(control$tol), sqrt(.Machine$double.eps),
+                                      control$tol)] <- 0L
+    Sigma <- fiml$VCOV
+    s2    <- fiml$sigma2
+    n     <- fiml$N
+    # observed-data log-likelihood of the (saturated) joint normal model
+    ll.unrestr <- fiml$loglik
+    # fitted values and residuals are only available for rows with
+    # completely observed model variables (NA otherwise)
+    Zx <- fiml$Z[, 1L + seq_len(fiml$nx), drop = FALSE]
+    fitted.unrestr <- as.numeric(cbind(1, Zx) %*% b.unrestr)
+    residuals      <- as.numeric(fiml$Z[, 1L]) - fitted.unrestr
+    # model-implied R-squared
+    R2.unrestr   <- fiml_R2(b.unrestr, s2, fiml$Sigma, fiml$nx)
+    df.resid.out <- n - p
+  }
+
   if (debug) {
     print(list(loglik.unc = ll.unrestr))
   }
@@ -145,57 +198,91 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                 b.unrestr   = b.unrestr,
                 b.restr     = b.unrestr,
                 residuals   = residuals, # unweighted residuals
-                fitted      = object$fitted.values,
+                fitted      = fitted.unrestr,
                 weights     = weights,
-                df.residual = object$df.residual,
-                R2.org      = so$r.squared, 
-                R2.reduced  = so$r.squared,
-                s2          = s2, 
-                loglik      = ll.unrestr, 
+                df.residual = df.resid.out,
+                R2.org      = R2.unrestr,
+                R2.reduced  = R2.unrestr,
+                s2          = s2,
+                loglik      = ll.unrestr,
                 Sigma       = Sigma,
-                constraints = Amat, 
-                rhs         = bvec, 
-                neq         = meq, 
+                constraints = Amat,
+                rhs         = bvec,
+                neq         = meq,
                 wt.bar      = NULL,
-                iact        = 0L, 
-                bootout     = NULL, 
-                control     = control)  
+                iact        = 0L,
+                bootout     = NULL,
+                control     = control)
   } else {
+    if (missing == "fiml") {
+      # restricted FIML estimates via ECM with a quadratic-programming
+      # M-step for the constrained regression coefficients
+      ecm <- fiml_ecm_restricted(fiml, Amat = Amat, bvec = bvec, meq = meq,
+                                 max.iter = fiml$control$max.iter,
+                                 tol      = fiml$control$tol,
+                                 verbose  = verbose)
+      b.restr <- ecm$b.restr
+        names(b.restr) <- names(b.unrestr)
+      b.restr[abs(b.restr) < ifelse(is.null(control$tol),
+                                    sqrt(.Machine$double.eps),
+                                    control$tol)] <- 0L
+
+      timing$optim <- (proc.time()[3] - start.time)
+      start.time <- proc.time()[3]
+
+      Zx <- fiml$Z[, 1L + seq_len(fiml$nx), drop = FALSE]
+      fitted <- as.numeric(cbind(1, Zx) %*% b.restr)
+      residuals <- as.numeric(fiml$Z[, 1L]) - fitted
+
+      # observed-data log-likelihood under the order restrictions
+      ll.restr <- ecm$loglik
+      s2 <- ecm$sigma2
+      R2.reduced <- fiml_R2(b.restr, s2, ecm$Sigma, fiml$nx)
+
+      if (debug) {
+        print(list(loglik.restr = ll.restr))
+      }
+
+      # active constraints
+      slack <- abs(Amat %*% b.restr - bvec)
+      iact <- which(slack < sqrt(.Machine$double.eps))
+      if (length(iact) == 0L) { iact <- 0L }
+    } else {
     # compute constrained estimates using quadprog
-    out.solver <- con_solver_lm(X         = X, 
-                                y         = y, 
-                                w         = weights, 
+    out.solver <- con_solver_lm(X         = X,
+                                y         = y,
+                                w         = weights,
                                 Amat      = Amat,
-                                bvec      = bvec, 
-                                meq       = meq, 
-                                absval    = ifelse(is.null(control$absval), 
-                                                sqrt(.Machine$double.eps), 
+                                bvec      = bvec,
+                                meq       = meq,
+                                absval    = ifelse(is.null(control$absval),
+                                                sqrt(.Machine$double.eps),
                                                 control$absval),
-                                maxit     = ifelse(is.null(control$maxit), 1e04, 
+                                maxit     = ifelse(is.null(control$maxit), 1e04,
                                                 control$maxit))
     out.QP <- out.solver$qp
     b.restr <- out.QP$solution
       names(b.restr) <- names(b.unrestr)
-    b.restr[abs(b.restr) < ifelse(is.null(control$tol), 
-                                  sqrt(.Machine$double.eps), 
+    b.restr[abs(b.restr) < ifelse(is.null(control$tol),
+                                  sqrt(.Machine$double.eps),
                                   control$tol)] <- 0L
-    
+
     timing$optim <- (proc.time()[3] - start.time)
     start.time <- proc.time()[3]
-    
+
     # lm
     if (ncol(y) == 1L) {
       fitted <- X %*% b.restr
       residuals <- y - fitted
-      
+
       # compute log-likelihood
       object.restr <- list(residuals = residuals, weights = weights)
       ll.restr <- con_loglik_lm(object.restr)
-      
+
       if (debug) {
         print(list(loglik.restr = ll.restr))
-      }  
-      
+      }
+
       # compute R^2
       if (is.null(weights)) {
         mss <- if (attr(object$terms, "intercept")) {
@@ -210,15 +297,17 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
         rss <- sum(weights * residuals^2)
       }
       R2.reduced <- mss / (mss + rss)
-      
+
       # compute weighted residuals
       if (is.null(weights)) {
-        s2 <- sum(residuals^2) / df.residual  
+        s2 <- sum(residuals^2) / df.residual
       } else {
         s2 <- sum(weights * residuals^2) / df.residual
       }
-    } else { 
+    } else {
       stop("mlm not supported. Switch to conMLM.")
+    }
+    iact <- out.QP$iact
     }
 
     OUT <- list(CON         = CON,
@@ -230,26 +319,43 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
                 residuals   = residuals, # unweighted residuals
                 fitted      = fitted,
                 weights     = weights,
-                df.residual = object$df.residual,
-                R2.org      = so$r.squared, 
+                df.residual = df.resid.out,
+                R2.org      = R2.unrestr,
                 R2.reduced  = R2.reduced,
                 s2          = s2,
-                loglik      = ll.restr, 
+                loglik      = ll.restr,
                 Sigma       = Sigma,
-                constraints = Amat, 
-                rhs         = bvec, 
-                neq         = meq, 
+                constraints = Amat,
+                rhs         = bvec,
+                neq         = meq,
                 wt.bar      = NULL,
-                iact        = out.QP$iact, 
-                bootout     = NULL, 
+                iact        = iact,
+                bootout     = NULL,
                 control     = control)
   }
-  
+
   # original object
   OUT$model.org <- object
   # type standard error
   OUT$se <- se
-  OUT$information <- 1/s2 * crossprod(X)
+  if (missing == "fiml") {
+    OUT$missing   <- "fiml"
+    OUT$auxiliary <- auxiliary
+    OUT$fiml <- list(N              = fiml$N,
+                     loglik.unrestr = fiml$loglik,
+                     sigma2.unrestr = fiml$sigma2,
+                     iter           = fiml$iter,
+                     converged      = fiml$converged)
+    # observed FIML information matrix of the coefficients
+    OUT$information <- chol2inv(chol(Sigma))
+    dimnames(OUT$information) <- dimnames(Sigma)
+    # con_augmented_information() derives the information from crossprod(X);
+    # supply a matrix square root of the FIML information instead
+    X <- chol(OUT$information)
+  } else {
+    OUT$missing <- "none"
+    OUT$information <- 1/s2 * crossprod(X)
+  }
   
   ## compute standard errors based on the augmented inverted information matrix or
   ## based on the standard bootstrap or model.based bootstrap

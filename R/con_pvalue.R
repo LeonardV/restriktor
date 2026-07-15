@@ -1,13 +1,25 @@
 # mixture of F distributions.
 con_pvalue_Fbar <- function(wt.bar, Ts.org, df.residual, type = "A",
                             Amat, bvec, meq = 0L, meq.alt = 0L) {
-  
-  # wt.method <- attr(wt.bar, "method")
-  # if (wt.method == "boot") {
-  #   idx.start <- (ncol(Amat) - nrow(Amat)) + 1
-  #   idx.end   <- (ncol(Amat) - meq) + 1
-  # }
-  
+
+  # mix_weights = "pmvnorm" stores nrow(Amat) - meq + 1 weights in the type A
+  # convention (wt.bar[k+1] <-> chi2_k). mix_weights = "boot" stores level
+  # probabilities for the dimensions 0:p (p = number of parameters), of which
+  # the window p - q ... p - meq corresponds to k = 0 ... q - meq. Without
+  # this alignment the mixture below would recycle the weights and produce
+  # wrong p-values.
+  wt.method <- attr(wt.bar, "method")
+  if (!is.null(wt.method) && wt.method == "boot" &&
+      length(wt.bar) == ncol(Amat) + 1L &&
+      length(wt.bar) != nrow(Amat) - meq + 1L) {
+    idx.start <- (ncol(Amat) - nrow(Amat)) + 1L
+    idx.end   <- (ncol(Amat) - meq) + 1L
+    wt.bar.attr <- attributes(wt.bar)
+    wt.bar <- wt.bar[idx.start:idx.end]
+    wt.bar.attr$names <- NULL
+    attributes(wt.bar) <- c(attributes(wt.bar), wt.bar.attr)
+  }
+
   if (type == "global") {
     # compute df
     bvecG <- attr(bvec, "bvec.global")

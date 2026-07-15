@@ -3,11 +3,11 @@
 \alias{conTestC.restriktor}
 
 \title{one-sided t-test for iht}
-\description{\code{conTestC} tests linear inequality restricted 
-hypotheses for (robust) linear models by a one-sided t-test. This 
-method is based on the union-intersection principle. It is called 
-by the \code{conTest} function if all restrictions are equalities.
-For more information see details. 
+\description{\code{conTestC} tests linear inequality restricted
+hypotheses for (robust) linear models by a one-sided t-test. This
+method is based on the intersection-union principle. It is called
+by the \code{conTest} function if \code{type = "C"}.
+For more information see details.
 }
 
 \usage{
@@ -26,14 +26,14 @@ For more information see details.
 \details{Hypothesis test Type C:
 \itemize{
   \item Test H0: at least one restriction false ("<") 
-  against HA: all constraints strikty true (">"). This test is 
+  against HA: all constraints strictly true (">"). This test is 
   based on the intersection-union principle. Note that, this test only makes 
   sense in case of no equality constraints.
 }
 
 The null-distribution of hypothesis test Type C is based on a 
 t-distribution (one-sided). Its power can be poor in case of many 
-inequalty constraints. Its main role is to prevent wrong 
+inequality constraints. Its main role is to prevent wrong 
 conclusions from significant results from hypothesis test Type A.
 
 }

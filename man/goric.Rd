@@ -88,9 +88,9 @@ comparable to the Akaike weights.
   Parameters passed to the truncated multivariate normal distribution. By default, 
   restriktor (i.e. \code{con_weights_boot} function) uses no truncation points 
   for calculating the chi-bar-square weights, which renders to the multivariate 
-  normal distribution. See the manual page of the \code{rtmvnorm} function from 
-  the \pkg{rtmvnorm} to see how to specify a truncated mvnorm distribution and 
-  the possible arguments.}
+  normal distribution. See the manual page of the \code{rtmvnorm} function from
+  the \pkg{tmvtnorm} package to see how to specify a truncated mvnorm
+  distribution and the possible arguments.}
   
   \item{hypotheses}{a named list; Please note that the hypotheses argument in the given 
   context serves the same purpose as the constraints argument utilized in the 
@@ -102,9 +102,7 @@ comparable to the Akaike weights.
   string enclosed by single quotes. Only the names of \code{coef(model)} or
   \code{names(vector)} can be used as names. See details for more information. 
   Note that objects of class "mlm" do not (yet) support this method.
-  % TO DO ik gebruik nu rijnamen van vcov en dan moet gebruiker evt : vervangen door .. 
-  %       Werkt dat? Zo ja, dan kan deze opmerking gewijzigd worden.
-  
+
   Second, the hypothesis syntax consists of a matrix \eqn{R} (or a vector in 
   case of one constraint) and defines the left-hand side of the constraint 
   \eqn{R\theta \ge rhs}, where each row represents one constraint. The number of 
@@ -126,7 +124,7 @@ comparable to the Akaike weights.
   
   \item{type}{if \code{"goric"}, the generalized order-restricted 
   information criterion value is computed. 
-  If \code{"gorica"}, a proxi for the log-likihood is calculated by assuming that 
+  If \code{"gorica"}, a proxy for the log-likelihood is calculated by assuming that 
   the parameter estimates (of interest) are multivariate normally distributed. 
   Then, either the unbiased covariance matrix of the estimates (based on 'N'; e.g., for an lm object) is used
   or the biased one obtained via the vcov function (e.g., for a lavaan object). 
@@ -139,7 +137,7 @@ comparable to the Akaike weights.
   For many fit objects, one can use the function vcov() to obtain the VCOV. 
   This renders the (biased) restricted sample covariance matrix and not the unbiased sample covariance matrix (based on 'N').
   To obtain the unbiased one, one should make an adjustment based on samples size and the rank of the model (i.e., number of predictors including intercept); 
-  as shwon in an example below.
+  as shown in an example below.
   }
   
   \item{sample_nobs}{the number of observations, only needed if \code{type = "goricac"}. Note that, 
@@ -182,8 +180,7 @@ comparable to the Akaike weights.
   parameter change.}
   
   \item{standardized}{if TRUE, standardized parameter estimates are used.
-  % TO DO Only used for class lavaan?
-  }
+  Only used for objects of class \code{lavaan}.}
   
   \item{digits}{the number of significant digits to use when printing.}
   
@@ -194,7 +191,7 @@ comparable to the Akaike weights.
     \itemize{
       \item \code{chunk_size} integer; the chi-bar-square weights are computed for samples
       of size \code{chunk_size = 5000L}. This process is repeated iteratively until the 
-      weights converges (see \code{convergenge_crit}) or the maximum is reached, i.e., 
+      weights converges (see \code{convergence_crit}) or the maximum is reached, i.e., 
       \code{mix_weights_bootstrap_limit}.
       
       \item \code{mix_weights_bootstrap_limit} integer; maximum number of bootstrap draws.
@@ -269,10 +266,10 @@ comparable to the Akaike weights.
   
   If the restriction matrix is not of full row-rank, this means one of the following:
   \itemize{
-   \item There is at least one redundant restriction specified in the hypothesis. Then, either 
+   \item There is at least one redundant restriction specified in the hypothesis. Then, either
     \itemize{
-      \item[a] Leave the redundant one out 
-      \item[b] Use another (more time-consuming) way of obtaining the level probabilities 
+      \item Leave the redundant one out, or
+      \item Use another (more time-consuming) way of obtaining the level probabilities
       for the penalty term (goric function does this by default): Bootstrapping, as discussed above.
       }
    \item There is at least one range restriction (e.g., -2 < group1 < 2). 
@@ -285,9 +282,11 @@ comparable to the Akaike weights.
     To prevent this type of error delete the one that is incorrect.
 }
 
-\value{The function returns a dataframe with the log-likelihood,
-penalty term, GORIC(A) values and the GORIC(A) weights. Furthermore, a dataframe
-is returned with the relative GORIC(A) weights. 
+\value{The function returns an object of class \code{con_goric}, for
+which print, summary and coef methods are available. The object contains,
+among other things, a dataframe (\code{$result}) with the log-likelihood,
+penalty term, GORIC(A) values and the GORIC(A) weights, and a dataframe
+(\code{$ratio.gw}) with the relative GORIC(A) weights.
 }
 
 
@@ -297,12 +296,9 @@ information criterion for model selection under inequality constraints.
 \emph{Biometrika}, 98, 2, 495--501.
 \doi{10.1093/biomet/asr002}
 
-Vanbrabant, L. and Kuiper, R. (2020). Evaluating a theory-based hypothesis against 
-its complement using an AIC-type information criterion with an application to 
-facial burn injury. Psychological Methods.
-Vanbrabant, L., Van Loey, N., and Kuiper, R. M. (2020). 
-Evaluating a Theory-Based Hypothesis Against Its Complement Using an AIC-Type Information Criterion With an Application to Facial Burn Injury. 
-\emph{Psychological Methods}, 25(2), 129-142. 
+Vanbrabant, L., Van Loey, N., and Kuiper, R. M. (2020).
+Evaluating a Theory-Based Hypothesis Against Its Complement Using an AIC-Type Information Criterion With an Application to Facial Burn Injury.
+\emph{Psychological Methods}, 25(2), 129-142.
 \doi{10.1037/met0000238}
 
 Arbuckle, J. L. (1996). Full information estimation in the presence of
@@ -323,10 +319,11 @@ structural equation models. \emph{Structural Equation Modeling}, 10(1), 80-100.
 ## your research questions and analytical framework.
 
 # The hypotheses (i.e., constraints) have to be in a list. It is recommended to name
-# each hypothesis in the list. Otherwise the hypotheses are named accordingly 'H1', 'H2', \ldots.
-# Another option is to use the \code{llist()} function from the \pkg{Hmisc} package, where.
+# each hypothesis in the list. Otherwise the hypotheses are named accordingly 'H1', 'H2', etc.
+# Another option is to use the llist() function from the Hmisc package, which
+# names the list elements after the objects automatically.
 
-# text-based syntax (the labels x1, x2, and x2 are the names of coef(model) or names(vector))
+# text-based syntax (the labels x1, x2, and x3 are the names of coef(model) or names(vector))
 h1 <- '(x1, x2, x3) > 0'
 h2 <- '(x1, x3) > 0; x2 = 0'
 h3 <- 'x1 > 0; x2 < 0; x3 = 0'
@@ -361,7 +358,7 @@ library(MASS)
 # prepare data
 DATA <- subset(ZelazoKolb1972, Group != "Control")
   
-# fit unrestrikted linear model
+# fit unrestricted linear model
 fit1.lm <- lm(Age ~ Group, data = DATA)
 
 # some artificial restrictions

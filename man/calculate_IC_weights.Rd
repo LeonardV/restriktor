@@ -9,14 +9,14 @@
 calculate_IC_weights(IC, hypo_names = NULL)
 calc_ICweights(IC, hypo_names = NULL)
 
-\method{print}{goric_ICw}(x, digits = max(3, getOption("digits") - 4), use_scientific, \dots)
+\method{print}{goric_ICw}(x, digits = max(3, getOption("digits") - 4), use_scientific = TRUE, \dots)
 
 }
 \arguments{
   \item{IC}{A vector or one-column matrix with information criteria (AIC, ORIC, GORIC(A), BIC, SIC,
             \ldots) values of length 'NrHypos', where 'NrHypos' stands for the number of hypotheses/
             models.}
-  \item{x}{an object of class \code{con_goric}.}
+  \item{x}{an object of class \code{goric_ICw}.}
   \item{hypo_names}{Optional. Vector containing 'NrHypos' characters which will be used for labeling the
                     hypothesis. Default: H1, H2, \ldots}
   \item{use_scientific}{If TRUE (default), the IC weights and ratio of IC weights 

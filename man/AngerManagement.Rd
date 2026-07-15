@@ -14,7 +14,7 @@
 
 \usage{data(AngerManagement)}
 \format{
-  A data frame of 40 observations of 4 treatment variables and covariate age.
+  A data frame of 40 observations on 3 variables.
   \describe{
     \item{\code{Anger}}{reduction in aggression levels}
     \item{\code{Group}}{No, Physical, Behavioral, Both}

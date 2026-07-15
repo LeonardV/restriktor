@@ -44,11 +44,12 @@
   
   \item{level}{the confidence level of the interval (default = 0.95).}
   
-  \item{goric}{if \code{"goric"} (default), the generalized order-restricted 
-  information criterion value is computed. If \code{"gorica"} the 
-  log-likihood is computed using the multivariate normal distribution 
-  function. If \code{"goricc" or "goricca"}, a small sample version
-  of the \code{"goric" or "gorica"} is computed.}
+  \item{goric}{if \code{"goric"} (default), the generalized order-restricted
+  information criterion value is computed. If \code{"gorica"} the
+  log-likelihood is computed using the multivariate normal distribution
+  function. If \code{"goricc"} or \code{"goricac"}, a small sample version
+  of the \code{"goric"} or \code{"gorica"} is computed. If \code{"none"},
+  no information criterion is computed.}
   
   \item{which}{
     Character string indicating which coefficient vector to return:
@@ -58,7 +59,7 @@
   
   \item{digits}{the number of significant digits to use when printing.}
   
-  \item{signif.stars}{If TRUE, "significance stars are printed 
+  \item{signif.stars}{If TRUE, significance stars are printed
   for each coefficient.}
   
   \item{\ldots}{no additional arguments for now.}
@@ -71,8 +72,8 @@
   about the unrestricted and restricted R-square and by default 
   the output of the GORIC. If bootstrapped standard errors are 
   requested (e.g., option \code{se = "boot.model.based"} in the 
-  \code{restriktor} function and \code{bootCI = TRUE} in the 
-  summary function) standard errors and confidence intervals 
+  \code{restriktor} function and \code{bootCIs = TRUE} in the
+  summary function) standard errors and confidence intervals
   are provided.
 }
 

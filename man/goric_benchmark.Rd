@@ -16,12 +16,12 @@
                   group_size = NULL, alt_group_size = NULL, 
                   quant = NULL, iter = 2000, 
                   control = list(), 
-                  ncpus = 1, seed = NULL, \ldots)
+                  ncpus = 1, seed = NULL, \dots)
 
   benchmark_asymp(object, pop_est = NULL, sample_size = NULL, 
                   alt_sample_size = NULL, quant = NULL, iter = 2000, 
                   control = list(), 
-                  ncpus = 1, seed = NULL, \ldots)
+                  ncpus = 1, seed = NULL, \dots)
   
   \method{print}{benchmark}(x, output_type = c("rgw", "gw", "rlw", "ld", "all"), 
                             hypo_rate_threshold = 1, color = TRUE, ...)
@@ -35,7 +35,8 @@
   \item{object}{An object of class \code{con_goric} (a GORIC(A) object from the \code{goric} function).}
   \item{model_type}{If "means", the model parameters reflect (adjusted) means, else
   model_type = "asymp" (default). See details for more information about \code{asymp}.}
-  \item{x}{An object of class \code{benchmark} or \code{benchmark}.}
+  \item{x}{An object of class \code{benchmark} (i.e., of class
+  \code{benchmark_means} or \code{benchmark_asymp}).}
   \item{pop_es}{A scalar or a vector of population Cohen's f (effect-size) values. 
   By default, it benchmarks ES = 0 (no-effect) and the observed Cohen's f.}
   \item{pop_est}{A 1 x k vector or an n x k matrix of population 
@@ -67,7 +68,7 @@
   \item{hypo_rate_threshold}{A numeric value specifying the threshold for the 
   hypothesis rate. The function calculates the proportion of ratio-of-goric-weights 
   that exceeds this threshold. Defaults to 1.}
-  \item{control}{A list of control parameters.For more information, see details \link{goric}.}
+  \item{control}{A list of control parameters. For more information, see details \link{goric}.}
   \item{ncpus}{Number of CPUs to use for parallel processing. Defaults to \code{1}.
   See details for more information.}
   \item{seed}{A seed for random number generation.}
@@ -173,7 +174,7 @@ fit_goric <- goric(anova_result, hypotheses = list(H1 = h1, H2 = h2),
                    comparison = "unconstrained", type = "goric")
 
 # by default: ES = 0 \& ES = observed ES
-# In practice you want to increase the number of iterations (default = 1000).
+# In practice you want to increase the number of iterations (default = 2000).
 \donttest{
 # multisession supports windows machines
 # future::plan(future::multisession, workers = 8)
@@ -184,10 +185,8 @@ print(benchmark_results_mean)
 }
 
 # by default the ratio of GORIC weights for the preferred hypothesis (here h1) is
-# plotted against its competitors (i.e., h2 and the unconstrained). To improve
-# the readability of the plot, the argument hypothesis_comparison can be used to
-# focus on a specif competitor. Further readability can be achieved by setting
-# the x_lim option. 
+# plotted against its competitors (i.e., h2 and the unconstrained). The
+# readability of the plot can be improved by setting the x_lim option.
 \donttest{plot(benchmark_results_mean, output_type = "rgw")}
 
 # specify custom effect-sizes

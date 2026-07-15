@@ -12,7 +12,7 @@ to 18 years old with burns and their mother.
 
 \usage{data(Burns)}
 \format{
-  A data frame of 278 observations of 4 variables.
+  A data frame of 278 observations on 6 variables.
   \describe{
     \item{\code{PTSS}}{post-traumatic stress symptoms}
     \item{\code{gender}}{gender}

@@ -12,7 +12,6 @@
 \alias{print.summary.evSyn}
 \alias{summary.evSyn}
 \alias{plot.evSyn}
-\alias{evSyn}
 \alias{leave1studyout}
 \alias{leave1studyout.evSyn}
 \alias{leave1studyout.default}
@@ -31,10 +30,10 @@ reduced set.
 
 \usage{
 # I try to guess the input type.
-evSyn(object, input_type = NULL, \ldots)
+evSyn(object, input_type = NULL, \dots)
 
 # input: Parameter estimates and covariance matrix
-evSyn_est(object, \ldots, VCOV = list(), hypotheses = list(),
+evSyn_est(object, \dots, VCOV = list(), hypotheses = list(),
           type_ev = c("added", "equal", "average"), 
           comparison = c("unconstrained", "complement", "none"),
           hypo_names = c(), type = c("gorica", "goricac"), 
@@ -42,20 +41,20 @@ evSyn_est(object, \ldots, VCOV = list(), hypotheses = list(),
           study_names = c(), study_sample_nobs = NULL)
 
 # input: Log-likelihood and penalty values
-evSyn_LL(object, \ldots, PT = list(), type_ev = c("added", "equal", "average"),
+evSyn_LL(object, \dots, PT = list(), type_ev = c("added", "equal", "average"),
          hypo_names = c(), type = c("goric", "goricc", "gorica", "goricac"),
          order_studies = c("input_order", "ascending", "descending"),
          study_names = c())
 
 # input: GORIC(A), ORIC, AIC values
-evSyn_ICvalues(object, \ldots, type_ev = c("added", "average"), hypo_names = c(), 
+evSyn_ICvalues(object, \dots, type_ev = c("added", "average"), hypo_names = c(), 
                type = c("goric", "goricc", "gorica", "goricac"), 
                order_studies = c("input_order", "ascending", "descending"), 
                study_names = c())
 
 # input: AIC or ORIC or GORIC or GORICA weights or (Bayesian) posterior 
 # model probabilities
-evSyn_ICweights(object, \ldots, type_ev = c("added", "average"), 
+evSyn_ICweights(object, \dots, type_ev = c("added", "average"), 
                 priorWeights = NULL, hypo_names = c(),
                 type = c("goric", "goricc", "gorica", "goricac"),
                 order_studies = c("input_order", "ascending", "descending"), 
@@ -63,7 +62,7 @@ evSyn_ICweights(object, \ldots, type_ev = c("added", "average"),
 
 # input: Ratio of AIC or ORIC or GORIC or GORICA weights or 
 # (Bayesian) posterior model probabilities
-evSyn_ICratios(object, \ldots, type_ev = c("added", "average"), 
+evSyn_ICratios(object, \dots, type_ev = c("added", "average"), 
                priorWeights = NULL, hypo_names = c(),
                type = c("goric", "goricc", "gorica", "goricac"),
                order_studies = c("input_order", "ascending", "descending"), 
@@ -81,7 +80,7 @@ evSyn_gorica(object, \dots, type_ev = c("added", "equal", "average"),
 # function for evSyn_est.
 evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", study_sample_nobs = "ni", 
              type = NULL, cluster_col = c("trial", "study", "author", "authors", 
-             "Trial", "Study", "Author", "Authors"), outcome_col = NULL, \ldots)
+             "Trial", "Study", "Author", "Authors"), outcome_col = NULL, \dots)
 
 \method{print}{evSyn}(x, digits = max(3, getOption("digits") - 4), \dots)
 
@@ -134,7 +133,7 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   Average-evidence approach (\code{type_ev = "average"}). See details for more 
   information.}
 
-  \item{type}{If \code{"gorica"}, a proxi for the log-likihood is calculated by assuming that 
+  \item{type}{If \code{"gorica"}, a proxy for the log-likelihood is calculated by assuming that 
   the parameter estimates (of interest) are multivariate normally distributed. 
   Then, either the unbiased covariance matrix of the estimates (based on 'N'; e.g., for an lm object) is used
   or the biased one obtained via the vcov function (e.g., for a lavaan object). 
@@ -162,7 +161,7 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   \item{hypo_names}{character vector for labelling the hypotheses. By default the
   names are set to H1, H2, \ldots}
 
-  \item{output_type}{a plot options. If "\code{gorica_weights}" (default), 
+  \item{output_type}{a plot option. If "\code{gorica_weights}" (default),
   a plot with the cumulative goric(a)
   weights and goric(a) weights per study is displayed. If "\code{ll_weights}",
   a plot with the cumulative log-likelihood weights and log-likelihood weights 
@@ -225,11 +224,10 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   \item{outcome_col}{a column name in \code{data} containing the outcome 
   identifiers/labels for each observation within a cluster/study. 
   The hypothesis/-es should be based on this labelling.
-  By default (i.e., if 'outcome_col' is null), the function assumes that the 
-  parameter label used in the hypothesis is 
-  "theta" 
-  % ms juist via deze de labels voor de hypo opgeven!
-  (one outcome variable); 
+  By default (i.e., if 'outcome_col' is null), the function assumes that the
+  parameter label used in the hypothesis is
+  "theta"
+  (one outcome variable);
   when there is additionally a column called 'outcome', it will use that as the outcome identifier,
   employing its unique levels/values as the labels (more outcome variables).
   If 'outcome_col' is not null but user-specified, then the labeling should be based
@@ -237,20 +235,20 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   Notably, outcome_col is related to the labeling; 
   the column with estimates is referred to as 'yi_col' and is, 
   by default, set to "yi".
-  For more information, see Example 5 below.
+  For more information, see Example 6 below.
   }
   
   \item{yi_col}{a character string specifying the column in \code{data} that 
   contains the outcome values / estimates for each observation. 
   The default is \code{"yi"}.
-  For more information, see Example 5 below.
+  For more information, see Example 6 below.
   }
   
   \item{vi_cols}{a character vector specifying the columns in \code{data} that 
   contain the variance and covariance values for each observation. The default is, 
   in the case of one outcome variable, \code{"vi"};
-  in the case of multiple (namely, O) variables, \code{c("v1i", \ldots, "vOi"}.
-  For more information, see Example 5 below.
+  in the case of multiple (namely, O) variables, \code{c("v1i", ..., "vOi")}.
+  For more information, see Example 6 below.
   }
   
   \item{digits}{the number of significant digits to use when printing.}
@@ -352,7 +350,7 @@ for the theory-based hypotheses.
 ## your research questions and analytical framework.
 
 # The hypotheses (i.e., constraints) have to be in a list. It is recommended to name
-# each hypothesis in the list. Otherwise, the hypotheses are named accordingly 'H1', 'H2', \ldots.
+# each hypothesis in the list. Otherwise, the hypotheses are named accordingly 'H1', 'H2', etc.
 
 # Example using text-based syntax (the labels x1, x2, and x3 are the names of 
 # coef(model) or names(vector))

@@ -3,7 +3,7 @@
 \title{Package for equality and inequality restricted estimation, model selection and hypothesis testing}
 \description{
 Package \code{restriktor} implements estimation, testing and evaluating of linear equality and 
-inequality restriktions about parameters and effects for univariate and multivariate 
+inequality restrictions about parameters and effects for univariate and multivariate 
 normal models and generalized linear models.}
 
 \details{
@@ -19,7 +19,7 @@ normal models and generalized linear models.}
   Function \code{restriktor} estimates the parameters of an univariate
   and multivariate linear model (\code{lm}), robust estimation of the 
   linear model (\code{rlm}) or a generalized linear model (\code{glm}) 
-  subject to linear equality and/or inequality restriktions. The real 
+  subject to linear equality and/or inequality restrictions. The real 
   work horses are the \code{conLM}, \code{conMLM}, the \code{conRLM}, 
   and the \code{conGLM} functions. A major advantage of \pkg{restriktor} 
   is that the constraints can be specified by a text-based description. 
@@ -27,7 +27,7 @@ normal models and generalized linear models.}
   (comparable with a contrast matrix) themselves. 
   
   The function \code{restriktor} offers the possibility to compute 
-  (model robust) standard errors under the restriktions. The 
+  (model robust) standard errors under the restrictions. The 
   parameter estimates can also be bootstrapped, where bootstrapped 
   standard errors and confidence intervals are available via the 
   summary function. Moreover, the function computes the Generalized 
@@ -47,7 +47,7 @@ normal models and generalized linear models.}
   
   The function \code{goric} (generalized order-restricted information
   criterion) computes GORIC values, weights and relative-weights or GORICA
-  (generalized order-restricted information crittion approximation) values,
+  (generalized order-restricted information criterion approximation) values,
   weights and relative weights. The GORIC(A) values are comparable to the AIC 
   values. The function offers the possibility to evaluate an order-restricted 
   hypothesis against its complement, the unconstrained hypothesis or against
@@ -55,11 +55,11 @@ normal models and generalized linear models.}
   evaluated against its complement but work is in progress to evaluate a set 
   of order-restricted hypothesis against its complement. 
   
-  The package makes use of various other R packages: \pkg{quadprog} 
-  is used for restricted estimation, \pkg{boot} for bootstrapping, 
-  \pkg{ic.infer} for computing the mixing weights based on the 
-  multivariate normal distribution, \pkg{lavaan} for parsing the 
-  constraint syntax. 
+  The package makes use of various other R packages: \pkg{quadprog}
+  and \pkg{nnls} are used for restricted estimation and projections,
+  \pkg{boot} for bootstrapping, \pkg{mvtnorm} and \pkg{tmvtnorm} for
+  computing the mixing weights based on the multivariate normal
+  distribution, and \pkg{lavaan} for parsing the constraint syntax.
 }
 
 \value{
@@ -150,7 +150,7 @@ summary(fit.con)
 
 \author{Leonard Vanbrabant and Yves Rosseel - Ghent University}
 \seealso{ 
-See also \code{\link{restriktor}}, \code{\link{iht}}, 
-          packages \pkg{boot}, \pkg{goric}, \pkg{ic.infer}, 
+See also \code{\link{restriktor}}, \code{\link{iht}},
+          \code{\link{goric}}, and the packages \pkg{boot},
           \pkg{mvtnorm}, and \pkg{quadprog}.
 }

@@ -11,10 +11,10 @@ restricted hypotheses for linear models.
 }
 
 \usage{
-iht(\ldots)
+iht(\dots)
 
 conTest(object, constraints = NULL, type = "summary", test = "F", 
-        rhs = NULL, neq = 0, \dots)
+        rhs = NULL, neq = 0L, \dots)
 
 conTestD(model = NULL, data = NULL, constraints = NULL, 
          type = c("A","B"), R = 1000L, bootstrap.type = "bollen.stine", 
@@ -22,7 +22,7 @@ conTestD(model = NULL, data = NULL, constraints = NULL,
          double.bootstrap = "standard", double.bootstrap.R = 249, 
          double.bootstrap.alpha = 0.05, 
          parallel = c("no", "multicore", "snow"), 
-         ncpus = 1L, cl = NULL, verbose = FALSE, \ldots)        
+         ncpus = 1L, cl = NULL, verbose = FALSE, \dots)        
 }
 
 \arguments{
@@ -131,7 +131,7 @@ conTestD(model = NULL, data = NULL, constraints = NULL,
     is created for the duration of the \code{InformativeTesting} call.}
   \item{verbose}{Logical; if \code{TRUE}, information is shown at each bootstrap         
     draw.}
-  \item{\dots}{futher options for the \code{iht} and/or 
+  \item{\dots}{further options for the \code{iht} and/or 
   \code{restriktor} function. See details for more information.}
 
 }
@@ -147,7 +147,7 @@ conTestD(model = NULL, data = NULL, constraints = NULL,
   one restriction false (some equality constraints may be 
   maintained).
   \item Type C: Test H0: at least one restriction false ("<") 
-  against HA: all constraints strikty true (">"). This test is 
+  against HA: all constraints strictly true (">"). This test is 
   based on the intersection-union principle (Silvapulle and Sen, 
   2005, chp 5.3). Note that, this test only makes sense in case 
   of no equality constraints.
@@ -158,7 +158,7 @@ conTestD(model = NULL, data = NULL, constraints = NULL,
 
 The null-distribution of hypothesis test Type C is based on a 
 t-distribution (one-sided). Its power can be poor in case of many 
-inequalty constraints. Its main role is to prevent wrong 
+inequality constraints. Its main role is to prevent wrong 
 conclusions from significant results from hypothesis test Type A.
 
 The exact finite sample distributions of the non-robust F-, 
@@ -176,8 +176,8 @@ score-test statistics are based on chi-square distributions.
 
 If object is of class \code{lm} or \code{rlm}, the \code{conTest} function
 internally calls the \code{restriktor} function. Arguments for the 
-\code{\link{restriktor}} function can be passed on via the \code{\ldots}. Additional
-arguments for the \code{conTest} function can also passed on via the \code{\ldots}.
+\code{\link{restriktor}} function can be passed on via the \code{...}. Additional
+arguments for the \code{conTest} function can also passed on via the \code{...}.
 See for example \code{\link{conTestF}} for all available arguments.
 
 }
@@ -340,7 +340,7 @@ myConstraints4 <- ' group1 = group2
 
 iht(fit2.lm, constraints = myConstraints4, type = "B", neq.alt = 1)
 
-# fit resticted model and compute model-based bootstrapped 
+# fit restricted model and compute model-based bootstrapped 
 # standard errors. We only generate 9 bootstrap samples in this 
 # example; in practice you may wish to use a much higher number.
 # Note that, a warning message may be thrown because the number of 

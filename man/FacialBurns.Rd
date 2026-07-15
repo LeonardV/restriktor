@@ -1,7 +1,7 @@
 \name{FacialBurns}
 \alias{FacialBurns}
 \docType{data}
-\title{Dataset for illustrating the conTest_conLavaan function.}
+\title{Dataset for illustrating the conTestD function.}
 
 \description{
   A dataset from the Dutch burn center (http://www.adbc.nl). 
@@ -13,7 +13,7 @@
 \usage{data(FacialBurns)}
 
 \format{
-A data frame of 77 observations of 6 variables.
+A data frame of 77 observations on 6 variables.
 \describe{
     \item{\code{Selfesteem}}{Rosenberg's self-esteem scale}
 \item{\code{HADS}}{Anxiety and depression scale}

@@ -14,17 +14,24 @@ restriktor <- function(object, constraints = NULL, ...) {
   
   arguments <- list(...)
   if (length(arguments)) {
-    pnames <- c("se", "B", "rhs", "neq", "mix_weights",  
-                "auxilliary", "emControl", "parallel", "ncpus", "cl", "seed", 
+    pnames <- c("se", "B", "rhs", "neq", "mix_weights",
+                "missing", "auxiliary", "parallel", "ncpus", "cl", "seed",
                 "control", "verbose", "debug", "auto_bound",
                 # for rtmvnorm() function
                 "lower", "upper", "algorithm",
                 "burn.in.samples", "start.values", "thinning")
     
     pm <- pmatch(names(arguments), pnames, nomatch = 0L)
-    if (any(pm == 0L)) { 
+    if (any(pm == 0L)) {
       pm.idx <- which(pm == 0L)
       stop("Restriktor Error: ", paste(sQuote(names(arguments[pm.idx])), collapse = " and "), " invalid argument(s).")
+    }
+
+    if (!is.null(arguments$missing) &&
+        tolower(arguments$missing) %in% c("fiml", "em", "two.stage", "twostage") &&
+        !(class(object)[1] %in% c("lm", "aov"))) {
+      stop("restriktor ERROR: missing = \"fiml\" is currently only available for objects of class lm.",
+           call. = FALSE)
     }
   }
 

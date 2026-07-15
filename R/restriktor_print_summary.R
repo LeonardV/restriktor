@@ -25,11 +25,12 @@ print.summary.restriktor <- function(x, digits = max(3, getOption("digits") - 2)
     "Weighted ", "Residuals:\n", sep = "")
   if (rdf > 5L) {
     nam <- c("Min", "1Q", "Median", "3Q", "Max")
+    # residuals may contain NAs when the model was fitted with missing = "fiml"
     rq <- if (length(dim(c(resid))) == 2L) {
-      structure(apply(t(resid), 1L, quantile), dimnames = list(nam, 
-                                                               dimnames(resid)[[2L]]))
+      structure(apply(t(resid), 1L, quantile, na.rm = TRUE),
+                dimnames = list(nam, dimnames(resid)[[2L]]))
     } else {
-      zz <- zapsmall(quantile(resid), digits + 1L)
+      zz <- zapsmall(quantile(resid, na.rm = TRUE), digits + 1L)
       structure(zz, names = nam)
     }
     print(rq, digits = digits, ...)

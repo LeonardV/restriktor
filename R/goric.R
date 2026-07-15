@@ -114,14 +114,19 @@ goric.default <- function(object, ..., hypotheses = NULL,
     stop("restriktor ERROR: All arguments in ... must be named.", call. = FALSE)
   }
   
-  ldots$missing <- NULL
+  # missing = "fiml" is passed through to restriktor(); other missing-data
+  # methods are handled before goric.default is reached
+  fiml_missing <- !is.null(ldots$missing) && tolower(ldots$missing) == "fiml"
+  if (!fiml_missing) {
+    ldots$missing <- NULL
+  }
   ldots$control <- control
-  
-  # which arguments are allowed 
+
+  # which arguments are allowed
   allowed <- c(
     "B","mix_weights","parallel","ncpus","cl","seed","control","verbose","debug",
     "comparison","type","hypotheses","auxiliary","VCOV","sample_nobs","object",
-    "lower","upper","algorithm","burn.in.samples","start.values","thinning"
+    "missing","lower","upper","algorithm","burn.in.samples","start.values","thinning"
   )
   
   unknown <- setdiff(names(ldots), allowed)
@@ -190,11 +195,19 @@ goric.default <- function(object, ..., hypotheses = NULL,
     
     ans$hypotheses_usr <- lapply(conList, function(x) x$CON$constraints)
     ans$model.org <- object # add unrestricted object to output
-    if (is.null(sample_nobs)) {
-      sample_nobs <- nrow(model.frame(object)) # This is sample size N, not group sizes
-    } 
-    VCOV <- VCOV.unbiased(ans$model.org, sample_nobs) # unrestricted VCOV + check sample_nobs
-    idx <- length(conList) 
+    if (fiml_missing) {
+      # FIML sample size and coefficient covariance matrix
+      if (is.null(sample_nobs)) {
+        sample_nobs <- conList[[1]]$fiml$N
+      }
+      VCOV <- conList[[1]]$Sigma
+    } else {
+      if (is.null(sample_nobs)) {
+        sample_nobs <- nrow(model.frame(object)) # This is sample size N, not group sizes
+      }
+      VCOV <- VCOV.unbiased(ans$model.org, sample_nobs) # unrestricted VCOV + check sample_nobs
+    }
+    idx <- length(conList)
     objectnames <- vector("character", idx)
   } else if (any(object_class %in% c("aov","lm","rlm","glm","mlm")) && !isConChar) {
     # tolower names Amat and rhs
@@ -237,11 +250,19 @@ goric.default <- function(object, ..., hypotheses = NULL,
     }
     
     ans$model.org <- object # add unrestricted object to output
-    if (is.null(sample_nobs)) {
-      sample_nobs <- nrow(model.frame(object)) # This is sample size N, not group sizes
-    } 
-    VCOV <- VCOV.unbiased(ans$model.org, sample_nobs) # unrestricted VCOV + check sample_nobs
-    idx <- length(conList) 
+    if (fiml_missing) {
+      # FIML sample size and coefficient covariance matrix
+      if (is.null(sample_nobs)) {
+        sample_nobs <- conList[[1]]$fiml$N
+      }
+      VCOV <- conList[[1]]$Sigma
+    } else {
+      if (is.null(sample_nobs)) {
+        sample_nobs <- nrow(model.frame(object)) # This is sample size N, not group sizes
+      }
+      VCOV <- VCOV.unbiased(ans$model.org, sample_nobs) # unrestricted VCOV + check sample_nobs
+    }
+    idx <- length(conList)
     objectnames <- vector("character", idx)
     #CALL$object <- NULL
   } else if ("numeric" %in% object_class && isConChar) {
@@ -386,9 +407,10 @@ goric.default <- function(object, ..., hypotheses = NULL,
   # compute log-likelihood for complement
   # moet dit obv PT_Amat en PT_meq? TO DO
   LL_c <- compute_complement_likelihood(ans$model.org, VCOV,
-                                        Amat, Amat.ciq, Amat.ceq, 
-                                        bvec, bvec.ciq, bvec.ceq, 
+                                        Amat, Amat.ciq, Amat.ceq,
+                                        bvec, bvec.ciq, bvec.ceq,
                                         meq, b.unrestr, type, ldots,
+                                        ll.unrestr = if (fiml_missing) conList[[Hm]]$fiml$loglik.unrestr else NULL,
                                         debug = debug)
   llc <- LL_c$llc
   betasc <- LL_c$betasc
@@ -440,9 +462,14 @@ goric.default <- function(object, ..., hypotheses = NULL,
             PTm <- unlist(lapply(isSummary, function(x) attr(x$goric, "penalty")))
             if (type %in% c("goric", "goricc")) {
               # model
-              llm <- unlist(lapply(isSummary, function(x) attr(x$goric, "loglik"))) 
+              llm <- unlist(lapply(isSummary, function(x) attr(x$goric, "loglik")))
               # unrestricted
-              llu <- logLik(ans$model.org)
+              if (fiml_missing) {
+                # observed-data log-likelihood of the unrestricted (saturated) model
+                llu <- conList[[1]]$fiml$loglik.unrestr
+              } else {
+                llu <- logLik(ans$model.org)
+              }
             } else if (type %in% c("gorica", "goricac")) {
                 llm <- unlist(lapply(conList, function(x) { 
                   dmvnorm(c(x$b.unrestr - x$b.restr), sigma = VCOV, log = TRUE) 
@@ -650,14 +677,24 @@ goric.default <- function(object, ..., hypotheses = NULL,
 # object of class lm ------------------------------------------------------
 goric.lm <- function(object, ..., hypotheses = NULL,
                      comparison = NULL,
-                     type = "goric", 
+                     type = "goric",
                      missing = "none", auxiliary = c(), emControl = list(),
                      debug = FALSE) {
-  
-  if (missing %in% c("em", "EM", "two.stage", "twostage")) {
-    missing <- "two.stage" 
-  } 
-  
+
+  missing <- tolower(missing)
+  if (missing %in% c("em", "two.stage", "twostage")) {
+    message("\nrestriktor Message: the two-stage EM approach has been replaced by",
+            " direct full information maximum likelihood; missing = \"fiml\" is used.")
+    missing <- "fiml"
+  }
+  if (!(missing %in% c("none", "listwise", "fiml"))) {
+    stop("restriktor ERROR: missing method ", sQuote(missing),
+         " unknown. Choose from \"none\" (listwise deletion) or \"fiml\".", call. = FALSE)
+  }
+  if (missing == "listwise") {
+    missing <- "none"
+  }
+
   objectList <- list(...)
 
   # only one object of class lm is allowed
@@ -666,52 +703,40 @@ goric.lm <- function(object, ..., hypotheses = NULL,
   if (sum(isLm) > 1L) {
     stop(paste("\nrestriktor ERROR: multiple objects of class lm found, only 1 is allowed."), call. = FALSE)
   }
-  
-  if (missing == "two.stage") {
+
+  if (missing == "fiml") {
     if (family(object)$family != "gaussian") {
-      stop(paste("\nrestriktor ERROR: \"two.stage\" is not available in the categorical setting"), call. = FALSE)
+      stop(paste("\nrestriktor ERROR: \"fiml\" is not available in the categorical setting"), call. = FALSE)
     }
-    #
-    # Check on type and possibly change
-    if (type == "goric") {
-      message("\nrestriktor Message: missing = \"two.stage\" is only (for now)", 
-              "available for type = 'gorica(c)'. The GORICA will be used, not the GORIC.")
-      type = "gorica"
-    } else if (type == "goricc") {
-      message("\nrestriktor Message: missing = \"two.stage\" is only (for now)", 
-              "available for type = 'gorica(c)'. The GORICAC will be used, not the GORICC.")
-      type = "goricac"
-    } else if (!c(type %in% c("gorica", "goricac"))) {
-      message("\nrestriktor Message: missing = \"two.stage\" is only (for now)", 
-              "available for type = 'gorica(c)'. The GORICA will be used.")
-      type = "gorica"
+    # the restriktor objects are fitted with restricted FIML (ECM), so both
+    # the GORIC(C) (log-likelihood based) and the GORICA(C) are available
+    objectList$missing   <- "fiml"
+    objectList$auxiliary <- auxiliary
+    if (length(emControl) > 0L) {
+      ctrl <- objectList$control
+      if (is.null(ctrl)) { ctrl <- list() }
+      ctrl$fiml <- emControl
+      objectList$control <- ctrl
     }
-    #
-    tsm  <- two_stage_matrices(object, auxiliary = auxiliary, emControl = emControl)
-    vcov <- two_stage_sandwich(tsm)
-    est  <- coef_named_vector(tsm$fitTarget, VCOV = vcov)
-    #N <- tsm$N
-    objectList$sample_nobs <- tsm$N
-    objectList$object <- est
-    objectList$VCOV   <- vcov
+    objectList$object      <- object
+    objectList$VCOV        <- NULL
+    # the FIML sample size is determined in goric.default from the fitted
+    # restriktor objects (unless the user supplied sample_nobs)
   } else {
-    objectList$object <- object
-    objectList$VCOV   <- NULL
-  } 
-    objectList$sample_nobs <- length(residuals(object))
+    objectList$object      <- object
+    objectList$VCOV        <- NULL
+    objectList$missing     <- NULL
+    objectList$auxiliary   <- NULL
+    if (is.null(objectList$sample_nobs)) {
+      objectList$sample_nobs <- length(residuals(object))
+    }
+  }
     objectList$hypotheses  <- hypotheses
     objectList$comparison  <- comparison
     objectList$type        <- type
     objectList$debug       <- debug
-    objectList$missing     <- NULL
-    objectList$auxiliary   <- NULL
-    objectList$emControl   <- NULL
-    
-    if (missing == "two.stage") {
-      res <- do.call(goric.numeric, objectList)
-    } else {    
-      res <- do.call(goric.default, objectList)
-    }
+
+  res <- do.call(goric.default, objectList)
   res
 }
 

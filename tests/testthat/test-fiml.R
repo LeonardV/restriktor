@@ -191,6 +191,38 @@ test_that("fiml works with factors and interactions", {
 })
 
 
+test_that("fiml respects the subset argument of the lm fit", {
+  df <- gen_fiml_data()
+  fit <- lm(y ~ x1 + x2 + x3, data = df, subset = x1 > 0)
+
+  r <- restriktor(fit, constraints = "x1 > 0", missing = "fiml")
+  n_subset <- sum(df$x1 > 0)
+  expect_equal(r$fiml$N, sum(rowSums(!is.na(df[df$x1 > 0, 1:4])) > 0))
+  expect_lte(r$fiml$N, n_subset)
+})
+
+
+test_that("fiml handles character predictors like factors", {
+  set.seed(11)
+  n <- 200
+  x1 <- rnorm(n)
+  g_chr <- sample(c("a", "b", "c"), n, replace = TRUE)
+  y <- 1 + 0.8 * x1 + 0.5 * (g_chr == "b") + rnorm(n)
+  df <- data.frame(y, x1, g = g_chr, stringsAsFactors = FALSE)
+  df$y[runif(n) < 0.2] <- NA
+  df$g[runif(n) < 0.2] <- NA
+
+  fit_chr <- lm(y ~ x1 + g, data = df)
+  df_fac <- df
+  df_fac$g <- factor(df_fac$g)
+  fit_fac <- lm(y ~ x1 + g, data = df_fac)
+
+  r_chr <- restriktor(fit_chr, constraints = "gb > 0", missing = "fiml")
+  r_fac <- restriktor(fit_fac, constraints = "gb > 0", missing = "fiml")
+  expect_equal(coef(r_chr), coef(r_fac), tolerance = 1e-8)
+})
+
+
 test_that("fiml error handling", {
   df <- gen_fiml_data()
   fit <- lm(y ~ x1 + x2 + x3, data = df)
@@ -215,4 +247,9 @@ test_that("fiml error handling", {
   fitw <- lm(y ~ x1 + x2 + x3, data = df, weights = rep(1, nrow(df)))
   expect_error(restriktor(fitw, constraints = "x1 > 0", missing = "fiml"),
                "weighted")
+  # auxiliary equal to the response or a model variable
+  expect_error(restriktor(fit, constraints = "x1 > 0", missing = "fiml",
+                          auxiliary = "y"), "auxiliary")
+  expect_error(restriktor(fit, constraints = "x1 > 0", missing = "fiml",
+                          auxiliary = "x1"), "auxiliary")
 })

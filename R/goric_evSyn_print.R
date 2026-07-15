@@ -47,33 +47,48 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     cat("Ratio of information criteria weights (each study has at least one 1)\n")
   } 
   
+  cat("\n")
+  cat("---\n")
   
   if (!is.null(x[["Cumulative_LL_weights"]]) && !is.null(x[["Cumulative_GORICA_weights"]])) {
-    cat(paste0("\nFinal log-likelihood & ", type_label,  " weights:\n"))
+    cat(paste0("\nFinal log-likelihood (LL) & ", type_label,  " weights:\n"))
     clw <- sapply(x[["Cumulative_LL_weights"]]["Final", , drop = FALSE], 
                   FUN = function(x) format_numeric(x, digits = digits))
     cgw <- sapply(x[["Cumulative_GORICA_weights"]]["Final", , drop = FALSE], 
                   FUN = function(x) format_numeric(x, digits = digits))
     cw <- t(rbind(clw, cgw))
     rownames(cw) <- colnames(x[["Cumulative_LL_weights"]])
-    colnames(cw) <- c("log-likelihood", type_label)
+    #colnames(cw) <- c("log-likelihood", type_label)
+    colnames(cw) <- c("LL weights", paste0(type_label, " weights"))
     print(cw, print.gap = 2, quote = FALSE, right = TRUE)
+    cat("\n")
     cat("---\n")
     #cat("\n")
   } else if (!is.null(x[["Cumulative_LL_weights"]])) {
-    cat(paste0("\nFinal ", "log-likelihood", " weights:\n"))
+    cat(paste0("\nFinal ", "log-likelihood  (LL)", " weights:\n"))
     clw <- sapply(x[["Cumulative_LL_weights"]]["Final", , drop = FALSE], 
                   FUN = function(x) format_numeric(x, digits = digits))
-    names(clw) <- colnames(x[["Cumulative_LL_weights"]])
-    print(clw, print.gap = 2, quote = FALSE, right = TRUE)
+    # names(clw) <- colnames(x[["Cumulative_LL_weights"]])
+    # print(clw, print.gap = 2, quote = FALSE, right = TRUE)
+    cw <- matrix(clw, ncol = 1)
+    cw <- as.data.frame(cw)
+    rownames(cw) <- colnames(x[["Cumulative_LL_weights"]])
+    colnames(cw) <- "LL weights" #NULL #paste0("Final ", "log-likelihood", " weights")
+    print(cw, print.gap = 2, quote = FALSE, right = TRUE, col.names = FALSE)
     #cat("---\n")
     cat("\n")
   } else if (!is.null(x[["Cumulative_GORICA_weights"]])) {
     cat(paste0("\nFinal ", type_label, " weights:\n"))
     cgw <- sapply(x[["Cumulative_GORICA_weights"]]["Final", , drop = FALSE], 
                   FUN = function(x) format_numeric(x, digits = digits))
-    names(cgw) <- colnames(x[["Cumulative_GORICA_weights"]])
-    print(cgw, print.gap = 2, quote = FALSE, right = TRUE)
+    # names(cgw) <- colnames(x[["Cumulative_GORICA_weights"]])
+    # print(cgw, print.gap = 2, quote = FALSE, right = TRUE)
+    cw <- matrix(cgw, ncol = 1)
+    cw <- as.data.frame(cw)
+    rownames(cw) <- colnames(x[["Cumulative_GORICA_weights"]])
+    colnames(cw) <- paste0(type_label, " weights") #NULL #paste0("Final ", type_label, " weights")
+    print(cw, print.gap = 2, quote = FALSE, right = TRUE, col.names = FALSE)
+    #write.table(format(cw, justify="right"), col.names = FALSE, quote = F, sep = "              ")
     cat("\n")
     cat("---\n")
   }

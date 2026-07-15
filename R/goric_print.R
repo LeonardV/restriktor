@@ -224,15 +224,25 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     formatted_numbers <- sprintf("%.3f %.3f", x$result[[7]][1], x$result[[7]][2])
     numbers <- strsplit(formatted_numbers, " ")[[1]]
     if (as.numeric(numbers[1]) / as.numeric(numbers[2]) > 1) {
-      support_ratio <- sprintf("%.2f", x$ratio.gw[1, 2])
+      if (x$ratio.gw[1, 2] > 10000) {
+        support_ratio <- sprintf("%.2e", x$ratio.gw[1, 2])
+      } else {
+        support_ratio <- sprintf("%.2f", x$ratio.gw[1, 2])
+      }
       cat(paste0("The order-restricted hypothesis ", sQuote(objectnames[1]), 
                  " has ", support_ratio, " times more support than its complement."))
     } else if (as.numeric(numbers[1]) / as.numeric(numbers[2]) < 1) {
       result <- paste(numbers[1], "/", numbers[2], "< 1", sep = " ")
+      gw_c <- as.numeric(numbers[2]) / as.numeric(numbers[1])
+      if (gw_c > 10000) {
+        support_ratio_c <- sprintf("%.2e", gw_c)
+      } else {
+        support_ratio_c <- sprintf("%.2f", gw_c)
+      }
       cat("The order-restricted hypothesis", sQuote(objectnames[1]), 
           "has less support (namely, ", result, 
           "times more support) than its complement.",
-      "That is, the complement has", sprintf("%.2f", as.numeric(numbers[2]) / as.numeric(numbers[1])), "times more support than", sQuote(objectnames[1]))      
+      "That is, the complement has", support_ratio_c, "times more support than", sQuote(objectnames[1]))      
     } else {
       result <- paste(numbers[1], "/", numbers[2], "= 1", sep = " ")
       cat("The order-restricted hypothesis", sQuote(objectnames[1]), "and the complement have equal support:", result)      
@@ -294,7 +304,11 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     }
   } else if (comparison == "none" && length(overlap_unique_combinations) == 0 && length(df$model) == 2) {
     class(x$ratio.gw) <- "numeric"
-    support_ratio <- sprintf("%.2f", x$ratio.gw[1, 2])
+    if (x$ratio.gw[1, 2] > 10000) {
+      support_ratio <- sprintf("%.2e", x$ratio.gw[1, 2])
+    } else {
+      support_ratio <- sprintf("%.2f", x$ratio.gw[1, 2])
+    }
     objectname1 <- sQuote(objectnames[1])
     objectname2 <- sQuote(objectnames[2])
     cat(paste0("The order-restricted hypothesis ", objectname1, 

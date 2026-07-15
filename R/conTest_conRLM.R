@@ -183,7 +183,7 @@ conTestF.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R = 99
     attr(pvalue, "mix_weights_bootstrap_limit") <- attr(wt.bar, "mix_weights_bootstrap_limit")
     
     attr(pvalue, "wt_bar_chunk") <- attr(wt.bar, "wt_bar_chunk")
-    attr(pvalue, "chunk_size"  ) <- attr(wt.bar, "chunk_size_org")
+    attr(pvalue, "chunk_size"  ) <- attr(wt.bar, "chunk_size")
     attr(pvalue, "total_chunks") <- attr(wt.bar, "total_chunks")
     attr(pvalue, "chunk_iter"  ) <- attr(wt.bar, "chunk_iter")
     
@@ -449,7 +449,7 @@ conTestWald.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R =
     attr(pvalue, "mix_weights_bootstrap_limit") <- attr(wt.bar, "mix_weights_bootstrap_limit")
     
     attr(pvalue, "wt_bar_chunk") <- attr(wt.bar, "wt_bar_chunk")
-    attr(pvalue, "chunk_size"  ) <- attr(wt.bar, "chunk_size_org")
+    attr(pvalue, "chunk_size"  ) <- attr(wt.bar, "chunk_size")
     attr(pvalue, "total_chunks") <- attr(wt.bar, "total_chunks")
     attr(pvalue, "chunk_iter"  ) <- attr(wt.bar, "chunk_iter")
     
@@ -759,7 +759,7 @@ conTestScore.conRLM <- function(object, type = "A", neq.alt = 0, boot = "no", R 
     attr(pvalue, "mix_weights_bootstrap_limit") <- attr(wt.bar, "mix_weights_bootstrap_limit")
     
     attr(pvalue, "wt_bar_chunk") <- attr(wt.bar, "wt_bar_chunk")
-    attr(pvalue, "chunk_size"  ) <- attr(wt.bar, "chunk_size_org")
+    attr(pvalue, "chunk_size"  ) <- attr(wt.bar, "chunk_size")
     attr(pvalue, "total_chunks") <- attr(wt.bar, "total_chunks")
     attr(pvalue, "chunk_iter"  ) <- attr(wt.bar, "chunk_iter")
     

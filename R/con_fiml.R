@@ -59,9 +59,30 @@ fiml_lm_data <- function(object, auxiliary = c()) {
     }
   }
 
+  # apply a subset argument the same way lm() did
+  subsetcall <- getCall(object)$subset
+  if (!is.null(subsetcall)) {
+    subs <- try(eval(subsetcall, envir = data, enclos = env), silent = TRUE)
+    if (inherits(subs, "try-error")) {
+      stop(paste("restriktor ERROR: the 'subset' argument of the fitted model",
+                 "could not be evaluated on the recovered data."), call. = FALSE)
+    }
+    if (is.logical(subs)) {
+      subs <- which(subs)
+    }
+    data <- data[subs, , drop = FALSE]
+  }
+
+  # convert character variables to factors, as lm() does internally
+  for (j in seq_along(data)) {
+    if (is.character(data[[j]])) {
+      data[[j]] <- factor(data[[j]])
+    }
+  }
+
   # model frame with missing values preserved
   mf <- model.frame(delete.response(terms(object)), data = data, na.action = na.pass)
-  y  <- eval(form[[2L]], envir = data)
+  y  <- eval(form[[2L]], envir = data, enclos = env)
   if (!is.numeric(y) || !is.null(dim(y))) {
     stop("restriktor ERROR: missing = \"fiml\" requires a single numeric response variable.",
          call. = FALSE)
@@ -97,7 +118,7 @@ fiml_lm_data <- function(object, auxiliary = c()) {
                  paste(sQuote(auxiliary[!is_num]), collapse = ", ")), call. = FALSE)
     }
     A <- as.matrix(A)
-    dup <- intersect(colnames(A), c("y__", colnames(X)))
+    dup <- intersect(colnames(A), c(deparse(form[[2L]]), colnames(X)))
     if (length(dup) > 0L) {
       stop("restriktor ERROR: auxiliary variable(s) also appear in the model: ",
            paste(sQuote(dup), collapse = ", "), call. = FALSE)

@@ -190,7 +190,6 @@ comparable to the Akaike weights.
   
   \item{standardized}{if TRUE, standardized parameter estimates are used.
     Only used for objects of class \code{lavaan}.}
-  }
   
   \item{digits}{the number of significant digits to use when printing.}
   
@@ -292,7 +291,7 @@ comparable to the Akaike weights.
     To prevent this type of error delete the one that is incorrect.
 }
 
-\value{\value{The function returns an object of class \code{con_goric}, for
+\value{The function returns an object of class \code{con_goric}, for
 which print, summary and coef methods are available. The object contains,
 among other things, a dataframe (\code{$result}) with the log-likelihood,
 penalty term, GORIC(A) values and the GORIC(A) weights, and a dataframe

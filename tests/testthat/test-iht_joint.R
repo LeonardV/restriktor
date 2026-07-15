@@ -97,15 +97,17 @@ test_that("marginalisatie: pchibar_joint consistent met pchibar", {
 test_that("marginalisatie: pfbar_joint consistent met pfbar", {
   meq <- con_lm$neq
   L <- q_lm - meq
+  # tolerance is relatief; de kwadratuur in pfbar_joint (rel.tol 1e-09) geeft
+  # in verre staarten (kansen ~1e-4) relatieve afwijkingen tot ~1e-07
   for (cc in c(0.3, 1.2, 3.7, 8, 15)) {
     expect_equal(pfbar_joint(0, cc, q_lm, df2_lm, wt_lm),
                  1 - restriktor:::pfbar(cc, df1 = 0:L, df2 = df2_lm,
                                         wt.bar = wt_lm),
-                 tolerance = 1e-08)
+                 tolerance = 1e-06)
     expect_equal(pfbar_joint(cc, 0, q_lm, df2_lm, wt_lm),
                  1 - restriktor:::pfbar(cc, df1 = meq:q_lm, df2 = df2_lm,
                                         wt.bar = rev(wt_lm)),
-                 tolerance = 1e-08)
+                 tolerance = 1e-06)
   }
 })
 

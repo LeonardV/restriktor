@@ -101,28 +101,9 @@ iht_joint <- function(object, constraints = NULL, test = "F",
   df.residual <- outA$df.residual
   q <- nrow(Amat)
 
-  # align wt.bar with the type A convention wt.bar[k+1] <-> chi2_k, k = 0:L.
-  # mix_weights = "pmvnorm" stores exactly L + 1 weights; mix_weights = "boot"
-  # stores level probabilities for dimensions 0:p (p = number of parameters),
-  # of which the window p-q ... p-meq corresponds to k = 0:L.
-  L <- q - meq
-  p <- length(object$b.unrestr)
-  if (length(wt.bar) == L + 1L) {
-    wt.bar.joint <- as.numeric(wt.bar)
-  } else if (length(wt.bar) == p + 1L) {
-    wt.bar.joint <- as.numeric(wt.bar[(p - q + 1L):(p - meq + 1L)])
-  } else {
-    stop("restriktor ERROR: length of wt.bar (", length(wt.bar),
-         ") does not match the number of (inequality) constraints.")
-  }
-  if (abs(sum(wt.bar.joint) - 1) > 1e-04) {
-    warning("restriktor WARNING: chi-bar-square weights do not sum to 1 (sum = ",
-            round(sum(wt.bar.joint), 6), "); the joint p-value may be inaccurate.")
-  }
-
-  # joint tail probability Pr[IU >= Ts.B, EI >= Ts.A] under Rb = r
-  pvalue.joint <- pfbar_joint(cIU = outB$Ts, cEI = outA$Ts, df_total = q,
-                              df2 = df.residual, wt.bar = wt.bar.joint)
+  joint <- con_pvalue_joint(object, Ts.A = outA$Ts, Ts.B = outB$Ts)
+  wt.bar.joint <- joint$wt.bar
+  pvalue.joint <- joint$pvalue
 
   # combined decision rule at level alpha, based on the marginal tests:
   #  (a) H0: Rb = r is retained          (type A not rejected)
@@ -162,6 +143,43 @@ iht_joint <- function(object, constraints = NULL, test = "F",
   class(OUT) <- "conTestJoint"
 
   OUT
+}
+
+
+# internal workhorse shared by iht_joint() and conTest_summary(): the joint
+# tail probability Pr[IU >= Ts.B, EI >= Ts.A] under the least favorable null
+# Rb = r (Wolak, 1989, Theorem 1; F-bar form of Wolak, 1987, Theorem 4.4),
+# computed from the cached chi-bar-square weights on the restriktor object.
+con_pvalue_joint <- function(object, Ts.A, Ts.B) {
+  Amat <- object$constraints
+  meq  <- object$neq
+  q <- nrow(Amat)
+
+  # align wt.bar with the type A convention wt.bar[k+1] <-> chi2_k, k = 0:L.
+  # mix_weights = "pmvnorm" stores exactly L + 1 weights; mix_weights = "boot"
+  # stores level probabilities for dimensions 0:p (p = number of parameters),
+  # of which the window p-q ... p-meq corresponds to k = 0:L.
+  wt.bar <- object$wt.bar
+  L <- q - meq
+  p <- length(object$b.unrestr)
+  if (length(wt.bar) == L + 1L) {
+    wt.bar.joint <- as.numeric(wt.bar)
+  } else if (length(wt.bar) == p + 1L) {
+    wt.bar.joint <- as.numeric(wt.bar[(p - q + 1L):(p - meq + 1L)])
+  } else {
+    stop("restriktor ERROR: length of wt.bar (", length(wt.bar),
+         ") does not match the number of (inequality) constraints.")
+  }
+  if (abs(sum(wt.bar.joint) - 1) > 1e-04) {
+    warning("restriktor WARNING: chi-bar-square weights do not sum to 1 (sum = ",
+            round(sum(wt.bar.joint), 6), "); the joint p-value may be inaccurate.")
+  }
+
+  pvalue <- pfbar_joint(cIU = Ts.B, cEI = Ts.A, df_total = q,
+                        df2 = object$df.residual, wt.bar = wt.bar.joint)
+
+  list(pvalue = pvalue, wt.bar = wt.bar.joint, Ts.A = Ts.A, Ts.B = Ts.B,
+       df.residual = object$df.residual)
 }
 
 

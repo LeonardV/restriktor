@@ -29,8 +29,21 @@ conTest_summary.restriktor <- function(object, test = "F", ...) {
     OUT$C <- do.call("conTest", CALL)
     #OUT <- c(OUT, OUT4)
   }
-  
+
+  # joint tail probability of the type B and type A statistics under the
+  # shared (least favorable) null Rb = r (Wolak, 1989, Theorem 1). Only
+  # available when the marginal p-values are based on the chi-bar-square
+  # weights (no bootstrap) and under the full null (neq.alt = 0).
+  wt.bar <- object$wt.bar
+  if ((is.null(ldots$boot) || ldots$boot == "no") &&
+      (is.null(ldots$neq.alt) || ldots$neq.alt == 0L) &&
+      inherits(object, c("conLM", "conGLM", "conRLM")) &&
+      !is.null(wt.bar) && !is.null(attr(wt.bar, "method")) &&
+      attr(wt.bar, "method") != "none") {
+    OUT$joint <- con_pvalue_joint(object, Ts.A = OUT$A$Ts, Ts.B = OUT$B$Ts)
+  }
+
   class(OUT) <- c("conTest")
-  
+
   OUT
 }

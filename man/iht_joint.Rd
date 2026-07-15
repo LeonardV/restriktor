@@ -151,6 +151,10 @@ least one constraint must be an inequality.
 
   \code{pchibar_joint} and \code{pfbar_joint} return the joint upper
   tail probability (a single number in [0, 1]).
+
+  The joint tail probability is also reported by
+  \code{iht(..., type = "summary")} (see \code{\link{conTest_summary}}),
+  next to the marginal type A and type B results.
 }
 
 \references{

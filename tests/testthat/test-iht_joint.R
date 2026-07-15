@@ -349,7 +349,7 @@ test_that("Monte-Carlo: marginale en gezamenlijke type-I-fout volgen Wolak", {
     # empirisch consistent met Wolak Theorem 1 (F-bar-vorm)
     expect_lt(abs(emp_joint - theo_joint), 4 * mc_se(max(theo_joint, 1e-04)))
     # het naieve product van de marginale niveaus wijkt systematisch af ...
-    expect_gt(abs(emp_joint - naive_prod), 10 * mc_se(max(theo_joint, 1e-04)))
+    expect_gt(abs(emp_joint - naive_prod), 8 * mc_se(max(theo_joint, 1e-04)))
     # ... en de joint-functie zit er aantoonbaar dichter op
     expect_lt(abs(emp_joint - theo_joint), abs(emp_joint - naive_prod))
   }

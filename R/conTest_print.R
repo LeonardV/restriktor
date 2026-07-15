@@ -110,8 +110,22 @@ print.conTest <- function(x, digits = max(3, getOption("digits") - 2), ...) {
           }, "\n\n", sep = "")
     }
     ###
+    if (!is.null(x$joint)) {
+      cat("Joint Type A and Type B test (Wolak, 1989, Theorem 1):\n",
+          "        joint tail probability under H0: Rb = r (least favorable null)\n")
+      cat("       Pr[Type B >= ", sprintf("%.4f", x$joint$Ts.B),
+          ", Type A >= ", sprintf("%.4f", x$joint$Ts.A), "]:   p-value: ",
+          if (!is.na(x$joint$pvalue) && x$joint$pvalue < 1e-04) {
+            "<0.0001"
+          } else if (!is.na(x$joint$pvalue)) {
+            format(x$joint$pvalue, digits = 4)
+          } else {
+            as.numeric(NA)
+          }, "\n\n", sep = "")
+    }
+    ###
     if (!is.null(x$C)) {
-      cat("Type C test: H0: at least one restriction is false or active (==)", 
+      cat("Type C test: H0: at least one restriction is false or active (==)",
           "\n", "        vs. HA: all restrictions are strictly true (>)\n")
       cat("       Test statistic: ", sprintf("%.4f", x$C$Ts), ",   p-value: ", 
           if (!is.na(x$C$pvalue) && x$C$pvalue < 1e-04) { 

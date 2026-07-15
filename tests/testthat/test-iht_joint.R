@@ -248,6 +248,29 @@ test_that("print.conTestJoint geeft leesbare output", {
 
 
 # =============================================================================
+# Integratie in conTest_summary / iht(type = "summary")
+# =============================================================================
+
+test_that("iht(type = 'summary') bevat de joint p-waarde (Wolak)", {
+  s <- iht(con_lm)  # type = "summary" is de default
+  expect_false(is.null(s$joint))
+  expect_equal(s$joint$pvalue, out_joint$pvalue.joint, tolerance = 1e-10)
+  expect_equal(s$joint$Ts.A, out_joint$Ts.A, tolerance = 1e-10)
+  expect_equal(s$joint$Ts.B, out_joint$Ts.B, tolerance = 1e-10)
+  # print toont de joint-regel
+  txt <- capture.output(print(s))
+  expect_true(any(grepl("Joint Type A and Type B test \\(Wolak", txt)))
+})
+
+test_that("summary zonder chi-bar-gewichten of met bootstrap: geen joint", {
+  con_nw <- restriktor(fit_lm, constraints = "group1 < group2 < group3",
+                       mix_weights = "none")
+  s_nw <- iht(con_nw, boot = "parametric", R = 9)
+  expect_true(is.null(s_nw$joint))
+})
+
+
+# =============================================================================
 # Beslisregel en foutafhandeling
 # =============================================================================
 

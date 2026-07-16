@@ -54,9 +54,15 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
     if (se.type == "standard") {
       V <- attr(z$information, "inverted")
       se <- sqrt(diag(V))
+    } else if (se.type %in% c("HAC", "kernHAC", "NeweyWest")) {
+      # heteroskedasticity and autocorrelation consistent (HAC) covariance
+      # matrix; additional arguments (e.g., prewhite, bw, kernel, lag) are
+      # passed on to the sandwich package.
+      V <- do.call(con_vcovHAC, c(list(z, type = se.type), ldots))
+      se <- sqrt(diag(V))
     } else {
-      V <- sandwich(z, 
-                    bread. = bread(z), 
+      V <- sandwich(z,
+                    bread. = bread(z),
                     meat.  = meatHC(z, type = se.type))
       se <- sqrt(diag(V))
     }

@@ -43,7 +43,8 @@ test_that("conLM: inactieve restricties reproduceren sandwich::vcovHC exact", {
 test_that("conLM: equality constraint == geherparametriseerd model", {
   fit     <- lm(y ~ x1 + x2 + x3, data = df_sw)
   fit_red <- lm(y ~ I(x1 + x2) + x3, data = df_sw)
-  for (tp in c("const", "HC0", "HC1")) {
+  # HC2/HC3 dekken ook de hatvalues in de gereduceerde kolomruimte (X %*% N)
+  for (tp in c("const", "HC0", "HC1", "HC2", "HC3")) {
     z <- restriktor(fit, constraints = "x1 == x2", se = tp, mix_weights = "none")
     expect_equal(unname(summary(z)$V),
                  unname(J_sw %*% sandwich::vcovHC(fit_red, type = tp) %*% t(J_sw)),

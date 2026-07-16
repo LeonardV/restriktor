@@ -610,7 +610,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
   
   if (comparison == "complement") {
     # does def function exists
-    if (!is.null(body(conList[[1]]$CON$def.function))) {
+    if (is.function(conList[[1]]$CON$def.function) &&
+        !is.null(body(conList[[1]]$CON$def.function))) {
       betasc_def <- conList[[1]]$CON$def.function(betasc)  
       one_vec <- betasc
       one_vec <- one_vec[!duplicated(names(one_vec))]
@@ -625,7 +626,9 @@ goric.default <- function(object, ..., hypotheses = NULL,
     rownames(coefs) <- c(objectnames, "complement")
   } else if (comparison == "unconstrained") {
     b_unrestr <- conList[[1]]$b.unrestr
-    exists_def <- sapply(conList, FUN = function(x) !is.null(body(x$CON$def.function)))
+    exists_def <- sapply(conList, FUN = function(x) {
+      is.function(x$CON$def.function) && !is.null(body(x$CON$def.function))
+    })
     one_vec <- b_unrestr
     one_vec <- one_vec[!duplicated(names(one_vec))]
     

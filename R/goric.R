@@ -248,7 +248,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
                                                      goric          = type,
                                                      sample.nobs    = sample_nobs,
                                                      penalty_factor = penalty_factor,
-                                                     priorICweights   = priorICweights))
+                                                     priorICweights = priorICweights))
     
     PT_Amat <- lapply(isSummary, function(x) x$PT_Amat)
     PT_meq  <- lapply(isSummary, function(x) x$PT_meq)

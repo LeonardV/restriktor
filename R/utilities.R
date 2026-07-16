@@ -349,14 +349,14 @@ detect_range_restrictions <- function(Amat) {
   return(range_restrictions)
 }
 
-# correct misspecified constraints of format e.g., x1 < 1 & x1 < 2.
+# correct mis-specified constraints of format e.g., x1 < 1 & x1 < 2.
 # x1 < 2 is removed since it is redundant. It has no impact on the LPs, but
 # since the redundant matrix is not full row-rank the slower boot method is used. 
 remove_redundant_constraints <- function(constraints, rhs, meq) {
   df_orig <- data.frame(constraints, rhs)
   df_orig$eq <- 0
   if (meq > 0) {
-    df_orig$eq <- rep(1, meq)
+    df_orig$eq[1:meq] <- 1
   }
   df <- df_orig[order(df_orig$rhs, decreasing = TRUE),] 
   Dupl <- duplicated(df[, -c((ncol(df)-1), ncol(df))])

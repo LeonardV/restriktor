@@ -12,6 +12,7 @@
 \alias{print.summary.evSyn}
 \alias{summary.evSyn}
 \alias{plot.evSyn}
+\alias{evSyn}
 \alias{leave1studyout}
 \alias{leave1studyout.evSyn}
 \alias{leave1studyout.default}
@@ -21,7 +22,7 @@
 hypotheses from multiple studies that may use diverse designs to investigate the 
 same central theory.
 
-The function \code{leave1studyout} performs a leave-one-out sensitivity analysis 
+The function \code{leave1studyout} performs a leave-one-study-out sensitivity (outlier) analysis 
 on a fitted \code{evSyn} object: it re-runs the evidence synthesis S times, each 
 time omitting one study, and reports which hypothesis is preferred in each 
 reduced set.
@@ -30,40 +31,43 @@ reduced set.
 
 \usage{
 # I try to guess the input type.
-evSyn(object, input_type = NULL, \dots)
+evSyn(object, input_type = NULL, \ldots)
 
 # input: Parameter estimates and covariance matrix
-evSyn_est(object, \dots, VCOV = list(), hypotheses = list(),
+evSyn_est(object, \ldots, VCOV = list(), hypotheses = list(),
           type_ev = c("added", "equal", "average"), 
           comparison = c("unconstrained", "complement", "none"),
-          hypo_names = c(), type = c("gorica", "goricac"), 
+          hypo_names = c(), priorICweights = NULL, 
+          type = c("gorica", "goricac"), 
           order_studies = c("input_order", "ascending", "descending"),
           study_names = c(), study_sample_nobs = NULL)
 
 # input: Log-likelihood and penalty values
-evSyn_LL(object, \dots, PT = list(), type_ev = c("added", "equal", "average"),
-         hypo_names = c(), type = c("goric", "goricc", "gorica", "goricac"),
+evSyn_LL(object, \ldots, PT = list(), type_ev = c("added", "equal", "average"),
+         hypo_names = c(), priorICweights = NULL, 
+         type = c("goric", "goricc", "gorica", "goricac"),
          order_studies = c("input_order", "ascending", "descending"),
          study_names = c())
 
 # input: GORIC(A), ORIC, AIC values
-evSyn_ICvalues(object, \dots, type_ev = c("added", "average"), hypo_names = c(), 
+evSyn_ICvalues(object, \ldots, type_ev = c("added", "average"), 
+               hypo_names = c(), priorICweights = NULL, 
                type = c("goric", "goricc", "gorica", "goricac"), 
                order_studies = c("input_order", "ascending", "descending"), 
                study_names = c())
 
 # input: AIC or ORIC or GORIC or GORICA weights or (Bayesian) posterior 
 # model probabilities
-evSyn_ICweights(object, \dots, type_ev = c("added", "average"), 
-                priorWeights = NULL, hypo_names = c(),
+evSyn_ICweights(object, \ldots, type_ev = c("added", "average"), 
+                hypo_names = c(), priorICweights = NULL, 
                 type = c("goric", "goricc", "gorica", "goricac"),
                 order_studies = c("input_order", "ascending", "descending"), 
                 study_names = c())
 
 # input: Ratio of AIC or ORIC or GORIC or GORICA weights or 
 # (Bayesian) posterior model probabilities
-evSyn_ICratios(object, \dots, type_ev = c("added", "average"), 
-               priorWeights = NULL, hypo_names = c(),
+evSyn_ICratios(object, \ldots, type_ev = c("added", "average"), 
+               hypo_names = c(), priorICweights = NULL, 
                type = c("goric", "goricc", "gorica", "goricac"),
                order_studies = c("input_order", "ascending", "descending"), 
                study_names = c())
@@ -71,16 +75,16 @@ evSyn_ICratios(object, \dots, type_ev = c("added", "average"),
 # input: result from the goric() function
 # Note that this is a wrapper function for evSyn_LL.
 evSyn_gorica(object, \dots, type_ev = c("added", "equal", "average"), 
-             hypo_names = c(), 
+             hypo_names = c(), priorICweights = NULL, 
              order_studies = c("input_order", "ascending", "descending"), 
              study_names = c())
 
 # input: Result from the escalc() function from the metafor package (or a 
-# regular data.frame using the same labelling). Note that this is a wrapper 
-# function for evSyn_est.
+# regular data.frame using the same labelling). 
+# Note that this is a wrapper function for evSyn_est.
 evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", study_sample_nobs = "ni", 
              type = NULL, cluster_col = c("trial", "study", "author", "authors", 
-             "Trial", "Study", "Author", "Authors"), outcome_col = NULL, \dots)
+             "Trial", "Study", "Author", "Authors"), outcome_col = NULL, \ldots)
 
 \method{print}{evSyn}(x, digits = max(3, getOption("digits") - 4), \dots)
 
@@ -105,6 +109,7 @@ xlab_unordered = NULL, angle_x = 30, \dots)
       \item a list of objects of class goric;
       \item a data.frame of class escalc from the \pkg{metafor} package or a regular data.frame using the same labelling;
     }
+    In the case of the first or last option, \code{evSyn} will calculate the GORICA (incl. log-likelihood and penalty) for each study using \code{goric}.
   }
   
   \item{input_type}{
@@ -133,7 +138,7 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   Average-evidence approach (\code{type_ev = "average"}). See details for more 
   information.}
 
-  \item{type}{If \code{"gorica"}, a proxy for the log-likelihood is calculated by assuming that 
+  \item{type}{If \code{"gorica"}, a proxi for the log-likihood is calculated by assuming that 
   the parameter estimates (of interest) are multivariate normally distributed. 
   Then, either the unbiased covariance matrix of the estimates (based on 'N'; e.g., for an lm object) is used
   or the biased one obtained via the vcov function (e.g., for a lavaan object). 
@@ -152,16 +157,23 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   By default, if one user-specified hypothesis, "\code{comparison = 'complement'}"; 
   if multiple user-specified hypotheses, "\code{comparison = 'unconstrained'}".
   Note that the complement can only be computed for one model/hypothesis at a time.} 
-  
-  \item{priorWeights}{vector that represents the prior belief for this model. By default,
-  equal prior weights are used (i.e., 1/(#hypotheses)). Notably, in case the prior
-  weights do not sum to 1, it will be rescaled such that it does; which implies that
-  relative importance can be used and not per se weights.}
-  
-  \item{hypo_names}{character vector for labelling the hypotheses. By default the
+
+  \item{hypo_names}{character vector for labelling the hypotheses. By default, the
   names are set to H1, H2, \ldots}
 
-  \item{output_type}{a plot option. If "\code{gorica_weights}" (default),
+  \item{priorICweights}{vector that represents the prior belief for the specified hypotheses. 
+  By default, equal prior weights are used (i.e., 1/(#hypotheses)). 
+  Notably, in case the prior weights do not sum to 1, it will be rescaled such that it does; 
+  the prior weights thus reflect relative a priori likeliness of the hypotheses.
+  %% For now, like this; if code changes, then perhaps:
+  %In the case of ratios of IC weights ('icratios'), the ratio of prior weights should be given.
+  %In that case, they do not sum to 1; and 
+  %the ratio of weights for the reference hypothesis equals 1.
+  Notably, the priorICweights will be used in the cumulative and final results of evidence synthesis.
+  They will not be used in ordering the studies with 'order_studies' = \code{"ascending"} or \code{"descending"}; 
+  this will be based equal a priori likeliness of the hypotheses.}
+  
+  \item{output_type}{a plot option. If "\code{gorica_weights}" (default), 
   a plot with the cumulative goric(a)
   weights and goric(a) weights per study is displayed. If "\code{ll_weights}",
   a plot with the cumulative log-likelihood weights and log-likelihood weights 
@@ -180,19 +192,25 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   When provided, these names will be used throughout the output, including in 
   tables, summaries, and plots (in place of numeric study indices).
   If \code{NULL} (default), studies are automatically numbered 
-  (1, 2, ..., K) following the order determined by \code{order_studies}.}
+  (1, 2, ..., S) following the order determined by \code{order_studies}.}
 
   \item{study_sample_nobs}{a numeric vector specifying the sample size (\code{n}) 
   for each study; only needed if \code{type = "goricac"}. 
   In case the input is a escalc object (or a dataframe), it is inherited from the 
   'study_sample_nobs' column, which by default is labelled "ni".}
   
-%  \item{study_weights}{Not available yet! 
-%  a numeric vector specifying the weight for each study.
-%  When provided, this information will be included in summaries and can be used 
-%  for weighted averaging or diagnostic purposes in the evidence synthesis. 
-%  If \code{NULL} (default), all studies are assumed to have equal weight 
-%  with respect to sample size.}
+  \item{study_weights}{ 
+  a numeric vector specifying the weight for each study, which should sum to 1 or S, with S the number of studies.
+  If \code{NULL} (default), all studies are assumed to have equal weight. 
+  Note that study-specific sample size is already taken into account via 'VCOV'.
+  When provided, the study weights will be used to conduct weighted evidence synthesis.
+  %Weighted evidence synthesis is possible when the GORIC(A) values can be calculated.
+  %That is, it is not possible when the input consists of IC weights or IC weights ratios
+  %(i.e., 'input_type' = \code{"icweights"} or \code{"icratios"});
+  %then, the study weights cancel out.
+  Notably, the study weights will be used in the cumulative and final results of evidence synthesis.
+  They will not be used in ordering the studies with 'order_studies' = \code{"ascending"} or \code{"descending"}; 
+  this will be based on the height of support for each study assuming equal study weights.}
   
   \item{order_studies}{
   either a i) character string or ii) numeric vector:
@@ -201,6 +219,8 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   provided. If \code{"ascending"} or \code{"descending"}, studies are ordered based 
   on the ascending or descending support for the preferred hypothesis, 
   respectively. 
+  In this case, the order will be determined using equal a priori likeliness of the hypotheses
+  and equal study weights.
   ii) A numeric vector with length the number of studies (S). 
   This vector then gives the ordering of studies to be used, which one could base on, 
   say, year of the study.
@@ -224,10 +244,11 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   \item{outcome_col}{a column name in \code{data} containing the outcome 
   identifiers/labels for each observation within a cluster/study. 
   The hypothesis/-es should be based on this labelling.
-  By default (i.e., if 'outcome_col' is null), the function assumes that the
-  parameter label used in the hypothesis is
-  "theta"
-  (one outcome variable);
+  By default (i.e., if 'outcome_col' is null), the function assumes that the 
+  parameter label used in the hypothesis is 
+  "theta" 
+  % ms juist via deze de labels voor de hypo opgeven!
+  (one outcome variable); 
   when there is additionally a column called 'outcome', it will use that as the outcome identifier,
   employing its unique levels/values as the labels (more outcome variables).
   If 'outcome_col' is not null but user-specified, then the labeling should be based
@@ -235,20 +256,20 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   Notably, outcome_col is related to the labeling; 
   the column with estimates is referred to as 'yi_col' and is, 
   by default, set to "yi".
-  For more information, see Example 6 below.
+  For more information, see Example 5 below.
   }
   
   \item{yi_col}{a character string specifying the column in \code{data} that 
   contains the outcome values / estimates for each observation. 
   The default is \code{"yi"}.
-  For more information, see Example 6 below.
+  For more information, see Example 5 below.
   }
   
   \item{vi_cols}{a character vector specifying the columns in \code{data} that 
   contain the variance and covariance values for each observation. The default is, 
   in the case of one outcome variable, \code{"vi"};
-  in the case of multiple (namely, O) variables, \code{c("v1i", ..., "vOi")}.
-  For more information, see Example 6 below.
+  in the case of multiple (namely, O) variables, \code{c("v1i", \ldots, "vOi"}.
+  For more information, see Example 5 below.
   }
   
   \item{digits}{the number of significant digits to use when printing.}
@@ -350,7 +371,7 @@ for the theory-based hypotheses.
 ## your research questions and analytical framework.
 
 # The hypotheses (i.e., constraints) have to be in a list. It is recommended to name
-# each hypothesis in the list. Otherwise, the hypotheses are named accordingly 'H1', 'H2', etc.
+# each hypothesis in the list. Otherwise, the hypotheses are named accordingly 'H1', 'H2', \ldots.
 
 # Example using text-based syntax (the labels x1, x2, and x3 are the names of 
 # coef(model) or names(vector))
@@ -416,6 +437,7 @@ evS4_added <- evSyn(object = Param_studies, VCOV = CovMx_studies,
 evS4_added
 summary(evS4_added)
 plot(evS4_added)
+# Note that this renders a ggplot whhicg you can change accordingly, as done below.
 
 evS4_equal <- evSyn(object = Param_studies, VCOV = CovMx_studies, 
                     hypotheses = hypotheses,
@@ -549,12 +571,14 @@ evS_LL_added <- evSyn(object = LL, PT = penalty.values,
                       hypo_names = colnames(myLLs),
                       type_ev = "added")
 evS_LL_added
+plot(evS_LL_added)
 #
 # Equal-evidence
 evS_LL_equal <- evSyn(object = LL, PT = penalty.values, 
                       hypo_names = colnames(myLLs),
                       type_ev = "equal")
 evS_LL_equal
+plot(evS_LL_equal)
 
 
 ## Example 5: based on AIC, ORIC, GORIC(A) values
@@ -566,6 +590,7 @@ goric.values <- as.list(data.frame(t(myGORICs)))
 evS_Gv <- evSyn(goric.values, 
                 hypo_names = colnames(myGORICs))
 evS_Gv
+plot(evS_Gv)
 
 
 ## Example 6: based on an escalc object
@@ -593,6 +618,23 @@ if (requireNamespace("metadat", quietly = TRUE)) {
     comparison = "complement"
   )
   evS_escalc_a
+  plot(evS_escalc_a)
+  
+  #Plot options
+  #The evSyn plot is a ggplot and can be changed as such. 
+  #
+  #As an example, one could change the x-axis colors based on the value(s) of another variable (in a way, looking at subgroups).
+  #Next, we set the colors based on two subgroups of studies, those published before 1983 (dark-gray) and those published that year or later (black):
+  evSynplot <- plot(evS_escalc_a)
+  cols_subgroup <- ifelse(data_a$year < 1983, "darkgray", "black")
+  library(ggplot2)
+  evSynplot_subgroup <- evSynplot + theme(axis.text.x = element_text(colour = cols_subgroup))
+  evSynplot_subgroup
+  #
+  # As another example, one can overwrite the subtitle:
+  evSynplot_subgroup_subtitle <- evSynplot_subgroup + labs(subtitle = 'For studies published < and >= 1983')
+  evSynplot_subgroup_subtitle
+  
 }
 
 
@@ -615,6 +657,7 @@ if (requireNamespace("metadat", quietly = TRUE)) {
                         type_ev = "equal",
                         comparison = "complement")
   evS_escalc_b
+  plot(evS_escalc_b)
 }
 
 
@@ -638,6 +681,23 @@ if (requireNamespace("metadat", quietly = TRUE)) {
                         type_ev = "equal",
                         comparison = "complement")
   evS_escalc_c
+  plot(evS_escalc_c)
+  
+  #Plot options
+  #The evSyn plot is a ggplot and can be changed as such. 
+  #
+  #As an example, one could change the x-axis colors based on the value(s) of another variable (in a way, looking at subgroups).
+  #Next, we set the colors based on two subgroups of studies, those published before 1983 (dark-gray) and those published that year or later (black):
+  evSynplot <- plot(evS_escalc_c)
+  cols_subgroup <- ifelse(data_a$year < 1983, "darkgray", "black")
+  library(ggplot2)
+  evSynplot_subgroup <- evSynplot + theme(axis.text.x = element_text(colour = cols_subgroup))
+  evSynplot_subgroup
+  #
+  # As another example, one can overwrite the subtitle:
+  evSynplot_subgroup_subtitle <- evSynplot_subgroup + labs(subtitle = 'For studies published < and >= 1983')
+  evSynplot_subgroup_subtitle
+
 }
 
 }

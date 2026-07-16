@@ -88,9 +88,9 @@ comparable to the Akaike weights.
   Parameters passed to the truncated multivariate normal distribution. By default, 
   restriktor (i.e. \code{con_weights_boot} function) uses no truncation points 
   for calculating the chi-bar-square weights, which renders to the multivariate 
-  normal distribution. See the manual page of the \code{rtmvnorm} function from
-  the \pkg{tmvtnorm} package to see how to specify a truncated mvnorm
-  distribution and the possible arguments.}
+  normal distribution. See the manual page of the \code{rtmvnorm} function from 
+  the \pkg{rtmvnorm} to see how to specify a truncated mvnorm distribution and 
+  the possible arguments.}
   
   \item{hypotheses}{a named list; Please note that the hypotheses argument in the given 
   context serves the same purpose as the constraints argument utilized in the 
@@ -102,7 +102,9 @@ comparable to the Akaike weights.
   string enclosed by single quotes. Only the names of \code{coef(model)} or
   \code{names(vector)} can be used as names. See details for more information. 
   Note that objects of class "mlm" do not (yet) support this method.
-
+  % TO DO ik gebruik nu rijnamen van vcov en dan moet gebruiker evt : vervangen door .. 
+  %       Werkt dat? Zo ja, dan kan deze opmerking gewijzigd worden.
+  
   Second, the hypothesis syntax consists of a matrix \eqn{R} (or a vector in 
   case of one constraint) and defines the left-hand side of the constraint 
   \eqn{R\theta \ge rhs}, where each row represents one constraint. The number of 
@@ -124,10 +126,10 @@ comparable to the Akaike weights.
   
   \item{type}{if \code{"goric"}, the generalized order-restricted 
   information criterion value is computed. 
-  If \code{"gorica"}, a proxy for the log-likelihood is calculated by assuming that 
+  If \code{"gorica"}, a proxy for the log-likihood is calculated by assuming that 
   the parameter estimates (of interest) are multivariate normally distributed. 
   Then, either the unbiased covariance matrix of the estimates (based on 'N'; e.g., for an lm object) is used
-  or the biased one obtained via the vcov function (e.g., for a lavaan object). 
+  or the biased one obtained via the vcov function (e.g., for a \code{lavaan} object). 
   In the latter case, a corresponding message will be printed. 
   If \code{"goricc"} or \code{"goricac"}, 
   then the small-sample-size correction is applied.}
@@ -158,6 +160,13 @@ comparable to the Akaike weights.
   effectively testing the hypothesis that the parameters satisfy exact equality 
   rather than inequality. Defaults to \code{FALSE}.}
   
+  \item{priorICweights}{vector that represents the prior belief for the specified hypotheses. 
+  By default, equal prior weights are used (i.e., 1/(#hypotheses)). 
+  Notably, in case the prior weights do not sum to 1, it will be rescaled such that it does; 
+  the prior weights thus reflect relative a priori likeliness of the hypotheses.
+  Notably, the priorICweights will be used in the determining the (ratios of) IC weights;
+  so, not in the other output, like the IC values but also not the log likelihood weights or penalty weights.}
+  
   \item{missing}{the default setting for objects of class "lm" is \code{"none"}
   (listwise deletion): all cases with missing values are removed from the data
   before the analysis. This is only valid if the data are missing completely at
@@ -180,7 +189,7 @@ comparable to the Akaike weights.
   parameter change.}
   
   \item{standardized}{if TRUE, standardized parameter estimates are used.
-  Only used for objects of class \code{lavaan}.}
+    Only used for objects of class \code{lavaan}.}
   
   \item{digits}{the number of significant digits to use when printing.}
   
@@ -191,7 +200,7 @@ comparable to the Akaike weights.
     \itemize{
       \item \code{chunk_size} integer; the chi-bar-square weights are computed for samples
       of size \code{chunk_size = 5000L}. This process is repeated iteratively until the 
-      weights converges (see \code{convergence_crit}) or the maximum is reached, i.e., 
+      weights converges (see \code{convergenge_crit}) or the maximum is reached, i.e., 
       \code{mix_weights_bootstrap_limit}.
       
       \item \code{mix_weights_bootstrap_limit} integer; maximum number of bootstrap draws.
@@ -232,12 +241,12 @@ comparable to the Akaike weights.
   specified in two ways, see \code{\link{restriktor}}. For examples, see below.
   
   To determine the penalty term values, the chi-bar-square weights (a.k.a. level
-  probabilities) must be computed. If \code{"mix_weights = "pmvnorm" "} (default),
+  probabilities) must be computed. If \code{mix_weights = "pmvnorm"} (default),
   the chi-bar-square weights are computed based on the multivariate normal distribution
-  function with additional Monte Carlo steps. If \code{"mix_weights = "boot" "}, the
+  function with additional Monte Carlo steps. If \code{mix_weights = "boot"}, the
   chi-bar-square weights are computed using parametric bootstrapping (see \code{\link{restriktor}}).
 
-  For \code{"mix_weights = "pmvnorm" "} with about ten or more (in)equality
+  For \code{mix_weights = "pmvnorm"} with about ten or more (in)equality
   constraints, the computation can be sped up by enabling a parallel
   \code{future} plan, e.g., \code{future::plan(multisession, workers = 4)}
   (on Linux/macOS \code{future::plan(multicore, workers = 4)} is more
@@ -266,10 +275,10 @@ comparable to the Akaike weights.
   
   If the restriction matrix is not of full row-rank, this means one of the following:
   \itemize{
-   \item There is at least one redundant restriction specified in the hypothesis. Then, either
+   \item There is at least one redundant restriction specified in the hypothesis. Then, either 
     \itemize{
-      \item Leave the redundant one out, or
-      \item Use another (more time-consuming) way of obtaining the level probabilities
+      \item Leave the redundant one out, or 
+      \item Use another (more time-consuming) way of obtaining the level probabilities 
       for the penalty term (goric function does this by default): Bootstrapping, as discussed above.
       }
    \item There is at least one range restriction (e.g., -2 < group1 < 2). 
@@ -296,9 +305,9 @@ information criterion for model selection under inequality constraints.
 \emph{Biometrika}, 98, 2, 495--501.
 \doi{10.1093/biomet/asr002}
 
-Vanbrabant, L., Van Loey, N., and Kuiper, R. M. (2020).
-Evaluating a Theory-Based Hypothesis Against Its Complement Using an AIC-Type Information Criterion With an Application to Facial Burn Injury.
-\emph{Psychological Methods}, 25(2), 129-142.
+Vanbrabant, L., Van Loey, N., and Kuiper, R. M. (2020). 
+Evaluating a Theory-Based Hypothesis Against Its Complement Using an AIC-Type Information Criterion With an Application to Facial Burn Injury. 
+\emph{Psychological Methods}, 25(2), 129-142. 
 \doi{10.1037/met0000238}
 
 Arbuckle, J. L. (1996). Full information estimation in the presence of
@@ -319,11 +328,10 @@ structural equation models. \emph{Structural Equation Modeling}, 10(1), 80-100.
 ## your research questions and analytical framework.
 
 # The hypotheses (i.e., constraints) have to be in a list. It is recommended to name
-# each hypothesis in the list. Otherwise the hypotheses are named accordingly 'H1', 'H2', etc.
-# Another option is to use the llist() function from the Hmisc package, which
-# names the list elements after the objects automatically.
+# each hypothesis in the list. Otherwise the hypotheses are named accordingly 'H1', 'H2', \ldots.
+# Another option is to use the \code{llist()} function from the \pkg{Hmisc} package, where.
 
-# text-based syntax (the labels x1, x2, and x3 are the names of coef(model) or names(vector))
+# text-based syntax (the labels x1, x2, and x2 are the names of coef(model) or names(vector))
 h1 <- '(x1, x2, x3) > 0'
 h2 <- '(x1, x3) > 0; x2 = 0'
 h3 <- 'x1 > 0; x2 < 0; x3 = 0'

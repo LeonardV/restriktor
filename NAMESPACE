@@ -184,3 +184,15 @@ S3method(print, goric_ICw)
 S3method(print, benchmark)
 S3method(plot, benchmark)
 S3method(print, benchmark_plot)
+
+# register the bread() and estfun() methods for the generics of the
+# (suggested) sandwich package, so that e.g. sandwich::vcovHAC(),
+# sandwich::kernHAC(), sandwich::NeweyWest() and sandwich::vcovCL() can be
+# applied directly to restricted models. the registration takes effect once
+# the sandwich package is loaded (delayed registration).
+S3method(sandwich::bread, conLM)
+S3method(sandwich::bread, conRLM)
+S3method(sandwich::bread, conGLM)
+S3method(sandwich::estfun, conLM)
+S3method(sandwich::estfun, conRLM)
+S3method(sandwich::estfun, conGLM)

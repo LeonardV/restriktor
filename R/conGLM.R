@@ -14,8 +14,14 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
     se <- "boot.model.based"
   }
   if (!(se %in% c("none","standard","const","boot.model.based","boot.standard",
-                  "HC","HC0","HC1","HC2","HC3","HC4","HC4m","HC5"))) {
+                  "HC","HC0","HC1","HC2","HC3","HC4","HC4m","HC5",
+                  "HAC","kernHAC","NeweyWest"))) {
     stop("restriktor ERROR: standard error method ", sQuote(se), " unknown.")
+  }
+  if (se %in% c("HAC","kernHAC","NeweyWest") &&
+      !requireNamespace("sandwich", quietly = TRUE)) {
+    stop("restriktor ERROR: se = ", sQuote(se),
+         " requires the 'sandwich' package. Please install it.", call. = FALSE)
   }
   # check method to compute chi-square-bar weights
   if (!(mix_weights %in% c("pmvnorm", "boot", "none"))) {

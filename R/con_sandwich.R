@@ -128,6 +128,62 @@ estfun.conGLM <- function(x, ...) {
 }
 
 
+# HAC (heteroskedasticity and autocorrelation consistent) covariance matrix
+# for restricted models. the meat is computed by the sandwich package from the
+# empirical estimating functions of the restricted fit (the estfun methods
+# above are registered for the sandwich generics in the NAMESPACE); the bread
+# is the inverted augmented information matrix, so that the (in)equality
+# restrictions are taken into account. without active restrictions the results
+# are identical to sandwich::vcovHAC(), sandwich::kernHAC() and
+# sandwich::NeweyWest(), respectively.
+con_vcovHAC <- function(x, type = c("HAC", "kernHAC", "NeweyWest"), ...) {
+  type <- match.arg(type)
+  if (!requireNamespace("sandwich", quietly = TRUE)) {
+    stop("restriktor ERROR: se = ", sQuote(type),
+         " requires the 'sandwich' package. Please install it.", call. = FALSE)
+  }
+  fun <- switch(type,
+                "HAC"       = sandwich::vcovHAC,
+                "kernHAC"   = sandwich::kernHAC,
+                "NeweyWest" = sandwich::NeweyWest)
+
+  # sandwich's finite-sample adjustment n / (n - k) counts all k = p columns
+  # of the estimating function; under equality constraints only
+  # k = p - rank(Aeq) parameters are free (cf. the df correction in meatHC).
+  # hence the adjustment is applied here instead of inside sandwich. the
+  # defaults follow sandwich: adjust = TRUE for vcovHAC/kernHAC and
+  # adjust = FALSE for NeweyWest.
+  ldots <- list(...)
+  adjust <- if (is.null(ldots$adjust)) {
+    type %in% c("HAC", "kernHAC")
+  } else {
+    isTRUE(ldots$adjust)
+  }
+  ldots$adjust <- FALSE
+  # only pass arguments the sandwich function understands; NeweyWest() has no
+  # '...' and summary.restriktor() passes along unrelated arguments.
+  pnames <- switch(type,
+    "HAC"       = c("order.by", "prewhite", "weights", "adjust", "diagnostics",
+                    "ar.method", "data", "bw", "kernel", "approx", "tol", "verbose"),
+    "kernHAC"   = c("order.by", "prewhite", "bw", "kernel", "approx", "adjust",
+                    "diagnostics", "ar.method", "tol", "data", "verbose"),
+    "NeweyWest" = c("lag", "order.by", "prewhite", "adjust", "diagnostics",
+                    "ar.method", "data", "verbose"))
+  ldots <- ldots[names(ldots) %in% pnames]
+
+  rval <- do.call(fun, c(list(x), ldots))
+
+  if (adjust) {
+    n <- NROW(estfun(x))
+    p <- NCOL(x$constraints)
+    k <- p - qr(x$constraints[seq_len(x$neq), , drop = FALSE])$rank
+    rval <- n / (n - k) * rval
+  }
+
+  return(rval)
+}
+
+
 meatHC <- function(x,
                    type = c("HC3", "const", "HC", "HC0", "HC1", "HC2", "HC4", "HC4m", "HC5"),
                    omega = NULL) {

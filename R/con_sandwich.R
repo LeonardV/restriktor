@@ -163,7 +163,19 @@ meatHC <- function(x,
       rW <- rep(1, n)
     }
 
-    QR <- qr.default(rW * X)
+    Xh <- rW * X
+    # under equality constraints the fitted values live in the column space
+    # of X %*% N, with N a basis for the null space of the equality rows;
+    # the hat values are therefore based on that reduced space. inequality
+    # constraints are not counted, consistent with the df correction above.
+    if (x$neq > 0L) {
+      Aeq <- x$constraints[seq_len(x$neq), , drop = FALSE]
+      QRt <- qr(t(Aeq))
+      N <- qr.Q(QRt, complete = TRUE)[, -seq_len(QRt$rank), drop = FALSE]
+      Xh <- Xh %*% N
+    }
+
+    QR <- qr.default(Xh)
     Q <- qr.qy(QR, diag(1, nrow = nrow(QR$qr), ncol = QR$rank))
     # diagonal of the hat matrix; observations with a zero weight simply get
     # a zero hat value.

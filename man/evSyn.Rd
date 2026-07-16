@@ -138,7 +138,7 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   Average-evidence approach (\code{type_ev = "average"}). See details for more 
   information.}
 
-  \item{type}{If \code{"gorica"}, a proxi for the log-likihood is calculated by assuming that 
+  \item{type}{If \code{"gorica"}, a proxy for the log-likihood is calculated by assuming that 
   the parameter estimates (of interest) are multivariate normally distributed. 
   Then, either the unbiased covariance matrix of the estimates (based on 'N'; e.g., for an lm object) is used
   or the biased one obtained via the vcov function (e.g., for a lavaan object). 

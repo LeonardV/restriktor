@@ -7,7 +7,7 @@
 
 }
 \description{conTest_summary computes all available hypothesis tests and returns
-and object of class \code{conTest} for which a print function is available. The
+an object of class \code{conTest} for which a print function is available. The
 \code{conTest_summary} can be used directly and is called by the \code{conTest}
 function if \code{type = "summary"}.
 

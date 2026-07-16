@@ -1,6 +1,5 @@
 \name{bootstrapD}
 \alias{bootstrapD}
-\alias{bootstrapD}
 \alias{print.conTestLavaan}
 \title{Bootstrapping a Lavaan Model}
 \description{Bootstrap the D statistic.}
@@ -34,8 +33,8 @@
     the fast double bootstrap is used to compute second level LRT-values for 
     each bootstrap sample. Note that the \code{"FDB"} is experimental and should 
     not be used by inexperienced users.}    
-  \item{double.bootstrap.R}{Integer; number of double bootstrap draws. The default 
-    value is set to 249.}
+  \item{double.bootstrap.R}{Integer; number of double bootstrap draws. The default
+    value is set to 500.}
   \item{double.bootstrap.alpha}{The significance level to compute the adjusted 
     alpha based on the plugin p-values. Only used if \code{double.bootstrap = "standard"}. 
     The default value is set to 0.05.}

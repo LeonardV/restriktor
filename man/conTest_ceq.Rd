@@ -53,8 +53,8 @@ and is called by the \code{conTest} function if all restrictions are equalities.
   \item{R}{integer; number of bootstrap draws for \code{boot}. 
   The default value is set to 9999.}
   
-  \item{p.distr}{the p.distr function is specified by this function. For 
-  all available distributions see \code{?distributions}. For example, 
+  \item{p.distr}{random generation distribution for the parametric bootstrap. For
+  all available distributions see \code{?distributions}. For example,
   if \code{rnorm}, samples are drawn from the normal distribution (default) 
   with mean zero and variance one. If \code{rt}, samples are drawn from 
   a t-distribution. If \code{rchisq}, samples are drawn from a chi-square 

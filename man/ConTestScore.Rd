@@ -33,8 +33,7 @@ used directly and is called by the \code{conTest} function if \code{test = "scor
 \arguments{
   \item{object}{an object of class \code{conLM}, \code{conRLM} or \code{conGLM}.} 
   
-  \item{type}{hypothesis test type "A", "B", "C", "global", or 
-   "summary" (default). See details for more information.}
+  \item{type}{hypothesis test type "A" (default), "B", "C", or "global". See details for more information.}
   
   \item{neq.alt}{integer: number of equality constraints that 
   are maintained under the alternative hypothesis (for hypothesis 
@@ -45,7 +44,7 @@ used directly and is called by the \code{conTest} function if \code{test = "scor
   F-distributions. The tail probabilities can be computed directly 
   via bootstrapping; if \code{"parametric"}, the p-value is 
   computed based on the parametric bootstrap. By default, samples 
-  are drawn from a normal distribution with mean zero and varance 
+  are drawn from a normal distribution with mean zero and variance 
   one. See \code{p.distr} for other distributional options. If 
   \code{"model.based"}, a model-based bootstrap method is used. 
   Instead of computing the p-value via simulation, the p-value
@@ -53,8 +52,8 @@ used directly and is called by the \code{conTest} function if \code{test = "scor
   \code{"no"}, the p-value is computed based on the weights 
   obtained via simulation (\code{mix_weights = "boot"}) or using the 
   multivariate normal distribution function (\code{mix_weights = "pmvnorm"}).
-  Note that, these weights are already available in the restriktor objected and
-  do not need to be estimated again. However, there are two exception for objects 
+  Note that, these weights are already available in the restriktor object and
+  do not need to be estimated again. However, there are two exceptions for objects 
   of class \code{conRLM}, namely for computing the p-value for the robust 
   \code{test} = \code{"Wald"} and the robust \code{"score"}. In these cases 
   the weights need to be recalculated.
@@ -99,7 +98,7 @@ used directly and is called by the \code{conTest} function if \code{test = "scor
      smaller than \code{tol} are set to 0.
      \item \code{chunk_size} the chi-bar-square weights are computed for samples 
      of size \code{chunk_size = 5000L}. This process is repeated iteratively 
-     until the weights converges (see \code{convergenge_crit}) or the maximum 
+     until the weights converge (see \code{convergence_crit}) or the maximum 
      is reached, i.e., mix_weights_bootstrap_limit.
      \item \code{convergence_crit} the target Monte Carlo precision of the
      chi-bar-square weights: sampling stops once the 95\% confidence
@@ -126,7 +125,7 @@ used directly and is called by the \code{conTest} function if \code{test = "scor
   one restriction false (some equality constraints may be 
   maintained).
   \item Type C: Test H0: at least one restriction false ("<") 
-  against HA: all constraints strikty true (">"). This test is 
+  against HA: all constraints strictly true (">"). This test is 
   based on the intersection-union principle (Silvapulle and Sen, 
   2005, chp 5.3). Note that, this test only makes sense in case 
   of no equality constraints.
@@ -137,7 +136,7 @@ used directly and is called by the \code{conTest} function if \code{test = "scor
 
 The null-distribution of hypothesis test Type C is based on a 
 t-distribution (one-sided). Its power can be poor in case of many 
-inequalty constraints. Its main role is to prevent wrong 
+inequality constraints. Its main role is to prevent wrong 
 conclusions from significant results from hypothesis test Type A.
 
 The exact finite sample distributions of the non-robust F-, 
@@ -292,7 +291,7 @@ myConstraints3 <- ' group1  = group2
 
 iht(fit2.lm, constraints = myConstraints3, type = "B", test = "score", neq.alt = 1)
 
-# fit resticted model and compute model-based bootstrapped 
+# fit restricted model and compute model-based bootstrapped 
 # standard errors. We only generate 9 bootstrap samples in this 
 # example; in practice you may wish to use a much higher number.
 # Note that, a warning message may be thrown because the number of 

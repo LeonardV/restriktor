@@ -38,7 +38,7 @@ and level probabilities).
   
   \item{chunk_size}{integer; the chi-bar-square weights are computed for samples of
   size \code{chunk_size = 5000L}. This process is repeated iteratively until the 
-  weights converges (see \code{convergenge_crit}) or the maximum is reached, i.e.,
+  weights converges (see \code{convergence_crit}) or the maximum is reached, i.e.,
   mix_weights_bootstrap_limit.}
   
   \item{convergence_crit}{the target Monte Carlo precision of the weights:
@@ -88,7 +88,7 @@ If this precision has not been reached and the
 proceeds with adding another set of 5000 samples and updates the weights
 accordingly. If the maximum number of draws is reached without convergence,
 the function returns the (non-converged) weights. In this situation, it is
-advisible to increase the number of \code{mix_weights_bootstrap_limit}.
+advisable to increase the number of \code{mix_weights_bootstrap_limit}.
 }
 
 
@@ -97,13 +97,13 @@ weights with the following attributes:
 
 \item{total_bootstrap_draws}{total number of bootstrap draws}
 \item{converged}{have the chi-bar-square weights converged}
-\item{convergence_crit}{convergence criterium}
+\item{convergence_crit}{convergence criterion}
 \item{wt_bar_chunk}{matrix with the chi-bar-square weights for each iteration}
 \item{chunk_size}{how many samples are added in each iteration}
 \item{total_chunks}{what is the maximum number of chunks based on 
 \code{mix_weights_bootstrap_limit} and \code{chunk_size}}
 \item{chunk_iter}{number of iterations run}
-\item{error.idx}{which bootstrap samples were not succesful}
+\item{error.idx}{which bootstrap samples were not successful}
 \item{mix_weights_bootstrap_limit}{the maximum number of bootstrap draws}
 \item{engine}{which computational engine produced the weights: "nnls"
 (default) or "quadprog"}
@@ -126,7 +126,8 @@ meq <- 0L
 wt.bar <- con_weights_boot(W, Amat, meq, R = 99999)
 wt.bar
 
-# in practice you want to use are more conservative convergence criterion
+# a larger convergence criterion is faster, but less precise; in practice
+# you may want to use a stricter (i.e., smaller) convergence criterion.
 wt.bar2 <- con_weights_boot(W, Amat, meq, R = 99999, convergence_crit = 1e-02)
 wt.bar2
 }

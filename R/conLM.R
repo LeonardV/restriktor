@@ -354,6 +354,12 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
     X <- chol(OUT$information)
   } else {
     OUT$missing <- "none"
+    # for weighted least squares the information is based on the weighted
+    # model matrix; con_augmented_information() below then also derives the
+    # Lagrange multipliers from crossprod(X) = X'WX
+    if (!is.null(weights)) {
+      X <- sqrt(weights) * X
+    }
     OUT$information <- 1/s2 * crossprod(X)
   }
   

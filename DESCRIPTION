@@ -24,10 +24,11 @@ NeedsCompilation: no
 Packaged: 2026-07-15 11:11:11 UTC; leonardv
 Author: Leonard Vanbrabant [aut, cre], Rebecca Kuiper [aut], Yves Rosseel [ctb], Aleksandra Dacko [ctb]
 Maintainer: Leonard Vanbrabant <info@restriktor.org>
-Suggests: 
+Suggests:
     knitr,
     rmarkdown,
     bain,
+    sandwich,
     testthat (>= 3.0.0),
     metadat
 VignetteBuilder: knitr

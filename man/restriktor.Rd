@@ -71,9 +71,9 @@ restriktor(object, constraints = NULL, \dots)
   package. If "\code{boot.standard}", bootstrapped standard 
   errors are computed using standard bootstrapping. If "\code{boot.model.based}" 
   or "\code{boot.residual}", bootstrapped standard errors are computed 
-  using model-based bootstrapping. If "\code{none}", no standard errors 
-  are computed. Note that for objects of class "mlm" no standard errors 
-  are available (yet).}
+  using model-based bootstrapping. If "\code{none}", no standard errors
+  are computed. Note that for objects of class "mlm" only "\code{none}"
+  (default) and "\code{standard}" are available (yet).}
   \item{B}{integer; number of bootstrap draws for \code{se}. The 
   default value is set to 999. Parallel support is available.}
   \item{rhs}{vector on the right-hand side of the constraints; 

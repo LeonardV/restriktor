@@ -46,6 +46,11 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
 
   ans$residuals <- r
   if (is.null(z$bootout) && se.type != "none") {
+    if (inherits(z, "conMLM") && is.matrix(b.restr)) {
+      # vec(B), in the same response-major order and naming as the
+      # information matrix
+      b.restr <- structure(c(b.restr), names = colnames(z$information))
+    }
     if (se.type == "standard") {
       V <- attr(z$information, "inverted")
       se <- sqrt(diag(V))
@@ -128,8 +133,11 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
       stop("restriktor ERROR: you may have found a bug, please contact me at info@restriktor.org")
     }
   
+  # for mlm fits without standard errors the coefficients are kept as a
+  # p x ny matrix; label the columns with the response names. With standard
+  # errors the coefficients form a regular (vec(B) x 4) coefficient table.
   ny <- ncol(coef(object$model.org))
-  if (!is.null(ny) && ny > 1L) {
+  if (!is.null(ny) && ny > 1L && se.type == "none") {
     ynames <- colnames(ans$coefficients)
     if (is.null(ynames)) {
       lhs <- object$model.org$terms[[2L]]

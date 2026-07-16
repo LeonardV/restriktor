@@ -26,7 +26,7 @@ print.summary.restriktor <- function(x, digits = max(3, getOption("digits") - 2)
   if (rdf > 5L) {
     nam <- c("Min", "1Q", "Median", "3Q", "Max")
     # residuals may contain NAs when the model was fitted with missing = "fiml"
-    rq <- if (length(dim(c(resid))) == 2L) {
+    rq <- if (length(dim(resid)) == 2L) {
       structure(apply(t(resid), 1L, quantile, na.rm = TRUE),
                 dimnames = list(nam, dimnames(resid)[[2L]]))
     } else {

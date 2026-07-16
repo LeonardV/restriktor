@@ -277,6 +277,106 @@ test_that("conRLM.rlm: output bevat verwachte velden", {
 
 
 # =============================================================================
+# conMLM.mlm
+# =============================================================================
+# Coefficientvolgorde vec(B): eerst de 3 coefficienten van y, dan die van y2.
+
+test_that("conMLM.mlm: matrixrestrictie geeft restriktor object en respecteert restricties", {
+  # geschonden restrictie: group1 (y) >= group3 (y)
+  Amat <- rbind(c(1, 0, -1, 0, 0, 0))
+  result <- restriktor(fit_mlm, constraints = Amat, mix_weights = "none")
+  expect_s3_class(result, "restriktor")
+  expect_true("conMLM" %in% class(result))
+  b <- result$b.restr
+  expect_true(b["group1", "y"] >= b["group3", "y"] - 1e-6)
+})
+
+test_that("conMLM.mlm: gelijkheidsbeperking wordt gerespecteerd", {
+  Amat <- rbind(c(1, -1, 0, 0, 0, 0))
+  result <- restriktor(fit_mlm, constraints = Amat, neq = 1, mix_weights = "none")
+  b <- result$b.restr
+  expect_equal(unname(b["group1", "y"]), unname(b["group2", "y"]), tolerance = 1e-5)
+})
+
+test_that("conMLM.mlm: R2.reduced komt overeen met handmatige berekening per respons", {
+  Amat <- rbind(c(1, 0, -1, 0, 0, 0))
+  result <- restriktor(fit_mlm, constraints = Amat, mix_weights = "none")
+  fitted <- result$fitted
+  resid  <- result$residuals
+  # fit_mlm heeft geen intercept, dus mss = colSums(fitted^2)
+  mss <- colSums(fitted^2)
+  rss <- colSums(resid^2)
+  expect_equal(unname(result$R2.reduced), unname(mss / (mss + rss)), tolerance = 1e-8)
+})
+
+test_that("conMLM.mlm: R2.reduced correct bij model met intercept en responsen op verschillende schaal", {
+  # regressietest voor de recycling-bug in de gecentreerde kwadratensom
+  y2_scaled <- 100 + df_test$y + rnorm(n)
+  fit_mlm_int <- lm(cbind(y, y2_scaled) ~ x1, data = cbind(df_test, y2_scaled = y2_scaled))
+  # geschonden restrictie op de slope van y: b_x1 (y) >= 1
+  Amat <- rbind(c(0, 1, 0, 0))
+  result <- restriktor(fit_mlm_int, constraints = Amat, rhs = 1, mix_weights = "none")
+  fitted <- result$fitted
+  resid  <- result$residuals
+  mss <- colSums(sweep(fitted, 2, colMeans(fitted))^2)
+  rss <- colSums(resid^2)
+  expect_equal(unname(result$R2.reduced), unname(mss / (mss + rss)), tolerance = 1e-8)
+  expect_true(all(result$R2.reduced < 1))
+})
+
+test_that("conMLM.mlm: loglik neemt niet toe door restricties", {
+  Amat <- rbind(c(1, 0, -1, 0, 0, 0))
+  result <- restriktor(fit_mlm, constraints = Amat, mix_weights = "none")
+  ll.unrestr <- restriktor(fit_mlm, mix_weights = "none")$loglik
+  expect_true(result$loglik <= ll.unrestr + 1e-8)
+})
+
+test_that("conMLM.mlm: se = 'standard' zonder restricties reproduceert vcov(mlm)", {
+  result <- restriktor(fit_mlm, se = "standard", mix_weights = "none")
+  s <- summary(result)
+  se.restr <- s$coefficients[, "Std. Error"]
+  se.vcov  <- sqrt(diag(vcov(fit_mlm)))
+  expect_equal(unname(se.restr), unname(se.vcov), tolerance = 1e-6)
+})
+
+test_that("conMLM.mlm: se = 'standard' met actieve restrictie geeft bruikbare summary", {
+  Amat <- rbind(c(1, 0, -1, 0, 0, 0))
+  result <- restriktor(fit_mlm, constraints = Amat, se = "standard",
+                       mix_weights = "none")
+  s <- summary(result)
+  coefs <- s$coefficients
+  expect_equal(nrow(coefs), length(coef(fit_mlm)))
+  expect_true(all(c("Estimate", "Std. Error", "t value", "Pr(>|t|)")
+                  %in% colnames(coefs)))
+  expect_true(all(is.finite(coefs[, "Std. Error"])))
+})
+
+test_that("conMLM.mlm: summary met se = 'none' behoudt coefficientenmatrix", {
+  Amat <- rbind(c(1, 0, -1, 0, 0, 0))
+  result <- restriktor(fit_mlm, constraints = Amat, mix_weights = "none")
+  s <- summary(result)
+  expect_equal(ncol(s$coefficients), ncol(coef(fit_mlm)))
+})
+
+test_that("conMLM.mlm: fout bij niet-ondersteunde se methode", {
+  expect_error(
+    restriktor(fit_mlm, constraints = rbind(c(1, 0, -1, 0, 0, 0)),
+               se = "boot.standard"),
+    "not \\(yet\\) available"
+  )
+})
+
+test_that("conMLM.mlm: fout bij gewogen mlm fit", {
+  w <- runif(n, 0.5, 1.5)
+  fit_mlm_w <- lm(Y_mat ~ -1 + group, data = df_test, weights = w)
+  expect_error(
+    restriktor(fit_mlm_w, constraints = rbind(c(1, 0, -1, 0, 0, 0))),
+    "weighted mlm"
+  )
+})
+
+
+# =============================================================================
 # Foutafhandeling
 # =============================================================================
 

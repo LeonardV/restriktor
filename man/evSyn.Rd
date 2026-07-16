@@ -140,10 +140,10 @@ xlab_unordered = NULL, angle_x = 30, \dots)
 
   \item{type}{If \code{"gorica"}, a proxy for the log-likihood is calculated by assuming that 
   the parameter estimates (of interest) are multivariate normally distributed. 
-  Then, either the unbiased covariance matrix of the estimates (based on 'N'; e.g., for an lm object) is used
-  or the biased one obtained via the vcov function (e.g., for a lavaan object). 
-  In the latter case, a corresponding message will be printed. If \code{"goricac"}, 
-  then the small-sample-size correction is applied.}
+  %Then, either the unbiased covariance matrix of the estimates (based on 'N'; e.g., for an lm object) is used
+  %or the biased one obtained via the vcov function (e.g., for a \code{lavaan} object). 
+  %In the latter case, a corresponding message will be printed. 
+  If \code{"goricac"}, then the small-sample-size correction is applied.}
 
   \item{hypotheses}{When applying the same set of hypotheses to each study, 
   the syntax structure should be as follows: "hypotheses = list(H1, H2, \ldots)". 

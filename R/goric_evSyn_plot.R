@@ -46,7 +46,7 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
                                                 cumulative_weights = x$Cumulative_GORICA_weights,
                                                 y_label = ylabel_IC)
     )
-  } else if (inherits(x, "evSyn_ICweights")) {
+  } else if (inherits(x, c("evSyn_ICweights", "evSyn_ICratios", "evSyn_escalc"))) {
     data_list <- switch(output_type,
                         "gorica_weights" = list(weight_m = x$GORICA_weight_m, 
                                                 cumulative_weights = x$Cumulative_GORICA_weights,

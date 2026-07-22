@@ -14,8 +14,8 @@
 
 # evSyn_est       <- function(object, ...) UseMethod("evSyn_est")
 # evSyn_LL        <- function(object, ...) UseMethod("evSyn_LL")
-# evSyn_ICweights <- function(object, ...) UseMethod("evSyn_ICweights")
 # evSyn_ICvalues  <- function(object, ...) UseMethod("evSyn_ICvalues")
+# evSyn_ICweights <- function(object, ...) UseMethod("evSyn_ICweights")
 # evSyn_ICratios  <- function(object, ...) UseMethod("evSyn_ICratios")
 # evSyn_escalc    <- function(object, ...) UseMethod("evSyn_escalc")
 # -------------------------------------------------------------------------
@@ -1635,12 +1635,17 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
   rownames(Weights) <- study_names
   
   
+  sequence <- paste0("Study nr.s 1-", 1:S, "   ")
+  sequence[1] <- "Study nr.  1   "
+  #
+  studyspecWeights <- matrix(NA, nrow = (S), ncol = (NrHypos))
+  colnames(studyspecWeights) <- hypo_names
+  rownames(studyspecWeights) <- c(sequence)  
+  #
   CumulativeRatios <- matrix(NA, nrow = (S+1), ncol = (NrHypos))
   CumulativeWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos))
   CumulativeICdiff <- matrix(NA, nrow = (S+1), ncol = (NrHypos))
   colnames(CumulativeRatios) <- colnames(CumulativeWeights) <- colnames(CumulativeICdiff) <- hypo_names
-  sequence <- paste0("Study nr.s 1-", 1:S, "   ")
-  sequence[1] <- "Study nr.  1   "
   rownames(CumulativeRatios) <- rownames(CumulativeWeights) <- rownames(CumulativeICdiff) <- c(sequence, "Final")
   #
   if (type_ev == "average") { 
@@ -1661,6 +1666,10 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
     sumIC_diff <- 0
     sum_weights <- 0 
     for (s in 1:S) {
+      minGoric <- min(IC_diff[s, ])
+      expGW <- priorICweights * exp(-0.5*(IC_diff[s, ]-minGoric))
+      studyspecWeights[s, ] <- expGW / sum(expGW)
+      #
       sumIC_diff <- (sumIC_diff + IC_diff[s, ]*study_weights_S[s]) / (sum(study_weights_S[1:s])/s)
       CumulativeICdiff[s, ] <- sumIC_diff / s # take average here, not sum.
       minGoric <- min(CumulativeICdiff[s, ])
@@ -1688,11 +1697,16 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
     sumIC_diff <- 0
     sum_weights <- 0 
     for (s in 1:S) {
+      minGoric <- min(IC_diff[s, ])
+      expGW <- priorICweights * exp(-0.5*(IC_diff[s, ]-minGoric))
+      studyspecWeights[s, ] <- expGW / sum(expGW)
+      #
       sumIC_diff <- (sumIC_diff + IC_diff[s, ]*study_weights_S[s]) / (sum(study_weights_S[1:s])/s)
       CumulativeICdiff[s, ] <- sumIC_diff
       minGoric <- min(CumulativeICdiff[s, ])
       expGW <- priorICweights * exp(-0.5*(CumulativeICdiff[s, ]-minGoric))
-      CumulativeWeights[s, ] <- expGW / sum(expGW) 
+      CumulativeWeights[s, ] <- expGW / sum(expGW)
+      #CumulativeRatioWeights[s, ] <- CumulativeWeights[s, ] / CumulativeWeights[s, Href] # Ratio GORIC(A) weight
       sum_weights <- sum_weights + study_weights_S[s]
       sumIC_diff <- sumIC_diff * (sum(study_weights_S[1:s])/s)
     }
@@ -1721,7 +1735,7 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
     study_weights = study_weights, #rep(1/S, S),
     ##study_sample_nobs = study_sample_nobs,
     #GORICA_m          = IC_diff, # diff in IC values versus reference hypo
-    #GORICA_weight_m   = Weights, # ratio of IC weights!
+    GORICA_weight_m   = studyspecWeights, # IC weights!
     #Cumulative_GORICA = CumulativeICdiff, # cum diff in IC values versus reference hypo
     ICdiff_m    = IC_diff, # diff in IC values versus reference hypo
     GwRatio_m   = Weights, # ratio of IC weights!

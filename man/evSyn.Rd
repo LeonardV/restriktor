@@ -103,9 +103,9 @@ xlab_unordered = NULL, angle_x = 30, \dots)
     \itemize{
       \item a list of vectors with (standardized) parameter estimates (the \code{VCOV} argument is required);   
       \item a list of vectors with log-likelihood values (the \code{PT} argument is required);
+      \item a list of vectors with GORIC(A) values;
       \item a list of vectors with GORIC(A) weights;
       \item a list of vectors with ratio of GORIC(A) weights;
-      \item a list of vectors with GORIC(A) values;
       \item a list of objects of class goric;
       \item a data.frame of class escalc from the \pkg{metafor} package or a regular data.frame using the same labelling;
     }
@@ -117,9 +117,9 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   \describe{
     \item{\code{"est_vcov"}}{Indicates that the input consists of estimates and covariance matrices. Invokes the \code{evSyn_est()} function.}
     \item{\code{"ll_pt"}}{Indicates that the input consists of log-likelihoods and penalty values. Invokes the \code{evSyn_LL()} function.}
+    \item{\code{"icvalues"}}{Indicates that the input consists of IC values. Invokes the \code{evSyn_ICvalues()} function.}
     \item{\code{"icweights"}}{Indicates that the input consists of information criterion (IC) weights. Invokes the \code{evSyn_ICweights()} function.}
     \item{\code{"icratios"}}{Indicates that the input consists of IC weights ratios. Invokes the \code{evSyn_ICratios()} function.}
-    \item{\code{"icvalues"}}{Indicates that the input consists of IC values. Invokes the \code{evSyn_ICvalues()} function.}
     \item{\code{"gorica"}}{Indicates that the input is of class goric from the \code{goric} function. Invokes the \code{evSyn_gorica()} function.}
     \item{\code{"escalc"}}{Indicates that the input is of class escalc from the \pkg{metafor} package (or a regular data.frame using the same labelling). Invokes the \code{evSyn_escalc()} function.}
   }

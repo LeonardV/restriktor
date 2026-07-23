@@ -56,7 +56,7 @@ evSyn_ICvalues(object, \ldots, type_ev = c("added", "average"),
                order_studies = c("input_order", "ascending", "descending"), 
                study_names = c())
 
-# input: AIC or ORIC or GORIC or GORICA weights or (Bayesian) posterior 
+# input: AIC or ORIC or GORIC or GORICA weights; or (Bayesian) posterior 
 # model probabilities
 evSyn_ICweights(object, \ldots, type_ev = c("added", "average"), 
                 hypo_names = c(), priorICweights = NULL, 
@@ -64,8 +64,8 @@ evSyn_ICweights(object, \ldots, type_ev = c("added", "average"),
                 order_studies = c("input_order", "ascending", "descending"), 
                 study_names = c())
 
-# input: Ratio of AIC or ORIC or GORIC or GORICA weights or 
-# (Bayesian) posterior model probabilities
+# input: Ratio of AIC or ORIC or GORIC or GORICA weights; or 
+# Bayes factors
 evSyn_ICratios(object, \ldots, type_ev = c("added", "average"), 
                hypo_names = c(), priorICweights = NULL, 
                type = c("goric", "goricc", "gorica", "goricac"),
@@ -105,7 +105,7 @@ xlab_unordered = NULL, angle_x = 30, \dots)
       \item a list of vectors with log-likelihood values (the \code{PT} argument is required);
       \item a list of vectors with GORIC(A) values;
       \item a list of vectors with GORIC(A) weights;
-      \item a list of vectors with ratio of GORIC(A) weights;
+      \item a list of vectors with ratios of GORIC(A) weights (versus a reference hypothesis / central theory);
       \item a list of objects of class goric;
       \item a data.frame of class escalc from the \pkg{metafor} package or a regular data.frame using the same labelling;
     }
@@ -119,7 +119,7 @@ xlab_unordered = NULL, angle_x = 30, \dots)
     \item{\code{"ll_pt"}}{Indicates that the input consists of log-likelihoods and penalty values. Invokes the \code{evSyn_LL()} function.}
     \item{\code{"icvalues"}}{Indicates that the input consists of IC values. Invokes the \code{evSyn_ICvalues()} function.}
     \item{\code{"icweights"}}{Indicates that the input consists of information criterion (IC) weights. Invokes the \code{evSyn_ICweights()} function.}
-    \item{\code{"icratios"}}{Indicates that the input consists of IC weights ratios. Invokes the \code{evSyn_ICratios()} function.}
+    \item{\code{"icratios"}}{Indicates that the input consists of IC weights ratios (versus a reference hypothesis / central theory). Invokes the \code{evSyn_ICratios()} function.}
     \item{\code{"gorica"}}{Indicates that the input is of class goric from the \code{goric} function. Invokes the \code{evSyn_gorica()} function.}
     \item{\code{"escalc"}}{Indicates that the input is of class escalc from the \pkg{metafor} package (or a regular data.frame using the same labelling). Invokes the \code{evSyn_escalc()} function.}
   }
@@ -136,7 +136,9 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   \item{type_ev}{type of evidence-synthesis approach: Equal-evidence approach 
   (\code{type_ev = "equal"}), Added-evidence approach (\code{type_ev = "added"}), or
   Average-evidence approach (\code{type_ev = "average"}). See details for more 
-  information.}
+  information. Notably, when the input is a list of i) GORIC(A) values, ii) GORIC(A) weights, 
+  or iii) ratios of GORIC(A) weights, equal-evidence approach is not possible 
+  (the added-evidence approach is then used instead).}
 
   \item{type}{If \code{"gorica"}, a proxy for the log-likihood is calculated by assuming that 
   the parameter estimates (of interest) are multivariate normally distributed. 

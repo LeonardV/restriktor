@@ -141,21 +141,21 @@ evSyn <- function(object, input_type = NULL, ...) {
     
   } else if (obj_isICweights) {
     if (!is.null(type_ev) && identical(type_ev, "equal")) {
-      message("\nrestriktor Message: When the input consists of weights, the equal-evidence approach is not applicable. The added-evidence approach is used instead.")
+      message("\nrestriktor Message: When the input consists of weights, the equal-evidence approach is not possible. The added-evidence approach is used instead.")
       args$type_ev <- "added"
     }
     return(call_sub(evSyn_ICweights, args, object))
     
   } else if (obj_isICratios) {
     if (!is.null(type_ev) && identical(type_ev, "equal")) {
-      message("\nrestriktor Message: When the input consists of ratios of weights, the equal-evidence approach is not applicable. The added-evidence approach is used instead.")
+      message("\nrestriktor Message: When the input consists of ratios of weights, the equal-evidence approach is not possible. The added-evidence approach is used instead.")
       args$type_ev <- "added"   
     }
     return(call_sub(evSyn_ICratios, args, object))
     
   } else { # ICvalues
     if (!is.null(type_ev) && identical(type_ev, "equal")) {
-      message("\nrestriktor Message: When the input consists of IC values, the equal-evidence approach is not applicable. The added-evidence approach is used instead.")
+      message("\nrestriktor Message: When the input consists of IC values, the equal-evidence approach is not possible. The added-evidence approach is used instead.")
       args$type_ev <- "added"  
     }
     return(call_sub(evSyn_ICvalues, args, object))

@@ -1648,6 +1648,10 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
   colnames(CumulativeRatios) <- colnames(CumulativeWeights) <- colnames(CumulativeICdiff) <- hypo_names
   rownames(CumulativeRatios) <- rownames(CumulativeWeights) <- rownames(CumulativeICdiff) <- c(sequence, "Final")
   #
+  CumulativeRatioWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos))
+  colnames(CumulativeRatioWeights) <- hypo_names
+  rownames(CumulativeRatioWeights) <- c(sequence, "Final")
+  #
   if (type_ev == "average") { 
     # average-ev approach
     # So, if there were IC values, then average IC values.
@@ -1675,6 +1679,7 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
       minGoric <- min(CumulativeICdiff[s, ])
       expGW <- priorICweights * exp(-0.5*(CumulativeICdiff[s, ]-minGoric))
       CumulativeWeights[s, ] <- expGW / sum(expGW) 
+      CumulativeRatioWeights[s, ] <- CumulativeWeights[s, ] / CumulativeWeights[s, Href] # Ratio GORIC(A) weight
       sum_weights <- sum_weights + study_weights_S[s]
       sumIC_diff <- sumIC_diff * (sum(study_weights_S[1:s])/s)
     }
@@ -1706,7 +1711,7 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
       minGoric <- min(CumulativeICdiff[s, ])
       expGW <- priorICweights * exp(-0.5*(CumulativeICdiff[s, ]-minGoric))
       CumulativeWeights[s, ] <- expGW / sum(expGW)
-      #CumulativeRatioWeights[s, ] <- CumulativeWeights[s, ] / CumulativeWeights[s, Href] # Ratio GORIC(A) weight
+      CumulativeRatioWeights[s, ] <- CumulativeWeights[s, ] / CumulativeWeights[s, Href] # Ratio GORIC(A) weight
       sum_weights <- sum_weights + study_weights_S[s]
       sumIC_diff <- sumIC_diff * (sum(study_weights_S[1:s])/s)
     }
@@ -1715,6 +1720,8 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
   # add final row
   CumulativeICdiff[(S+1), ] <- CumulativeICdiff[S, ] 
   CumulativeWeights[(S+1), ] <- CumulativeWeights[S, ]
+  #
+  CumulativeRatioWeights[(S+1), ] <- CumulativeRatioWeights[S, ]
   
   Final.weights <- CumulativeWeights[S, ]
   # The Final.weights are the ratios of weights vs the reference hypothesis
@@ -1739,10 +1746,10 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
     #Cumulative_GORICA = CumulativeICdiff, # cum diff in IC values versus reference hypo
     ICdiff_m    = IC_diff, # diff in IC values versus reference hypo
     GwRatio_m   = Weights, # ratio of IC weights!
+    Cumulative_ratioICweights  = CumulativeRatioWeights, # cum ratios!
     Cumulative_ICdiff = CumulativeICdiff, # cum diff in IC values versus reference hypo
     Cumulative_GORICA_weights  = CumulativeWeights, # This is cum GORICA weights (so, not cum ratios!)
     Final_ratio_GORICA_weights = Final.ratio.GORICA.weights) # These are the ratios, and all versus all (as usual)
-  # TO DO in output goede namen gebruiken en elt toevoegen! zie hierboven
   
   class(out) <- c("evSyn_ICratios", "evSyn")
   

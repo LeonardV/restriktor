@@ -36,8 +36,9 @@ summary.evSyn <- function(object, ...) {
     # If icratios
     Href        = x[["Href"]],
     ICdiff_m    = x[["ICdiff_m"]], # diff in IC values versus reference hypo
-    GwRatio_m   = x[["GwRatio_m"]], # ratio of IC weights!
-    Cumulative_ICdiff = x[["Cumulative_ICdiff"]] # cum diff in IC values versus reference hypo
+    Cumulative_ICdiff = x[["Cumulative_ICdiff"]], # cum diff in IC values versus reference hypo
+    Cumulative_ratioICweights = x[["Cumulative_ratioICweights"]], # cum ratios
+    GwRatio_m   = x[["GwRatio_m"]] # ratio of IC weights!
   )
   
   if (!is.null(x[["PT_m"]])) {
@@ -84,6 +85,14 @@ summary.evSyn <- function(object, ...) {
     fcptv <- t(ans$Cumulative_PT[ans$n_studies, ])
     rownames(fcptv) <- "Penalty term values"
     final <- rbind(final, fcptv)
+  }
+  
+  # If icratios
+  if (!is.null(x[["Cumulative_ratioICweights"]])) {
+    f_cumICratio <- t(x[["Cumulative_ratioICweights"]]["Final", ])
+    rownames(f_cumICratio) <- paste0("Ratio of ", type_label, " weights")
+    #paste0("Ratio of ", type_label, " weights \n", "(versus reference hypothesis ", names(x[["Href"]]), ")")
+    final <- rbind(final, f_cumICratio)
   }
   
   # If icratios
@@ -263,6 +272,17 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
     cat("\n    Penalty term values:\n")  
     formatted_cptv <- apply(x[["Cumulative_PT"]][,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     captured_output <- capture.output(print(formatted_cptv, row.names = TRUE, right = TRUE, quote = "FALSE"))
+    adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
+    cat(paste0(adjusted_output, "\n"), sep = "")
+    cat("    ---\n")
+  }
+  
+  # If icratios
+  if (!is.null(x[["Cumulative_ratioICweights"]])) {
+    cat(paste0("\n    ", "Ratio of ", type_label, " weights",
+               "\n    ", "(versus reference hypothesis ", names(x[["Href"]]), "):\n"))
+    formatted_crgw <- apply(x[["Cumulative_ratioICweights"]][1:S, , drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
+    captured_output <- capture.output(print(formatted_crgw, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
     cat(paste0(adjusted_output, "\n"), sep = "")
     cat("    ---\n")

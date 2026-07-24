@@ -239,6 +239,8 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
   if (standardized) {
     # Note: sometimes stand. and unstand. not of same size, 
     #       so, if not needed, then do not add stand. estimates.
+    nrparam <- length(standardizedSolution(x)['est.std']$est.std)
+    paramTable <- paramTable[1:nrparam, ]
     paramTable$est.std <- standardizedSolution(x)['est.std']$est.std
   }
   indices_fixed <- which(paramTable$free == 0L & paramTable$op != ":=")

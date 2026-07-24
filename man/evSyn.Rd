@@ -40,21 +40,21 @@ evSyn_est(object, \ldots, VCOV = list(), hypotheses = list(),
           hypo_names = c(), priorICweights = NULL, 
           type = c("gorica", "goricac"), 
           order_studies = c("input_order", "ascending", "descending"),
-          study_names = c(), study_sample_nobs = NULL)
+          study_names = c(), study_weights = c(), study_sample_nobs = NULL)
 
 # input: Log-likelihood and penalty values
 evSyn_LL(object, \ldots, PT = list(), type_ev = c("added", "equal", "average"),
          hypo_names = c(), priorICweights = NULL, 
          type = c("goric", "goricc", "gorica", "goricac"),
          order_studies = c("input_order", "ascending", "descending"),
-         study_names = c())
+         study_names = c(), study_weights = c())
 
 # input: GORIC(A), ORIC, AIC values
 evSyn_ICvalues(object, \ldots, type_ev = c("added", "average"), 
                hypo_names = c(), priorICweights = NULL, 
                type = c("goric", "goricc", "gorica", "goricac"), 
                order_studies = c("input_order", "ascending", "descending"), 
-               study_names = c())
+               study_names = c(), study_weights = c())
 
 # input: AIC or ORIC or GORIC or GORICA weights; or (Bayesian) posterior 
 # model probabilities
@@ -62,7 +62,7 @@ evSyn_ICweights(object, \ldots, type_ev = c("added", "average"),
                 hypo_names = c(), priorICweights = NULL, 
                 type = c("goric", "goricc", "gorica", "goricac"),
                 order_studies = c("input_order", "ascending", "descending"), 
-                study_names = c())
+                study_names = c(), study_weights = c())
 
 # input: Ratio of AIC or ORIC or GORIC or GORICA weights; or 
 # Bayes factors
@@ -70,14 +70,14 @@ evSyn_ICratios(object, \ldots, type_ev = c("added", "average"),
                hypo_names = c(), priorICweights = NULL, 
                type = c("goric", "goricc", "gorica", "goricac"),
                order_studies = c("input_order", "ascending", "descending"), 
-               study_names = c())
+               study_names = c(), study_weights = c())
 
 # input: result from the goric() function
 # Note that this is a wrapper function for evSyn_LL.
 evSyn_gorica(object, \dots, type_ev = c("added", "equal", "average"), 
              hypo_names = c(), priorICweights = NULL, 
              order_studies = c("input_order", "ascending", "descending"), 
-             study_names = c())
+             study_names = c(), study_weights = c())
 
 # input: Result from the escalc() function from the metafor package (or a 
 # regular data.frame using the same labelling). 
@@ -428,26 +428,38 @@ H0   <- "beta1 = 0"
 Hpos <- "beta1 > 0"
 Hneg <- "beta1 < 0"
 hypotheses <- list(H0 = H0, Hpos = Hpos, Hneg = Hneg)
-
 # Since this covers the whole space / covers all theories, we do not need a safeguard-hypothesis:
 comparison <- "none"
 
+# GORICA evidence synthesis (added-approach)
 evS4_added <- evSyn(object = Param_studies, VCOV = CovMx_studies, 
                     hypotheses = hypotheses,
-                    type_ev = "added", 
+                    type_ev = "added", # default
                     comparison = "none")
-evS4_added
-summary(evS4_added)
-plot(evS4_added)
-# Note that this renders a ggplot whhicg you can change accordingly, as done below.
 
+# Output
+# Final results:
+evS4_added
+# Study-specific, cumulative, and final results:
+summary(evS4_added)
+# evSyn plot:
+plot(evS4_added) # Note that this renders a ggplot which you can change accordingly, as done below.
+
+
+# GORICA evidence synthesis (equal-approach)
 evS4_equal <- evSyn(object = Param_studies, VCOV = CovMx_studies, 
                     hypotheses = hypotheses,
                     type_ev = "equal", 
                     comparison = "none")
+                    
+# Output
+# Final results:
 evS4_equal
+# Study-specific, cumulative, and final results:
 summary(evS4_equal)
+# evSyn plot:
 plot(evS4_equal)
+
 
 
 ## Example 2: based on (multiple) estimates and their covariance matrices
@@ -478,11 +490,19 @@ H22 <- 'gr2 > gr1 > gr3'
 # list of (competing) hypotheses
 hypotheses <- list(H1 = list(H11, H12), H2 = list(H21, H22))
 
-# Evidence synthesis (added-evidence)
+# GORICA vidence synthesis (added-evidence)
 evS2_added <- evSyn(object, VCOV = VCOV, hypotheses = hypotheses,
-                    type_ev = "added", comparison = "unconstrained") 
+                    type_ev = "added", # default
+                    comparison = "unconstrained") # default (if multiple hypotheses)
+
+# Output
+# Final results:
 evS2_added
+# Study-specific, cumulative, and final results:
+summary(evS2_added)
+# evSyn plot:
 plot(evS2_added)
+
 
 
 ## Example 3: based on (multiple) estimates and their covariance matrices
@@ -554,10 +574,17 @@ hypothesis <- 'x1 < x2 < x3'
 # Evidence synthesis (added-evidence)
 evS3 <- evSyn(object = Param_studies, VCOV = CovMx_studies, 
               hypotheses = list(H1 = hypothesis),
-              type_ev = "added", 
-              comparison = "complement") 
+              type_ev = "added", # default
+              comparison = "complement") # default (if one hypothesis)
+
+# Output
+# Final results:
 evS3
+# Study-specific, cumulative, and final results:
+summary(evS3)
+# evSyn plot:
 plot(evS3)
+
 
 
 ## Example 4: based on loglikelihood values and penalty values
@@ -566,21 +593,23 @@ plot(evS3)
 LL <- as.list(data.frame(t(myLLs)))
 penalty.values <- as.list(data.frame(t(myPTs)))
 
+
 # Evidence synthesis
-#
+
 # Added-evidence
 evS_LL_added <- evSyn(object = LL, PT = penalty.values, 
                       hypo_names = colnames(myLLs),
-                      type_ev = "added")
+                      type_ev = "added") # default
 evS_LL_added
 plot(evS_LL_added)
-#
+
 # Equal-evidence
 evS_LL_equal <- evSyn(object = LL, PT = penalty.values, 
                       hypo_names = colnames(myLLs),
                       type_ev = "equal")
 evS_LL_equal
 plot(evS_LL_equal)
+
 
 
 ## Example 5: based on AIC, ORIC, GORIC(A) values
@@ -609,22 +638,26 @@ if (requireNamespace("metadat", quietly = TRUE)) {
   # outcome_col = NULL # No 'outcome' variable, so 'theta' is used as labeling
   # yi_col = "yi"
   # vi_cols = "vi"
-  #  
 
-  # The hypothesis should thus now be based on the default labelling theta:
+  # The hypothesis should thus now be based on the default labelling 'theta':
   H1 <- "abs(theta) > 0.5" 
+  
+  # Evidence synthesis (equal-evidence)
   evS_escalc_a <- evSyn(
     data_a, 
     hypotheses = list(H1 = H1), 
     type_ev = "equal",
-    comparison = "complement"
+    comparison = "complement" # default (if one hypothesis)
   )
+  
+  # Output
   evS_escalc_a
   plot(evS_escalc_a)
   
+  
   #Plot options
   #The evSyn plot is a ggplot and can be changed as such. 
-  #
+  
   #As an example, one could change the x-axis colors based on the value(s) of another variable (in a way, looking at subgroups).
   #Next, we set the colors based on two subgroups of studies, those published before 1983 (dark-gray) and those published that year or later (black):
   evSynplot <- plot(evS_escalc_a)
@@ -632,7 +665,7 @@ if (requireNamespace("metadat", quietly = TRUE)) {
   library(ggplot2)
   evSynplot_subgroup <- evSynplot + theme(axis.text.x = element_text(colour = cols_subgroup))
   evSynplot_subgroup
-  #
+  
   # As another example, one can overwrite the subtitle:
   evSynplot_subgroup_subtitle <- evSynplot_subgroup + labs(subtitle = 'For studies published < and >= 1983')
   evSynplot_subgroup_subtitle
@@ -651,13 +684,17 @@ if (requireNamespace("metadat", quietly = TRUE)) {
   # labeling, that is, "PD"
   # yi_col = "yi"
   # vi_cols = "vi"
-  #  
+  
   # The hypothesis should thus now be based on the labeling based on the 'outcome' variable:
   H1 <- "abs(PD) > 0.5" 
+  
+  # Evidence synthesis (equal-evidence)
   evS_escalc_b <- evSyn(data_b, 
                         hypotheses = list(H1 = H1), 
                         type_ev = "equal",
-                        comparison = "complement")
+                        comparison = "complement") # default (if one hypothesis)
+  
+  # Output
   evS_escalc_b
   plot(evS_escalc_b)
 }
@@ -672,22 +709,27 @@ if (requireNamespace("metadat", quietly = TRUE)) {
   # cluster_col = "trial" # using the first variable with a cluster variable 
   # name (year and author are other possibilities)
   # outcome_col = "outcome" # was NULL, but found 'outcome' variable, so use 
-  # that labeling, that is, "PD"
+  # that labeling, that is, "AL" and "PD"
   # yi_col = "yi"
   # vi_cols = c("v1i", "v2i")
-  #  
+   
   # The hypothesis should thus now be based on the labeling based on the 'outcome' variable:
   H1 <- "abs(AL) > 0.5, abs(PD) > 0.5" 
+  
+  # Evidence synthesis (equal-evidence)
   evS_escalc_c <- evSyn(data_c, 
                         hypotheses = list(H1 = H1), 
                         type_ev = "equal",
-                        comparison = "complement")
+                        comparison = "complement") # default (if one hypothesis)
+  
+  # Output
   evS_escalc_c
   plot(evS_escalc_c)
   
+  
   #Plot options
   #The evSyn plot is a ggplot and can be changed as such. 
-  #
+  
   #As an example, one could change the x-axis colors based on the value(s) of another variable (in a way, looking at subgroups).
   #Next, we set the colors based on two subgroups of studies, those published before 1983 (dark-gray) and those published that year or later (black):
   evSynplot <- plot(evS_escalc_c)
@@ -695,12 +737,41 @@ if (requireNamespace("metadat", quietly = TRUE)) {
   library(ggplot2)
   evSynplot_subgroup <- evSynplot + theme(axis.text.x = element_text(colour = cols_subgroup))
   evSynplot_subgroup
-  #
+  
   # As another example, one can overwrite the subtitle:
   evSynplot_subgroup_subtitle <- evSynplot_subgroup + labs(subtitle = 'For studies published < and >= 1983')
   evSynplot_subgroup_subtitle
 
 }
+
+
+## Example 6d: 2 outcomes, assigning study weigths
+if (requireNamespace("metadat", quietly = TRUE)) {
+  data_c <- metadat::dat.berkey1998
+  # yi gives the estimates (for both outcomes), vi their variances,
+  # and v1i & v2i combined their covariance matrices.
+  # So, here:
+  # cluster_col = "trial" # using the first variable with a cluster variable 
+  # name (year and author are other possibilities)
+  # outcome_col = "outcome" # was NULL, but found 'outcome' variable, so use 
+  # that labeling, that is, "PD"
+  # yi_col = "yi"
+  # vi_cols = c("v1i", "v2i")
+   
+  # The hypothesis should thus now be based on the labeling based on the 'outcome' variable:
+  H1 <- "abs(AL) > 0.5, abs(PD) > 0.5" 
+  
+  # Evidence synthesis (equal-evidence)
+  evS_escalc_c <- evSyn(data_c, 
+                        hypotheses = list(H1 = H1), 
+                        type_ev = "equal",
+                        comparison = "complement") # default (if one hypothesis)
+  
+  # Output
+  evS_escalc_c
+  plot(evS_escalc_c)
+}
+  
 
 }
 

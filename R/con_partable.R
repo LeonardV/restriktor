@@ -4,7 +4,7 @@ con_partable <- function(object, est = FALSE, label = FALSE,
 
     #  we first check the class of object
     if (!(class(object)[1] %in% c("lm", "aov", "rlm", "glm", "mlm"))) {
-       stop("restriktor ERROR: It only works for lm, mlm, rlm and glm")
+       stop("restriktor ERROR: It only works for aov, lm, mlm, rlm, and glm")
      }
 
     objectTerms <- terms(object)
@@ -15,12 +15,15 @@ con_partable <- function(object, est = FALSE, label = FALSE,
 
     predCoef <- coef(object)
     if (class(object)[1] == "mlm") {
-      predNames <- colnames(predCoef)  
+      #predNames <- colnames(predCoef) 
+      #
+      responseName <- colnames(predCoef)
+      predNames <- rownames(predCoef)
     } else {
       predNames <- names(predCoef)
     }
     
-    lhs <- rep(responseName, length(predNames))
+    lhs <- rep(responseName, each = length(predNames))
      op <- rep("~", length(predNames))
     rhs <- predNames
 
@@ -29,6 +32,11 @@ con_partable <- function(object, est = FALSE, label = FALSE,
         int.idx <- which(rhs == "(Intercept)")
         op[int.idx] <- "~1"
         rhs[int.idx] <- ""
+    }
+    #
+    if (class(object)[1] == "mlm") {
+      op <- rep(op, length(responseName))
+      rhs <- rep(rhs, length(responseName))
     }
 
     # always add residual variance?
@@ -50,6 +58,10 @@ con_partable <- function(object, est = FALSE, label = FALSE,
     if (label) {
         # partable$label <- c(predNames, responseName)
         partable$label <- predNames
+        #
+        if (class(object)[1] == "mlm") {
+          partable$label <- rownames(vcov(object))
+        }
 
         # convert all ':' to '.'
         partable$label <- gsub("[:()]", ".", partable$label)

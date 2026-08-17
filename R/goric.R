@@ -9,6 +9,9 @@ goric.default <- function(object, ..., hypotheses = NULL,
                           priorICweights = NULL,
                           control = list(), debug = FALSE) {
 
+  #TO DO: Ook beste vs complement - zie commented code (met TO DOs)
+  #TO DO: Default doen, maar wel argument, en dan in benchmarks en evt een simulatie study uit. 
+  
 
   if (is.null(hypotheses) || !is.list(hypotheses)) {
     stop(paste("\nrestriktor ERROR: The 'hypotheses' argument is missing or not a list.",
@@ -216,14 +219,35 @@ goric.default <- function(object, ..., hypotheses = NULL,
     #c(coef(fit)) # per DV de param
     #c(t(coef(fit))) # per param de waardes voor de DVs
     #vcov(fit) # per DV de param
-    
+    #
+    #
     # TO DO CHECK
     # als lm en dan multivariate (dus cbind(Y1, Y2) ~ x1 + x2 oid)
-    # Dan werkt het volgens mij niet.
+    # Dan werkt het volgens mij niet. Dat is trouwens dan ook mlm!
     # Komt iig door naamgeving van parameters 
     # (dan ook geen vector van estimates met coef() en dus gorica ook niet makkelijk)
     # Als we namen zouden toestaan (evt iets aangepast zoals bij intercept en interactie),
     # zou het dan wel werken? Kortom, multivar wel ingebouwd? (goric wel voor afgeleid...)
+    # We kunnen as.vector doen en dan met als namen de predictoren dan een "." en dan de DV namen.
+    #a <- rownames(coef(fit1.lm.mv))
+    #b <- colnames(coef(fit1.lm.mv))
+    #paste0(a, ".", rep(b, each = length(a)))
+    # of ws logischer: de namen van vcov:
+    #rownames(vcov(fit1.lm.mv))
+    # Dat gebruikt dan eerst DV dan een : (maar die kan dan ws niet...) en dan predictor naam.
+    #
+    #
+    # stop("'logLik.lm' does not support multiple responses")
+    # goric_compute_loglik_complement.R#26
+    # Zie ook comments daar.
+    #
+    # 
+    # TO DO check sample_nobs en N, moet bij iig mlm dan
+    # aantal DVs keer zijn (of de ander juist niet)
+    #
+    #
+    # Ondertussen een error, maar die ms al door andere code-wijzigingen komt:
+    #Error in fBody[[i]] : no such index at level 2
     
     
     # standard errors are not needed
@@ -668,7 +692,13 @@ goric.default <- function(object, ..., hypotheses = NULL,
   ans$ratio.gw <- model_comparison_metrics$goric_rw
   ans$ratio.pw <- model_comparison_metrics$penalty_rw
   ans$ratio.lw <- model_comparison_metrics$loglik_rw
-  
+  #
+  best_hypo <- which.max(df[, 7])
+  ans$best_hypo <- best_hypo
+  rownames(ans$ratio.gw)[best_hypo] <- paste0(rownames(ans$ratio.gw)[best_hypo], " (best)")
+  rownames(ans$ratio.pw)[best_hypo] <- paste0(rownames(ans$ratio.pw)[best_hypo], " (best)")
+  rownames(ans$ratio.lw)[best_hypo] <- paste0(rownames(ans$ratio.lw)[best_hypo], " (best)")
+ 
   
   # list all object estimates
   coefs_list <- lapply(conList, function(x) coef(x, which = "restr"))

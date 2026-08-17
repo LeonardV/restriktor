@@ -23,7 +23,10 @@ coef_named_vector <- function(x, VCOV = NULL, ...)  {
     message("\nrestriktor Message: The coefficients from the fitted model have been converted into a vector. ",
             "The coefficient names are taken from the row names of the covariance matrix (vcov). ",
             "Use these names when specifying hypotheses. ",
-            "Note: replace any ':' characters with '.' in hypothesis labels.")
+            "Note: replace any ':' characters with '.' in hypothesis labels."
+            )
+    # TO DO mlm: ws nog zeggen dat intercept dan wordt: DV..Intercept.
+    # TO DO mlm: Werkt dit wel voor mlm, bij mij volgens mij niet....
   } else {
     est <- coef(x)
   }
@@ -47,7 +50,7 @@ check_N_with_sample_nobs <- function(N, sample_nobs, ...)  {
   # Check on N
   if (!is.null(sample_nobs) && sample_nobs != N) {
     message(paste0(
-    "\nrestriktor Message: The specified 'sample_nobs' (or its sum = ", sample_nobs, 
+    "\nrestriktor Message: The (specified) 'sample_nobs' (or its sum = ", sample_nobs, 
     ") differs from the sample size derived from the fitted model (", N, "). ",
     "The model-based value is used instead."
     ))
@@ -87,7 +90,7 @@ VCOV.unbiased <- function(model.org, sample_nobs = NULL, ...)  {
   #if(!is.null(N) && sample_nobs != N) {
   if (!is.null(N) && !is.null(sample_nobs) && sample_nobs != N) {
     message(paste0(
-    "\nrestriktor Message: The specified 'sample_nobs' (or its sum = ", sample_nobs, 
+    "\nrestriktor Message: The (specified) 'sample_nobs' (or its sum = ", sample_nobs, 
     ") differs from the sample size determined from the fitted model (", N, "). ",
     "The unbiased covariance matrix is computed using the model-based value."
     ))

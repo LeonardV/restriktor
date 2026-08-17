@@ -24,6 +24,10 @@ compute_complement_likelihood <- function(model.org, VCOV,
       # for missing = "fiml" the unrestricted observed-data log-likelihood is
       # supplied via ll.unrestr; logLik(model.org) would be the listwise value
       llc <- if (!is.null(ll.unrestr)) ll.unrestr else logLik(model.org)
+      # TO DO mlm:
+      #else{ 
+      #  if(class(model.org)[1] != "mlm") logLik(model.org) else con_loglik_lm(model.org)
+      #  }
       betasc <- b.unrestr
     } else if (type %in% c("gorica", "goricac")) {
       llc <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE)
@@ -76,6 +80,8 @@ compute_complement_likelihood <- function(model.org, VCOV,
   } else if (nrow(Amat) == meq) {
     if (type %in% c("goric", "goricc")) {
       llc <- if (!is.null(ll.unrestr)) ll.unrestr else logLik(model.org)
+      # TO DO logLik does not work for mlm object! ''logLik.lm' does not support multiple responses'
+      # Kan die uit con_loglik: con_loglik_lm(model.org)
       betasc <- b.unrestr
     } else if (type %in% c("gorica", "goricac")) {
       llc <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE)

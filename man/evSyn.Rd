@@ -280,49 +280,59 @@ xlab_unordered = NULL, angle_x = 30, \dots)
 }
 
 \details{
-In the \strong{added-evidence} approach, evidence from each study or dataset is 
-cumulatively aggregated. This means that for every new study, the log-likelihood 
-and the penalty term are added to the cumulative totals. The strength of the 
-aggregated evidence in this approach depends on the nature of the evidence itself. 
-Simply having more studies doesn't necessarily mean stronger evidence if those 
-studies provide weak or contradictory evidence.\cr 
-Opt for this approach when you anticipate each new piece of evidence to provide an 
-incremental contribution to the overall evidence, without the need to normalize or 
-average across datasets. It's especially suitable when you believe that the 
+In the \strong{added-evidence} approach, evidence for a central hypothesis/theory 
+from each study or dataset is cumulatively aggregated. 
+This means that for every new study, the log-likelihood and the penalty term are 
+added to the cumulative totals. Stated differently, the (cumulative) IC weights 
+are used as an a priori weigth for the next study.
+%The strength of the aggregated evidence depends on the nature of the evidence itself: 
+%Simply having more studies does not necessarily mean stronger evidence if those 
+%studies provide weak or contradictory evidence.
+\cr 
+Opt for this approach when 
+%you anticipate each new piece of evidence to provide an 
+%incremental contribution to the overall evidence, without the need to normalize or 
+%average across datasets. It is especially suitable when 
+you believe that the 
 aggregated evidence from multiple studies is stronger than if the data were combined 
-into a single study.
+into a single study (when that would be possible).
+The overall evidence then reflects the support for the central hypothesis/theory 
+being true in all studies.
 
-The \strong{equal-evidence} approach aggregates the cumulative evidence in the same 
-manner as the added-evidence approach. However, when calculating the GORICA, the 
-cumulative evidence is divided by the number of studies. This ensures that the 
-contribution from each study or dataset remains equal, regardless of the total count. 
-Conceptually, aggregating evidence from multiple studies in this approach can be 
-likened to obtaining evidence from a single larger study, similar to how a 
-meta-analysis treats combined evidence.\cr
-Choose this method when you want each study to contribute equally to the overall 
-evidence, irrespective of the size or scope of each individual dataset. It's ideal 
-for situations where you view the combined evidence from multiple studies as 
+The \strong{equal-evidence} approach also aggregates the cumulative evidence 
+central hypothesis/theory but as if the data were combined into a single study 
+(when that would be possible).  
+In that way, it is comparable to meta-analysis but without the need that the 
+data can be combined. 
+This means that for every new study, the log-likelihood 
+part (reflecting the fit of the hypothesis to the data) is added to the 
+cumulative total, while the penalty part (reflecting the size of the hypothesis) 
+is averaged. Because of this, this approach can only be used when there is 
+information about the log-likelihood and penalty (and not only the IC values or 
+weights).
+\cr
+Choose this method when you view the combined evidence from multiple studies as 
 equivalent to that from a single, larger study.
+The overall evidence then reflects the support for the central hypothesis/theory 
+being true on average in all studies.
 
 The \strong{average-evidence} method can be conceptualized as a form of multiverse 
 analysis. When faced with a single dataset, there are often numerous analytical 
 choices available, such as handling missing data, selecting variables, or choosing 
 statistical methods. Each choice can lead to a different analysis or model, creating 
-a "multiverse" of possible outcomes.\cr
-For each of these analyses, an "evidence" score can be calculated, indicating how 
-well the model fits the data. Some models might offer a superior fit, while others 
-might not align as closely with the data. The average-evidence method aggregates 
-these scores, providing an average measure of fit across all considered models.
-This approach offers an overarching perspective on the general trend across all 
-analyses. If the average evidence suggests a good fit, it indicates that the 
-majority of the chosen analyses align well with the data. This method is invaluable 
-for assessing the robustness of results, ensuring that findings are not merely 
-artifacts of a specific analytical choice but are consistent across various model 
-specifications on the same dataset.\cr
-Opt for the average-evidence approach when you wish to gauge the central tendency 
-of evidence across multiple analytical choices. It's especially beneficial when 
-aiming to determine the robustness of results across various model specifications 
-applied to the same dataset.
+a "multiverse" of possible outcomes.
+%This method is invaluable for assessing the robustness of results, ensuring that 
+%findings are not merely artifacts of a specific analytical choice but are consistent 
+%across various model specifications on the same dataset.
+\cr
+For each of these analyses, evidence for your hypothesis/-es of interest can be 
+calculated using IC values or weights, indicating how likely your hypothesis is. 
+In some analyses, a hypothesis might obtain high support, while in others it might not. 
+The average-evidence method aggregates the evidence for a hypothesis from all analyses, 
+providing an average measure of evidence across all considered analyses.
+\cr
+Opt for the average-evidence approach when you want to combine evidence from 
+multiple analyses on one dataset.
 
 \strong{Leave-one-out sensitivity analysis.}
 \code{leave1studyout} repeats the evidence synthesis S times, each time dropping 

@@ -765,7 +765,17 @@ goric.default <- function(object, ..., hypotheses = NULL,
   
   # list all object estimates
   coefs_list <- lapply(conList, function(x) coef(x, which = "restr"))
-  coefs <- list_to_df_rows(coefs_list)
+  # # TO DO mlm:
+  # if ("conMLM" %in% class(conList[[1]])) {
+  #   coefs_list <- lapply(coefs_list, function(x) {
+  #     est_vec <- as.vector(x)
+  #     # TO DO geef namen, maar nu hier vcov niet bekend....
+  #     names(est_vec) <- rownames(vcov(conList[[1]]))
+  #     return(est_vec)
+  #   }
+  #   )
+  # } 
+  coefs <- list_to_df_rows(coefs_list) 
   
   if (comparison == "complement") {
     # does def function exists

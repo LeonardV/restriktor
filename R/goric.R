@@ -6,11 +6,51 @@ goric.default <- function(object, ..., hypotheses = NULL,
                           VCOV = NULL, sample_nobs = NULL,
                           penalty_factor = 2,
                           Heq = FALSE, 
+                          add_Hc = NULL,
                           priorICweights = NULL,
+                          posthoc = TRUE,
                           control = list(), debug = FALSE) {
 
+  # TO DO RMK: Loop onderstaande ook samen door - ik weet nl niet waar ik die dingen moet doen...
+  
   #TO DO: Ook beste vs complement - zie commented code (met TO DOs)
-  #TO DO: Default doen, maar wel argument, en dan in benchmarks en evt een simulatie study uit. 
+  #TO DO: Default doen, maar wel argument (posthoc = T), en dan in benchmarks en evt een simulatie study uit. 
+  
+  # TO DO: add compl of one hypo out of set
+  #Restriktor, argument add_Hc. Geef of dan nr of naam hypo.
+  # Zet dan comparison none. Overrule evt, met melding dan. 
+  #Run dan ook h vs hc en neem samen met results set+unc.
+  # TO DO: In Help doc: meest zinvol als andere hypo in h. 
+  #
+  # TO DO Gebruik evt iets van onderstaande code, waarbij
+  # IC_allHunc -> hypos vs unc -- kan evt ook zonder Hunc trouwens
+  # IC_HmHc -> 1 van de hypos vs its complement
+  #
+  # Combine these results (dan dus 3 hypos en compl van 1 van de 3 en geen failsafe!):
+  # nrHypo <- num_hypotheses + 1
+  # IC_all <- matrix(NA, nrow = nrHypo, ncol = 6)
+  # if(is.numeric(add_Hc) {
+  #   nameCompl <- paste0("Complement of ", IC_HmHc$result$model[add_Hc])
+  #   nr_Hm <- add_Hc
+  # } else {
+  #   nameCompl <- paste0("Complement of ", add_Hc)
+  #   nr_Hm <- which(IC_HmHc$result$model == add_Hc)
+  # }
+  # rownames(IC_all) <- c(IC_allHunc$result$model[1:num_hypotheses], nameCompl)
+  # colnames(IC_all) <- colnames(IC_allHunc$result[2:7])
+  # IC_all[,1] <- c(IC_allHunc$result$loglik[1:num_hypotheses], IC_HmHc$result$loglik[nr_Hm])
+  # IC_all[,2] <- c(IC_allHunc$result$penalty[1:num_hypotheses], IC_HmHc$result$penalty[nr_Hm])
+  # IC_all[,3] <- c(IC_allHunc$result$gorica[1:num_hypotheses], IC_HmHc$result$gorica[nr_Hm])
+  # IC_all[,4] <- calc_ICweights(-2*c(IC_allHunc$result$loglik[1:num_hypotheses], IC_HmHc$result$loglik[nr_Hm]))$IC_weights
+  # IC_all[,5] <- calc_ICweights(2*c(IC_allHunc$result$penalty[1:num_hypotheses], IC_HmHc$result$penalty[nr_Hm]))$IC_weights
+  # IC_all[,6] <- calc_ICweights(c(IC_allHunc$result$gorica[1:num_hypotheses], IC_HmHc$result$gorica[nr_Hm]))$IC_weights
+  # #
+  # # Result 3 hypos vs their complement
+  # round(IC_all, 3)
+  # #
+  # # Ratio of GORICA weights:
+  # GWs <- calc_ICweights(c(IC_allHunc$result$gorica[1:num_hypotheses], IC_HmHc$result$gorica[nr_Hm]))
+  # GWs$ratio_IC_weights
   
 
   if (is.null(hypotheses) || !is.list(hypotheses)) {
@@ -198,6 +238,29 @@ goric.default <- function(object, ..., hypotheses = NULL,
 
   constraints <- hypotheses
   type <- match.arg(tolower(type), c("goric", "goricc", "gorica", "goricac"))
+  
+
+  # add_Hc validation
+  if (!is.null(add_Hc)) {
+    if (!is.numeric(add_Hc) && !(add_Hc %in% names(hypotheses))) {
+      stop(paste0(
+        "\nrestriktor ERROR: The argument add_Hc should be a number or name ",
+        "denoting one of the order-restricted hypotheses. ",
+        "It should thus either be a number between 1 and ", num_hypotheses,
+        " or one of the following names: ", names(hypotheses), "."
+      ), call. = FALSE)
+    }
+    if (is.numeric(add_Hc) && add_Hc > num_hypotheses) {
+      stop(paste0(
+        "\nrestriktor ERROR: The argument add_Hc should be a number (or name) ",
+        "denoting one of the order-restricted hypotheses. ",
+        "It should thus be a number between 1 and ", num_hypotheses,
+        " (or one of the following names: ", names(hypotheses), ").",
+        "Now, it takes on the value ", add_Hc
+      ), call. = FALSE)
+    }
+  }
+
   
   conChar <- vapply(constraints, function(x) inherits(x, "character"), logical(1))
   isConChar <- all(conChar)

@@ -178,7 +178,8 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
                       study_sample_nobs = NULL,
                       study_weights = NULL) {
   
-  if (missing(comparison)) {
+  comparison_orig <- comparison
+  if (missing(comparison_orig)) {
     if (length(hypotheses) == 1) {
       comparison <- "complement"
     } else {
@@ -315,7 +316,8 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   # Note: in the case of a list in a list, 
   # and only one hypothesis in the sub-lists, then:
   # comparison <- "complement"
-  if (all(len_H == 1)) {
+  # BUT only when it was not set to something in the first place!
+  if (missing(comparison_orig) && all(len_H == 1)) {
     comparison <- "complement"
   }
   

@@ -98,6 +98,10 @@ leave1studyout.evSyn <- function(object, ...) {
       rownames,
       colnames(ICw_m)
     )
+    # TO DO Als weight bijna een, dan geeft het 1 en bijv niet 1.000 of .999.
+    #       Ik denk dat je met 1 denkt dat het exact 1 is... 
+    #       Graag aanpassen, maar hoe&Waar?
+    # TO DO Sowieso overal kijken naar hoeveel decimalen printen....
   )
   
   OverallPrefHypo <- matrix(
@@ -162,4 +166,8 @@ leave1studyout.evSyn <- function(object, ...) {
   result
 }
 
+# TO DO:
+# NB som gaat sowieso omlaag en het hangt van N af hoeveel!!!
+# Dus eigenlijk zou je ook voorspelling moeten geven
+# en/of verdisconteren!
 

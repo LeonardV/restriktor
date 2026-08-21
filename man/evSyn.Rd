@@ -285,19 +285,10 @@ from each study or dataset is cumulatively aggregated.
 This means that for every new study, the log-likelihood and the penalty term are 
 added to the cumulative totals. Stated differently, the (cumulative) IC weights 
 are used as an a priori weigth for the next study.
-%The strength of the aggregated evidence depends on the nature of the evidence itself: 
-%Simply having more studies does not necessarily mean stronger evidence if those 
-%studies provide weak or contradictory evidence.
 \cr 
-Opt for this approach when 
-%you anticipate each new piece of evidence to provide an 
-%incremental contribution to the overall evidence, without the need to normalize or 
-%average across datasets. It is especially suitable when 
-you believe that the 
+Opt for this approach when you believe that the 
 aggregated evidence from multiple studies is stronger than if the data were combined 
 into a single study (when that would be possible).
-The overall evidence then reflects the support for the central hypothesis/theory 
-being true in all studies.
 
 The \strong{equal-evidence} approach also aggregates the cumulative evidence 
 central hypothesis/theory but as if the data were combined into a single study 
@@ -313,17 +304,12 @@ weights).
 \cr
 Choose this method when you view the combined evidence from multiple studies as 
 equivalent to that from a single, larger study.
-The overall evidence then reflects the support for the central hypothesis/theory 
-being true on average in all studies.
 
 The \strong{average-evidence} method can be conceptualized as a form of multiverse 
 analysis. When faced with a single dataset, there are often numerous analytical 
 choices available, such as handling missing data, selecting variables, or choosing 
 statistical methods. Each choice can lead to a different analysis or model, creating 
 a "multiverse" of possible outcomes.
-%This method is invaluable for assessing the robustness of results, ensuring that 
-%findings are not merely artifacts of a specific analytical choice but are consistent 
-%across various model specifications on the same dataset.
 \cr
 For each of these analyses, evidence for your hypothesis/-es of interest can be 
 calculated using IC values or weights, indicating how likely your hypothesis is. 

@@ -322,7 +322,7 @@ multiple analyses on one dataset.
 
 \strong{Leave-one-out sensitivity analysis.}
 \code{leave1studyout} repeats the evidence synthesis S times, each time dropping 
-one of the S studies. For each reduced set the aggregated IC values per hypothesis 
+one of the S studies. For each reduced set, the aggregated IC values per hypothesis 
 are computed using the same \code{type_ev} as in the original \code{evSyn} call:
 \itemize{
   \item \code{"added"}: column sums of the IC matrix with study \emph{s} removed.
@@ -330,10 +330,18 @@ are computed using the same \code{type_ev} as in the original \code{evSyn} call:
     removed.
   \item \code{"average"}: column means of the IC matrix with study \emph{s} removed.
 }
-The hypothesis with the lowest aggregated IC value is identified as the preferred 
-hypothesis for that reduced set. This analysis can be used to detect influential 
+The hypothesis with the lowest aggregated IC value and thus highest aggregtaed IC weight 
+is identified as the preferred hypothesis for that reduced set. 
+\cr
+Notably, when leaving a study out, the combined sample size lowers. 
+Therefore, the maximum log-likelihood goes down and thus the IC values go up (become less negative).
+Since the sample sizes of the studies may differ per study, the combined sample size 
+for each of the S evidence syntheses may differ.
+Therefore, it is not fair to compare the rendered IC values across the S evidence syntheses. 
+Although research is needed, one can best compare the rendered IC weights.
+\cr
+This analysis can be used to detect influential 
 studies and to assess the robustness of the overall conclusion.
-
 }
 
 

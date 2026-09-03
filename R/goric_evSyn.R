@@ -31,6 +31,10 @@
 ## object = Ratio IC weights
 
 
+# TO DO when type_ev = "average" then we should not say 'studies' but 'analyses'.
+#       So, messages and labels should be changed then (names of arguments should not).
+
+
 # -------------------------------------------------------------------------
 # Helper: validate and process order_studies argument.
 # Accepts a character string ("input_order", "ascending", "descending") or a

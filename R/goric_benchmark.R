@@ -36,22 +36,6 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
                             quant = NULL, iter = 2000,
                             control = list(),
                             ncpus = 1, seed = NULL, ...) {
-# TO DO in asymp functie heet het niet group_size maar sample_size (dito sample_size) 
-  #     en dat kan vervelend voor gebruiker zijn...
-#       als argument ms toch sample_size en dan direct hierna:
-  
-  # if exists
-  group_size <- object$sample_nobs # To DO dit is totaal, niet per groep
-  # TO DO ik weil m per groep, dat uitlezen lm object oid.
-  
-  # group_size <- sample_size
-  # alt_sample_size <- alt_group_size
-  # Ws 'andersom' iets doen met sample_size <- sum(group_size)
-  # TO DO dan wel ook help file en tutorial / example R scripts aanpassen ws!
-  # TO DO waar sample_nobs oid nodig is, daar direct de sum meegeven! anders steeds message nl.
-  
-  # NOTE: group_size is needed to rescale vcov based on alt_group_size.
-  #       and also for calculating Cohens f. 
 
   if (length(control) == 1) {
     control <- object$objectList[[1]]$control
@@ -105,23 +89,44 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   # original model fit (if exists)
   form_model_org <- formula(object$model.org)
 
-  # ES and ratio in data
-  #if (is.null(object$model.org)) {
-  #  # Number of subjects per group
-    if (is.null(group_size)) {
-      stop("\nrestriktor ERROR: please specify the group-size, e.g. group_size = 100.", call. = FALSE)
-    } else if (length(group_size) == 1) {
-      N <- rep(group_size, ngroups) # TO DO als uit resriktor dan niet rep of daar aanpassen, zie comment daar
-    # Hele andere TO DO: geef perc under null voor sample goric
-    } else {
-      N <- group_size
-    }
-  #} else {
   
-  #  # Number of subjects per group
-  #  # Note that the next assumes equal group size, which does not need to be the case.
-  #  N <- rep(object$sample_nobs/ngroups, ngroups) #colSums(model.matrix(object$model.org))
-  #}
+  # # Number of subjects per group
+  # NOTE: This is needed to rescale vcov based on alt_group_size.
+  #       and also for calculating Cohens f. 
+  fitLM <- object$model.org
+  # multiple factors: full interaction-cell counts, no matter how many factors
+  # or what they're called, using only positional indexing
+  N_lm <- do.call(table, fitLM$model[-1])
+  ## marginal group sizes per factor
+  #N_lm <- lapply(fitLM$model[-1], table)
+  ##colSums(model.matrix(object$model.org))
+  if (!is.null(group_size)) { # So, user specified it as input
+    if (length(group_size) == 1) {
+      N <- rep(group_size, ngroups) 
+    } else { # if vector and not scalar
+      if (length(group_size) == ngroups) {
+        N <- group_size
+      } else { # so, length incorrect
+        print(paste0("The argument 'group-size' should be of lenght 1 or of length ", ngroups, 
+                     ". It is currently of length ", length(group_size), ". Namely, it equals: "))
+        print(group_size)
+        stop("\nrestriktor ERROR: The argument 'group-size' should be a scalar 
+             if all groups have the same size (e.g., group_size = 100) or a vector with for each group its group size (e.g., group_size = c(75, 100, 120)).", call. = FALSE)
+      }
+    }
+    # Check whether same as obtained from lm object.
+    if (all(N != N_lm)) {
+      message("\nrestriktor Message: The argument 'group-size' differs from the group sizes retreived from the lm object. The function proceded with the user-specified 'group_size'.", call. = FALSE)
+      print("Notably, based on group_size, N = ")
+      print(N)
+      print("and, based on the lm object, N = ")
+      print(N_lm)
+    }
+  } else { # so, not user specified
+    N <- N_lm
+  }
+  #stop("\nrestriktor ERROR: please specify the group-size; e.g., group_size = 100.", call. = FALSE)
+  
 
   VCOV <- VCOV_orig <- object$VCOV # Is already based on N (so, not N-k)
   
@@ -304,6 +309,14 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     benchmarks_difLL = benchmark_results$benchmarks_difLL,
     benchmarks_absdifLL = benchmark_results$benchmarks_absdifLL,
     combined_values = benchmark_results$combined_values,
+    #
+    percentile_goric_weights = benchmark_results$percentile_gw,
+    percentile_ratio_goric_weights = benchmark_results$percentile_rgw,
+    percentile_ratio_ll_weights = benchmark_results$percentile_rlw,
+    percentile_ratio_ll_ge1 = benchmark_results$percentile_rlw_ge1,
+    percentile_difLL = benchmark_results$percentile_difLL,
+    percentile_absdifLL = benchmark_results$percentile_absdifLL,
+    #
     iter = iter
   )
 
@@ -527,6 +540,14 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     benchmarks_difLL = benchmark_results$benchmarks_difLL,
     benchmarks_absdifLL = benchmark_results$benchmarks_absdifLL,
     combined_values = benchmark_results$combined_values,
+    #
+    percentile_goric_weights = benchmark_results$percentile_gw,
+    percentile_ratio_goric_weights = benchmark_results$percentile_rgw,
+    percentile_ratio_ll_weights = benchmark_results$percentile_rlw,
+    percentile_ratio_ll_ge1 = benchmark_results$percentile_rlw_ge1,
+    percentile_difLL = benchmark_results$percentile_difLL,
+    percentile_absdifLL = benchmark_results$percentile_absdifLL,
+    #
     iter = iter
   )
   

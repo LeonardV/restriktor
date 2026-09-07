@@ -131,25 +131,32 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"),
   output_type <- tolower(output_type)
   
   # Print benchmarks for Goric-weights percentiles
-  if ("all" %in% output_type || "gw" %in% output_type) { 
+  if ("all" %in% output_type || "gw" %in% output_type) {
+    for (pop_es in names(x$benchmarks_goric_weights)) {
+      x$benchmarks_goric_weights[[pop_es]] <- cbind(
+        x$benchmarks_goric_weights[[pop_es]],
+        x$percentile_goric_weights[[pop_es]]
+      )
+    }
     print_section(
       text_gw,
       function() {
         for (pop_es in names(x$benchmarks_goric_weights)) {
-          print_rounded_es_value(x$benchmarks_goric_weights[[pop_es]], pop_es, 
+          print_rounded_es_value(x$benchmarks_goric_weights[[pop_es]], pop_es,
                                  model_type, green, reset)
         }
       }, nchar(text_gw), text_color = blue, reset = reset
     )
   }
-  
+
   # Print benchmarks for ratio Goric-weights percentiles
   if ("all" %in% output_type || "rgw" %in% output_type) {
-    
+
     # Loop over alle sets in both benchmarks_ratio_goric_weights and hypothesis_rate
     for (pop_es_name in names(x$benchmarks_ratio_goric_weights)) {
       x$benchmarks_ratio_goric_weights[[pop_es_name]] <- cbind(
         x$benchmarks_ratio_goric_weights[[pop_es_name]],
+        x$percentile_ratio_goric_weights[[pop_es_name]],
         hypothesis_rate = x$hypothesis_rate[[pop_es_name]] # x$hypothesis_rate
       )
     }
@@ -158,8 +165,14 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"),
     #       Ws overleggen of dit handig is - nu ineens denk ik dat het zo gek nog niet is :-).
     
     if (any(NE_names)) {
-      x$benchmarks_ratio_goric_weights[NE_names][[1]] <- 
-        x$benchmarks_ratio_goric_weights[NE_names][[1]][, -7, drop = FALSE]
+      # Was hardcoded as column -7 (assuming Sample + 5 default quantiles as
+      # columns 1-6, hypothesis_rate as 7); now selected by name instead,
+      # since adding the percentile column shifted hypothesis_rate to column 8
+      # and a positional index would silently drop the wrong column.
+      x$benchmarks_ratio_goric_weights[NE_names][[1]] <-
+        x$benchmarks_ratio_goric_weights[NE_names][[1]][
+          , colnames(x$benchmarks_ratio_goric_weights[NE_names][[1]]) != "hypothesis_rate",
+          drop = FALSE]
     }
     
     print_section(
@@ -175,24 +188,36 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"),
   
   # Print benchmarks for ratio log-likelihood-weights percentiles
   if ("all" %in% output_type || "rlw" %in% output_type) {
+    for (pop_es in names(x$benchmarks_ratio_ll_weights)) {
+      x$benchmarks_ratio_ll_weights[[pop_es]] <- cbind(
+        x$benchmarks_ratio_ll_weights[[pop_es]],
+        x$percentile_ratio_ll_weights[[pop_es]]
+      )
+    }
     print_section(
       text_rlw,
       function() {
         for (pop_es in names(x$benchmarks_ratio_ll_weights)) {
-          print_rounded_es_value(x$benchmarks_ratio_ll_weights[[pop_es]], pop_es, 
+          print_rounded_es_value(x$benchmarks_ratio_ll_weights[[pop_es]], pop_es,
                                  model_type, green, reset)
         }
       }, nchar(text_rlw), text_color = blue, reset = reset
     )
   }
-  
+
   # Print benchmarks for difference log-likelihood-values percentiles
   if ("all" %in% output_type || "ld" %in% output_type) {
+    for (pop_es in names(x$benchmarks_difLL)) {
+      x$benchmarks_difLL[[pop_es]] <- cbind(
+        x$benchmarks_difLL[[pop_es]],
+        x$percentile_difLL[[pop_es]]
+      )
+    }
     print_section(
       text_ld,
       function() {
         for (pop_es in names(x$benchmarks_difLL)) {
-          print_rounded_es_value(x$benchmarks_difLL[[pop_es]], pop_es, model_type, 
+          print_rounded_es_value(x$benchmarks_difLL[[pop_es]], pop_es, model_type,
                                  green, reset)
         }
       }, nchar(text_ld), text_color = blue, reset = reset

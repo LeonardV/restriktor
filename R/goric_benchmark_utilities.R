@@ -108,9 +108,7 @@ compute_cohens_f <- function(group_means, N, VCOV) {
   ss_between <- sum(N * (group_means - total_mean)^2)
   cov_matrix <- VCOV * (N - 1) # covmx based on N instead of N-1
   ss_within <- sum(N * diag(cov_matrix)) # equates: summing over i = 1 to N
-  R2 <- sqrt(ss_between/ss_within)
-
-  cohens_f <- R2 / (1-R2)
+  cohens_f <- sqrt(ss_between/ss_within)
   
   return(cohens_f)
 }
@@ -381,9 +379,20 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     colnames(CI_benchmarks_gw) <- names_quant
     rownames(CI_benchmarks_gw) <- pref_hypo_name
     CI_benchmarks_gw
+
   })
-  
-  
+
+  # Percentile of the observed goric(a) weight within its benchmark
+  # distribution, for each pop_es category (0-100 scale, matching the others)
+  percentile_gw <- lapply(gw_combined, function(gw_values) {
+    Fn <- ecdf(gw_values)
+    percentile_gw <- matrix(Fn(object$result[pref_hypo, 7]) * 100, nrow = 1)
+    colnames(percentile_gw) <- "percentile"
+    rownames(percentile_gw) <- pref_hypo_name
+    percentile_gw
+  })
+
+
   # Initialize matrices to store CI benchmarks for current pop_es category
   CI_benchmarks_rgw <- matrix(NA, nrow = nr.hypos, ncol = 1 + length(quant))
   CI_benchmarks_rlw <- matrix(NA, nrow = nr.hypos, ncol = 1 + length(quant))
@@ -409,6 +418,12 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   CI_benchmarks_rlw_ge1_all <- list()
   CI_benchmarks_ld_all <- list()
   CI_benchmarks_ld_ge0_all <- list()
+
+  percentile_rgw_all <- list()
+  percentile_rlw_all <- list()
+  percentile_rlw_ge1_all <- list()
+  percentile_ld_all <- list()
+  percentile_ld_ge0_all <- list()
   
   # Loop through each pop_es category to fill in the CI benchmark lists
   for (name in names(results)) {
@@ -429,6 +444,46 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
       CI_benchmarks_ld[j, 2:(1 + length(quant))] <- quantile(ld_combined_values[, j], quant, na.rm = TRUE)
       CI_benchmarks_ld_ge0[j, 2:(1 + length(quant))] <- quantile(ld_ge0[, j], quant, na.rm = TRUE)
     }
+    # Loop through the hypotheses and calculate the percentile of the sample finding
+    percentile_rgw <- matrix(NA, nrow = nr.hypos, ncol = 1)
+    percentile_rlw <- matrix(NA, nrow = nr.hypos, ncol = 1 )
+    percentile_rlw_ge1 <- matrix(NA, nrow = nr.hypos, ncol = 1)
+    percentile_ld <- matrix(NA, nrow = nr.hypos, ncol = 1)
+    percentile_ld_ge0 <- matrix(NA, nrow = nr.hypos, ncol = 1)
+    for (j in seq_len(nr.hypos)) {
+      Fn <- ecdf(rgw_combined_values[, j])
+      percentile_rgw[j, 1] <- Fn(CI_benchmarks_rgw[j, 1]) * 100
+      #
+      Fn <- ecdf(rlw_combined_values[, j])
+      percentile_rlw[j, 1] <- Fn(CI_benchmarks_rlw[j, 1]) * 100
+      #
+      Fn <- ecdf(rlw_ge1[, j])
+      percentile_rlw_ge1[j, 1] <- Fn(CI_benchmarks_rlw_ge1[j, 1]) * 100
+      #
+      Fn <- ecdf(ld_combined_values[, j])
+      percentile_ld[j, 1] <- Fn(CI_benchmarks_ld[j, 1]) * 100
+      #
+      Fn <- ecdf(ld_ge0[, j])
+      percentile_ld_ge0[j, 1] <- Fn(CI_benchmarks_ld_ge0[j, 1]) * 100
+    }
+
+    # Label the percentiles (percentage of the benchmark distribution at or
+    # below the sample value, i.e. on a 0-100 scale)
+    percentile_names <- paste(pref_hypo_name, names(object$ratio.gw[pref_hypo, ]))
+    rownames(percentile_rgw) <- rownames(percentile_rlw) <-
+      rownames(percentile_rlw_ge1) <- rownames(percentile_ld) <-
+      rownames(percentile_ld_ge0) <- percentile_names
+    colnames(percentile_rgw) <- colnames(percentile_rlw) <-
+      colnames(percentile_rlw_ge1) <- colnames(percentile_ld) <-
+      colnames(percentile_ld_ge0) <- "percentile"
+
+    # Store this pop_es category's percentiles so they survive past this
+    # loop iteration (mirrors the CI_benchmarks_*_all pattern below)
+    percentile_rgw_all[[name]] <- percentile_rgw
+    percentile_rlw_all[[name]] <- percentile_rlw
+    percentile_rlw_ge1_all[[name]] <- percentile_rlw_ge1
+    percentile_ld_all[[name]] <- percentile_ld
+    percentile_ld_ge0_all[[name]] <- percentile_ld_ge0
     
     # Set column names for the CI benchmarks
     colnames(CI_benchmarks_rgw) <- colnames(CI_benchmarks_rlw) <- 
@@ -468,8 +523,25 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   CI_benchmarks_ld_ge0_all_cleaned <- lapply(CI_benchmarks_ld_ge0_all, function(pop_es_list) {
     remove_single_value_rows(pop_es_list, 0)
   })
-  
-  
+
+  # remove_single_value_rows() drops the preferred hypothesis' self-comparison
+  # row from the benchmarks_* matrices above (ratio/difference vs. itself is
+  # always 1 or 0). The percentile_*_all matrices were never subject to that
+  # filter (a percentile is essentially never exactly 1 or 0), so without this
+  # they'd have one row more than their benchmarks_* counterpart, and cbind()-ing
+  # them together (e.g. in print/summary) would silently misalign rows instead
+  # of erroring. Subset by rowname to keep both sets of matrices in lockstep.
+  align_rows <- function(percentile_list, cleaned_list) {
+    Map(function(perc, bench) perc[rownames(bench), , drop = FALSE],
+        percentile_list, cleaned_list)
+  }
+  percentile_rgw_all_cleaned <- align_rows(percentile_rgw_all, CI_benchmarks_rgw_all_cleaned)
+  percentile_rlw_all_cleaned <- align_rows(percentile_rlw_all, CI_benchmarks_rlw_all_cleaned)
+  percentile_rlw_ge1_all_cleaned <- align_rows(percentile_rlw_ge1_all, CI_benchmarks_rlw_ge1_all_cleaned)
+  percentile_ld_all_cleaned <- align_rows(percentile_ld_all, CI_benchmarks_ld_all_cleaned)
+  percentile_ld_ge0_all_cleaned <- align_rows(percentile_ld_ge0_all, CI_benchmarks_ld_ge0_all_cleaned)
+
+
   rgw_combined <- lapply(rgw_combined, function(pop_es_list) {
     remove_single_value_col(pop_es_list, 1)
   })
@@ -490,9 +562,15 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     benchmarks_rlw_ge1 = CI_benchmarks_rlw_ge1_all_cleaned,
     benchmarks_difLL = CI_benchmarks_ld_all_cleaned,
     benchmarks_absdifLL = CI_benchmarks_ld_ge0_all_cleaned,
-    combined_values = list(gw_combined = gw_combined, 
-                           rgw_combined = rgw_combined, 
-                           rlw_combined = rlw_combined, 
+    percentile_gw  = percentile_gw,
+    percentile_rgw = percentile_rgw_all_cleaned,
+    percentile_rlw = percentile_rlw_all_cleaned,
+    percentile_rlw_ge1 = percentile_rlw_ge1_all_cleaned,
+    percentile_difLL = percentile_ld_all_cleaned,
+    percentile_absdifLL = percentile_ld_ge0_all_cleaned,
+    combined_values = list(gw_combined = gw_combined,
+                           rgw_combined = rgw_combined,
+                           rlw_combined = rlw_combined,
                            ld_combined = ld_combined)
   )
   

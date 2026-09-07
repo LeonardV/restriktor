@@ -292,6 +292,7 @@ parallel_function_means <- function(i, N, var_e, means_pop,
   list(
     #test  = attr(results.goric$objectList[[results.goric$objectNames]]$wt.bar, "mvtnorm"),
     gw  = results_goric$result[pref_hypo, 7], # goric(a) weight
+    lw  = results_goric$result$loglik.weights[pref_hypo], # (unpenalized) log-likelihood weight
     rgw = results_goric$ratio.gw[pref_hypo, ], # ratio goric(a) weights
     rlw = results_goric$ratio.lw[pref_hypo, ], # ratio log-likelihood weights
     ld  = ld # loglik difference
@@ -338,11 +339,12 @@ parallel_function_asymp <- function(i, est, VCOV, hypos, pref_hypo, comparison,
   
   out <- list(
     gw  = results_goric$result[pref_hypo, 7], # goric(a) weight
+    lw  = results_goric$result$loglik.weights[pref_hypo], # (unpenalized) log-likelihood weight
     rgw = results_goric$ratio.gw[pref_hypo, ], # ratio goric(a) weights
     rlw = results_goric$ratio.lw[pref_hypo, ], # ratio log-likelihood weights
     ld  = ld
   )
-  
+
   return(out)
 }
 
@@ -367,6 +369,7 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   
     # Use lapply to apply the extract_and_combine_values function to each element in the results list
   gw_combined  <- lapply(results, function(pop_es_list) extract_and_combine_values(pop_es_list, "gw"))
+  lw_combined  <- lapply(results, function(pop_es_list) extract_and_combine_values(pop_es_list, "lw"))
   rgw_combined <- lapply(results, function(pop_es_list) extract_and_combine_values(pop_es_list, "rgw"))
   rlw_combined <- lapply(results, function(pop_es_list) extract_and_combine_values(pop_es_list, "rlw"))
   ld_combined  <- lapply(results, function(pop_es_list) extract_and_combine_values(pop_es_list, "ld"))
@@ -390,6 +393,27 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     colnames(percentile_gw) <- "percentile"
     rownames(percentile_gw) <- pref_hypo_name
     percentile_gw
+  })
+
+  # Same as CI_benchmarks_gw/percentile_gw above, but for the (unpenalized)
+  # log-likelihood weight -- used together with percentile_gw by the
+  # iter-adequacy check (see goric_percentile_test()/check_iter_adequacy()),
+  # since a user may ultimately be interested in either output_type.
+  CI_benchmarks_lw <- lapply(lw_combined, function(lw_values) {
+    CI_benchmarks_lw <- matrix(c(object$result$loglik.weights[pref_hypo], quantile(lw_values,
+                                                                       quant, na.rm = TRUE)),
+                               nrow = 1)
+    colnames(CI_benchmarks_lw) <- names_quant
+    rownames(CI_benchmarks_lw) <- pref_hypo_name
+    CI_benchmarks_lw
+  })
+
+  percentile_lw <- lapply(lw_combined, function(lw_values) {
+    Fn <- ecdf(lw_values)
+    percentile_lw <- matrix(Fn(object$result$loglik.weights[pref_hypo]) * 100, nrow = 1)
+    colnames(percentile_lw) <- "percentile"
+    rownames(percentile_lw) <- pref_hypo_name
+    percentile_lw
   })
 
 
@@ -557,23 +581,26 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   
   OUT <- list(
     benchmarks_gw = CI_benchmarks_gw,
+    benchmarks_lw = CI_benchmarks_lw,
     benchmarks_rgw = CI_benchmarks_rgw_all_cleaned,
     benchmarks_rlw = CI_benchmarks_rlw_all_cleaned,
     benchmarks_rlw_ge1 = CI_benchmarks_rlw_ge1_all_cleaned,
     benchmarks_difLL = CI_benchmarks_ld_all_cleaned,
     benchmarks_absdifLL = CI_benchmarks_ld_ge0_all_cleaned,
     percentile_gw  = percentile_gw,
+    percentile_lw  = percentile_lw,
     percentile_rgw = percentile_rgw_all_cleaned,
     percentile_rlw = percentile_rlw_all_cleaned,
     percentile_rlw_ge1 = percentile_rlw_ge1_all_cleaned,
     percentile_difLL = percentile_ld_all_cleaned,
     percentile_absdifLL = percentile_ld_ge0_all_cleaned,
     combined_values = list(gw_combined = gw_combined,
+                           lw_combined = lw_combined,
                            rgw_combined = rgw_combined,
                            rlw_combined = rlw_combined,
                            ld_combined = ld_combined)
   )
-  
+
   return(OUT)
 }
 
@@ -621,6 +648,232 @@ calculate_error_probability <- function(object, hypos, pref_hypo, est,
     }
   }
   return(error_prob)
+}
+
+
+# Diagnostic check: is 'iter' large enough for a stable benchmark?
+#
+# Under the "Observed" population (only present when pop_es/pop_est was left
+# NULL, so it is auto-added), the benchmark draws are simulated centered
+# exactly on the observed estimate. So the observed goric(a) weight is
+# expected to sit close to the 50th percentile of its own benchmark
+# distribution; systematic deviation from that is a sign that 'iter' bootstrap
+# draws is not (yet) enough to have converged, rather than a real finding.
+#
+# This is checked using 'gw' rather than 'rgw'/'rlw' on purpose: gw is a
+# single, bounded [0, 1] weight per draw, whereas rgw/rlw = gw_pref / gw_k is
+# a ratio of two such weights (see calc_ICweights() in
+# goric_calculate_IC_weights.R). When gw_k is small, that ratio amplifies
+# small (essentially unavoidable, e.g. optimizer-precision-level)
+# fluctuations in gw_k multiplicatively, so rgw/rlw are a noisier basis for
+# this particular check than gw itself -- even though all of them should, in
+# principle, lead to the same conclusion about whether 'iter' is adequate.
+check_iter_adequacy <- function(benchmark_results, observed_name, iter,
+                                band = c(0.495, 0.505), control = list(), ...) {
+  if (!observed_name %in% names(benchmark_results$percentile_gw)) {
+    # No "Observed" population in this run (user supplied a custom pop_es/
+    # pop_est without an "Observed" category) -- nothing to check.
+    return(invisible(NULL))
+  }
+
+  sample_gw <- benchmark_results$benchmarks_gw[[observed_name]][1, 1]
+  sample_lw <- benchmark_results$benchmarks_lw[[observed_name]][1, 1]
+  gw_draws  <- benchmark_results$combined_values$gw_combined[[observed_name]]
+  lw_draws  <- benchmark_results$combined_values$lw_combined[[observed_name]]
+
+  chk_gw <- goric_percentile_test(gw_draws, sample_gw, band = band, control = control, ...)
+  chk_lw <- goric_percentile_test(lw_draws, sample_lw, band = band, control = control, ...)
+
+  if (!(chk_gw$converged && chk_lw$converged)) {
+    message(
+      "\nrestriktor Message: For the 'Observed' population, the sample value sits at the ",
+      sprintf("%.1f", chk_gw$percentile), "th percentile of its own benchmark distribution for ",
+      "output_type = 'gw', and at the ", sprintf("%.1f", chk_lw$percentile), "th percentile for ",
+      "output_type = 'lw'. Since these benchmark draws are centered on the observed estimate, ",
+      "both are expected to be close to the 50th percentile; testing this (via goric(a) itself, ",
+      "against the interval ", band[1], " < p < ", band[2], ") gives support of ",
+      sprintf("%.3f", chk_gw$gw), " for 'gw' and ", sprintf("%.3f", chk_lw$gw), " for 'lw', for ",
+      "the current 'iter' = ", iter, ". This may simply reflect Monte Carlo error -- consider ",
+      "increasing 'iter' for a more stable benchmark."
+    )
+  }
+  invisible(NULL)
+}
+
+
+# Core of the Monte Carlo adequacy check: is 'sample_value' consistent with
+# being the median of 'draws'? Rather than a binomial test against p = 0.5,
+# this expresses "close to the median" as a small, fixed interval around
+# 0.5 (band -- a region of practical equivalence, deliberately NOT scaled to
+# the percentile estimate's own standard error, since doing so would just
+# reconstruct a Wald interval that goric(a) would then re-analyze with that
+# same standard error a second time) and lets goric(a) itself -- type =
+# "gorica", using the percentile estimate's own sampling variance as VCOV --
+# weigh the evidence for "the true percentile lies in that band" against its
+# complement. This keeps the whole diagnostic inside goric(a)'s own
+# machinery rather than a separate hypothesis-testing framework. Returns the
+# percentile (0-100) 'sample_value' falls at within 'draws', and the
+# resulting gorica(a) weight for the "in-band" hypothesis (>= 0.5 is taken
+# to mean converged, i.e. goric(a) favors "close to the median" over its
+# complement).
+goric_percentile_test <- function(draws, sample_value, band = c(0.495, 0.505),
+                                  control = list(), ...) {
+  draws <- draws[!is.na(draws)]
+  n <- length(draws)
+  k <- sum(draws <= sample_value)
+  phat <- k / n
+
+  # Continuity-corrected proportion, used for the variance only, so that
+  # phat = 0 or 1 (possible at small iter) doesn't collapse VCOV to exactly
+  # zero.
+  phat_v <- (k + 0.5) / (n + 1)
+  VCOV <- matrix(phat_v * (1 - phat_v) / n)
+  rownames(VCOV) <- colnames(VCOV) <- "p"
+  est <- c(p = phat)
+
+  H1 <- paste(band[1], "< p <", band[2])
+  fit <- goric(est, VCOV = VCOV, hypotheses = list(H1 = H1),
+              comparison = "complement", type = "gorica",
+              control = control, ...)
+  gw_H1 <- fit$result$gorica.weights[fit$result$model == "H1"]
+
+  list(percentile = 100 * phat, n = n, band = band,
+      gw = gw_H1, converged = isTRUE(gw_H1 >= 0.5))
+}
+
+
+# Run the pop_es/pop_est simulation loop used by benchmark_means()/
+# benchmark_asymp(), growing the number of draws adaptively when the user
+# leaves 'iter' unspecified (iter = NULL): start at iter_min draws and, if
+# the "Observed" population's sample value is not close to its own 50th
+# percentile for output_type = 'gw' and/or 'lw' (see goric_percentile_test()
+# above for how "close" is defined and tested), add iter_step more draws --
+# WITHOUT discarding or redrawing the ones already computed -- repeating until
+# either it looks adequate or iter_max is reached. If the user supplies a
+# fixed numeric 'iter' instead, this runs exactly one round of that many
+# draws (the original, non-adaptive behaviour); benchmark_means()/
+# benchmark_asymp() then call check_iter_adequacy() themselves afterwards
+# for that fixed-iter case (this function does not, to avoid messaging
+# twice).
+#
+# Returns list(parallel_function_results = <as before, one element per
+# pop_es/pop_est category>, iter = <final number of draws used>).
+run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
+                                     colnames_vec, VCOV, hypos, pref_hypo,
+                                     comparison, control, mix_weights,
+                                     penalty_factor, Heq, object, iter,
+                                     es_labels = rnames,
+                                     iter_min = 500, iter_step = 100,
+                                     iter_max = 2000, band = c(0.495, 0.505), ...) {
+
+  auto_iter <- is.null(iter)
+  sample_gw <- object$result[pref_hypo, 7]
+  sample_lw <- object$result$loglik.weights[pref_hypo]
+  obs_pos   <- which(rnames == "Observed")
+
+  parallel_function_results <- vector("list", nr_es)
+  names(parallel_function_results) <- paste0(name_prefix, rnames)
+  est_accum <- vector("list", nr_es)
+
+  n_done <- 0L
+  target <- if (auto_iter) min(iter_min, iter_max) else iter
+
+  progressr::handlers(progressr::handler_txtprogressbar(char = ">"))
+
+  repeat {
+    n_new <- target - n_done
+
+    progressr::with_progress({
+      p <- progressr::progressor(along = seq_len(n_new * nr_es))
+
+      for (teller_es in seq_len(nr_es)) {
+        cat("Calculating benchmark for", es_labels[teller_es],
+            "-- draws", n_done + 1, "to", target, "\n")
+
+        new_draws <- mvtnorm::rmvnorm(n = n_new, center_matrix[teller_es, ], sigma = VCOV)
+        colnames(new_draws) <- colnames_vec
+        est_accum[[teller_es]] <- rbind(est_accum[[teller_es]], new_draws)
+        est_full <- est_accum[[teller_es]]
+
+        # Wrapper function for future_lapply
+        wrapper_function_asymp <- function(i) {
+          p() # Update progress
+          parallel_function_asymp(i,
+                                  est = est_full, VCOV = VCOV,
+                                  hypos = hypos, pref_hypo = pref_hypo,
+                                  comparison = comparison, type = "gorica",
+                                  control = control, mix_weights = mix_weights,
+                                  penalty_factor = penalty_factor,
+                                  Heq = Heq, ...)
+        }
+
+        new_results <- future_lapply(
+          seq(n_done + 1, target),
+          wrapper_function_asymp,
+          future.seed = TRUE # Ensures safe and reproducible random number generation
+        )
+
+        key <- paste0(name_prefix, rnames[teller_es])
+        parallel_function_results[[key]] <- c(parallel_function_results[[key]], new_results)
+      }
+    })
+
+    n_done <- target
+
+    if (!auto_iter) break # fixed iter: exactly one round, done
+
+    if (length(obs_pos) == 1) {
+      obs_key <- paste0(name_prefix, "Observed")
+      gw_draws <- vapply(parallel_function_results[[obs_key]], function(x) {
+        if (is.null(x)) NA_real_ else as.numeric(x$gw)
+      }, numeric(1))
+      lw_draws <- vapply(parallel_function_results[[obs_key]], function(x) {
+        if (is.null(x)) NA_real_ else as.numeric(x$lw)
+      }, numeric(1))
+      gw_draws <- gw_draws[!is.na(gw_draws)]
+      lw_draws <- lw_draws[!is.na(lw_draws)]
+      chk_gw <- goric_percentile_test(gw_draws, sample_gw, band = band, control = control)
+      chk_lw <- goric_percentile_test(lw_draws, sample_lw, band = band, control = control)
+      converged <- chk_gw$converged && chk_lw$converged
+    } else {
+      # No "Observed" category (custom pop_es/pop_est) -- nothing to check
+      # against, so stop growing after the first (iter_min-sized) batch.
+      converged <- TRUE
+      chk_gw <- chk_lw <- NULL
+    }
+
+    if (converged || n_done >= iter_max) {
+      if (auto_iter && !is.null(chk_gw)) {
+        if (converged) {
+          message(
+            "\nrestriktor Message: 'iter' was not specified, so it was set automatically. ",
+            "Using iter = ", n_done, " draws, the 'Observed' population's sample value is ",
+            "close to the 50th percentile of its benchmark distribution for both ",
+            "output_type = 'gw' (percentile = ", sprintf("%.1f", chk_gw$percentile),
+            ", support = ", sprintf("%.3f", chk_gw$gw), ") and output_type = 'lw' ",
+            "(percentile = ", sprintf("%.1f", chk_lw$percentile), ", support = ",
+            sprintf("%.3f", chk_lw$gw), "), so no further draws were added."
+          )
+        } else {
+          message(
+            "\nrestriktor Message: 'iter' was not specified, so it was increased ",
+            "automatically up to its maximum of iter = ", iter_max, " draws. The 'Observed' ",
+            "population's sample value is still not close to the 50th percentile of its ",
+            "benchmark distribution for output_type = 'gw' (percentile = ",
+            sprintf("%.1f", chk_gw$percentile), ", support = ", sprintf("%.3f", chk_gw$gw),
+            ") and/or output_type = 'lw' (percentile = ", sprintf("%.1f", chk_lw$percentile),
+            ", support = ", sprintf("%.3f", chk_lw$gw), "). Consider re-running with a ",
+            "manually specified, larger 'iter' for a more stable benchmark."
+          )
+        }
+      }
+      break
+    }
+
+    target <- min(n_done + iter_step, iter_max)
+  }
+
+  list(parallel_function_results = parallel_function_results, iter = n_done)
 }
 
 

@@ -33,9 +33,16 @@ benchmark <- function(object, model_type = c("asymp", "means"), ...) {
 
 benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
                             group_size = NULL, alt_group_size = NULL,
-                            quant = NULL, iter = 2000,
+                            quant = NULL, iter = NULL,
                             control = list(),
-                            ncpus = 1, seed = NULL, ...) {
+                            ncpus = 1, seed = NULL,
+                            iter_adequacy_band = c(0.495, 0.505), ...) {
+
+  # iter = NULL (the default): start at 500 draws and grow by 100 at a time,
+  # up to 2000, stopping as soon as the "Observed" population's benchmark
+  # looks adequate -- see run_benchmark_simulation(). A user-supplied numeric
+  # 'iter' is used as-is (single fixed-size run, as before).
+  user_iter <- iter
 
   if (length(control) == 1) {
     control <- object$objectList[[1]]$control
@@ -56,25 +63,21 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   if (!is.null(seed)) set.seed(seed)
   if (!exists(".Random.seed", envir = .GlobalEnv)) runif(1)
 
+  # If ncpus > 1 but no parallel plan is active yet, set one up for the
+  # duration of this call (restored automatically on exit) so the
+  # future_lapply() calls below actually run in parallel, instead of ncpus
+  # being silently ignored and everything running sequentially regardless.
+  # A plan the user already set up themselves (sequential or not) is left
+  # untouched.
   if (ncpus > 1 && inherits(future::plan(), "sequential")) {
-    message(
-      "restriktor: ncpus > 1, but the current future plan is sequential. ",
-      "To enable parallel computation, set e.g. ",
-      "future::plan(multisession, workers = ", ncpus, ")."
-    )
+    current_plan <- future::plan()
+    on.exit(future::plan(current_plan), add = TRUE)
+    if (.Platform$OS.type == "windows") {
+      future::plan(future::multisession, workers = ncpus)
+    } else {
+      future::plan(future::multicore, workers = ncpus)
+    }
   }
-  # TO DO Kan je dit niet voor de gebruiker intern/hier aanpassen?
-  
-  # keep current plan
-  #current_plan <- plan()
-  #on.exit(plan(current_plan), add = TRUE)
-  #if (inherits(current_plan, "sequential")) {
-  #  if (.Platform$OS.type == "windows") {
-  #    plan(future::multisession, workers = ncpus)
-  #  } else {
-  #    plan(future::multicore, workers = ncpus)
-  #  }
-  #}
 
   # Hypotheses
   hypos <- object$hypotheses_usr
@@ -219,8 +222,6 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   pref_hypo <- which.max(object$result[, 7])
   pref_hypo_name <- object$result$model[pref_hypo]
 
-  nr_iter <- iter
-
   if (is.null(quant)) {
     quant <- c(.05, .35, .50, .65, .95)
     names_quant <- c("Sample", "5%", "35%", "50%", "65%", "95%")
@@ -228,54 +229,34 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     names_quant <- c("Sample", paste0(as.character(quant*100), "%"))
   }
 
-  parallel_function_results <- list()
-
-  progressr::handlers(progressr::handler_txtprogressbar(char = ">"))
-
-  progressr::with_progress({
-    p <- progressr::progressor(along = seq_len(nr_iter * nr_es))
-
-    for (teller_es in seq_len(nr_es)) {
-        cat("Calculating means benchmark for effect-size =", es[teller_es],
-            paste0("(", names(es)[teller_es], ")\n"))
-
-      est <- mvtnorm::rmvnorm(n = iter, means_pop_all[teller_es, ], sigma = VCOV)
-      # Note that VCOV is the unbiased cov.mx estimate.
-      colnames(est) <- names(group_means)
-
-      # Wrapper function for future_lapply
-      wrapper_function_asymp <- function(i) {
-        p() # Update progress
-        parallel_function_asymp(i,
-                                est = est, VCOV = VCOV,
-                                hypos = hypos, pref_hypo = pref_hypo,
-                                comparison = object$comparison, 
-                                type = "gorica", # TO DO dus niet ook goricac (evt type = type?); als default en het dus wel kan, dan ook 'sample_nobs' nodig toch... 
-                                #type = type,
-                                #sample_nobs = sample_nobs,
-                                control = control, mix_weights = mix_weights,
-                                penalty_factor = penalty_factor, 
-                                Heq = Heq,
-                                ...)
-      }
-      
-      
-
-      name <- paste0("pop_es = ", rnames[teller_es])
-      parallel_function_results[[name]] <- future_lapply(
-        seq_len(nr_iter),
-        wrapper_function_asymp,
-        future.seed = TRUE  # Ensures safe and reproducible random number generation
-      )
-    }
-  })
-
+  # TO DO dus niet ook goricac (evt type = type?); als default en het dus wel
+  # kan, dan ook 'sample_nobs' nodig toch...
+  sim <- run_benchmark_simulation(
+    nr_es = nr_es, rnames = rnames, name_prefix = "pop_es = ",
+    center_matrix = means_pop_all, colnames_vec = names(group_means),
+    VCOV = VCOV, hypos = hypos, pref_hypo = pref_hypo,
+    comparison = object$comparison, control = control,
+    mix_weights = mix_weights, penalty_factor = penalty_factor, Heq = Heq,
+    object = object, iter = user_iter,
+    es_labels = paste0(es, " (", names(es), ")"),
+    band = iter_adequacy_band,
+    ...
+  )
+  parallel_function_results <- sim$parallel_function_results
+  iter <- sim$iter # final number of draws actually used, per category
 
   # get benchmark results
   benchmark_results <- get_results_benchmark(parallel_function_results,
                                              object, pref_hypo,
                                              pref_hypo_name, quant,
                                              names_quant, nr_hypos)
+
+  if (!is.null(user_iter)) {
+    # Fixed 'iter': run_benchmark_simulation() does not auto-grow or message
+    # in this case, so do the (non-growing) adequacy check here instead.
+    check_iter_adequacy(benchmark_results, "pop_es = Observed", iter,
+                        band = iter_adequacy_band, control = control)
+  }
 
   # compute error probability
   error_prob <- calculate_error_probability(object, hypos, pref_hypo,
@@ -328,10 +309,17 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
 
 
 ## asymp
-benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL, 
-                            alt_sample_size = NULL, quant = NULL, iter = 2000,
-                            control = list(), 
-                            ncpus = 1, seed = NULL, ...) {
+benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
+                            alt_sample_size = NULL, quant = NULL, iter = NULL,
+                            control = list(),
+                            ncpus = 1, seed = NULL,
+                            iter_adequacy_band = c(0.495, 0.505), ...) {
+
+  # iter = NULL (the default): start at 500 draws and grow by 100 at a time,
+  # up to 2000, stopping as soon as the "Observed" population's benchmark
+  # looks adequate -- see run_benchmark_simulation(). A user-supplied numeric
+  # 'iter' is used as-is (single fixed-size run, as before).
+  user_iter <- iter
 
   # TO DO als in means nog 'group_size' argument dan ms hier zeggen dat dat sample_size moet zijn?
   #       NB alleen nodig als alt_sample_size nodig is...
@@ -354,25 +342,22 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   if (!is.null(seed)) set.seed(seed)
   if (!exists(".Random.seed", envir = .GlobalEnv)) runif(1)
   
+  # If ncpus > 1 but no parallel plan is active yet, set one up for the
+  # duration of this call (restored automatically on exit) so the
+  # future_lapply() calls below actually run in parallel, instead of ncpus
+  # being silently ignored and everything running sequentially regardless.
+  # A plan the user already set up themselves (sequential or not) is left
+  # untouched.
   if (ncpus > 1 && inherits(future::plan(), "sequential")) {
-    message(
-      "restriktor: ncpus > 1, but the current future plan is sequential. ",
-      "To enable parallel computation, set e.g. ",
-      "future::plan(multisession, workers = ", ncpus, ")."
-    )
+    current_plan <- future::plan()
+    on.exit(future::plan(current_plan), add = TRUE)
+    if (.Platform$OS.type == "windows") {
+      future::plan(future::multisession, workers = ncpus)
+    } else {
+      future::plan(future::multicore, workers = ncpus)
+    }
   }
-  
-  # keep current plan 
-  # current_plan <- plan()  
-  # on.exit(plan(current_plan), add = TRUE)
-  # if (inherits(current_plan, "sequential")) {
-  #   if (.Platform$OS.type == "windows") {
-  #     plan(future::multisession, workers = ncpus)
-  #   } else {
-  #     plan(future::multicore, workers = ncpus)
-  #   }
-  # }
-  
+
   VCOV <- object$VCOV
   # Note that -- assuming an lm object was used -- VCOV is the unbiased cov.mx estimate.
   # It is also mentioned in tutorials, so if user specified it, they could have made this asjustment....
@@ -480,48 +465,32 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   pref_hypo <- which.max(object$result[, 7])
   pref_hypo_name <- object$result$model[pref_hypo]
   
-  nr_iter <- iter
   nr_es  <- nrow(pop_est)
-  parallel_function_results <- list()
-  
-  progressr::handlers(progressr::handler_txtprogressbar(char = ">"))
-  progressr::with_progress({
-    p <- progressr::progressor(along = seq_len(nr_iter * nr_es))  
-    
-    for (teller_es in seq_len(nr_es)) {
-      cat("Calculating asymptotic benchmark for population estimates =", row.names(pop_est)[teller_es], "\n")
-      
-      est <- mvtnorm::rmvnorm(n = iter, pop_est[teller_es, ], sigma = VCOV)
-      colnames(est) <- names(est_sample)
-      
-      # Wrapper function for future_lapply
-      wrapper_function_asymp <- function(i) {
-        p() # Update progress
-        parallel_function_asymp(i, 
-                                est = est, VCOV = VCOV,
-                                hypos = hypos, pref_hypo = pref_hypo, 
-                                comparison = comparison, type = "gorica",
-                                control = control, mix_weights = mix_weights, 
-                                penalty_factor = penalty_factor, 
-                                Heq = Heq,
-                                ...)
-      }
-      
-      
-      
-      name <- paste0("pop_est = ", rnames[teller_es])
-      parallel_function_results[[name]] <- future_lapply(
-        seq_len(nr_iter),
-        wrapper_function_asymp,
-        future.seed = TRUE  # Ensures safe and reproducible random number generation
-      )
-    }
-  })
-  
-  benchmark_results <- get_results_benchmark(parallel_function_results, object, pref_hypo, 
+
+  sim <- run_benchmark_simulation(
+    nr_es = nr_es, rnames = rnames, name_prefix = "pop_est = ",
+    center_matrix = pop_est, colnames_vec = names(est_sample),
+    VCOV = VCOV, hypos = hypos, pref_hypo = pref_hypo,
+    comparison = comparison, control = control,
+    mix_weights = mix_weights, penalty_factor = penalty_factor, Heq = Heq,
+    object = object, iter = user_iter,
+    band = iter_adequacy_band,
+    ...
+  )
+  parallel_function_results <- sim$parallel_function_results
+  iter <- sim$iter # final number of draws actually used, per category
+
+  benchmark_results <- get_results_benchmark(parallel_function_results, object, pref_hypo,
                                              pref_hypo_name, quant, names_quant, nr_hypos)
-  
-  error_prob <- calculate_error_probability(object, hypos, pref_hypo, 
+
+  if (!is.null(user_iter)) {
+    # Fixed 'iter': run_benchmark_simulation() does not auto-grow or message
+    # in this case, so do the (non-growing) adequacy check here instead.
+    check_iter_adequacy(benchmark_results, "pop_est = Observed", iter,
+                        band = iter_adequacy_band, control = control)
+  }
+
+  error_prob <- calculate_error_probability(object, hypos, pref_hypo,
                                             est = est_sample, VCOV, control, ...)
   
   OUT <- list(

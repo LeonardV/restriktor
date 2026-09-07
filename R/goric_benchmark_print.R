@@ -15,7 +15,12 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"),
                               calculate_hypothesis_rate, q = hypo_rate_threshold)
   
   # no effect names
-  NE_names <- names(x$hypothesis_rate) %in% c("pop_est = No-effect", "pop_es = 0")
+  # Was c("pop_est = No-effect", "pop_es = 0") -- but benchmark_means() names
+  # this category "pop_es = No-effect" (matching benchmark_asymp's
+  # "pop_est = No-effect"), never "pop_es = 0", so this never matched for
+  # benchmark_means objects and the hypothesis_rate column was never hidden
+  # for their No-effect category.
+  NE_names <- names(x$hypothesis_rate) %in% c("pop_est = No-effect", "pop_es = No-effect")
   x$hypothesis_rate[NE_names] <- as.numeric(NA)
   
   # number of failed bootstrap runs
@@ -161,6 +166,7 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"),
       )
     }
     # TO DO nu bij No-effect ook hypothesis_rate maar die zouden we dacht ik niet meer laten zien omdat het verwarrend is wat het betekent
+    # Is nu juist weer weg, als het goed is.
     #       daarnaast heeft anders echt beschrijving nodig, want het is steun info hypo onder NE en dan in gehele set?
     #       Ws overleggen of dit handig is - nu ineens denk ik dat het zo gek nog niet is :-).
     

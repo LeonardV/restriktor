@@ -108,8 +108,10 @@ compute_cohens_f <- function(group_means, N, VCOV) {
   ss_between <- sum(N * (group_means - total_mean)^2)
   cov_matrix <- VCOV * (N - 1) # covmx based on N instead of N-1
   ss_within <- sum(N * diag(cov_matrix)) # equates: summing over i = 1 to N
-  cohens_f <- sqrt(ss_between/ss_within)
+  R2 <- sqrt(ss_between/ss_within)
 
+  cohens_f <- R2 / (1-R2)
+  
   return(cohens_f)
 }
 

@@ -41,7 +41,8 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
 #       als argument ms toch sample_size en dan direct hierna:
   
   # if exists
-  group_size <- object$sample_nobs
+  group_size <- object$sample_nobs # To DO dit is totaal, niet per groep
+  # TO DO ik weil m per groep, dat uitlezen lm object oid.
   
   # group_size <- sample_size
   # alt_sample_size <- alt_group_size
@@ -110,11 +111,13 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     if (is.null(group_size)) {
       stop("\nrestriktor ERROR: please specify the group-size, e.g. group_size = 100.", call. = FALSE)
     } else if (length(group_size) == 1) {
-      N <- rep(group_size, ngroups)
+      N <- rep(group_size, ngroups) # TO DO als uit resriktor dan niet rep of daar aanpassen, zie comment daar
+    # Hele andere TO DO: geef perc under null voor sample goric
     } else {
       N <- group_size
     }
   #} else {
+  
   #  # Number of subjects per group
   #  # Note that the next assumes equal group size, which does not need to be the case.
   #  N <- rep(object$sample_nobs/ngroups, ngroups) #colSums(model.matrix(object$model.org))

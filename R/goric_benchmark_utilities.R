@@ -669,7 +669,9 @@ calculate_error_probability <- function(object, hypos, pref_hypo, est,
 # this particular check than gw itself -- even though all of them should, in
 # principle, lead to the same conclusion about whether 'iter' is adequate.
 check_iter_adequacy <- function(benchmark_results, observed_name, iter,
-                                band = c(0.495, 0.505), control = list(), ...) {
+                                band = c(0.495, 0.505),
+                                iter_min = 500, iter_step = 100, iter_max = 2000,
+                                control = list(), ...) {
   if (!observed_name %in% names(benchmark_results$percentile_gw)) {
     # No "Observed" population in this run (user supplied a custom pop_es/
     # pop_est without an "Observed" category) -- nothing to check.
@@ -683,6 +685,21 @@ check_iter_adequacy <- function(benchmark_results, observed_name, iter,
 
   chk_gw <- goric_percentile_test(gw_draws, sample_gw, band = band, control = control, ...)
   chk_lw <- goric_percentile_test(lw_draws, sample_lw, band = band, control = control, ...)
+
+  # Suggests running with 'iter' left at its default (iter = NULL) instead of
+  # manually raising a too-low fixed 'iter' -- only sensible if the adaptive
+  # procedure could actually try more draws than the user's fixed 'iter', i.e.
+  # if that 'iter' is below iter_max; if they already used iter_max or more,
+  # the automatic procedure wouldn't go any further either.
+  suggest_default <- function() {
+    if (iter >= iter_max) return("")
+    paste0(
+      " Instead of manually raising 'iter', you could also run this with 'iter' left at its ",
+      "default (iter = NULL): draws are then added automatically, starting at iter_min = ",
+      iter_min, " and increasing by iter_step = ", iter_step, " at a time, up to a maximum of ",
+      "iter_max = ", iter_max, "."
+    )
+  }
 
   if (!(chk_gw$converged && chk_lw$converged)) {
     # Same style/format as the auto-'iter' messages in run_benchmark_simulation()
@@ -731,7 +748,26 @@ check_iter_adequacy <- function(benchmark_results, observed_name, iter,
       " (support = ", sprintf("%.3f", chk_gw$gw), ") ", describe_type(chk_gw), "\n",
       "For output_type = 'lw', the percentile is ", sprintf("%.1f", chk_lw$percentile),
       " (support = ", sprintf("%.3f", chk_lw$gw), ") ", describe_type(chk_lw), "\n",
-      closing
+      closing, suggest_default()
+    )
+  } else if (iter < iter_min) {
+    # goric_percentile_test()'s own uncertainty (its VCOV) is built from
+    # THIS 'iter' -- so at a very low 'iter' that uncertainty is large, and
+    # the check above has little power to detect an inadequate benchmark in
+    # the first place. A "looks fine" verdict at such a low 'iter' can
+    # therefore slip through undetected: flag any 'iter' below iter_min (the
+    # adaptive procedure's own starting point) outright, regardless of what
+    # the percentile check itself concluded, rather than silently trusting
+    # a check that may not have had the power to catch a problem.
+    message(
+      "\nrestriktor Message: The user-specified 'iter' = ", iter, " is below the recommended ",
+      "starting point of iter_min = ", iter_min, " draws. In that case, there may be too little ",
+      "power to detect that the percentile of the 'Sample value' under the 'Observed' ",
+      "population is near 50.\n",
+      "You may want to consider increasing 'iter'; either manually or by running the code with ",
+      "'iter' left at its default (iter = NULL): draws are then added automatically, starting ",
+      "at iter_min = ", iter_min, " and increasing by iter_step = ", iter_step, " at a time, up ",
+      "to a maximum of iter_max = ", iter_max, "."
     )
   }
   invisible(NULL)

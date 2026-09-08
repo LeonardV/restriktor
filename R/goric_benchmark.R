@@ -37,7 +37,8 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
                             control = list(),
                             ncpus = 1, seed = NULL,
                             iter_adequacy_band = c(0.495, 0.505),
-                            iter_stability_tol = 1, ...) {
+                            iter_stability_tol = 1,
+                            iter_min = 500, iter_step = 100, iter_max = 2000, ...) {
 
   # iter = NULL (the default): start at 500 draws and grow by 100 at a time,
   # up to 2000, stopping as soon as the "Observed" population's benchmark
@@ -242,6 +243,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     es_labels = paste0(es, " (", names(es), ")"),
     band = iter_adequacy_band,
     stability_tol = iter_stability_tol,
+    iter_min = iter_min, iter_step = iter_step, iter_max = iter_max,
     ...
   )
   parallel_function_results <- sim$parallel_function_results
@@ -257,7 +259,9 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     # Fixed 'iter': run_benchmark_simulation() does not auto-grow or message
     # in this case, so do the (non-growing) adequacy check here instead.
     check_iter_adequacy(benchmark_results, "pop_es = Observed", iter,
-                        band = iter_adequacy_band, control = control)
+                        band = iter_adequacy_band,
+                        iter_min = iter_min, iter_step = iter_step, iter_max = iter_max,
+                        control = control)
   }
 
   # compute error probability
@@ -316,7 +320,8 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
                             control = list(),
                             ncpus = 1, seed = NULL,
                             iter_adequacy_band = c(0.495, 0.505),
-                            iter_stability_tol = 1, ...) {
+                            iter_stability_tol = 1,
+                            iter_min = 500, iter_step = 100, iter_max = 2000, ...) {
 
   # iter = NULL (the default): start at 500 draws and grow by 100 at a time,
   # up to 2000, stopping as soon as the "Observed" population's benchmark
@@ -479,6 +484,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     object = object, iter = user_iter,
     band = iter_adequacy_band,
     stability_tol = iter_stability_tol,
+    iter_min = iter_min, iter_step = iter_step, iter_max = iter_max,
     ...
   )
   parallel_function_results <- sim$parallel_function_results
@@ -491,7 +497,9 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     # Fixed 'iter': run_benchmark_simulation() does not auto-grow or message
     # in this case, so do the (non-growing) adequacy check here instead.
     check_iter_adequacy(benchmark_results, "pop_est = Observed", iter,
-                        band = iter_adequacy_band, control = control)
+                        band = iter_adequacy_band,
+                        iter_min = iter_min, iter_step = iter_step, iter_max = iter_max,
+                        control = control)
   }
 
   error_prob <- calculate_error_probability(object, hypos, pref_hypo,

@@ -685,16 +685,53 @@ check_iter_adequacy <- function(benchmark_results, observed_name, iter,
   chk_lw <- goric_percentile_test(lw_draws, sample_lw, band = band, control = control, ...)
 
   if (!(chk_gw$converged && chk_lw$converged)) {
+    # Same style/format as the auto-'iter' messages in run_benchmark_simulation()
+    # (percentile + support per output_type, band mentioned once, a closing
+    # suggestion) -- this is the fixed-'iter' counterpart of those: since
+    # 'iter' was user-specified here, there is no growing/stopping decision
+    # to report, just whether the fixed 'iter' the user chose looks adequate.
+    # "close/equal" (rather than just "close") for a converged output_type,
+    # since printing e.g. percentile = 50.0 right next to "close to" reads
+    # oddly when it is, in fact, (numerically) equal.
+    describe_type <- function(chk) {
+      if (chk$converged) {
+        "-- close/equal to the 50th percentile."
+      } else {
+        "-- not close to the 50th percentile."
+      }
+    }
+    # The closing suggestion is tailored to which output_type(s) are actually
+    # inadequate at this 'iter' -- mirroring the "Notably, you could
+    # user-specify a lower 'iter' ..." clause in the auto-'iter' converged
+    # message, but for the opposite situation: here, if only one of 'gw'/'lw'
+    # is the problem, raising 'iter' only matters to someone who cares about
+    # that one; someone only interested in the other (already-adequate) one
+    # doesn't need to.
+    closing <- if (!chk_gw$converged && !chk_lw$converged) {
+      "Consider increasing 'iter' for a more stable benchmark."
+    } else if (!chk_gw$converged) {
+      paste0(
+        "Consider increasing 'iter' for a more stable benchmark when you are (also) interested ",
+        "in GORIC(A) weights ('gw') and not (only) in log-likelihood weights ('lw')."
+      )
+    } else {
+      paste0(
+        "Consider increasing 'iter' for a more stable benchmark when you are (also) interested ",
+        "in log-likelihood weights ('lw') and not (only) in GORIC(A) weights ('gw')."
+      )
+    }
     message(
-      "\nrestriktor Message: For the 'Observed' population, the sample value sits at the ",
-      sprintf("%.1f", chk_gw$percentile), "th percentile of its own benchmark distribution for ",
-      "output_type = 'gw', and at the ", sprintf("%.1f", chk_lw$percentile), "th percentile for ",
-      "output_type = 'lw'. Since these benchmark draws are centered on the observed estimate, ",
-      "both are expected to be close to the 50th percentile; testing this (via goric(a) itself, ",
-      "against the interval ", band[1], " < p < ", band[2], ") gives support of ",
-      sprintf("%.3f", chk_gw$gw), " for 'gw' and ", sprintf("%.3f", chk_lw$gw), " for 'lw', for ",
-      "the current 'iter' = ", iter, ". This may simply reflect Monte Carlo error -- consider ",
-      "increasing 'iter' for a more stable benchmark."
+      "\nrestriktor Message: For the user-specified 'iter' = ", iter, ", the value based on ",
+      "your data (called the 'Sample' value in the output) is not close to the 50th ",
+      "percentile of the benchmark distribution under the 'Observed' population.\n",
+      "This is checked for the weight-type output, where the GORICA determined the 'support', ",
+      "that is, the GORICA weight, for the percentile being between ", band[1], " and ", band[2],
+      " versus outside of that range:\n",
+      "For output_type = 'gw', the percentile is ", sprintf("%.1f", chk_gw$percentile),
+      " (support = ", sprintf("%.3f", chk_gw$gw), ") ", describe_type(chk_gw), "\n",
+      "For output_type = 'lw', the percentile is ", sprintf("%.1f", chk_lw$percentile),
+      " (support = ", sprintf("%.3f", chk_lw$gw), ") ", describe_type(chk_lw), "\n",
+      closing
     )
   }
   invisible(NULL)
@@ -758,13 +795,15 @@ goric_percentile_test <- function(draws, sample_value, band = c(0.495, 0.505),
 #
 # Returns list(parallel_function_results = <as before, one element per
 # pop_es/pop_est category>, iter = <final number of draws used>).
+
 run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
                                      colnames_vec, VCOV, hypos, pref_hypo,
                                      comparison, control, mix_weights,
                                      penalty_factor, Heq, object, iter,
                                      es_labels = rnames,
                                      iter_min = 500, iter_step = 100,
-                                     iter_max = 2000, band = c(0.495, 0.505), ...) {
+                                     iter_max = 2000, band = c(0.495, 0.505),
+                                     stability_tol = 1, ...) {
 
   auto_iter <- is.null(iter)
   sample_gw <- object$result[pref_hypo, 7]
@@ -777,6 +816,20 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
 
   n_done <- 0L
   target <- if (auto_iter) min(iter_min, iter_max) else iter
+
+  # First (smallest) number of draws at which each output_type individually
+  # already showed adequate support, tracked separately since 'gw' and 'lw'
+  # need not converge at the same iter -- reported in the adequacy message so
+  # the user can see whether a smaller 'iter' would have sufficed had they
+  # only cared about one of the two.
+  min_iter_gw <- NA_integer_
+  min_iter_lw <- NA_integer_
+
+  # Previous round's percentile per output_type, used to detect when a
+  # not-yet-converged percentile has stopped moving (see 'no_progress'
+  # below) -- NA until a second round exists to compare against.
+  prev_percentile_gw <- NA_real_
+  prev_percentile_lw <- NA_real_
 
   progressr::handlers(progressr::handler_txtprogressbar(char = ">"))
 
@@ -835,33 +888,91 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
       chk_gw <- goric_percentile_test(gw_draws, sample_gw, band = band, control = control)
       chk_lw <- goric_percentile_test(lw_draws, sample_lw, band = band, control = control)
       converged <- chk_gw$converged && chk_lw$converged
+      if (is.na(min_iter_gw) && chk_gw$converged) min_iter_gw <- n_done
+      if (is.na(min_iter_lw) && chk_lw$converged) min_iter_lw <- n_done
+
+      # Has a not-yet-converged percentile stopped moving with more draws?
+      # If every currently-unconverged output_type is stable, more draws
+      # are unlikely to bring it closer to the 50th percentile either --
+      # that looks like a genuine feature of the benchmark distribution
+      # rather than a Monte Carlo adequacy problem, so growth can stop early
+      # instead of running all the way to iter_max. FALSE (not NA) on the
+      # very first round, since there is no
+      # earlier percentile yet to compare against. This is a first-cut
+      # heuristic based on a single round-to-round comparison -- if it
+      # turns out to call "stalled" too eagerly (a percentile can drift by
+      # a percentage point or two by chance alone), requiring stability
+      # across two consecutive rounds instead of one would be the natural
+      # tightening.
+      stable_gw <- isTRUE(!is.na(prev_percentile_gw) &&
+                            abs(chk_gw$percentile - prev_percentile_gw) < stability_tol)
+      stable_lw <- isTRUE(!is.na(prev_percentile_lw) &&
+                            abs(chk_lw$percentile - prev_percentile_lw) < stability_tol)
+      no_progress <- (chk_gw$converged || stable_gw) && (chk_lw$converged || stable_lw)
+      prev_percentile_gw <- chk_gw$percentile
+      prev_percentile_lw <- chk_lw$percentile
     } else {
       # No "Observed" category (custom pop_es/pop_est) -- nothing to check
       # against, so stop growing after the first (iter_min-sized) batch.
       converged <- TRUE
+      no_progress <- FALSE
       chk_gw <- chk_lw <- NULL
     }
 
-    if (converged || n_done >= iter_max) {
+    if (converged || (no_progress && !converged) || n_done >= iter_max) {
       if (auto_iter && !is.null(chk_gw)) {
         if (converged) {
           message(
-            "\nrestriktor Message: 'iter' was not specified, so it was set automatically. ",
-            "Using iter = ", n_done, " draws, the 'Observed' population's sample value is ",
-            "close to the 50th percentile of its benchmark distribution for both ",
-            "output_type = 'gw' (percentile = ", sprintf("%.1f", chk_gw$percentile),
-            ", support = ", sprintf("%.3f", chk_gw$gw), ") and output_type = 'lw' ",
-            "(percentile = ", sprintf("%.1f", chk_lw$percentile), ", support = ",
-            sprintf("%.3f", chk_lw$gw), "), so no further draws were added."
+            "\nrestriktor Message: 'iter' was not specified, so it was set automatically.\n",
+            "Using iter = ", n_done, " draws, the value based on your data (called the ",
+            "'Sample' value in the output) is close to the 50th percentile of the benchmark ",
+            "distribution under the 'Observed' population.\n",
+            "This is checked for the weight-type output, where the GORICA determined the ",
+            "'support', that is, the GORICA weight, for the percentile being between ",
+            band[1], " and ", band[2], " versus outside of that range:\n",
+            "For output_type = 'gw', the percentile is ", sprintf("%.1f", chk_gw$percentile),
+            " (support = ", sprintf("%.3f", chk_gw$gw), "; minimum iter = ", min_iter_gw,
+            "); for output_type = 'lw', the percentile is ", sprintf("%.1f", chk_lw$percentile),
+            " (support = ", sprintf("%.3f", chk_lw$gw), "; minimum iter = ", min_iter_lw, ").\n",
+            "So, no further draws were added.",
+            if (min_iter_gw != min_iter_lw) paste0(
+              " Notably, you could user-specify a lower 'iter' if you are not interested in ",
+              "both GORIC(A) weights ('gw') and log-likelihood weights ('lw')."
+            ) else ""
+          )
+        } else if (no_progress) {
+          describe_type <- function(chk) {
+            if (chk$converged) {
+              "-- converged (close to the 50th percentile)."
+            } else {
+              "-- stabilized, but not close to the 50th percentile."
+            }
+          }
+          message(
+            "\nrestriktor Message: The default for 'iter' was used, since it was not ",
+            "specified. Draws were added up to iter = ", n_done, " (below the maximum of ",
+            iter_max, "). Over the last ", iter_step, " draws, the percentile(s) changed by ",
+            "less than ", stability_tol, " percentage point(s). This may imply that increasing ",
+            "'iter' to ", iter_max, " will not help.\n",
+            "The percentile values are not near 50 yet. This is checked for the weight-type ",
+            "output, where the GORICA determined the 'support', that is, the GORICA weight, ",
+            "for the percentile being between ", band[1], " and ", band[2],
+            " versus outside of that range:\n",
+            "For output_type = 'gw', the percentile is ", sprintf("%.1f", chk_gw$percentile),
+            " (support = ", sprintf("%.3f", chk_gw$gw), ") ", describe_type(chk_gw), "\n",
+            "For output_type = 'lw', the percentile is ", sprintf("%.1f", chk_lw$percentile),
+            " (support = ", sprintf("%.3f", chk_lw$gw), ") ", describe_type(chk_lw), "\n",
+            "Since more draws are unlikely to change this, consider inspecting the 'Observed' ",
+            "benchmark distribution directly rather than increasing 'iter' further."
           )
         } else {
           message(
             "\nrestriktor Message: 'iter' was not specified, so it was increased ",
             "automatically up to its maximum of iter = ", iter_max, " draws. The 'Observed' ",
             "population's sample value is still not close to the 50th percentile of its ",
-            "benchmark distribution for output_type = 'gw' (percentile = ",
+            "benchmark distribution for output_type = 'gw' (percentile is ",
             sprintf("%.1f", chk_gw$percentile), ", support = ", sprintf("%.3f", chk_gw$gw),
-            ") and/or output_type = 'lw' (percentile = ", sprintf("%.1f", chk_lw$percentile),
+            ") and/or output_type = 'lw' (percentile is ", sprintf("%.1f", chk_lw$percentile),
             ", support = ", sprintf("%.3f", chk_lw$gw), "). Consider re-running with a ",
             "manually specified, larger 'iter' for a more stable benchmark."
           )

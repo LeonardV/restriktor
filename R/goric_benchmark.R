@@ -36,7 +36,8 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
                             quant = NULL, iter = NULL,
                             control = list(),
                             ncpus = 1, seed = NULL,
-                            iter_adequacy_band = c(0.495, 0.505), ...) {
+                            iter_adequacy_band = c(0.495, 0.505),
+                            iter_stability_tol = 1, ...) {
 
   # iter = NULL (the default): start at 500 draws and grow by 100 at a time,
   # up to 2000, stopping as soon as the "Observed" population's benchmark
@@ -240,6 +241,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     object = object, iter = user_iter,
     es_labels = paste0(es, " (", names(es), ")"),
     band = iter_adequacy_band,
+    stability_tol = iter_stability_tol,
     ...
   )
   parallel_function_results <- sim$parallel_function_results
@@ -313,7 +315,8 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
                             alt_sample_size = NULL, quant = NULL, iter = NULL,
                             control = list(),
                             ncpus = 1, seed = NULL,
-                            iter_adequacy_band = c(0.495, 0.505), ...) {
+                            iter_adequacy_band = c(0.495, 0.505),
+                            iter_stability_tol = 1, ...) {
 
   # iter = NULL (the default): start at 500 draws and grow by 100 at a time,
   # up to 2000, stopping as soon as the "Observed" population's benchmark
@@ -475,6 +478,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     mix_weights = mix_weights, penalty_factor = penalty_factor, Heq = Heq,
     object = object, iter = user_iter,
     band = iter_adequacy_band,
+    stability_tol = iter_stability_tol,
     ...
   )
   parallel_function_results <- sim$parallel_function_results

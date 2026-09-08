@@ -39,6 +39,108 @@ calculate_power <- function(density_h1, critical_value) {
   sum(density_h1$y[density_h1$x > critical_value]) * mean(diff(density_h1$x))
 }
 
+# Overlapping coefficient (OVL) between two samples' distributions: the
+# proportion of area shared by their kernel density estimates -- 1 = fully
+# overlapping (identical) distributions, 0 = no overlap at all. This is the
+# numeric counterpart of what overlaying, say, the 'Observed' and 'No-effect'
+# population's benchmark draws in a density/histogram plot shows visually.
+# Both densities are evaluated on the SAME x-grid (spanning the combined
+# range of both samples, with a small margin so neither tail gets clipped)
+# so their y-values are directly comparable point-by-point; Gaussian kernel
+# with bw = "nrd0" matches the density estimate already used elsewhere in
+# this file (see calculate_power() above). Like a plain density()-based plot,
+# this does not respect the [0, 1] bounds that 'gw'/'lw' are constrained to
+# -- a Gaussian kernel can put a little mass just outside that range, same
+# as it would visually spill past the axis limits in a density plot.
+compute_overlap <- function(draws1, draws2, n = 512) {
+  draws1 <- draws1[!is.na(draws1)]
+  draws2 <- draws2[!is.na(draws2)]
+  if (length(draws1) < 2 || length(draws2) < 2 ||
+      sd(draws1) == 0 || sd(draws2) == 0) {
+    # Can't fit a (non-degenerate) density on too few draws, or on draws
+    # that are all identical (zero variance) -- not enough information for
+    # an overlap coefficient to be meaningful.
+    return(NA_real_)
+  }
+  rng <- range(c(draws1, draws2))
+  pad <- diff(rng) * 0.1
+  from <- rng[1] - pad
+  to   <- rng[2] + pad
+  d1 <- tryCatch(
+    density(draws1, kernel = "gaussian", bw = "nrd0", from = from, to = to, n = n),
+    error = function(e) NULL
+  )
+  d2 <- tryCatch(
+    density(draws2, kernel = "gaussian", bw = "nrd0", from = from, to = to, n = n),
+    error = function(e) NULL
+  )
+  if (is.null(d1) || is.null(d2)) return(NA_real_)
+  dx <- mean(diff(d1$x))
+  min(sum(pmin(d1$y, d2$y)) * dx, 1) # cap at 1 for the (rare) numerical-integration overshoot
+}
+
+# Overlap of the 'Observed' population's benchmark distribution against EACH
+# other ('null') population present -- by default just 'No-effect', but
+# there can be more than one if the user supplied multiple pop_es/pop_est
+# values. 'draws_combined' is a named list of draw vectors keyed by
+# population (e.g. gw_combined/lw_combined from get_results_benchmark()),
+# with names like "pop_es = No-effect"/"pop_es = Observed" (or
+# "pop_est = ..." for benchmark_asymp) -- the "Observed" entry is found by
+# name rather than requiring the caller to pass the exact prefixed key.
+# Returns a named numeric vector (named by the other population), or NULL if
+# there is no "Observed" category in this run (a custom pop_es/pop_est
+# without one -- nothing to compare against, same guard as
+# check_iter_adequacy()).
+compute_overlap_vs_observed <- function(draws_combined) {
+  observed_name <- names(draws_combined)[grepl("= Observed$", names(draws_combined))]
+  if (length(observed_name) != 1) {
+    return(NULL)
+  }
+  observed_draws <- draws_combined[[observed_name]]
+  other_names <- setdiff(names(draws_combined), observed_name)
+  if (length(other_names) == 0) {
+    return(NULL)
+  }
+  overlaps <- vapply(other_names, function(nm) {
+    compute_overlap(observed_draws, draws_combined[[nm]])
+  }, numeric(1))
+  names(overlaps) <- other_names
+  overlaps
+}
+
+# Same idea as compute_overlap_vs_observed(), but for the matrix-valued
+# per-draw statistics ('rgw'/'rlw'/'ld'): each population's entry is a
+# matrix with one column per alternative hypothesis being compared against
+# the preferred one (e.g. column "H2"), rather than a single vector. Overlap
+# is computed per shared column, so the result is a list (named by the other
+# population, same as compute_overlap_vs_observed()) of named numeric
+# vectors (named by hypothesis column). Returns NULL under the same
+# conditions as compute_overlap_vs_observed() (no "Observed" category, or no
+# columns to compare -- e.g. after remove_single_value_col() has dropped
+# every column because there is only one alternative hypothesis and it is
+# constant across draws).
+compute_overlap_vs_observed_matrix <- function(draws_combined) {
+  observed_name <- names(draws_combined)[grepl("= Observed$", names(draws_combined))]
+  if (length(observed_name) != 1) {
+    return(NULL)
+  }
+  observed_mat <- draws_combined[[observed_name]]
+  other_names <- setdiff(names(draws_combined), observed_name)
+  cols <- colnames(observed_mat)
+  if (length(other_names) == 0 || is.null(cols) || length(cols) == 0) {
+    return(NULL)
+  }
+  overlaps <- lapply(other_names, function(nm) {
+    other_mat <- draws_combined[[nm]]
+    shared_cols <- intersect(cols, colnames(other_mat))
+    vapply(shared_cols, function(cn) {
+      compute_overlap(observed_mat[, cn], other_mat[, cn])
+    }, numeric(1))
+  })
+  names(overlaps) <- other_names
+  overlaps
+}
+
 # Function to calculate density
 # calculate_density <- function(data, var, sample_value) {
 #   dens <- density(data[[var]], kernel = "gaussian", na.rm = TRUE, bw = "nrd0")
@@ -579,6 +681,21 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   })
   
   
+  # Overlap (0-1 overlapping coefficient) between the 'Observed' population's
+  # benchmark distribution and each other ('null') population's -- the
+  # numeric counterpart of the overlap visible when plotting them together.
+  # NULL (dropped from OUT below) when there's no "Observed" category.
+  # Computed separately for gw, lw, rgw, rlw and ld (rather than assuming
+  # gw and rgw -- or lw and rlw -- give the same overlap): rgw is only a
+  # bijective transform of gw (and so shares its overlap) in the special
+  # case of exactly 2 hypotheses; with more hypotheses, or for lw/rlw
+  # (lw is not normalized to sum to 1 the way gw is), that need not hold.
+  overlap_gw  <- compute_overlap_vs_observed(gw_combined)
+  overlap_lw  <- compute_overlap_vs_observed(lw_combined)
+  overlap_rgw <- compute_overlap_vs_observed_matrix(rgw_combined)
+  overlap_rlw <- compute_overlap_vs_observed_matrix(rlw_combined)
+  overlap_ld  <- compute_overlap_vs_observed_matrix(ld_combined)
+
   OUT <- list(
     benchmarks_gw = CI_benchmarks_gw,
     benchmarks_lw = CI_benchmarks_lw,
@@ -594,6 +711,11 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     percentile_rlw_ge1 = percentile_rlw_ge1_all_cleaned,
     percentile_difLL = percentile_ld_all_cleaned,
     percentile_absdifLL = percentile_ld_ge0_all_cleaned,
+    overlap_gw = overlap_gw,
+    overlap_lw = overlap_lw,
+    overlap_rgw = overlap_rgw,
+    overlap_rlw = overlap_rlw,
+    overlap_ld = overlap_ld,
     combined_values = list(gw_combined = gw_combined,
                            lw_combined = lw_combined,
                            rgw_combined = rgw_combined,

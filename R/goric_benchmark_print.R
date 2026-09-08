@@ -1,12 +1,12 @@
-print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"), 
+print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "overlap", "all"),
                             hypo_rate_threshold = 1, color = TRUE, ...) {
 
   # Ensure the object is of class 'benchmark_means'
   if (!inherits(x, "benchmark")) {
     stop("Invalid object. The object should be of class 'benchmark'.", call. = FALSE)
   }
-  
-  output_type <- match.arg(output_type, c("rgw", "gw", "rlw", "ld", "all"))
+
+  output_type <- match.arg(output_type, c("rgw", "gw", "rlw", "ld", "overlap", "all"))
   
   ldots <- list(...)
   
@@ -90,7 +90,8 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"),
   text_rgw <- paste0("Benchmark: Percentiles of ", orange, "Ratio-of-", goric_type, "-weights", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
   text_rlw <- paste0("Benchmark: Percentiles of ", orange, "Ratio-of-log-likelihood-weights", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
   text_ld  <- paste0("Benchmark: Percentiles of ", orange, "Differences in Log-likelihood Values", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
-  
+  text_overlap <- paste0("Benchmark: ", orange, "Overlap", blue, " of the 'Observed' Population's Benchmark Distribution with each 'Null' Population")
+
   cat("\n")
   #cat(strrep("=", 70), "\n")
   cat(paste0(blue, "Benchmark Results", reset), "\n")
@@ -229,5 +230,54 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "all"),
       }, nchar(text_ld), text_color = blue, reset = reset
     )
   }
+
+  # Print overlap of the 'Observed' population's benchmark distribution
+  # against each 'null' population (by default just 'No-effect'). One table
+  # for gw/lw (a single overlap value per population), plus -- whenever
+  # present -- a block per matrix-valued statistic (rgw/rlw/ld, one value
+  # per alternative hypothesis), since gw and rgw (and lw and rlw) need not
+  # have the same overlap: rgw is only a bijective transform of gw (and so
+  # shares its overlap) in the special case of exactly 2 hypotheses; with
+  # more hypotheses, or for lw/rlw (lw is not normalized to sum to 1 the
+  # way gw is), that need not hold. Skipped (no error) when there's no
+  # "Observed" category to compare against (a custom pop_es/pop_est without
+  # one), same as the other overlap-dependent diagnostics.
+  if ("all" %in% output_type || "overlap" %in% output_type) {
+    if (!is.null(x$overlap_goric_weights) && length(x$overlap_goric_weights) > 0) {
+      print_section(
+        text_overlap,
+        function() {
+          other_names <- names(x$overlap_goric_weights)
+          overlap_tab <- cbind(
+            gw = x$overlap_goric_weights[other_names],
+            lw = x$overlap_ll_weights[other_names]
+          )
+          formatted_values <- sapply(as.numeric(overlap_tab), format_value)
+          formatted_tab <- `dim<-`(formatted_values, dim(overlap_tab))
+          rownames(formatted_tab) <- gsub("^pop_es(t)? = ", "", other_names)
+          colnames(formatted_tab) <- colnames(overlap_tab)
+          print(formatted_tab, quote = FALSE)
+          cat("(0 = no overlap, 1 = fully overlapping distributions, versus the 'Observed' population)\n")
+
+          print_matrix_overlap <- function(overlap_list, label) {
+            if (is.null(overlap_list) || length(overlap_list) == 0) return(invisible(NULL))
+            cat("\n", label, ":\n", sep = "")
+            for (pop_es in names(overlap_list)) {
+              vals <- overlap_list[[pop_es]]
+              if (length(vals) == 0) next
+              formatted <- sapply(vals, format_value)
+              names(formatted) <- names(vals)
+              cat(sprintf("  %s: ", gsub("^pop_es(t)? = ", "", pop_es)))
+              cat(paste(names(formatted), formatted, sep = " = ", collapse = ", "), "\n")
+            }
+          }
+          print_matrix_overlap(x$overlap_ratio_goric_weights, "Ratio-of-GORIC(A)-weights (rgw)")
+          print_matrix_overlap(x$overlap_ratio_ll_weights, "Ratio-of-log-likelihood-weights (rlw)")
+          print_matrix_overlap(x$overlap_difLL, "Differences in log-likelihood values (ld)")
+        }, nchar(text_overlap), text_color = blue, reset = reset
+      )
+    }
+  }
+
   return(invisible(x))
 }

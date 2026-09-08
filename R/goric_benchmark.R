@@ -304,6 +304,12 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     percentile_difLL = benchmark_results$percentile_difLL,
     percentile_absdifLL = benchmark_results$percentile_absdifLL,
     #
+    overlap_goric_weights = benchmark_results$overlap_gw,
+    overlap_ll_weights = benchmark_results$overlap_lw,
+    overlap_ratio_goric_weights = benchmark_results$overlap_rgw,
+    overlap_ratio_ll_weights = benchmark_results$overlap_rlw,
+    overlap_difLL = benchmark_results$overlap_ld,
+    #
     iter = iter
   )
 
@@ -528,6 +534,12 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     percentile_ratio_ll_ge1 = benchmark_results$percentile_rlw_ge1,
     percentile_difLL = benchmark_results$percentile_difLL,
     percentile_absdifLL = benchmark_results$percentile_absdifLL,
+    #
+    overlap_goric_weights = benchmark_results$overlap_gw,
+    overlap_ll_weights = benchmark_results$overlap_lw,
+    overlap_ratio_goric_weights = benchmark_results$overlap_rgw,
+    overlap_ratio_ll_weights = benchmark_results$overlap_rlw,
+    overlap_difLL = benchmark_results$overlap_ld,
     #
     iter = iter
   )

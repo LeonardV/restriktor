@@ -4,7 +4,7 @@ Version: 0.7
 Authors@R: c(person(given = "Leonard", family = "Vanbrabant",
                     role =  c("aut","cre"),
                     email = "info@restriktor.org"),
-             person(given = "Rebecca", family = "Kuiper",
+             person(given = "Rebecca M.", family = "Kuiper",
                     role  = c("aut"),
                     email = "r.m.kuiper@uu.nl"),
              person(given = "Yves", family = "Rosseel",
@@ -22,7 +22,7 @@ LazyData: yes
 URL: https://restriktor.org
 NeedsCompilation: no
 Packaged: 2026-07-15 11:11:11 UTC; leonardv
-Author: Leonard Vanbrabant [aut, cre], Rebecca Kuiper [aut], Yves Rosseel [ctb], Aleksandra Dacko [ctb]
+Author: Leonard Vanbrabant [aut, cre], Rebecca M. Kuiper [aut], Yves Rosseel [ctb], Aleksandra Dacko [ctb]
 Maintainer: Leonard Vanbrabant <info@restriktor.org>
 Suggests:
     knitr,

@@ -101,7 +101,20 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   fitLM <- object$model.org
   # multiple factors: full interaction-cell counts, no matter how many factors
   # or what they're called, using only positional indexing
-  N_lm <- do.call(table, fitLM$model[-1])
+  # table() returns an object of class "table" which -- even for a single
+  # factor -- carries a 'dim' attribute (it's a 1-D array, not a plain
+  # vector). Left as-is, N (set to N_lm below whenever the user doesn't
+  # supply group_size) keeps that 'dim' attribute, and R's arithmetic
+  # requires two objects that both have a 'dim' attribute to have matching
+  # dims -- so VCOV * (N - 1) in compute_cohens_f() (VCOV a ngroups x ngroups
+  # matrix, N a length-ngroups "table") fails with "non-conformable arrays",
+  # even though N and VCOV are perfectly conformable as plain vector/matrix.
+  # c() strips the table's 'dim'/'dimnames'/class down to a plain named
+  # vector (keeping the counts and names, i.e. the flattened cell order,
+  # exactly as they were) so N behaves like the ordinary vector it's treated
+  # as everywhere else (the group_size = <scalar> and group_size = <vector>
+  # paths below already produce plain vectors, not tables).
+  N_lm <- c(do.call(table, fitLM$model[-1]))
   ## marginal group sizes per factor
   #N_lm <- lapply(fitLM$model[-1], table)
   ##colSums(model.matrix(object$model.org))
@@ -258,10 +271,14 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   if (!is.null(user_iter)) {
     # Fixed 'iter': run_benchmark_simulation() does not auto-grow or message
     # in this case, so do the (non-growing) adequacy check here instead.
-    check_iter_adequacy(benchmark_results, "pop_es = Observed", iter,
+    bias_check <- check_iter_adequacy(benchmark_results, "pop_es = Observed", iter,
                         band = iter_adequacy_band,
                         iter_min = iter_min, iter_step = iter_step, iter_max = iter_max,
+                        stability_tol = iter_stability_tol,
                         control = control)
+  } else {
+    bias_check <- list(median_bias_check_gw = sim$median_bias_check_gw,
+                       median_bias_check_lw = sim$median_bias_check_lw)
   }
 
   # compute error probability
@@ -290,17 +307,23 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     pref_hypo_name = pref_hypo_name,
     error_prob_pref_hypo = error_prob,
     benchmarks_goric_weights = benchmark_results$benchmarks_gw,
+    benchmarks_ll_weights = benchmark_results$benchmarks_lw,
     benchmarks_ratio_goric_weights = benchmark_results$benchmarks_rgw,
     benchmarks_ratio_ll_weights = benchmark_results$benchmarks_rlw,
     benchmarks_ratio_ll_ge1 = benchmark_results$benchmarks_rlw_ge1,
+    benchmarks_ratio_goric_weights_log = benchmark_results$benchmarks_rgw_log,
+    benchmarks_ratio_ll_weights_log = benchmark_results$benchmarks_rlw_log,
     benchmarks_difLL = benchmark_results$benchmarks_difLL,
     benchmarks_absdifLL = benchmark_results$benchmarks_absdifLL,
     combined_values = benchmark_results$combined_values,
     #
     percentile_goric_weights = benchmark_results$percentile_gw,
+    percentile_ll_weights = benchmark_results$percentile_lw,
     percentile_ratio_goric_weights = benchmark_results$percentile_rgw,
     percentile_ratio_ll_weights = benchmark_results$percentile_rlw,
     percentile_ratio_ll_ge1 = benchmark_results$percentile_rlw_ge1,
+    percentile_ratio_goric_weights_log = benchmark_results$percentile_rgw_log,
+    percentile_ratio_ll_weights_log = benchmark_results$percentile_rlw_log,
     percentile_difLL = benchmark_results$percentile_difLL,
     percentile_absdifLL = benchmark_results$percentile_absdifLL,
     #
@@ -308,7 +331,13 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     overlap_ll_weights = benchmark_results$overlap_lw,
     overlap_ratio_goric_weights = benchmark_results$overlap_rgw,
     overlap_ratio_ll_weights = benchmark_results$overlap_rlw,
+    overlap_ratio_goric_weights_log = benchmark_results$overlap_rgw_log,
+    overlap_ratio_ll_weights_log = benchmark_results$overlap_rlw_log,
     overlap_difLL = benchmark_results$overlap_ld,
+    overlap_reference = benchmark_results$overlap_reference_pop,
+    #
+    median_bias_check_gw = bias_check$median_bias_check_gw,
+    median_bias_check_lw = bias_check$median_bias_check_lw,
     #
     iter = iter
   )
@@ -502,10 +531,14 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   if (!is.null(user_iter)) {
     # Fixed 'iter': run_benchmark_simulation() does not auto-grow or message
     # in this case, so do the (non-growing) adequacy check here instead.
-    check_iter_adequacy(benchmark_results, "pop_est = Observed", iter,
+    bias_check <- check_iter_adequacy(benchmark_results, "pop_est = Observed", iter,
                         band = iter_adequacy_band,
                         iter_min = iter_min, iter_step = iter_step, iter_max = iter_max,
+                        stability_tol = iter_stability_tol,
                         control = control)
+  } else {
+    bias_check <- list(median_bias_check_gw = sim$median_bias_check_gw,
+                       median_bias_check_lw = sim$median_bias_check_lw)
   }
 
   error_prob <- calculate_error_probability(object, hypos, pref_hypo,
@@ -521,17 +554,23 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     pref_hypo_name = pref_hypo_name, 
     error_prob_pref_hypo = error_prob,
     benchmarks_goric_weights = benchmark_results$benchmarks_gw,
+    benchmarks_ll_weights = benchmark_results$benchmarks_lw,
     benchmarks_ratio_goric_weights = benchmark_results$benchmarks_rgw,
     benchmarks_ratio_ll_weights = benchmark_results$benchmarks_rlw,
     benchmarks_ratio_ll_ge1 = benchmark_results$benchmarks_rlw_ge1,
+    benchmarks_ratio_goric_weights_log = benchmark_results$benchmarks_rgw_log,
+    benchmarks_ratio_ll_weights_log = benchmark_results$benchmarks_rlw_log,
     benchmarks_difLL = benchmark_results$benchmarks_difLL,
     benchmarks_absdifLL = benchmark_results$benchmarks_absdifLL,
     combined_values = benchmark_results$combined_values,
     #
     percentile_goric_weights = benchmark_results$percentile_gw,
+    percentile_ll_weights = benchmark_results$percentile_lw,
     percentile_ratio_goric_weights = benchmark_results$percentile_rgw,
     percentile_ratio_ll_weights = benchmark_results$percentile_rlw,
     percentile_ratio_ll_ge1 = benchmark_results$percentile_rlw_ge1,
+    percentile_ratio_goric_weights_log = benchmark_results$percentile_rgw_log,
+    percentile_ratio_ll_weights_log = benchmark_results$percentile_rlw_log,
     percentile_difLL = benchmark_results$percentile_difLL,
     percentile_absdifLL = benchmark_results$percentile_absdifLL,
     #
@@ -539,11 +578,17 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     overlap_ll_weights = benchmark_results$overlap_lw,
     overlap_ratio_goric_weights = benchmark_results$overlap_rgw,
     overlap_ratio_ll_weights = benchmark_results$overlap_rlw,
+    overlap_ratio_goric_weights_log = benchmark_results$overlap_rgw_log,
+    overlap_ratio_ll_weights_log = benchmark_results$overlap_rlw_log,
     overlap_difLL = benchmark_results$overlap_ld,
+    overlap_reference = benchmark_results$overlap_reference_pop,
+    #
+    median_bias_check_gw = bias_check$median_bias_check_gw,
+    median_bias_check_lw = bias_check$median_bias_check_lw,
     #
     iter = iter
   )
-  
+
   class(OUT) <- c("benchmark_asymp", "benchmark", "list")
   return(OUT)
 }

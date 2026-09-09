@@ -79,32 +79,47 @@ compute_overlap <- function(draws1, draws2, n = 512) {
   min(sum(pmin(d1$y, d2$y)) * dx, 1) # cap at 1 for the (rare) numerical-integration overshoot
 }
 
-# Overlap of the 'Observed' population's benchmark distribution against EACH
-# other ('null') population present -- by default just 'No-effect', but
-# there can be more than one if the user supplied multiple pop_es/pop_est
-# values. 'draws_combined' is a named list of draw vectors keyed by
-# population (e.g. gw_combined/lw_combined from get_results_benchmark()),
-# with names like "pop_es = No-effect"/"pop_es = Observed" (or
-# "pop_est = ..." for benchmark_asymp) -- the "Observed" entry is found by
-# name rather than requiring the caller to pass the exact prefixed key.
-# Returns a named numeric vector (named by the other population), or NULL if
-# there is no "Observed" category in this run (a custom pop_es/pop_est
-# without one -- nothing to compare against, same guard as
-# check_iter_adequacy()).
+# Which population the "Overlap with ..." column is computed against.
+# Prefers the "Observed" category when one is present (the usual case: the
+# default 'No-effect' plus the user's actually-observed estimates). When
+# there is no "Observed" category -- a custom pop_es/pop_est run, which
+# never includes one -- falls back to the LAST population in
+# 'pop_names' (i.e. the last pop_es/pop_est value supplied), so overlap is
+# still shown rather than silently omitted. Returns NULL only when there are
+# no populations at all.
+determine_overlap_reference <- function(pop_names) {
+  observed_name <- pop_names[grepl("= Observed$", pop_names)]
+  if (length(observed_name) == 1) {
+    return(observed_name)
+  }
+  if (length(pop_names) == 0) {
+    return(NULL)
+  }
+  pop_names[length(pop_names)]
+}
+
+# Overlap of the reference population's (see determine_overlap_reference())
+# benchmark distribution against EACH other population present -- by default
+# just 'No-effect', but there can be more than one if the user supplied
+# multiple pop_es/pop_est values. 'draws_combined' is a named list of draw
+# vectors keyed by population (e.g. gw_combined/lw_combined from
+# get_results_benchmark()), with names like "pop_es = No-effect"/
+# "pop_es = Observed" (or "pop_est = ..." for benchmark_asymp). Returns a
+# named numeric vector (named by the other population, plus the reference
+# population's own entry fixed at 1 -- its overlap with itself), or NULL if
+# there are no populations at all.
 compute_overlap_vs_observed <- function(draws_combined) {
-  observed_name <- names(draws_combined)[grepl("= Observed$", names(draws_combined))]
-  if (length(observed_name) != 1) {
+  reference_name <- determine_overlap_reference(names(draws_combined))
+  if (is.null(reference_name)) {
     return(NULL)
   }
-  observed_draws <- draws_combined[[observed_name]]
-  other_names <- setdiff(names(draws_combined), observed_name)
-  if (length(other_names) == 0) {
-    return(NULL)
-  }
+  reference_draws <- draws_combined[[reference_name]]
+  other_names <- setdiff(names(draws_combined), reference_name)
   overlaps <- vapply(other_names, function(nm) {
-    compute_overlap(observed_draws, draws_combined[[nm]])
+    compute_overlap(reference_draws, draws_combined[[nm]])
   }, numeric(1))
   names(overlaps) <- other_names
+  overlaps[reference_name] <- 1
   overlaps
 }
 
@@ -113,31 +128,35 @@ compute_overlap_vs_observed <- function(draws_combined) {
 # matrix with one column per alternative hypothesis being compared against
 # the preferred one (e.g. column "H2"), rather than a single vector. Overlap
 # is computed per shared column, so the result is a list (named by the other
-# population, same as compute_overlap_vs_observed()) of named numeric
-# vectors (named by hypothesis column). Returns NULL under the same
-# conditions as compute_overlap_vs_observed() (no "Observed" category, or no
-# columns to compare -- e.g. after remove_single_value_col() has dropped
+# population, plus the reference population's own entry -- a same-length
+# vector of 1s, one per column) of named numeric vectors (named by
+# hypothesis column). Returns NULL under the same conditions as
+# compute_overlap_vs_observed() (no populations at all), or when there are
+# no columns to compare -- e.g. after remove_single_value_col() has dropped
 # every column because there is only one alternative hypothesis and it is
 # constant across draws).
 compute_overlap_vs_observed_matrix <- function(draws_combined) {
-  observed_name <- names(draws_combined)[grepl("= Observed$", names(draws_combined))]
-  if (length(observed_name) != 1) {
+  reference_name <- determine_overlap_reference(names(draws_combined))
+  if (is.null(reference_name)) {
     return(NULL)
   }
-  observed_mat <- draws_combined[[observed_name]]
-  other_names <- setdiff(names(draws_combined), observed_name)
-  cols <- colnames(observed_mat)
-  if (length(other_names) == 0 || is.null(cols) || length(cols) == 0) {
+  reference_mat <- draws_combined[[reference_name]]
+  other_names <- setdiff(names(draws_combined), reference_name)
+  cols <- colnames(reference_mat)
+  if (is.null(cols) || length(cols) == 0) {
     return(NULL)
   }
   overlaps <- lapply(other_names, function(nm) {
     other_mat <- draws_combined[[nm]]
     shared_cols <- intersect(cols, colnames(other_mat))
     vapply(shared_cols, function(cn) {
-      compute_overlap(observed_mat[, cn], other_mat[, cn])
+      compute_overlap(reference_mat[, cn], other_mat[, cn])
     }, numeric(1))
   })
   names(overlaps) <- other_names
+  self_overlap <- rep(1, length(cols))
+  names(self_overlap) <- cols
+  overlaps[[reference_name]] <- self_overlap
   overlaps
 }
 
@@ -523,12 +542,16 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   CI_benchmarks_rgw <- matrix(NA, nrow = nr.hypos, ncol = 1 + length(quant))
   CI_benchmarks_rlw <- matrix(NA, nrow = nr.hypos, ncol = 1 + length(quant))
   CI_benchmarks_rlw_ge1 <- matrix(NA, nrow = nr.hypos, ncol = 1 + length(quant))
+  CI_benchmarks_rgw_log <- matrix(NA, nrow = nr.hypos, ncol = 1 + length(quant))
+  CI_benchmarks_rlw_log <- matrix(NA, nrow = nr.hypos, ncol = 1 + length(quant))
   CI_benchmarks_ld <- matrix(NA, nrow = nr.hypos, ncol = 1 + length(quant))
   CI_benchmarks_ld_ge0 <- matrix(NA, nrow = nr.hypos, ncol = 1 + length(quant))
-  
+
   # Fill the first column with sample values
-  CI_benchmarks_rgw[, 1] <- object$ratio.gw[pref_hypo,] 
-  CI_benchmarks_rlw[, 1] <- object$ratio.lw[pref_hypo,] 
+  CI_benchmarks_rgw[, 1] <- object$ratio.gw[pref_hypo,]
+  CI_benchmarks_rlw[, 1] <- object$ratio.lw[pref_hypo,]
+  CI_benchmarks_rgw_log[, 1] <- log(object$ratio.gw[pref_hypo,])
+  CI_benchmarks_rlw_log[, 1] <- log(object$ratio.lw[pref_hypo,])
   for (j in seq_len(nr.hypos)) {
     if (object$ratio.lw[pref_hypo, j] >= 1) {
       CI_benchmarks_rlw_ge1[j, 1] <- object$ratio.lw[pref_hypo, j] 
@@ -542,12 +565,16 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   CI_benchmarks_rgw_all <- list()
   CI_benchmarks_rlw_all <- list()
   CI_benchmarks_rlw_ge1_all <- list()
+  CI_benchmarks_rgw_log_all <- list()
+  CI_benchmarks_rlw_log_all <- list()
   CI_benchmarks_ld_all <- list()
   CI_benchmarks_ld_ge0_all <- list()
 
   percentile_rgw_all <- list()
   percentile_rlw_all <- list()
   percentile_rlw_ge1_all <- list()
+  percentile_rgw_log_all <- list()
+  percentile_rlw_log_all <- list()
   percentile_ld_all <- list()
   percentile_ld_ge0_all <- list()
   
@@ -561,12 +588,31 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     rlw_ge1 <- rlw_combined_values
     rlw_ge1[rlw_combined_values < 1] <- 1 / rlw_combined_values[rlw_combined_values < 1]
     ld_ge0 <- abs(ld_combined_values)
+
+    # log(rgw)/log(rlw) -- a scale-invariant, symmetric-around-0 alternative
+    # to rgw/rlw themselves: log(rgw)/log(rlw) equals the log-odds (logit) of
+    # the corresponding pairwise-rescaled weight (e.g. lw_pref/(lw_pref+lw_k)),
+    # since the shared (lw_pref+lw_k) normalizer cancels out of the ratio --
+    # so it carries no new information beyond rgw/rlw, but is far better
+    # suited to things like the 'Observed'-vs-'No Effect' overlap comparison:
+    # unbounded and symmetric around 0 (rather than living on the heavily
+    # right-skewed (0, Inf) scale that rgw/rlw do, where '1' isn't a natural
+    # visual center), and not distorted by how much weight other hypotheses
+    # in the set happen to be carrying (that dilution cancels out of the
+    # ratio -- and so out of its log -- exactly, per draw). Self-comparison
+    # (pref vs pref) is log(1) = 0 here, rather than the 1 that rgw/rlw use,
+    # so it gets cleaned via the 0-baseline (like ld) rather than the
+    # 1-baseline used for rgw/rlw below.
+    rgw_log_combined_values <- log(rgw_combined_values)
+    rlw_log_combined_values <- log(rlw_combined_values)
     
     # Loop through the hypotheses and calculate the quantiles
     for (j in seq_len(nr.hypos)) {
       CI_benchmarks_rgw[j, 2:(1 + length(quant))] <- quantile(rgw_combined_values[, j], quant, na.rm = TRUE)
       CI_benchmarks_rlw[j, 2:(1 + length(quant))] <- quantile(rlw_combined_values[, j], quant, na.rm = TRUE)
       CI_benchmarks_rlw_ge1[j, 2:(1 + length(quant))] <- quantile(rlw_ge1[, j], quant, na.rm = TRUE)
+      CI_benchmarks_rgw_log[j, 2:(1 + length(quant))] <- quantile(rgw_log_combined_values[, j], quant, na.rm = TRUE)
+      CI_benchmarks_rlw_log[j, 2:(1 + length(quant))] <- quantile(rlw_log_combined_values[, j], quant, na.rm = TRUE)
       CI_benchmarks_ld[j, 2:(1 + length(quant))] <- quantile(ld_combined_values[, j], quant, na.rm = TRUE)
       CI_benchmarks_ld_ge0[j, 2:(1 + length(quant))] <- quantile(ld_ge0[, j], quant, na.rm = TRUE)
     }
@@ -574,6 +620,8 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     percentile_rgw <- matrix(NA, nrow = nr.hypos, ncol = 1)
     percentile_rlw <- matrix(NA, nrow = nr.hypos, ncol = 1 )
     percentile_rlw_ge1 <- matrix(NA, nrow = nr.hypos, ncol = 1)
+    percentile_rgw_log <- matrix(NA, nrow = nr.hypos, ncol = 1)
+    percentile_rlw_log <- matrix(NA, nrow = nr.hypos, ncol = 1)
     percentile_ld <- matrix(NA, nrow = nr.hypos, ncol = 1)
     percentile_ld_ge0 <- matrix(NA, nrow = nr.hypos, ncol = 1)
     for (j in seq_len(nr.hypos)) {
@@ -586,6 +634,12 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
       Fn <- ecdf(rlw_ge1[, j])
       percentile_rlw_ge1[j, 1] <- Fn(CI_benchmarks_rlw_ge1[j, 1]) * 100
       #
+      Fn <- ecdf(rgw_log_combined_values[, j])
+      percentile_rgw_log[j, 1] <- Fn(CI_benchmarks_rgw_log[j, 1]) * 100
+      #
+      Fn <- ecdf(rlw_log_combined_values[, j])
+      percentile_rlw_log[j, 1] <- Fn(CI_benchmarks_rlw_log[j, 1]) * 100
+      #
       Fn <- ecdf(ld_combined_values[, j])
       percentile_ld[j, 1] <- Fn(CI_benchmarks_ld[j, 1]) * 100
       #
@@ -597,10 +651,12 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     # below the sample value, i.e. on a 0-100 scale)
     percentile_names <- paste(pref_hypo_name, names(object$ratio.gw[pref_hypo, ]))
     rownames(percentile_rgw) <- rownames(percentile_rlw) <-
-      rownames(percentile_rlw_ge1) <- rownames(percentile_ld) <-
+      rownames(percentile_rlw_ge1) <- rownames(percentile_rgw_log) <-
+      rownames(percentile_rlw_log) <- rownames(percentile_ld) <-
       rownames(percentile_ld_ge0) <- percentile_names
     colnames(percentile_rgw) <- colnames(percentile_rlw) <-
-      colnames(percentile_rlw_ge1) <- colnames(percentile_ld) <-
+      colnames(percentile_rlw_ge1) <- colnames(percentile_rgw_log) <-
+      colnames(percentile_rlw_log) <- colnames(percentile_ld) <-
       colnames(percentile_ld_ge0) <- "percentile"
 
     # Store this pop_es category's percentiles so they survive past this
@@ -608,26 +664,32 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     percentile_rgw_all[[name]] <- percentile_rgw
     percentile_rlw_all[[name]] <- percentile_rlw
     percentile_rlw_ge1_all[[name]] <- percentile_rlw_ge1
+    percentile_rgw_log_all[[name]] <- percentile_rgw_log
+    percentile_rlw_log_all[[name]] <- percentile_rlw_log
     percentile_ld_all[[name]] <- percentile_ld
     percentile_ld_ge0_all[[name]] <- percentile_ld_ge0
-    
+
     # Set column names for the CI benchmarks
-    colnames(CI_benchmarks_rgw) <- colnames(CI_benchmarks_rlw) <- 
-      colnames(CI_benchmarks_rlw_ge1) <- colnames(CI_benchmarks_ld) <- 
+    colnames(CI_benchmarks_rgw) <- colnames(CI_benchmarks_rlw) <-
+      colnames(CI_benchmarks_rlw_ge1) <- colnames(CI_benchmarks_rgw_log) <-
+      colnames(CI_benchmarks_rlw_log) <- colnames(CI_benchmarks_ld) <-
       colnames(CI_benchmarks_ld_ge0) <- names_quant
-    
+
     # Set row names for the CI benchmarks
-    rownames(CI_benchmarks_rgw) <- rownames(CI_benchmarks_rlw) <- 
-      rownames(CI_benchmarks_rlw_ge1) <- rownames(CI_benchmarks_ld) <- 
+    rownames(CI_benchmarks_rgw) <- rownames(CI_benchmarks_rlw) <-
+      rownames(CI_benchmarks_rlw_ge1) <- rownames(CI_benchmarks_rgw_log) <-
+      rownames(CI_benchmarks_rlw_log) <- rownames(CI_benchmarks_ld) <-
       rownames(CI_benchmarks_ld_ge0) <- paste(pref_hypo_name, names(object$ratio.gw[pref_hypo, ]))
-    
+
     # Store CI benchmarks in lists
     CI_benchmarks_rgw_all[[name]] <- CI_benchmarks_rgw
     CI_benchmarks_rlw_all[[name]] <- CI_benchmarks_rlw
     CI_benchmarks_rlw_ge1_all[[name]] <- CI_benchmarks_rlw_ge1
+    CI_benchmarks_rgw_log_all[[name]] <- CI_benchmarks_rgw_log
+    CI_benchmarks_rlw_log_all[[name]] <- CI_benchmarks_rlw_log
     CI_benchmarks_ld_all[[name]] <- CI_benchmarks_ld
     CI_benchmarks_ld_ge0_all[[name]] <- CI_benchmarks_ld_ge0
-  } 
+  }
   
   
   CI_benchmarks_rgw_all_cleaned <- lapply(CI_benchmarks_rgw_all, function(pop_es_list) {
@@ -641,7 +703,18 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   CI_benchmarks_rlw_ge1_all_cleaned <- lapply(CI_benchmarks_rlw_ge1_all, function(pop_es_list) {
     remove_single_value_rows(pop_es_list, 1)
   })
-  
+
+  # rgw_log/rlw_log's self-comparison row is log(1) = 0, not 1 -- clean
+  # against the 0 baseline (like ld/ld_ge0) rather than the 1 baseline used
+  # for rgw/rlw/rlw_ge1 above.
+  CI_benchmarks_rgw_log_all_cleaned <- lapply(CI_benchmarks_rgw_log_all, function(pop_es_list) {
+    remove_single_value_rows(pop_es_list, 0)
+  })
+
+  CI_benchmarks_rlw_log_all_cleaned <- lapply(CI_benchmarks_rlw_log_all, function(pop_es_list) {
+    remove_single_value_rows(pop_es_list, 0)
+  })
+
   CI_benchmarks_ld_all_cleaned <- lapply(CI_benchmarks_ld_all, function(pop_es_list) {
     remove_single_value_rows(pop_es_list, 0)
   })
@@ -664,36 +737,62 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   percentile_rgw_all_cleaned <- align_rows(percentile_rgw_all, CI_benchmarks_rgw_all_cleaned)
   percentile_rlw_all_cleaned <- align_rows(percentile_rlw_all, CI_benchmarks_rlw_all_cleaned)
   percentile_rlw_ge1_all_cleaned <- align_rows(percentile_rlw_ge1_all, CI_benchmarks_rlw_ge1_all_cleaned)
+  percentile_rgw_log_all_cleaned <- align_rows(percentile_rgw_log_all, CI_benchmarks_rgw_log_all_cleaned)
+  percentile_rlw_log_all_cleaned <- align_rows(percentile_rlw_log_all, CI_benchmarks_rlw_log_all_cleaned)
   percentile_ld_all_cleaned <- align_rows(percentile_ld_all, CI_benchmarks_ld_all_cleaned)
   percentile_ld_ge0_all_cleaned <- align_rows(percentile_ld_ge0_all, CI_benchmarks_ld_ge0_all_cleaned)
 
+  # rgw_log/rlw_log combined draws, for combined_values/overlap below -- same
+  # log() transform as CI_benchmarks_rgw_log/rlw_log above, just derived
+  # directly from the (still self-column-including) rgw_combined/rlw_combined
+  # matrices before those get trimmed just below.
+  rgw_log_combined <- lapply(rgw_combined, function(m) log(m))
+  rlw_log_combined <- lapply(rlw_combined, function(m) log(m))
 
   rgw_combined <- lapply(rgw_combined, function(pop_es_list) {
     remove_single_value_col(pop_es_list, 1)
   })
-  
+
   rlw_combined <- lapply(rlw_combined, function(pop_es_list) {
     remove_single_value_col(pop_es_list, 1)
   })
-  
+
+  # rgw_log/rlw_log's self-column is log(1) = 0 -- trim against the 0
+  # baseline (like ld) rather than the 1 baseline used for rgw/rlw above.
+  rgw_log_combined <- lapply(rgw_log_combined, function(pop_es_list) {
+    remove_single_value_col(pop_es_list, 0)
+  })
+
+  rlw_log_combined <- lapply(rlw_log_combined, function(pop_es_list) {
+    remove_single_value_col(pop_es_list, 0)
+  })
+
   ld_combined <- lapply(ld_combined, function(pop_es_list) {
     remove_single_value_col(pop_es_list, 0)
   })
-  
-  
-  # Overlap (0-1 overlapping coefficient) between the 'Observed' population's
-  # benchmark distribution and each other ('null') population's -- the
-  # numeric counterpart of the overlap visible when plotting them together.
-  # NULL (dropped from OUT below) when there's no "Observed" category.
+
+
+  # Overlap (0-1 overlapping coefficient) between the reference population's
+  # benchmark distribution and each other population's -- the numeric
+  # counterpart of the overlap visible when plotting them together. The
+  # reference population is "Observed" when present, else the last
+  # pop_es/pop_est population supplied (see determine_overlap_reference());
+  # it is the same population across gw/lw/rgw/rlw/rgw_log/rlw_log/ld since
+  # they're all built from the same set of populations, so it only needs
+  # computing once here and is exposed below as overlap_reference_pop for
+  # print.R to build the "Overlap with <name>" column header.
   # Computed separately for gw, lw, rgw, rlw and ld (rather than assuming
   # gw and rgw -- or lw and rlw -- give the same overlap): rgw is only a
   # bijective transform of gw (and so shares its overlap) in the special
   # case of exactly 2 hypotheses; with more hypotheses, or for lw/rlw
   # (lw is not normalized to sum to 1 the way gw is), that need not hold.
+  overlap_reference_pop <- determine_overlap_reference(names(gw_combined))
   overlap_gw  <- compute_overlap_vs_observed(gw_combined)
   overlap_lw  <- compute_overlap_vs_observed(lw_combined)
   overlap_rgw <- compute_overlap_vs_observed_matrix(rgw_combined)
   overlap_rlw <- compute_overlap_vs_observed_matrix(rlw_combined)
+  overlap_rgw_log <- compute_overlap_vs_observed_matrix(rgw_log_combined)
+  overlap_rlw_log <- compute_overlap_vs_observed_matrix(rlw_log_combined)
   overlap_ld  <- compute_overlap_vs_observed_matrix(ld_combined)
 
   OUT <- list(
@@ -702,6 +801,8 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     benchmarks_rgw = CI_benchmarks_rgw_all_cleaned,
     benchmarks_rlw = CI_benchmarks_rlw_all_cleaned,
     benchmarks_rlw_ge1 = CI_benchmarks_rlw_ge1_all_cleaned,
+    benchmarks_rgw_log = CI_benchmarks_rgw_log_all_cleaned,
+    benchmarks_rlw_log = CI_benchmarks_rlw_log_all_cleaned,
     benchmarks_difLL = CI_benchmarks_ld_all_cleaned,
     benchmarks_absdifLL = CI_benchmarks_ld_ge0_all_cleaned,
     percentile_gw  = percentile_gw,
@@ -709,17 +810,24 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     percentile_rgw = percentile_rgw_all_cleaned,
     percentile_rlw = percentile_rlw_all_cleaned,
     percentile_rlw_ge1 = percentile_rlw_ge1_all_cleaned,
+    percentile_rgw_log = percentile_rgw_log_all_cleaned,
+    percentile_rlw_log = percentile_rlw_log_all_cleaned,
     percentile_difLL = percentile_ld_all_cleaned,
     percentile_absdifLL = percentile_ld_ge0_all_cleaned,
     overlap_gw = overlap_gw,
     overlap_lw = overlap_lw,
     overlap_rgw = overlap_rgw,
     overlap_rlw = overlap_rlw,
+    overlap_rgw_log = overlap_rgw_log,
+    overlap_rlw_log = overlap_rlw_log,
     overlap_ld = overlap_ld,
+    overlap_reference_pop = overlap_reference_pop,
     combined_values = list(gw_combined = gw_combined,
                            lw_combined = lw_combined,
                            rgw_combined = rgw_combined,
                            rlw_combined = rlw_combined,
+                           rgw_log_combined = rgw_log_combined,
+                           rlw_log_combined = rlw_log_combined,
                            ld_combined = ld_combined)
   )
 
@@ -775,12 +883,37 @@ calculate_error_probability <- function(object, hypos, pref_hypo, est,
 
 # Diagnostic check: is 'iter' large enough for a stable benchmark?
 #
+# NOTE on what "stable" means here -- and what it deliberately does NOT mean.
 # Under the "Observed" population (only present when pop_es/pop_est was left
 # NULL, so it is auto-added), the benchmark draws are simulated centered
-# exactly on the observed estimate. So the observed goric(a) weight is
-# expected to sit close to the 50th percentile of its own benchmark
-# distribution; systematic deviation from that is a sign that 'iter' bootstrap
-# draws is not (yet) enough to have converged, rather than a real finding.
+# exactly on the observed estimate. It is tempting to then expect the
+# observed goric(a) weight to sit at the 50th percentile of its own benchmark
+# distribution -- but that is NOT generally true, even with unlimited draws.
+# gw/lw/rgw/rlw/ld are nonlinear functions of the (multivariate normal)
+# bootstrap draws, computed through an order-restricted/inequality-constrained
+# log-likelihood, which involves projecting each draw onto a constraint cone.
+# That projection is nonlinear, and once more than one constraint is
+# simultaneously relevant -- i.e. the observed estimates sit close to more
+# than one boundary of the hypothesis at once -- the resulting distribution
+# need not be symmetric around the plug-in value, so its median can genuinely
+# differ from the observed value. This is the same mechanism behind
+# chi-bar-square (mixture) distributions in order-restricted inference, and
+# is analogous to why bootstrap bias-correction (the "BC" in BCa) exists at
+# all: a nonlinear statistic's bootstrap median need not equal the original
+# estimate. So a percentile far from 50 is not necessarily a sign that 'iter'
+# is too low -- it can be a genuine feature of the benchmark distribution,
+# especially when (some of) the hypotheses are close to being (an) equality
+# constraint(s) -- and is not something to strive to eliminate by adjusting
+# 'iter'. Because of this, "is the percentile near 50" is NOT what is
+# checked (or acted on) here; see goric_percentile_test() for a diagnostic
+# that DOES test that directly, kept purely informational for now (returned,
+# not printed, and not used to decide anything).
+#
+# What IS checked here is whether the percentile has stabilized: whether
+# growing the number of draws still meaningfully changes where the sample
+# value falls in the benchmark distribution. If it does not, more draws are
+# unlikely to change anything else about the benchmark either, regardless of
+# whether that percentile happens to be near 50.
 #
 # This is checked using 'gw' rather than 'rgw'/'rlw' on purpose: gw is a
 # single, bounded [0, 1] weight per draw, whereas rgw/rlw = gw_pref / gw_k is
@@ -788,11 +921,11 @@ calculate_error_probability <- function(object, hypos, pref_hypo, est,
 # goric_calculate_IC_weights.R). When gw_k is small, that ratio amplifies
 # small (essentially unavoidable, e.g. optimizer-precision-level)
 # fluctuations in gw_k multiplicatively, so rgw/rlw are a noisier basis for
-# this particular check than gw itself -- even though all of them should, in
-# principle, lead to the same conclusion about whether 'iter' is adequate.
+# this particular check than gw itself.
 check_iter_adequacy <- function(benchmark_results, observed_name, iter,
                                 band = c(0.495, 0.505),
                                 iter_min = 500, iter_step = 100, iter_max = 2000,
+                                stability_tol = 1,
                                 control = list(), ...) {
   if (!observed_name %in% names(benchmark_results$percentile_gw)) {
     # No "Observed" population in this run (user supplied a custom pop_es/
@@ -804,9 +937,17 @@ check_iter_adequacy <- function(benchmark_results, observed_name, iter,
   sample_lw <- benchmark_results$benchmarks_lw[[observed_name]][1, 1]
   gw_draws  <- benchmark_results$combined_values$gw_combined[[observed_name]]
   lw_draws  <- benchmark_results$combined_values$lw_combined[[observed_name]]
+  gw_draws  <- gw_draws[!is.na(gw_draws)]
+  lw_draws  <- lw_draws[!is.na(lw_draws)]
 
-  chk_gw <- goric_percentile_test(gw_draws, sample_gw, band = band, control = control, ...)
-  chk_lw <- goric_percentile_test(lw_draws, sample_lw, band = band, control = control, ...)
+  # Informational only, for now: a formal GORICA-based test of whether the
+  # sample value sits near the 50th percentile of its own ('Observed')
+  # benchmark distribution -- see the note above this function for why that
+  # need not hold even asymptotically. Returned on the object (see
+  # median_bias_check_gw/median_bias_check_lw in benchmark_means()/
+  # benchmark_asymp()) but not printed and not used below to decide anything.
+  median_bias_check_gw <- goric_percentile_test(gw_draws, sample_gw, band = band, control = control, ...)
+  median_bias_check_lw <- goric_percentile_test(lw_draws, sample_lw, band = band, control = control, ...)
 
   # Suggests running with 'iter' left at its default (iter = NULL) instead of
   # manually raising a too-low fixed 'iter' -- only sensible if the adaptive
@@ -823,32 +964,37 @@ check_iter_adequacy <- function(benchmark_results, observed_name, iter,
     )
   }
 
-  if (!(chk_gw$converged && chk_lw$converged)) {
-    # Same style/format as the auto-'iter' messages in run_benchmark_simulation()
-    # (percentile + support per output_type, band mentioned once, a closing
-    # suggestion) -- this is the fixed-'iter' counterpart of those: since
-    # 'iter' was user-specified here, there is no growing/stopping decision
-    # to report, just whether the fixed 'iter' the user chose looks adequate.
-    # "close/equal" (rather than just "close") for a converged output_type,
-    # since printing e.g. percentile = 50.0 right next to "close to" reads
-    # oddly when it is, in fact, (numerically) equal.
-    describe_type <- function(chk) {
-      if (chk$converged) {
-        "-- close/equal to the 50th percentile."
-      } else {
-        "-- not close to the 50th percentile."
-      }
-    }
-    # The closing suggestion is tailored to which output_type(s) are actually
-    # inadequate at this 'iter' -- mirroring the "Notably, you could
-    # user-specify a lower 'iter' ..." clause in the auto-'iter' converged
-    # message, but for the opposite situation: here, if only one of 'gw'/'lw'
-    # is the problem, raising 'iter' only matters to someone who cares about
-    # that one; someone only interested in the other (already-adequate) one
+  # Stability check: since 'iter' here is a single, fixed, non-growing run
+  # (no rounds to compare across draw-by-draw, unlike the auto-'iter' case in
+  # run_benchmark_simulation()), stability is instead assessed by comparing
+  # the percentile computed from the first 80% of the draws against the
+  # percentile computed from the full 'iter' draws -- i.e. did the last 20%
+  # of draws still meaningfully move where the sample value falls in the
+  # benchmark distribution?
+  n <- length(gw_draws) # == length(lw_draws)
+  n80 <- max(1, floor(0.8 * n))
+  percentile_gw_80  <- 100 * mean(gw_draws[seq_len(n80)] <= sample_gw)
+  percentile_lw_80  <- 100 * mean(lw_draws[seq_len(n80)] <= sample_lw)
+  percentile_gw_full <- 100 * mean(gw_draws <= sample_gw)
+  percentile_lw_full <- 100 * mean(lw_draws <= sample_lw)
+  stable_gw <- abs(percentile_gw_full - percentile_gw_80) < stability_tol
+  stable_lw <- abs(percentile_lw_full - percentile_lw_80) < stability_tol
+
+  if (!(stable_gw && stable_lw)) {
+    # The closing suggestion is tailored to which output_type(s) actually
+    # have not (yet) stabilized at this 'iter': if only one of 'gw'/'lw' is
+    # the problem, raising 'iter' only matters to someone who cares about
+    # that one; someone only interested in the other (already-stable) one
     # doesn't need to.
-    closing <- if (!chk_gw$converged && !chk_lw$converged) {
+    describe_type <- function(pct_80, pct_full) {
+      paste0(
+        "percentile went from ", sprintf("%.1f", pct_80), " (based on the first 80% of ",
+        "'iter') to ", sprintf("%.1f", pct_full), " (based on the full 'iter')."
+      )
+    }
+    closing <- if (!stable_gw && !stable_lw) {
       "Consider increasing 'iter' for a more stable benchmark."
-    } else if (!chk_gw$converged) {
+    } else if (!stable_gw) {
       paste0(
         "Consider increasing 'iter' for a more stable benchmark when you are (also) interested ",
         "in GORIC(A) weights ('gw') and not (only) in log-likelihood weights ('lw')."
@@ -860,57 +1006,64 @@ check_iter_adequacy <- function(benchmark_results, observed_name, iter,
       )
     }
     message(
-      "\nrestriktor Message: For the user-specified 'iter' = ", iter, ", the value based on ",
-      "your data (called the 'Sample' value in the output) is not close to the 50th ",
-      "percentile of the benchmark distribution under the 'Observed' population.\n",
-      "This is checked for the weight-type output, where the GORICA determined the 'support', ",
-      "that is, the GORICA weight, for the percentile being between ", band[1], " and ", band[2],
-      " versus outside of that range:\n",
-      "For output_type = 'gw', the percentile is ", sprintf("%.1f", chk_gw$percentile),
-      " (support = ", sprintf("%.3f", chk_gw$gw), ") ", describe_type(chk_gw), "\n",
-      "For output_type = 'lw', the percentile is ", sprintf("%.1f", chk_lw$percentile),
-      " (support = ", sprintf("%.3f", chk_lw$gw), ") ", describe_type(chk_lw), "\n",
+      "\nrestriktor Message: For the user-specified 'iter' = ", iter, ", the percentile of the ",
+      "value based on your data (called the 'Sample' value in the output) within the benchmark ",
+      "distribution under the 'Observed' population has not (yet) stabilized: it changed by ",
+      stability_tol, " percentage point(s) or more over the last 20% of the draws.\n",
+      "For output_type = 'gw', ", describe_type(percentile_gw_80, percentile_gw_full), "\n",
+      "For output_type = 'lw', ", describe_type(percentile_lw_80, percentile_lw_full), "\n",
       closing, suggest_default()
     )
   } else if (iter < iter_min) {
-    # goric_percentile_test()'s own uncertainty (its VCOV) is built from
-    # THIS 'iter' -- so at a very low 'iter' that uncertainty is large, and
-    # the check above has little power to detect an inadequate benchmark in
-    # the first place. A "looks fine" verdict at such a low 'iter' can
-    # therefore slip through undetected: flag any 'iter' below iter_min (the
-    # adaptive procedure's own starting point) outright, regardless of what
-    # the percentile check itself concluded, rather than silently trusting
-    # a check that may not have had the power to catch a problem.
+    # This stability check itself has little power at a very low 'iter'
+    # (comparing an 80%/20% split of, say, 10 draws is barely more than
+    # comparing single draws) -- so a "looks stable" verdict can slip
+    # through undetected. Flag any 'iter' below iter_min (the adaptive
+    # procedure's own starting point) outright, regardless of what the
+    # stability check itself concluded, rather than silently trusting a
+    # check that may not have had the power to catch real instability.
     message(
       "\nrestriktor Message: The user-specified 'iter' = ", iter, " is below the recommended ",
       "starting point of iter_min = ", iter_min, " draws. In that case, there may be too little ",
-      "power to detect that the percentile of the 'Sample value' under the 'Observed' ",
-      "population is near 50.\n",
+      "power to detect whether the percentile of the 'Sample value' under the 'Observed' ",
+      "population has actually stabilized.\n",
       "You may want to consider increasing 'iter'; either manually or by running the code with ",
       "'iter' left at its default (iter = NULL): draws are then added automatically, starting ",
       "at iter_min = ", iter_min, " and increasing by iter_step = ", iter_step, " at a time, up ",
       "to a maximum of iter_max = ", iter_max, "."
     )
   }
-  invisible(NULL)
+  invisible(list(median_bias_check_gw = median_bias_check_gw,
+                median_bias_check_lw = median_bias_check_lw))
 }
 
 
-# Core of the Monte Carlo adequacy check: is 'sample_value' consistent with
-# being the median of 'draws'? Rather than a binomial test against p = 0.5,
-# this expresses "close to the median" as a small, fixed interval around
-# 0.5 (band -- a region of practical equivalence, deliberately NOT scaled to
-# the percentile estimate's own standard error, since doing so would just
-# reconstruct a Wald interval that goric(a) would then re-analyze with that
-# same standard error a second time) and lets goric(a) itself -- type =
-# "gorica", using the percentile estimate's own sampling variance as VCOV --
-# weigh the evidence for "the true percentile lies in that band" against its
-# complement. This keeps the whole diagnostic inside goric(a)'s own
-# machinery rather than a separate hypothesis-testing framework. Returns the
-# percentile (0-100) 'sample_value' falls at within 'draws', and the
-# resulting gorica(a) weight for the "in-band" hypothesis (>= 0.5 is taken
-# to mean converged, i.e. goric(a) favors "close to the median" over its
-# complement).
+# Is 'sample_value' consistent with being the median of 'draws'? Rather than
+# a binomial test against p = 0.5, this expresses "close to the median" as a
+# small, fixed interval around 0.5 (band -- a region of practical
+# equivalence, deliberately NOT scaled to the percentile estimate's own
+# standard error, since doing so would just reconstruct a Wald interval that
+# goric(a) would then re-analyze with that same standard error a second
+# time) and lets goric(a) itself -- type = "gorica", using the percentile
+# estimate's own sampling variance as VCOV -- weigh the evidence for "the
+# true percentile lies in that band" against its complement. This keeps the
+# whole diagnostic inside goric(a)'s own machinery rather than a separate
+# hypothesis-testing framework. Returns the percentile (0-100) 'sample_value'
+# falls at within 'draws', and the resulting gorica(a) weight for the
+# "in-band" hypothesis (>= 0.5 is taken to mean converged, i.e. goric(a)
+# favors "close to the median" over its complement).
+#
+# NOTE: despite the name, this is NOT a check for whether 'iter' is large
+# enough -- see the long note above check_iter_adequacy() for why the
+# 'Observed' population's median need not be at the 50th percentile at all
+# (a real feature of the benchmark distribution near constraint boundaries,
+# not a sign of too few draws). This function is kept around as an
+# informational, GORICA-based diagnostic of that median-vs-sample-value gap
+# specifically -- both check_iter_adequacy() and run_benchmark_simulation()
+# call it and return its result on the benchmark object (median_bias_check_gw
+# / median_bias_check_lw) for possible future use, but neither currently acts
+# on it or prints it; the adequacy checks themselves are based on whether the
+# percentile has stabilized with more draws instead (see both functions).
 goric_percentile_test <- function(draws, sample_value, band = c(0.495, 0.505),
                                   control = list(), ...) {
   draws <- draws[!is.na(draws)]
@@ -940,19 +1093,25 @@ goric_percentile_test <- function(draws, sample_value, band = c(0.495, 0.505),
 # Run the pop_es/pop_est simulation loop used by benchmark_means()/
 # benchmark_asymp(), growing the number of draws adaptively when the user
 # leaves 'iter' unspecified (iter = NULL): start at iter_min draws and, if
-# the "Observed" population's sample value is not close to its own 50th
-# percentile for output_type = 'gw' and/or 'lw' (see goric_percentile_test()
-# above for how "close" is defined and tested), add iter_step more draws --
-# WITHOUT discarding or redrawing the ones already computed -- repeating until
-# either it looks adequate or iter_max is reached. If the user supplies a
-# fixed numeric 'iter' instead, this runs exactly one round of that many
-# draws (the original, non-adaptive behaviour); benchmark_means()/
-# benchmark_asymp() then call check_iter_adequacy() themselves afterwards
-# for that fixed-iter case (this function does not, to avoid messaging
-# twice).
+# the "Observed" population's percentile (for output_type = 'gw' and/or
+# 'lw') is still changing meaningfully round to round, add iter_step more
+# draws -- WITHOUT discarding or redrawing the ones already computed --
+# repeating until the percentile has stabilized or iter_max is reached.
+# Growth is deliberately based on STABILITY of the percentile, not on
+# whether it is close to 50 -- see the long note above check_iter_adequacy()
+# for why the 'Observed' population's median need not be at the 50th
+# percentile at all, so that is not something more draws can be expected to
+# fix. If the user supplies a fixed numeric 'iter' instead, this runs
+# exactly one round of that many draws (the original, non-adaptive
+# behaviour); benchmark_means()/benchmark_asymp() then call
+# check_iter_adequacy() themselves afterwards for that fixed-iter case (this
+# function does not, to avoid messaging twice).
 #
 # Returns list(parallel_function_results = <as before, one element per
-# pop_es/pop_est category>, iter = <final number of draws used>).
+# pop_es/pop_est category>, iter = <final number of draws used>,
+# median_bias_check_gw/median_bias_check_lw = <the last round's
+# goric_percentile_test() result, informational only -- see the note above
+# that function>).
 
 run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
                                      colnames_vec, VCOV, hypos, pref_hypo,
@@ -975,19 +1134,19 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
   n_done <- 0L
   target <- if (auto_iter) min(iter_min, iter_max) else iter
 
-  # First (smallest) number of draws at which each output_type individually
-  # already showed adequate support, tracked separately since 'gw' and 'lw'
-  # need not converge at the same iter -- reported in the adequacy message so
-  # the user can see whether a smaller 'iter' would have sufficed had they
-  # only cared about one of the two.
-  min_iter_gw <- NA_integer_
-  min_iter_lw <- NA_integer_
-
-  # Previous round's percentile per output_type, used to detect when a
-  # not-yet-converged percentile has stopped moving (see 'no_progress'
-  # below) -- NA until a second round exists to compare against.
+  # Previous round's percentile per output_type, used to detect when it has
+  # stopped moving (see 'stabilized' below) -- NA until a second round
+  # exists to compare against.
   prev_percentile_gw <- NA_real_
   prev_percentile_lw <- NA_real_
+
+  # NULL unless/until computed inside the repeat loop below -- stays NULL for
+  # a fixed, user-specified 'iter' (auto_iter = FALSE), since that path
+  # breaks out of the loop before reaching the percentile-stability check
+  # (benchmark_means()/benchmark_asymp() do that check themselves afterwards,
+  # via check_iter_adequacy(), for the fixed-iter case).
+  chk_gw <- NULL
+  chk_lw <- NULL
 
   progressr::handlers(progressr::handler_txtprogressbar(char = ">"))
 
@@ -1043,96 +1202,64 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
       }, numeric(1))
       gw_draws <- gw_draws[!is.na(gw_draws)]
       lw_draws <- lw_draws[!is.na(lw_draws)]
+      # Informational only, for now -- see the note above goric_percentile_test().
       chk_gw <- goric_percentile_test(gw_draws, sample_gw, band = band, control = control)
       chk_lw <- goric_percentile_test(lw_draws, sample_lw, band = band, control = control)
-      converged <- chk_gw$converged && chk_lw$converged
-      if (is.na(min_iter_gw) && chk_gw$converged) min_iter_gw <- n_done
-      if (is.na(min_iter_lw) && chk_lw$converged) min_iter_lw <- n_done
 
-      # Has a not-yet-converged percentile stopped moving with more draws?
-      # If every currently-unconverged output_type is stable, more draws
-      # are unlikely to bring it closer to the 50th percentile either --
-      # that looks like a genuine feature of the benchmark distribution
-      # rather than a Monte Carlo adequacy problem, so growth can stop early
-      # instead of running all the way to iter_max. FALSE (not NA) on the
-      # very first round, since there is no
-      # earlier percentile yet to compare against. This is a first-cut
-      # heuristic based on a single round-to-round comparison -- if it
-      # turns out to call "stalled" too eagerly (a percentile can drift by
-      # a percentage point or two by chance alone), requiring stability
-      # across two consecutive rounds instead of one would be the natural
+      # Has the percentile stopped moving with more draws? This -- not
+      # closeness to the 50th percentile -- is what growth is based on; see
+      # the long note above check_iter_adequacy() for why the percentile
+      # need not be near 50 at all, even once it has fully stabilized.
+      # FALSE (not NA) on the very first round, since there is no earlier
+      # percentile yet to compare against. This is a first-cut heuristic
+      # based on a single round-to-round comparison -- if it turns out to
+      # call "stabilized" too eagerly (a percentile can drift by a
+      # percentage point or two by chance alone), requiring stability across
+      # two consecutive rounds instead of one would be the natural
       # tightening.
       stable_gw <- isTRUE(!is.na(prev_percentile_gw) &&
                             abs(chk_gw$percentile - prev_percentile_gw) < stability_tol)
       stable_lw <- isTRUE(!is.na(prev_percentile_lw) &&
                             abs(chk_lw$percentile - prev_percentile_lw) < stability_tol)
-      no_progress <- (chk_gw$converged || stable_gw) && (chk_lw$converged || stable_lw)
+      stabilized <- stable_gw && stable_lw
       prev_percentile_gw <- chk_gw$percentile
       prev_percentile_lw <- chk_lw$percentile
     } else {
       # No "Observed" category (custom pop_es/pop_est) -- nothing to check
       # against, so stop growing after the first (iter_min-sized) batch.
-      converged <- TRUE
-      no_progress <- FALSE
+      stabilized <- TRUE
       chk_gw <- chk_lw <- NULL
     }
 
-    if (converged || (no_progress && !converged) || n_done >= iter_max) {
+    if (stabilized || n_done >= iter_max) {
       if (auto_iter && !is.null(chk_gw)) {
-        if (converged) {
+        if (stabilized) {
           message(
             "\nrestriktor Message: 'iter' was not specified, so it was set automatically.\n",
-            "Using iter = ", n_done, " draws, the value based on your data (called the ",
-            "'Sample' value in the output) is close to the 50th percentile of the benchmark ",
-            "distribution under the 'Observed' population.\n",
-            "This is checked for the weight-type output, where the GORICA determined the ",
-            "'support', that is, the GORICA weight, for the percentile being between ",
-            band[1], " and ", band[2], " versus outside of that range:\n",
+            "Using iter = ", n_done, " draws, the percentile of the value based on your data ",
+            "(called the 'Sample' value in the output) within the benchmark distribution under ",
+            "the 'Observed' population has stabilized: over the last ", iter_step, " draws, it ",
+            "changed by less than ", stability_tol, " percentage point(s).\n",
             "For output_type = 'gw', the percentile is ", sprintf("%.1f", chk_gw$percentile),
-            " (support = ", sprintf("%.3f", chk_gw$gw), "; minimum iter = ", min_iter_gw,
-            "); for output_type = 'lw', the percentile is ", sprintf("%.1f", chk_lw$percentile),
-            " (support = ", sprintf("%.3f", chk_lw$gw), "; minimum iter = ", min_iter_lw, ").\n",
-            "So, no further draws were added.",
-            if (min_iter_gw != min_iter_lw) paste0(
-              " Notably, you could user-specify a lower 'iter' if you are not interested in ",
-              "both GORIC(A) weights ('gw') and log-likelihood weights ('lw')."
-            ) else ""
-          )
-        } else if (no_progress) {
-          describe_type <- function(chk) {
-            if (chk$converged) {
-              "-- converged (close to the 50th percentile)."
-            } else {
-              "-- stabilized, but not close to the 50th percentile."
-            }
-          }
-          message(
-            "\nrestriktor Message: The default for 'iter' was used, since it was not ",
-            "specified. Draws were added up to iter = ", n_done, " (below the maximum of ",
-            iter_max, "). Over the last ", iter_step, " draws, the percentile(s) changed by ",
-            "less than ", stability_tol, " percentage point(s). This may imply that increasing ",
-            "'iter' to ", iter_max, " will not help.\n",
-            "The percentile values are not near 50 yet. This is checked for the weight-type ",
-            "output, where the GORICA determined the 'support', that is, the GORICA weight, ",
-            "for the percentile being between ", band[1], " and ", band[2],
-            " versus outside of that range:\n",
-            "For output_type = 'gw', the percentile is ", sprintf("%.1f", chk_gw$percentile),
-            " (support = ", sprintf("%.3f", chk_gw$gw), ") ", describe_type(chk_gw), "\n",
-            "For output_type = 'lw', the percentile is ", sprintf("%.1f", chk_lw$percentile),
-            " (support = ", sprintf("%.3f", chk_lw$gw), ") ", describe_type(chk_lw), "\n",
-            "Since more draws are unlikely to change this, consider inspecting the 'Observed' ",
-            "benchmark distribution directly rather than increasing 'iter' further."
+            "; for output_type = 'lw', the percentile is ", sprintf("%.1f", chk_lw$percentile),
+            ".\n",
+            "So, no further draws were added. Note that this percentile is not necessarily ",
+            "expected to be near 50 -- that need not indicate a problem, particularly when ",
+            "(some of) the hypotheses are close to being (an) equality constraint(s)."
           )
         } else {
           message(
-            "\nrestriktor Message: 'iter' was not specified, so it was increased ",
-            "automatically up to its maximum of iter = ", iter_max, " draws. The 'Observed' ",
-            "population's sample value is still not close to the 50th percentile of its ",
-            "benchmark distribution for output_type = 'gw' (percentile is ",
-            sprintf("%.1f", chk_gw$percentile), ", support = ", sprintf("%.3f", chk_gw$gw),
-            ") and/or output_type = 'lw' (percentile is ", sprintf("%.1f", chk_lw$percentile),
-            ", support = ", sprintf("%.3f", chk_lw$gw), "). Consider re-running with a ",
-            "manually specified, larger 'iter' for a more stable benchmark."
+            "\nrestriktor Message: 'iter' was not specified, so it was increased automatically ",
+            "up to its maximum of iter = ", iter_max, " draws, since the percentile of the value ",
+            "based on your data (called the 'Sample' value in the output) within the benchmark ",
+            "distribution under the 'Observed' population had not (yet) stabilized: over the ",
+            "last ", iter_step, " draws, it changed by ", stability_tol,
+            " percentage point(s) or more.\n",
+            "For output_type = 'gw', the percentile is ", sprintf("%.1f", chk_gw$percentile),
+            "; for output_type = 'lw', the percentile is ", sprintf("%.1f", chk_lw$percentile),
+            ".\n",
+            "Consider re-running with a manually specified, larger 'iter' for a more stable ",
+            "benchmark."
           )
         }
       }
@@ -1142,7 +1269,8 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
     target <- min(n_done + iter_step, iter_max)
   }
 
-  list(parallel_function_results = parallel_function_results, iter = n_done)
+  list(parallel_function_results = parallel_function_results, iter = n_done,
+      median_bias_check_gw = chk_gw, median_bias_check_lw = chk_lw)
 }
 
 
@@ -1165,13 +1293,116 @@ print_section <- function(header, content_printer, nchar, text_color, reset) {
 
 format_value <- function(value) {
   if (is.na(value)) {
-    return("")  
+    return("")
   }
   if (abs(value) >= 1000 || (abs(value) <= 0.001 && value != 0)) {
-    return(sprintf("%.3e", value))  
+    return(sprintf("%.3e", value))
   } else {
-    return(sprintf("%.3f", value))  
+    return(sprintf("%.3f", value))
   }
+}
+
+# Used only for the "Overlap with ..." column: an overlap of exactly 1 there
+# is always the reference population's own (self-)entry, fixed at 1 by
+# construction rather than actually computed (see compute_overlap_vs_observed()/
+# compute_overlap_vs_observed_matrix() in this file) -- printing "1.000" would
+# suggest a computed value carrying that much precision, which is misleading.
+# Every other value in this column (and every value in every other column)
+# still goes through the normal format_value().
+format_overlap_value <- function(value) {
+  if (!is.na(value) && value == 1) {
+    return("1")
+  }
+  format_value(value)
+}
+
+
+# Builds the "Overlap with Observed" column added to each output_type's
+# per-population benchmark table in print.benchmark(). 'overlap_source' is
+# the relevant overlap_* field on the benchmark object: for gw/lw it is a
+# plain vector named by population (a single overlap value per population);
+# for rgw/rlw/ld it is a list named by population, each entry itself a
+# vector named by alternative hypothesis (there can be more than one per
+# population). 'n_rows' is the number of rows in the benchmark table this
+# column is being attached to (nrow() of e.g. benchmarks_ratio_goric_weights
+# [[pop_es]]). Deliberately aligns by POSITION rather than by matching
+# names against the table's rownames: those rownames are formatted as
+# "<preferred hypothesis> <alternative hypothesis>" (e.g. "H1 H2") for
+# display, and parsing that back apart is fragile -- e.g. R drops the
+# alternative hypothesis's name entirely when there is exactly one
+# alternative (a 1x1 ratio.gw matrix, as in a single hypothesis vs. its
+# complement), leaving no name to parse. Positional alignment instead
+# matches the existing convention already used for the 'hypothesis_rate'
+# column added the same way (see print.benchmark()): both the benchmark
+# table's rows and the overlap data's entries are built from -- and
+# filtered the same way as -- the same underlying combined draws, so their
+# order lines up. Returns a column of NA when there's nothing to report --
+# no "Observed" category in this run, the 'Observed' population's own row
+# (no self-overlap to report), or (defensively) a length mismatch.
+overlap_column <- function(overlap_source, pop_es, n_rows) {
+  na_col <- rep(NA_real_, n_rows)
+  if (is.null(overlap_source) || !(pop_es %in% names(overlap_source))) {
+    # Note: for the gw/lw case, overlap_source is a plain named vector, and
+    # `[[` on that with a non-matching name errors ("subscript out of
+    # bounds") rather than returning NULL the way it would for a list (the
+    # rgw/rlw/ld case) -- so membership is checked explicitly first.
+    return(na_col)
+  }
+  vals <- overlap_source[[pop_es]]
+  if (is.null(vals) || length(vals) == 0) {
+    return(na_col)
+  }
+  vals <- unname(vals)
+  if (length(vals) == n_rows) {
+    return(vals)
+  }
+  # gw/lw case: a single overlap value for the whole population, repeated
+  # across every row (normally just one: the preferred hypothesis).
+  if (length(vals) == 1) {
+    return(rep(vals, n_rows))
+  }
+  # Length mismatch that isn't the gw/lw broadcast case -- shouldn't
+  # normally happen, but pad/truncate defensively rather than risk silently
+  # mis-aligning a row with the wrong hypothesis's overlap value.
+  out <- na_col
+  out[seq_len(min(n_rows, length(vals)))] <- vals[seq_len(min(n_rows, length(vals)))]
+  out
+}
+
+
+# Rebuilds the "Sample" + percentile% columns of an already-built benchmark
+# table (e.g. x$benchmarks_goric_weights[[pop_es]]) at PRINT time, for a
+# caller-supplied set of percentiles, instead of using the percentiles that
+# happened to be requested via 'quant' back when the (often expensive,
+# bootstrap-based) benchmark object was computed. Mirrors exactly what
+# plot.benchmark()'s own 'percentiles' argument already does (see
+# goric_benchmark_plot.R): both recompute quantile() fresh from the raw
+# combined draws stored on the object (x$combined_values), so you can look at
+# different percentiles without rerunning benchmark_means()/benchmark_asymp().
+# 'existing_mat' is the current table (used only for its "Sample" column and
+# its row names/count -- both stay unchanged); 'combined_data' is the
+# matching raw-draws entry from x$combined_values for this population: a
+# plain numeric vector for gw/lw, or a matrix (one column per row of
+# 'existing_mat', in the same order -- gw/lw and rgw/rlw/rgw_log/rlw_log/ld
+# align this way throughout the codebase, e.g. overlap_column() above relies
+# on the same positional correspondence) for rgw/rlw/rgw_log/rlw_log/ld.
+recompute_percentile_table <- function(existing_mat, combined_data, percentiles) {
+  sample_col <- existing_mat[, 1, drop = FALSE]
+  pct_names <- paste0(percentiles * 100, "%")
+  if (is.null(dim(combined_data))) {
+    # gw/lw case: a single row, one shared set of draws.
+    q <- unname(quantile(combined_data, probs = percentiles, na.rm = TRUE))
+    new_mat <- matrix(c(sample_col, q), nrow = nrow(existing_mat))
+  } else {
+    # rgw/rlw/rgw_log/rlw_log/ld case: one column of draws per row (hypothesis).
+    q <- t(vapply(seq_len(nrow(existing_mat)), function(j) {
+      quantile(combined_data[, j], probs = percentiles, na.rm = TRUE)
+    }, numeric(length(percentiles))))
+    new_mat <- cbind(sample_col, q)
+  }
+  colnames(new_mat) <- c("Sample", pct_names)
+  rownames(new_mat) <- rownames(existing_mat)
+  new_mat
 }
 
 
@@ -1186,8 +1417,18 @@ print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset) {
   }
   
   #formatted_column <- sprintf("%.3f", df)
-  formatted_values <- sapply(as.numeric(df), format_value)
-  formatted_df <- `dim<-`(formatted_values, dim(df))
+  # The "Overlap with ..." column (if present -- see overlap_column() /
+  # print.benchmark()) is formatted with format_overlap_value() instead of
+  # format_value(), so its self-overlap entries print as "1" rather than
+  # "1.000" (that value isn't actually computed, it's fixed by construction --
+  # see format_overlap_value()'s own comment). Every other column keeps using
+  # format_value() as before.
+  is_overlap_col <- grepl("^Overlap with ", colnames(df))
+  formatted_cols <- lapply(seq_len(ncol(df)), function(j) {
+    col_formatter <- if (is_overlap_col[j]) format_overlap_value else format_value
+    vapply(df[, j], col_formatter, character(1))
+  })
+  formatted_df <- do.call(cbind, formatted_cols)
   rownames(formatted_df) <- rownames(df)
   colnames(formatted_df) <- colnames(df)
   print(formatted_df, row.names = TRUE, quote = FALSE)

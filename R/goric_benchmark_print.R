@@ -1,12 +1,15 @@
-print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "overlap", "all"),
-                            hypo_rate_threshold = 1, color = TRUE, ...) {
+print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
+                                               "rgw_log", "rlw_log", "all"),
+                            hypo_rate_threshold = 1, color = TRUE,
+                            percentiles = NULL, ...) {
 
   # Ensure the object is of class 'benchmark_means'
   if (!inherits(x, "benchmark")) {
     stop("Invalid object. The object should be of class 'benchmark'.", call. = FALSE)
   }
 
-  output_type <- match.arg(output_type, c("rgw", "gw", "rlw", "ld", "overlap", "all"))
+  output_type <- match.arg(output_type, c("rgw", "gw", "lw", "rlw", "ld",
+                                          "rgw_log", "rlw_log", "all"))
   
   ldots <- list(...)
   
@@ -87,10 +90,12 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "overla
   }
   
   text_gw  <- paste0("Benchmark: Percentiles of ", orange, goric_type, " Weights", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
+  text_lw  <- paste0("Benchmark: Percentiles of ", orange, "Log-likelihood Weights", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
   text_rgw <- paste0("Benchmark: Percentiles of ", orange, "Ratio-of-", goric_type, "-weights", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
   text_rlw <- paste0("Benchmark: Percentiles of ", orange, "Ratio-of-log-likelihood-weights", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
   text_ld  <- paste0("Benchmark: Percentiles of ", orange, "Differences in Log-likelihood Values", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
-  text_overlap <- paste0("Benchmark: ", orange, "Overlap", blue, " of the 'Observed' Population's Benchmark Distribution with each 'Null' Population")
+  text_rgw_log <- paste0("Benchmark: Percentiles of ", orange, "Log(Ratio-of-", goric_type, "-weights)", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
+  text_rlw_log <- paste0("Benchmark: Percentiles of ", orange, "Log(Ratio-of-log-likelihood-weights)", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
 
   cat("\n")
   #cat(strrep("=", 70), "\n")
@@ -135,14 +140,55 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "overla
 
   # Normalize output_type to lowercase
   output_type <- tolower(output_type)
-  
+
+  # Header for the overlap column below: "Overlap with <reference population>".
+  # x$overlap_reference is the population the overlap values were computed
+  # against (see determine_overlap_reference() in goric_benchmark_utilities.R)
+  # -- "Observed" when that category is present, else the last pop_es/pop_est
+  # population supplied (e.g. "PES_2"). Strip the "pop_es = "/"pop_est = "
+  # prefix the same way print_rounded_es_value() does for row labels, so the
+  # header reads "Overlap with PES_2" rather than "Overlap with pop_es = PES_2".
+  overlap_header <- if (!is.null(x$overlap_reference)) {
+    paste0("Overlap with ", gsub("^(pop_es|pop_est) = ", "", x$overlap_reference))
+  } else {
+    "Overlap with Observed"
+  }
+
+  # 'percentiles', if supplied, overrides which percentiles are shown in
+  # every section below -- the "Sample" + percentile% columns are recomputed
+  # from the raw bootstrap draws stored on the object (x$combined_values), the
+  # same way plot.benchmark()'s own 'percentiles' argument already works (see
+  # recompute_percentile_table() in goric_benchmark_utilities.R). This lets
+  # you look at different percentiles than the ones 'quant' was set to back
+  # when the (often expensive) benchmark object was computed, without
+  # rerunning benchmark_means()/benchmark_asymp(). Leave at the default
+  # (NULL) to keep using the percentiles the object was built with.
+  recompute_section <- function(benchmarks_list, combined_list) {
+    if (is.null(percentiles)) {
+      return(benchmarks_list)
+    }
+    for (pop_es in names(benchmarks_list)) {
+      benchmarks_list[[pop_es]] <- recompute_percentile_table(
+        benchmarks_list[[pop_es]], combined_list[[pop_es]], percentiles
+      )
+    }
+    benchmarks_list
+  }
+
   # Print benchmarks for Goric-weights percentiles
   if ("all" %in% output_type || "gw" %in% output_type) {
+    x$benchmarks_goric_weights <- recompute_section(x$benchmarks_goric_weights, x$combined_values$gw_combined)
     for (pop_es in names(x$benchmarks_goric_weights)) {
       x$benchmarks_goric_weights[[pop_es]] <- cbind(
         x$benchmarks_goric_weights[[pop_es]],
-        x$percentile_goric_weights[[pop_es]]
+        x$percentile_goric_weights[[pop_es]],
+        overlap_column(
+          x$overlap_goric_weights, pop_es, nrow(x$benchmarks_goric_weights[[pop_es]])
+        )
       )
+      colnames(x$benchmarks_goric_weights[[pop_es]])[
+        ncol(x$benchmarks_goric_weights[[pop_es]])
+      ] <- overlap_header
     }
     print_section(
       text_gw,
@@ -155,16 +201,53 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "overla
     )
   }
 
+  # Print benchmarks for (unpenalized) log-likelihood-weight percentiles --
+  # was computed all along (used internally by check_iter_adequacy()'s
+  # too-low/not-converged diagnostics) but never exposed to the user or
+  # printed here; only 'gw' (the GORIC(A) weight) had its own section.
+  if ("all" %in% output_type || "lw" %in% output_type) {
+    x$benchmarks_ll_weights <- recompute_section(x$benchmarks_ll_weights, x$combined_values$lw_combined)
+    for (pop_es in names(x$benchmarks_ll_weights)) {
+      x$benchmarks_ll_weights[[pop_es]] <- cbind(
+        x$benchmarks_ll_weights[[pop_es]],
+        x$percentile_ll_weights[[pop_es]],
+        overlap_column(
+          x$overlap_ll_weights, pop_es, nrow(x$benchmarks_ll_weights[[pop_es]])
+        )
+      )
+      colnames(x$benchmarks_ll_weights[[pop_es]])[
+        ncol(x$benchmarks_ll_weights[[pop_es]])
+      ] <- overlap_header
+    }
+    print_section(
+      text_lw,
+      function() {
+        for (pop_es in names(x$benchmarks_ll_weights)) {
+          print_rounded_es_value(x$benchmarks_ll_weights[[pop_es]], pop_es,
+                                 model_type, green, reset)
+        }
+      }, nchar(text_lw), text_color = blue, reset = reset
+    )
+  }
+
   # Print benchmarks for ratio Goric-weights percentiles
   if ("all" %in% output_type || "rgw" %in% output_type) {
+    x$benchmarks_ratio_goric_weights <- recompute_section(x$benchmarks_ratio_goric_weights, x$combined_values$rgw_combined)
 
     # Loop over alle sets in both benchmarks_ratio_goric_weights and hypothesis_rate
     for (pop_es_name in names(x$benchmarks_ratio_goric_weights)) {
       x$benchmarks_ratio_goric_weights[[pop_es_name]] <- cbind(
         x$benchmarks_ratio_goric_weights[[pop_es_name]],
         x$percentile_ratio_goric_weights[[pop_es_name]],
-        hypothesis_rate = x$hypothesis_rate[[pop_es_name]] # x$hypothesis_rate
+        hypothesis_rate = x$hypothesis_rate[[pop_es_name]], # x$hypothesis_rate
+        overlap_column(
+          x$overlap_ratio_goric_weights, pop_es_name,
+          nrow(x$benchmarks_ratio_goric_weights[[pop_es_name]])
+        )
       )
+      colnames(x$benchmarks_ratio_goric_weights[[pop_es_name]])[
+        ncol(x$benchmarks_ratio_goric_weights[[pop_es_name]])
+      ] <- overlap_header
     }
     # TO DO nu bij No-effect ook hypothesis_rate maar die zouden we dacht ik niet meer laten zien omdat het verwarrend is wat het betekent
     # Is nu juist weer weg, als het goed is.
@@ -186,20 +269,62 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "overla
       text_rgw,
       function() {
         for (pop_es in names(x$benchmarks_ratio_goric_weights)) {
-          print_rounded_es_value(x$benchmarks_ratio_goric_weights[[pop_es]], pop_es, 
+          print_rounded_es_value(x$benchmarks_ratio_goric_weights[[pop_es]], pop_es,
                                  model_type, green, reset)
         }
       }, nchar(text_rgw), text_color = blue, reset = reset
     )
   }
-  
+
+  # Print benchmarks for log(ratio-GORIC(A)-weights) percentiles -- same
+  # information as ratio-GORIC(A)-weights (rgw) above (it's just log(rgw)),
+  # but on a scale-invariant, symmetric-around-0 scale that is better suited
+  # to judging whether the preferred hypothesis and an alternative are
+  # equally supported (rgw itself lives on a heavily right-skewed (0, Inf)
+  # scale where '1' isn't a natural visual center; see the note above
+  # get_results_benchmark()'s rgw_log/rlw_log computation in
+  # goric_benchmark_utilities.R for the full rationale). No hypothesis_rate
+  # column here, matching rlw/ld's (not rgw's) simpler layout.
+  if ("all" %in% output_type || "rgw_log" %in% output_type) {
+    x$benchmarks_ratio_goric_weights_log <- recompute_section(x$benchmarks_ratio_goric_weights_log, x$combined_values$rgw_log_combined)
+    for (pop_es in names(x$benchmarks_ratio_goric_weights_log)) {
+      x$benchmarks_ratio_goric_weights_log[[pop_es]] <- cbind(
+        x$benchmarks_ratio_goric_weights_log[[pop_es]],
+        x$percentile_ratio_goric_weights_log[[pop_es]],
+        overlap_column(
+          x$overlap_ratio_goric_weights_log, pop_es,
+          nrow(x$benchmarks_ratio_goric_weights_log[[pop_es]])
+        )
+      )
+      colnames(x$benchmarks_ratio_goric_weights_log[[pop_es]])[
+        ncol(x$benchmarks_ratio_goric_weights_log[[pop_es]])
+      ] <- overlap_header
+    }
+    print_section(
+      text_rgw_log,
+      function() {
+        for (pop_es in names(x$benchmarks_ratio_goric_weights_log)) {
+          print_rounded_es_value(x$benchmarks_ratio_goric_weights_log[[pop_es]], pop_es,
+                                 model_type, green, reset)
+        }
+      }, nchar(text_rgw_log), text_color = blue, reset = reset
+    )
+  }
+
   # Print benchmarks for ratio log-likelihood-weights percentiles
   if ("all" %in% output_type || "rlw" %in% output_type) {
+    x$benchmarks_ratio_ll_weights <- recompute_section(x$benchmarks_ratio_ll_weights, x$combined_values$rlw_combined)
     for (pop_es in names(x$benchmarks_ratio_ll_weights)) {
       x$benchmarks_ratio_ll_weights[[pop_es]] <- cbind(
         x$benchmarks_ratio_ll_weights[[pop_es]],
-        x$percentile_ratio_ll_weights[[pop_es]]
+        x$percentile_ratio_ll_weights[[pop_es]],
+        overlap_column(
+          x$overlap_ratio_ll_weights, pop_es, nrow(x$benchmarks_ratio_ll_weights[[pop_es]])
+        )
       )
+      colnames(x$benchmarks_ratio_ll_weights[[pop_es]])[
+        ncol(x$benchmarks_ratio_ll_weights[[pop_es]])
+      ] <- overlap_header
     }
     print_section(
       text_rlw,
@@ -212,13 +337,48 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "overla
     )
   }
 
+  # Print benchmarks for log(ratio-log-likelihood-weights) percentiles --
+  # same idea as rgw_log above, but for lw/rlw.
+  if ("all" %in% output_type || "rlw_log" %in% output_type) {
+    x$benchmarks_ratio_ll_weights_log <- recompute_section(x$benchmarks_ratio_ll_weights_log, x$combined_values$rlw_log_combined)
+    for (pop_es in names(x$benchmarks_ratio_ll_weights_log)) {
+      x$benchmarks_ratio_ll_weights_log[[pop_es]] <- cbind(
+        x$benchmarks_ratio_ll_weights_log[[pop_es]],
+        x$percentile_ratio_ll_weights_log[[pop_es]],
+        overlap_column(
+          x$overlap_ratio_ll_weights_log, pop_es,
+          nrow(x$benchmarks_ratio_ll_weights_log[[pop_es]])
+        )
+      )
+      colnames(x$benchmarks_ratio_ll_weights_log[[pop_es]])[
+        ncol(x$benchmarks_ratio_ll_weights_log[[pop_es]])
+      ] <- overlap_header
+    }
+    print_section(
+      text_rlw_log,
+      function() {
+        for (pop_es in names(x$benchmarks_ratio_ll_weights_log)) {
+          print_rounded_es_value(x$benchmarks_ratio_ll_weights_log[[pop_es]], pop_es,
+                                 model_type, green, reset)
+        }
+      }, nchar(text_rlw_log), text_color = blue, reset = reset
+    )
+  }
+
   # Print benchmarks for difference log-likelihood-values percentiles
   if ("all" %in% output_type || "ld" %in% output_type) {
+    x$benchmarks_difLL <- recompute_section(x$benchmarks_difLL, x$combined_values$ld_combined)
     for (pop_es in names(x$benchmarks_difLL)) {
       x$benchmarks_difLL[[pop_es]] <- cbind(
         x$benchmarks_difLL[[pop_es]],
-        x$percentile_difLL[[pop_es]]
+        x$percentile_difLL[[pop_es]],
+        overlap_column(
+          x$overlap_difLL, pop_es, nrow(x$benchmarks_difLL[[pop_es]])
+        )
       )
+      colnames(x$benchmarks_difLL[[pop_es]])[
+        ncol(x$benchmarks_difLL[[pop_es]])
+      ] <- overlap_header
     }
     print_section(
       text_ld,
@@ -229,54 +389,6 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "rlw", "ld", "overla
         }
       }, nchar(text_ld), text_color = blue, reset = reset
     )
-  }
-
-  # Print overlap of the 'Observed' population's benchmark distribution
-  # against each 'null' population (by default just 'No-effect'). One table
-  # for gw/lw (a single overlap value per population), plus -- whenever
-  # present -- a block per matrix-valued statistic (rgw/rlw/ld, one value
-  # per alternative hypothesis), since gw and rgw (and lw and rlw) need not
-  # have the same overlap: rgw is only a bijective transform of gw (and so
-  # shares its overlap) in the special case of exactly 2 hypotheses; with
-  # more hypotheses, or for lw/rlw (lw is not normalized to sum to 1 the
-  # way gw is), that need not hold. Skipped (no error) when there's no
-  # "Observed" category to compare against (a custom pop_es/pop_est without
-  # one), same as the other overlap-dependent diagnostics.
-  if ("all" %in% output_type || "overlap" %in% output_type) {
-    if (!is.null(x$overlap_goric_weights) && length(x$overlap_goric_weights) > 0) {
-      print_section(
-        text_overlap,
-        function() {
-          other_names <- names(x$overlap_goric_weights)
-          overlap_tab <- cbind(
-            gw = x$overlap_goric_weights[other_names],
-            lw = x$overlap_ll_weights[other_names]
-          )
-          formatted_values <- sapply(as.numeric(overlap_tab), format_value)
-          formatted_tab <- `dim<-`(formatted_values, dim(overlap_tab))
-          rownames(formatted_tab) <- gsub("^pop_es(t)? = ", "", other_names)
-          colnames(formatted_tab) <- colnames(overlap_tab)
-          print(formatted_tab, quote = FALSE)
-          cat("(0 = no overlap, 1 = fully overlapping distributions, versus the 'Observed' population)\n")
-
-          print_matrix_overlap <- function(overlap_list, label) {
-            if (is.null(overlap_list) || length(overlap_list) == 0) return(invisible(NULL))
-            cat("\n", label, ":\n", sep = "")
-            for (pop_es in names(overlap_list)) {
-              vals <- overlap_list[[pop_es]]
-              if (length(vals) == 0) next
-              formatted <- sapply(vals, format_value)
-              names(formatted) <- names(vals)
-              cat(sprintf("  %s: ", gsub("^pop_es(t)? = ", "", pop_es)))
-              cat(paste(names(formatted), formatted, sep = " = ", collapse = ", "), "\n")
-            }
-          }
-          print_matrix_overlap(x$overlap_ratio_goric_weights, "Ratio-of-GORIC(A)-weights (rgw)")
-          print_matrix_overlap(x$overlap_ratio_ll_weights, "Ratio-of-log-likelihood-weights (rlw)")
-          print_matrix_overlap(x$overlap_difLL, "Differences in log-likelihood values (ld)")
-        }, nchar(text_overlap), text_color = blue, reset = reset
-      )
-    }
   }
 
   return(invisible(x))

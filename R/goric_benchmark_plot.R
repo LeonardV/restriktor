@@ -1,13 +1,32 @@
-plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"), 
+plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
                            percentiles = NULL, x_lim = c(), log_scale = FALSE,
-                           alpha = 0.50, nrow_grid = NULL, ncol_grid = 1, 
+                           opacity = 0.50, nrow_grid = NULL, ncol_grid = 1,
                            distr_grid = FALSE, ...) {
-  
+
   # Ensure the object is of class 'benchmark_means'
   if (!inherits(x, "benchmark")) {
     stop("\nrestriktor ERROR: Invalid object. The object should be of class 'benchmark'.", call. = FALSE)
   }
-  
+
+  # 'alpha' was the original name of this argument; renamed to 'opacity' since
+  # 'alpha' is also (and more commonly) used for a statistical significance
+  # level, which was confusing here where it means plotting transparency and
+  # has nothing to do with significance. Still accepted for backward
+  # compatibility with existing scripts, with a deprecation warning; 'opacity'
+  # (if explicitly supplied) takes precedence over a simultaneously-supplied
+  # 'alpha'.
+  ldots <- list(...)
+  if (!is.null(ldots$alpha)) {
+    warning("The 'alpha' argument to plot.benchmark() has been renamed to 'opacity' ",
+            "(it controls plotting transparency, not a statistical significance ",
+            "level). 'alpha' still works for now but is deprecated and may be ",
+            "removed in a future version; please switch to 'opacity'.", call. = FALSE)
+    if (missing(opacity)) {
+      opacity <- ldots$alpha
+    }
+    ldots$alpha <- NULL
+  }
+
   # Check if the output_type is valid
   output_type <- match.arg(output_type, c("rgw", "rlw", "gw", "ld"))
   
@@ -124,12 +143,12 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   
   group <- unique(df_long$Group_hypo_comparison)
   # here we start to create the plot ----------------------------------------
-  plot_list <- plot_all_groups(plot_df = df_long, 
-                               groups = group, 
+  plot_list <- plot_all_groups(plot_df = df_long,
+                               groups = group,
                                title = title,
                                xlabel = xlabel,
                                x_lim = x_lim,
-                               alpha = alpha,
+                               opacity = opacity,
                                distr_grid = distr_grid,
                                percentiles = percentiles,
                                log_scale = log_scale)
@@ -150,7 +169,7 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
 
 # benchmark plots
 create_density_plot <- function(plot_df, group_comparison, title, xlabel,
-                                x_lim = NULL, alpha = 0.5, distr_grid = FALSE,
+                                x_lim = NULL, opacity = 0.5, distr_grid = FALSE,
                                 percentiles = NULL, log_scale = FALSE) {
   
   output_type <- attr(plot_df, "output_type")
@@ -229,14 +248,14 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
         aes(ymin = 0, ymax = after_stat(density)),
         geom = "ribbon",
         position = "identity",
-        alpha = alpha,
+        alpha = opacity, # ggplot2's own stat_density() parameter is named 'alpha' (its transparency aesthetic); fed from our 'opacity' argument
         adjust = 0.5,        # Pas aan als je de gladheid wilt veranderen
         trim = TRUE,
         bw = "nrd0",         # Bandwidth selector
         kernel = "gaussian", # Kernel voor dichtheidschatting
         na.rm = TRUE
       ) +
-    #geom_ribbon(aes(ymin = 0, ymax = y), alpha = alpha) +
+    #geom_ribbon(aes(ymin = 0, ymax = y), alpha = opacity) +
     geom_segment(data = percentile_df[nrow(percentile_df):1, ], aes(x = percentile_value, xend = percentile_value,
                                            y = 0, yend = Inf, linetype = percentile_label, 
                                            color = percentile_label),
@@ -316,13 +335,13 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
 
 
 # 
-plot_all_groups <- function(plot_df, groups, title, xlabel, x_lim = NULL, 
-                            alpha = 0.5, distr_grid = FALSE, 
+plot_all_groups <- function(plot_df, groups, title, xlabel, x_lim = NULL,
+                            opacity = 0.5, distr_grid = FALSE,
                             percentiles = NULL, log_scale = FALSE) {
-  
+
   plot_list <- list()
   for (group in groups) {
-    plot <- create_density_plot(plot_df, group, title, xlabel, x_lim, alpha, 
+    plot <- create_density_plot(plot_df, group, title, xlabel, x_lim, opacity,
                                 distr_grid, percentiles, log_scale)
     plot_list[[group]] <- plot
   }

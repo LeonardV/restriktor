@@ -181,7 +181,8 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
     for (pop_es in names(x$benchmarks_goric_weights)) {
       x$benchmarks_goric_weights[[pop_es]] <- cbind(
         x$benchmarks_goric_weights[[pop_es]],
-        x$percentile_goric_weights[[pop_es]],
+        x$pctl_Sample_goric_weights[[pop_es]],
+        x$pctl_medianRefPop_goric_weights[[pop_es]],
         overlap_column(
           x$overlap_goric_weights, pop_es, nrow(x$benchmarks_goric_weights[[pop_es]])
         )
@@ -195,7 +196,8 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
       function() {
         for (pop_es in names(x$benchmarks_goric_weights)) {
           print_rounded_es_value(x$benchmarks_goric_weights[[pop_es]], pop_es,
-                                 model_type, green, reset)
+                                 model_type, green, reset,
+                                 is_reference = identical(pop_es, x$overlap_reference))
         }
       }, nchar(text_gw), text_color = blue, reset = reset
     )
@@ -210,7 +212,8 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
     for (pop_es in names(x$benchmarks_ll_weights)) {
       x$benchmarks_ll_weights[[pop_es]] <- cbind(
         x$benchmarks_ll_weights[[pop_es]],
-        x$percentile_ll_weights[[pop_es]],
+        x$pctl_Sample_ll_weights[[pop_es]],
+        x$pctl_medianRefPop_ll_weights[[pop_es]],
         overlap_column(
           x$overlap_ll_weights, pop_es, nrow(x$benchmarks_ll_weights[[pop_es]])
         )
@@ -224,7 +227,8 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
       function() {
         for (pop_es in names(x$benchmarks_ll_weights)) {
           print_rounded_es_value(x$benchmarks_ll_weights[[pop_es]], pop_es,
-                                 model_type, green, reset)
+                                 model_type, green, reset,
+                                 is_reference = identical(pop_es, x$overlap_reference))
         }
       }, nchar(text_lw), text_color = blue, reset = reset
     )
@@ -238,7 +242,8 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
     for (pop_es_name in names(x$benchmarks_ratio_goric_weights)) {
       x$benchmarks_ratio_goric_weights[[pop_es_name]] <- cbind(
         x$benchmarks_ratio_goric_weights[[pop_es_name]],
-        x$percentile_ratio_goric_weights[[pop_es_name]],
+        x$pctl_Sample_ratio_goric_weights[[pop_es_name]],
+        x$pctl_medianRefPop_ratio_goric_weights[[pop_es_name]],
         hypothesis_rate = x$hypothesis_rate[[pop_es_name]], # x$hypothesis_rate
         overlap_column(
           x$overlap_ratio_goric_weights, pop_es_name,
@@ -270,7 +275,8 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
       function() {
         for (pop_es in names(x$benchmarks_ratio_goric_weights)) {
           print_rounded_es_value(x$benchmarks_ratio_goric_weights[[pop_es]], pop_es,
-                                 model_type, green, reset)
+                                 model_type, green, reset,
+                                 is_reference = identical(pop_es, x$overlap_reference))
         }
       }, nchar(text_rgw), text_color = blue, reset = reset
     )
@@ -290,7 +296,8 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
     for (pop_es in names(x$benchmarks_ratio_goric_weights_log)) {
       x$benchmarks_ratio_goric_weights_log[[pop_es]] <- cbind(
         x$benchmarks_ratio_goric_weights_log[[pop_es]],
-        x$percentile_ratio_goric_weights_log[[pop_es]],
+        x$pctl_Sample_ratio_goric_weights_log[[pop_es]],
+        x$pctl_medianRefPop_ratio_goric_weights_log[[pop_es]],
         overlap_column(
           x$overlap_ratio_goric_weights_log, pop_es,
           nrow(x$benchmarks_ratio_goric_weights_log[[pop_es]])
@@ -305,7 +312,8 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
       function() {
         for (pop_es in names(x$benchmarks_ratio_goric_weights_log)) {
           print_rounded_es_value(x$benchmarks_ratio_goric_weights_log[[pop_es]], pop_es,
-                                 model_type, green, reset)
+                                 model_type, green, reset,
+                                 is_reference = identical(pop_es, x$overlap_reference))
         }
       }, nchar(text_rgw_log), text_color = blue, reset = reset
     )
@@ -317,7 +325,8 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
     for (pop_es in names(x$benchmarks_ratio_ll_weights)) {
       x$benchmarks_ratio_ll_weights[[pop_es]] <- cbind(
         x$benchmarks_ratio_ll_weights[[pop_es]],
-        x$percentile_ratio_ll_weights[[pop_es]],
+        x$pctl_Sample_ratio_ll_weights[[pop_es]],
+        x$pctl_medianRefPop_ratio_ll_weights[[pop_es]],
         overlap_column(
           x$overlap_ratio_ll_weights, pop_es, nrow(x$benchmarks_ratio_ll_weights[[pop_es]])
         )
@@ -331,7 +340,8 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
       function() {
         for (pop_es in names(x$benchmarks_ratio_ll_weights)) {
           print_rounded_es_value(x$benchmarks_ratio_ll_weights[[pop_es]], pop_es,
-                                 model_type, green, reset)
+                                 model_type, green, reset,
+                                 is_reference = identical(pop_es, x$overlap_reference))
         }
       }, nchar(text_rlw), text_color = blue, reset = reset
     )
@@ -344,7 +354,8 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
     for (pop_es in names(x$benchmarks_ratio_ll_weights_log)) {
       x$benchmarks_ratio_ll_weights_log[[pop_es]] <- cbind(
         x$benchmarks_ratio_ll_weights_log[[pop_es]],
-        x$percentile_ratio_ll_weights_log[[pop_es]],
+        x$pctl_Sample_ratio_ll_weights_log[[pop_es]],
+        x$pctl_medianRefPop_ratio_ll_weights_log[[pop_es]],
         overlap_column(
           x$overlap_ratio_ll_weights_log, pop_es,
           nrow(x$benchmarks_ratio_ll_weights_log[[pop_es]])
@@ -359,7 +370,8 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
       function() {
         for (pop_es in names(x$benchmarks_ratio_ll_weights_log)) {
           print_rounded_es_value(x$benchmarks_ratio_ll_weights_log[[pop_es]], pop_es,
-                                 model_type, green, reset)
+                                 model_type, green, reset,
+                                 is_reference = identical(pop_es, x$overlap_reference))
         }
       }, nchar(text_rlw_log), text_color = blue, reset = reset
     )
@@ -371,7 +383,8 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
     for (pop_es in names(x$benchmarks_difLL)) {
       x$benchmarks_difLL[[pop_es]] <- cbind(
         x$benchmarks_difLL[[pop_es]],
-        x$percentile_difLL[[pop_es]],
+        x$pctl_Sample_difLL[[pop_es]],
+        x$pctl_medianRefPop_difLL[[pop_es]],
         overlap_column(
           x$overlap_difLL, pop_es, nrow(x$benchmarks_difLL[[pop_es]])
         )
@@ -385,7 +398,8 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
       function() {
         for (pop_es in names(x$benchmarks_difLL)) {
           print_rounded_es_value(x$benchmarks_difLL[[pop_es]], pop_es, model_type,
-                                 green, reset)
+                                 green, reset,
+                                 is_reference = identical(pop_es, x$overlap_reference))
         }
       }, nchar(text_ld), text_color = blue, reset = reset
     )

@@ -494,7 +494,14 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   rgw_combined <- lapply(results, function(pop_es_list) extract_and_combine_values(pop_es_list, "rgw"))
   rlw_combined <- lapply(results, function(pop_es_list) extract_and_combine_values(pop_es_list, "rlw"))
   ld_combined  <- lapply(results, function(pop_es_list) extract_and_combine_values(pop_es_list, "ld"))
-  
+
+  # Which population the "median ref. pop." columns below (and the "Overlap
+  # with ..." column -- see overlap_reference_pop further down, which now
+  # just reuses this) are computed against: "Observed" when present, else
+  # the last pop_es/pop_est population supplied. Determined once here, since
+  # it doesn't depend on gw/lw/rgw/etc. -- see determine_overlap_reference().
+  reference_pop_name <- determine_overlap_reference(names(gw_combined))
+
   # Calculate CI_benchmarks_gw for each pop_es category
   CI_benchmarks_gw <- lapply(gw_combined, function(gw_values) {
     CI_benchmarks_gw <- matrix(c(object$result[pref_hypo, 7], quantile(gw_values, 
@@ -506,18 +513,41 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
 
   })
 
-  # Percentile of the observed goric(a) weight within its benchmark
-  # distribution, for each pop_es category (0-100 scale, matching the others)
-  percentile_gw <- lapply(gw_combined, function(gw_values) {
+  # Percentile of the observed goric(a) weight ('Sample' value) within its
+  # own benchmark distribution, for each pop_es category (0-100 scale,
+  # matching the others). Column/print header is "Pctl. Sample".
+  pctl_Sample_gw <- lapply(gw_combined, function(gw_values) {
     Fn <- ecdf(gw_values)
-    percentile_gw <- matrix(Fn(object$result[pref_hypo, 7]) * 100, nrow = 1)
-    colnames(percentile_gw) <- "percentile"
-    rownames(percentile_gw) <- pref_hypo_name
-    percentile_gw
+    pctl_Sample_gw <- matrix(Fn(object$result[pref_hypo, 7]) * 100, nrow = 1)
+    colnames(pctl_Sample_gw) <- "Pctl. Sample"
+    rownames(pctl_Sample_gw) <- pref_hypo_name
+    pctl_Sample_gw
   })
 
-  # Same as CI_benchmarks_gw/percentile_gw above, but for the (unpenalized)
-  # log-likelihood weight -- used together with percentile_gw by the
+  # Percentile of the reference population's own median goric(a) weight,
+  # located within *each* population's own benchmark distribution (0-100
+  # scale): where the reference/last population's typical draw falls
+  # relative to this population's distribution. For the reference
+  # population's own row this is hardcoded to exactly 50 -- ecdf() of a
+  # finite/even-n sample evaluated at its own median need not land on
+  # exactly 50. Column/print header is "Pctl. median ref. pop.".
+  median_gw_ref <- median(gw_combined[[reference_pop_name]], na.rm = TRUE)
+  pctl_medianRefPop_gw <- lapply(names(gw_combined), function(nm) {
+    value <- if (identical(nm, reference_pop_name)) {
+      50
+    } else {
+      Fn <- ecdf(gw_combined[[nm]])
+      Fn(median_gw_ref) * 100
+    }
+    out <- matrix(value, nrow = 1)
+    colnames(out) <- "Pctl. median ref. pop."
+    rownames(out) <- pref_hypo_name
+    out
+  })
+  names(pctl_medianRefPop_gw) <- names(gw_combined)
+
+  # Same as CI_benchmarks_gw/pctl_Sample_gw above, but for the (unpenalized)
+  # log-likelihood weight -- used together with pctl_Sample_gw by the
   # iter-adequacy check (see goric_percentile_test()/check_iter_adequacy()),
   # since a user may ultimately be interested in either output_type.
   CI_benchmarks_lw <- lapply(lw_combined, function(lw_values) {
@@ -529,13 +559,28 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     CI_benchmarks_lw
   })
 
-  percentile_lw <- lapply(lw_combined, function(lw_values) {
+  pctl_Sample_lw <- lapply(lw_combined, function(lw_values) {
     Fn <- ecdf(lw_values)
-    percentile_lw <- matrix(Fn(object$result$loglik.weights[pref_hypo]) * 100, nrow = 1)
-    colnames(percentile_lw) <- "percentile"
-    rownames(percentile_lw) <- pref_hypo_name
-    percentile_lw
+    pctl_Sample_lw <- matrix(Fn(object$result$loglik.weights[pref_hypo]) * 100, nrow = 1)
+    colnames(pctl_Sample_lw) <- "Pctl. Sample"
+    rownames(pctl_Sample_lw) <- pref_hypo_name
+    pctl_Sample_lw
   })
+
+  median_lw_ref <- median(lw_combined[[reference_pop_name]], na.rm = TRUE)
+  pctl_medianRefPop_lw <- lapply(names(lw_combined), function(nm) {
+    value <- if (identical(nm, reference_pop_name)) {
+      50
+    } else {
+      Fn <- ecdf(lw_combined[[nm]])
+      Fn(median_lw_ref) * 100
+    }
+    out <- matrix(value, nrow = 1)
+    colnames(out) <- "Pctl. median ref. pop."
+    rownames(out) <- pref_hypo_name
+    out
+  })
+  names(pctl_medianRefPop_lw) <- names(lw_combined)
 
 
   # Initialize matrices to store CI benchmarks for current pop_es category
@@ -570,14 +615,32 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   CI_benchmarks_ld_all <- list()
   CI_benchmarks_ld_ge0_all <- list()
 
-  percentile_rgw_all <- list()
-  percentile_rlw_all <- list()
+  pctl_Sample_rgw_all <- list()
+  pctl_Sample_rlw_all <- list()
   percentile_rlw_ge1_all <- list()
-  percentile_rgw_log_all <- list()
-  percentile_rlw_log_all <- list()
-  percentile_ld_all <- list()
+  pctl_Sample_rgw_log_all <- list()
+  pctl_Sample_rlw_log_all <- list()
+  pctl_Sample_ld_all <- list()
   percentile_ld_ge0_all <- list()
-  
+
+  medianRefPop_rgw_all <- list()
+  medianRefPop_rlw_all <- list()
+  medianRefPop_rgw_log_all <- list()
+  medianRefPop_rlw_log_all <- list()
+  medianRefPop_ld_all <- list()
+
+  # Reference population's own per-hypothesis median value, for each
+  # output_type that the "Pctl. median ref. pop." column is computed for.
+  # Fixed across all iterations of the loop below (it doesn't depend on
+  # 'name'), so computed once here rather than per-population. rgw_log/
+  # rlw_log need their own log() here since the rgw_log_combined/
+  # rlw_log_combined lists aren't built until after this loop (see below).
+  ref_median_rgw <- apply(rgw_combined[[reference_pop_name]], 2, median, na.rm = TRUE)
+  ref_median_rlw <- apply(rlw_combined[[reference_pop_name]], 2, median, na.rm = TRUE)
+  ref_median_rgw_log <- apply(log(rgw_combined[[reference_pop_name]]), 2, median, na.rm = TRUE)
+  ref_median_rlw_log <- apply(log(rlw_combined[[reference_pop_name]]), 2, median, na.rm = TRUE)
+  ref_median_ld <- apply(ld_combined[[reference_pop_name]], 2, median, na.rm = TRUE)
+
   # Loop through each pop_es category to fill in the CI benchmark lists
   for (name in names(results)) {
     rgw_combined_values <- rgw_combined[[name]]
@@ -616,7 +679,11 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
       CI_benchmarks_ld[j, 2:(1 + length(quant))] <- quantile(ld_combined_values[, j], quant, na.rm = TRUE)
       CI_benchmarks_ld_ge0[j, 2:(1 + length(quant))] <- quantile(ld_ge0[, j], quant, na.rm = TRUE)
     }
-    # Loop through the hypotheses and calculate the percentile of the sample finding
+    # Loop through the hypotheses and calculate the percentile of the sample
+    # finding ('Sample' value; pctl_Sample_* below) as well as the percentile
+    # of the reference population's own median value within this
+    # population's own distribution ("Pctl. median ref. pop."; medianRefPop_*
+    # below).
     percentile_rgw <- matrix(NA, nrow = nr.hypos, ncol = 1)
     percentile_rlw <- matrix(NA, nrow = nr.hypos, ncol = 1 )
     percentile_rlw_ge1 <- matrix(NA, nrow = nr.hypos, ncol = 1)
@@ -624,50 +691,76 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     percentile_rlw_log <- matrix(NA, nrow = nr.hypos, ncol = 1)
     percentile_ld <- matrix(NA, nrow = nr.hypos, ncol = 1)
     percentile_ld_ge0 <- matrix(NA, nrow = nr.hypos, ncol = 1)
+    medianRefPop_rgw <- matrix(NA, nrow = nr.hypos, ncol = 1)
+    medianRefPop_rlw <- matrix(NA, nrow = nr.hypos, ncol = 1)
+    medianRefPop_rgw_log <- matrix(NA, nrow = nr.hypos, ncol = 1)
+    medianRefPop_rlw_log <- matrix(NA, nrow = nr.hypos, ncol = 1)
+    medianRefPop_ld <- matrix(NA, nrow = nr.hypos, ncol = 1)
+    # Hardcode this population's own row to exactly 50 when it IS the
+    # reference population -- see the comment above ref_median_rgw etc.
+    is_ref_pop <- identical(name, reference_pop_name)
     for (j in seq_len(nr.hypos)) {
       Fn <- ecdf(rgw_combined_values[, j])
       percentile_rgw[j, 1] <- Fn(CI_benchmarks_rgw[j, 1]) * 100
+      medianRefPop_rgw[j, 1] <- if (is_ref_pop) 50 else Fn(ref_median_rgw[j]) * 100
       #
       Fn <- ecdf(rlw_combined_values[, j])
       percentile_rlw[j, 1] <- Fn(CI_benchmarks_rlw[j, 1]) * 100
+      medianRefPop_rlw[j, 1] <- if (is_ref_pop) 50 else Fn(ref_median_rlw[j]) * 100
       #
       Fn <- ecdf(rlw_ge1[, j])
       percentile_rlw_ge1[j, 1] <- Fn(CI_benchmarks_rlw_ge1[j, 1]) * 100
       #
       Fn <- ecdf(rgw_log_combined_values[, j])
       percentile_rgw_log[j, 1] <- Fn(CI_benchmarks_rgw_log[j, 1]) * 100
+      medianRefPop_rgw_log[j, 1] <- if (is_ref_pop) 50 else Fn(ref_median_rgw_log[j]) * 100
       #
       Fn <- ecdf(rlw_log_combined_values[, j])
       percentile_rlw_log[j, 1] <- Fn(CI_benchmarks_rlw_log[j, 1]) * 100
+      medianRefPop_rlw_log[j, 1] <- if (is_ref_pop) 50 else Fn(ref_median_rlw_log[j]) * 100
       #
       Fn <- ecdf(ld_combined_values[, j])
       percentile_ld[j, 1] <- Fn(CI_benchmarks_ld[j, 1]) * 100
+      medianRefPop_ld[j, 1] <- if (is_ref_pop) 50 else Fn(ref_median_ld[j]) * 100
       #
       Fn <- ecdf(ld_ge0[, j])
       percentile_ld_ge0[j, 1] <- Fn(CI_benchmarks_ld_ge0[j, 1]) * 100
     }
 
     # Label the percentiles (percentage of the benchmark distribution at or
-    # below the sample value, i.e. on a 0-100 scale)
+    # below the sample value / reference-population median, i.e. on a 0-100
+    # scale)
     percentile_names <- paste(pref_hypo_name, names(object$ratio.gw[pref_hypo, ]))
     rownames(percentile_rgw) <- rownames(percentile_rlw) <-
       rownames(percentile_rlw_ge1) <- rownames(percentile_rgw_log) <-
       rownames(percentile_rlw_log) <- rownames(percentile_ld) <-
-      rownames(percentile_ld_ge0) <- percentile_names
+      rownames(percentile_ld_ge0) <-
+      rownames(medianRefPop_rgw) <- rownames(medianRefPop_rlw) <-
+      rownames(medianRefPop_rgw_log) <- rownames(medianRefPop_rlw_log) <-
+      rownames(medianRefPop_ld) <- percentile_names
     colnames(percentile_rgw) <- colnames(percentile_rlw) <-
-      colnames(percentile_rlw_ge1) <- colnames(percentile_rgw_log) <-
-      colnames(percentile_rlw_log) <- colnames(percentile_ld) <-
-      colnames(percentile_ld_ge0) <- "percentile"
+      colnames(percentile_rgw_log) <- colnames(percentile_rlw_log) <-
+      colnames(percentile_ld) <- "Pctl. Sample"
+    colnames(percentile_rlw_ge1) <- colnames(percentile_ld_ge0) <- "percentile"
+    colnames(medianRefPop_rgw) <- colnames(medianRefPop_rlw) <-
+      colnames(medianRefPop_rgw_log) <- colnames(medianRefPop_rlw_log) <-
+      colnames(medianRefPop_ld) <- "Pctl. median ref. pop."
 
     # Store this pop_es category's percentiles so they survive past this
     # loop iteration (mirrors the CI_benchmarks_*_all pattern below)
-    percentile_rgw_all[[name]] <- percentile_rgw
-    percentile_rlw_all[[name]] <- percentile_rlw
+    pctl_Sample_rgw_all[[name]] <- percentile_rgw
+    pctl_Sample_rlw_all[[name]] <- percentile_rlw
     percentile_rlw_ge1_all[[name]] <- percentile_rlw_ge1
-    percentile_rgw_log_all[[name]] <- percentile_rgw_log
-    percentile_rlw_log_all[[name]] <- percentile_rlw_log
-    percentile_ld_all[[name]] <- percentile_ld
+    pctl_Sample_rgw_log_all[[name]] <- percentile_rgw_log
+    pctl_Sample_rlw_log_all[[name]] <- percentile_rlw_log
+    pctl_Sample_ld_all[[name]] <- percentile_ld
     percentile_ld_ge0_all[[name]] <- percentile_ld_ge0
+
+    medianRefPop_rgw_all[[name]] <- medianRefPop_rgw
+    medianRefPop_rlw_all[[name]] <- medianRefPop_rlw
+    medianRefPop_rgw_log_all[[name]] <- medianRefPop_rgw_log
+    medianRefPop_rlw_log_all[[name]] <- medianRefPop_rlw_log
+    medianRefPop_ld_all[[name]] <- medianRefPop_ld
 
     # Set column names for the CI benchmarks
     colnames(CI_benchmarks_rgw) <- colnames(CI_benchmarks_rlw) <-
@@ -734,13 +827,20 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     Map(function(perc, bench) perc[rownames(bench), , drop = FALSE],
         percentile_list, cleaned_list)
   }
-  percentile_rgw_all_cleaned <- align_rows(percentile_rgw_all, CI_benchmarks_rgw_all_cleaned)
-  percentile_rlw_all_cleaned <- align_rows(percentile_rlw_all, CI_benchmarks_rlw_all_cleaned)
+  pctl_Sample_rgw_all_cleaned <- align_rows(pctl_Sample_rgw_all, CI_benchmarks_rgw_all_cleaned)
+  pctl_Sample_rlw_all_cleaned <- align_rows(pctl_Sample_rlw_all, CI_benchmarks_rlw_all_cleaned)
   percentile_rlw_ge1_all_cleaned <- align_rows(percentile_rlw_ge1_all, CI_benchmarks_rlw_ge1_all_cleaned)
-  percentile_rgw_log_all_cleaned <- align_rows(percentile_rgw_log_all, CI_benchmarks_rgw_log_all_cleaned)
-  percentile_rlw_log_all_cleaned <- align_rows(percentile_rlw_log_all, CI_benchmarks_rlw_log_all_cleaned)
-  percentile_ld_all_cleaned <- align_rows(percentile_ld_all, CI_benchmarks_ld_all_cleaned)
+  pctl_Sample_rgw_log_all_cleaned <- align_rows(pctl_Sample_rgw_log_all, CI_benchmarks_rgw_log_all_cleaned)
+  pctl_Sample_rlw_log_all_cleaned <- align_rows(pctl_Sample_rlw_log_all, CI_benchmarks_rlw_log_all_cleaned)
+  pctl_Sample_ld_all_cleaned <- align_rows(pctl_Sample_ld_all, CI_benchmarks_ld_all_cleaned)
   percentile_ld_ge0_all_cleaned <- align_rows(percentile_ld_ge0_all, CI_benchmarks_ld_ge0_all_cleaned)
+
+  # Same alignment treatment for the new "Pctl. median ref. pop." matrices.
+  pctl_medianRefPop_rgw_all_cleaned <- align_rows(medianRefPop_rgw_all, CI_benchmarks_rgw_all_cleaned)
+  pctl_medianRefPop_rlw_all_cleaned <- align_rows(medianRefPop_rlw_all, CI_benchmarks_rlw_all_cleaned)
+  pctl_medianRefPop_rgw_log_all_cleaned <- align_rows(medianRefPop_rgw_log_all, CI_benchmarks_rgw_log_all_cleaned)
+  pctl_medianRefPop_rlw_log_all_cleaned <- align_rows(medianRefPop_rlw_log_all, CI_benchmarks_rlw_log_all_cleaned)
+  pctl_medianRefPop_ld_all_cleaned <- align_rows(medianRefPop_ld_all, CI_benchmarks_ld_all_cleaned)
 
   # rgw_log/rlw_log combined draws, for combined_values/overlap below -- same
   # log() transform as CI_benchmarks_rgw_log/rlw_log above, just derived
@@ -786,7 +886,7 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   # bijective transform of gw (and so shares its overlap) in the special
   # case of exactly 2 hypotheses; with more hypotheses, or for lw/rlw
   # (lw is not normalized to sum to 1 the way gw is), that need not hold.
-  overlap_reference_pop <- determine_overlap_reference(names(gw_combined))
+  overlap_reference_pop <- reference_pop_name
   overlap_gw  <- compute_overlap_vs_observed(gw_combined)
   overlap_lw  <- compute_overlap_vs_observed(lw_combined)
   overlap_rgw <- compute_overlap_vs_observed_matrix(rgw_combined)
@@ -805,15 +905,22 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     benchmarks_rlw_log = CI_benchmarks_rlw_log_all_cleaned,
     benchmarks_difLL = CI_benchmarks_ld_all_cleaned,
     benchmarks_absdifLL = CI_benchmarks_ld_ge0_all_cleaned,
-    percentile_gw  = percentile_gw,
-    percentile_lw  = percentile_lw,
-    percentile_rgw = percentile_rgw_all_cleaned,
-    percentile_rlw = percentile_rlw_all_cleaned,
+    pctl_Sample_gw  = pctl_Sample_gw,
+    pctl_Sample_lw  = pctl_Sample_lw,
+    pctl_Sample_rgw = pctl_Sample_rgw_all_cleaned,
+    pctl_Sample_rlw = pctl_Sample_rlw_all_cleaned,
     percentile_rlw_ge1 = percentile_rlw_ge1_all_cleaned,
-    percentile_rgw_log = percentile_rgw_log_all_cleaned,
-    percentile_rlw_log = percentile_rlw_log_all_cleaned,
-    percentile_difLL = percentile_ld_all_cleaned,
+    pctl_Sample_rgw_log = pctl_Sample_rgw_log_all_cleaned,
+    pctl_Sample_rlw_log = pctl_Sample_rlw_log_all_cleaned,
+    pctl_Sample_difLL = pctl_Sample_ld_all_cleaned,
     percentile_absdifLL = percentile_ld_ge0_all_cleaned,
+    pctl_medianRefPop_gw  = pctl_medianRefPop_gw,
+    pctl_medianRefPop_lw  = pctl_medianRefPop_lw,
+    pctl_medianRefPop_rgw = pctl_medianRefPop_rgw_all_cleaned,
+    pctl_medianRefPop_rlw = pctl_medianRefPop_rlw_all_cleaned,
+    pctl_medianRefPop_rgw_log = pctl_medianRefPop_rgw_log_all_cleaned,
+    pctl_medianRefPop_rlw_log = pctl_medianRefPop_rlw_log_all_cleaned,
+    pctl_medianRefPop_difLL = pctl_medianRefPop_ld_all_cleaned,
     overlap_gw = overlap_gw,
     overlap_lw = overlap_lw,
     overlap_rgw = overlap_rgw,
@@ -927,7 +1034,7 @@ check_iter_adequacy <- function(benchmark_results, observed_name, iter,
                                 iter_min = 500, iter_step = 100, iter_max = 2000,
                                 stability_tol = 1,
                                 control = list(), ...) {
-  if (!observed_name %in% names(benchmark_results$percentile_gw)) {
+  if (!observed_name %in% names(benchmark_results$pctl_Sample_gw)) {
     # No "Observed" population in this run (user supplied a custom pop_es/
     # pop_est without an "Observed" category) -- nothing to check.
     return(invisible(NULL))
@@ -1316,6 +1423,22 @@ format_overlap_value <- function(value) {
   format_value(value)
 }
 
+# Used only for the "Pctl. median ref. pop." column: the reference
+# population's own row there is hardcoded to exactly 50 by construction
+# (see get_results_benchmark()'s pctl_medianRefPop_* computation, and its
+# is_ref_pop/is_reference handling) rather than actually computed -- an
+# ecdf() evaluated at a finite/even-n sample's own median need not land on
+# exactly 50, so printing "50.000" there would suggest a computed value
+# carrying that much precision, which is misleading. Every other value in
+# this column (and every value in every other column) still goes through
+# format_value().
+format_median_ref_pop_value <- function(value) {
+  if (!is.na(value) && value == 50) {
+    return("50")
+  }
+  format_value(value)
+}
+
 
 # Builds the "Overlap with Observed" column added to each output_type's
 # per-population benchmark table in print.benchmark(). 'overlap_source' is
@@ -1406,32 +1529,174 @@ recompute_percentile_table <- function(existing_mat, combined_data, percentiles)
 }
 
 
-# called by the benchmark.print() function
-print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset) {
+# Column-header display text for print_grouped_header_table() below, keyed
+# off the (internal, formatter-matching) column names already set on the
+# benchmark tables by print.benchmark() -- "Sample", a percentile like "5%",
+# "Pctl. Sample", "Pctl. median ref. pop.", "hypothesis_rate", or an
+# "Overlap with <population>" header. Returns, per column: 'line1' (blank
+# for a column that instead shares a merged group label -- see 'group'
+# below), 'line2', and 'group' (NA for a column with its own two-line
+# header; otherwise the shared label text for the columns sharing a merged
+# top cell, e.g. "Percentiles distributions" for the quantile columns).
+# Layout per Rebecca's spec:
+#   Sample                  -> "Sample" / "value" (own two-line header)
+#   5%, 35%, ... (any N%)   -> grouped "Percentiles distributions", showing
+#                              the percentile itself on line 2
+#   Pctl. Sample            -> grouped "Percentiles (pctl.) comparisons",
+#                              "Sample value" on line 2
+#   Pctl. median ref. pop.  -> same group, "Median ref. pop." on line 2
+#   hypothesis_rate         -> "Hypothesis" / "rate" (own two-line header)
+#   Overlap with <pop>      -> "Overlap" / "with <pop>" (own two-line header,
+#                              second line already dynamic via overlap_header)
+# Anything unrecognized (shouldn't normally occur) falls back to a blank
+# line 1 and the column's own name on line 2, so nothing is ever dropped.
+header_lines_for_columns <- function(colnames_vec) {
+  n <- length(colnames_vec)
+  line1 <- character(n)
+  line2 <- character(n)
+  group <- rep(NA_character_, n)
+  for (i in seq_len(n)) {
+    cn <- colnames_vec[i]
+    if (identical(cn, "Sample")) {
+      line1[i] <- "Sample"
+      line2[i] <- "value"
+    } else if (grepl("^[0-9.]+%$", cn)) {
+      group[i] <- "Percentiles distributions"
+      line2[i] <- cn
+    } else if (identical(cn, "Pctl. Sample")) {
+      group[i] <- "Percentiles (pctl.) comparisons"
+      line2[i] <- "Sample value"
+    } else if (identical(cn, "Pctl. median ref. pop.")) {
+      group[i] <- "Percentiles (pctl.) comparisons"
+      line2[i] <- "Median ref. pop."
+    } else if (identical(cn, "hypothesis_rate")) {
+      line1[i] <- "Hypothesis"
+      line2[i] <- "rate"
+    } else if (grepl("^Overlap with ", cn)) {
+      line1[i] <- "Overlap"
+      line2[i] <- sub("^Overlap with ", "with ", cn)
+    } else {
+      line2[i] <- cn
+    }
+  }
+  list(line1 = line1, line2 = line2, group = group)
+}
+
+# Prints 'formatted_df' (a character matrix, already formatted -- see
+# print_rounded_es_value() below) with a 2-line column header, where
+# columns sharing the same non-NA 'group' (from header_lines_for_columns())
+# get a single label centered across their combined width on header line 1
+# -- a text "merged cell" -- instead of each getting a separate line-1 cell.
+# This deliberately does NOT use R's own print(): base R print() has no
+# notion of a header spanning two lines or multiple columns, and computes
+# its column widths/line-wrapping independently of any second header line,
+# so a naive two-line header would drift out of alignment with the data
+# the moment the console width changes (print() may then wrap the table
+# into column blocks, and nothing keeps a second header line in sync with
+# that). Here, every column width -- and the width each merged group label
+# needs -- is computed and padded by hand up front, so the two header lines
+# and the data stay aligned regardless of getOption("width").
+print_grouped_header_table <- function(formatted_df, rn) {
+  ncol_ <- ncol(formatted_df)
+  colnames_vec <- colnames(formatted_df)
+  hdr <- header_lines_for_columns(colnames_vec)
+
+  col_w <- vapply(seq_len(ncol_), function(j) {
+    max(nchar(hdr$line1[j]), nchar(hdr$line2[j]), nchar(formatted_df[, j]))
+  }, integer(1))
+
+  # If a group's shared label is wider than the columns it spans (plus the
+  # single-space separator between them), widen that group's last column to
+  # make room, rather than truncating or overflowing the label.
+  group_ids <- unique(stats::na.omit(hdr$group))
+  for (g in group_ids) {
+    idx <- which(hdr$group == g)
+    span_w <- sum(col_w[idx]) + (length(idx) - 1)
+    if (nchar(g) > span_w) {
+      col_w[idx[length(idx)]] <- col_w[idx[length(idx)]] + (nchar(g) - span_w)
+    }
+  }
+
+  rn_w <- max(nchar(rn), 0)
+  pad_left <- function(s, w) formatC(s, width = -w)
+  pad_center <- function(s, w) {
+    total <- w - nchar(s)
+    left <- total %/% 2
+    right <- total - left
+    paste0(strrep(" ", left), s, strrep(" ", right))
+  }
+
+  # Header line 1, built in column order: a merged group's columns collapse
+  # into one centered label spanning their combined width; an ungrouped
+  # column shows its own (possibly blank) line1 text.
+  line1_parts <- character(0)
+  j <- 1
+  while (j <= ncol_) {
+    if (!is.na(hdr$group[j])) {
+      idx <- which(hdr$group == hdr$group[j])
+      span_w <- sum(col_w[idx]) + (length(idx) - 1)
+      line1_parts <- c(line1_parts, pad_center(hdr$group[j], span_w))
+      j <- max(idx) + 1
+    } else {
+      line1_parts <- c(line1_parts, pad_left(hdr$line1[j], col_w[j]))
+      j <- j + 1
+    }
+  }
+  line2_parts <- mapply(pad_left, hdr$line2, col_w)
+
+  cat(pad_left("", rn_w), " ", paste(line1_parts, collapse = " "), "\n", sep = "")
+  cat(pad_left("", rn_w), " ", paste(line2_parts, collapse = " "), "\n", sep = "")
+  for (i in seq_len(nrow(formatted_df))) {
+    cat(pad_left(rn[i], rn_w), " ",
+        paste(mapply(pad_left, formatted_df[i, ], col_w), collapse = " "), "\n", sep = "")
+  }
+}
+
+
+# called by the benchmark.print() function. is_reference: TRUE when 'pop_es'
+# is the reference population that overlap/pctl_medianRefPop are computed
+# against (see determine_overlap_reference()/x$overlap_reference) -- appends
+# "(Reference population)" to the printed population label, e.g. "Population
+# effect-size = Observed (Reference population)".
+print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset,
+                                   is_reference = FALSE) {
   if (model_type == "benchmark_asymp") {
     pop_es_value <- gsub("pop_est = ", "", pop_es)
-    cat(sprintf("Population estimates = %s%s%s\n", text_color, pop_es_value, reset))
+    label <- "Population estimates"
   } else {
     pop_es_value <- gsub("pop_es = ", "", pop_es)
-    cat(sprintf("Population effect-size = %s%s%s\n", text_color, pop_es_value, reset))
+    label <- "Population effect-size"
   }
-  
+  if (is_reference) {
+    pop_es_value <- paste0(pop_es_value, " (Reference population)")
+  }
+  cat(sprintf("%s = %s%s%s\n", label, text_color, pop_es_value, reset))
+
   #formatted_column <- sprintf("%.3f", df)
   # The "Overlap with ..." column (if present -- see overlap_column() /
   # print.benchmark()) is formatted with format_overlap_value() instead of
   # format_value(), so its self-overlap entries print as "1" rather than
   # "1.000" (that value isn't actually computed, it's fixed by construction --
-  # see format_overlap_value()'s own comment). Every other column keeps using
-  # format_value() as before.
+  # see format_overlap_value()'s own comment). Likewise the "Pctl. median
+  # ref. pop." column (if present) uses format_median_ref_pop_value() so the
+  # reference population's own hardcoded-50 entry prints as "50" rather than
+  # "50.000". Every other column keeps using format_value() as before.
   is_overlap_col <- grepl("^Overlap with ", colnames(df))
+  is_median_ref_col <- colnames(df) == "Pctl. median ref. pop."
   formatted_cols <- lapply(seq_len(ncol(df)), function(j) {
-    col_formatter <- if (is_overlap_col[j]) format_overlap_value else format_value
+    col_formatter <- if (is_overlap_col[j]) {
+      format_overlap_value
+    } else if (is_median_ref_col[j]) {
+      format_median_ref_pop_value
+    } else {
+      format_value
+    }
     vapply(df[, j], col_formatter, character(1))
   })
   formatted_df <- do.call(cbind, formatted_cols)
   rownames(formatted_df) <- rownames(df)
   colnames(formatted_df) <- colnames(df)
-  print(formatted_df, row.names = TRUE, quote = FALSE)
+  print_grouped_header_table(formatted_df, rownames(df))
   cat("\n")
 }
 

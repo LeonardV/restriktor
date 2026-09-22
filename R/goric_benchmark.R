@@ -38,7 +38,30 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
                             ncpus = 1, seed = NULL,
                             iter_adequacy_band = c(0.495, 0.505),
                             iter_stability_tol = 1,
-                            iter_min = 500, iter_step = 100, iter_max = 2000, ...) {
+                            iter_min = 500, iter_step = 100, iter_max = 2000,
+                            # Threshold q used for the 'hypothesis_rate' output field (rate
+                            # at which each alternative hypothesis's ratio-GORIC(A)-weight
+                            # bootstrap draws exceed q, i.e. how often that alternative is
+                            # preferred over the preferred hypothesis). Stored on the
+                            # returned object as x$hypo_rate_threshold, which
+                            # print.benchmark()'s own 'hypo_rate_threshold' argument
+                            # defaults to -- so a print(x) matches what was used here,
+                            # while still allowing a different threshold to be requested at
+                            # print time (see print.benchmark()) without rerunning the
+                            # bootstrap.
+                            hypo_rate_threshold = 1,
+                            # Same mechanism as 'hypo_rate_threshold' above, but for the
+                            # 'rate_rlw' output field (rate at which each
+                            # alternative's ratio-log-likelihood-weight (rlw) bootstrap
+                            # draws exceed this threshold) -- kept as its own separate
+                            # argument/threshold rather than reusing hypo_rate_threshold,
+                            # since the GORIC(A)-weight and log-likelihood-weight ratios
+                            # need not be evaluated at the same cutoff. Deliberately not
+                            # named/called a "hypothesis rate": unlike rgw, rlw isn't the
+                            # quantity GORIC(A) hypothesis selection is actually based on,
+                            # so that label would be misleading here. Stored on the
+                            # returned object as x$threshold_rlw.
+                            threshold_rlw = 1, ...) {
 
   # iter = NULL (the default): start at 500 draws and grow by 100 at a time,
   # up to 2000, stopping as soon as the "Observed" population's benchmark
@@ -266,7 +289,9 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   benchmark_results <- get_results_benchmark(parallel_function_results,
                                              object, pref_hypo,
                                              pref_hypo_name, quant,
-                                             names_quant, nr_hypos)
+                                             names_quant, nr_hypos,
+                                             hypo_rate_threshold = hypo_rate_threshold,
+                                             threshold_rlw = threshold_rlw)
 
   if (!is.null(user_iter)) {
     # Fixed 'iter': run_benchmark_simulation() does not auto-grow or message
@@ -306,43 +331,74 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     #res_var_pop = var_e,
     pref_hypo_name = pref_hypo_name,
     error_prob_pref_hypo = error_prob,
-    benchmarks_goric_weights = benchmark_results$benchmarks_gw,
-    benchmarks_ll_weights = benchmark_results$benchmarks_lw,
-    benchmarks_ratio_goric_weights = benchmark_results$benchmarks_rgw,
-    benchmarks_ratio_ll_weights = benchmark_results$benchmarks_rlw,
-    benchmarks_ratio_ll_ge1 = benchmark_results$benchmarks_rlw_ge1,
-    benchmarks_ratio_goric_weights_log = benchmark_results$benchmarks_rgw_log,
-    benchmarks_ratio_ll_weights_log = benchmark_results$benchmarks_rlw_log,
-    benchmarks_difLL = benchmark_results$benchmarks_difLL,
-    benchmarks_absdifLL = benchmark_results$benchmarks_absdifLL,
+    # Grouped by family (rather than one flat field per output_type x family)
+    # so the object doesn't sprawl into ~40 top-level names -- each family is
+    # one list, indexed by output_type ("goric_weights", "ratio_goric_weights",
+    # etc.), and each output_type's value is, as before, a list indexed by
+    # pop_es/pop_est category, giving a matrix with one row per alternative
+    # hypothesis (self-comparison row dropped) for the "matrix" output_types
+    # (ratio_goric_weights, ratio_ll_weights, ratio_ll_weights_ge1,
+    # ratio_goric_weights_log, ratio_ll_weights_log, difLL, absdifLL) --
+    # nesting the family this way does not change that row structure at all,
+    # so this still works the same with 3+ hypotheses (multiple pairwise
+    # comparisons -> multiple rows) as it did with the flat field names.
+    benchmarks = list(
+      goric_weights = benchmark_results$benchmarks_gw,
+      ll_weights = benchmark_results$benchmarks_lw,
+      ratio_goric_weights = benchmark_results$benchmarks_rgw,
+      ratio_ll_weights = benchmark_results$benchmarks_rlw,
+      ratio_ll_weights_ge1 = benchmark_results$benchmarks_rlw_ge1,
+      ratio_goric_weights_log = benchmark_results$benchmarks_rgw_log,
+      ratio_ll_weights_log = benchmark_results$benchmarks_rlw_log,
+      difLL = benchmark_results$benchmarks_difLL,
+      absdifLL = benchmark_results$benchmarks_absdifLL
+    ),
     combined_values = benchmark_results$combined_values,
     #
-    pctl_Sample_goric_weights = benchmark_results$pctl_Sample_gw,
-    pctl_Sample_ll_weights = benchmark_results$pctl_Sample_lw,
-    pctl_Sample_ratio_goric_weights = benchmark_results$pctl_Sample_rgw,
-    pctl_Sample_ratio_ll_weights = benchmark_results$pctl_Sample_rlw,
-    percentile_ratio_ll_ge1 = benchmark_results$percentile_rlw_ge1,
-    pctl_Sample_ratio_goric_weights_log = benchmark_results$pctl_Sample_rgw_log,
-    pctl_Sample_ratio_ll_weights_log = benchmark_results$pctl_Sample_rlw_log,
-    pctl_Sample_difLL = benchmark_results$pctl_Sample_difLL,
-    percentile_absdifLL = benchmark_results$percentile_absdifLL,
+    pctl_Sample = list(
+      goric_weights = benchmark_results$pctl_Sample_gw,
+      ll_weights = benchmark_results$pctl_Sample_lw,
+      ratio_goric_weights = benchmark_results$pctl_Sample_rgw,
+      ratio_ll_weights = benchmark_results$pctl_Sample_rlw,
+      ratio_ll_weights_ge1 = benchmark_results$pctl_Sample_rlw_ge1,
+      ratio_goric_weights_log = benchmark_results$pctl_Sample_rgw_log,
+      ratio_ll_weights_log = benchmark_results$pctl_Sample_rlw_log,
+      difLL = benchmark_results$pctl_Sample_difLL,
+      absdifLL = benchmark_results$pctl_Sample_absdifLL
+    ),
     #
-    pctl_medianRefPop_goric_weights = benchmark_results$pctl_medianRefPop_gw,
-    pctl_medianRefPop_ll_weights = benchmark_results$pctl_medianRefPop_lw,
-    pctl_medianRefPop_ratio_goric_weights = benchmark_results$pctl_medianRefPop_rgw,
-    pctl_medianRefPop_ratio_ll_weights = benchmark_results$pctl_medianRefPop_rlw,
-    pctl_medianRefPop_ratio_goric_weights_log = benchmark_results$pctl_medianRefPop_rgw_log,
-    pctl_medianRefPop_ratio_ll_weights_log = benchmark_results$pctl_medianRefPop_rlw_log,
-    pctl_medianRefPop_difLL = benchmark_results$pctl_medianRefPop_difLL,
+    pctl_medianRefPop = list(
+      goric_weights = benchmark_results$pctl_medianRefPop_gw,
+      ll_weights = benchmark_results$pctl_medianRefPop_lw,
+      ratio_goric_weights = benchmark_results$pctl_medianRefPop_rgw,
+      ratio_ll_weights = benchmark_results$pctl_medianRefPop_rlw,
+      ratio_ll_weights_ge1 = benchmark_results$pctl_medianRefPop_rlw_ge1,
+      ratio_goric_weights_log = benchmark_results$pctl_medianRefPop_rgw_log,
+      ratio_ll_weights_log = benchmark_results$pctl_medianRefPop_rlw_log,
+      difLL = benchmark_results$pctl_medianRefPop_difLL,
+      absdifLL = benchmark_results$pctl_medianRefPop_absdifLL
+    ),
     #
-    overlap_goric_weights = benchmark_results$overlap_gw,
-    overlap_ll_weights = benchmark_results$overlap_lw,
-    overlap_ratio_goric_weights = benchmark_results$overlap_rgw,
-    overlap_ratio_ll_weights = benchmark_results$overlap_rlw,
-    overlap_ratio_goric_weights_log = benchmark_results$overlap_rgw_log,
-    overlap_ratio_ll_weights_log = benchmark_results$overlap_rlw_log,
-    overlap_difLL = benchmark_results$overlap_ld,
-    overlap_reference = benchmark_results$overlap_reference_pop,
+    # No ratio_ll_weights_ge1/absdifLL here -- overlap (vs. the reference
+    # population) was never computed for those two folded/"ge1"-"ge0"
+    # variants, same as before this restructuring. 'reference' (which
+    # population "with <name>" refers to) lives here too now, rather than as
+    # its own stray top-level field, since it's overlap-family metadata.
+    overlap = list(
+      goric_weights = benchmark_results$overlap_gw,
+      ll_weights = benchmark_results$overlap_lw,
+      ratio_goric_weights = benchmark_results$overlap_rgw,
+      ratio_ll_weights = benchmark_results$overlap_rlw,
+      ratio_goric_weights_log = benchmark_results$overlap_rgw_log,
+      ratio_ll_weights_log = benchmark_results$overlap_rlw_log,
+      difLL = benchmark_results$overlap_ld,
+      reference = benchmark_results$overlap_reference_pop
+    ),
+    #
+    hypothesis_rate = benchmark_results$hypothesis_rate,
+    hypo_rate_threshold = benchmark_results$hypo_rate_threshold,
+    rate_rlw = benchmark_results$rate_rlw,
+    threshold_rlw = benchmark_results$threshold_rlw,
     #
     median_bias_check_gw = bias_check$median_bias_check_gw,
     median_bias_check_lw = bias_check$median_bias_check_lw,
@@ -364,7 +420,15 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
                             ncpus = 1, seed = NULL,
                             iter_adequacy_band = c(0.495, 0.505),
                             iter_stability_tol = 1,
-                            iter_min = 500, iter_step = 100, iter_max = 2000, ...) {
+                            iter_min = 500, iter_step = 100, iter_max = 2000,
+                            # See benchmark_means()'s 'hypo_rate_threshold' for the full
+                            # rationale -- same argument, same default, same
+                            # x$hypo_rate_threshold output field.
+                            hypo_rate_threshold = 1,
+                            # See benchmark_means()'s 'threshold_rlw' for the full
+                            # rationale -- same argument, same default, same
+                            # x$threshold_rlw output field.
+                            threshold_rlw = 1, ...) {
 
   # iter = NULL (the default): start at 500 draws and grow by 100 at a time,
   # up to 2000, stopping as soon as the "Observed" population's benchmark
@@ -534,7 +598,9 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   iter <- sim$iter # final number of draws actually used, per category
 
   benchmark_results <- get_results_benchmark(parallel_function_results, object, pref_hypo,
-                                             pref_hypo_name, quant, names_quant, nr_hypos)
+                                             pref_hypo_name, quant, names_quant, nr_hypos,
+                                             hypo_rate_threshold = hypo_rate_threshold,
+                                             threshold_rlw = threshold_rlw)
 
   if (!is.null(user_iter)) {
     # Fixed 'iter': run_benchmark_simulation() does not auto-grow or message
@@ -561,43 +627,74 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     pop_VCOV = VCOV,
     pref_hypo_name = pref_hypo_name, 
     error_prob_pref_hypo = error_prob,
-    benchmarks_goric_weights = benchmark_results$benchmarks_gw,
-    benchmarks_ll_weights = benchmark_results$benchmarks_lw,
-    benchmarks_ratio_goric_weights = benchmark_results$benchmarks_rgw,
-    benchmarks_ratio_ll_weights = benchmark_results$benchmarks_rlw,
-    benchmarks_ratio_ll_ge1 = benchmark_results$benchmarks_rlw_ge1,
-    benchmarks_ratio_goric_weights_log = benchmark_results$benchmarks_rgw_log,
-    benchmarks_ratio_ll_weights_log = benchmark_results$benchmarks_rlw_log,
-    benchmarks_difLL = benchmark_results$benchmarks_difLL,
-    benchmarks_absdifLL = benchmark_results$benchmarks_absdifLL,
+    # Grouped by family (rather than one flat field per output_type x family)
+    # so the object doesn't sprawl into ~40 top-level names -- each family is
+    # one list, indexed by output_type ("goric_weights", "ratio_goric_weights",
+    # etc.), and each output_type's value is, as before, a list indexed by
+    # pop_es/pop_est category, giving a matrix with one row per alternative
+    # hypothesis (self-comparison row dropped) for the "matrix" output_types
+    # (ratio_goric_weights, ratio_ll_weights, ratio_ll_weights_ge1,
+    # ratio_goric_weights_log, ratio_ll_weights_log, difLL, absdifLL) --
+    # nesting the family this way does not change that row structure at all,
+    # so this still works the same with 3+ hypotheses (multiple pairwise
+    # comparisons -> multiple rows) as it did with the flat field names.
+    benchmarks = list(
+      goric_weights = benchmark_results$benchmarks_gw,
+      ll_weights = benchmark_results$benchmarks_lw,
+      ratio_goric_weights = benchmark_results$benchmarks_rgw,
+      ratio_ll_weights = benchmark_results$benchmarks_rlw,
+      ratio_ll_weights_ge1 = benchmark_results$benchmarks_rlw_ge1,
+      ratio_goric_weights_log = benchmark_results$benchmarks_rgw_log,
+      ratio_ll_weights_log = benchmark_results$benchmarks_rlw_log,
+      difLL = benchmark_results$benchmarks_difLL,
+      absdifLL = benchmark_results$benchmarks_absdifLL
+    ),
     combined_values = benchmark_results$combined_values,
     #
-    pctl_Sample_goric_weights = benchmark_results$pctl_Sample_gw,
-    pctl_Sample_ll_weights = benchmark_results$pctl_Sample_lw,
-    pctl_Sample_ratio_goric_weights = benchmark_results$pctl_Sample_rgw,
-    pctl_Sample_ratio_ll_weights = benchmark_results$pctl_Sample_rlw,
-    percentile_ratio_ll_ge1 = benchmark_results$percentile_rlw_ge1,
-    pctl_Sample_ratio_goric_weights_log = benchmark_results$pctl_Sample_rgw_log,
-    pctl_Sample_ratio_ll_weights_log = benchmark_results$pctl_Sample_rlw_log,
-    pctl_Sample_difLL = benchmark_results$pctl_Sample_difLL,
-    percentile_absdifLL = benchmark_results$percentile_absdifLL,
+    pctl_Sample = list(
+      goric_weights = benchmark_results$pctl_Sample_gw,
+      ll_weights = benchmark_results$pctl_Sample_lw,
+      ratio_goric_weights = benchmark_results$pctl_Sample_rgw,
+      ratio_ll_weights = benchmark_results$pctl_Sample_rlw,
+      ratio_ll_weights_ge1 = benchmark_results$pctl_Sample_rlw_ge1,
+      ratio_goric_weights_log = benchmark_results$pctl_Sample_rgw_log,
+      ratio_ll_weights_log = benchmark_results$pctl_Sample_rlw_log,
+      difLL = benchmark_results$pctl_Sample_difLL,
+      absdifLL = benchmark_results$pctl_Sample_absdifLL
+    ),
     #
-    pctl_medianRefPop_goric_weights = benchmark_results$pctl_medianRefPop_gw,
-    pctl_medianRefPop_ll_weights = benchmark_results$pctl_medianRefPop_lw,
-    pctl_medianRefPop_ratio_goric_weights = benchmark_results$pctl_medianRefPop_rgw,
-    pctl_medianRefPop_ratio_ll_weights = benchmark_results$pctl_medianRefPop_rlw,
-    pctl_medianRefPop_ratio_goric_weights_log = benchmark_results$pctl_medianRefPop_rgw_log,
-    pctl_medianRefPop_ratio_ll_weights_log = benchmark_results$pctl_medianRefPop_rlw_log,
-    pctl_medianRefPop_difLL = benchmark_results$pctl_medianRefPop_difLL,
+    pctl_medianRefPop = list(
+      goric_weights = benchmark_results$pctl_medianRefPop_gw,
+      ll_weights = benchmark_results$pctl_medianRefPop_lw,
+      ratio_goric_weights = benchmark_results$pctl_medianRefPop_rgw,
+      ratio_ll_weights = benchmark_results$pctl_medianRefPop_rlw,
+      ratio_ll_weights_ge1 = benchmark_results$pctl_medianRefPop_rlw_ge1,
+      ratio_goric_weights_log = benchmark_results$pctl_medianRefPop_rgw_log,
+      ratio_ll_weights_log = benchmark_results$pctl_medianRefPop_rlw_log,
+      difLL = benchmark_results$pctl_medianRefPop_difLL,
+      absdifLL = benchmark_results$pctl_medianRefPop_absdifLL
+    ),
     #
-    overlap_goric_weights = benchmark_results$overlap_gw,
-    overlap_ll_weights = benchmark_results$overlap_lw,
-    overlap_ratio_goric_weights = benchmark_results$overlap_rgw,
-    overlap_ratio_ll_weights = benchmark_results$overlap_rlw,
-    overlap_ratio_goric_weights_log = benchmark_results$overlap_rgw_log,
-    overlap_ratio_ll_weights_log = benchmark_results$overlap_rlw_log,
-    overlap_difLL = benchmark_results$overlap_ld,
-    overlap_reference = benchmark_results$overlap_reference_pop,
+    # No ratio_ll_weights_ge1/absdifLL here -- overlap (vs. the reference
+    # population) was never computed for those two folded/"ge1"-"ge0"
+    # variants, same as before this restructuring. 'reference' (which
+    # population "with <name>" refers to) lives here too now, rather than as
+    # its own stray top-level field, since it's overlap-family metadata.
+    overlap = list(
+      goric_weights = benchmark_results$overlap_gw,
+      ll_weights = benchmark_results$overlap_lw,
+      ratio_goric_weights = benchmark_results$overlap_rgw,
+      ratio_ll_weights = benchmark_results$overlap_rlw,
+      ratio_goric_weights_log = benchmark_results$overlap_rgw_log,
+      ratio_ll_weights_log = benchmark_results$overlap_rlw_log,
+      difLL = benchmark_results$overlap_ld,
+      reference = benchmark_results$overlap_reference_pop
+    ),
+    #
+    hypothesis_rate = benchmark_results$hypothesis_rate,
+    hypo_rate_threshold = benchmark_results$hypo_rate_threshold,
+    rate_rlw = benchmark_results$rate_rlw,
+    threshold_rlw = benchmark_results$threshold_rlw,
     #
     median_bias_check_gw = bias_check$median_bias_check_gw,
     median_bias_check_lw = bias_check$median_bias_check_lw,

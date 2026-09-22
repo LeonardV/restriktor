@@ -484,8 +484,10 @@ extract_and_combine_values <- function(pop_es_list, value_name) {
 
 
 ## 
-get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name, 
-                                  quant, names_quant, nr.hypos) {
+get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
+                                  quant, names_quant, nr.hypos,
+                                  hypo_rate_threshold = 1,
+                                  threshold_rlw = 1) {
   results <- x
   
     # Use lapply to apply the extract_and_combine_values function to each element in the results list
@@ -617,17 +619,19 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
 
   pctl_Sample_rgw_all <- list()
   pctl_Sample_rlw_all <- list()
-  percentile_rlw_ge1_all <- list()
+  pctl_Sample_rlw_ge1_all <- list()
   pctl_Sample_rgw_log_all <- list()
   pctl_Sample_rlw_log_all <- list()
   pctl_Sample_ld_all <- list()
-  percentile_ld_ge0_all <- list()
+  pctl_Sample_ld_ge0_all <- list()
 
   medianRefPop_rgw_all <- list()
   medianRefPop_rlw_all <- list()
+  medianRefPop_rlw_ge1_all <- list()
   medianRefPop_rgw_log_all <- list()
   medianRefPop_rlw_log_all <- list()
   medianRefPop_ld_all <- list()
+  medianRefPop_ld_ge0_all <- list()
 
   # Reference population's own per-hypothesis median value, for each
   # output_type that the "Pctl. median ref. pop." column is computed for.
@@ -640,6 +644,14 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   ref_median_rgw_log <- apply(log(rgw_combined[[reference_pop_name]]), 2, median, na.rm = TRUE)
   ref_median_rlw_log <- apply(log(rlw_combined[[reference_pop_name]]), 2, median, na.rm = TRUE)
   ref_median_ld <- apply(ld_combined[[reference_pop_name]], 2, median, na.rm = TRUE)
+  # rlw_ge1/ld_ge0 (see 'Prepare rlw_ge1 and ld_ge0 matrices' below) aren't
+  # available as standalone combined lists the way rgw/rlw/ld are -- they're
+  # folded per-population inside the loop below -- so the reference
+  # population's own version is folded here too, just for this median.
+  ref_rlw_ge1 <- rlw_combined[[reference_pop_name]]
+  ref_rlw_ge1[ref_rlw_ge1 < 1] <- 1 / ref_rlw_ge1[ref_rlw_ge1 < 1]
+  ref_median_rlw_ge1 <- apply(ref_rlw_ge1, 2, median, na.rm = TRUE)
+  ref_median_ld_ge0 <- apply(abs(ld_combined[[reference_pop_name]]), 2, median, na.rm = TRUE)
 
   # Loop through each pop_es category to fill in the CI benchmark lists
   for (name in names(results)) {
@@ -693,9 +705,11 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     percentile_ld_ge0 <- matrix(NA, nrow = nr.hypos, ncol = 1)
     medianRefPop_rgw <- matrix(NA, nrow = nr.hypos, ncol = 1)
     medianRefPop_rlw <- matrix(NA, nrow = nr.hypos, ncol = 1)
+    medianRefPop_rlw_ge1 <- matrix(NA, nrow = nr.hypos, ncol = 1)
     medianRefPop_rgw_log <- matrix(NA, nrow = nr.hypos, ncol = 1)
     medianRefPop_rlw_log <- matrix(NA, nrow = nr.hypos, ncol = 1)
     medianRefPop_ld <- matrix(NA, nrow = nr.hypos, ncol = 1)
+    medianRefPop_ld_ge0 <- matrix(NA, nrow = nr.hypos, ncol = 1)
     # Hardcode this population's own row to exactly 50 when it IS the
     # reference population -- see the comment above ref_median_rgw etc.
     is_ref_pop <- identical(name, reference_pop_name)
@@ -710,6 +724,7 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
       #
       Fn <- ecdf(rlw_ge1[, j])
       percentile_rlw_ge1[j, 1] <- Fn(CI_benchmarks_rlw_ge1[j, 1]) * 100
+      medianRefPop_rlw_ge1[j, 1] <- if (is_ref_pop) 50 else Fn(ref_median_rlw_ge1[j]) * 100
       #
       Fn <- ecdf(rgw_log_combined_values[, j])
       percentile_rgw_log[j, 1] <- Fn(CI_benchmarks_rgw_log[j, 1]) * 100
@@ -725,6 +740,7 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
       #
       Fn <- ecdf(ld_ge0[, j])
       percentile_ld_ge0[j, 1] <- Fn(CI_benchmarks_ld_ge0[j, 1]) * 100
+      medianRefPop_ld_ge0[j, 1] <- if (is_ref_pop) 50 else Fn(ref_median_ld_ge0[j]) * 100
     }
 
     # Label the percentiles (percentage of the benchmark distribution at or
@@ -736,31 +752,40 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
       rownames(percentile_rlw_log) <- rownames(percentile_ld) <-
       rownames(percentile_ld_ge0) <-
       rownames(medianRefPop_rgw) <- rownames(medianRefPop_rlw) <-
+      rownames(medianRefPop_rlw_ge1) <-
       rownames(medianRefPop_rgw_log) <- rownames(medianRefPop_rlw_log) <-
-      rownames(medianRefPop_ld) <- percentile_names
+      rownames(medianRefPop_ld) <- rownames(medianRefPop_ld_ge0) <- percentile_names
+    # rlw_ge1/ld_ge0's "Sample" percentile columns now match the "Pctl.
+    # Sample" naming used by every other output_type's Sample-percentile
+    # column (was "percentile" -- an inconsistency in the original naming
+    # that motivated renaming the percentile_rlw_ge1/percentile_absdifLL
+    # output fields below in the first place).
     colnames(percentile_rgw) <- colnames(percentile_rlw) <-
+      colnames(percentile_rlw_ge1) <-
       colnames(percentile_rgw_log) <- colnames(percentile_rlw_log) <-
-      colnames(percentile_ld) <- "Pctl. Sample"
-    colnames(percentile_rlw_ge1) <- colnames(percentile_ld_ge0) <- "percentile"
+      colnames(percentile_ld) <- colnames(percentile_ld_ge0) <- "Pctl. Sample"
     colnames(medianRefPop_rgw) <- colnames(medianRefPop_rlw) <-
+      colnames(medianRefPop_rlw_ge1) <-
       colnames(medianRefPop_rgw_log) <- colnames(medianRefPop_rlw_log) <-
-      colnames(medianRefPop_ld) <- "Pctl. median ref. pop."
+      colnames(medianRefPop_ld) <- colnames(medianRefPop_ld_ge0) <- "Pctl. median ref. pop."
 
     # Store this pop_es category's percentiles so they survive past this
     # loop iteration (mirrors the CI_benchmarks_*_all pattern below)
     pctl_Sample_rgw_all[[name]] <- percentile_rgw
     pctl_Sample_rlw_all[[name]] <- percentile_rlw
-    percentile_rlw_ge1_all[[name]] <- percentile_rlw_ge1
+    pctl_Sample_rlw_ge1_all[[name]] <- percentile_rlw_ge1
     pctl_Sample_rgw_log_all[[name]] <- percentile_rgw_log
     pctl_Sample_rlw_log_all[[name]] <- percentile_rlw_log
     pctl_Sample_ld_all[[name]] <- percentile_ld
-    percentile_ld_ge0_all[[name]] <- percentile_ld_ge0
+    pctl_Sample_ld_ge0_all[[name]] <- percentile_ld_ge0
 
     medianRefPop_rgw_all[[name]] <- medianRefPop_rgw
     medianRefPop_rlw_all[[name]] <- medianRefPop_rlw
+    medianRefPop_rlw_ge1_all[[name]] <- medianRefPop_rlw_ge1
     medianRefPop_rgw_log_all[[name]] <- medianRefPop_rgw_log
     medianRefPop_rlw_log_all[[name]] <- medianRefPop_rlw_log
     medianRefPop_ld_all[[name]] <- medianRefPop_ld
+    medianRefPop_ld_ge0_all[[name]] <- medianRefPop_ld_ge0
 
     # Set column names for the CI benchmarks
     colnames(CI_benchmarks_rgw) <- colnames(CI_benchmarks_rlw) <-
@@ -829,18 +854,20 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   }
   pctl_Sample_rgw_all_cleaned <- align_rows(pctl_Sample_rgw_all, CI_benchmarks_rgw_all_cleaned)
   pctl_Sample_rlw_all_cleaned <- align_rows(pctl_Sample_rlw_all, CI_benchmarks_rlw_all_cleaned)
-  percentile_rlw_ge1_all_cleaned <- align_rows(percentile_rlw_ge1_all, CI_benchmarks_rlw_ge1_all_cleaned)
+  pctl_Sample_rlw_ge1_all_cleaned <- align_rows(pctl_Sample_rlw_ge1_all, CI_benchmarks_rlw_ge1_all_cleaned)
   pctl_Sample_rgw_log_all_cleaned <- align_rows(pctl_Sample_rgw_log_all, CI_benchmarks_rgw_log_all_cleaned)
   pctl_Sample_rlw_log_all_cleaned <- align_rows(pctl_Sample_rlw_log_all, CI_benchmarks_rlw_log_all_cleaned)
   pctl_Sample_ld_all_cleaned <- align_rows(pctl_Sample_ld_all, CI_benchmarks_ld_all_cleaned)
-  percentile_ld_ge0_all_cleaned <- align_rows(percentile_ld_ge0_all, CI_benchmarks_ld_ge0_all_cleaned)
+  pctl_Sample_ld_ge0_all_cleaned <- align_rows(pctl_Sample_ld_ge0_all, CI_benchmarks_ld_ge0_all_cleaned)
 
   # Same alignment treatment for the new "Pctl. median ref. pop." matrices.
   pctl_medianRefPop_rgw_all_cleaned <- align_rows(medianRefPop_rgw_all, CI_benchmarks_rgw_all_cleaned)
   pctl_medianRefPop_rlw_all_cleaned <- align_rows(medianRefPop_rlw_all, CI_benchmarks_rlw_all_cleaned)
+  pctl_medianRefPop_rlw_ge1_all_cleaned <- align_rows(medianRefPop_rlw_ge1_all, CI_benchmarks_rlw_ge1_all_cleaned)
   pctl_medianRefPop_rgw_log_all_cleaned <- align_rows(medianRefPop_rgw_log_all, CI_benchmarks_rgw_log_all_cleaned)
   pctl_medianRefPop_rlw_log_all_cleaned <- align_rows(medianRefPop_rlw_log_all, CI_benchmarks_rlw_log_all_cleaned)
   pctl_medianRefPop_ld_all_cleaned <- align_rows(medianRefPop_ld_all, CI_benchmarks_ld_all_cleaned)
+  pctl_medianRefPop_ld_ge0_all_cleaned <- align_rows(medianRefPop_ld_ge0_all, CI_benchmarks_ld_ge0_all_cleaned)
 
   # rgw_log/rlw_log combined draws, for combined_values/overlap below -- same
   # log() transform as CI_benchmarks_rgw_log/rlw_log above, just derived
@@ -871,6 +898,53 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     remove_single_value_col(pop_es_list, 0)
   })
 
+  # Rate at which each alternative hypothesis's ratio-GORIC(A)-weight
+  # bootstrap draws exceed a threshold q (default 1, i.e. how often the
+  # alternative hypothesis is preferred over the preferred hypothesis within
+  # a given bootstrap draw) -- one rate per alternative hypothesis (self
+  # column already dropped from rgw_combined above, same convention used
+  # throughout). Computed here (at the 'hypo_rate_threshold' this function
+  # was called with -- benchmark_means()/benchmark_asymp() expose this as
+  # their own 'hypo_rate_threshold' argument, default 1) so it is a proper
+  # output field on the returned benchmark object rather than only
+  # appearing as a side effect of calling print.benchmark() -- previously
+  # x$hypothesis_rate was computed fresh inside print.benchmark() on its
+  # own local copy of x and was never saved back onto the object the user
+  # holds. print.benchmark() still recomputes this itself (so its own
+  # 'hypo_rate_threshold' argument keeps letting a user ask for a different
+  # threshold at print time, without rerunning the -- often expensive --
+  # bootstrap, as shown in the Guidelines vignette); that recomputation just
+  # overwrites this value for the duration of that print call.
+  #
+  # Unlike print.benchmark() (which hides the "No-effect" category's
+  # hypothesis rate from what gets printed/plotted, since there's no
+  # alternative hypothesis to compare against under the null and it reads
+  # as confusing there), this object-level field keeps the actually
+  # computed value for every category, including "No-effect" -- it's just
+  # not shown anywhere by default; a user who wants it can read it directly
+  # off the object (x$hypothesis_rate[["pop_es = No-effect"]]).
+  hypothesis_rate <- lapply(rgw_combined, calculate_hypothesis_rate, q = hypo_rate_threshold)
+
+  # Same mechanism as hypothesis_rate above, but for the log-likelihood-weight
+  # ratio (rlw) rather than the GORIC(A)-weight ratio (rgw) -- the rate at
+  # which each alternative hypothesis's rlw bootstrap draws exceed a
+  # threshold q (its own 'threshold_rlw', independent of
+  # hypothesis_rate's 'hypo_rate_threshold', since the two ratios need not
+  # be evaluated at the same cutoff). Computed on the raw (unfolded) rlw --
+  # NOT on rlw_ge1 -- since folding to always-≥1 discards the direction
+  # a threshold rate depends on (a folded ratio exceeding 1 is true for
+  # almost every draw, telling you nothing). Also not needed for
+  # rgw_log/rlw_log: since log() is strictly monotonic on a positive ratio,
+  # rate(log(rgw) > log(q)) is identical to rate(rgw > q) -- no new
+  # information, just a log-transformed threshold.
+  #
+  # Named 'rate_rlw' rather than 'hypothesis_rate_lw' (and its argument
+  # 'threshold_rlw' rather than 'hypo_rate_threshold_lw'), unlike the rgw
+  # version: rgw is literally the quantity GORIC(A) hypothesis selection is
+  # based on, so "rate rgw exceeds q" reads as a hypothesis-support rate.
+  # rlw doesn't carry that same interpretation, so calling it a "hypothesis
+  # rate" would be misleading -- it's just the exceedance rate of rlw.
+  rate_rlw <- lapply(rlw_combined, calculate_hypothesis_rate, q = threshold_rlw)
 
   # Overlap (0-1 overlapping coefficient) between the reference population's
   # benchmark distribution and each other population's -- the numeric
@@ -909,18 +983,20 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     pctl_Sample_lw  = pctl_Sample_lw,
     pctl_Sample_rgw = pctl_Sample_rgw_all_cleaned,
     pctl_Sample_rlw = pctl_Sample_rlw_all_cleaned,
-    percentile_rlw_ge1 = percentile_rlw_ge1_all_cleaned,
+    pctl_Sample_rlw_ge1 = pctl_Sample_rlw_ge1_all_cleaned,
     pctl_Sample_rgw_log = pctl_Sample_rgw_log_all_cleaned,
     pctl_Sample_rlw_log = pctl_Sample_rlw_log_all_cleaned,
     pctl_Sample_difLL = pctl_Sample_ld_all_cleaned,
-    percentile_absdifLL = percentile_ld_ge0_all_cleaned,
+    pctl_Sample_absdifLL = pctl_Sample_ld_ge0_all_cleaned,
     pctl_medianRefPop_gw  = pctl_medianRefPop_gw,
     pctl_medianRefPop_lw  = pctl_medianRefPop_lw,
     pctl_medianRefPop_rgw = pctl_medianRefPop_rgw_all_cleaned,
     pctl_medianRefPop_rlw = pctl_medianRefPop_rlw_all_cleaned,
+    pctl_medianRefPop_rlw_ge1 = pctl_medianRefPop_rlw_ge1_all_cleaned,
     pctl_medianRefPop_rgw_log = pctl_medianRefPop_rgw_log_all_cleaned,
     pctl_medianRefPop_rlw_log = pctl_medianRefPop_rlw_log_all_cleaned,
     pctl_medianRefPop_difLL = pctl_medianRefPop_ld_all_cleaned,
+    pctl_medianRefPop_absdifLL = pctl_medianRefPop_ld_ge0_all_cleaned,
     overlap_gw = overlap_gw,
     overlap_lw = overlap_lw,
     overlap_rgw = overlap_rgw,
@@ -929,6 +1005,10 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     overlap_rlw_log = overlap_rlw_log,
     overlap_ld = overlap_ld,
     overlap_reference_pop = overlap_reference_pop,
+    hypothesis_rate = hypothesis_rate,
+    hypo_rate_threshold = hypo_rate_threshold,
+    rate_rlw = rate_rlw,
+    threshold_rlw = threshold_rlw,
     combined_values = list(gw_combined = gw_combined,
                            lw_combined = lw_combined,
                            rgw_combined = rgw_combined,
@@ -1529,6 +1609,17 @@ recompute_percentile_table <- function(existing_mat, combined_data, percentiles)
 }
 
 
+# Displays a hypo_rate_threshold value for the "hypothesis_rate" column
+# header below -- e.g. 1 -> "1", 1.5 -> "1.5" -- without the trailing
+# ".000" sprintf("%.3f")-style formatting used elsewhere in this file would
+# add for a plain round number.
+format_threshold_display <- function(q) {
+  if (is.null(q) || is.na(q)) {
+    return("threshold")
+  }
+  as.character(q)
+}
+
 # Column-header display text for print_grouped_header_table() below, keyed
 # off the (internal, formatter-matching) column names already set on the
 # benchmark tables by print.benchmark() -- "Sample", a percentile like "5%",
@@ -1545,12 +1636,37 @@ recompute_percentile_table <- function(existing_mat, combined_data, percentiles)
 #   Pctl. Sample            -> grouped "Percentiles (pctl.) comparisons",
 #                              "Sample value" on line 2
 #   Pctl. median ref. pop.  -> same group, "Median ref. pop." on line 2
-#   hypothesis_rate         -> "Hypothesis" / "rate" (own two-line header)
+#   hypothesis_rate         -> "Hypothesis rate" / "(rgw > <threshold>)"
+#                              (own two-line header; 'hypo_rate_threshold'
+#                              is the actual q this particular print call
+#                              used -- see print.benchmark() -- shown here
+#                              so it's visible at a glance why this printed
+#                              rate can differ from x$hypothesis_rate
+#                              (computed at x$hypo_rate_threshold, which may
+#                              be a different value) or from another
+#                              print() call using a different threshold).
+#                              Called "Hypothesis rate" because rgw (the
+#                              ratio-of-GORIC(A)-weights) is the quantity
+#                              GORIC(A) hypothesis selection is actually
+#                              based on, so "exceeds q" reads as "how often
+#                              this alternative would be preferred".
+#   rate_rlw                -> "Rate" / "(rlw > <threshold>)" -- same
+#                              mechanism as hypothesis_rate (rate at which
+#                              bootstrap draws exceed a threshold, own
+#                              independent 'threshold_rlw'), applied to rlw
+#                              (ratio-of-log-likelihood-weights) instead.
+#                              Deliberately NOT labelled "Hypothesis rate"
+#                              here -- rlw isn't the quantity GORIC(A)
+#                              hypothesis selection is based on, so calling
+#                              this a hypothesis rate would be misleading;
+#                              "(rlw > <threshold>)" on its own already says
+#                              exactly what's being counted.
 #   Overlap with <pop>      -> "Overlap" / "with <pop>" (own two-line header,
 #                              second line already dynamic via overlap_header)
 # Anything unrecognized (shouldn't normally occur) falls back to a blank
 # line 1 and the column's own name on line 2, so nothing is ever dropped.
-header_lines_for_columns <- function(colnames_vec) {
+header_lines_for_columns <- function(colnames_vec, hypo_rate_threshold = NULL,
+                                     threshold_rlw = NULL) {
   n <- length(colnames_vec)
   line1 <- character(n)
   line2 <- character(n)
@@ -1570,8 +1686,11 @@ header_lines_for_columns <- function(colnames_vec) {
       group[i] <- "Percentiles (pctl.) comparisons"
       line2[i] <- "Median ref. pop."
     } else if (identical(cn, "hypothesis_rate")) {
-      line1[i] <- "Hypothesis"
-      line2[i] <- "rate"
+      line1[i] <- "Hypothesis rate"
+      line2[i] <- paste0("(rgw > ", format_threshold_display(hypo_rate_threshold), ")")
+    } else if (identical(cn, "rate_rlw")) {
+      line1[i] <- "Rate"
+      line2[i] <- paste0("(rlw > ", format_threshold_display(threshold_rlw), ")")
     } else if (grepl("^Overlap with ", cn)) {
       line1[i] <- "Overlap"
       line2[i] <- sub("^Overlap with ", "with ", cn)
@@ -1596,10 +1715,12 @@ header_lines_for_columns <- function(colnames_vec) {
 # that). Here, every column width -- and the width each merged group label
 # needs -- is computed and padded by hand up front, so the two header lines
 # and the data stay aligned regardless of getOption("width").
-print_grouped_header_table <- function(formatted_df, rn) {
+print_grouped_header_table <- function(formatted_df, rn, hypo_rate_threshold = NULL,
+                                       threshold_rlw = NULL) {
   ncol_ <- ncol(formatted_df)
   colnames_vec <- colnames(formatted_df)
-  hdr <- header_lines_for_columns(colnames_vec)
+  hdr <- header_lines_for_columns(colnames_vec, hypo_rate_threshold = hypo_rate_threshold,
+                                  threshold_rlw = threshold_rlw)
 
   col_w <- vapply(seq_len(ncol_), function(j) {
     max(nchar(hdr$line1[j]), nchar(hdr$line2[j]), nchar(formatted_df[, j]))
@@ -1659,7 +1780,8 @@ print_grouped_header_table <- function(formatted_df, rn) {
 # "(Reference population)" to the printed population label, e.g. "Population
 # effect-size = Observed (Reference population)".
 print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset,
-                                   is_reference = FALSE) {
+                                   is_reference = FALSE, hypo_rate_threshold = NULL,
+                                   threshold_rlw = NULL) {
   if (model_type == "benchmark_asymp") {
     pop_es_value <- gsub("pop_est = ", "", pop_es)
     label <- "Population estimates"
@@ -1696,7 +1818,8 @@ print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset,
   formatted_df <- do.call(cbind, formatted_cols)
   rownames(formatted_df) <- rownames(df)
   colnames(formatted_df) <- colnames(df)
-  print_grouped_header_table(formatted_df, rownames(df))
+  print_grouped_header_table(formatted_df, rownames(df), hypo_rate_threshold = hypo_rate_threshold,
+                             threshold_rlw = threshold_rlw)
   cat("\n")
 }
 

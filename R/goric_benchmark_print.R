@@ -12,6 +12,26 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
   output_type <- match.arg(output_type, c("rgw", "gw", "lw", "rlw", "ld",
                                           "rgw_log", "rlw_log", "all"))
 
+  # x$benchmarks/x$pctl_Sample/x$pctl_medianRefPop/x$overlap are nested list
+  # fields (e.g. x$benchmarks$goric_weights) since the output was
+  # restructured this way -- an older benchmark_means()/benchmark_asymp()
+  # object (from before that change -- still held in an R session, or
+  # reloaded from a saved .RData/.rds file) instead has flat fields like
+  # x$benchmarks_goric_weights, so x$benchmarks$goric_weights silently
+  # evaluates to NULL for it (R's '$' does not error on a missing list
+  # field). Left unchecked that would print every section as empty rather
+  # than fail loudly, so catch it here instead (see plot.benchmark()'s
+  # matching check for the full rationale).
+  if (is.null(x$benchmarks) || is.null(x$benchmarks$goric_weights)) {
+    stop("\nrestriktor ERROR: 'x' does not have the expected x$benchmarks$goric_weights ",
+         "field. This usually means 'x' is a benchmark object computed with an older ",
+         "version of benchmark_means()/benchmark_asymp() (from before its output was ",
+         "restructured into nested benchmarks/pctl_Sample/pctl_medianRefPop/overlap ",
+         "lists) -- e.g. one still held in your R session, or reloaded from a saved ",
+         ".RData/.rds file. Please rerun benchmark_means()/benchmark_asymp() to get a ",
+         "fresh benchmark object, then call print() on that.", call. = FALSE)
+  }
+
   ldots <- list(...)
 
   # Threshold q for the printed hypothesis rate. Defaults (NULL) to whatever

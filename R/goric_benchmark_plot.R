@@ -29,40 +29,62 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
 
   # Check if the output_type is valid
   output_type <- match.arg(output_type, c("rgw", "rlw", "gw", "ld"))
-  
-  #legend_lab <- names(x$benchmarks_goric_weights)
+
+  #legend_lab <- names(x$benchmarks$goric_weights)
   # first letter to upper-case
   #paste0(toupper(substring(x$type, 1, 1)), substring(x$type, 2))
-  goric_type <- toupper(x$type) 
+  goric_type <- toupper(x$type)
   comparison <- x$comparison
   pref_hypo_name <- x$pref_hypo_name
-  
+
+  # x$benchmarks/x$pctl_Sample/x$pctl_medianRefPop/x$overlap are nested list
+  # fields (each keyed by output_type, e.g. x$benchmarks$goric_weights) since
+  # the output was restructured this way -- older benchmark_means()/
+  # benchmark_asymp() objects (built before that change, e.g. still sitting
+  # in an R session or loaded from a saved .RData/.rds file) instead have
+  # flat fields like x$benchmarks_goric_weights, so x$benchmarks$goric_weights
+  # silently evaluates to NULL for them (R's '$' does not error on a missing
+  # list field). Left unchecked, that NULL propagates all the way down to
+  # 'percentiles' becoming numeric(0) below, which only surfaces much later
+  # as a cryptic "arguments imply differing number of rows" error out of
+  # data.frame() -- so catch it here instead, with a message that actually
+  # says what's wrong.
+  if (is.null(x$benchmarks) || is.null(x$benchmarks$goric_weights)) {
+    stop("\nrestriktor ERROR: 'x' does not have the expected x$benchmarks$goric_weights ",
+         "field. This usually means 'x' is a benchmark object computed with an older ",
+         "version of benchmark_means()/benchmark_asymp() (from before its output was ",
+         "restructured into nested benchmarks/pctl_Sample/pctl_medianRefPop/overlap ",
+         "lists) -- e.g. one still held in your R session, or reloaded from a saved ",
+         ".RData/.rds file. Please rerun benchmark_means()/benchmark_asymp() to get a ",
+         "fresh benchmark object, then call plot() on that.", call. = FALSE)
+  }
+
   # values are extracted from benchmark
   if (is.null(percentiles)) {
     # exclude sample
-    percentile_names <- colnames(x$benchmarks_goric_weights[[1]])[-1]
+    percentile_names <- colnames(x$benchmarks$goric_weights[[1]])[-1]
     percentiles <- as.numeric(sub("%", "", percentile_names)) / 100
   }
   
   # Define the labels based on the output_type
   if (output_type == "gw") {
     DATA <- x$combined_values$gw_combined
-    sample_value <- x$benchmarks_goric_weights[[1]][1]
+    sample_value <- x$benchmarks$goric_weights[[1]][1]
     xlabel <- paste(goric_type, "Weights")
     title <- paste0("Benchmark: ", goric_type, "-Weights Distribution for Preferred Hypothesis ", pref_hypo_name)
   } else if (output_type == "rgw") {
     DATA <- x$combined_values$rgw_combined
-    sample_value <- x$benchmarks_ratio_goric_weights[[1]][, 1, drop = FALSE]
+    sample_value <- x$benchmarks$ratio_goric_weights[[1]][, 1, drop = FALSE]
     xlabel <- paste("Ratio", goric_type, "Weights")
     title <- paste0("Benchmark: Ratio-", goric_type, "-Weights Distribution for Preferred Hypothesis ", pref_hypo_name)
   } else if (output_type == "rlw") {
     DATA <- x$combined_values$rlw_combined  
-    sample_value <- x$benchmarks_ratio_ll_weights[[1]][, 1, drop = FALSE]
+    sample_value <- x$benchmarks$ratio_ll_weights[[1]][, 1, drop = FALSE]
     xlabel <- "Ratio Log-likelihood Weights"
     title <- paste0("Benchmark: Ratio-Log-Likelihood-Weights Distribution for Preferred Hypothesis ", pref_hypo_name)
   } else if (output_type == "ld") {
     DATA <- x$combined_values$ld_combined
-    sample_value <- x$benchmarks_difLL[[1]][, 1, drop = FALSE]
+    sample_value <- x$benchmarks$difLL[[1]][, 1, drop = FALSE]
     xlabel <- "Log-likelihood Difference"
     title <- paste0("Benchmark: Log-likelihood-Difference Distribution for Preferred Hypothesis ", pref_hypo_name)
   }

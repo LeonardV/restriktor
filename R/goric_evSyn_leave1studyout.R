@@ -47,8 +47,36 @@ leave1studyout.evSyn <- function(object, ...) {
     ICw_m <- object$GORICA_weight_m
   }
   
+  # Prior IC weights (used in the same way as in evSyn() when determining the
+  # IC weights)
+  priorICweights <- object$priorICweights
+
+  # Input consisting of IC weights or ratios of IC weights: no IC values, but
+  # the differences in IC values (vs a reference hypothesis) can be used,
+  # since these lead to the same IC weights.
+  IC_is_diff <- FALSE
+  if (is.null(IC_m) && !is.null(object$ICdiff_m)) {
+    # ratios of IC weights: differences in IC values vs the reference hypothesis
+    IC_m <- object$ICdiff_m
+    IC_is_diff <- TRUE
+  } else if (is.null(IC_m) && !is.null(ICw_m)) {
+    # IC weights: the study-specific weights in the evSyn object include the
+    # prior IC weights, which are removed here (and included again below).
+    W <- ICw_m[, , drop = FALSE]
+    if (!is.null(priorICweights) && length(priorICweights) == ncol(W)) {
+      W <- sweep(W, 2, ifelse(priorICweights > 0, priorICweights, NA), "/")
+      W[, priorICweights == 0] <- 0
+    }
+    W <- W / rowSums(W)
+    IC_m <- -2 * log(W)
+    IC_is_diff <- TRUE
+  }
+
   if (is.null(IC_m)) {
     stop("restriktor ERROR: IC matrix is missing from the evSyn object.")
+  }
+  if (is.null(ICw_m)) {
+    ICw_m <- IC_m
   }
   
   if (!type_ev %in% c("added", "equal", "average")) {
@@ -66,6 +94,11 @@ leave1studyout.evSyn <- function(object, ...) {
     if (is.null(LL_m) || is.null(PT_m)) {
       stop("restriktor ERROR: LL_m and PT_m are required for type_ev = 'equal'.")
     }
+  }
+  # penalty factor (IC = -2 * LL + penalty_factor * PT), as used in evSyn()
+  penalty_factor <- object$penalty_factor
+  if (is.null(penalty_factor)) {
+    penalty_factor <- 2
   }
   
    
@@ -119,7 +152,6 @@ leave1studyout.evSyn <- function(object, ...) {
   if (is.null(study_weights)) {
     study_weights <- rep(1/S, S)
   }
-  priorICweights <- object$priorICweights
   if (is.null(priorICweights) || length(priorICweights) != ncol(IC_m)) {
     priorICweights <- rep(1/ncol(IC_m), ncol(IC_m))
   }
@@ -127,27 +159,33 @@ leave1studyout.evSyn <- function(object, ...) {
   for (s in seq_len(S)) {
     
     keep <- seq_len(S) != s
-    S_keep <- sum(keep)
-    # rescaled study weights (sum to S_keep)
-    w_keep <- S_keep * study_weights[keep] / sum(study_weights[keep])
+    # number of remaining studies with a positive study weight (a study with 
+    # weight 0 contributes nothing, as in evSyn())
+    S_keep <- sum(study_weights[keep] > 0)
+    # rescaled study weights (sum to S_keep); if the remaining studies all 
+    # have weight zero, there is no evidence (IC values of 0, so the IC 
+    # weights equal the prior IC weights), as in evSyn().
+    if (S_keep > 0) {
+      w_keep <- S_keep * study_weights[keep] / sum(study_weights[keep])
+    } else {
+      S_keep <- 1
+      w_keep <- rep(0, sum(keep))
+    }
     
-    # TO DO HIER
-    # Evt moet hier dan ook nog penalty_factor in verwerkt worden:
-    # -2 * colSums(LL_m[keep,]) + penalty_factor * colMeans(PT_m[keep,])  
-    # Of hebben we die term alleen in goric() ms
     OverallGoric[s, ] <- switch(
       type_ev,
       added   = colSums(IC_m[keep, , drop = FALSE] * w_keep),
       equal   = -2 * colSums(LL_m[keep, , drop = FALSE] * w_keep) +
-        2 * colSums(PT_m[keep, , drop = FALSE] * w_keep) / S_keep,
+        penalty_factor * colSums(PT_m[keep, , drop = FALSE] * w_keep) / S_keep,
       average = colSums(IC_m[keep, , drop = FALSE] * w_keep) / S_keep
     )
     
-    best <- which(OverallGoric[s, ] == min(OverallGoric[s, ], na.rm = TRUE))
+    # IC weights (incl. prior IC weights; computed on the log scale) and the
+    # preferred hypothesis, i.e., the one with the highest (prior-weighted)
+    # IC weight (and not the one with the lowest IC value).
+    OverallGoricWeights[s, ] <- ic_weights_log(OverallGoric[s, ], priorICweights)
+    best <- which(OverallGoricWeights[s, ] == max(OverallGoricWeights[s, ], na.rm = TRUE))
     OverallPrefHypo[s, 1L] <- paste(colnames(IC_m)[best], collapse = ", ")
-    minIC <- min(OverallGoric[s, ], na.rm = TRUE)
-    expGW <- priorICweights * exp(-0.5 * (OverallGoric[s, ] - minIC))
-    OverallGoricWeights[s, ] <- expGW / sum(expGW)
   }
   
   resultIC <- switch(
@@ -174,6 +212,11 @@ leave1studyout.evSyn <- function(object, ...) {
       type_ev = type_ev
     )
   )
+  if (IC_is_diff) {
+    # Based on IC weights or ratios of IC weights: the 'IC values' are
+    # differences in IC values (vs a reference hypothesis), not IC values.
+    result$IC_is_diff <- TRUE
+  }
   
   if (!type_missing) {
     result$type <- type

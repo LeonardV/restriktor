@@ -19,7 +19,7 @@ run_goric_mv <- function(...) suppressMessages(goric(fit_mv, ...))
 
 test_that("goric mlm: alle combinaties van comparison en type draaien", {
   for (cmp in c("complement", "unconstrained", "none")) {
-    for (ty in c("goric", "goricc", "gorica")) {
+    for (ty in c("goric", "gorica")) {
       res <- run_goric_mv(hypotheses = list(H1 = H_mv), comparison = cmp, type = ty)
       expect_s3_class(res, "con_goric")
       expect_true(all(is.finite(res$result[[ty]])))
@@ -34,12 +34,18 @@ test_that("goric mlm: loglik van complement en unconstrained is de MVN-loglik", 
   expect_equal(res_u$result$loglik[2], ll_mv_ref, tolerance = 1e-8)
 })
 
+test_that("goric mlm: goricc en goricac geven een duidelijke fout", {
+  # de small-sample correctie is (nog) niet afgeleid voor een multivariate
+  # residuele covariantiematrix; de univariate correctie mag niet gebruikt worden
+  for (ty in c("goricc", "goricac", "GORICC")) {
+    expect_error(run_goric_mv(hypotheses = list(H1 = H_mv), type = ty),
+                 "not \\(yet\\) available for objects of class mlm")
+  }
+})
+
 test_that("goric mlm: sample size is N en niet N x aantal responsen", {
-  res <- run_goric_mv(hypotheses = list(H1 = H_mv), comparison = "unconstrained",
-                      type = "goricc")
-  N <- nrow(df_mlm); p <- length(coef(fit_mv))
-  expect_equal(res$result$penalty[2], N * (p + 1) / (N - p - 2))
-  expect_equal(res$sample_nobs, N)
+  res <- run_goric_mv(hypotheses = list(H1 = H_mv), comparison = "unconstrained")
+  expect_equal(res$sample_nobs, nrow(df_mlm))
 })
 
 test_that("goric mlm: complement van alleen ongelijkheden (in lijn met de data)", {

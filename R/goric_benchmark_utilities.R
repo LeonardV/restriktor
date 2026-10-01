@@ -61,9 +61,21 @@ calculate_power <- function(density_h1, critical_value) {
 # this does not respect the [0, 1] bounds that 'gw'/'lw' are constrained to
 # -- a Gaussian kernel can put a little mass just outside that range, same
 # as it would visually spill past the axis limits in a density plot.
+#
+# NOTE on infinite draws: a ratio of weights (rgw/rlw) can be Inf when the
+# alternative's weight underflows to 0 (the ratios are formed on the log
+# scale -- see compute_log_ratios() -- so this only happens when the
+# log-ratio itself exceeds ~709, i.e. for truly overwhelming evidence). The
+# quantile/percentile/rate computations in get_results_benchmark() handle
+# Inf natively (an infinite draw simply counts as larger than any finite
+# draw), so such draws are NOT dropped there. A kernel density, however,
+# cannot be fitted on an infinite value, so for this overlap coefficient
+# (and only here) the non-finite draws are left out; the log-ratio
+# output_types (rgw_log/rlw_log) are always finite and are the better basis
+# for overlap in such cases anyway.
 compute_overlap <- function(draws1, draws2, n = 512) {
-  draws1 <- draws1[!is.na(draws1)]
-  draws2 <- draws2[!is.na(draws2)]
+  draws1 <- draws1[is.finite(draws1)]
+  draws2 <- draws2[is.finite(draws2)]
   if (length(draws1) < 2 || length(draws2) < 2 ||
       sd(draws1) == 0 || sd(draws2) == 0) {
     # Can't fit a (non-degenerate) density on too few draws, or on draws
@@ -280,30 +292,43 @@ compute_cohens_f <- function(group_means, N, VCOV) {
 # }
 
 
+# Population means with Cohen's f equal to 'target_f', keeping the PATTERN of
+# 'group_means' (the observed group means, or a user-specified
+# ratio_pop_means): the deviations from the (N-weighted) grand mean -- the
+# quantity Cohen's f is based on, see compute_cohens_f() -- are multiplied by
+# a single positive factor d, so that the ordering of the means, the sign of
+# each deviation and the relative differences between the means are all
+# preserved, whatever the sign of the means themselves. (Previously the means
+# were divided by min(group_means) and rescaled by a positive factor: with a
+# negative minimum this FLIPPED the ordering of the means, and with a zero
+# minimum it gave NaN/Inf.) Since Cohen's f is shift-invariant and scales
+# linearly with d, d = target_f / f(group_means) is available in closed form.
+# The returned means are centered (N-weighted grand mean 0), so a pattern
+# only matters up to a common shift: c(3, 2, 1) and c(1, 0, -1) give the same
+# population means. The 'Observed' population in benchmark_means() uses the
+# observed estimates as-is, rather than going through this function.
 generate_scaled_means <- function(group_means, target_f, N, VCOV) {
   if (target_f == 0) {
     # If targeted effect size f is 0, then set all the means to 0.
     new_means <- rep(0, length(group_means))
   } else {
-    ratio_vector <- group_means / min(group_means)  # such that ratios remain the same
-    #
-    objective <- function(d) {
-      means_new <- ratio_vector * d
-      computed_f <- compute_cohens_f(means_new, N, VCOV)
-      return(abs(computed_f - target_f))  # Minimize difference between calculated and desired Cohen's f
+    grand_mean <- sum(group_means * N) / sum(N)
+    deviations <- group_means - grand_mean
+    f_pattern <- compute_cohens_f(group_means, N, VCOV)
+    if (!is.finite(f_pattern) || f_pattern <= 0 ||
+        isTRUE(all.equal(unname(deviations), rep(0, length(deviations))))) {
+      stop("\nrestriktor ERROR: The group means (", paste(group_means, collapse = ", "),
+           ") are all equal, so they cannot be scaled to the population effect size ",
+           "(Cohen's f) ", target_f, ": the relative differences between the group ",
+           "means are needed to do so. Specify a pattern of population means with ",
+           "distinct values via the argument 'ratio_pop_means' (e.g., ratio_pop_means ",
+           "= c(1, 2, 3)).", call. = FALSE)
     }
-    
-    opt_result <- optimize(objective, interval = c(0, 100))
-    d_optimal <- opt_result$minimum
-    
-    new_means <- ratio_vector * d_optimal
+    d <- target_f / f_pattern
+    new_means <- deviations * d
   }
-  
-  # Debugging output
-  #cat(sprintf("Gevonden d: %.5f voor target f: %.5f\n", d_optimal, target_f))
-  #cat("Oude means:", group_means, "\n")
-  #cat("Nieuwe means:", new_means_ordered, "\n")
-  
+  names(new_means) <- names(group_means)
+
   return(new_means)
 }
 
@@ -334,11 +359,55 @@ generate_scaled_means <- function(group_means, target_f, N, VCOV) {
 #   return(means_pop_all)  
 # }
 
+# Log of the ratio of the preferred hypothesis' GORIC(A) weight (rgw) and
+# log-likelihood weight (rlw) to that of every hypothesis in a goric object,
+# computed directly from the IC and log-likelihood values (and the prior IC
+# weights) -- i.e., on the LOG scale -- rather than as log(ratio.gw): the
+# weights themselves (and hence ratio.gw/ratio.lw from goric()) underflow to
+# 0 / overflow to Inf for very large IC differences, whereas the log-ratio
+# is finite whenever the IC values are finite. The ratio itself is exp() of
+# this, so it can still be Inf (for a log-ratio above ~709) -- see
+# compute_overlap() for how such draws are handled. Names match the
+# columns of goric()$ratio.gw ("vs. <hypothesis>").
+compute_log_ratios <- function(result, type, priorICweights, pref_hypo) {
+  IC <- result[[type]]
+  loglik <- result$loglik
+  if (is.null(priorICweights)) priorICweights <- rep(1, length(IC))
+  # weight_i = prior_i * exp(-IC_i/2) / sum(...), so
+  # log(w_pref / w_j) = (IC_j - IC_pref)/2 + log(prior_pref) - log(prior_j);
+  # likewise loglik-weight_i = exp(loglik_i) / sum(...).
+  rgw_log <- 0.5 * (IC - IC[pref_hypo]) + log(priorICweights[pref_hypo]) - log(priorICweights)
+  rlw_log <- loglik[pref_hypo] - loglik
+  rgw_log[pref_hypo] <- 0 # self-comparison (ratio 1), also when prior = 0
+  names(rgw_log) <- names(rlw_log) <- paste0("vs. ", result$model)
+  list(rgw_log = rgw_log, rlw_log = rlw_log)
+}
+
+# The per-draw statistics returned by the workers below: gw/lw, the
+# log-ratios (always finite, see compute_log_ratios()) and the ratios
+# themselves (exp of the log-ratios).
+extract_draw_results <- function(results_goric, pref_hypo) {
+  log_ratios <- compute_log_ratios(results_goric$result, results_goric$type,
+                                   results_goric$priorICweights, pref_hypo)
+  ld <- results_goric$result$loglik[pref_hypo] - results_goric$result$loglik
+  names(ld) <- names(log_ratios$rgw_log)
+  list(
+    gw  = results_goric$result[pref_hypo, 7], # goric(a) weight
+    lw  = results_goric$result$loglik.weights[pref_hypo], # (unpenalized) log-likelihood weight
+    rgw = exp(log_ratios$rgw_log), # ratio goric(a) weights
+    rlw = exp(log_ratios$rlw_log), # ratio log-likelihood weights
+    rgw_log = log_ratios$rgw_log,
+    rlw_log = log_ratios$rlw_log,
+    ld  = ld # loglik difference
+  )
+}
+
 # this function is called from the goric_benchmark_anova() function
 parallel_function_means <- function(i, N, var_e, means_pop,
                                     hypos, pref_hypo, comparison, ngroups, sample,
                                     control, form_model_org, mix_weights,
-                                    penalty_factor, ...) {
+                                    penalty_factor, type = "gorica",
+                                    sample_nobs = sum(N), ...) {
 
   # Sample residuals
   #epsilon <- rnorm(sum(N), sd = sqrt(var_e/sum(N)))
@@ -391,7 +460,10 @@ parallel_function_means <- function(i, N, var_e, means_pop,
             VCOV = VCOV,
             hypotheses = hypos,
             comparison = comparison,
-            type = "gorica", # TO DO goricac ergens ook (als origineel dan goricc ws)?
+            # same criterion (gorica/goricac) and sample size as the
+            # benchmarked object
+            type = type,
+            sample_nobs = sample_nobs,
             control = control,
             mix_weights = mix_weights,
             ...)
@@ -413,18 +485,7 @@ parallel_function_means <- function(i, N, var_e, means_pop,
   }
 
   # Return the relevant results
-  ld_names <- names(results_goric$ratio.gw[pref_hypo, ])
-  ld <- results_goric$result$loglik[pref_hypo] - results_goric$result$loglik
-  names(ld) <- ld_names
-
-  list(
-    #test  = attr(results.goric$objectList[[results.goric$objectNames]]$wt.bar, "mvtnorm"),
-    gw  = results_goric$result[pref_hypo, 7], # goric(a) weight
-    lw  = results_goric$result$loglik.weights[pref_hypo], # (unpenalized) log-likelihood weight
-    rgw = results_goric$ratio.gw[pref_hypo, ], # ratio goric(a) weights
-    rlw = results_goric$ratio.lw[pref_hypo, ], # ratio log-likelihood weights
-    ld  = ld # loglik difference
-  )
+  extract_draw_results(results_goric, pref_hypo)
 }
 
 
@@ -433,15 +494,18 @@ parallel_function_means <- function(i, N, var_e, means_pop,
 # this function is called from the benchmark_asymp() function
 parallel_function_asymp <- function(i, est, VCOV, hypos, pref_hypo, comparison,
                                     type, control, mix_weights, penalty_factor,
-                                    priorICweights = NULL, ...) {  
+                                    priorICweights = NULL, sample_nobs = NULL, ...) {
   results_goric <- tryCatch(
     {
       # Voer de goric functie uit
       goric(est[i, ], VCOV = VCOV,
             hypotheses = hypos,
             comparison = comparison,
+            # same criterion (gorica/goricac) and sample size as the
+            # benchmarked object
             type = type,
-            control = control, 
+            sample_nobs = sample_nobs,
+            control = control,
             mix_weights = mix_weights,
             penalty_factor = penalty_factor,
             priorICweights = priorICweights,
@@ -462,20 +526,8 @@ parallel_function_asymp <- function(i, est, VCOV, hypos, pref_hypo, comparison,
   if (is.null(results_goric)) {
     return(NULL)
   }
-  
-  ld_names <- names(results_goric$ratio.gw[pref_hypo, ])
-  ld <- results_goric$result$loglik[pref_hypo] - results_goric$result$loglik
-  names(ld) <- ld_names
-  
-  out <- list(
-    gw  = results_goric$result[pref_hypo, 7], # goric(a) weight
-    lw  = results_goric$result$loglik.weights[pref_hypo], # (unpenalized) log-likelihood weight
-    rgw = results_goric$ratio.gw[pref_hypo, ], # ratio goric(a) weights
-    rlw = results_goric$ratio.lw[pref_hypo, ], # ratio log-likelihood weights
-    ld  = ld
-  )
 
-  return(out)
+  return(extract_draw_results(results_goric, pref_hypo))
 }
 
 
@@ -505,6 +557,14 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   rgw_combined <- lapply(results, function(pop_es_list) extract_and_combine_values(pop_es_list, "rgw"))
   rlw_combined <- lapply(results, function(pop_es_list) extract_and_combine_values(pop_es_list, "rlw"))
   ld_combined  <- lapply(results, function(pop_es_list) extract_and_combine_values(pop_es_list, "ld"))
+  # log(rgw)/log(rlw), as computed per draw on the log scale (see
+  # compute_log_ratios()): always finite, also when rgw/rlw itself is Inf.
+  rgw_log_combined <- lapply(results, function(pop_es_list) extract_and_combine_values(pop_es_list, "rgw_log"))
+  rlw_log_combined <- lapply(results, function(pop_es_list) extract_and_combine_values(pop_es_list, "rlw_log"))
+  # The 'Sample' values of the (log-)ratios, computed in the same way as the
+  # draws (on the log scale; the ratio is exp() of the log-ratio).
+  sample_log_ratios <- compute_log_ratios(object$result, object$type,
+                                          object$priorICweights, pref_hypo)
 
   # Which population the "median ref. pop." columns below (and the "Overlap
   # with ..." column -- see overlap_reference_pop further down, which now
@@ -604,17 +664,12 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   CI_benchmarks_ld_ge0 <- matrix(NA, nrow = nr.hypos, ncol = 1 + length(quant))
 
   # Fill the first column with sample values
-  CI_benchmarks_rgw[, 1] <- object$ratio.gw[pref_hypo,]
-  CI_benchmarks_rlw[, 1] <- object$ratio.lw[pref_hypo,]
-  CI_benchmarks_rgw_log[, 1] <- log(object$ratio.gw[pref_hypo,])
-  CI_benchmarks_rlw_log[, 1] <- log(object$ratio.lw[pref_hypo,])
-  for (j in seq_len(nr.hypos)) {
-    if (object$ratio.lw[pref_hypo, j] >= 1) {
-      CI_benchmarks_rlw_ge1[j, 1] <- object$ratio.lw[pref_hypo, j] 
-    } else {
-      CI_benchmarks_rlw_ge1[j, 1] <- 1 / object$ratio.lw[pref_hypo, j] 
-    }
-  }
+  CI_benchmarks_rgw[, 1] <- exp(sample_log_ratios$rgw_log)
+  CI_benchmarks_rlw[, 1] <- exp(sample_log_ratios$rlw_log)
+  CI_benchmarks_rgw_log[, 1] <- sample_log_ratios$rgw_log
+  CI_benchmarks_rlw_log[, 1] <- sample_log_ratios$rlw_log
+  # folded to >= 1: exp(|log-ratio|)
+  CI_benchmarks_rlw_ge1[, 1] <- exp(abs(sample_log_ratios$rlw_log))
   CI_benchmarks_ld[, 1] <- object$result$loglik[pref_hypo] - object$result$loglik 
   CI_benchmarks_ld_ge0[, 1] <- abs(object$result$loglik[pref_hypo] - object$result$loglik) 
   
@@ -650,8 +705,8 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   # rlw_log_combined lists aren't built until after this loop (see below).
   ref_median_rgw <- apply(rgw_combined[[reference_pop_name]], 2, median, na.rm = TRUE)
   ref_median_rlw <- apply(rlw_combined[[reference_pop_name]], 2, median, na.rm = TRUE)
-  ref_median_rgw_log <- apply(log(rgw_combined[[reference_pop_name]]), 2, median, na.rm = TRUE)
-  ref_median_rlw_log <- apply(log(rlw_combined[[reference_pop_name]]), 2, median, na.rm = TRUE)
+  ref_median_rgw_log <- apply(rgw_log_combined[[reference_pop_name]], 2, median, na.rm = TRUE)
+  ref_median_rlw_log <- apply(rlw_log_combined[[reference_pop_name]], 2, median, na.rm = TRUE)
   ref_median_ld <- apply(ld_combined[[reference_pop_name]], 2, median, na.rm = TRUE)
   # rlw_ge1/ld_ge0 (see 'Prepare rlw_ge1 and ld_ge0 matrices' below) aren't
   # available as standalone combined lists the way rgw/rlw/ld are -- they're
@@ -686,9 +741,11 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     # ratio -- and so out of its log -- exactly, per draw). Self-comparison
     # (pref vs pref) is log(1) = 0 here, rather than the 1 that rgw/rlw use,
     # so it gets cleaned via the 0-baseline (like ld) rather than the
-    # 1-baseline used for rgw/rlw below.
-    rgw_log_combined_values <- log(rgw_combined_values)
-    rlw_log_combined_values <- log(rlw_combined_values)
+    # 1-baseline used for rgw/rlw below. Taken from the draws' own log-scale
+    # computation (compute_log_ratios()) rather than as log() of the ratio,
+    # so these are finite even when the ratio itself overflowed to Inf.
+    rgw_log_combined_values <- rgw_log_combined[[name]]
+    rlw_log_combined_values <- rlw_log_combined[[name]]
     
     # Loop through the hypotheses and calculate the quantiles
     for (j in seq_len(nr.hypos)) {
@@ -884,13 +941,6 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   pctl_medianRefPop_ld_all_cleaned <- align_rows(medianRefPop_ld_all, CI_benchmarks_ld_all_cleaned)
   pctl_medianRefPop_ld_ge0_all_cleaned <- align_rows(medianRefPop_ld_ge0_all, CI_benchmarks_ld_ge0_all_cleaned)
 
-  # rgw_log/rlw_log combined draws, for combined_values/overlap below -- same
-  # log() transform as CI_benchmarks_rgw_log/rlw_log above, just derived
-  # directly from the (still self-column-including) rgw_combined/rlw_combined
-  # matrices before those get trimmed just below.
-  rgw_log_combined <- lapply(rgw_combined, function(m) log(m))
-  rlw_log_combined <- lapply(rlw_combined, function(m) log(m))
-
   rgw_combined <- lapply(rgw_combined, function(pop_es_list) {
     remove_self_col(pop_es_list, self_col)
   })
@@ -1055,11 +1105,14 @@ calculate_error_probability <- function(object, hypos, pref_hypo, est,
     } else {
       H_pref <- hypos[[pref_hypo]]
       if (is.null(object$model.org)) {
+        # same criterion (gorica/goricac) and sample size as the (refitted)
+        # benchmarked object
         results_goric_pref <- goric(est, VCOV = VCOV,
                                     hypotheses = list(H_pref = H_pref),
                                     comparison = "complement",
-                                    type = "gorica", 
-                                    control = control, 
+                                    type = object$type,
+                                    sample_nobs = object$sample_nobs,
+                                    control = control,
                                     ...)
       } else {
         fit_data <- object$model.org
@@ -1366,7 +1419,20 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
                                      es_labels = rnames,
                                      iter_min = 500, iter_step = 100,
                                      iter_max = 2000, band = c(0.495, 0.505),
-                                     stability_tol = 1, ...) {
+                                     stability_tol = 1,
+                                     # criterion (gorica/goricac) and sample
+                                     # size used for every draw: the same as
+                                     # those of the (refitted) benchmarked
+                                     # 'object', so that the 'Sample' value and
+                                     # the benchmark distribution are based on
+                                     # the same criterion.
+                                     type = object$type,
+                                     sample_nobs = object$sample_nobs, ...) {
+  if (type == "goricac" && is.null(sample_nobs)) {
+    stop("\nrestriktor ERROR: The benchmark is based on the GORICAC (goricac), which ",
+         "requires the sample size. Please specify it via the argument 'sample_size' ",
+         "(benchmark_asymp) or 'group_size' (benchmark_means).", call. = FALSE)
+  }
 
   auto_iter <- is.null(iter)
   sample_gw <- object$result[pref_hypo, 7]
@@ -1423,7 +1489,8 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
           parallel_function_asymp(i,
                                   est = est_full, VCOV = VCOV,
                                   hypos = hypos, pref_hypo = pref_hypo,
-                                  comparison = comparison, type = "gorica",
+                                  comparison = comparison, type = type,
+                                  sample_nobs = sample_nobs,
                                   control = control, mix_weights = mix_weights,
                                   penalty_factor = penalty_factor,
                                   # same prior weights as the (refitted) goric object

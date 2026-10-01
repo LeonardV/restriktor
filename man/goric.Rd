@@ -133,7 +133,10 @@ comparable to the Akaike weights.
   or the biased one obtained via the vcov function (e.g., for a \code{lavaan} object). 
   In the latter case, a corresponding message will be printed. 
   If \code{"goricc"} or \code{"goricac"}, 
-  then the small-sample-size correction is applied.}
+  then the small-sample-size correction is applied. Note that \code{"goricc"} 
+  and \code{"goricac"} are not (yet) available for objects of class \code{mlm}: 
+  the small-sample correction for a multivariate residual covariance matrix 
+  has not been derived/validated. Use \code{"goric"} or \code{"gorica"} instead.}
   
   \item{VCOV}{variance-covariance matrix. Only needed if object is of class 'numeric' (and, therefore,
   \code{type = "gorica"} or \code{type = "goricac"}).

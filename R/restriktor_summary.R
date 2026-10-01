@@ -205,6 +205,9 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
     #       free parameters is estimated instead of one variance. A choice 
     #       still has to be made whether to use 1 or ny*(ny+1)/2 (see also 
     #       PTu in goric.default() and penalty_complement_goric()).
+    #       The small-sample correction (goricc) for mlm objects is blocked in
+    #       goric.lm() until it has been derived for a multivariate residual
+    #       covariance matrix.
     if (goric %in% c("goric", "gorica")) {
       PT <- penalty_goric(Amat        = ans$PT_Amat,  
                           meq         = ans$PT_meq, 

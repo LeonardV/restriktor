@@ -108,7 +108,11 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
                      times = names(df), 
                      direction = "long")
   row.names(df_long) <- NULL
-  
+  # A ratio (rgw/rlw) can be Inf when the alternative's weight underflows to
+  # 0 (see compute_overlap() in goric_benchmark_utilities.R); a density
+  # cannot be estimated on such draws, so they are left out of the plot only.
+  df_long$Value[!is.finite(df_long$Value)] <- NA
+
   if (inherits(x, "benchmark_asymp")) {
     df_long$Group <- gsub("pop_est", "Population estimates", df_long$Group)
   } else {

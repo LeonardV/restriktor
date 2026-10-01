@@ -47,7 +47,7 @@ evSyn_LL(object, \dots, PT = list(), type_ev = c("added", "equal", "average"),
          hypo_names = c(), priorICweights = NULL, 
          type = c("goric", "goricc", "gorica", "goricac"),
          order_studies = c("input_order", "ascending", "descending"),
-         study_names = c(), study_weights = NULL)
+         study_names = c(), study_weights = NULL, penalty_factor = 2)
 
 # input: GORIC(A), ORIC, AIC values
 evSyn_ICvalues(object, \dots, type_ev = c("added", "average"), 
@@ -110,6 +110,14 @@ xlab_unordered = NULL, angle_x = 30, \dots)
       \item a data.frame of class escalc from the \pkg{metafor} package or a regular data.frame using the same labelling;
     }
     In the case of the first or last option, \code{evSyn} will calculate the GORICA (incl. log-likelihood and penalty) for each study using \code{goric}.
+    In the case of a list of goric objects, the hypotheses are identified by their names
+    (i.e., the names used in \code{goric}, or H1, H2, \ldots when unnamed, plus the failsafe hypothesis):
+    all objects must contain the same (named) hypotheses, use the same \code{comparison},
+    \code{type}, and \code{penalty_factor}; when the hypotheses are given in another
+    order in one of the objects, they are matched by name. When the hypotheses are unnamed
+    and their specification differs across objects, an error is given.
+    Likewise, when the input vectors (e.g., with IC values or weights) carry names,
+    these must denote the same hypotheses across studies (matched by name).
   }
   
   \item{input_type}{
@@ -130,6 +138,11 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   of interest.} 
   
   \item{PT}{a list of vectors with penalty values.}
+
+  \item{penalty_factor}{a single non-negative number: the factor with which the penalty is
+  multiplied in the information criterion, that is, IC = -2 * log-likelihood + \code{penalty_factor} * penalty
+  (default 2; see \code{\link{goric}}). When the input consists of goric objects,
+  the \code{penalty_factor} used in those objects is used (which must be the same for all objects).}
   
   \item{x}{an object of class \code{evSyn}}
 
@@ -162,7 +175,8 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   Note that the complement can only be computed for one model/hypothesis at a time.} 
 
   \item{hypo_names}{character vector for labelling the hypotheses. By default, the
-  names are set to H1, H2, \ldots}
+  names are set to H1, H2, \ldots; when the input consists of goric objects, the
+  hypothesis names of (the first of) these objects are used by default.}
 
   \item{priorICweights}{vector that represents the prior belief for the specified hypotheses. 
   By default, equal prior weights are used (i.e., 1/(#hypotheses)). 
@@ -181,8 +195,10 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   used in the study-specific IC weights; when the input consists of estimates 
   (or log-likelihood and penalty values or goric objects), the study-specific IC weights 
   are based on equal prior weights.
-  They will not be used in ordering the studies with 'order_studies' = \code{"ascending"} or \code{"descending"}; 
-  this will be based equal a priori likeliness of the hypotheses.
+  The prior weights must be non-negative (a hypothesis with prior weight 0 obtains an IC weight of 0)
+  and at least one of them must be positive.
+  When ordering the studies with 'order_studies' = \code{"ascending"} or \code{"descending"},
+  the preferred hypothesis is the one with the highest final (prior-weighted) IC weight.
   Notably, \code{priorICweights} was previously called \code{priorWeights}; 
   this argument name is deprecated (it still works, with a warning).}
   
@@ -226,8 +242,16 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   Notably, the study weights will be used in the cumulative and final results of evidence synthesis
   (i.e., for the IC values and weights as well as for the log-likelihood values and weights) 
   and in \code{leave1studyout} (where the weights of the remaining studies are rescaled).
-  They will not be used in ordering the studies with 'order_studies' = \code{"ascending"} or \code{"descending"}; 
-  this will be based on the height of support for each study assuming equal study weights.}
+  The study weights must be non-negative and at least one of them must be positive.
+  A study with weight 0 contributes nothing: it is not counted as a study, so the 
+  cumulative results at that step equal those of the previous step (and the final 
+  results equal those of an evidence synthesis without that study); 
+  as long as the cumulative set only contains studies with weight 0, there is no evidence yet
+  and the cumulative IC values (and log-likelihood values) are 0, such that the
+  cumulative IC weights equal the prior IC weights (and the log-likelihood weights are equal).
+  When ordering the studies with 'order_studies' = \code{"ascending"} or \code{"descending"},
+  the preferred hypothesis is determined using the final (study-weighted) results;
+  the ordering itself is based on the study-specific support for that hypothesis.}
   
   \item{order_studies}{
   either a i) character string or ii) numeric vector:
@@ -236,8 +260,9 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   provided. If \code{"ascending"} or \code{"descending"}, studies are ordered based 
   on the ascending or descending support for the preferred hypothesis, 
   respectively. 
-  In this case, the order will be determined using equal a priori likeliness of the hypotheses
-  and equal study weights.
+  The preferred hypothesis is the hypothesis with the highest final (prior-weighted and
+  study-weighted) IC weight; the (study-specific) support for it is based on the
+  study-specific IC weights.
   ii) A numeric vector with length the number of studies (S). 
   This vector then gives the ordering of studies to be used, which one could base on, 
   say, year of the study.

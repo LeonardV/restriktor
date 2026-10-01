@@ -111,40 +111,20 @@ goric.default <- function(object, ..., hypotheses = NULL,
   if (is.null(priorICweights)) {
     priorICweights <- rep(1/(NrHypos_incl), (NrHypos_incl))
   } else {
-    if (!is.numeric(priorICweights) || any(is.na(priorICweights))) {
-      stop("\nrestriktor ERROR: The argument 'priorICweights' should be a numeric vector ",
-           "without missing values.", call. = FALSE)
+    # description of the expected elements (used in the error message)
+    what <- if (isTRUE(Heq)) {
+      "one for Heq, one for the informative hypothesis, and one for its complement"
+    } else if (comparison %in% c("unconstrained", "complement")) {
+      "one for each informative hypothesis and one for the failsafe hypothesis"
+    } else { # comparison == "none"
+      "one for each informative hypothesis"
     }
-    if (any(priorICweights < 0)) {
-      stop("\nrestriktor ERROR: The argument 'priorICweights' should only contain ",
-           "non-negative values.", call. = FALSE)
-    }
-    if (sum(priorICweights) <= 0) {
-      stop("\nrestriktor ERROR: The argument 'priorICweights' should contain at least ",
-           "one positive value (the weights cannot all be zero).", call. = FALSE)
-    }
-    # Check if length is number of hypotheses in the set
-    if (length(priorICweights) != NrHypos_incl) {
-      if (isTRUE(Heq)) {
-        stop("\nrestriktor ERROR: The argument 'priorICweights' should consist of ", NrHypos_incl, " elements, \n",
-             "namely one for Heq, one for the informative hypothesis, and one for its complement. \n", 
-             "It now consists of ", length(priorICweights), " elements.",
-             call. = FALSE)
-      } else if (comparison %in% c("unconstrained", "complement") ) {
-      stop("\nrestriktor ERROR: The argument 'priorICweights' should consist of ", NrHypos_incl, " elements, \n",
-           "namely one for each informative hypothesis and a failsafe hypothesis. \n", 
-           "It now consists of ", length(priorICweights), " elements.",
-           call. = FALSE)
-      } else if (comparison %in% c("none") ) {
-        stop("\nrestriktor ERROR: The argument 'priorICweights' should consist of ", NrHypos_incl, " elements, \n",
-             "namely one for each informative hypothesis. \n", 
-             "It now consists of ", length(priorICweights), " elements.",
-             call. = FALSE)
-      }
-    }
-    # To make it sum to 1 (if it not already did)
-    if (!isTRUE(all.equal(sum(priorICweights), 1))) {
-      priorICweights <- priorICweights / sum(priorICweights) 
+    sum_priorICweights <- if (is.numeric(priorICweights)) sum(priorICweights) else NA
+    # checks: numeric, finite, non-negative, not all zero, correct length;
+    # rescaled to sum 1
+    priorICweights <- check_weights(priorICweights, "priorICweights", 
+                                    length_expected = NrHypos_incl, what = what)
+    if (!isTRUE(all.equal(sum_priorICweights, 1))) {
       message("\nrestriktor Message: The argument 'priorICweights' should add up to 1. It has been rescaled accordingly.")
     }
   }
@@ -613,6 +593,9 @@ goric.default <- function(object, ..., hypotheses = NULL,
               #       ny*(ny+1)/2 free parameters is estimated. A choice still 
               #       has to be made whether to use 1 or ny*(ny+1)/2 here (and 
               #       in penalty_goric() and penalty_complement_goric()).
+              #       Note: type = 'goricc'/'goricac' is blocked for mlm objects
+              #       (see goric.lm()) until the small-sample correction for a
+              #       multivariate residual covariance matrix has been derived.
               PTu <- 1 + ncol(VCOV)
             } else if (type %in% c("goricc", "goricac")) {
               
@@ -872,6 +855,16 @@ goric.lm <- function(object, ..., hypotheses = NULL,
   }
   if (missing == "listwise") {
     missing <- "none"
+  }
+
+  # The small-sample correction (goricc/goricac) has only been derived for a
+  # single residual variance; for a multivariate residual covariance matrix
+  # (ny*(ny+1)/2 parameters) it has not been derived/validated yet.
+  if (inherits(object, "mlm") && tolower(type) %in% c("goricc", "goricac")) {
+    stop("\nrestriktor ERROR: type = 'goricc'/'goricac' is not (yet) available for ",
+         "objects of class mlm: the small-sample correction for a multivariate ",
+         "residual covariance matrix has not been derived/validated. ",
+         "Use type = 'goric' or 'gorica'.", call. = FALSE)
   }
 
   objectList <- list(...)

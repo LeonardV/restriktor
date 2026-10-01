@@ -55,7 +55,8 @@ summary.evSyn <- function(object, ...) {
     Cumulative_PT <- matrix(Cumulative_PT, nrow = nrow(x[["PT_m"]]), 
                             dimnames = list(sequence, colnames(x[["PT_m"]])))
     if (x[["type_ev"]] %in% c("equal", "average")) {
-      Cumulative_PT <- Cumulative_PT / seq_len(ans$n_studies)
+      # average over the (positively weighted) studies so far
+      Cumulative_PT <- Cumulative_PT / pmax(.evSyn_n_pos(study_weights_S), 1)
     } 
     ans$Cumulative_PT <- Cumulative_PT
   }

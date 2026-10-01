@@ -112,9 +112,15 @@ test_that("goric: priorICweights validatie geeft duidelijke fouten", {
   expect_error(goric(est_cf, VCOV = VCOV_cf, hypotheses = hyp,
                      priorICweights = c(-1, 2)), "non-negative")
   expect_error(goric(est_cf, VCOV = VCOV_cf, hypotheses = hyp,
-                     priorICweights = c(NA, 1)), "missing")
+                     priorICweights = c(NA, 1)), "NA")
   expect_error(goric(est_cf, VCOV = VCOV_cf, hypotheses = hyp,
-                     priorICweights = c(0, 0)), "all be zero")
+                     priorICweights = c(Inf, 1)), "finite")
+  expect_error(goric(est_cf, VCOV = VCOV_cf, hypotheses = hyp,
+                     priorICweights = c(0, 0)), "at least one positive")
+  expect_error(goric(est_cf, VCOV = VCOV_cf, hypotheses = hyp,
+                     priorICweights = c(0.2, 0.3, 0.5)), "failsafe")
+  expect_error(goric(est_cf, VCOV = VCOV_cf, hypotheses = hyp, comparison = "none",
+                     priorICweights = c(0.5, 0.5)), "should consist of 1 elements")
   expect_error(goric(est_cf, VCOV = VCOV_cf, hypotheses = hyp,
                      priorICweights = c(0.2, 0.3, 0.5)), "should consist of 2 elements")
   expect_error(goric(est_cf, VCOV = VCOV_cf, hypotheses = hyp,
@@ -178,4 +184,139 @@ test_that("goric: add_Hc en posthoc zijn geen argumenten meer", {
                      add_Hc = 1), "Unknown argument")
   expect_error(goric(est_cf, VCOV = VCOV_cf, hypotheses = list(H1 = "x1 > x2"),
                      posthoc = TRUE), "Unknown argument")
+})
+
+
+# -----------------------------------------------------------------------------
+# IC-gewichten: nul-prior en grote IC-verschillen (log-sum-exp)
+# -----------------------------------------------------------------------------
+
+test_that("goric: priorICweight 0 geeft gewicht 0 en 1 (geen NaN)", {
+  res <- goric(c(x = 100), VCOV = matrix(1), hypotheses = list(H = "x > 0"),
+               priorICweights = c(0, 1))
+  expect_equal(res$result$gorica.weights, c(0, 1))
+  expect_false(anyNA(res$result$gorica.weights))
+  expect_equal(res$ratio.gw["H", "vs. complement"], 0)
+  expect_equal(res$ratio.gw["complement", "vs. H"], Inf)
+  expect_equal(diag(res$ratio.gw), c(1, 1))
+  expect_output(print(res))
+  expect_output(print(summary(res)))
+})
+
+test_that("goric: nul-prior bij unconstrained vergelijking", {
+  res <- goric(est_cf, VCOV = VCOV_cf,
+               hypotheses = list(H1 = "x1 > x2", H2 = "x1 < x2"),
+               priorICweights = c(0.5, 0.5, 0))
+  expect_equal(res$result$gorica.weights[3], 0)
+  expect_equal(sum(res$result$gorica.weights), 1)
+  expect_false(anyNA(res$result$gorica.weights))
+  expect_output(print(res))
+  expect_output(print(summary(res)))
+})
+
+test_that("goric: enorm IC-verschil geeft eindige gewichten 1/0 zonder NaN", {
+  # x = 100 met variantie 1: loglik-verschil H vs complement is enorm
+  res <- goric(c(x = 100), VCOV = matrix(1), hypotheses = list(H = "x < 0"))
+  w <- res$result$gorica.weights
+  expect_false(anyNA(w))
+  expect_equal(w, c(0, 1))
+  expect_equal(res$ratio.gw["complement", "vs. H"], Inf)
+  expect_equal(res$ratio.gw["H", "vs. complement"], 0)
+  expect_false(anyNA(res$result$loglik.weights))
+  expect_false(anyNA(res$result$penalty.weights))
+  expect_output(print(res))
+  expect_output(print(summary(res)))
+})
+
+test_that("ic_weights_log: gelijk aan de directe formule bij gewone waarden", {
+  IC <- c(10, 12, 15); prior <- c(0.5, 0.3, 0.2)
+  w_direct <- prior * exp(-IC / 2) / sum(prior * exp(-IC / 2))
+  expect_equal(restriktor:::ic_weights_log(IC, prior), w_direct)
+  expect_equal(restriktor:::ic_weights_log(IC), exp(-IC / 2) / sum(exp(-IC / 2)))
+  expect_equal(restriktor:::ic_weights_log(c(10, 2000)), c(1, 0))
+})
+
+
+# -----------------------------------------------------------------------------
+# gorica voor lavaan: gestandaardiseerde schattingen via merge op parameter
+# -----------------------------------------------------------------------------
+
+test_that("goric.lavaan standardized: := en == rijen worden correct gekoppeld", {
+  skip_if_not_installed("lavaan")
+  set.seed(1)
+  d <- data.frame(x = rnorm(100))
+  d$y <- 0.5 * d$x + rnorm(100)
+  d$z <- 0.4 * d$x + rnorm(100)
+  fit <- lavaan::sem("y ~ a*x\nz ~ b*x\na == b\ntotal := a+b", data = d)
+  est <- restriktor:::con_gorica_est_lav(fit, standardized = TRUE)
+  std <- lavaan::standardizedSolution(fit)
+  expect_equal(unname(est$estimate["total"]), std$est.std[std$label == "total"])
+  expect_equal(unname(est$estimate["a"]), std$est.std[std$label == "a"])
+  # dezelfde structuur als het ongestandaardiseerde pad
+  est_u <- restriktor:::con_gorica_est_lav(fit, standardized = FALSE)
+  expect_identical(names(est$estimate), names(est_u$estimate))
+  expect_identical(dim(est$VCOV), dim(est_u$VCOV))
+  res <- suppressMessages(goric(fit, hypotheses = list(H = "total > 0"),
+                                standardized = TRUE))
+  expect_s3_class(res, "con_gorica")
+  expect_equal(unname(res$b.unrestr["total"]), std$est.std[std$label == "total"])
+})
+
+test_that("goric.lavaan standardized: multigroep met group.equal", {
+  skip_if_not_installed("lavaan")
+  set.seed(2)
+  d <- data.frame(x = rnorm(120), g = rep(c("A", "B"), 60))
+  d$y <- 0.5 * d$x + rnorm(120)
+  d$z <- 0.4 * d$x + rnorm(120)
+  fit <- lavaan::sem("y ~ c(a1, a2)*x\nz ~ b*x\ntot := a1 + a2", data = d,
+                     group = "g", group.equal = "regressions")
+  est_s <- restriktor:::con_gorica_est_lav(fit, standardized = TRUE)
+  est_u <- restriktor:::con_gorica_est_lav(fit, standardized = FALSE)
+  expect_identical(names(est_s$estimate), names(est_u$estimate))
+  expect_identical(est_s$rhs, est_u$rhs)
+  std <- lavaan::standardizedSolution(fit)
+  expect_equal(unname(est_s$estimate["tot"]), std$est.std[std$label == "tot"])
+  expect_equal(unname(est_s$estimate["a1"]),
+               std$est.std[std$label == "a1" & std$group == 1])
+  expect_equal(unname(est_s$estimate["a2"]),
+               std$est.std[std$label == "a2" & std$group == 2])
+  res <- suppressMessages(goric(fit, hypotheses = list(H = "a1 > a2"),
+                                standardized = TRUE))
+  expect_s3_class(res, "con_gorica")
+})
+
+test_that("goric.lavaan standardized: model zonder restricties of := ", {
+  skip_if_not_installed("lavaan")
+  set.seed(3)
+  d <- data.frame(x = rnorm(100))
+  d$y <- 0.5 * d$x + rnorm(100)
+  d$z <- 0.4 * d$x + rnorm(100)
+  fit <- lavaan::sem("y ~ a*x\nz ~ b*x", data = d)
+  est_s <- restriktor:::con_gorica_est_lav(fit, standardized = TRUE)
+  est_u <- restriktor:::con_gorica_est_lav(fit, standardized = FALSE)
+  expect_identical(names(est_s$estimate), names(est_u$estimate))
+  expect_identical(dim(est_s$VCOV), dim(est_u$VCOV))
+  std <- lavaan::standardizedSolution(fit)
+  expect_equal(unname(est_s$estimate["a"]), std$est.std[std$label == "a"])
+  expect_equal(unname(est_s$estimate["b"]), std$est.std[std$label == "b"])
+  expect_equal(unname(est_u$estimate["a"]), lavaan::coef(fit)[["a"]])
+})
+
+
+# -----------------------------------------------------------------------------
+# mlm: goricc/goricac geblokkeerd
+# -----------------------------------------------------------------------------
+
+test_that("goric: goricc/goricac geven een fout voor mlm-objecten", {
+  set.seed(5)
+  d <- data.frame(x = rnorm(40))
+  d$y1 <- d$x + rnorm(40); d$y2 <- 2 * d$x + rnorm(40)
+  fit_mv <- lm(cbind(y1, y2) ~ x, data = d)
+  expect_error(goric(fit_mv, hypotheses = list(H = "y1.x > 0"), type = "goricc"),
+               "not \\(yet\\) available for objects of class mlm")
+  expect_error(goric(fit_mv, hypotheses = list(H = "y1.x > 0"), type = "goricac"),
+               "not \\(yet\\) available for objects of class mlm")
+  # goric en gorica blijven werken
+  expect_s3_class(suppressMessages(goric(fit_mv, hypotheses = list(H = "y1.x > 0"),
+                                         type = "goric")), "con_goric")
 })

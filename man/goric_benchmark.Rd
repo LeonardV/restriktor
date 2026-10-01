@@ -52,10 +52,17 @@
   \item{pop_est}{A 1 x k vector or an n x k matrix of population 
   estimates to benchmark. By default, all estimates are set to zero (no-effect) 
   and the observed estimates from the sample are used.}
-  \item{ratio_pop_means}{A 1 x k vector denoting the relative difference
-  between the k group means. Note that a ratio of \code{c(3, 2, 1)} gives the 
-  same as \code{c(1, 0, -1)}, as the consecutive relative differences are 1 in 
-  both ratios. By default, the relative differences from the data are used.}
+  \item{ratio_pop_means}{A 1 x k vector denoting the pattern of the k
+  population group means, that is, the relative differences between them. For
+  each value in \code{pop_es}, the population means are this pattern (centered
+  around its grand mean) multiplied by a positive scaling factor, such that
+  Cohen's f equals that \code{pop_es} value; the ordering of the means and
+  their relative differences are thus preserved. Note that a ratio of
+  \code{c(3, 2, 1)} gives the same as \code{c(1, 0, -1)}, as the consecutive
+  relative differences are 1 in both ratios. By default, the pattern of the
+  observed group means is used (for the default 'Observed' population the
+  observed group means themselves). All values should differ from each other
+  if a \code{pop_es} larger than 0 is benchmarked.}
   \item{group_size}{A 1 x k vector or a scalar to denote the k group sizes. If 
   a scalar is specified, it is assumed that each group is of that size. If the 
   GORIC(A) object is based on a fitted (\code{lm}) model, the group sizes are 
@@ -183,7 +190,19 @@
   only, while the covariate coefficients are kept at their observed estimates 
   in each population. If \code{object} is based on estimates and their 
   covariance matrix, all estimates are treated as group means.
-  
+
+  For \code{benchmark_means}, the population means for a value of
+  \code{pop_es} are obtained by scaling the deviations of the pattern of
+  means (the observed group means, or \code{ratio_pop_means}) from their
+  grand mean, such that Cohen's f equals that value; a \code{pop_es} of 0
+  gives all-zero means. For the default 'Observed' population (when
+  \code{pop_es} and \code{ratio_pop_means} are \code{NULL}), the observed
+  group means are used as they are. The benchmark distribution is
+  simulated with the same criterion as the GORIC(A) object (\code{goric}
+  and \code{goricc} are converted to \code{gorica} and \code{goricac},
+  respectively, since the draws are based on estimates and their covariance
+  matrix) and, for the \code{goricac}, the same sample size.
+
   The benchmark function leverages the \pkg{future} package for parallel processing, 
   allowing users to speed up computations by distributing tasks across multiple 
   cores or machines. If \code{ncpus > 1} and no parallel plan is set (i.e., the 

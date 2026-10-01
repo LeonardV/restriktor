@@ -189,3 +189,135 @@ test_that("adaptieve iter: ongeldige argumenten geven een duidelijke fout", {
   expect_error(benchmark(g_compl, iter_stability_tol = -1), "iter_stability_tol")
   expect_error(benchmark(g_compl, iter_adequacy_band = c(0.6, 0.4)), "iter_adequacy_band")
 })
+
+
+test_that("generate_scaled_means: volgorde behouden en geen NaN bij negatief/nul minimum", {
+  gsm <- restriktor:::generate_scaled_means
+  cf <- restriktor:::compute_cohens_f
+  N <- c(10, 10, 10)
+  V <- diag(3) * 0.1
+  # negatief minimum: vroeger draaide de volgorde om
+  m_neg <- c(a = -2, b = -1, c = 1)
+  r_neg <- gsm(m_neg, target_f = 0.3, N, V)
+  expect_true(all(is.finite(r_neg)))
+  expect_equal(order(r_neg), order(m_neg))
+  expect_equal(sign(r_neg - weighted.mean(r_neg, N)), sign(m_neg - weighted.mean(m_neg, N)))
+  expect_equal(cf(r_neg, N, V), 0.3)
+  # nul minimum: vroeger NaN/Inf
+  m_zero <- c(a = 0, b = 1, c = 2)
+  r_zero <- gsm(m_zero, target_f = 0.3, N, V)
+  expect_true(all(is.finite(r_zero)))
+  expect_equal(order(r_zero), order(m_zero))
+  expect_equal(cf(r_zero, N, V), 0.3)
+  # alleen een verschuiving maakt niet uit (zelfde patroon)
+  expect_equal(gsm(c(3, 2, 1), 0.3, N, V), gsm(c(1, 0, -1), 0.3, N, V))
+  # f = 0 geeft nullen; gelijke means met f > 0 geeft een duidelijke fout
+  expect_equal(unname(gsm(m_neg, 0, N, V)), c(0, 0, 0))
+  expect_error(gsm(c(1, 1, 1), 0.3, N, V), "all equal")
+})
+
+
+test_that("benchmark_means: negatieve groepsgemiddelden behouden de volgorde; Observed = schattingen", {
+  set.seed(7)
+  d_neg <- data.frame(group = factor(rep(1:3, times = n_g)))
+  d_neg$y <- c(0.5, -0.6, 0.9)[d_neg$group] + rnorm(sum(n_g))
+  f_neg <- lm(y ~ -1 + group, d_neg)
+  expect_true(any(coef(f_neg) < 0))
+  g_neg <- goric(f_neg, hypotheses = list(H1 = h1_bm), comparison = "complement")
+  b <- quiet(benchmark(g_neg, model_type = "means", iter = 10, seed = 1))
+  pm <- b$pop_group_means
+  expect_true(all(is.finite(pm)))
+  expect_equal(unname(pm["pop_es = 0", ]), c(0, 0, 0))
+  obs_row <- grep("Observed", names(b$benchmarks$goric_weights), value = TRUE)
+  expect_length(obs_row, 1)
+  expect_equal(unname(pm[2, ]), unname(coef(f_neg)))
+  expect_equal(order(pm[2, ]), order(coef(f_neg)))
+  # ook een andere effectgrootte behoudt de volgorde van de data
+  b2 <- quiet(benchmark(g_neg, model_type = "means", iter = 10, seed = 1,
+                        pop_es = c(0.2, 0.5)))
+  for (i in 1:2) {
+    expect_equal(order(b2$pop_group_means[i, ]), order(coef(f_neg)))
+    expect_equal(restriktor:::compute_cohens_f(b2$pop_group_means[i, ], b2$group_size,
+                                               g_neg$VCOV), unname(b2$pop_es[i]))
+  }
+})
+
+
+test_that("benchmark: goricac en gorica geven verschillende benchmarks", {
+  est <- c(x = 1, y = 2, z = 3)
+  V <- diag(3)
+  H <- list(H = "x < y < z")
+  ga <- goric(est, VCOV = V, hypotheses = H, type = "gorica")
+  gc <- goric(est, VCOV = V, hypotheses = H, type = "goricac", sample_nobs = 8)
+  ba <- quiet(benchmark(ga, iter = 20, seed = 1))
+  bc <- quiet(benchmark(gc, iter = 20, seed = 1))
+  expect_equal(ba$type, "gorica")
+  expect_equal(bc$type, "goricac")
+  expect_false(isTRUE(all.equal(ba$benchmarks$goric_weights, bc$benchmarks$goric_weights)))
+  # de 'Sample'-waarde is op hetzelfde criterium gebaseerd als de draws
+  expect_equal(bc$benchmarks$goric_weights[[1]][1, "Sample"],
+               gc$result$goricac.weights[1])
+  # goricac zonder steekproefgrootte: duidelijke fout
+  gc_noN <- goric(est, VCOV = V, hypotheses = H, type = "gorica")
+  gc_noN$type <- "goricc"
+  expect_error(quiet(benchmark(gc_noN, iter = 10, seed = 1)), "sample_size")
+  # means: goricc wordt goricac, met sum(N) als steekproefgrootte
+  gcc <- goric(fit_bm, hypotheses = list(H1 = h1_bm), comparison = "complement",
+               type = "goricc")
+  bcc <- quiet(benchmark(gcc, model_type = "means", iter = 10, seed = 1))
+  expect_equal(bcc$type, "goricac")
+  bgm <- quiet(benchmark(g_compl, model_type = "means", iter = 10, seed = 1))
+  expect_false(isTRUE(all.equal(bcc$benchmarks$goric_weights, bgm$benchmarks$goric_weights)))
+})
+
+
+test_that("benchmark: oneindige ratio (gewicht complement 0) draait, print en plot", {
+  g_inf <- goric(c(a = 0, b = 20), VCOV = diag(2) * .01, hypotheses = list(H = "a < b"))
+  expect_no_error(b <- quiet(benchmark(g_inf, iter = 10, seed = 2)))
+  obs <- "pop_est = Observed"
+  # de ratio zelf is Inf, maar de log-ratio is eindig
+  expect_true(is.infinite(b$benchmarks$ratio_goric_weights[[obs]][1, "Sample"]))
+  expect_true(all(is.finite(b$benchmarks$ratio_goric_weights_log[[obs]])))
+  expect_true(all(is.finite(b$combined_values$rgw_log_combined[[obs]])))
+  expect_equal(b$benchmarks$ratio_goric_weights_log[[obs]][1, "Sample"], 10000)
+  # Inf telt mee als 'groter dan elke eindige waarde' in de rates/percentielen
+  # (rgw = gewicht voorkeur / gewicht alternatief, dus Inf > 1 in elke draw)
+  expect_equal(unname(b$hypothesis_rate[[obs]]), 1)
+  expect_equal(unname(b$pctl_Sample$ratio_goric_weights[[obs]][1, 1]), 100)
+  # overlap op basis van een dichtheid kan niet met Inf: NA, maar niet op de log-schaal
+  expect_true(is.na(b$overlap$ratio_goric_weights[["pop_est = No-effect"]]))
+  expect_false(is.na(b$overlap$ratio_goric_weights_log[["pop_est = No-effect"]]))
+  expect_no_error(utils::capture.output(print(b, output_type = "all", color = FALSE)))
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off(), add = TRUE)
+  for (ot in c("rgw", "rlw", "gw", "ld")) {
+    expect_no_error(print(plot(b, output_type = ot)))
+  }
+})
+
+
+test_that("benchmark_means: ratio_pop_means bepaalt het patroon van de populatiegemiddelden", {
+  b_123 <- quiet(benchmark(g_compl, model_type = "means", iter = 10, seed = 1,
+                           ratio_pop_means = c(1, 2, 3)))
+  b_321 <- quiet(benchmark(g_compl, model_type = "means", iter = 10, seed = 1,
+                           ratio_pop_means = c(3, 2, 1)))
+  expect_equal(unname(b_123$ratio_pop_means), c(1, 2, 3))
+  expect_false(isTRUE(all.equal(b_123$pop_group_means, b_321$pop_group_means)))
+  pm <- b_123$pop_group_means[2, ]
+  # gevraagde verhoudingen: opeenvolgende verschillen gelijk, oplopend
+  expect_equal(unname(diff(pm)), rep(unname(diff(pm))[1], 2))
+  expect_true(all(diff(pm) > 0))
+  expect_true(all(diff(b_321$pop_group_means[2, ]) < 0))
+  expect_equal(unname(b_321$pop_group_means[2, ]), -unname(pm))
+  # effectgrootte klopt
+  expect_equal(restriktor:::compute_cohens_f(pm, b_123$group_size, g_compl$VCOV),
+               unname(b_123$pop_es[2]))
+  # verschuiving maakt niet uit
+  b_shift <- quiet(benchmark(g_compl, model_type = "means", iter = 10, seed = 1,
+                             ratio_pop_means = c(11, 12, 13)))
+  expect_equal(b_shift$pop_group_means, b_123$pop_group_means)
+  expect_equal(b_shift$benchmarks, b_123$benchmarks)
+  # verkeerde lengte: duidelijke fout
+  expect_error(quiet(benchmark(g_compl, model_type = "means", iter = 10,
+                               ratio_pop_means = c(1, 2))), "ratio_pop_means")
+})

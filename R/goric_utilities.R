@@ -53,6 +53,62 @@ coef_vec_mlm <- function(b, model.org)  {
   b
 }
 
+# Central validation of weight vectors (priorICweights, study_weights):
+# finite, non-negative, positive sum and (optionally) a given length.
+# Returns the weights rescaled to sum 1 (if rescale = TRUE). Zero weights are
+# allowed (unless allow_zero = FALSE); the calling code must handle them
+# (e.g., on the log scale, see ic_weights_log()).
+check_weights <- function(w, name = "priorICweights", length_expected = NULL,
+                          what = NULL, rescale = TRUE, allow_zero = TRUE) {
+  if (is.null(w)) {
+    return(NULL)
+  }
+  if (!is.numeric(w) || anyNA(w) || any(!is.finite(w))) {
+    stop("\nrestriktor ERROR: The argument '", name, "' should be a numeric vector ",
+         "with finite values (no NA, NaN, Inf).", call. = FALSE)
+  }
+  if (any(w < 0)) {
+    stop("\nrestriktor ERROR: The argument '", name, "' should only contain ",
+         "non-negative values.", call. = FALSE)
+  }
+  if (!allow_zero && any(w == 0)) {
+    stop("\nrestriktor ERROR: The argument '", name, "' should only contain ",
+         "positive values.", call. = FALSE)
+  }
+  if (sum(w) <= 0) {
+    stop("\nrestriktor ERROR: The argument '", name, "' should contain at least ",
+         "one positive value.", call. = FALSE)
+  }
+  if (!is.null(length_expected) && length(w) != length_expected) {
+    stop("\nrestriktor ERROR: The argument '", name, "' should consist of ",
+         length_expected, " elements",
+         if (!is.null(what)) paste0(", namely ", what),
+         ". It now consists of ", length(w), " elements.", call. = FALSE)
+  }
+  if (rescale && !isTRUE(all.equal(sum(w), 1))) {
+    w <- w / sum(w)
+  }
+  w
+}
+
+# Numerically stable (prior-weighted) IC weights:
+#   w_i = prior_i * exp(-IC_i / 2) / sum_j prior_j * exp(-IC_j / 2)
+# computed via log-sum-exp. A zero prior gives a zero weight (not NaN),
+# and very large IC differences do not underflow to 0/0.
+ic_weights_log <- function(IC, prior = NULL) {
+  if (is.null(prior)) {
+    prior <- rep(1, length(IC))
+  }
+  lw <- -IC / 2 + log(prior)              # log(0) = -Inf for a zero prior
+  lw[prior == 0] <- -Inf
+  m <- max(lw)
+  if (!is.finite(m)) {
+    return(rep(NaN, length(IC)))
+  }
+  w <- exp(lw - m)
+  w / sum(w)
+}
+
 check_sample_nobs <- function(sample_nobs, ...)  {
   if (length(sample_nobs) > 1) { 
     # Probably group sizes, then sample size is sum of group sizes
@@ -151,54 +207,50 @@ check.type <- function(type, class, ...)  {
   return(type)
 }
 
+# ratio of weights w_i / w_j. A zero weight gives 0 (row) or Inf (column);
+# 0/0 (NaN) only occurs for two zero weights, the diagonal is set to 1.
+weight_ratio_matrix <- function(w, modelnames) {
+  rw <- outer(w, w, "/")
+  diag(rw) <- 1
+  rownames(rw) <- modelnames
+  colnames(rw) <- paste0("vs. ", modelnames)
+  rw
+}
+
 calculate_model_comparison_metrics <- function(x, priorICweights) {
   modelnames <- as.character(x$model)
+  # All weights are computed on the log scale (log-sum-exp, see
+  # ic_weights_log()): a zero prior gives a zero weight (not NaN) and large
+  # IC differences do not result in 0/0.
   ## Log-likelihood
-  LL = -2 * x$loglik
-  delta_LL = LL - min(LL)
-  loglik_weights = exp(0.5 * -delta_LL) / sum(exp(0.5 * -delta_LL))
-  loglik_rw = loglik_weights %*% t(1/loglik_weights)
-  diag(loglik_rw) = 1
+  loglik_weights = ic_weights_log(-2 * x$loglik)
+  loglik_rw = weight_ratio_matrix(loglik_weights, modelnames)
   
   ## penalty
-  penalty_weights = exp(-x$penalty) / sum(exp(-x$penalty))
-  penalty_rw = penalty_weights %*% t(1/penalty_weights)
-  diag(penalty_rw) = 1
+  penalty_weights = ic_weights_log(2 * x$penalty)
+  penalty_rw = weight_ratio_matrix(penalty_weights, modelnames)
   
   ## goric
-  delta_goric = x$goric - min(x$goric)
-  goric_weights = priorICweights * exp(0.5 * -delta_goric) / sum(priorICweights * exp(0.5 * -delta_goric))
-  goric_rw = goric_weights %*% t(1/goric_weights)
-  diag(goric_rw) = 1
+  goric_weights = ic_weights_log(x$goric, priorICweights)
+  goric_rw = weight_ratio_matrix(goric_weights, modelnames)
   
   # if user specified hypotheses is >= 2 and comparison = unconstrained
   # add extra column with goric weights excluding unconstrained model.
   mn_unc_idx <- grep("unconstrained", modelnames)
   if (length(modelnames) > 2 && length(mn_unc_idx) > 0 && 
       which.max(goric_weights) != mn_unc_idx) {
-    delta_goric = x$goric[-mn_unc_idx] - min(x$goric[mn_unc_idx])
-    priorICweights_adj <- priorICweights[-mn_unc_idx] / sum(priorICweights[-mn_unc_idx])
-    goric_weights_without_unc = priorICweights_adj * exp(0.5 * -delta_goric) / 
-      sum(priorICweights_adj * exp(0.5 * -delta_goric))
+    goric_weights_without_unc = ic_weights_log(x$goric[-mn_unc_idx], 
+                                               priorICweights[-mn_unc_idx])
     goric_weights_without_unc <- c(goric_weights_without_unc, NA)
   } else { goric_weights_without_unc <- NULL }
   
   mn_heq_idx <- grep("Heq", modelnames)
   if (length(modelnames) > 2 && length(mn_heq_idx) > 0 && 
       which.max(goric_weights) != mn_heq_idx) {
-    delta_goric = x$goric[-mn_heq_idx] - min(x$goric[-mn_heq_idx])
-    priorICweights_adj <- priorICweights[-mn_heq_idx] / sum(priorICweights[-mn_heq_idx])
-    goric_weights_without_heq = priorICweights_adj * exp(0.5 * -delta_goric) / 
-      sum(priorICweights_adj * exp(0.5 * -delta_goric))
+    goric_weights_without_heq = ic_weights_log(x$goric[-mn_heq_idx], 
+                                               priorICweights[-mn_heq_idx])
     goric_weights_without_heq <- c(NA, goric_weights_without_heq)
   } else { goric_weights_without_heq <- NULL }
-  
-  rownames(goric_rw) = modelnames
-  rownames(penalty_rw) = modelnames
-  rownames(loglik_rw) = modelnames
-  colnames(goric_rw) = paste0("vs. ", modelnames)
-  colnames(penalty_rw) = paste0("vs. ", modelnames)
-  colnames(loglik_rw) = paste0("vs. ", modelnames)
   
   out <- list(loglik_weights = loglik_weights, 
               penalty_weights = penalty_weights,

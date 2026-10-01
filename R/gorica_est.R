@@ -237,14 +237,25 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
   # get parameter table
   paramTable <- parTable(x)
   if (standardized) {
-    # Note: sometimes stand. and unstand. not of same size, 
-    #       so, if not needed, then do not add stand. estimates.
-    nrparam <- length(standardizedSolution(x)['est.std']$est.std)
-    paramTable <- paramTable[1:nrparam, ]
-    paramTable$est.std <- standardizedSolution(x)['est.std']$est.std
+    # The rows of standardizedSolution() do not necessarily correspond
+    # (by position) to those of parTable() (e.g., ==, <, > and := rows).
+    # Therefore, merge on parameter identity (lhs, op, rhs, group, block,
+    # level; whichever are present in both tables), not on row position.
+    std_sol <- standardizedSolution(x, remove.eq = FALSE, remove.ineq = FALSE,
+                                    remove.def = FALSE)
+    key_cols <- intersect(c("lhs", "op", "rhs", "group", "block", "level"),
+                          intersect(names(paramTable), names(std_sol)))
+    key_pt  <- do.call(paste, c(paramTable[key_cols], sep = "\r"))
+    key_std <- do.call(paste, c(std_sol[key_cols], sep = "\r"))
+    paramTable$est.std <- std_sol$est.std[match(key_pt, key_std)]
   }
-  indices_fixed <- which(paramTable$free == 0L & paramTable$op != ":=")
-  paramTable <- paramTable[-indices_fixed,]
+  # keep the free and the defined (:=) parameters
+  paramTable <- paramTable[paramTable$free != 0L | paramTable$op == ":=", ]
+  if (standardized && anyNA(paramTable$est.std)) {
+    stop("\nrestriktor ERROR: no standardized estimate could be found for the ",
+         "parameter(s): ", paste(paste(paramTable$lhs, paramTable$op, paramTable$rhs)[is.na(paramTable$est.std)], collapse = ", "),
+         ".", call. = FALSE)
+  }
   #
   # Determine output w.r.t. labeled & defined estimates
   labels_free <- paramTable$label

@@ -174,6 +174,21 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   ngroups <- length(group_idx)
   covariate_idx <- setdiff(seq_len(n_coef), group_idx)
 
+  # Pattern of the population means (see generate_scaled_means()): by
+  # default the observed group means; otherwise the user-specified
+  # ratio_pop_means (one value per group).
+  if (!is.null(ratio_pop_means)) {
+    if (!is.numeric(ratio_pop_means) || length(ratio_pop_means) != ngroups ||
+        anyNA(ratio_pop_means) || any(!is.finite(ratio_pop_means))) {
+      stop("\nrestriktor ERROR: The argument 'ratio_pop_means' should be a numeric vector ",
+           "of length ", ngroups, " (one value per group), e.g., ratio_pop_means = c(",
+           paste(seq_len(ngroups), collapse = ", "), "). It is currently of length ",
+           length(ratio_pop_means), ".", call. = FALSE)
+    }
+    ratio_pop_means <- as.vector(ratio_pop_means)
+    names(ratio_pop_means) <- names(group_means)[group_idx]
+  }
+
   # # Number of subjects per group
   # NOTE: This is needed to rescale vcov based on alt_group_size.
   #       and also for calculating Cohens f. 
@@ -283,7 +298,8 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
                                         VCOV[group_idx, group_idx, drop = FALSE])
 
   # effect size population
-  if (is.null(pop_es)) {
+  default_pop_es <- is.null(pop_es)
+  if (default_pop_es) {
     pop_es <- c(0, cohens_f_observed)
     names(pop_es) <- c("No-effect", "Observed")
   } else {
@@ -306,13 +322,22 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   es <- pop_es
   nr_es <- length(es)
 
-  #means_pop_all <- compute_population_means(pop_es, ratio_pop_means, var_e, ngroups)
-  # Only the group means are scaled to the targeted effect size; covariate
-  # coefficients (if any) are kept at their observed estimates.
-  means_pop_all <- t(sapply(pop_es, function(x) {
+  # Population means per pop_es: the pattern of the means (the observed group
+  # means by default, or 'ratio_pop_means' if specified) scaled such that
+  # Cohen's f equals pop_es, see generate_scaled_means(). Only the group means
+  # are scaled to the targeted effect size; covariate coefficients (if any)
+  # are kept at their observed estimates. The default 'Observed' population
+  # (pop_es = NULL, no ratio_pop_means) uses the observed estimates as-is.
+  pattern_means <- if (is.null(ratio_pop_means)) group_means[group_idx] else ratio_pop_means
+  use_observed <- is.null(ratio_pop_means) & names(pop_es) == "Observed" & default_pop_es
+  means_pop_all <- t(sapply(seq_along(pop_es), function(i) {
     means_pop <- group_means
-    means_pop[group_idx] <- generate_scaled_means(group_means[group_idx], target_f = x, N,
-                                                  VCOV[group_idx, group_idx, drop = FALSE])
+    if (use_observed[i]) {
+      means_pop[group_idx] <- group_means[group_idx]
+    } else {
+      means_pop[group_idx] <- generate_scaled_means(pattern_means, target_f = pop_es[i], N,
+                                                    VCOV[group_idx, group_idx, drop = FALSE])
+    }
     means_pop
   }))
   colnames(means_pop_all) <- colnames(coef(object))
@@ -329,8 +354,9 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     names_quant <- c("Sample", paste0(as.character(quant*100), "%"))
   }
 
-  # TO DO dus niet ook goricac (evt type = type?); als default en het dus wel
-  # kan, dan ook 'sample_nobs' nodig toch...
+  # The draws are evaluated with the same criterion (gorica/goricac) and
+  # sample size as the (refitted) object above, so that the 'Sample' value
+  # and the benchmark distribution are based on the same criterion.
   sim <- run_benchmark_simulation(
     nr_es = nr_es, rnames = rnames, name_prefix = "pop_es = ",
     center_matrix = means_pop_all, colnames_vec = names(group_means),
@@ -338,6 +364,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     comparison = object$comparison, control = control,
     mix_weights = mix_weights, penalty_factor = penalty_factor, Heq = Heq,
     object = object, iter = user_iter,
+    type = type, sample_nobs = sum(N),
     es_labels = paste0(es, " (", names(es), ")"),
     band = iter_adequacy_band,
     stability_tol = iter_stability_tol,
@@ -612,26 +639,34 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
                  object$type)
   
   
+  # Original sample size: from the goric object, else from 'sample_size'
+  if ((is.null(N) || all(N == 0)) && !is.null(sample_size)) {
+    N <- sample_size
+  }
   # Controleer op alternatieve steekproefgrootte
   if (!is.null(alt_sample_size)) {
     # Controleer of de originele steekproefgrootte beschikbaar is
-    if (is.null(N) || N == 0) {
-      if (is.null(sample_size)) {
-        stop("\nrestriktor ERROR: Please provide the original sample size(s) using the argument `sample_size`.", .call = FALSE)
-      }
-      N <- sample_size
+    if (is.null(N) || all(N == 0)) {
+      stop("\nrestriktor ERROR: Please provide the original sample size(s) using the argument `sample_size`.", call. = FALSE)
     }
     VCOV <- VCOV * N / alt_sample_size
     N <- alt_sample_size
-  } 
+  }
+  # The goricac requires the sample size (also for every benchmark draw)
+  if (type == "goricac" && (is.null(N) || all(N == 0))) {
+    stop("\nrestriktor ERROR: The GORIC(A) object is of type '", object$type, "', so the ",
+         "benchmark is based on the goricac, which requires the sample size. However, no ",
+         "sample size is available from the GORIC(A) object. Please specify it via the ",
+         "argument 'sample_size'.", call. = FALSE)
+  }
+  # overall sample size (a vector of group sizes is summed, as in goric())
+  sample_nobs <- if (is.null(N)) NULL else sum(N)
 
   # Herbereken met goric-functie
   object <- goric(
     est_sample,
     VCOV = VCOV,
-    sample_nobs = N[1], # Needed for type = "goricac"
-    # TO DO, dit is toch maar een getal en als niet dan ws de sum (iig bij anova wel)
-    #sample_nobs = sum(N), # Needed for type = "goricac" - daar genoeg aan sum(N) of moet het juist gehele N hebben?
+    sample_nobs = sample_nobs, # Needed for type = "goricac"
     hypotheses = hypos,
     comparison = comparison,
     type = type,
@@ -666,6 +701,8 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     comparison = comparison, control = control,
     mix_weights = mix_weights, penalty_factor = penalty_factor, Heq = Heq,
     object = object, iter = user_iter,
+    # same criterion (gorica/goricac) and sample size as the refitted object
+    type = type, sample_nobs = sample_nobs,
     band = iter_adequacy_band,
     stability_tol = iter_stability_tol,
     iter_min = iter_min, iter_step = iter_step, iter_max = iter_max,

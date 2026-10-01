@@ -434,7 +434,7 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       }
       
       ratio.gw <- apply(x$ratio.gw, 2, sprintf, fmt = dig)
-      rownames(ratio.gw) <- rownames(x$ratio.gw)
+      rownames(ratio.gw) <- mark_best_hypo(rownames(x$ratio.gw), x)
       class(ratio.gw) <- "numeric"
       
       if (max(ratio.gw, na.rm = TRUE) >= 1e4) {
@@ -483,3 +483,16 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
 # vang ze dus op en geef ze niet direct (niet tijdens runnen en niet bij print).
 #
 # TO DO veel output (bvb warnings, conclusion) is doorlopende tekst zonder 'line breaks' en dus in de pdf zie je maar de helft; het is beter om line breaks toe te voegen, zodat de output nooit meer is dan 76 karakters.
+
+# add " (best)" to the name of the best hypothesis (highest GORIC(A) weight);
+# only used for the printed copies of the ratio matrices.
+mark_best_hypo <- function(names_ratio, x) {
+  best <- x$best_hypo
+  if (is.null(best)) {
+    best <- which.max(x$result[, 7])
+  }
+  if (length(best) == 1L && best >= 1L && best <= length(names_ratio)) {
+    names_ratio[best] <- paste0(names_ratio[best], " (best)")
+  }
+  names_ratio
+}

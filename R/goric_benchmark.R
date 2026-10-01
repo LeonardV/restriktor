@@ -63,9 +63,10 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
                             # returned object as x$threshold_rlw.
                             threshold_rlw = 1, ...) {
 
-  # iter = NULL (the default): start at 500 draws and grow by 100 at a time,
-  # up to 2000, stopping as soon as the "Observed" population's benchmark
-  # looks adequate -- see run_benchmark_simulation(). A user-supplied numeric
+  # iter = NULL (the default): start at iter_min (500) draws and grow by
+  # iter_step (100) at a time, up to iter_max (2000), stopping as soon as the
+  # "Observed" population's percentile has been stable for two consecutive
+  # rounds -- see run_benchmark_simulation(). A user-supplied numeric
   # 'iter' is used as-is (single fixed-size run, as before).
   user_iter <- iter
 
@@ -84,6 +85,10 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
                paste(class(object), collapse = ", ")
     ), call. = FALSE)
   }
+
+  validate_iter_args(iter, iter_min = iter_min, iter_step = iter_step,
+                     iter_max = iter_max, iter_stability_tol = iter_stability_tol,
+                     iter_adequacy_band = iter_adequacy_band)
 
   if (!is.null(seed)) set.seed(seed)
   if (!exists(".Random.seed", envir = .GlobalEnv)) runif(1)
@@ -111,36 +116,67 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
 
   # Unrestricted (adjusted) group_means
   group_means <- object$b.unrestr
-  # number of groups
-  ngroups <- length(group_means)
+  n_coef <- length(group_means)
 
   # original model fit (if exists)
   form_model_org <- formula(object$model.org)
 
-  
+  # Which coefficients are group means? 
+  # NOTE (ANCOVA, e.g. lm(y ~ -1 + group + x)): only the coefficients that
+  # belong to factor (or character/logical) terms of the original model fit
+  # are treated as group means. The effect size (Cohen's f), the group sizes
+  # and the scaling of the population means all refer to these group means
+  # only; the coefficients of continuous covariates are nuisance parameters
+  # here: they are kept fixed at their observed estimates in every
+  # population (also under 'No-effect') and their (co)variances are rescaled
+  # with the overall sample size (sum(N)/sum(alt_group_size)) when
+  # alt_group_size is specified. All coefficients (group means and
+  # covariates) are still simulated jointly with the full VCOV, as before.
+  # Without a fitted model (input is est + VCOV) the type of each estimate is
+  # unknown, and -- as before -- all estimates are treated as group means.
+  fitLM <- object$model.org
+  group_idx <- seq_len(n_coef)
+  N_lm <- NULL
+  if (!is.null(fitLM) && inherits(fitLM, "lm")) {
+    group_info <- tryCatch({
+      tt <- terms(fitLM)
+      mf <- model.frame(fitLM)
+      is_group_var <- function(v) is.factor(v) || is.character(v) || is.logical(v)
+      fac <- attr(tt, "factors")
+      vars <- rownames(fac)
+      if (attr(tt, "response") > 0) vars <- vars[-attr(tt, "response")]
+      # factor variables in the model frame (response and "(weights)" etc. excluded)
+      group_vars <- intersect(rownames(fac)[-attr(tt, "response")], names(mf))
+      group_vars <- group_vars[vapply(mf[group_vars], is_group_var, logical(1))]
+      # terms that consist of factor variables only
+      group_terms <- which(apply(fac[, , drop = FALSE] > 0, 2, function(v) {
+        all(rownames(fac)[v] %in% group_vars)
+      }))
+      assign <- attr(model.matrix(fitLM), "assign")
+      idx <- which(assign %in% group_terms)
+      # group sizes: (interaction-)cell counts of the factor variables only.
+      # table() returns a 1-D array with a 'dim' attribute; c() strips it to
+      # a plain named vector (otherwise VCOV * (N - 1) in compute_cohens_f()
+      # fails with "non-conformable arrays").
+      counts <- if (length(group_vars) > 0) c(do.call(table, mf[group_vars])) else NULL
+      list(idx = idx, counts = counts)
+    }, error = function(e) NULL)
+    if (!is.null(group_info) && length(group_info$idx) > 0) {
+      group_idx <- group_info$idx
+      # only usable if there is one count per group mean (e.g., not for an
+      # additive model with multiple factors).
+      if (length(group_info$counts) == length(group_idx)) {
+        N_lm <- group_info$counts
+      }
+    }
+  }
+  # number of groups (covariates not included)
+  ngroups <- length(group_idx)
+  covariate_idx <- setdiff(seq_len(n_coef), group_idx)
+
   # # Number of subjects per group
   # NOTE: This is needed to rescale vcov based on alt_group_size.
   #       and also for calculating Cohens f. 
-  fitLM <- object$model.org
-  # multiple factors: full interaction-cell counts, no matter how many factors
-  # or what they're called, using only positional indexing
-  # table() returns an object of class "table" which -- even for a single
-  # factor -- carries a 'dim' attribute (it's a 1-D array, not a plain
-  # vector). Left as-is, N (set to N_lm below whenever the user doesn't
-  # supply group_size) keeps that 'dim' attribute, and R's arithmetic
-  # requires two objects that both have a 'dim' attribute to have matching
-  # dims -- so VCOV * (N - 1) in compute_cohens_f() (VCOV a ngroups x ngroups
-  # matrix, N a length-ngroups "table") fails with "non-conformable arrays",
-  # even though N and VCOV are perfectly conformable as plain vector/matrix.
-  # c() strips the table's 'dim'/'dimnames'/class down to a plain named
-  # vector (keeping the counts and names, i.e. the flattened cell order,
-  # exactly as they were) so N behaves like the ordinary vector it's treated
-  # as everywhere else (the group_size = <scalar> and group_size = <vector>
-  # paths below already produce plain vectors, not tables).
-  N_lm <- c(do.call(table, fitLM$model[-1]))
-  ## marginal group sizes per factor
-  #N_lm <- lapply(fitLM$model[-1], table)
-  ##colSums(model.matrix(object$model.org))
   if (!is.null(group_size)) { # So, user specified it as input
     if (length(group_size) == 1) {
       N <- rep(group_size, ngroups) 
@@ -148,27 +184,32 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
       if (length(group_size) == ngroups) {
         N <- group_size
       } else { # so, length incorrect
-        print(paste0("The argument 'group-size' should be of lenght 1 or of length ", ngroups, 
-                     ". It is currently of length ", length(group_size), ". Namely, it equals: "))
-        print(group_size)
-        stop("\nrestriktor ERROR: The argument 'group-size' should be a scalar 
-             if all groups have the same size (e.g., group_size = 100) or a vector with for each group its group size (e.g., group_size = c(75, 100, 120)).", call. = FALSE)
+        stop("\nrestriktor ERROR: The argument 'group_size' should be of length 1 or of length ", 
+             ngroups, ". It is currently of length ", length(group_size), 
+             ". It should be a scalar if all groups have the same size (e.g., group_size = 100)",
+             " or a vector with for each group its group size (e.g., group_size = c(75, 100, 120)).", 
+             call. = FALSE)
       }
     }
     # Check whether same as obtained from lm object.
-    if (all(N != N_lm)) {
-      message("\nrestriktor Message: The argument 'group-size' differs from the group sizes retreived from the lm object. The function proceded with the user-specified 'group_size'.", call. = FALSE)
-      print("Notably, based on group_size, N = ")
-      print(N)
-      print("and, based on the lm object, N = ")
-      print(N_lm)
+    if (!is.null(N_lm) && (length(N) != length(N_lm) || any(N != N_lm))) {
+      message("\nrestriktor Message: The argument 'group_size' differs from the group sizes ",
+              "retrieved from the lm object. The function proceeded with the user-specified ",
+              "'group_size'.\n",
+              "Notably, based on group_size, N = ", paste(N, collapse = ", "), 
+              "; and, based on the lm object, N = ", paste(N_lm, collapse = ", "), ".")
     }
-  } else { # so, not user specified
+  } else if (!is.null(N_lm)) { # so, not user specified
     N <- N_lm
+  } else {
+    stop("\nrestriktor ERROR: The group sizes could not be retrieved from the goric object ",
+         "(e.g., because only estimates and their covariance matrix were used as input). ",
+         "Please specify them by the argument 'group_size'; e.g., group_size = 100 ",
+         "or group_size = c(75, 100, 120).", call. = FALSE)
   }
-  #stop("\nrestriktor ERROR: please specify the group-size; e.g., group_size = 100.", call. = FALSE)
+  N <- as.vector(N)
+  names(N) <- names(group_means)[group_idx]
   
-
   VCOV <- VCOV_orig <- object$VCOV # Is already based on N (so, not N-k)
   
   # If alt_group_size specified, adjust VCOV accordingly
@@ -176,11 +217,20 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   if (!is.null(alt_group_size)) {
   
     if (length(alt_group_size) != 1 && length(alt_group_size) != ngroups) {
-      return(paste0("The argument alt_group_size should be of length 1 or ",
-                    ngroups, " (or NULL) but not of length ", length(alt_group_size), "."))
+      stop("\nrestriktor ERROR: The argument 'alt_group_size' should be of length 1 or ",
+           ngroups, " (or NULL) but not of length ", length(alt_group_size), ".", 
+           call. = FALSE)
     }
-    VCOV <- VCOV_orig * N / alt_group_size
-    N <- alt_group_size
+    alt_N <- rep_len(alt_group_size, ngroups)
+    # scaling factor per coefficient: N/alt_N for the group means, and the
+    # ratio of the total sample sizes for covariates (if any). The VCOV is
+    # scaled symmetrically (for a diagonal VCOV, as in an ANOVA model, this
+    # equals scaling each variance by N/alt_N).
+    scale_coef <- rep(sum(N) / sum(alt_N), n_coef)
+    scale_coef[group_idx] <- N / alt_N
+    VCOV <- VCOV_orig * sqrt(outer(scale_coef, scale_coef))
+    N <- alt_N
+    names(N) <- names(group_means)[group_idx]
     #
     # The sample gorica(c) value must also be adjusted, 
     # thus we need to fit a new goric-object
@@ -217,6 +267,9 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
       control = control,
       mix_weights = mix_weights,
       penalty_factor = penalty_factor,
+      # same prior weights as in the goric object, so that the preferred
+      # hypothesis (and the weights) match those of the goric object
+      priorICweights = object$priorICweights,
       #Heq = FALSE,
       Heq = Heq,
       ...
@@ -225,7 +278,9 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   
 
   ## Compute observed Cohens f
-  cohens_f_observed <- compute_cohens_f(group_means, N, VCOV)
+  # (based on the group means only; see the note on covariates above)
+  cohens_f_observed <- compute_cohens_f(group_means[group_idx], N, 
+                                        VCOV[group_idx, group_idx, drop = FALSE])
 
   # effect size population
   if (is.null(pop_es)) {
@@ -252,7 +307,14 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   nr_es <- length(es)
 
   #means_pop_all <- compute_population_means(pop_es, ratio_pop_means, var_e, ngroups)
-  means_pop_all <- t(sapply(pop_es, function(x) generate_scaled_means(group_means, target_f = x, N, VCOV)))
+  # Only the group means are scaled to the targeted effect size; covariate
+  # coefficients (if any) are kept at their observed estimates.
+  means_pop_all <- t(sapply(pop_es, function(x) {
+    means_pop <- group_means
+    means_pop[group_idx] <- generate_scaled_means(group_means[group_idx], target_f = x, N,
+                                                  VCOV[group_idx, group_idx, drop = FALSE])
+    means_pop
+  }))
   colnames(means_pop_all) <- colnames(coef(object))
   rownames(means_pop_all) <- paste0("pop_es = ", pop_es)
 
@@ -430,9 +492,10 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
                             # x$threshold_rlw output field.
                             threshold_rlw = 1, ...) {
 
-  # iter = NULL (the default): start at 500 draws and grow by 100 at a time,
-  # up to 2000, stopping as soon as the "Observed" population's benchmark
-  # looks adequate -- see run_benchmark_simulation(). A user-supplied numeric
+  # iter = NULL (the default): start at iter_min (500) draws and grow by
+  # iter_step (100) at a time, up to iter_max (2000), stopping as soon as the
+  # "Observed" population's percentile has been stable for two consecutive
+  # rounds -- see run_benchmark_simulation(). A user-supplied numeric
   # 'iter' is used as-is (single fixed-size run, as before).
   user_iter <- iter
 
@@ -454,6 +517,10 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
                paste(class(object), collapse = ", ")), call. = FALSE)
   }
  
+  validate_iter_args(iter, iter_min = iter_min, iter_step = iter_step,
+                     iter_max = iter_max, iter_stability_tol = iter_stability_tol,
+                     iter_adequacy_band = iter_adequacy_band)
+
   if (!is.null(seed)) set.seed(seed)
   if (!exists(".Random.seed", envir = .GlobalEnv)) runif(1)
   
@@ -495,6 +562,13 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     # In that constraint matrix / hypothesis, the inequalities will be set to equalities.
     # First determine the preferred hypothesis:
     pref_hypo <- which.max(object$result[, 7])
+    if (pref_hypo > length(object$constraints) || 
+        is.null(object$constraints[[pref_hypo]])) {
+      stop("\nrestriktor ERROR: The preferred hypothesis is the ", object$result$model[pref_hypo], 
+           " hypothesis, for which no constraint matrix is available. Hence, the default 'No-effect' population ",
+           "estimates cannot be determined. Please specify the population estimates via the ",
+           "argument 'pop_est'.", call. = FALSE)
+    }
     NE <- theta_restricted(theta = est_sample, V = VCOV, R = object$constraints[[pref_hypo]], rhs = object$rhs[[pref_hypo]])
     # Note that VCOV is the unbiased cov.mx estimate.
     pop_est <- matrix(rbind(NE, est_sample), nrow = 2)
@@ -564,6 +638,9 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     control = control,
     mix_weights = mix_weights,
     penalty_factor = penalty_factor,
+    # same prior weights as in the goric object, so that the preferred
+    # hypothesis (and the weights) match those of the goric object
+    priorICweights = object$priorICweights,
     Heq = Heq,
     ...
   )

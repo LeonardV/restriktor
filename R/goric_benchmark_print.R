@@ -232,7 +232,8 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
     }
     for (pop_es in names(benchmarks_list)) {
       benchmarks_list[[pop_es]] <- recompute_percentile_table(
-        benchmarks_list[[pop_es]], combined_list[[pop_es]], percentiles
+        benchmarks_list[[pop_es]], combined_list[[pop_es]], percentiles,
+        pref_hypo_name = pref_hypo
       )
     }
     benchmarks_list
@@ -307,10 +308,16 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
         x$benchmarks$ratio_goric_weights[[pop_es_name]],
         x$pctl_Sample$ratio_goric_weights[[pop_es_name]],
         x$pctl_medianRefPop$ratio_goric_weights[[pop_es_name]],
-        hypothesis_rate = x$hypothesis_rate[[pop_es_name]], # x$hypothesis_rate
+        # aligned with the table's rows by hypothesis name
+        hypothesis_rate = align_by_hypothesis(
+          x$hypothesis_rate[[pop_es_name]],
+          rownames(x$benchmarks$ratio_goric_weights[[pop_es_name]]), pref_hypo
+        ),
         overlap_column(
           x$overlap$ratio_goric_weights, pop_es_name,
-          nrow(x$benchmarks$ratio_goric_weights[[pop_es_name]])
+          nrow(x$benchmarks$ratio_goric_weights[[pop_es_name]]),
+          row_names = rownames(x$benchmarks$ratio_goric_weights[[pop_es_name]]),
+          pref_hypo_name = pref_hypo
         )
       )
       colnames(x$benchmarks$ratio_goric_weights[[pop_es_name]])[
@@ -364,7 +371,9 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
         x$pctl_medianRefPop$ratio_goric_weights_log[[pop_es]],
         overlap_column(
           x$overlap$ratio_goric_weights_log, pop_es,
-          nrow(x$benchmarks$ratio_goric_weights_log[[pop_es]])
+          nrow(x$benchmarks$ratio_goric_weights_log[[pop_es]]),
+          row_names = rownames(x$benchmarks$ratio_goric_weights_log[[pop_es]]),
+          pref_hypo_name = pref_hypo
         )
       )
       colnames(x$benchmarks$ratio_goric_weights_log[[pop_es]])[
@@ -391,9 +400,15 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
         x$benchmarks$ratio_ll_weights[[pop_es]],
         x$pctl_Sample$ratio_ll_weights[[pop_es]],
         x$pctl_medianRefPop$ratio_ll_weights[[pop_es]],
-        rate_rlw = x$rate_rlw[[pop_es]],
+        # aligned with the table's rows by hypothesis name
+        rate_rlw = align_by_hypothesis(
+          x$rate_rlw[[pop_es]], rownames(x$benchmarks$ratio_ll_weights[[pop_es]]), pref_hypo
+        ),
         overlap_column(
-          x$overlap$ratio_ll_weights, pop_es, nrow(x$benchmarks$ratio_ll_weights[[pop_es]])
+          x$overlap$ratio_ll_weights, pop_es,
+          nrow(x$benchmarks$ratio_ll_weights[[pop_es]]),
+          row_names = rownames(x$benchmarks$ratio_ll_weights[[pop_es]]),
+          pref_hypo_name = pref_hypo
         )
       )
       colnames(x$benchmarks$ratio_ll_weights[[pop_es]])[
@@ -430,7 +445,9 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
         x$pctl_medianRefPop$ratio_ll_weights_log[[pop_es]],
         overlap_column(
           x$overlap$ratio_ll_weights_log, pop_es,
-          nrow(x$benchmarks$ratio_ll_weights_log[[pop_es]])
+          nrow(x$benchmarks$ratio_ll_weights_log[[pop_es]]),
+          row_names = rownames(x$benchmarks$ratio_ll_weights_log[[pop_es]]),
+          pref_hypo_name = pref_hypo
         )
       )
       colnames(x$benchmarks$ratio_ll_weights_log[[pop_es]])[
@@ -458,7 +475,10 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
         x$pctl_Sample$difLL[[pop_es]],
         x$pctl_medianRefPop$difLL[[pop_es]],
         overlap_column(
-          x$overlap$difLL, pop_es, nrow(x$benchmarks$difLL[[pop_es]])
+          x$overlap$difLL, pop_es,
+          nrow(x$benchmarks$difLL[[pop_es]]),
+          row_names = rownames(x$benchmarks$difLL[[pop_es]]),
+          pref_hypo_name = pref_hypo
         )
       )
       colnames(x$benchmarks$difLL[[pop_es]])[

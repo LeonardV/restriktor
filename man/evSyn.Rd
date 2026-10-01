@@ -31,60 +31,60 @@ reduced set.
 
 \usage{
 # I try to guess the input type.
-evSyn(object, input_type = NULL, \ldots)
+evSyn(object, input_type = NULL, \dots)
 
 # input: Parameter estimates and covariance matrix
-evSyn_est(object, \ldots, VCOV = list(), hypotheses = list(),
+evSyn_est(object, \dots, VCOV = list(), hypotheses = list(),
           type_ev = c("added", "equal", "average"), 
           comparison = c("unconstrained", "complement", "none"),
           hypo_names = c(), priorICweights = NULL, 
           type = c("gorica", "goricac"), 
           order_studies = c("input_order", "ascending", "descending"),
-          study_names = c(), study_weights = c(), study_sample_nobs = NULL)
+          study_names = c(), study_sample_nobs = NULL, study_weights = NULL)
 
 # input: Log-likelihood and penalty values
-evSyn_LL(object, \ldots, PT = list(), type_ev = c("added", "equal", "average"),
+evSyn_LL(object, \dots, PT = list(), type_ev = c("added", "equal", "average"),
          hypo_names = c(), priorICweights = NULL, 
          type = c("goric", "goricc", "gorica", "goricac"),
          order_studies = c("input_order", "ascending", "descending"),
-         study_names = c(), study_weights = c())
+         study_names = c(), study_weights = NULL)
 
 # input: GORIC(A), ORIC, AIC values
-evSyn_ICvalues(object, \ldots, type_ev = c("added", "average"), 
+evSyn_ICvalues(object, \dots, type_ev = c("added", "average"), 
                hypo_names = c(), priorICweights = NULL, 
                type = c("goric", "goricc", "gorica", "goricac"), 
                order_studies = c("input_order", "ascending", "descending"), 
-               study_names = c(), study_weights = c())
+               study_names = c(), study_weights = NULL)
 
 # input: AIC or ORIC or GORIC or GORICA weights; or (Bayesian) posterior 
 # model probabilities
-evSyn_ICweights(object, \ldots, type_ev = c("added", "average"), 
+evSyn_ICweights(object, \dots, type_ev = c("added", "average"), 
                 hypo_names = c(), priorICweights = NULL, 
                 type = c("goric", "goricc", "gorica", "goricac"),
                 order_studies = c("input_order", "ascending", "descending"), 
-                study_names = c(), study_weights = c())
+                study_names = c(), study_weights = NULL)
 
 # input: Ratio of AIC or ORIC or GORIC or GORICA weights; or 
 # Bayes factors
-evSyn_ICratios(object, \ldots, type_ev = c("added", "average"), 
+evSyn_ICratios(object, \dots, type_ev = c("added", "average"), 
                hypo_names = c(), priorICweights = NULL, 
                type = c("goric", "goricc", "gorica", "goricac"),
                order_studies = c("input_order", "ascending", "descending"), 
-               study_names = c(), study_weights = c())
+               study_names = c(), study_weights = NULL)
 
 # input: result from the goric() function
 # Note that this is a wrapper function for evSyn_LL.
 evSyn_gorica(object, \dots, type_ev = c("added", "equal", "average"), 
              hypo_names = c(), priorICweights = NULL, 
              order_studies = c("input_order", "ascending", "descending"), 
-             study_names = c(), study_weights = c())
+             study_names = c(), study_weights = NULL)
 
 # input: Result from the escalc() function from the metafor package (or a 
 # regular data.frame using the same labelling). 
 # Note that this is a wrapper function for evSyn_est.
 evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", study_sample_nobs = "ni", 
              type = NULL, cluster_col = c("trial", "study", "author", "authors", 
-             "Trial", "Study", "Author", "Authors"), outcome_col = NULL, \ldots)
+             "Trial", "Study", "Author", "Authors"), outcome_col = NULL, \dots)
 
 \method{print}{evSyn}(x, digits = max(3, getOption("digits") - 4), \dots)
 
@@ -156,7 +156,8 @@ xlab_unordered = NULL, angle_x = 30, \dots)
 
   \item{comparison}{denotes the failsafe hypothesis; one can choose from "unconstrained", "complement", and "none".
   If "\code{none}", the model is only compared against the models provided by the user.
-  By default, if one user-specified hypothesis, "\code{comparison = 'complement'}"; 
+  By default, if one user-specified hypothesis, "\code{comparison = 'complement'}" 
+  (also when a different set of hypotheses is used for each study and each set consists of one hypothesis); 
   if multiple user-specified hypotheses, "\code{comparison = 'unconstrained'}".
   Note that the complement can only be computed for one model/hypothesis at a time.} 
 
@@ -171,9 +172,19 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   %In the case of ratios of IC weights ('icratios'), the ratio of prior weights should be given.
   %In that case, they do not sum to 1; and 
   %the ratio of weights for the reference hypothesis equals 1.
-  Notably, the priorICweights will be used in the cumulative and final results of evidence synthesis.
+  The vector should consist of one element for each hypothesis, including a possible 
+  failsafe hypothesis (i.e., the unconstrained or complement hypothesis); 
+  so, its length equals the number of columns in the output.
+  Notably, the priorICweights will be used in the cumulative and final results of evidence synthesis
+  (and in \code{leave1studyout}).
+  When the input consists of IC values, IC weights, or ratios of IC weights, they are also 
+  used in the study-specific IC weights; when the input consists of estimates 
+  (or log-likelihood and penalty values or goric objects), the study-specific IC weights 
+  are based on equal prior weights.
   They will not be used in ordering the studies with 'order_studies' = \code{"ascending"} or \code{"descending"}; 
-  this will be based equal a priori likeliness of the hypotheses.}
+  this will be based equal a priori likeliness of the hypotheses.
+  Notably, \code{priorICweights} was previously called \code{priorWeights}; 
+  this argument name is deprecated (it still works, with a warning).}
   
   \item{output_type}{a plot option. If "\code{gorica_weights}" (default), 
   a plot with the cumulative goric(a)
@@ -210,7 +221,11 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   %That is, it is not possible when the input consists of IC weights or IC weights ratios
   %(i.e., 'input_type' = \code{"icweights"} or \code{"icratios"});
   %then, the study weights cancel out.
-  Notably, the study weights will be used in the cumulative and final results of evidence synthesis.
+  The study weights correspond to the studies in the input order (i.e., before possibly 
+  re-ordering them via \code{order_studies}); they are re-ordered together with the studies.
+  Notably, the study weights will be used in the cumulative and final results of evidence synthesis
+  (i.e., for the IC values and weights as well as for the log-likelihood values and weights) 
+  and in \code{leave1studyout} (where the weights of the remaining studies are rescaled).
   They will not be used in ordering the studies with 'order_studies' = \code{"ascending"} or \code{"descending"}; 
   this will be based on the height of support for each study assuming equal study weights.}
   
@@ -270,7 +285,7 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   \item{vi_cols}{a character vector specifying the columns in \code{data} that 
   contain the variance and covariance values for each observation. The default is, 
   in the case of one outcome variable, \code{"vi"};
-  in the case of multiple (namely, O) variables, \code{c("v1i", \ldots, "vOi"}.
+  in the case of multiple (namely, O) variables, \code{c("v1i", ..., "vOi")}.
   For more information, see Example 5 below.
   }
   
@@ -330,6 +345,11 @@ are computed using the same \code{type_ev} as in the original \code{evSyn} call:
     removed.
   \item \code{"average"}: column means of the IC matrix with study \emph{s} removed.
 }
+If study weights were used in the \code{evSyn} call, these sums and means are 
+weighted sums and means, where the weights of the remaining studies are rescaled 
+in the same way as in \code{evSyn}. 
+Likewise, the IC weights are determined using the \code{priorICweights} of the 
+\code{evSyn} call.
 The hypothesis with the lowest aggregated IC value and thus highest aggregtaed IC weight 
 is identified as the preferred hypothesis for that reduced set. 
 \cr
@@ -749,7 +769,7 @@ if (requireNamespace("metadat", quietly = TRUE)) {
 }
 
 
-## Example 6d: 2 outcomes, assigning study weigths
+## Example 6d: 2 outcomes, assigning study weights
 if (requireNamespace("metadat", quietly = TRUE)) {
   data_c <- metadat::dat.berkey1998
   # yi gives the estimates (for both outcomes), vi their variances,
@@ -765,15 +785,21 @@ if (requireNamespace("metadat", quietly = TRUE)) {
   # The hypothesis should thus now be based on the labeling based on the 'outcome' variable:
   H1 <- "abs(AL) > 0.5, abs(PD) > 0.5" 
   
-  # Evidence synthesis (equal-evidence)
-  evS_escalc_c <- evSyn(data_c, 
+  # Study weights (one for each of the 5 trials, in the input order), 
+  # which sum to 1 or to the number of studies (here, 5). For example, 
+  # if one wants to give the first trial more weight and the last one less:
+  sw <- c(1.5, 1, 1, 1, 0.5)
+  
+  # Evidence synthesis (equal-evidence) using study weights
+  evS_escalc_d <- evSyn(data_c, 
                         hypotheses = list(H1 = H1), 
                         type_ev = "equal",
-                        comparison = "complement") # default (if one hypothesis)
+                        comparison = "complement", # default (if one hypothesis)
+                        study_weights = sw)
   
   # Output
-  evS_escalc_c
-  plot(evS_escalc_c)
+  evS_escalc_d
+  plot(evS_escalc_d)
 }
   
 

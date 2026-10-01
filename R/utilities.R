@@ -352,20 +352,89 @@ detect_range_restrictions <- function(Amat) {
 # correct mis-specified constraints of format e.g., x1 < 1 & x1 < 2.
 # x1 < 2 is removed since it is redundant. It has no impact on the LPs, but
 # since the redundant matrix is not full row-rank the slower boot method is used. 
-remove_redundant_constraints <- function(constraints, rhs, meq) {
-  df_orig <- data.frame(constraints, rhs)
-  df_orig$eq <- 0
-  if (meq > 0) {
-    df_orig$eq[1:meq] <- 1
+remove_redundant_constraints <- function(constraints, rhs, meq = 0L) {
+  # Note: the first meq rows of constraints are the equality constraints. This 
+  # also holds for the returned constraints (needed for, e.g., quadprog).
+  if (is.vector(constraints)) {
+    constraints <- rbind(constraints)
   }
-  df <- df_orig[order(df_orig$rhs, decreasing = TRUE),] 
-  Dupl <- duplicated(df[, -c((ncol(df)-1), ncol(df))])
-  df_reduced <- df[!Dupl,] # unique constraints
-  rhs <- df_reduced$rhs
-  meq <- sum(df_reduced$eq)
-  row.names(df_reduced) <- NULL
-  colnames(df_reduced) <- NULL
-  minWhichCol <- c((ncol(df_reduced)-1), ncol(df_reduced))
-  list(constraints = as.matrix(df_reduced[, -minWhichCol]), 
-       rhs = rhs, meq = meq) 
+  constraints <- as.matrix(constraints)
+  rhs <- as.numeric(rhs)
+  if (is.null(meq) || length(meq) == 0L || is.na(meq[1])) {
+    meq <- 0L
+  }
+  meq <- as.integer(meq[1])
+  nr <- nrow(constraints)
+  
+  if (nr == 0L || length(rhs) != nr || meq > nr || meq < 0L) {
+    # nothing to do here (or invalid input); this is checked elsewhere
+    return(list(constraints = unname(constraints), rhs = rhs, meq = meq))
+  }
+  
+  eq <- seq_len(nr) <= meq
+  # equalities first, then by decreasing rhs. As a result, for inequalities 
+  # with identical rows the one with the largest rhs is kept (e.g., x1 > 2 
+  # implies x1 > 1).
+  ord <- order(!eq, -rhs)
+  Amat <- constraints[ord, , drop = FALSE]
+  bvec <- rhs[ord]
+  eq   <- eq[ord]
+  
+  row_key <- function(A) {
+    apply(A, 1, function(r) paste(r + 0, collapse = "|"))
+  }
+  key     <- row_key(Amat)
+  key_neg <- row_key(-Amat)
+  keep    <- rep(TRUE, nr)
+  
+  conflict_msg <- paste0("\nrestriktor ERROR: The constraints are conflicting (i.e., the ",
+                         "parameter space is empty/infeasible): ")
+  
+  # equalities among equalities
+  idx_eq <- which(eq)
+  for (i in idx_eq) {
+    if (!keep[i]) next
+    # a'x = b and -a'x = -b are the same restriction
+    same <- idx_eq[idx_eq > i & keep[idx_eq] & 
+                     (key[idx_eq] == key[i] | key[idx_eq] == key_neg[i])]
+    for (j in same) {
+      b_j <- if (key[j] == key[i]) bvec[j] else -bvec[j]
+      if (!isTRUE(all.equal(b_j, bvec[i]))) {
+        stop(conflict_msg, "two equality restrictions on the same (combination of) ", 
+             "parameter(s) have a different value (rhs = ", bvec[i], " and rhs = ", 
+             b_j, ").", call. = FALSE)
+      }
+      keep[j] <- FALSE
+    }
+  }
+  
+  # inequalities among inequalities (keep the first, i.e., largest rhs)
+  idx_ineq <- which(!eq)
+  dupl_ineq <- duplicated(key[idx_ineq])
+  keep[idx_ineq[dupl_ineq]] <- FALSE
+  
+  # inequalities vs. equalities: drop the inequality if it is implied by the 
+  # equality, otherwise the constraints are conflicting.
+  for (i in idx_ineq[!dupl_ineq]) {
+    for (j in idx_eq[keep[idx_eq]]) {
+      if (key[i] == key[j]) {
+        b_eq <- bvec[j]       # a'x = b_eq  vs. a'x >= b_ineq
+      } else if (key[i] == key_neg[j]) {
+        b_eq <- -bvec[j]      # -a'x = -b_eq vs. -a'x >= b_ineq
+      } else {
+        next
+      }
+      if (b_eq >= bvec[i] || isTRUE(all.equal(b_eq, bvec[i]))) {
+        keep[i] <- FALSE
+        break
+      } else {
+        stop(conflict_msg, "an equality restriction (rhs = ", b_eq, ") and an ", 
+             "inequality restriction (rhs = ", bvec[i], ") on the same (combination of) ", 
+             "parameter(s) cannot hold simultaneously.", call. = FALSE)
+      }
+    }
+  }
+  
+  list(constraints = unname(Amat[keep, , drop = FALSE]), 
+       rhs = unname(bvec[keep]), meq = sum(eq[keep])) 
 }

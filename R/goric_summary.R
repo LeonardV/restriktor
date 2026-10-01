@@ -136,7 +136,7 @@ summary.con_goric <- function(object, brief = TRUE,
     }
     
     ratio.gw <- apply(x$ratio.gw, 2, sprintf, fmt = dig)
-    rownames(ratio.gw) <- rownames(x$ratio.gw)
+    rownames(ratio.gw) <- mark_best_hypo(rownames(x$ratio.gw), x)
     class(ratio.gw) <- "numeric"
     
     if (max(ratio.gw, na.rm = TRUE) >= 1e4) {
@@ -152,7 +152,7 @@ summary.con_goric <- function(object, brief = TRUE,
   if (!is.null(x$ratio.lw)) {
     cat("\nRatio loglik-weights:\n")
     ratio.lw <- apply(x$ratio.lw, 2, sprintf, fmt = dig)
-    rownames(ratio.lw) <- rownames(x$ratio.lw) 
+    rownames(ratio.lw) <- mark_best_hypo(rownames(x$ratio.lw), x) 
     class(ratio.lw) <- "numeric"
     
     if (max(ratio.lw, na.rm = TRUE) >= 1e4) {
@@ -168,11 +168,11 @@ summary.con_goric <- function(object, brief = TRUE,
   if (!is.null(x$ratio.pw)) {
     cat("\nRatio penalty-weights:\n")
     ratio.pw <- apply(x$ratio.pw, 2, sprintf, fmt = dig)
-    rownames(ratio.pw) <- rownames(x$ratio.pw)
+    rownames(ratio.pw) <- mark_best_hypo(rownames(x$ratio.pw), x)
     class(ratio.pw) <- "numeric"
     
     if (max(ratio.pw, na.rm = TRUE) >= 1e4) {
-      print(format(x$ratio.pw, digits = digits, scientific = TRUE, trim = TRUE), 
+      print(format(ratio.pw, digits = digits, scientific = TRUE, trim = TRUE), 
             print.gap = 2, quote = FALSE, right = TRUE)
     } else {
       print(format(ratio.pw, digits = digits, scientific = FALSE, trim = TRUE), 

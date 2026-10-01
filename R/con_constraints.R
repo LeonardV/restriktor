@@ -147,10 +147,14 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
   }
   
   # Check before deleting redundant constraints
+  if (!(nrow(Amat) == length(bvec))) {
+    warning(paste("restriktor WARNING: The number of constraints does not match", 
+                  "the \'rhs\' (nrow(Amat) != length(rhs))."))
+  }
   if (meq > nrow(Amat)) { 
     stop(sprintf("restriktor ERROR: The number of equality restrictions (meq = %d) cannot exceed the number of constraints (nrow(Amat) = %d).", meq, nrow(Amat)),
          "\n There might be conflicting and perhaps redundant constraints. \n",
-         "When deleting those, goric() should be able to evaluated the adjusted set of hypotheses.", call. = FALSE)
+         "When deleting those, goric() should be able to evaluate the adjusted set of hypotheses.", call. = FALSE)
   }
   
   # correct user errors, like x1 < 2 & x1 < 1, x1 < 2 is removed to get a 
@@ -162,14 +166,10 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
   bvec <- rrc$rhs
   meq <- rrc$meq
   
-  if (!(nrow(Amat) == length(bvec))) {
-    warning(paste("restriktor WARNING: The number of constraints does not match", 
-                  "the \'rhs\' (nrow(Amat) != length(rhs))."))
-  }
   if (meq > nrow(Amat)) { 
     stop(sprintf("restriktor ERROR: The number of equality restrictions (meq = %d) cannot exceed the number of constraints (nrow(Amat) = %d).", meq, nrow(Amat)),
          "\n There might be conflicting and perhaps redundant constraints. \n",
-         "When deleting those, goric() should be able to evaluated the adjusted set of hypotheses.", call. = FALSE)
+         "When deleting those, goric() should be able to evaluate the adjusted set of hypotheses.", call. = FALSE)
   }
   
   if (length(CON$ceq.nonlinear.idx) > 0L || length(CON$cin.nonlinear.idx) > 0L) {

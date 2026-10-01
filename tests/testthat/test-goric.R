@@ -859,13 +859,15 @@ test_that("edge: fout bij (bijna-)singuliere VCOV", {
 # Edge cases: Heq parameter
 # =============================================================================
 
-test_that("edge: Heq = TRUE met >1 hypothese geeft fout", {
-  expect_error(
-    goric(est_3, VCOV = VCOV_3, type = "gorica",
-          Heq = TRUE,
-          hypotheses = list(H1 = "x1 > x2", H2 = "x2 > x3")),
-    "Heq.*one|one.*hypothesis"
+test_that("edge: Heq = TRUE met >1 hypothese geeft waarschuwing en Heq wordt genegeerd", {
+  expect_warning(
+    result <- goric(est_3, VCOV = VCOV_3, type = "gorica",
+                    Heq = TRUE,
+                    hypotheses = list(H1 = "x1 > x2", H2 = "x2 > x3")),
+    "Heq.*ignored"
   )
+  expect_false(result$Heq)
+  expect_false("Heq" %in% result$result$model)
 })
 
 test_that("edge: Heq = TRUE met comparison='unconstrained' geeft waarschuwing", {

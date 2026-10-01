@@ -23,11 +23,7 @@ compute_complement_likelihood <- function(model.org, VCOV,
     if (type %in% c("goric", "goricc")) {
       # for missing = "fiml" the unrestricted observed-data log-likelihood is
       # supplied via ll.unrestr; logLik(model.org) would be the listwise value
-      llc <- if (!is.null(ll.unrestr)) ll.unrestr else logLik(model.org)
-      # TO DO mlm:
-      #else{ 
-      #  if(class(model.org)[1] != "mlm") logLik(model.org) else con_loglik_lm(model.org)
-      #  }
+      llc <- if (!is.null(ll.unrestr)) ll.unrestr else loglik_unrestr(model.org)
       betasc <- b.unrestr
     } else if (type %in% c("gorica", "goricac")) {
       llc <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE)
@@ -54,7 +50,7 @@ compute_complement_likelihood <- function(model.org, VCOV,
                              ldots[intersect(names(ldots),
                                              c("missing", "auxiliary", "control"))])
         Hc.restr <- do.call("restriktor", CALL.restr)
-        betas[[l]] <- coef(Hc.restr)
+        betas[[l]] <- coef_vec_mlm(coef(Hc.restr), model.org)
         ll[[l]]    <- logLik(Hc.restr)
       } else if (type %in% c("gorica", "goricac")) {
         ldots$mix_weights <- "none"
@@ -79,9 +75,7 @@ compute_complement_likelihood <- function(model.org, VCOV,
     betasc <- betas[[ll.idx]]
   } else if (nrow(Amat) == meq) {
     if (type %in% c("goric", "goricc")) {
-      llc <- if (!is.null(ll.unrestr)) ll.unrestr else logLik(model.org)
-      # TO DO logLik does not work for mlm object! ''logLik.lm' does not support multiple responses'
-      # Kan die uit con_loglik: con_loglik_lm(model.org)
+      llc <- if (!is.null(ll.unrestr)) ll.unrestr else loglik_unrestr(model.org)
       betasc <- b.unrestr
     } else if (type %in% c("gorica", "goricac")) {
       llc <- dmvnorm(rep(0, p), sigma = VCOV, log = TRUE)

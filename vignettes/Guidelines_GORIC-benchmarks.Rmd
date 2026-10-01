@@ -129,7 +129,10 @@ By default, two populations are used: i) a null population in which the populati
 ```{r, warning=F, message=F, eval=FALSE}
 # If ANOVA model:
 
-# In practise you may want to increase the number of iter, say 2000, and use parallel computing
+# In practise you may want to increase the number of iter, say 2000 (or leave 'iter' at 
+# its default, iter = NULL, such that the number of draws is set automatically), and use
+# parallel computing via the argument 'ncpus' (e.g., ncpus = 8). 
+# Alternatively, set up your own parallel plan beforehand, which is then used:
 # future::plan(multisession, workers = 8) # windows machines
 # future::plan(multicore, workers = 8) # unix machines
 benchmarks_means <- benchmark(goric_object, model_type = "means", iter = 400)
@@ -279,7 +282,7 @@ times more supported than its complement. The probability that $H_1$ is not the 
 Based on the benchmarks, you can check how plausible your finding is (given the assumed population parameters and given the sample size).
 If you want to compare your results with the situation in which one or more equalities hold true, use a null population (here, an effect size of 0, indicating that the three means are equal). Then, you obtain insight into how (un)likely / how extreme your finding (based on inequalities) is.^[Note that the benchmarks are based on the GORICA, not GORIC. Therefore, in case you used the GORIC, the reported sample value in the benchmark output may differ somewhat from your finding (in the goric output). For those interested: This has to do with using a different scaling of the covariance matrix; namely, dividing by N vs N-1.]
 
-When assuming that there is no effect in the population (i.e., under the null), that is, all three group means are equal, the ratio of GORIC weights of $H_1$ versus its complement (i.e., `r round(results_1c$ratio.gw[1,2], 2)`) is larger than the 95th percentile (i.e., `r round(benchmarks_1c$benchmarks_ratio_goric_weights[[1]][6], 2)`).
+When assuming that there is no effect in the population (i.e., under the null), that is, all three group means are equal, the ratio of GORIC weights of $H_1$ versus its complement (i.e., `r round(results_1c$ratio.gw[1,2], 2)`) is larger than the 95th percentile (i.e., `r round(benchmarks_1c$benchmarks$ratio_goric_weights[[1]][1, "95%"], 2)`).
 Hence, our finding is very extreme if the null would be true. Using the table with cut-off values above, this indicates that there is very large (tremendous) support, when assuming no population effect size (given a group size of 40 for each of the 3 groups).
 
 Additionally, when inspecting the distributions of the ratio of GORIC weights of $H_1$ versus its complement under the null population and under the population based on the observed effect size (see plot above), then we can see that they differ, that is, do not overlap much. This also indicates that our finding is very unlikely if the null would be true.
@@ -289,8 +292,8 @@ Additionally, when inspecting the distributions of the ratio of GORIC weights of
 hypo_rate <- print(benchmarks_1c, hypo_rate_threshold = 1)
 hyporate <- hypo_rate$hypothesis_rate[[2]]
 ```
-The output regarding the 'Ratio-of-GORIC-weights' also gives the *hypothesis rate* under the observed values (either the observed effect size ('model_type = "means"') or observed parameter estimates ('model_type = "asymp"', the default)). That is, it gives the proportion of time the hypothesis is chosen (when compared to the mentioned competing hypothesis; here, `r rownames(benchmarks_1c$benchmarks_ratio_goric_weights[[2]])`), assuming that the population values equal the observed values.  
-Here, the hypothesis rate is `r hyporate`, meaning that, when the population effect size is `r benchmarks_1c$pop_es[2]`, the number of times `r benchmarks_1c$pref_hypo_name` is selected versus the competing one (here, `r rownames(benchmarks_1c$benchmarks_ratio_goric_weights[[2]])` is `r 100*hyporate`%.
+The output regarding the 'Ratio-of-GORIC-weights' also gives the *hypothesis rate* under the observed values (either the observed effect size ('model_type = "means"') or observed parameter estimates ('model_type = "asymp"', the default)). That is, it gives the proportion of time the hypothesis is chosen (when compared to the mentioned competing hypothesis; here, `r rownames(benchmarks_1c$benchmarks$ratio_goric_weights[[2]])`), assuming that the population values equal the observed values.  
+Here, the hypothesis rate is `r hyporate`, meaning that, when the population parameter values equal the observed ones (i.e., `r paste(round(benchmarks_1c$pop_est[2, ], 2), collapse = ", ")`), the number of times `r benchmarks_1c$pref_hypo_name` is selected versus the competing one (here, `r rownames(benchmarks_1c$benchmarks$ratio_goric_weights[[2]])`) is `r 100*hyporate`%.
 By default, a threshold of 1 is used, meaning that if the ratio of GORIC weights is greater than 1, `r benchmarks_1c$pref_hypo_name` is selected. If you want to use another threshold, say 2, then use the following code:
 ```{r, message=F, warning=F, eval = F}
 hypo_rate_2 <- print(benchmarks_1c, hypo_rate_threshold = 2)

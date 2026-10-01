@@ -3,16 +3,25 @@ capitalize_first_letter <- function(input_string) {
   paste0(toupper(substring(input_string, 1, 1)), substring(input_string, 2))
 }
 
-# used in get_results_benchmark_means()
-remove_single_value_rows <- function(data, value) {
-  rows_to_keep <- apply(data, 1, function(row) !all(row == value))
-  data[rows_to_keep, , drop = FALSE]
-}  
+# used in get_results_benchmark(): drop the preferred hypothesis'
+# self-comparison (ratio = 1, log-ratio/difference = 0 by construction) BY
+# NAME -- the row 'self_row' of a benchmark table, or the column 'self_col'
+# of a matrix of draws. Previously rows/columns were dropped by VALUE (all
+# values equal to 1 or 0), which was decided separately for the tables
+# (Sample + quantiles) and the draws (every draw), and separately per
+# population, so that a genuine comparison that happened to be (almost)
+# constant (e.g. H1 vs. unconstrained when H1 is nearly always satisfied)
+# could be dropped from one but not from the other -- leaving tables, draws,
+# hypothesis_rate, rate_rlw and overlap misaligned.
+remove_self_row <- function(data, self_row) {
+  if (is.null(data)) return(data)
+  data[rownames(data) != self_row, , drop = FALSE]
+}
 
-remove_single_value_col <- function(data, value) {
-  cols_to_keep <- apply(data, 2, function(col) !all(col == value))
-  data[, cols_to_keep, drop = FALSE]
-}  
+remove_self_col <- function(data, self_col) {
+  if (is.null(data) || is.null(colnames(data))) return(data)
+  data[, colnames(data) != self_col, drop = FALSE]
+}
 
 # Function to filter columns based on exact matching of hypothesis_comparison
 filter_columns <- function(data, hypothesis_comparison) {
@@ -132,9 +141,7 @@ compute_overlap_vs_observed <- function(draws_combined) {
 # vector of 1s, one per column) of named numeric vectors (named by
 # hypothesis column). Returns NULL under the same conditions as
 # compute_overlap_vs_observed() (no populations at all), or when there are
-# no columns to compare -- e.g. after remove_single_value_col() has dropped
-# every column because there is only one alternative hypothesis and it is
-# constant across draws).
+# no columns to compare (e.g. no successful draws at all).
 compute_overlap_vs_observed_matrix <- function(draws_combined) {
   reference_name <- determine_overlap_reference(names(draws_combined))
   if (is.null(reference_name)) {
@@ -425,7 +432,8 @@ parallel_function_means <- function(i, N, var_e, means_pop,
 
 # this function is called from the benchmark_asymp() function
 parallel_function_asymp <- function(i, est, VCOV, hypos, pref_hypo, comparison,
-                                    type, control, mix_weights, penalty_factor, ...) {  
+                                    type, control, mix_weights, penalty_factor,
+                                    priorICweights = NULL, ...) {  
   results_goric <- tryCatch(
     {
       # Voer de goric functie uit
@@ -436,6 +444,7 @@ parallel_function_asymp <- function(i, est, VCOV, hypos, pref_hypo, comparison,
             control = control, 
             mix_weights = mix_weights,
             penalty_factor = penalty_factor,
+            priorICweights = priorICweights,
             ...)
     },
     error = function(e) {
@@ -809,39 +818,45 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     CI_benchmarks_ld_ge0_all[[name]] <- CI_benchmarks_ld_ge0
   }
   
-  
+  # The preferred hypothesis' self-comparison (always 1 for the ratios, 0 for
+  # the log-ratios and log-likelihood differences) is dropped -- by name, and
+  # in exactly the same way for every output_type and population -- from
+  # the benchmark tables (row 'self_row') and from the draws (column
+  # 'self_col'), so that tables, draws, hypothesis_rate, rate_rlw and overlap
+  # always refer to the same set of (alternative) hypotheses, in the same
+  # order. See remove_self_row()/remove_self_col().
+  self_col <- names(object$ratio.gw[pref_hypo, ])[pref_hypo]
+  self_row <- paste(pref_hypo_name, self_col)
+
   CI_benchmarks_rgw_all_cleaned <- lapply(CI_benchmarks_rgw_all, function(pop_es_list) {
-    remove_single_value_rows(pop_es_list, 1)
+    remove_self_row(pop_es_list, self_row)
   })
   
   CI_benchmarks_rlw_all_cleaned <- lapply(CI_benchmarks_rlw_all, function(pop_es_list) {
-    remove_single_value_rows(pop_es_list, 1)
+    remove_self_row(pop_es_list, self_row)
   })
   
   CI_benchmarks_rlw_ge1_all_cleaned <- lapply(CI_benchmarks_rlw_ge1_all, function(pop_es_list) {
-    remove_single_value_rows(pop_es_list, 1)
+    remove_self_row(pop_es_list, self_row)
   })
 
-  # rgw_log/rlw_log's self-comparison row is log(1) = 0, not 1 -- clean
-  # against the 0 baseline (like ld/ld_ge0) rather than the 1 baseline used
-  # for rgw/rlw/rlw_ge1 above.
   CI_benchmarks_rgw_log_all_cleaned <- lapply(CI_benchmarks_rgw_log_all, function(pop_es_list) {
-    remove_single_value_rows(pop_es_list, 0)
+    remove_self_row(pop_es_list, self_row)
   })
 
   CI_benchmarks_rlw_log_all_cleaned <- lapply(CI_benchmarks_rlw_log_all, function(pop_es_list) {
-    remove_single_value_rows(pop_es_list, 0)
+    remove_self_row(pop_es_list, self_row)
   })
 
   CI_benchmarks_ld_all_cleaned <- lapply(CI_benchmarks_ld_all, function(pop_es_list) {
-    remove_single_value_rows(pop_es_list, 0)
+    remove_self_row(pop_es_list, self_row)
   })
   
   CI_benchmarks_ld_ge0_all_cleaned <- lapply(CI_benchmarks_ld_ge0_all, function(pop_es_list) {
-    remove_single_value_rows(pop_es_list, 0)
+    remove_self_row(pop_es_list, self_row)
   })
 
-  # remove_single_value_rows() drops the preferred hypothesis' self-comparison
+  # remove_self_row() drops the preferred hypothesis' self-comparison
   # row from the benchmarks_* matrices above (ratio/difference vs. itself is
   # always 1 or 0). The percentile_*_all matrices were never subject to that
   # filter (a percentile is essentially never exactly 1 or 0), so without this
@@ -877,25 +892,23 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   rlw_log_combined <- lapply(rlw_combined, function(m) log(m))
 
   rgw_combined <- lapply(rgw_combined, function(pop_es_list) {
-    remove_single_value_col(pop_es_list, 1)
+    remove_self_col(pop_es_list, self_col)
   })
 
   rlw_combined <- lapply(rlw_combined, function(pop_es_list) {
-    remove_single_value_col(pop_es_list, 1)
+    remove_self_col(pop_es_list, self_col)
   })
 
-  # rgw_log/rlw_log's self-column is log(1) = 0 -- trim against the 0
-  # baseline (like ld) rather than the 1 baseline used for rgw/rlw above.
   rgw_log_combined <- lapply(rgw_log_combined, function(pop_es_list) {
-    remove_single_value_col(pop_es_list, 0)
+    remove_self_col(pop_es_list, self_col)
   })
 
   rlw_log_combined <- lapply(rlw_log_combined, function(pop_es_list) {
-    remove_single_value_col(pop_es_list, 0)
+    remove_self_col(pop_es_list, self_col)
   })
 
   ld_combined <- lapply(ld_combined, function(pop_es_list) {
-    remove_single_value_col(pop_es_list, 0)
+    remove_self_col(pop_es_list, self_col)
   })
 
   # Rate at which each alternative hypothesis's ratio-GORIC(A)-weight
@@ -1196,7 +1209,12 @@ check_iter_adequacy <- function(benchmark_results, observed_name, iter,
       "\nrestriktor Message: For the user-specified 'iter' = ", iter, ", the percentile of the ",
       "value based on your data (called the 'Sample' value in the output) within the benchmark ",
       "distribution under the 'Observed' population has not (yet) stabilized: it changed by ",
-      stability_tol, " percentage point(s) or more over the last 20% of the draws.\n",
+      stability_tol, " percentage point(s) or more over the last 20% of the draws",
+      if (stability_tol <= 0) {
+        paste0(" (note that with iter_stability_tol = ", stability_tol, ", the percentile ",
+               "can never be considered stable)")
+      } else "",
+      ".\n",
       "For output_type = 'gw', ", describe_type(percentile_gw_80, percentile_gw_full), "\n",
       "For output_type = 'lw', ", describe_type(percentile_lw_80, percentile_lw_full), "\n",
       closing, suggest_default()
@@ -1283,7 +1301,8 @@ goric_percentile_test <- function(draws, sample_value, band = c(0.495, 0.505),
 # the "Observed" population's percentile (for output_type = 'gw' and/or
 # 'lw') is still changing meaningfully round to round, add iter_step more
 # draws -- WITHOUT discarding or redrawing the ones already computed --
-# repeating until the percentile has stabilized or iter_max is reached.
+# repeating until the percentile has stabilized (i.e., stayed within
+# stability_tol for two consecutive rounds) or iter_max is reached.
 # Growth is deliberately based on STABILITY of the percentile, not on
 # whether it is close to 50 -- see the long note above check_iter_adequacy()
 # for why the 'Observed' population's median need not be at the 50th
@@ -1299,6 +1318,46 @@ goric_percentile_test <- function(draws, sample_value, band = c(0.495, 0.505),
 # median_bias_check_gw/median_bias_check_lw = <the last round's
 # goric_percentile_test() result, informational only -- see the note above
 # that function>).
+
+# Checks the iter-related arguments of benchmark_means()/benchmark_asymp()
+# up front, so that invalid values give a clear error instead of an obscure
+# failure (or an endless/empty loop) inside run_benchmark_simulation().
+validate_iter_args <- function(iter, iter_min, iter_step, iter_max,
+                               iter_stability_tol, iter_adequacy_band) {
+  is_count <- function(v, min_value) {
+    is.numeric(v) && length(v) == 1 && !is.na(v) && is.finite(v) &&
+      v >= min_value && v == round(v)
+  }
+  if (!is.null(iter) && !is_count(iter, 1)) {
+    stop("\nrestriktor ERROR: The argument 'iter' should be NULL (the default; then the ",
+         "number of draws is set automatically) or a single whole number >= 1.", call. = FALSE)
+  }
+  if (!is_count(iter_min, 1)) {
+    stop("\nrestriktor ERROR: The argument 'iter_min' should be a single whole number >= 1.",
+         call. = FALSE)
+  }
+  if (!is_count(iter_step, 1)) {
+    stop("\nrestriktor ERROR: The argument 'iter_step' should be a single whole number >= 1.",
+         call. = FALSE)
+  }
+  if (!is_count(iter_max, 1)) {
+    stop("\nrestriktor ERROR: The argument 'iter_max' should be a single whole number >= 1.",
+         call. = FALSE)
+  }
+  if (!(is.numeric(iter_stability_tol) && length(iter_stability_tol) == 1 &&
+        !is.na(iter_stability_tol) && iter_stability_tol >= 0)) {
+    stop("\nrestriktor ERROR: The argument 'iter_stability_tol' should be a single number >= 0 ",
+         "(in percentage points).", call. = FALSE)
+  }
+  if (!(is.numeric(iter_adequacy_band) && length(iter_adequacy_band) == 2 &&
+        !anyNA(iter_adequacy_band) && all(iter_adequacy_band >= 0) &&
+        all(iter_adequacy_band <= 1) && iter_adequacy_band[1] < iter_adequacy_band[2])) {
+    stop("\nrestriktor ERROR: The argument 'iter_adequacy_band' should be a vector of two ",
+         "increasing proportions between 0 and 1 (e.g., c(0.495, 0.505)).", call. = FALSE)
+  }
+  invisible(TRUE)
+}
+
 
 run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
                                      colnames_vec, VCOV, hypos, pref_hypo,
@@ -1326,6 +1385,12 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
   # exists to compare against.
   prev_percentile_gw <- NA_real_
   prev_percentile_lw <- NA_real_
+  # Number of consecutive rounds in which the percentile stayed within
+  # stability_tol (for both 'gw' and 'lw'), and the sizes of the batches of
+  # draws added in those rounds (the last batch can be smaller than
+  # iter_step when it is capped by iter_max).
+  n_stable_rounds <- 0L
+  batch_sizes <- integer(0)
 
   # NULL unless/until computed inside the repeat loop below -- stays NULL for
   # a fixed, user-specified 'iter' (auto_iter = FALSE), since that path
@@ -1361,6 +1426,8 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
                                   comparison = comparison, type = "gorica",
                                   control = control, mix_weights = mix_weights,
                                   penalty_factor = penalty_factor,
+                                  # same prior weights as the (refitted) goric object
+                                  priorICweights = object$priorICweights,
                                   Heq = Heq, ...)
         }
 
@@ -1375,6 +1442,7 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
       }
     })
 
+    batch_sizes <- c(batch_sizes, as.integer(target - n_done))
     n_done <- target
 
     if (!auto_iter) break # fixed iter: exactly one round, done
@@ -1398,17 +1466,18 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
       # the long note above check_iter_adequacy() for why the percentile
       # need not be near 50 at all, even once it has fully stabilized.
       # FALSE (not NA) on the very first round, since there is no earlier
-      # percentile yet to compare against. This is a first-cut heuristic
-      # based on a single round-to-round comparison -- if it turns out to
-      # call "stabilized" too eagerly (a percentile can drift by a
-      # percentage point or two by chance alone), requiring stability across
-      # two consecutive rounds instead of one would be the natural
-      # tightening.
+      # percentile yet to compare against. Since a percentile can drift by a
+      # percentage point or two by chance alone, a single round-to-round
+      # comparison could call "stabilized" too eagerly; therefore, the
+      # percentile has to stay within stability_tol for TWO consecutive
+      # rounds (i.e., over the last two batches of added draws) before the
+      # growing stops.
       stable_gw <- isTRUE(!is.na(prev_percentile_gw) &&
                             abs(chk_gw$percentile - prev_percentile_gw) < stability_tol)
       stable_lw <- isTRUE(!is.na(prev_percentile_lw) &&
                             abs(chk_lw$percentile - prev_percentile_lw) < stability_tol)
-      stabilized <- stable_gw && stable_lw
+      n_stable_rounds <- if (stable_gw && stable_lw) n_stable_rounds + 1L else 0L
+      stabilized <- n_stable_rounds >= 2L
       prev_percentile_gw <- chk_gw$percentile
       prev_percentile_lw <- chk_lw$percentile
     } else {
@@ -1420,33 +1489,57 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
 
     if (stabilized || n_done >= iter_max) {
       if (auto_iter && !is.null(chk_gw)) {
+        # number of draws over which the last (one or two) comparison(s)
+        # were made; the last batch can be smaller than iter_step if capped
+        # by iter_max.
+        n_last <- if (length(batch_sizes) > 1) batch_sizes[length(batch_sizes)] else NA
+        n_last2 <- if (length(batch_sizes) > 2) sum(utils::tail(batch_sizes, 2)) else NA
+        percentiles_txt <- paste0(
+          "For output_type = 'gw', the percentile is ", sprintf("%.1f", chk_gw$percentile),
+          "; for output_type = 'lw', the percentile is ", sprintf("%.1f", chk_lw$percentile),
+          ".\n"
+        )
         if (stabilized) {
           message(
             "\nrestriktor Message: 'iter' was not specified, so it was set automatically.\n",
             "Using iter = ", n_done, " draws, the percentile of the value based on your data ",
             "(called the 'Sample' value in the output) within the benchmark distribution under ",
-            "the 'Observed' population has stabilized: over the last ", iter_step, " draws, it ",
-            "changed by less than ", stability_tol, " percentage point(s).\n",
-            "For output_type = 'gw', the percentile is ", sprintf("%.1f", chk_gw$percentile),
-            "; for output_type = 'lw', the percentile is ", sprintf("%.1f", chk_lw$percentile),
-            ".\n",
+            "the 'Observed' population has stabilized: in each of the last two rounds of added ",
+            "draws (", n_last2, " draws in total), it changed by less than ", stability_tol,
+            " percentage point(s).\n",
+            percentiles_txt,
             "So, no further draws were added. Note that this percentile is not necessarily ",
             "expected to be near 50 -- that need not indicate a problem, particularly when ",
             "(some of) the hypotheses are close to being (an) equality constraint(s)."
           )
         } else {
+          reason <- if (stability_tol <= 0) {
+            paste0("since iter_stability_tol = ", stability_tol, ", the percentile can never be ",
+                   "considered stable (it would have to change by less than ", stability_tol,
+                   " percentage points).\n")
+          } else if (is.na(n_last)) {
+            paste0("since there were no further draws to compare the percentile against ",
+                   "(iter_min >= iter_max), it could not be checked whether the percentile of ",
+                   "the value based on your data (called the 'Sample' value in the output) within ",
+                   "the benchmark distribution under the 'Observed' population has stabilized.\n")
+          } else {
+            paste0("since the percentile of the value based on your data (called the 'Sample' ",
+                   "value in the output) within the benchmark distribution under the 'Observed' ",
+                   "population had not (yet) stabilized: it did not stay within ", stability_tol,
+                   " percentage point(s) for two consecutive rounds of added draws (over the last ",
+                   n_last, " draws, it changed by ",
+                   if (n_stable_rounds > 0) "less than " else "", stability_tol,
+                   " percentage point(s)", if (n_stable_rounds > 0) "" else " or more",
+                   ").\n")
+          }
           message(
-            "\nrestriktor Message: 'iter' was not specified, so it was increased automatically ",
-            "up to its maximum of iter = ", iter_max, " draws, since the percentile of the value ",
-            "based on your data (called the 'Sample' value in the output) within the benchmark ",
-            "distribution under the 'Observed' population had not (yet) stabilized: over the ",
-            "last ", iter_step, " draws, it changed by ", stability_tol,
-            " percentage point(s) or more.\n",
-            "For output_type = 'gw', the percentile is ", sprintf("%.1f", chk_gw$percentile),
-            "; for output_type = 'lw', the percentile is ", sprintf("%.1f", chk_lw$percentile),
-            ".\n",
-            "Consider re-running with a manually specified, larger 'iter' for a more stable ",
-            "benchmark."
+            "\nrestriktor Message: 'iter' was not specified, so it was ",
+            if (is.na(n_last)) "set to" else "increased automatically up to",
+            " its maximum of iter = ", n_done, " draws (iter_max = ", iter_max, "), ",
+            reason,
+            percentiles_txt,
+            "Consider re-running with a manually specified, larger 'iter' (or a larger ",
+            "'iter_max') for a more stable benchmark."
           )
         }
       }
@@ -1528,21 +1621,14 @@ format_median_ref_pop_value <- function(value) {
 # vector named by alternative hypothesis (there can be more than one per
 # population). 'n_rows' is the number of rows in the benchmark table this
 # column is being attached to (nrow() of e.g. benchmarks_ratio_goric_weights
-# [[pop_es]]). Deliberately aligns by POSITION rather than by matching
-# names against the table's rownames: those rownames are formatted as
-# "<preferred hypothesis> <alternative hypothesis>" (e.g. "H1 H2") for
-# display, and parsing that back apart is fragile -- e.g. R drops the
-# alternative hypothesis's name entirely when there is exactly one
-# alternative (a 1x1 ratio.gw matrix, as in a single hypothesis vs. its
-# complement), leaving no name to parse. Positional alignment instead
-# matches the existing convention already used for the 'hypothesis_rate'
-# column added the same way (see print.benchmark()): both the benchmark
-# table's rows and the overlap data's entries are built from -- and
-# filtered the same way as -- the same underlying combined draws, so their
-# order lines up. Returns a column of NA when there's nothing to report --
-# no "Observed" category in this run, the 'Observed' population's own row
-# (no self-overlap to report), or (defensively) a length mismatch.
-overlap_column <- function(overlap_source, pop_es, n_rows) {
+# [[pop_es]]). For rgw/rlw/ld, the values are aligned with the table's rows
+# BY NAME when 'row_names' and 'pref_hypo_name' are supplied (see
+# align_by_hypothesis()); otherwise by position. For gw/lw the single
+# overlap value is repeated across the (single) row. Returns a column of NA
+# when there's nothing to report -- no "Observed" category in this run, or
+# (defensively) a length mismatch.
+overlap_column <- function(overlap_source, pop_es, n_rows, row_names = NULL,
+                           pref_hypo_name = NULL) {
   na_col <- rep(NA_real_, n_rows)
   if (is.null(overlap_source) || !(pop_es %in% names(overlap_source))) {
     # Note: for the gw/lw case, overlap_source is a plain named vector, and
@@ -1554,6 +1640,11 @@ overlap_column <- function(overlap_source, pop_es, n_rows) {
   vals <- overlap_source[[pop_es]]
   if (is.null(vals) || length(vals) == 0) {
     return(na_col)
+  }
+  # rgw/rlw/ld case with the table's rownames available: align by name (see
+  # align_by_hypothesis()).
+  if (!is.null(names(vals)) && !is.null(row_names) && !is.null(pref_hypo_name)) {
+    return(align_by_hypothesis(vals, row_names, pref_hypo_name))
   }
   vals <- unname(vals)
   if (length(vals) == n_rows) {
@@ -1589,7 +1680,28 @@ overlap_column <- function(overlap_source, pop_es, n_rows) {
 # 'existing_mat', in the same order -- gw/lw and rgw/rlw/rgw_log/rlw_log/ld
 # align this way throughout the codebase, e.g. overlap_column() above relies
 # on the same positional correspondence) for rgw/rlw/rgw_log/rlw_log/ld.
-recompute_percentile_table <- function(existing_mat, combined_data, percentiles) {
+# Aligns a vector of per-alternative-hypothesis values (e.g. hypothesis_rate,
+# rate_rlw or overlap; named by the draws' column names, like "vs. H2") with
+# the rows of a benchmark table (rownames "<preferred hypothesis> vs. H2", see
+# get_results_benchmark()) BY NAME. A single unnamed value (e.g. the NA used
+# for the 'No-effect' population in print.benchmark()) is repeated for every
+# row. Rows without a matching value get NA.
+align_by_hypothesis <- function(vals, row_names, pref_hypo_name) {
+  n_rows <- length(row_names)
+  if (is.null(vals) || length(vals) == 0) {
+    return(rep(NA_real_, n_rows))
+  }
+  if (is.null(names(vals))) {
+    if (length(vals) == 1) return(rep(unname(vals), n_rows))
+    if (length(vals) == n_rows) return(unname(vals))
+    return(rep(NA_real_, n_rows))
+  }
+  unname(vals[match(row_names, paste(pref_hypo_name, names(vals)))])
+}
+
+
+recompute_percentile_table <- function(existing_mat, combined_data, percentiles,
+                                       pref_hypo_name = NULL) {
   sample_col <- existing_mat[, 1, drop = FALSE]
   pct_names <- paste0(percentiles * 100, "%")
   if (is.null(dim(combined_data))) {
@@ -1598,9 +1710,19 @@ recompute_percentile_table <- function(existing_mat, combined_data, percentiles)
     new_mat <- matrix(c(sample_col, q), nrow = nrow(existing_mat))
   } else {
     # rgw/rlw/rgw_log/rlw_log/ld case: one column of draws per row (hypothesis).
-    q <- t(vapply(seq_len(nrow(existing_mat)), function(j) {
-      quantile(combined_data[, j], probs = percentiles, na.rm = TRUE)
-    }, numeric(length(percentiles))))
+    # Columns of draws are matched to the table's rows by name (see
+    # align_by_hypothesis()) when possible, otherwise by position.
+    col_idx <- seq_len(nrow(existing_mat))
+    if (!is.null(pref_hypo_name) && !is.null(colnames(combined_data))) {
+      col_idx <- match(rownames(existing_mat),
+                       paste(pref_hypo_name, colnames(combined_data)))
+    }
+    q <- vapply(col_idx, function(j) {
+      if (is.na(j) || j > ncol(combined_data)) return(rep(NA_real_, length(percentiles)))
+      quantile(combined_data[, j], probs = percentiles, na.rm = TRUE, names = FALSE)
+    }, numeric(length(percentiles)))
+    # one row per table row, also for a single percentile or no rows at all
+    q <- matrix(q, nrow = length(col_idx), ncol = length(percentiles), byrow = TRUE)
     new_mat <- cbind(sample_col, q)
   }
   colnames(new_mat) <- c("Sample", pct_names)

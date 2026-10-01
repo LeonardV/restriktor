@@ -201,6 +201,10 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
     
     # compute penalty term based on simulated level probabilities (wt.bar)
     # The value 1 is the penalty for estimating the variance/dispersion parameter.
+    # TO DO mlm: for mlm objects a residual covariance matrix with ny*(ny+1)/2
+    #       free parameters is estimated instead of one variance. A choice 
+    #       still has to be made whether to use 1 or ny*(ny+1)/2 (see also 
+    #       PTu in goric.default() and penalty_complement_goric()).
     if (goric %in% c("goric", "gorica")) {
       PT <- penalty_goric(Amat        = ans$PT_Amat,  
                           meq         = ans$PT_meq, 
@@ -215,7 +219,7 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
                           meq         = ans$PT_meq, 
                           LP          = wt.bar, 
                           correction  = TRUE, 
-                          sample.nobs = length(r))
+                          sample.nobs = NROW(r)) # NROW: r is a N x ny matrix for mlm
       if (goric == "goricac") {
         PT <- PT - 1 
       }

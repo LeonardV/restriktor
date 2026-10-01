@@ -33,6 +33,26 @@ coef_named_vector <- function(x, VCOV = NULL, ...)  {
   return(est)
 }
 
+# log-likelihood of the unrestricted model. logLik.lm() does not support
+# multiple responses, so for mlm objects con_loglik_lm() is used.
+loglik_unrestr <- function(model.org)  {
+  if (inherits(model.org, "mlm")) {
+    con_loglik_lm(model.org)
+  } else {
+    logLik(model.org)
+  }
+}
+
+# For mlm objects the coefficients form a p x ny matrix. Convert it to a
+# vector in the order of vcov(), with the names of vcov() (e.g., 'Age:GroupNo').
+# Other objects are returned as is.
+coef_vec_mlm <- function(b, model.org)  {
+  if (inherits(model.org, "mlm") && is.matrix(b)) {
+    b <- structure(as.vector(b), names = rownames(vcov(model.org)))
+  }
+  b
+}
+
 check_sample_nobs <- function(sample_nobs, ...)  {
   if (length(sample_nobs) > 1) { 
     # Probably group sizes, then sample size is sum of group sizes
@@ -382,3 +402,70 @@ calculate_weight_bar <- function(Amat, meq, VCOV, mix_weights, seed, control,
 # parameter_table <- parameterTable(fit2)
 # extract_constraints(parameter_table, hypotheses2)
 
+
+
+# Construct the equality-restricted hypothesis (Heq) belonging to an 
+# order-restricted hypothesis by replacing '<' and '>' by '='. Redundant 
+# inequality restrictions (e.g., x1 > 0.2 when x1 > 0.5 is also specified, or 
+# an inequality implied by an equality restriction) are removed first. Otherwise, 
+# Heq would contain conflicting equality restrictions (x1 = 0.5 and x1 = 0.2).
+# If this does not work out, the plain substitution is returned.
+goric_heq_constraints <- function(object, hypothesis) {
+  Hceq_default <- gsub("<|>", "=", hypothesis)
+  if (!is.character(hypothesis)) {
+    return(Hceq_default)
+  }
+  
+  Hceq <- tryCatch({
+    singles <- unlist(lapply(hypothesis, function(h) {
+      syntax <- process_constraint_syntax(clean_constraints(h))
+      unlist(lapply(lapply(syntax, process_abs_and_expand), 
+                    expand_compound_constraints))
+    }), use.names = FALSE)
+    singles <- unique(singles[singles != ""])
+    
+    is_def  <- grepl(":=", singles, fixed = TRUE)
+    is_ineq <- grepl("[<>]", singles) & !is_def
+    is_eq   <- grepl("=", singles, fixed = TRUE) & !is_def & !is_ineq
+    
+    if (sum(is_ineq) < 1L || (sum(is_ineq) < 2L && !any(is_eq))) {
+      Hceq_default
+    } else {
+      # Amat row and rhs of each single restriction
+      get_row <- function(s) {
+        defs <- singles[is_def]
+        cc <- con_constraints(object, constraints = paste(c(defs, s), collapse = "\n"))
+        if (NROW(cc$Amat) != 1L) {
+          stop("not a single linear restriction")
+        }
+        list(key     = paste(c(cc$Amat) + 0, collapse = "|"), 
+             key_neg = paste(-c(cc$Amat) + 0, collapse = "|"),
+             rhs     = cc$bvec)
+      }
+      idx_ineq <- which(is_ineq)
+      rows_ineq <- lapply(singles[idx_ineq], get_row)
+      keys_eq <- unlist(lapply(singles[is_eq], function(s) {
+        r <- get_row(s)
+        c(r$key, r$key_neg)
+      }))
+      keys_ineq <- vapply(rows_ineq, `[[`, character(1), "key")
+      rhs_ineq  <- vapply(rows_ineq, `[[`, numeric(1), "rhs")
+      
+      drop <- rep(FALSE, length(singles))
+      # inequalities implied by an equality restriction
+      drop[idx_ineq[keys_ineq %in% keys_eq]] <- TRUE
+      # identical inequality rows: keep the one with the largest rhs
+      ord <- order(-rhs_ineq)
+      dupl <- duplicated(keys_ineq[ord])
+      drop[idx_ineq[ord][dupl]] <- TRUE
+      
+      if (!any(drop)) {
+        Hceq_default
+      } else {
+        gsub("<|>", "=", paste(singles[!drop], collapse = "; "))
+      }
+    }
+  }, error = function(e) Hceq_default)
+  
+  Hceq
+}

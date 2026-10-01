@@ -68,6 +68,9 @@ penalty_goric <- function(Amat, meq, LP, correction = FALSE,
 }
 
 
+# TO DO mlm: the 1 in the penalty terms below is the penalty for the residual
+#       variance. For mlm objects ny*(ny+1)/2 (co)variances are estimated. A 
+#       choice still has to be made whether to use 1 or ny*(ny+1)/2.
 penalty_complement_goric <- function(Amat, meq, type, wt.bar, 
                                      sample.nobs = NULL, debug = FALSE) {
   # compute the number of free parameters f in the complement

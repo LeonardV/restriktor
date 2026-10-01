@@ -111,9 +111,25 @@ leave1studyout.evSyn <- function(object, ...) {
     dimnames = list(rownames(OverallGoric), "")
   )
   
+  # Study weights and prior IC weights, used in the same way as in evSyn():
+  # - the study weights of the remaining studies are rescaled such that they 
+  #   sum to the number of remaining studies (S - 1), 
+  # - the prior IC weights are used when determining the IC weights.
+  study_weights <- object$study_weights
+  if (is.null(study_weights)) {
+    study_weights <- rep(1/S, S)
+  }
+  priorICweights <- object$priorICweights
+  if (is.null(priorICweights) || length(priorICweights) != ncol(IC_m)) {
+    priorICweights <- rep(1/ncol(IC_m), ncol(IC_m))
+  }
+  
   for (s in seq_len(S)) {
     
     keep <- seq_len(S) != s
+    S_keep <- sum(keep)
+    # rescaled study weights (sum to S_keep)
+    w_keep <- S_keep * study_weights[keep] / sum(study_weights[keep])
     
     # TO DO HIER
     # Evt moet hier dan ook nog penalty_factor in verwerkt worden:
@@ -121,15 +137,17 @@ leave1studyout.evSyn <- function(object, ...) {
     # Of hebben we die term alleen in goric() ms
     OverallGoric[s, ] <- switch(
       type_ev,
-      added   = colSums(IC_m[keep, , drop = FALSE]),
-      equal   = -2 * colSums(LL_m[keep, , drop = FALSE]) +
-        2 * colMeans(PT_m[keep, , drop = FALSE]),
-      average = colMeans(IC_m[keep, , drop = FALSE])
+      added   = colSums(IC_m[keep, , drop = FALSE] * w_keep),
+      equal   = -2 * colSums(LL_m[keep, , drop = FALSE] * w_keep) +
+        2 * colSums(PT_m[keep, , drop = FALSE] * w_keep) / S_keep,
+      average = colSums(IC_m[keep, , drop = FALSE] * w_keep) / S_keep
     )
     
     best <- which(OverallGoric[s, ] == min(OverallGoric[s, ], na.rm = TRUE))
     OverallPrefHypo[s, 1L] <- paste(colnames(IC_m)[best], collapse = ", ")
-    OverallGoricWeights[s, ] <- calc_ICweights(OverallGoric[s, ], hypo_names = colnames(IC_m))$IC_weights
+    minIC <- min(OverallGoric[s, ], na.rm = TRUE)
+    expGW <- priorICweights * exp(-0.5 * (OverallGoric[s, ] - minIC))
+    OverallGoricWeights[s, ] <- expGW / sum(expGW)
   }
   
   resultIC <- switch(

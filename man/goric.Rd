@@ -23,7 +23,8 @@ comparable to the Akaike weights.
 \method{goric}{default}(object, ..., hypotheses = NULL,
       comparison = NULL, type = "goric",
       VCOV = NULL, sample_nobs = NULL,
-      penalty_factor = 2, Heq = FALSE, control = list(), debug = FALSE)
+      penalty_factor = 2, Heq = FALSE, priorICweights = NULL,
+      control = list(), debug = FALSE)
 
 \method{goric}{lm}(object, ..., hypotheses = NULL,
       comparison = NULL, type = "goric",
@@ -158,12 +159,22 @@ comparable to the Akaike weights.
   \item{Heq}{If \code{TRUE}, the null hypothesis is added to the set of models. 
   This means that all inequality constraints are replaced with equality constraints, 
   effectively testing the hypothesis that the parameters satisfy exact equality 
-  rather than inequality. Defaults to \code{FALSE}.}
+  rather than inequality. Heq is only used when one order-restricted hypothesis 
+  is compared to its complement; otherwise it is ignored (with a warning). 
+  Defaults to \code{FALSE}.}
   
-  \item{priorICweights}{vector that represents the prior belief for the specified hypotheses. 
-  By default, equal prior weights are used (i.e., 1/(#hypotheses)). 
-  Notably, in case the prior weights do not sum to 1, it will be rescaled such that it does; 
-  the prior weights thus reflect relative a priori likeliness of the hypotheses.
+  \item{priorICweights}{numeric vector with the prior weights of the models in 
+  the set; it represents the (relative) prior belief in each model. One 
+  (non-negative) weight per model is needed, in the order of the result table: 
+  first Heq (if \code{Heq = TRUE}), then the hypotheses (in the order of 
+  \code{hypotheses}), and finally the complement or unconstrained hypothesis 
+  (if \code{comparison} is \code{"complement"} or \code{"unconstrained"}). 
+  By default, equal prior weights are used (i.e., 1/(#models)). If the prior 
+  weights do not sum to 1, they are rescaled such that they do; the prior 
+  weights thus reflect the relative a priori likeliness of the models.
+  An error is given if the weights are not numeric, contain missing or 
+  negative values, are all zero, or if the number of weights does not equal 
+  the number of models in the set.
   Notably, the priorICweights will be used in the determining the (ratios of) IC weights;
   so, not in the other output, like the IC values but also not the log likelihood weights or penalty weights.}
   

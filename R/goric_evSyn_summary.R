@@ -44,7 +44,14 @@ summary.evSyn <- function(object, ...) {
   if (!is.null(x[["PT_m"]])) {
     sequence <- paste0("Study nr.s 1-", 1:ans$n_studies, "   ")
     sequence[1] <- "Study nr.  1   "
-    Cumulative_PT <- apply(x[["PT_m"]][,, drop = FALSE], 2, cumsum)  
+    # Possibly weighted using the study weights (as done for the cumulative IC values)
+    study_weights_S <- x[["study_weights"]]
+    if (is.null(study_weights_S)) {
+      study_weights_S <- rep(1, ans$n_studies)
+    } else {
+      study_weights_S <- ans$n_studies * study_weights_S / sum(study_weights_S)
+    }
+    Cumulative_PT <- .evSyn_cum_weighted(x[["PT_m"]], study_weights_S)
     Cumulative_PT <- matrix(Cumulative_PT, nrow = nrow(x[["PT_m"]]), 
                             dimnames = list(sequence, colnames(x[["PT_m"]])))
     if (x[["type_ev"]] %in% c("equal", "average")) {
@@ -148,6 +155,17 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   
   indentation <- "    "  # Four spaces for indentation
   
+  # If icratios: label of the reference hypothesis
+  if (!is.null(x[["Href"]])) {
+    Href_label <- names(x[["Href"]])
+    if (is.null(Href_label) || is.na(Href_label) || Href_label == "") {
+      hnames_ratio <- colnames(x[["Cumulative_GORICA_weights"]])
+      Href_label <- if (!is.null(hnames_ratio)) hnames_ratio[x[["Href"]]] else x[["Href"]]
+    }
+  } else {
+    Href_label <- ""
+  }
+  
   cat("\nStudy-specific results:\n")
   
   if (!is.null(x[["GORICA_weight_m"]])) {
@@ -208,7 +226,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   # If icratios
   if (!is.null(x[["GwRatio_m"]])) {
     cat(paste0("\n    ", "Ratio of ", type_label, " weights",
-               "\n    ", "(versus reference hypothesis ", names(x[["Href"]]), "):\n"))
+               "\n    ", "(versus reference hypothesis ", Href_label, "):\n"))
     formatted_gw <- apply(x[["GwRatio_m"]][,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     input_gw <- cbind(1:S, formatted_gw)
     colnames(input_gw)[1] <- "   Study nr."
@@ -219,7 +237,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   }
   if (!is.null(x[["ICdiff_m"]])) {
     cat(paste0("\n    ", "Difference in ", type_label, " values",
-               "\n    ", "(versus reference hypothesis ", names(x[["Href"]]), "):\n"))
+               "\n    ", "(versus reference hypothesis ", Href_label, "):\n"))
     formatted_gv <- apply(x[["ICdiff_m"]][,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     input_gv <- cbind(1:S, formatted_gv)
     colnames(input_gv)[1] <- "   Study nr."
@@ -280,7 +298,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   # If icratios
   if (!is.null(x[["Cumulative_ratioICweights"]])) {
     cat(paste0("\n    ", "Ratio of ", type_label, " weights",
-               "\n    ", "(versus reference hypothesis ", names(x[["Href"]]), "):\n"))
+               "\n    ", "(versus reference hypothesis ", Href_label, "):\n"))
     formatted_crgw <- apply(x[["Cumulative_ratioICweights"]][1:S, , drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     captured_output <- capture.output(print(formatted_crgw, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
@@ -291,7 +309,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   # If icratios
   if (!is.null(x[["Cumulative_ICdiff"]])) {
     cat(paste0("\n    ", "Difference in ", type_label, " values",
-               "\n    ", "(versus reference hypothesis ", names(x[["Href"]]), "):\n"))
+               "\n    ", "(versus reference hypothesis ", Href_label, "):\n"))
     formatted_cgv <- apply(x[["Cumulative_ICdiff"]][1:S, , drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     captured_output <- capture.output(print(formatted_cgv, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)

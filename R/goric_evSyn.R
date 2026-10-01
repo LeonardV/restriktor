@@ -56,10 +56,45 @@
 }
 
 # -------------------------------------------------------------------------
+# Helper: backwards compatibility for the deprecated argument 'priorWeights'
+# (renamed to 'priorICweights'). 'dots' is the list of arguments passed via '...'.
+.evSyn_priorWeights_compat <- function(priorICweights, dots) {
+  priorWeights <- dots[["priorWeights"]]
+  if (is.null(priorWeights)) {
+    return(priorICweights)
+  }
+  if (!is.null(priorICweights)) {
+    stop("\nrestriktor ERROR: both 'priorICweights' and the deprecated argument 'priorWeights' are specified; ",
+         "please use 'priorICweights' only.", call. = FALSE)
+  }
+  warning("restriktor WARNING: argument 'priorWeights' is deprecated; use 'priorICweights'",
+          call. = FALSE)
+  priorWeights
+}
+
+# Helper: cumulative (study-)weighted sums of the rows of M.
+# Row s equals sum_{i <= s} w_i * M[i, ] / mean(w_1, ..., w_s), with w =
+# study_weights_S (which sum to S). This equals the weighting used for the
+# cumulative IC values; with equal study weights it reduces to cumsum.
+.evSyn_cum_weighted <- function(M, study_weights_S) {
+  M <- M[, , drop = FALSE]
+  S <- nrow(M)
+  out <- apply(M * study_weights_S, 2, cumsum)
+  out <- matrix(out, nrow = S, dimnames = dimnames(M))
+  out / (cumsum(study_weights_S) / seq_len(S))
+}
+
+# -------------------------------------------------------------------------
 evSyn <- function(object, input_type = NULL, ...) {
-  
+
   args <- list(...)
-  
+
+  # Backwards compatibility: 'priorWeights' is renamed to 'priorICweights'.
+  if (!is.null(args[["priorWeights"]])) {
+    args$priorICweights <- .evSyn_priorWeights_compat(args[["priorICweights"]], args)
+    args$priorWeights <- NULL
+  }
+
   VCOV <- args$VCOV
   PT   <- args$PT
   
@@ -182,8 +217,9 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
                       study_sample_nobs = NULL,
                       study_weights = NULL) {
   
-  comparison_orig <- comparison
-  if (missing(comparison_orig)) {
+  # Note: missing() must be evaluated before any assignment to 'comparison'.
+  comparison_missing <- missing(comparison)
+  if (comparison_missing) {
     if (length(hypotheses) == 1) {
       comparison <- "complement"
     } else {
@@ -321,8 +357,10 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   # and only one hypothesis in the sub-lists, then:
   # comparison <- "complement"
   # BUT only when it was not set to something in the first place!
-  if (missing(comparison_orig) && all(len_H == 1)) {
+  if (comparison_missing && all(len_H == 1)) {
     comparison <- "complement"
+  } else if (comparison_missing) {
+    comparison <- "unconstrained"
   }
   
   complement_check <- all(len_H == 1)
@@ -478,6 +516,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     LL_m[s, ] <- res_goric$result$loglik
     LL_weights_m[s, ] <- res_goric$result$loglik.weights
     GORICA_m[s, ] <- res_goric$result[[type]] #res_goric$result$gorica
+    # TO DO: open question (Leonard/Rebecca): should study-specific weights include priorICweights in all routes? Currently est/gorica route does not, ICvalues/ICweights routes do.
     GORICA_weight_m[s, ] <- res_goric$result[[paste0(type, ".weights")]]
     PT[s, ] <- res_goric$result$penalty
   }
@@ -539,7 +578,15 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     study_names <- study_names[orderStudies]
   }
   rownames(LL_m) <- rownames(LL_weights_m) <- rownames(GORICA_m) <- rownames(GORICA_weight_m) <- rownames(PT) <- study_names
+  ratio.weight_mu <- ratio.weight_mu[orderStudies, , drop = FALSE]
   rownames(ratio.weight_mu) <- study_names
+  # Re-order the study-specific settings as well, such that they match the 
+  # (re-ordered) studies and results do not depend on the input order.
+  study_weights <- study_weights[orderStudies]
+  study_weights_S <- study_weights_S[orderStudies]
+  if (!is.null(study_sample_nobs)) {
+    study_sample_nobs <- study_sample_nobs[orderStudies]
+  }
   
   CumulativeLLWeights <- CumulativeGoricaWeights <- CumulativeGorica <- matrix(NA, nrow = S+1, ncol = NrHypos_incl)
   colnames(CumulativeLLWeights) <- colnames(CumulativeGorica) <- colnames(CumulativeGoricaWeights) <- hnames
@@ -602,19 +649,20 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     }
   } # else {}
   
+  # cumulative log-likelihood values (possibly weighted using study weights,
+  # in the same way as for the cumulative IC values)
+  # Note: priorICweights are not used for the log-likelihood weights, since 
+  #       these are not IC weights (and there is no penalty term).
+  Cumulative_LL <- .evSyn_cum_weighted(LL_m, study_weights_S)
+  Cumulative_LL <- matrix(Cumulative_LL, nrow = nrow(LL_m), 
+                          dimnames = list(sequence, colnames(LL_m)))
+  
   # cumulative log_likelihood weights
-  sumLL <- 0
   for (l in 1:S) {
-    sumLL <- sumLL + LL_m[l, ]
-    CumulativeLL <- -2 * sumLL
+    CumulativeLL <- -2 * Cumulative_LL[l, ]
     minLL <- min(CumulativeLL)
     CumulativeLLWeights[l, ] <- exp(-0.5*(CumulativeLL-minLL)) / sum(exp(-0.5*(CumulativeLL-minLL)))
   }
-  
-  # cumulative log-likelihood values
-  Cumulative_LL <- apply(LL_m, 2, cumsum)
-  Cumulative_LL <- matrix(Cumulative_LL, nrow = nrow(LL_m), 
-                          dimnames = list(sequence, colnames(LL_m)))
   # final cumulative log-likelihood value
   Cumulative_LL_final <- -2*Cumulative_LL[S, , drop = FALSE]
   rownames(Cumulative_LL_final) <- "Final"
@@ -779,6 +827,7 @@ evSyn_LL <- function(object, ..., PT = list(),
   IC <- -2 * LL_m + 2 * PT
   #
   GORICA_weight_m <- matrix(NA, nrow = S, ncol = (NrHypos + 1))
+  # TO DO: open question (Leonard/Rebecca): should study-specific weights include priorICweights in all routes? Currently est/gorica route does not, ICvalues/ICweights routes do.
   for(s in 1:S) {
     minIC <- min(IC[s, ])
     GORICA_weight_m[s, ] <- exp(-0.5*(IC[s, ]-minIC)) / sum(exp(-0.5*(IC[s, ]-minIC)))
@@ -844,12 +893,19 @@ evSyn_LL <- function(object, ..., PT = list(),
   rownames(LL_m) <- rownames(PT) <- rownames(IC) <- rownames(GORICA_weight_m) <- study_names
   # Set colnames
   colnames(LL_m) <- colnames(PT) <- colnames(IC) <- colnames(GORICA_weight_m) <- hnames
+  # Re-order the study weights as well, such that they match the (re-ordered) 
+  # studies and results do not depend on the input order.
+  study_weights <- study_weights[orderStudies]
+  study_weights_S <- study_weights_S[orderStudies]
   
   sequence <- paste0("Study nr.s 1-", 1:S, "   ")
   sequence[1] <- "Study nr.  1   "
   #
-  # cumulative log-likelihood values
-  Cumulative_LL <- apply(LL_m, 2, cumsum)
+  # cumulative log-likelihood values (possibly weighted using study weights,
+  # in the same way as for the cumulative IC values)
+  # Note: priorICweights are not used for the log-likelihood weights, since 
+  #       these are not IC weights (and there is no penalty term).
+  Cumulative_LL <- .evSyn_cum_weighted(LL_m, study_weights_S)
   Cumulative_LL <- matrix(Cumulative_LL, nrow = nrow(LL_m), 
                           dimnames = list(sequence, colnames(LL_m)))
   # final cumulative log-likelihood value
@@ -871,8 +927,7 @@ evSyn_LL <- function(object, ..., PT = list(),
     delta_LL <- LL - min(LL)
     LL_weights_m[l, ] <- exp(-0.5 * delta_LL) / sum(exp(-0.5 * delta_LL))
     #
-    sumLL <- sumLL + LL_m[l, ]
-    CumulativeLL <- -2 * sumLL
+    CumulativeLL <- -2 * Cumulative_LL[l, ]
     minLL <- min(CumulativeLL)
     CumulativeLLWeights[l, ] <- exp(-0.5*(CumulativeLL-minLL)) / sum(exp(-0.5*(CumulativeLL-minLL)))
   }
@@ -1005,12 +1060,12 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
     hnames <- paste0("H", 1:NrHypos_incl)
   } else {
     if (length(hypo_names) != NrHypos_incl) {
-      stop("\nrestriktor ERROR: The argument 'hypo_names' should consist of ", NrHypos, " names, \n",
+      stop("\nrestriktor ERROR: The argument 'hypo_names' should consist of ", NrHypos_incl, " names, \n",
            "namely one for each specified hypothesis. It now consists of ", length(hypo_names), ".",
            call. = FALSE)
     }
     if (!all(is.character(hypo_names))) {
-      stop("\nrestriktor ERROR: The argument 'hypo_names' should consist of ", NrHypos, " names. \n",
+      stop("\nrestriktor ERROR: The argument 'hypo_names' should consist of ", NrHypos_incl, " names. \n",
            "Now, (some of) the elements are not characters.",
            call. = FALSE)
     }
@@ -1129,6 +1184,10 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
     study_names <- study_names[orderStudies]
   }
   rownames(IC) <- rownames(GORICA_weight_m) <- study_names
+  # Re-order the study weights as well, such that they match the (re-ordered) 
+  # studies and results do not depend on the input order.
+  study_weights <- study_weights[orderStudies]
+  study_weights_S <- study_weights_S[orderStudies]
   sequence <- paste0("Study nr.s 1-", 1:S, "   ")
   sequence[1] <- "Study nr.  1   "
   rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(sequence, "Final")
@@ -1173,7 +1232,10 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hnames)
   
   # Use priorICweights (i.e., a priori likeliness for each hypotheses)
-  GORICA_weight_m <- priorICweights * GORICA_weight_m / rowSums(priorICweights * GORICA_weight_m)
+  # Note: sweep() multiplies each column (hypothesis) with its own prior weight.
+  # TO DO: open question (Leonard/Rebecca): should study-specific weights include priorICweights in all routes? Currently est/gorica route does not, ICvalues/ICweights routes do.
+  GORICA_weight_m <- sweep(GORICA_weight_m, 2, priorICweights, "*")
+  GORICA_weight_m <- GORICA_weight_m / rowSums(GORICA_weight_m)
   
   out <- list(type             = type,
     type_ev           = type_ev,
@@ -1221,6 +1283,9 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
     type <- "gorica"
   type <- match.arg(type)
   
+  # Backwards compatibility: 'priorWeights' is renamed to 'priorICweights'.
+  priorICweights <- .evSyn_priorWeights_compat(priorICweights, list(...))
+  
   Weights <- object
   # Check whether weights between 0 and 1 (and sum to 1)
   min0 <- all(abs(vapply(object, min, numeric(1)) >= 0)) 
@@ -1229,16 +1294,16 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
   if (min0 + max1 + sum1 != 3) {
     text <- paste0("\nrestriktor ERROR: Please check the input. The function expects IC weights, but:. \n",
                    "ICweights are values between 0 and 1 and (per study) sum to 1. \n")
-    if (min0) {
+    if (!min0) {
       text <- paste0(text,
                      "Not all values are >= 0. \n")
     }
-    if (max1) {
+    if (!max1) {
       text <- paste0(text,
                      "Not all values are <= 1. \n")
     }
-    if (max1) {
-      sum1 <- paste0(text,
+    if (!sum1) {
+      text <- paste0(text,
                      "For one or more studies, the values do not sum to 1. \n")
     }
     stop(text, call. = FALSE)
@@ -1356,7 +1421,7 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
     } else {
       decreasing = FALSE
     }
-    orderStudies <- order(GORICA_weight_m[,OverallPrefHypo], decreasing = decreasing)
+    orderStudies <- order(Weights[, OverallPrefHypo[1]], decreasing = decreasing)
     #
     Weights <- Weights[orderStudies,]
   }
@@ -1381,6 +1446,10 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
     study_names <- study_names[orderStudies]
   }
   rownames(Weights) <- study_names
+  # Re-order the study weights as well, such that they match the (re-ordered) 
+  # studies and results do not depend on the input order.
+  study_weights <- study_weights[orderStudies]
+  study_weights_S <- study_weights_S[orderStudies]
   
   CumulativeWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos))
   colnames(CumulativeWeights) <- hypo_names
@@ -1422,7 +1491,10 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hypo_names)
   
   # Use priorICweights (i.e., a priori likeliness for each hypotheses)
-  Weights <- priorICweights * Weights / rowSums(priorICweights * Weights)
+  # Note: sweep() multiplies each column (hypothesis) with its own prior weight.
+  # TO DO: open question (Leonard/Rebecca): should study-specific weights include priorICweights in all routes? Currently est/gorica route does not, ICvalues/ICweights routes do.
+  Weights <- sweep(Weights, 2, priorICweights, "*")
+  Weights <- Weights / rowSums(Weights)
   
   out <- list(type             = type,
     type_ev           = type_ev,
@@ -1461,6 +1533,37 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
     type <- "gorica"
   type <- match.arg(type)
   
+  # Backwards compatibility: 'priorWeights' is renamed to 'priorICweights'.
+  priorICweights <- .evSyn_priorWeights_compat(priorICweights, list(...))
+  
+  # Determine reference hypothesis -- use in output headers
+  # Which hypothesis is the best, for each study
+  #
+  # Note that because of a previous step, each study will have at least one 1
+  # So, for each study, determine for which hypothesis/-es there is a one:
+  refHypo_s <- lapply(object, function(x){which(x == 1)})
+  # Search for a hypothesis that has a ratio of 1 in all studies 
+  # (i.e., a common reference hypothesis); take the first candidate.
+  Href <- NA_integer_
+  for (h in refHypo_s[[1]]) {
+    if (all(vapply(refHypo_s, function(x){any(x == h)}, logical(1)))) {
+      Href <- h
+      break
+    }
+  }
+  # If did not find a Href for which all studies have a one,
+  # transform the input such that all have the same Href.
+  # Note: this must be done before the ratios (Weights) are determined below.
+  if (is.na(Href)) {
+    #Href <- Mode(as.data.frame(refHypo_s)) # not base function
+    Href <- if (length(refHypo_s[[1]]) > 0) refHypo_s[[1]][1] else 1L
+    object <- lapply(object, function(x){x / x[Href]})
+    message("\nrestriktor Message: Not all studies used the same reference hypothesis. \n",
+            "Now, evidence synthesis is done using Href = ", Href, " as the reference hypothesis. \n",
+            "Note that the choice for Href does not affect the ratio of final IC weights.")
+  }
+  Href <- unname(Href)
+  
   Weights <- object # Now, ratio of weights 
   S <- length(Weights)
   Weights <- do.call(rbind, Weights)
@@ -1482,37 +1585,8 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
     }
   }
   
-  # Determine reference hypothesis -- use in output headers
-  # Which hypothesis is the best, for each study
-  #
-  # Note that because of a previous step, each study will have at least one 1
-  # So, for each study, determine for which hypothesis/-es there is a one:
-  refHypo_s <- lapply(object, function(x){which(x == 1)})
-  Href <- refHypo_s[[1]][1] # first candidate
-  Href_All <- lapply(refHypo_s, function(x){any(x == Href)})
-  test_All <- all(unlist(Href_All))
-  # If not all the same (!test_All), 
-  # then first check other options for Href:
-  if (!test_All && length(refHypo_s[[1]]) > 1) { 
-    # If length(refHypo_s[[1]]) > 1, then there could be other candidate Href's as well
-    teller <- 1
-    while(!test_All && teller <= length(refHypo_s[[1]])){
-      teller <- teller + 1
-      Href <- refHypo_s[[1]][teller]
-      Href_All <- lapply(refHypo_s, function(x){any(x == Href)})
-      test_All <- all(unlist(Href_All))
-    }
-  }
-  # If did not find a Href for which all studies have a one,
-  # transform the input such that all have the same Href:
-  if (!test_All) {
-    #Href <- Mode(as.data.frame(refHypo_s)) # not base function
-    Href <- refHypo_s[[1]][1]
-    object <- lapply(object, function(x){x / x[Href]})
-    message("\nrestriktor Message: Not all studies used the same reference hypothesis. \n",
-            "Now, evidence synthesis is done using Href = ", Href, " as the reference hypothesis. \n",
-            "Note that the choice for Href does not affect the ratio of final IC weights.")
-  }
+  # Name of the reference hypothesis (used in output headers)
+  names(Href) <- hypo_names[Href]
   
   
   if (is.null(priorICweights)) {
@@ -1614,7 +1688,8 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
     } else {
       decreasing = FALSE
     }
-    orderStudies <- order(GORICA_weight_m[,OverallPrefHypo], decreasing = decreasing)
+    # Order based on the study-specific IC weights (i.e., normalized ratios)
+    orderStudies <- order((Weights / rowSums(Weights))[, OverallPrefHypo[1]], decreasing = decreasing)
     #
     Weights <- Weights[orderStudies,]
   }
@@ -1639,6 +1714,10 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
     study_names <- study_names[orderStudies]
   }
   rownames(Weights) <- study_names
+  # Re-order the study weights as well, such that they match the (re-ordered) 
+  # studies and results do not depend on the input order.
+  study_weights <- study_weights[orderStudies]
+  study_weights_S <- study_weights_S[orderStudies]
   
   
   sequence <- paste0("Study nr.s 1-", 1:S, "   ")
@@ -1646,7 +1725,7 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
   #
   studyspecWeights <- matrix(NA, nrow = (S), ncol = (NrHypos))
   colnames(studyspecWeights) <- hypo_names
-  rownames(studyspecWeights) <- c(sequence)  
+  rownames(studyspecWeights) <- study_names
   #
   CumulativeRatios <- matrix(NA, nrow = (S+1), ncol = (NrHypos))
   CumulativeWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos))

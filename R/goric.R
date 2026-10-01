@@ -6,9 +6,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
                           VCOV = NULL, sample_nobs = NULL,
                           penalty_factor = 2,
                           Heq = FALSE, 
-                          add_Hc = NULL,
                           priorICweights = NULL,
-                          posthoc = TRUE,
                           control = list(), debug = FALSE) {
 
   # TO DO RMK: Loop onderstaande ook samen door - ik weet nl niet waar ik die dingen moet doen...
@@ -102,14 +100,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
     Heq <- FALSE
   }
   
-  # Heq validatie
-  if (isTRUE(Heq) && num_hypotheses > 1L) {
-    stop(paste0(
-      "\nrestriktor ERROR: Heq = TRUE is only allowed when there is one order-restricted hypothesis. ",
-      "Now, there are ", num_hypotheses, " order-restricted hypotheses."
-    ), call. = FALSE)
-  }
-  
   NrHypos_incl <- num_hypotheses
   if (comparison %in% c("unconstrained", "complement")) {
     NrHypos_incl <- NrHypos_incl + 1
@@ -121,24 +111,23 @@ goric.default <- function(object, ..., hypotheses = NULL,
   if (is.null(priorICweights)) {
     priorICweights <- rep(1/(NrHypos_incl), (NrHypos_incl))
   } else {
-    # # Check all values in between 0 and 1 - not done:
-    # # Since we rescale the following check is not needed;
-    # # This allows users to specify the weights in a different manner.
-    # if (any(priorICweights < 0) || any(priorICweights > 0)) {
-    #   stop("\nrestriktor ERROR: The argument 'priorICweights' should consist of ", NrHypos_incl, " elements, \n",
-    #        "where each element is in between 0 and 1 (and they sum to 1).",
-    #        call. = FALSE)
-    # }
-    # To make it sum to 1 (if it not already did)
-    if (sum(priorICweights) != 1) {
-      priorICweights <- priorICweights / sum(priorICweights) 
-      message("\nrestriktor Message: The argument 'priorICweights' should add up to 1. It has been rescaled accordingly.")
+    if (!is.numeric(priorICweights) || any(is.na(priorICweights))) {
+      stop("\nrestriktor ERROR: The argument 'priorICweights' should be a numeric vector ",
+           "without missing values.", call. = FALSE)
+    }
+    if (any(priorICweights < 0)) {
+      stop("\nrestriktor ERROR: The argument 'priorICweights' should only contain ",
+           "non-negative values.", call. = FALSE)
+    }
+    if (sum(priorICweights) <= 0) {
+      stop("\nrestriktor ERROR: The argument 'priorICweights' should contain at least ",
+           "one positive value (the weights cannot all be zero).", call. = FALSE)
     }
     # Check if length is number of hypotheses in the set
     if (length(priorICweights) != NrHypos_incl) {
       if (isTRUE(Heq)) {
         stop("\nrestriktor ERROR: The argument 'priorICweights' should consist of ", NrHypos_incl, " elements, \n",
-             "namely one for Heq, one for the informative hypothesis, and one for its comlement. \n", 
+             "namely one for Heq, one for the informative hypothesis, and one for its complement. \n", 
              "It now consists of ", length(priorICweights), " elements.",
              call. = FALSE)
       } else if (comparison %in% c("unconstrained", "complement") ) {
@@ -152,6 +141,11 @@ goric.default <- function(object, ..., hypotheses = NULL,
              "It now consists of ", length(priorICweights), " elements.",
              call. = FALSE)
       }
+    }
+    # To make it sum to 1 (if it not already did)
+    if (!isTRUE(all.equal(sum(priorICweights), 1))) {
+      priorICweights <- priorICweights / sum(priorICweights) 
+      message("\nrestriktor Message: The argument 'priorICweights' should add up to 1. It has been rescaled accordingly.")
     }
   }
   
@@ -232,7 +226,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   }
 
   if (length(hypotheses) == 1L && isTRUE(Heq) && comparison != "none") {
-    Hceq <- gsub("<|>", "=", hypotheses[[1]])
+    Hceq <- goric_heq_constraints(object, hypotheses[[1]])
     hypotheses <- append(list(Heq = Hceq), hypotheses)
   }
 
@@ -240,28 +234,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
   type <- match.arg(tolower(type), c("goric", "goricc", "gorica", "goricac"))
   
 
-  # add_Hc validation
-  if (!is.null(add_Hc)) {
-    if (!is.numeric(add_Hc) && !(add_Hc %in% names(hypotheses))) {
-      stop(paste0(
-        "\nrestriktor ERROR: The argument add_Hc should be a number or name ",
-        "denoting one of the order-restricted hypotheses. ",
-        "It should thus either be a number between 1 and ", num_hypotheses,
-        " or one of the following names: ", names(hypotheses), "."
-      ), call. = FALSE)
-    }
-    if (is.numeric(add_Hc) && add_Hc > num_hypotheses) {
-      stop(paste0(
-        "\nrestriktor ERROR: The argument add_Hc should be a number (or name) ",
-        "denoting one of the order-restricted hypotheses. ",
-        "It should thus be a number between 1 and ", num_hypotheses,
-        " (or one of the following names: ", names(hypotheses), ").",
-        "Now, it takes on the value ", add_Hc
-      ), call. = FALSE)
-    }
-  }
-
-  
   conChar <- vapply(constraints, function(x) inherits(x, "character"), logical(1))
   isConChar <- all(conChar)
   
@@ -622,7 +594,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
                 # observed-data log-likelihood of the unrestricted (saturated) model
                 llu <- conList[[1]]$fiml$loglik.unrestr
               } else {
-                llu <- logLik(ans$model.org)
+                llu <- loglik_unrestr(ans$model.org)
               }
             } else if (type %in% c("gorica", "goricac")) {
                 llm <- unlist(lapply(conList, function(x) { 
@@ -636,6 +608,11 @@ goric.default <- function(object, ..., hypotheses = NULL,
             }
             
             if (type %in% c("goric", "gorica")) {
+              # TO DO mlm: the 1 is the penalty for the residual variance (sigma^2).
+              #       For mlm objects a residual covariance matrix with 
+              #       ny*(ny+1)/2 free parameters is estimated. A choice still 
+              #       has to be made whether to use 1 or ny*(ny+1)/2 here (and 
+              #       in penalty_goric() and penalty_complement_goric()).
               PTu <- 1 + ncol(VCOV)
             } else if (type %in% c("goricc", "goricac")) {
               
@@ -758,24 +735,26 @@ goric.default <- function(object, ..., hypotheses = NULL,
   #
   best_hypo <- which.max(df[, 7])
   ans$best_hypo <- best_hypo
-  rownames(ans$ratio.gw)[best_hypo] <- paste0(rownames(ans$ratio.gw)[best_hypo], " (best)")
-  rownames(ans$ratio.pw)[best_hypo] <- paste0(rownames(ans$ratio.pw)[best_hypo], " (best)")
-  rownames(ans$ratio.lw)[best_hypo] <- paste0(rownames(ans$ratio.lw)[best_hypo], " (best)")
+  # Note: the " (best)" marker is only added to the printed copies of the 
+  # ratio matrices (see print.con_goric / summary.con_goric), such that the 
+  # rownames of ans$ratio.gw/pw/lw remain the hypothesis names.
  
   
   # list all object estimates
-  coefs_list <- lapply(conList, function(x) coef(x, which = "restr"))
-  # # TO DO mlm:
-  # if ("conMLM" %in% class(conList[[1]])) {
-  #   coefs_list <- lapply(coefs_list, function(x) {
-  #     est_vec <- as.vector(x)
-  #     # TO DO geef namen, maar nu hier vcov niet bekend....
-  #     names(est_vec) <- rownames(vcov(conList[[1]]))
-  #     return(est_vec)
-  #   }
-  #   )
-  # } 
-  coefs <- list_to_df_rows(coefs_list) 
+  coefs_list <- lapply(conList, function(x) {
+    if (inherits(x, "conMLM")) {
+      # mlm: coefficient matrix as a named vector (order and names of vcov()),
+      # followed by the defined parameters (if any)
+      b <- coef_vec_mlm(x$b.restr, x$model.org)
+      if (is.function(x$CON$def.function) && !is.null(body(x$CON$def.function))) {
+        b <- c(b, x$CON$def.function(b))
+      }
+      b
+    } else {
+      coef(x, which = "restr")
+    }
+  })
+  coefs <- list_to_df_rows(coefs_list)
   
   if (comparison == "complement") {
     # does def function exists
@@ -794,7 +773,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     }
     rownames(coefs) <- c(objectnames, "complement")
   } else if (comparison == "unconstrained") {
-    b_unrestr <- conList[[1]]$b.unrestr
+    b_unrestr <- coef_vec_mlm(conList[[1]]$b.unrestr, conList[[1]]$model.org)
     exists_def <- sapply(conList, FUN = function(x) {
       is.function(x$CON$def.function) && !is.null(body(x$CON$def.function))
     })
@@ -928,7 +907,8 @@ goric.lm <- function(object, ..., hypotheses = NULL,
     objectList$missing     <- NULL
     objectList$auxiliary   <- NULL
     if (is.null(objectList$sample_nobs)) {
-      objectList$sample_nobs <- length(residuals(object))
+      # NROW: for mlm objects the residuals form an N x ny matrix
+      objectList$sample_nobs <- NROW(residuals(object))
     }
   }
     objectList$hypotheses  <- hypotheses

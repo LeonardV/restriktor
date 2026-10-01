@@ -69,6 +69,9 @@ print.summary.restriktor <- function(x, digits = max(3, getOption("digits") - 2)
       se.type <- "standard"
     }
     cat("\nBootstrapped standard errors:", se.type ,"\n")
+  } else if (se.type %in% c("HAC", "kernHAC", "NeweyWest")) {
+    cat("\nHeteroskedasticity and autocorrelation robust standard errors:",
+        se.type, "\n")
   } else {
     cat("\nHeteroskedastic robust standard errors:", se.type ,"\n")
   }

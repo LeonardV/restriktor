@@ -66,9 +66,22 @@ restriktor(object, constraints = NULL, \dots)
   If "\code{HC0}" or just "\code{HC}", heteroskedastic robust standard 
   errors are computed (a.k.a Huber White). The options "\code{HC1}", 
   "\code{HC2}", "\code{HC3}", "\code{HC4}", "\code{HC4m}", and 
-  "\code{HC5}" are refinements of "\code{HC0}". For more details about 
-  heteroskedastic robust standard errors see the \pkg{sandwich} 
-  package. If "\code{boot.standard}", bootstrapped standard 
+  "\code{HC5}" are refinements of "\code{HC0}". For more details about
+  heteroskedastic robust standard errors see the \pkg{sandwich}
+  package. If "\code{HAC}", "\code{kernHAC}" or "\code{NeweyWest}",
+  heteroskedasticity and autocorrelation consistent (HAC) standard
+  errors are computed (requires the \pkg{sandwich} package). The meat
+  is based on the estimating functions of the restricted model and the
+  bread on the inverted augmented information matrix, so that the
+  restrictions are taken into account; "\code{HAC}" corresponds to
+  \code{sandwich::vcovHAC}, "\code{kernHAC}" to \code{sandwich::kernHAC}
+  and "\code{NeweyWest}" to \code{sandwich::NeweyWest}. Additional
+  arguments (e.g., \code{prewhite}, \code{bw}, \code{kernel},
+  \code{lag}) can be passed via \code{summary()}, e.g.,
+  \code{summary(fit.restr, bw = 2)}. Alternatively, these
+  \pkg{sandwich} functions (and, e.g., \code{sandwich::vcovCL}) can be
+  applied directly to the restricted model object, e.g.,
+  \code{sandwich::vcovHAC(fit.restr)}. If "\code{boot.standard}", bootstrapped standard
   errors are computed using standard bootstrapping. If "\code{boot.model.based}" 
   or "\code{boot.residual}", bootstrapped standard errors are computed 
   using model-based bootstrapping. If "\code{none}", no standard errors

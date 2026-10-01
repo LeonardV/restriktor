@@ -429,13 +429,30 @@ parallel_function_asymp <- function(i, est, VCOV, hypos, pref_hypo, comparison,
   results_goric <- tryCatch(
     {
       # Voer de goric functie uit
+      #
+      # NOTE: check_add_Hc = FALSE -- add_Hc's best-effort
+      # hypotheses-subset-nesting check (see goric_add_hc.R) is purely a
+      # function of the hypotheses' constraint structure, not of the
+      # (re)sampled estimates, so it was already meaningfully run once, on
+      # the original (observed-data) goric() object that was passed into
+      # benchmark()/benchmark_asymp()/benchmark_means(). Re-running it on
+      # every single bootstrap draw here is redundant -- and, for this
+      # numeric-estimate-vector input mode, has been observed to raise an
+      # extra, inconsistent warning that isn't meaningful here. Left
+      # unsuppressed, any warning raised inside this goric() call hits the
+      # warning = ... handler below, which discards *this draw's* result --
+      # so an unsuppressed, invariant per-draw warning would silently
+      # discard *every* draw whenever add_Hc is combined with hypotheses
+      # that aren't actual subsets of the reference hypothesis (exactly the
+      # "should not matter for this" scenario a user can otherwise hit).
       goric(est[i, ], VCOV = VCOV,
             hypotheses = hypos,
             comparison = comparison,
             type = type,
-            control = control, 
+            control = control,
             mix_weights = mix_weights,
             penalty_factor = penalty_factor,
+            check_add_Hc = FALSE,
             ...)
     },
     error = function(e) {
@@ -1039,6 +1056,15 @@ calculate_error_probability <- function(object, hypos, pref_hypo, est,
   } else {
     if (pref_hypo == nr_hypos && object$comparison == "unconstrained") {
       error_prob <- "The unconstrained (i.e., the failsafe) containing all possible orderings is preferred."
+    } else if (pref_hypo == nr_hypos && !is.null(object$add_Hc)) {
+      # 'object' is a goric(..., add_Hc = ...) object: the last row is
+      # "Complement of <add_Hc>", standing in for the usual unconstrained
+      # safeguard, and (like the unconstrained row) has no corresponding
+      # entry in 'hypos' (object$hypotheses_usr) to index into.
+      error_prob <- paste0(
+        "The complement of ", object$add_Hc,
+        " (the add_Hc safeguard) is preferred."
+      )
     } else {
       H_pref <- hypos[[pref_hypo]]
       if (is.null(object$model.org)) {

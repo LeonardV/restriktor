@@ -2,55 +2,22 @@ goric <- function(object, ...) { UseMethod("goric") }
 
 
 goric.default <- function(object, ..., hypotheses = NULL,
-                          comparison = NULL, type = "goric", 
+                          comparison = NULL, type = "goric",
                           VCOV = NULL, sample_nobs = NULL,
                           penalty_factor = 2,
-                          Heq = FALSE, 
+                          Heq = FALSE,
                           add_Hc = NULL,
+                          check_add_Hc = TRUE, # set to FALSE only from within goric_benchmark.R / goric_benchmark_utilities.R.
                           priorICweights = NULL,
                           posthoc = TRUE,
                           control = list(), debug = FALSE) {
 
-  # TO DO RMK: Loop onderstaande ook samen door - ik weet nl niet waar ik die dingen moet doen...
-  
   #TO DO: Ook beste vs complement - zie commented code (met TO DOs)
   #TO DO: Default doen, maar wel argument (posthoc = T), en dan in benchmarks en evt een simulatie study uit. 
+  #       Of posthoc functie.
+  # Leonard kijkt hier eerst naar!
   
-  # TO DO: add compl of one hypo out of set
-  #Restriktor, argument add_Hc. Geef of dan nr of naam hypo.
-  # Zet dan comparison none. Overrule evt, met melding dan. 
-  #Run dan ook h vs hc en neem samen met results set+unc.
-  # TO DO: In Help doc: meest zinvol als andere hypo in h. 
-  #
-  # TO DO Gebruik evt iets van onderstaande code, waarbij
-  # IC_allHunc -> hypos vs unc -- kan evt ook zonder Hunc trouwens
-  # IC_HmHc -> 1 van de hypos vs its complement
-  #
-  # Combine these results (dan dus 3 hypos en compl van 1 van de 3 en geen failsafe!):
-  # nrHypo <- num_hypotheses + 1
-  # IC_all <- matrix(NA, nrow = nrHypo, ncol = 6)
-  # if(is.numeric(add_Hc) {
-  #   nameCompl <- paste0("Complement of ", IC_HmHc$result$model[add_Hc])
-  #   nr_Hm <- add_Hc
-  # } else {
-  #   nameCompl <- paste0("Complement of ", add_Hc)
-  #   nr_Hm <- which(IC_HmHc$result$model == add_Hc)
-  # }
-  # rownames(IC_all) <- c(IC_allHunc$result$model[1:num_hypotheses], nameCompl)
-  # colnames(IC_all) <- colnames(IC_allHunc$result[2:7])
-  # IC_all[,1] <- c(IC_allHunc$result$loglik[1:num_hypotheses], IC_HmHc$result$loglik[nr_Hm])
-  # IC_all[,2] <- c(IC_allHunc$result$penalty[1:num_hypotheses], IC_HmHc$result$penalty[nr_Hm])
-  # IC_all[,3] <- c(IC_allHunc$result$gorica[1:num_hypotheses], IC_HmHc$result$gorica[nr_Hm])
-  # IC_all[,4] <- calc_ICweights(-2*c(IC_allHunc$result$loglik[1:num_hypotheses], IC_HmHc$result$loglik[nr_Hm]))$IC_weights
-  # IC_all[,5] <- calc_ICweights(2*c(IC_allHunc$result$penalty[1:num_hypotheses], IC_HmHc$result$penalty[nr_Hm]))$IC_weights
-  # IC_all[,6] <- calc_ICweights(c(IC_allHunc$result$gorica[1:num_hypotheses], IC_HmHc$result$gorica[nr_Hm]))$IC_weights
-  # #
-  # # Result 3 hypos vs their complement
-  # round(IC_all, 3)
-  # #
-  # # Ratio of GORICA weights:
-  # GWs <- calc_ICweights(c(IC_allHunc$result$gorica[1:num_hypotheses], IC_HmHc$result$gorica[nr_Hm]))
-  # GWs$ratio_IC_weights
+
   
 
   if (is.null(hypotheses) || !is.list(hypotheses)) {
@@ -69,7 +36,22 @@ goric.default <- function(object, ..., hypotheses = NULL,
   }
   
   num_hypotheses <- length(hypotheses)
-  
+
+  # add_Hc combines the user-specified hypotheses (compared among
+  # themselves) with the complement of one of them (by default the first,
+  # or whichever is given via add_Hc) in place of the usual implicit
+  # unconstrained safeguard; see goric_add_complement() in
+  # goric_add_hc.R. The user-supplied priorICweights (if any) are meant
+  # for that final, combined (num_hypotheses + 1)-hypothesis set, not for
+  # this function's own per-hypothesis run below, so they are stashed
+  # here and applied only at combination time; the per-hypothesis run
+  # below uses its own natural default instead.
+  priorICweights_add_Hc <- NULL
+  if (!is.null(add_Hc)) {
+    priorICweights_add_Hc <- priorICweights
+    priorICweights <- NULL
+  }
+
   # Set default comparison if needed
   if (is.null(comparison)) {
     if (num_hypotheses == 1) {
@@ -218,7 +200,9 @@ goric.default <- function(object, ..., hypotheses = NULL,
   allowed <- c(
     "B","mix_weights","parallel","ncpus","cl","seed","control","verbose","debug",
     "comparison","type","hypotheses","auxiliary","VCOV","sample_nobs","object",
-    "missing","lower","upper","algorithm","burn.in.samples","start.values","thinning"
+    "missing","lower","upper","algorithm","burn.in.samples","start.values","thinning",
+    #
+    "penalty_factor", "Heq", "add_Hc", "priorICweights", "se" # TO DO welke hier van nodig - ik kreeg foutmelding door geen se te hebben hieronder
   )
   
   unknown <- setdiff(names(ldots), allowed)
@@ -259,9 +243,17 @@ goric.default <- function(object, ..., hypotheses = NULL,
         "Now, it takes on the value ", add_Hc
       ), call. = FALSE)
     }
+    if (num_hypotheses < 2) {
+      stop(paste0(
+        "\nrestriktor ERROR: The argument add_Hc requires at least two specified ",
+        "hypotheses (it adds the complement of one of them to the comparison of ",
+        "the hypotheses themselves). With a single hypothesis, use the default ",
+        "comparison = 'complement' instead."
+      ), call. = FALSE)
+    }
   }
 
-  
+
   conChar <- vapply(constraints, function(x) inherits(x, "character"), logical(1))
   isConChar <- all(conChar)
   
@@ -780,16 +772,24 @@ goric.default <- function(object, ..., hypotheses = NULL,
   if (comparison == "complement") {
     # does def function exists
     if (!is.null(body(conList[[1]]$CON$def.function))) {
-      betasc_def <- conList[[1]]$CON$def.function(betasc)  
+      betasc_def <- conList[[1]]$CON$def.function(betasc)
       one_vec <- betasc
       one_vec <- one_vec[!duplicated(names(one_vec))]
       one_vec_full <- c(one_vec, betasc_def)
-      coefs <- rbind(coefs, one_vec_full)
+      # rbind_named_row() (not a raw rbind): whether 'coefs' already has a
+      # column for this defined (':=') parameter depends on whether
+      # coef(<hypothesis>, which = "restr") itself included it upstream,
+      # which can differ by input mode (e.g. goric_benchmark.R's internal
+      # numeric-estimate-vector + VCOV calls vs. a fitted model object) --
+      # see rbind_named_row()'s own comment in utilities.R for the full
+      # rationale; a raw rbind() here would warn and silently misalign
+      # values whenever the two disagree.
+      coefs <- rbind_named_row(coefs, one_vec_full)
     } else {
       one_vec <- betasc
       one_vec <- one_vec[!duplicated(names(one_vec))]
       one_vec_full <- c(one_vec, rep(NA_real_, ncol(coefs) - length(one_vec)))
-      coefs <- rbind(coefs, one_vec_full)
+      coefs <- rbind_named_row(coefs, one_vec_full)
     }
     rownames(coefs) <- c(objectnames, "complement")
   } else if (comparison == "unconstrained") {
@@ -797,13 +797,13 @@ goric.default <- function(object, ..., hypotheses = NULL,
     exists_def <- sapply(conList, FUN = function(x) !is.null(body(x$CON$def.function)))
     one_vec <- b_unrestr
     one_vec <- one_vec[!duplicated(names(one_vec))]
-    
+
     if (any(exists_def)) {
       betas_unc_def <- sapply(conList[exists_def], FUN = function(x) x$CON$def.function(b_unrestr))
       one_vec_full <- c(one_vec, betas_unc_def)
-      coefs <- rbind(coefs, one_vec_full)
+      coefs <- rbind_named_row(coefs, one_vec_full)
     } else {
-      coefs <- rbind(coefs, one_vec)
+      coefs <- rbind_named_row(coefs, one_vec)
     }
     rownames(coefs) <- c(objectnames, "unconstrained")
   } else {
@@ -827,6 +827,27 @@ goric.default <- function(object, ..., hypotheses = NULL,
   ans$penalty_factor <- penalty_factor
   ans$Heq <- Heq
   ans$priorICweights <- priorICweights
+
+  if (!is.null(add_Hc)) {
+    ans <- goric_add_complement(ans = ans, add_Hc = add_Hc, hypotheses = hypotheses,
+                                objectnames = objectnames, object = object, type = type,
+                                VCOV = VCOV, sample_nobs = sample_nobs,
+                                penalty_factor = penalty_factor,
+                                priorICweights = priorICweights_add_Hc,
+                                control = control, debug = debug,
+                                check_add_Hc = check_add_Hc,
+                                # NOTE: list(...) re-captures the ORIGINAL
+                                # user-supplied '...' arguments fresh here,
+                                # not the local 'ldots' variable -- by this
+                                # point 'ldots' has been mutated with
+                                # internal-only bookkeeping (e.g. ldots$se
+                                # <- "none" above, added purely for the
+                                # restriktor()/con_gorica_est() calls
+                                # above) that goric.default()'s own
+                                # 'allowed' argument whitelist would reject
+                                # if forwarded back into it recursively.
+                                ldots = list(...))
+  }
 
   # Assign class based on type\
   classMappings <- list(

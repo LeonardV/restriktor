@@ -2,8 +2,45 @@ coef.con_goric <- function(object, ...)  {
   return(object$ormle$b.restr)
 }
 
-coef.gorica_est <- function(object, ...)  {
-  return(object$b.restr)
+# ROOT CAUSE NOTE (found while tracking down a benchmark()-internal column-
+# count mismatch -- see rbind_named_row() in utilities.R and its call sites
+# in goric.R): this used to just be `return(object$b.restr)`, ignoring both
+# the 'which' argument and any defined (':=') parameter -- unlike its
+# sibling coef.restriktor() (utilities.R), which correctly appends the
+# defined-parameter value (via object$CON$def.function) whenever
+# object$parTable$op contains ":=". A 'gorica_est' object (the class
+# con_gorica_est() returns -- used for every goric() call whose 'object'
+# is a plain numeric estimate vector + VCOV, which is exactly the input
+# mode goric_benchmark.R's internal recompute/per-draw goric() calls use)
+# has that same $parTable/$CON$def.function information available and
+# correctly populated; coef.gorica_est() just never looked at it. That
+# meant coef(<hypothesis>, which = "restr") silently omitted a defined
+# parameter's value for a numeric-vector-dispatched hypothesis while
+# including it for a fitted-model-object-dispatched one -- the actual
+# source of the column-count mismatch patched defensively (rbind_named_row())
+# downstream in goric.R. Fixed here at the source, mirroring
+# coef.restriktor()'s logic; the downstream rbind_named_row() guard is kept
+# as a second, defensive layer (e.g. in case some other/future caller of
+# coef.gorica_est() constructs a defined-parameter value itself again).
+coef.gorica_est <- function(object, ..., which = c("restr", "unrestr"))  {
+  which <- match.arg(which)
+
+  b_name <- if (which == "restr") "b.restr" else "b.unrestr"
+  if (is.null(object[[b_name]])) {
+    stop(sprintf("Object has no '%s'.", b_name), call. = FALSE)
+  }
+  b_base <- object[[b_name]]
+
+  b_def <- NULL
+  has_defs <- !is.null(object$parTable$op) && any(object$parTable$op == ":=")
+  if (has_defs) {
+    if (is.null(object$CON$def.function) || !is.function(object$CON$def.function)) {
+      stop("Defined ':=' parameters are present, but object$CON$def.function is missing.", call. = FALSE)
+    }
+    b_def <- object$CON$def.function(b_base)
+  }
+
+  c(b_base, b_def)
 }
 
 coef_named_vector <- function(x, VCOV = NULL, ...)  {

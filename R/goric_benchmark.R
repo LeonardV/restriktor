@@ -108,6 +108,12 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   hypos <- object$hypotheses_usr
   nr_hypos <- dim(object$result)[1]
   Heq <- object$Heq
+  # Capture add_Hc *before* 'object' is reassigned below (object <- goric(...))
+  # -- otherwise it's lost and the recomputed/simulated goric() calls below
+  # silently collapse the add_Hc row structure back down to a plain
+  # comparison = "none" result (see goric_benchmark.R history for the bug
+  # this caused: a dimension mismatch in benchmark()).
+  add_Hc <- object$add_Hc
 
   # Unrestricted (adjusted) group_means
   group_means <- object$b.unrestr
@@ -219,6 +225,11 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
       penalty_factor = penalty_factor,
       #Heq = FALSE,
       Heq = Heq,
+      add_Hc = add_Hc,
+      # already checked once on the user's original add_Hc fit; see the
+      # NOTE above parallel_function_asymp()'s internal goric() call in
+      # goric_benchmark_utilities.R for the full rationale.
+      check_add_Hc = FALSE,
       ...
     )
   
@@ -280,6 +291,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     band = iter_adequacy_band,
     stability_tol = iter_stability_tol,
     iter_min = iter_min, iter_step = iter_step, iter_max = iter_max,
+    add_Hc = add_Hc,
     ...
   )
   parallel_function_results <- sim$parallel_function_results
@@ -485,6 +497,12 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   nr_hypos <- dim(object$result)[1]
   Heq <- object$Heq
   comparison <- object$comparison
+  # Capture add_Hc *before* 'object' is reassigned below (object <- goric(...))
+  # -- otherwise it's lost and the recomputed/simulated goric() calls below
+  # silently collapse the add_Hc row structure back down to a plain
+  # comparison = "none" result (see goric_benchmark.R history for the bug
+  # this caused: a dimension mismatch in benchmark()).
+  add_Hc <- object$add_Hc
   type <- object$type
   est_sample <- object$b.unrestr
   n_coef <- length(est_sample)
@@ -495,6 +513,39 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     # In that constraint matrix / hypothesis, the inequalities will be set to equalities.
     # First determine the preferred hypothesis:
     pref_hypo <- which.max(object$result[, 7])
+
+    # object$constraints/$rhs only have one entry per *specified* hypothesis
+    # (one per name in object$objectNames) -- not one for an implicit
+    # safeguard row. If the preferred row is such a safeguard (the
+    # unconstrained model for an ordinary comparison = "unconstrained"
+    # object, or the "Complement of <add_Hc>" row for a
+    # goric(..., add_Hc = ...) object), pref_hypo points past the end of
+    # object$constraints/$rhs, and there is in any case no single
+    # constraint matrix for a safeguard row to project the observed
+    # estimates onto (theta_restricted() needs one hypothesis's own (R,
+    # rhs) to do that). Fall back to a well-defined reference hypothesis
+    # instead -- the add_Hc reference hypothesis itself when there is one
+    # (the natural anchor, since the complement is defined relative to
+    # it), otherwise the first specified hypothesis -- and let the user
+    # know, since this changes what the 'No-effect' population represents.
+    if (pref_hypo > length(object$constraints)) {
+      if (!is.null(object$add_Hc)) {
+        fallback_name <- object$add_Hc
+        safeguard_desc <- paste0("the complement of ", sQuote(fallback_name))
+      } else {
+        fallback_name <- object$objectNames[1]
+        safeguard_desc <- "the unconstrained model"
+      }
+      message(paste0(
+        "\nrestriktor Message: The preferred hypothesis/model is the safeguard (",
+        safeguard_desc, "), which has no constraint matrix of its own to derive ",
+        "a 'No-effect' population from. Falling back to ", sQuote(fallback_name),
+        " for this purpose instead. Supply your own 'pop_est' argument if you ",
+        "want a different 'No-effect' population estimate."
+      ))
+      pref_hypo <- which(object$objectNames == fallback_name)
+    }
+
     NE <- theta_restricted(theta = est_sample, V = VCOV, R = object$constraints[[pref_hypo]], rhs = object$rhs[[pref_hypo]])
     # Note that VCOV is the unbiased cov.mx estimate.
     pop_est <- matrix(rbind(NE, est_sample), nrow = 2)
@@ -565,11 +616,16 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     mix_weights = mix_weights,
     penalty_factor = penalty_factor,
     Heq = Heq,
+    add_Hc = add_Hc,
+    # already checked once on the user's original add_Hc fit; see the NOTE
+    # above parallel_function_asymp()'s internal goric() call in
+    # goric_benchmark_utilities.R for the full rationale.
+    check_add_Hc = FALSE,
     ...
   )
-  
-  
-  
+
+
+
   if (is.null(quant)) {
     quant <- c(.05, .35, .50, .65, .95)
     names_quant <- c("Sample", "5%", "35%", "50%", "65%", "95%")
@@ -592,6 +648,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     band = iter_adequacy_band,
     stability_tol = iter_stability_tol,
     iter_min = iter_min, iter_step = iter_step, iter_max = iter_max,
+    add_Hc = add_Hc,
     ...
   )
   parallel_function_results <- sim$parallel_function_results

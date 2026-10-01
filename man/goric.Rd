@@ -23,7 +23,10 @@ comparable to the Akaike weights.
 \method{goric}{default}(object, ..., hypotheses = NULL,
       comparison = NULL, type = "goric",
       VCOV = NULL, sample_nobs = NULL,
-      penalty_factor = 2, Heq = FALSE, control = list(), debug = FALSE)
+      penalty_factor = 2, Heq = FALSE, 
+      add_Hc = NULL,
+      priorICweights = NULL,
+      control = list(), debug = FALSE)
 
 \method{goric}{lm}(object, ..., hypotheses = NULL,
       comparison = NULL, type = "goric",
@@ -385,6 +388,11 @@ goric(coef(fit1.lm), VCOV = vcov(fit1.lm), hypotheses = list(H1 = H1, H2 = H2, H
 
 # hypothesis H1 versus the complement (i.e., not H1)
 goric(fit1.lm, hypotheses = list(H1 = H1), comparison = "complement")
+
+
+# Add complement of one of the hypotheses. 
+# Note: Only meaningfull when that hypothesis encompasses the other specified hypotheses.
+goric(fit1.lm, hypotheses = list(H_large = H1, H_equal = H3), add_Hc = "H_large") # or: add_Hc = 1
 
 
 ## GORICA

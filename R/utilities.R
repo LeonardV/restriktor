@@ -195,14 +195,54 @@ coef.restriktor <- function(object, ..., which = c("restr", "unrestr"))  {
 list_to_df_rows <- function(x) {
   stopifnot(is.list(x), length(x) > 0L)
   all_names <- unique(unlist(lapply(x, names), use.names = FALSE))
-  
+
   mat <- do.call(rbind, lapply(x, function(v) {
     out <- setNames(rep(NA_real_, length(all_names)), all_names)
     out[names(v)] <- as.numeric(v)
     out
   }))
-  
+
   as.data.frame(mat, check.names = FALSE)
+}
+
+
+# Appends one named numeric row ('new_row') to an existing data.frame of
+# coefficients ('df', as produced by list_to_df_rows() above), aligning by
+# column NAME instead of relying on raw rbind()'s positional matching.
+#
+# goric.R's "complement"/"unconstrained" result-assembly (coefs <- rbind(
+# coefs, one_vec_full)) builds 'one_vec_full' as a hypothesis's own
+# coefficients plus, when present, its defined (':=') parameter value(s) --
+# but whether coef(<hypothesis>, which = "restr") itself already includes
+# that defined-parameter value (and so is already reflected in 'df's
+# columns) can differ depending on how the hypothesis's 'object' was
+# derived upstream (e.g. a plain numeric-estimate-vector + VCOV input, the
+# mode goric_benchmark.R's internal/simulated goric() calls use, vs. a
+# fitted model object). When the two disagree, 'df' and 'one_vec_full' end
+# up with different lengths, and raw rbind() recycles positionally instead
+# of erroring -- which both warns ("number of columns of result, ... is
+# not a multiple of vector length ...") *and* silently misaligns the
+# recycled values into the wrong columns. Aligning by name and NA-filling
+# any column one side doesn't have avoids both: the added/missing
+# parameter column is just NA for the rows that don't carry it.
+rbind_named_row <- function(df, new_row) {
+  all_names <- union(colnames(df), names(new_row))
+
+  df_full <- as.data.frame(
+    matrix(NA_real_, nrow = nrow(df), ncol = length(all_names),
+           dimnames = list(rownames(df), all_names)),
+    check.names = FALSE
+  )
+  if (nrow(df) > 0 && ncol(df) > 0) {
+    df_full[, colnames(df)] <- df
+  }
+
+  new_row_full <- setNames(rep(NA_real_, length(all_names)), all_names)
+  new_row_full[names(new_row)] <- as.numeric(new_row)
+
+  out <- rbind(df_full, new_row_full)
+  rownames(out) <- NULL
+  out
 }
 
 # get_defs <- function(obj, b) {

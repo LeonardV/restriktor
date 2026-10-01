@@ -156,8 +156,8 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
       idx <- which(assign %in% group_terms)
       # group sizes: (interaction-)cell counts of the factor variables only.
       # table() returns a 1-D array with a 'dim' attribute; c() strips it to
-      # a plain named vector (otherwise VCOV * (N - 1) in compute_cohens_f()
-      # fails with "non-conformable arrays").
+      # a plain named vector (otherwise arithmetic with N in
+      # compute_cohens_f() fails with "non-conformable arrays").
       counts <- if (length(group_vars) > 0) c(do.call(table, mf[group_vars])) else NULL
       list(idx = idx, counts = counts)
     }, error = function(e) NULL)
@@ -226,7 +226,32 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   names(N) <- names(group_means)[group_idx]
   
   VCOV <- VCOV_orig <- object$VCOV # Is already based on N (so, not N-k)
-  
+
+  # Residual (within-group) error variance sigma2, used for Cohen's f (the
+  # observed f and the scaling of the population means to 'pop_es', see
+  # compute_cohens_f()/generate_scaled_means()). With a fitted lm model it
+  # is the model's residual variance sigma(fit)^2 (for an ANCOVA this is the
+  # residual variance after adjusting for the covariates, which is what
+  # Cohen's f refers to). Without a model (input is est + VCOV) it is
+  # derived from VCOV as the average of N_g * VCOV[g, g], assuming
+  # independent group means with a common error variance -- see
+  # residual_variance_from_vcov(), which warns if that assumption seems
+  # violated. Computed from the ORIGINAL group sizes and VCOV: the product
+  # N_g * VCOV[g, g] is unaffected by the alt_group_size rescaling below
+  # (which scales VCOV[g, g] by N_g / alt_N_g, i.e. keeps Var(mean_g) =
+  # sigma2 / N_g for the new group sizes), so the same sigma2 applies to the
+  # alternative group sizes -- and to the simulation, which draws from VCOV.
+  sigma2 <- NULL
+  if (!is.null(fitLM) && inherits(fitLM, "lm")) {
+    sigma2 <- tryCatch(sigma(fitLM)^2, error = function(e) NULL)
+    if (!is.numeric(sigma2) || length(sigma2) != 1 || !is.finite(sigma2)) {
+      sigma2 <- NULL
+    }
+  }
+  if (is.null(sigma2)) {
+    sigma2 <- residual_variance_from_vcov(N, VCOV_orig[group_idx, group_idx, drop = FALSE])
+  }
+
   # If alt_group_size specified, adjust VCOV accordingly
   # Notably, VCOV is based on N not N-k (i.e., sum(N) - ngroups)
   if (!is.null(alt_group_size)) {
@@ -294,8 +319,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
 
   ## Compute observed Cohens f
   # (based on the group means only; see the note on covariates above)
-  cohens_f_observed <- compute_cohens_f(group_means[group_idx], N, 
-                                        VCOV[group_idx, group_idx, drop = FALSE])
+  cohens_f_observed <- compute_cohens_f(group_means[group_idx], N, sigma2)
 
   # effect size population
   default_pop_es <- is.null(pop_es)
@@ -336,7 +360,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
       means_pop[group_idx] <- group_means[group_idx]
     } else {
       means_pop[group_idx] <- generate_scaled_means(pattern_means, target_f = pop_es[i], N,
-                                                    VCOV[group_idx, group_idx, drop = FALSE])
+                                                    sigma2)
     }
     means_pop
   }))
@@ -413,7 +437,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     group_means_observed = group_means,
     #ratio_group_means.data = ratio_data,
     cohens_f_observed = cohens_f_observed,
-    #res_var_observed = var_e_data,
+    res_var = sigma2, # residual error variance used for Cohen's f
     pop_es = pop_es, 
     pop_group_means = means_pop_all,
     ratio_pop_means = ratio_pop_means,

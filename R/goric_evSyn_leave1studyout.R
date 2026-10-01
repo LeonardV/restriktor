@@ -172,12 +172,19 @@ leave1studyout.evSyn <- function(object, ...) {
       w_keep <- rep(0, sum(keep))
     }
     
+    # (Study-)weighted column sums, where a study with weight 0 contributes 
+    # exactly 0 (and not 0 * value, which is NaN for infinite values, e.g., 
+    # an IC difference of Inf when an IC weight is 0), as in evSyn().
+    wsum <- function(M) {
+      Mw <- M[keep, , drop = FALSE] * w_keep
+      Mw[w_keep == 0, ] <- 0
+      colSums(Mw)
+    }
     OverallGoric[s, ] <- switch(
       type_ev,
-      added   = colSums(IC_m[keep, , drop = FALSE] * w_keep),
-      equal   = -2 * colSums(LL_m[keep, , drop = FALSE] * w_keep) +
-        penalty_factor * colSums(PT_m[keep, , drop = FALSE] * w_keep) / S_keep,
-      average = colSums(IC_m[keep, , drop = FALSE] * w_keep) / S_keep
+      added   = wsum(IC_m),
+      equal   = -2 * wsum(LL_m) + penalty_factor * wsum(PT_m) / S_keep,
+      average = wsum(IC_m) / S_keep
     )
     
     # IC weights (incl. prior IC weights; computed on the log scale) and the

@@ -68,8 +68,9 @@
   GORIC(A) object is based on a fitted (\code{lm}) model, the group sizes are 
   by default the (cell) counts of the factor variable(s) in that model; a 
   user-specified \code{group_size} overrides these (with a message if they 
-  differ). If the GORIC(A) object is based on estimates and their covariance 
-  matrix (instead of on a model/fit object), \code{group_size} must be specified.}
+  differ). If the GORIC(A) object is based on estimates and their covariance
+  matrix (instead of on a model/fit object), \code{group_size} must be specified.
+  The group sizes are also needed for Cohen's f, see Details.}
   \item{alt_group_size}{An 1 x k vector or a scalar to denote alternative 
   group sizes, if you want to use sizes different from those in the data. This 
   can be used, for example, to see the values to which the GORIC(A) weights will 
@@ -191,7 +192,22 @@
   in each population. If \code{object} is based on estimates and their 
   covariance matrix, all estimates are treated as group means.
 
-  For \code{benchmark_means}, the population means for a value of
+  For \code{benchmark_means}, Cohen's f is defined as
+  \eqn{f = \sqrt{\sum_g N_g (\mu_g - \mu)^2 / \sum_g N_g} / \sigma}, with
+  \eqn{\mu} the (group-size weighted) grand mean of the group means and
+  \eqn{\sigma^2} the residual (within-group) error variance. If
+  \code{object} is based on a fitted \code{lm} model, \eqn{\sigma^2} is the
+  residual variance of that model (\code{sigma(fit)^2}; for a model with
+  covariates, the residual variance after adjusting for them). If
+  \code{object} is based on estimates and their covariance matrix,
+  \eqn{\sigma^2} is derived from that covariance matrix as the average of
+  \eqn{N_g \cdot \mathrm{VCOV}[g, g]} over the groups, which assumes that the
+  estimates are independent group means with a common error variance (so
+  that \eqn{\mathrm{Var}(\hat{\mu}_g) = \sigma^2 / N_g}); a warning is given
+  if the per-group values \eqn{N_g \cdot \mathrm{VCOV}[g, g]} differ by more
+  than 10\% (relative to their average), since Cohen's f is then only
+  approximate. The residual variance used is returned as \code{res_var}.
+  The population means for a value of
   \code{pop_es} are obtained by scaling the deviations of the pattern of
   means (the observed group means, or \code{ratio_pop_means}) from their
   grand mean, such that Cohen's f equals that value; a \code{pop_es} of 0

@@ -21,6 +21,14 @@ h1_bm <- "group1 < group2 < group3"
 g_compl <- goric(fit_bm, hypotheses = list(H1 = h1_bm), comparison = "complement")
 g_unc   <- goric(fit_bm, hypotheses = list(H1 = h1_bm), comparison = "unconstrained")
 
+# Onafhankelijke referentieformule voor Cohen's f (niet via compute_cohens_f):
+# f = sqrt(sum(n_g (mu_g - mu)^2) / sum(n_g)) / sigma, met mu het gewogen
+# grote gemiddelde en sigma de residuele standaardafwijking
+cohens_f_ref <- function(m, N, s) {
+  mu <- sum(N * m) / sum(N)
+  unname(sqrt(sum(N * (m - mu)^2) / sum(N)) / s)
+}
+
 # controleer dat tabellen, draws en rates per populatie dezelfde hypothesen bevatten
 expect_aligned <- function(b) {
   for (p in names(b$benchmarks$ratio_goric_weights)) {
@@ -193,27 +201,111 @@ test_that("adaptieve iter: ongeldige argumenten geven een duidelijke fout", {
 
 test_that("generate_scaled_means: volgorde behouden en geen NaN bij negatief/nul minimum", {
   gsm <- restriktor:::generate_scaled_means
-  cf <- restriktor:::compute_cohens_f
   N <- c(10, 10, 10)
-  V <- diag(3) * 0.1
+  s2 <- 1.5 # residuele variantie
   # negatief minimum: vroeger draaide de volgorde om
   m_neg <- c(a = -2, b = -1, c = 1)
-  r_neg <- gsm(m_neg, target_f = 0.3, N, V)
+  r_neg <- gsm(m_neg, target_f = 0.3, N, s2)
   expect_true(all(is.finite(r_neg)))
   expect_equal(order(r_neg), order(m_neg))
   expect_equal(sign(r_neg - weighted.mean(r_neg, N)), sign(m_neg - weighted.mean(m_neg, N)))
-  expect_equal(cf(r_neg, N, V), 0.3)
+  expect_equal(cohens_f_ref(r_neg, N, sqrt(s2)), 0.3)
   # nul minimum: vroeger NaN/Inf
   m_zero <- c(a = 0, b = 1, c = 2)
-  r_zero <- gsm(m_zero, target_f = 0.3, N, V)
+  r_zero <- gsm(m_zero, target_f = 0.3, N, s2)
   expect_true(all(is.finite(r_zero)))
   expect_equal(order(r_zero), order(m_zero))
-  expect_equal(cf(r_zero, N, V), 0.3)
+  expect_equal(cohens_f_ref(r_zero, N, sqrt(s2)), 0.3)
   # alleen een verschuiving maakt niet uit (zelfde patroon)
-  expect_equal(gsm(c(3, 2, 1), 0.3, N, V), gsm(c(1, 0, -1), 0.3, N, V))
+  expect_equal(gsm(c(3, 2, 1), 0.3, N, s2), gsm(c(1, 0, -1), 0.3, N, s2))
   # f = 0 geeft nullen; gelijke means met f > 0 geeft een duidelijke fout
-  expect_equal(unname(gsm(m_neg, 0, N, V)), c(0, 0, 0))
-  expect_error(gsm(c(1, 1, 1), 0.3, N, V), "all equal")
+  expect_equal(unname(gsm(m_neg, 0, N, s2)), c(0, 0, 0))
+  expect_error(gsm(c(1, 1, 1), 0.3, N, s2), "all equal")
+})
+
+
+test_that("compute_cohens_f: komt overeen met de onafhankelijke referentieformule", {
+  cf <- restriktor:::compute_cohens_f
+  # sigma2 = 1: f = sqrt(sum(n_g (mu_g - mu)^2) / sum(n_g)) / sigma = sqrt(4/6)
+  expect_equal(cf(c(-1, 0, 1), c(2, 2, 2), 1), sqrt(2 / 3))
+  expect_equal(cf(c(-1, 0, 1), c(2, 2, 2), 1), 0.8164966, tolerance = 1e-7)
+  # vroeger (VCOV * (N - 1) als residuele variantie) gaf dit 1.154701
+  expect_false(isTRUE(all.equal(cf(c(-1, 0, 1), c(2, 2, 2), 1), 1.154701, tolerance = 1e-6)))
+  # ongelijke groepsgroottes en andere sigma
+  m <- c(0.2, -0.5, 1.1); N <- c(5, 12, 7); s <- 0.7
+  expect_equal(cf(m, N, s^2), cohens_f_ref(m, N, s))
+  # residuele variantie uit VCOV: n_g * VCOV[g, g], gemiddeld over de groepen
+  rv <- restriktor:::residual_variance_from_vcov
+  expect_equal(rv(c(2, 2, 2), diag(c(0.5, 0.5, 0.5))), 1)
+  expect_equal(rv(c(10, 20), diag(c(0.3, 0.15))), 3)
+  expect_silent(rv(c(10, 20), diag(c(0.3, 0.15))))
+  # schending van de aanname (n_g * VCOV[g, g] verschilt > 10%): waarschuwing
+  expect_warning(rv(c(10, 10), diag(c(0.3, 0.1))), "common error variance")
+})
+
+
+test_that("benchmark_means: Cohen's f op basis van sigma(fit); pop_es wordt echt bereikt", {
+  s <- sigma(fit_bm)
+  # waargenomen f volgens de referentieformule met sigma(fit)
+  b <- quiet(benchmark(g_compl, model_type = "means", iter = 10, seed = 1))
+  expect_equal(b$res_var, s^2)
+  expect_equal(b$cohens_f_observed, cohens_f_ref(coef(fit_bm), n_g, s))
+  expect_equal(unname(b$pop_es["Observed"]), b$cohens_f_observed)
+  # gevraagde pop_es wordt bereikt (gecontroleerd op pop_group_means)
+  b2 <- quiet(benchmark(g_compl, model_type = "means", iter = 10, seed = 1,
+                        pop_es = c(0.25, 0.5)))
+  expect_equal(unname(apply(b2$pop_group_means, 1, cohens_f_ref, N = n_g, s = s)),
+               c(0.25, 0.5))
+  # alt_group_size: zelfde sigma2, f ten opzichte van de nieuwe groepsgroottes
+  b3 <- quiet(benchmark(g_compl, model_type = "means", iter = 10, seed = 1,
+                        alt_group_size = 50, pop_es = 0.3))
+  expect_equal(b3$res_var, s^2)
+  expect_equal(cohens_f_ref(b3$pop_group_means[1, ], rep(50, 3), s), 0.3)
+  # ANCOVA: residuele variantie van het model (na correctie voor de covariaat)
+  fit_ancova <- lm(y ~ -1 + group + x, data = df_bm)
+  g_ancova <- goric(fit_ancova, hypotheses = list(H1 = h1_bm), comparison = "complement")
+  ba <- quiet(benchmark(g_ancova, model_type = "means", iter = 10, seed = 1))
+  expect_equal(ba$res_var, sigma(fit_ancova)^2)
+  expect_equal(ba$cohens_f_observed,
+               cohens_f_ref(coef(fit_ancova)[1:3], n_g, sigma(fit_ancova)))
+  # schattingen + VCOV (vcov(fit)): sigma2 = n_g * VCOV[g, g] = sigma(fit)^2
+  g_est <- goric(coef(fit_bm), VCOV = vcov(fit_bm), hypotheses = list(H1 = h1_bm),
+                 comparison = "complement")
+  be <- quiet(benchmark(g_est, model_type = "means", iter = 10, seed = 1,
+                        group_size = n_g))
+  expect_equal(be$res_var, s^2)
+  expect_equal(be$cohens_f_observed, b$cohens_f_observed)
+})
+
+
+test_that("compute_overlap: NA (met reden) bij niet-eindige draws, niet conditioneel", {
+  co <- restriktor:::compute_overlap
+  d1 <- c(seq(0, 1, length.out = 100), rep(Inf, 900))
+  d2 <- seq(0, 1, length.out = 100)
+  ov <- co(d1, d2)
+  expect_true(is.na(ov)) # vroeger 0.98 (overlap van de eindige draws alleen)
+  expect_match(attr(ov, "note"), "non-finite")
+  expect_true(is.na(co(d2, d1)))
+  expect_true(is.na(co(c(d2, NaN), d2)))
+  expect_false(is.na(co(d1[1:100], d2)))
+  expect_match(attr(co(rep(1, 10), d2), "note"), "constant")
+})
+
+
+test_that("benchmark: error_prob voor goricac is een enkel getal (type-afhankelijke kolom)", {
+  est <- c(x = 1, y = 2, z = 3)
+  gc <- goric(est, VCOV = diag(3), hypotheses = list(H = "x < y < z"),
+              type = "goricac", sample_nobs = 8)
+  bc <- quiet(benchmark(gc, iter = 10, seed = 1))
+  expect_length(bc$error_prob_pref_hypo, 1)
+  expect_equal(bc$error_prob_pref_hypo, 0.02129459, tolerance = 1e-6)
+  expect_equal(bc$error_prob_pref_hypo, gc$result$goricac.weights[2])
+  # ook via de herfit (comparison = 'unconstrained' met meer hypothesen)
+  gc2 <- goric(est, VCOV = diag(3), hypotheses = list(H1 = "x < y < z", H2 = "x > y"),
+               type = "goricac", sample_nobs = 8, comparison = "unconstrained")
+  bc2 <- quiet(benchmark(gc2, iter = 10, seed = 1))
+  expect_length(bc2$error_prob_pref_hypo, 1)
+  expect_true(is.numeric(bc2$error_prob_pref_hypo))
 })
 
 
@@ -237,8 +329,8 @@ test_that("benchmark_means: negatieve groepsgemiddelden behouden de volgorde; Ob
                         pop_es = c(0.2, 0.5)))
   for (i in 1:2) {
     expect_equal(order(b2$pop_group_means[i, ]), order(coef(f_neg)))
-    expect_equal(restriktor:::compute_cohens_f(b2$pop_group_means[i, ], b2$group_size,
-                                               g_neg$VCOV), unname(b2$pop_es[i]))
+    expect_equal(cohens_f_ref(b2$pop_group_means[i, ], b2$group_size, sigma(f_neg)),
+                 unname(b2$pop_es[i]))
   }
 })
 
@@ -310,7 +402,7 @@ test_that("benchmark_means: ratio_pop_means bepaalt het patroon van de populatie
   expect_true(all(diff(b_321$pop_group_means[2, ]) < 0))
   expect_equal(unname(b_321$pop_group_means[2, ]), -unname(pm))
   # effectgrootte klopt
-  expect_equal(restriktor:::compute_cohens_f(pm, b_123$group_size, g_compl$VCOV),
+  expect_equal(cohens_f_ref(pm, b_123$group_size, sigma(fit_bm)),
                unname(b_123$pop_es[2]))
   # verschuiving maakt niet uit
   b_shift <- quiet(benchmark(g_compl, model_type = "means", iter = 10, seed = 1,

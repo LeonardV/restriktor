@@ -243,17 +243,20 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
   if ("all" %in% output_type || "gw" %in% output_type) {
     x$benchmarks$goric_weights <- recompute_section(x$benchmarks$goric_weights, x$combined_values$gw_combined)
     for (pop_es in names(x$benchmarks$goric_weights)) {
+      ov_col <- overlap_column(
+        x$overlap$goric_weights, pop_es, nrow(x$benchmarks$goric_weights[[pop_es]])
+      )
       x$benchmarks$goric_weights[[pop_es]] <- cbind(
         x$benchmarks$goric_weights[[pop_es]],
         x$pctl_Sample$goric_weights[[pop_es]],
         x$pctl_medianRefPop$goric_weights[[pop_es]],
-        overlap_column(
-          x$overlap$goric_weights, pop_es, nrow(x$benchmarks$goric_weights[[pop_es]])
-        )
+        ov_col
       )
       colnames(x$benchmarks$goric_weights[[pop_es]])[
         ncol(x$benchmarks$goric_weights[[pop_es]])
       ] <- overlap_header
+      # why an overlap is NA (if any), per row -- see overlap_column()
+      attr(x$benchmarks$goric_weights[[pop_es]], "overlap_notes") <- attr(ov_col, "notes")
     }
     print_section(
       text_gw,
@@ -274,17 +277,20 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
   if ("all" %in% output_type || "lw" %in% output_type) {
     x$benchmarks$ll_weights <- recompute_section(x$benchmarks$ll_weights, x$combined_values$lw_combined)
     for (pop_es in names(x$benchmarks$ll_weights)) {
+      ov_col <- overlap_column(
+        x$overlap$ll_weights, pop_es, nrow(x$benchmarks$ll_weights[[pop_es]])
+      )
       x$benchmarks$ll_weights[[pop_es]] <- cbind(
         x$benchmarks$ll_weights[[pop_es]],
         x$pctl_Sample$ll_weights[[pop_es]],
         x$pctl_medianRefPop$ll_weights[[pop_es]],
-        overlap_column(
-          x$overlap$ll_weights, pop_es, nrow(x$benchmarks$ll_weights[[pop_es]])
-        )
+        ov_col
       )
       colnames(x$benchmarks$ll_weights[[pop_es]])[
         ncol(x$benchmarks$ll_weights[[pop_es]])
       ] <- overlap_header
+      # why an overlap is NA (if any), per row -- see overlap_column()
+      attr(x$benchmarks$ll_weights[[pop_es]], "overlap_notes") <- attr(ov_col, "notes")
     }
     print_section(
       text_lw,
@@ -304,6 +310,12 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
 
     # Loop over alle sets in both benchmarks_ratio_goric_weights and hypothesis_rate
     for (pop_es_name in names(x$benchmarks$ratio_goric_weights)) {
+      ov_col <- overlap_column(
+        x$overlap$ratio_goric_weights, pop_es_name,
+        nrow(x$benchmarks$ratio_goric_weights[[pop_es_name]]),
+        row_names = rownames(x$benchmarks$ratio_goric_weights[[pop_es_name]]),
+        pref_hypo_name = pref_hypo
+      )
       x$benchmarks$ratio_goric_weights[[pop_es_name]] <- cbind(
         x$benchmarks$ratio_goric_weights[[pop_es_name]],
         x$pctl_Sample$ratio_goric_weights[[pop_es_name]],
@@ -313,16 +325,13 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
           x$hypothesis_rate[[pop_es_name]],
           rownames(x$benchmarks$ratio_goric_weights[[pop_es_name]]), pref_hypo
         ),
-        overlap_column(
-          x$overlap$ratio_goric_weights, pop_es_name,
-          nrow(x$benchmarks$ratio_goric_weights[[pop_es_name]]),
-          row_names = rownames(x$benchmarks$ratio_goric_weights[[pop_es_name]]),
-          pref_hypo_name = pref_hypo
-        )
+        ov_col
       )
       colnames(x$benchmarks$ratio_goric_weights[[pop_es_name]])[
         ncol(x$benchmarks$ratio_goric_weights[[pop_es_name]])
       ] <- overlap_header
+      # why an overlap is NA (if any), per row -- see overlap_column()
+      attr(x$benchmarks$ratio_goric_weights[[pop_es_name]], "overlap_notes") <- attr(ov_col, "notes")
     }
     # TO DO nu bij No-effect ook hypothesis_rate maar die zouden we dacht ik niet meer laten zien omdat het verwarrend is wat het betekent
     # Is nu juist weer weg, als het goed is.
@@ -334,10 +343,11 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
       # columns 1-6, hypothesis_rate as 7); now selected by name instead,
       # since adding the percentile column shifted hypothesis_rate to column 8
       # and a positional index would silently drop the wrong column.
-      x$benchmarks$ratio_goric_weights[NE_names][[1]] <-
-        x$benchmarks$ratio_goric_weights[NE_names][[1]][
-          , colnames(x$benchmarks$ratio_goric_weights[NE_names][[1]]) != "hypothesis_rate",
-          drop = FALSE]
+      ne_tab <- x$benchmarks$ratio_goric_weights[NE_names][[1]]
+      ne_notes <- attr(ne_tab, "overlap_notes") # dropped by `[`, see overlap_column()
+      ne_tab <- ne_tab[, colnames(ne_tab) != "hypothesis_rate", drop = FALSE]
+      attr(ne_tab, "overlap_notes") <- ne_notes
+      x$benchmarks$ratio_goric_weights[NE_names][[1]] <- ne_tab
     }
     
     print_section(
@@ -365,20 +375,23 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
   if ("all" %in% output_type || "rgw_log" %in% output_type) {
     x$benchmarks$ratio_goric_weights_log <- recompute_section(x$benchmarks$ratio_goric_weights_log, x$combined_values$rgw_log_combined)
     for (pop_es in names(x$benchmarks$ratio_goric_weights_log)) {
+      ov_col <- overlap_column(
+        x$overlap$ratio_goric_weights_log, pop_es,
+        nrow(x$benchmarks$ratio_goric_weights_log[[pop_es]]),
+        row_names = rownames(x$benchmarks$ratio_goric_weights_log[[pop_es]]),
+        pref_hypo_name = pref_hypo
+      )
       x$benchmarks$ratio_goric_weights_log[[pop_es]] <- cbind(
         x$benchmarks$ratio_goric_weights_log[[pop_es]],
         x$pctl_Sample$ratio_goric_weights_log[[pop_es]],
         x$pctl_medianRefPop$ratio_goric_weights_log[[pop_es]],
-        overlap_column(
-          x$overlap$ratio_goric_weights_log, pop_es,
-          nrow(x$benchmarks$ratio_goric_weights_log[[pop_es]]),
-          row_names = rownames(x$benchmarks$ratio_goric_weights_log[[pop_es]]),
-          pref_hypo_name = pref_hypo
-        )
+        ov_col
       )
       colnames(x$benchmarks$ratio_goric_weights_log[[pop_es]])[
         ncol(x$benchmarks$ratio_goric_weights_log[[pop_es]])
       ] <- overlap_header
+      # why an overlap is NA (if any), per row -- see overlap_column()
+      attr(x$benchmarks$ratio_goric_weights_log[[pop_es]], "overlap_notes") <- attr(ov_col, "notes")
     }
     print_section(
       text_rgw_log,
@@ -396,6 +409,12 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
   if ("all" %in% output_type || "rlw" %in% output_type) {
     x$benchmarks$ratio_ll_weights <- recompute_section(x$benchmarks$ratio_ll_weights, x$combined_values$rlw_combined)
     for (pop_es in names(x$benchmarks$ratio_ll_weights)) {
+      ov_col <- overlap_column(
+        x$overlap$ratio_ll_weights, pop_es,
+        nrow(x$benchmarks$ratio_ll_weights[[pop_es]]),
+        row_names = rownames(x$benchmarks$ratio_ll_weights[[pop_es]]),
+        pref_hypo_name = pref_hypo
+      )
       x$benchmarks$ratio_ll_weights[[pop_es]] <- cbind(
         x$benchmarks$ratio_ll_weights[[pop_es]],
         x$pctl_Sample$ratio_ll_weights[[pop_es]],
@@ -404,22 +423,20 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
         rate_rlw = align_by_hypothesis(
           x$rate_rlw[[pop_es]], rownames(x$benchmarks$ratio_ll_weights[[pop_es]]), pref_hypo
         ),
-        overlap_column(
-          x$overlap$ratio_ll_weights, pop_es,
-          nrow(x$benchmarks$ratio_ll_weights[[pop_es]]),
-          row_names = rownames(x$benchmarks$ratio_ll_weights[[pop_es]]),
-          pref_hypo_name = pref_hypo
-        )
+        ov_col
       )
       colnames(x$benchmarks$ratio_ll_weights[[pop_es]])[
         ncol(x$benchmarks$ratio_ll_weights[[pop_es]])
       ] <- overlap_header
+      # why an overlap is NA (if any), per row -- see overlap_column()
+      attr(x$benchmarks$ratio_ll_weights[[pop_es]], "overlap_notes") <- attr(ov_col, "notes")
     }
     if (any(NE_names)) {
-      x$benchmarks$ratio_ll_weights[NE_names][[1]] <-
-        x$benchmarks$ratio_ll_weights[NE_names][[1]][
-          , colnames(x$benchmarks$ratio_ll_weights[NE_names][[1]]) != "rate_rlw",
-          drop = FALSE]
+      ne_tab <- x$benchmarks$ratio_ll_weights[NE_names][[1]]
+      ne_notes <- attr(ne_tab, "overlap_notes") # dropped by `[`, see overlap_column()
+      ne_tab <- ne_tab[, colnames(ne_tab) != "rate_rlw", drop = FALSE]
+      attr(ne_tab, "overlap_notes") <- ne_notes
+      x$benchmarks$ratio_ll_weights[NE_names][[1]] <- ne_tab
     }
     print_section(
       text_rlw,
@@ -439,20 +456,23 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
   if ("all" %in% output_type || "rlw_log" %in% output_type) {
     x$benchmarks$ratio_ll_weights_log <- recompute_section(x$benchmarks$ratio_ll_weights_log, x$combined_values$rlw_log_combined)
     for (pop_es in names(x$benchmarks$ratio_ll_weights_log)) {
+      ov_col <- overlap_column(
+        x$overlap$ratio_ll_weights_log, pop_es,
+        nrow(x$benchmarks$ratio_ll_weights_log[[pop_es]]),
+        row_names = rownames(x$benchmarks$ratio_ll_weights_log[[pop_es]]),
+        pref_hypo_name = pref_hypo
+      )
       x$benchmarks$ratio_ll_weights_log[[pop_es]] <- cbind(
         x$benchmarks$ratio_ll_weights_log[[pop_es]],
         x$pctl_Sample$ratio_ll_weights_log[[pop_es]],
         x$pctl_medianRefPop$ratio_ll_weights_log[[pop_es]],
-        overlap_column(
-          x$overlap$ratio_ll_weights_log, pop_es,
-          nrow(x$benchmarks$ratio_ll_weights_log[[pop_es]]),
-          row_names = rownames(x$benchmarks$ratio_ll_weights_log[[pop_es]]),
-          pref_hypo_name = pref_hypo
-        )
+        ov_col
       )
       colnames(x$benchmarks$ratio_ll_weights_log[[pop_es]])[
         ncol(x$benchmarks$ratio_ll_weights_log[[pop_es]])
       ] <- overlap_header
+      # why an overlap is NA (if any), per row -- see overlap_column()
+      attr(x$benchmarks$ratio_ll_weights_log[[pop_es]], "overlap_notes") <- attr(ov_col, "notes")
     }
     print_section(
       text_rlw_log,
@@ -470,20 +490,23 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
   if ("all" %in% output_type || "ld" %in% output_type) {
     x$benchmarks$difLL <- recompute_section(x$benchmarks$difLL, x$combined_values$ld_combined)
     for (pop_es in names(x$benchmarks$difLL)) {
+      ov_col <- overlap_column(
+        x$overlap$difLL, pop_es,
+        nrow(x$benchmarks$difLL[[pop_es]]),
+        row_names = rownames(x$benchmarks$difLL[[pop_es]]),
+        pref_hypo_name = pref_hypo
+      )
       x$benchmarks$difLL[[pop_es]] <- cbind(
         x$benchmarks$difLL[[pop_es]],
         x$pctl_Sample$difLL[[pop_es]],
         x$pctl_medianRefPop$difLL[[pop_es]],
-        overlap_column(
-          x$overlap$difLL, pop_es,
-          nrow(x$benchmarks$difLL[[pop_es]]),
-          row_names = rownames(x$benchmarks$difLL[[pop_es]]),
-          pref_hypo_name = pref_hypo
-        )
+        ov_col
       )
       colnames(x$benchmarks$difLL[[pop_es]])[
         ncol(x$benchmarks$difLL[[pop_es]])
       ] <- overlap_header
+      # why an overlap is NA (if any), per row -- see overlap_column()
+      attr(x$benchmarks$difLL[[pop_es]], "overlap_notes") <- attr(ov_col, "notes")
     }
     print_section(
       text_ld,

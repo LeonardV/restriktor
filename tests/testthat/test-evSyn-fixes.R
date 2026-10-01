@@ -479,3 +479,129 @@ test_that("evSyn_gorica neemt penalty_factor over van de goric-objecten", {
   expect_equal(re$penalty_factor, 5)
   expect_equal(unname(re$Cumulative_GORICA_weights), unname(res$Cumulative_GORICA_weights))
 })
+
+# 16. Externe review van 64e3034 ---------------------------------------------------
+test_that("evSyn_LL: PT wordt samen met LL op naam uitgelijnd", {
+  LL <- list(c(A = -1, B = -2), c(A = -1, B = -2))
+  PT <- list(c(A = 0, B = 2), c(A = 0, B = 2))
+  a <- evSyn(LL, PT = PT, hypo_names = c("A", "B"))
+  expect_message(
+    b <- evSyn(list(LL[[1]], rev(LL[[2]])), PT = list(PT[[1]], rev(PT[[2]])),
+               hypo_names = c("A", "B")),
+    "matched by name"
+  )
+  expect_equal(a, b)
+  expect_equal(unname(final_w(a)), c(0.9975274, 0.0024726), tolerance = 1e-6)
+  expect_equal(unname(a$PT_m), rbind(c(0, 2), c(0, 2)))
+  # alleen PT in een andere volgorde (LL niet): PT wordt op naam herordend
+  c0 <- evSyn(LL, PT = list(PT[[1]], rev(PT[[2]])), hypo_names = c("A", "B"))
+  expect_equal(c0, a)
+  # namen van PT komen niet overeen met die van LL -> fout
+  expect_error(evSyn(LL, PT = list(PT[[1]], c(A = 0, C = 2))),
+               "hypothesis names of 'PT'")
+  expect_error(evSyn(LL, PT = list(PT[[1]], c(B = 2, B = 0))),
+               "hypothesis names of 'PT'")
+  # de een benoemd, de ander niet -> fout
+  expect_error(evSyn(LL, PT = list(PT[[1]], unname(PT[[2]]))),
+               "given for 'object' but not for 'PT'")
+  expect_error(suppressWarnings(evSyn(list(LL[[1]], unname(LL[[2]])), PT = PT)),
+               "given for 'PT' but not for 'object'")
+  # beide onbenoemd: op positie
+  expect_equal(final_w(evSyn(lapply(LL, unname), PT = lapply(PT, unname))), final_w(a))
+  # ook via de goric-route (hypothesen in andere volgorde) identiek
+  g1 <- goric(est_fx[[1]], VCOV = V_fx[[1]], hypotheses = H2_fx, type = "gorica")
+  g2 <- goric(est_fx[[2]], VCOV = V_fx[[2]], hypotheses = rev(H2_fx), type = "gorica")
+  g2b <- goric(est_fx[[2]], VCOV = V_fx[[2]], hypotheses = H2_fx, type = "gorica")
+  expect_equal(suppressMessages(evSyn(list(g1, g2)))$Cumulative_GORICA_weights,
+               evSyn(list(g1, g2b))$Cumulative_GORICA_weights)
+})
+
+test_that("evSyn_est: herordende est + VCOV (rijen en kolommen) geeft identieke resultaten", {
+  V <- V_fx[1:2]
+  dimnames(V[[1]]) <- dimnames(V[[2]]) <- list(names(est_fx[[1]]), names(est_fx[[1]]))
+  p <- c(3, 1, 2)
+  r1 <- evSyn(est_fx[1:2], VCOV = V, hypotheses = H2_fx)
+  r2 <- evSyn(list(est_fx[[1]], est_fx[[2]][p]), VCOV = list(V[[1]], V[[2]][p, p]),
+              hypotheses = H2_fx)
+  expect_equal(r1$Cumulative_GORICA_weights, r2$Cumulative_GORICA_weights)
+  expect_equal(r1$LL_m, r2$LL_m)
+  expect_equal(r1$PT_m, r2$PT_m)
+  # ook zonder dimnames op VCOV
+  r3 <- evSyn(list(est_fx[[1]], est_fx[[2]][p]), VCOV = list(V_fx[[1]], V_fx[[2]][p, p]),
+              hypotheses = H2_fx)
+  expect_equal(r1$Cumulative_GORICA_weights, r3$Cumulative_GORICA_weights)
+})
+
+test_that("study_weights van 0 met oneindige IC-verschillen geven geen NaN", {
+  sw <- c(0, .5, .5)
+  # A: icratios met een ratio van 0 (-> IC-verschil Inf) in de uitgesloten studie
+  r <- evSyn(list(c(0, 1), c(7/3, 1), c(1.5, 1)), input_type = "icratios", study_weights = sw)
+  expect_equal(unname(final_w(r)), c(0.777778, 0.222222), tolerance = 1e-6)
+  expect_false(anyNA(r$Cumulative_GORICA_weights))
+  expect_false(anyNA(r$Cumulative_ICdiff))
+  expect_equal(unname(r$Cumulative_GORICA_weights[2, ]), c(.7, .3))
+  ra <- evSyn(list(c(0, 1), c(7/3, 1), c(1.5, 1)), input_type = "icratios",
+              study_weights = sw, type_ev = "average")
+  expect_false(anyNA(ra$Cumulative_GORICA_weights))
+  l1r <- leave1studyout(r)
+  expect_equal(unname(l1r$OverallGoricaWeights[2, ]), c(.6, .4))
+  expect_equal(unname(l1r$OverallGoricaWeights[3, ]), c(.7, .3))
+  # B: icweights met een gewicht van 0 in de uitgesloten studie; leave1studyout
+  e <- evSyn(list(c(0, 1), c(.7, .3), c(.6, .4)), input_type = "icweights", study_weights = sw)
+  expect_equal(unname(final_w(e)), c(7/9, 2/9))
+  l1 <- leave1studyout(e)
+  expect_equal(unname(l1$OverallGoricaWeights[1, ]), c(7/9, 2/9))
+  expect_equal(unname(l1$OverallGoricaWeights[2, ]), c(.6, .4))
+  expect_equal(unname(l1$OverallGoricaWeights[3, ]), c(.7, .3))
+  expect_equal(unname(l1$OverallPrefHypo[, 1]), rep("H1", 3))
+  for (te in c("added", "average")) {
+    l1t <- leave1studyout(evSyn(list(c(0, 1), c(.7, .3), c(.6, .4)), input_type = "icweights",
+                                study_weights = sw, type_ev = te))
+    expect_false(anyNA(l1t$OverallGoricaWeights))
+  }
+  # icvalues met Inf in de uitgesloten studie
+  v <- evSyn(list(c(Inf, 0), c(2, 0), c(0, 2)), input_type = "icvalues", study_weights = sw)
+  expect_equal(unname(final_w(v)), c(.5, .5))
+  expect_false(anyNA(leave1studyout(v)$OverallGoricaWeights))
+  # LL-route (en dus est/gorica-route) met -Inf in de uitgesloten studie, alle type_ev
+  LL <- list(c(-Inf, -1), c(-1, -2), c(-1, -2)); PT <- list(c(1, 2), c(1, 2), c(1, 2))
+  for (te in c("added", "equal", "average")) {
+    r <- evSyn(LL, PT = PT, study_weights = sw, type_ev = te)
+    ref <- evSyn(LL[-1], PT = PT[-1], type_ev = te)
+    expect_false(anyNA(r$Cumulative_GORICA_weights))
+    expect_false(anyNA(r$Cumulative_LL_weights))
+    expect_equal(final_w(r), final_w(ref))
+    expect_equal(unname(leave1studyout(r)$OverallGoricaWeights[2, ]),
+                 unname(final_w(evSyn(LL[3], PT = PT[3], type_ev = te))))
+    expect_false(anyNA(summary(r)$Cumulative_PT))
+  }
+  # positief gewicht met een IC-gewicht van 0: die hypothese krijgt gewicht 0
+  e0 <- evSyn(list(c(0, 1), c(.7, .3), c(.6, .4)), input_type = "icweights")
+  expect_equal(unname(final_w(e0)), c(0, 1))
+  expect_equal(unname(leave1studyout(e0)$OverallGoricaWeights[2, ]), c(0, 1))
+  expect_equal(unname(leave1studyout(e0)$OverallGoricaWeights[1, ]), c(7/9, 2/9))
+})
+
+test_that("order_studies: zelfde voorkeurshypothese voor icweights, icvalues en icratios bij gewichten van 0", {
+  W  <- list(c(.5, .5), c(.8, .2), c(.6, .4))
+  sw <- c(0, .5, .5)
+  pr <- c(.1, .9)
+  IC <- lapply(W, function(w) -2 * log(w))
+  R  <- lapply(W, function(w) w / w[2])
+  for (te in c("added", "average")) for (os in c("ascending", "descending")) {
+    x <- evSyn(W, input_type = "icweights", study_weights = sw, priorICweights = pr,
+               order_studies = os, type_ev = te)
+    y <- evSyn(IC, input_type = "icvalues", study_weights = sw, priorICweights = pr,
+               order_studies = os, type_ev = te)
+    z <- evSyn(R, input_type = "icratios", study_weights = sw, priorICweights = pr,
+               order_studies = os, type_ev = te)
+    expect_equal(x$order_studies, y$order_studies)
+    expect_equal(z$order_studies, y$order_studies)
+    expect_equal(unname(final_w(x)), unname(final_w(y)))
+    expect_equal(unname(final_w(z)), unname(final_w(y)))
+  }
+  x <- evSyn(W, input_type = "icweights", study_weights = sw, priorICweights = pr,
+             order_studies = "descending")
+  expect_equal(x$order_studies, c(1, 3, 2))
+  expect_equal(unname(final_w(x)), c(.4, .6))
+})

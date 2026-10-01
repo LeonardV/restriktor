@@ -80,11 +80,16 @@
 # equals row s-1 (the mean is taken over the studies with a positive weight, 
 # see .evSyn_n_pos). If the weights of studies 1, ..., s are all 0, there is 
 # no evidence yet and row s is set to 0 (so that the corresponding IC weights 
-# equal the prior IC weights).
+# equal the prior IC weights). The contribution of a study with weight 0 is 
+# set to exactly 0 (and not computed as 0 * value), such that infinite values 
+# (e.g., an IC difference of Inf when an IC weight is 0) of such a study do 
+# not result in NaN (0 * Inf) in the cumulative results.
 .evSyn_cum_weighted <- function(M, study_weights_S) {
   M <- M[, , drop = FALSE]
   S <- nrow(M)
-  out <- apply(M * study_weights_S, 2, cumsum)
+  Mw <- M * study_weights_S
+  Mw[study_weights_S == 0, ] <- 0
+  out <- apply(Mw, 2, cumsum)
   out <- matrix(out, nrow = S, dimnames = dimnames(M))
   denom <- cumsum(study_weights_S) / pmax(.evSyn_n_pos(study_weights_S), 1)
   out <- out / denom
@@ -135,6 +140,26 @@
                 length_expected = NrHypos_incl,
                 what = "one for each hypothesis including a possible failsafe hypothesis",
                 rescale = TRUE)
+}
+
+# Helper: rescale the study weights of studies 1, ..., s as used when combining
+# IC weights (i.e., when the IC weights are 'powers'; see evSyn_ICweights): 
+# - added:   summing to the number of positively weighted studies (as if IC 
+#            values were summed), 
+# - average: summing to 1 (as if IC values were averaged).
+# If all study weights are 0, all rescaled weights are 0 (no evidence yet).
+# This is used both for the cumulative/final results and for determining the 
+# preferred hypothesis when ordering the studies, such that these agree.
+.evSyn_rescale_study_weights <- function(study_weights_S, type_ev) {
+  if (sum(study_weights_S) == 0) {
+    return(rep(0, length(study_weights_S)))
+  }
+  w <- study_weights_S / sum(study_weights_S)
+  if (type_ev == "average") {
+    w
+  } else {
+    sum(study_weights_S > 0) * w
+  }
 }
 
 # Helper: (study-)weighted sum of log IC weights over studies, i.e., the log of
@@ -301,6 +326,50 @@
             call. = FALSE)
   }
   object
+}
+
+# Helper: align a second, parallel input (e.g., the penalty values 'PT' that 
+# go with the log-likelihood values in 'object') to the (possibly re-ordered, 
+# see .evSyn_check_input_names) 'object', per study. For each study, the names
+# of PT[[s]] must denote the same hypotheses as the names of object[[s]]: when
+# the order differs, PT[[s]] is re-ordered to the order of object[[s]]; when
+# the sets of names differ, or when only one of the two is named, an error is
+# given. Unnamed vectors (in both) are matched by position.
+.evSyn_align_second_input <- function(object, second, name = "PT", 
+                                      object_name = "object") {
+  is_named <- function(x) {
+    nms <- names(x)
+    !is.null(nms) && all(!is.na(nms)) && all(nms != "")
+  }
+  for (s in seq_along(object)) {
+    if (s > length(second)) {
+      break
+    }
+    obj_named <- is_named(object[[s]])
+    sec_named <- is_named(second[[s]])
+    if (!obj_named && !sec_named) {
+      next
+    }
+    if (obj_named != sec_named) {
+      stop("\nrestriktor ERROR: For study ", s, ", the hypothesis names are given for '",
+           if (obj_named) object_name else name, "' but not for '", 
+           if (obj_named) name else object_name, "'. ",
+           "Please name the elements of both (identically) or of neither.",
+           call. = FALSE)
+    }
+    ref <- names(object[[s]])
+    nms <- names(second[[s]])
+    if (length(nms) != length(ref) || !setequal(nms, ref) || anyDuplicated(nms)) {
+      stop("\nrestriktor ERROR: For study ", s, ", the hypothesis names of '", name, 
+           "' (", paste(nms, collapse = ", "), ") must be identical to those of '", 
+           object_name, "' (", paste(ref, collapse = ", "), ").",
+           call. = FALSE)
+    }
+    if (!identical(nms, ref)) {
+      second[[s]] <- second[[s]][ref]
+    }
+  }
+  second
 }
 
 # -------------------------------------------------------------------------
@@ -903,6 +972,9 @@ evSyn_LL <- function(object, ..., PT = list(),
   # If the input vectors carry hypothesis names, these must denote the same 
   # hypotheses across studies (matched by name); otherwise matched by position.
   object <- .evSyn_check_input_names(object, hypo_names)
+  # The penalty values must match the (possibly re-ordered) log-likelihood 
+  # values per study: matched by name when named, otherwise by position.
+  PT <- .evSyn_align_second_input(object, PT, name = "PT", object_name = "object")
   
   LL_m <- object
   S <- length(LL_m)
@@ -1376,7 +1448,10 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
       #OverallPrefHypo <- which(OverallGoric == max(OverallGoric))
       # Computed on the log scale (-2 * log of the weighted product of IC weights
       # is a difference in IC values), including possible prior hypothesis weights.
-      OverallICdiff <- -2 * .evSyn_log_prod_weights(log(Weights), study_weights_S / sum(study_weights_S > 0))
+      # The study weights are rescaled in the same way as for the final results
+      # below (see .evSyn_rescale_study_weights), such that the preferred 
+      # hypothesis equals the finally preferred one.
+      OverallICdiff <- -2 * .evSyn_log_prod_weights(log(Weights), .evSyn_rescale_study_weights(study_weights_S, type_ev))
       OverallPrefHypo <- .evSyn_pref_hypo(OverallICdiff, priorICweights)
     } else {
       # type_ev == "added" (or when "equal", because then it is overruled to be "added")
@@ -1390,7 +1465,10 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
       #OverallPrefHypo <- which(OverallGoric == max(OverallGoric))
       # Computed on the log scale (-2 * log of the weighted product of IC weights
       # is a difference in IC values), including possible prior hypothesis weights.
-      OverallICdiff <- -2 * .evSyn_log_prod_weights(log(Weights), study_weights_S)
+      # The study weights are rescaled in the same way as for the final results
+      # below (see .evSyn_rescale_study_weights), such that the preferred 
+      # hypothesis equals the finally preferred one.
+      OverallICdiff <- -2 * .evSyn_log_prod_weights(log(Weights), .evSyn_rescale_study_weights(study_weights_S, type_ev))
       OverallPrefHypo <- .evSyn_pref_hypo(OverallICdiff, priorICweights)
     }
     if (order_studies == "descending") {
@@ -1442,21 +1520,14 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
   # yet and the cumulative IC weights equal the prior IC weights.
   logWeights <- log(Weights)
   for (s in seq_len(S)) {
-    if (type_ev == "average") { 
-      # average-ev approach
-      # So, if there were IC values, then average IC values.
-      # Therefore, use study weights which sum to 1.
-      stW <- study_weights_S[1:s] / sum(study_weights_S[1:s])
-    } else {
-      # type_ev == "added" (or when "equal", because then it is overruled to be "added")
-      # So, if there were IC values, then sum IC values.
-      # Therefore, use study weights which sum to s (not to 1), where s is 
-      # the number of (positively weighted) studies so far.
-      stW <- sum(study_weights_S[1:s] > 0) * (study_weights_S[1:s] / sum(study_weights_S[1:s]))
-    }
-    if (sum(study_weights_S[1:s]) == 0) {
-      stW <- rep(0, s)
-    }
+    # Rescaled study weights of studies 1 to s (see .evSyn_rescale_study_weights):
+    # - average: as if there were IC values, then average IC values;
+    #            therefore, use study weights which sum to 1,
+    # - added (or "equal", because then it is overruled to be "added"):
+    #            as if there were IC values, then sum IC values; therefore, 
+    #            use study weights which sum to the number of (positively 
+    #            weighted) studies so far (not to 1).
+    stW <- .evSyn_rescale_study_weights(study_weights_S[1:s], type_ev)
     CumICdiff <- -2 * .evSyn_log_prod_weights(logWeights[1:s, , drop = FALSE], stW)
     CumulativeWeights[s, ] <- ic_weights_log(CumICdiff, priorICweights)
   }
@@ -1620,13 +1691,15 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
     # That is, the hypothesis with the highest final (prior-weighted) IC weight,
     # computed on the log scale (-2 * log of the weighted product of the ratios
     # is a difference in IC values).
+    # The same computation as for the final cumulative IC differences below,
+    # such that the preferred hypothesis equals the finally preferred one.
+    OverallICdiff <- .evSyn_cum_weighted(-2 * log(Weights), study_weights_S)[S, ]
     if (type_ev == "average") { 
       # average-evidence approach
-      OverallICdiff <- -2 * .evSyn_log_prod_weights(log(Weights), study_weights_S / sum(study_weights_S > 0))
+      OverallICdiff <- OverallICdiff / sum(study_weights_S > 0)
     } else {
       # type_ev == "added" (or when "equal", because then it is overruled to be "added")
       type_ev = "added"
-      OverallICdiff <- -2 * .evSyn_log_prod_weights(log(Weights), study_weights_S)
     }
     OverallPrefHypo <- .evSyn_pref_hypo(OverallICdiff, priorICweights)
     if (order_studies == "descending") {

@@ -117,7 +117,9 @@ xlab_unordered = NULL, angle_x = 30, \dots)
     order in one of the objects, they are matched by name. When the hypotheses are unnamed
     and their specification differs across objects, an error is given.
     Likewise, when the input vectors (e.g., with IC values or weights) carry names,
-    these must denote the same hypotheses across studies (matched by name).
+    these must denote the same hypotheses across studies (matched by name); 
+    in case of log-likelihood values, the corresponding penalty values in \code{PT}
+    are matched to these by name as well (see \code{PT}).
   }
   
   \item{input_type}{
@@ -137,7 +139,13 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   \item{VCOV}{a list of covariance matrices of the (standardized) parameter estimates 
   of interest.} 
   
-  \item{PT}{a list of vectors with penalty values.}
+  \item{PT}{a list of vectors with penalty values (one vector for each study, 
+  with one value for each hypothesis, matching the log-likelihood values in \code{object}).
+  When, for a study, both the log-likelihood and the penalty values carry names, 
+  these must denote the same hypotheses (an error is given otherwise) and the 
+  penalty values are matched to the log-likelihood values by name (i.e., they 
+  are re-ordered when given in another order); when neither carries names, they 
+  are matched by position. An error is given when only one of the two is named.}
 
   \item{penalty_factor}{a single non-negative number: the factor with which the penalty is
   multiplied in the information criterion, that is, IC = -2 * log-likelihood + \code{penalty_factor} * penalty
@@ -249,8 +257,14 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   as long as the cumulative set only contains studies with weight 0, there is no evidence yet
   and the cumulative IC values (and log-likelihood values) are 0, such that the
   cumulative IC weights equal the prior IC weights (and the log-likelihood weights are equal).
+  A study with weight 0 contributes nothing even when its values are infinite 
+  (e.g., an IC weight of 0, which corresponds to an infinite IC difference); 
+  such values are ignored. For a study with a positive weight, an infinite value 
+  is taken into account: for instance, an IC weight of 0 for a hypothesis in such 
+  a study results in a cumulative and final IC weight of 0 for that hypothesis.
   When ordering the studies with 'order_studies' = \code{"ascending"} or \code{"descending"},
-  the preferred hypothesis is determined using the final (study-weighted) results;
+  the preferred hypothesis is determined using the final (study-weighted) results
+  (that is, in exactly the same way, with the same study weights, as the final results);
   the ordering itself is based on the study-specific support for that hypothesis.}
   
   \item{order_studies}{

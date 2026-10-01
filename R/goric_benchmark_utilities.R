@@ -69,19 +69,25 @@ calculate_power <- function(density_h1, critical_value) {
 # quantile/percentile/rate computations in get_results_benchmark() handle
 # Inf natively (an infinite draw simply counts as larger than any finite
 # draw), so such draws are NOT dropped there. A kernel density, however,
-# cannot be fitted on an infinite value, so for this overlap coefficient
-# (and only here) the non-finite draws are left out; the log-ratio
-# output_types (rgw_log/rlw_log) are always finite and are the better basis
-# for overlap in such cases anyway.
+# cannot be fitted on an infinite value. Such draws are NOT silently dropped
+# here either: dropping them would give the overlap of the distributions
+# CONDITIONAL on the draws being finite (e.g. 0.98 when only 10% of one
+# sample is finite and happens to coincide with the other sample), which is
+# not the overlap of the benchmark distributions. Instead, the overlap is
+# NA (with an attribute "note" saying why) whenever either sample contains
+# a non-finite draw; the log-ratio output_types (rgw_log/rlw_log) are always
+# finite, so their overlap is always available and is the quantity to look
+# at in such cases.
 compute_overlap <- function(draws1, draws2, n = 512) {
-  draws1 <- draws1[is.finite(draws1)]
-  draws2 <- draws2[is.finite(draws2)]
+  if (any(!is.finite(draws1)) || any(!is.finite(draws2))) {
+    return(structure(NA_real_, note = overlap_note_non_finite))
+  }
   if (length(draws1) < 2 || length(draws2) < 2 ||
       sd(draws1) == 0 || sd(draws2) == 0) {
     # Can't fit a (non-degenerate) density on too few draws, or on draws
     # that are all identical (zero variance) -- not enough information for
     # an overlap coefficient to be meaningful.
-    return(NA_real_)
+    return(structure(NA_real_, note = overlap_note_degenerate))
   }
   rng <- range(c(draws1, draws2))
   pad <- diff(rng) * 0.1
@@ -95,9 +101,29 @@ compute_overlap <- function(draws1, draws2, n = 512) {
     density(draws2, kernel = "gaussian", bw = "nrd0", from = from, to = to, n = n),
     error = function(e) NULL
   )
-  if (is.null(d1) || is.null(d2)) return(NA_real_)
+  if (is.null(d1) || is.null(d2)) return(structure(NA_real_, note = overlap_note_degenerate))
   dx <- mean(diff(d1$x))
   min(sum(pmin(d1$y, d2$y)) * dx, 1) # cap at 1 for the (rare) numerical-integration overshoot
+}
+
+# The reasons compute_overlap() can return NA, as stored in its "note"
+# attribute and propagated (as attribute "notes" -- named by population, or
+# by hypothesis column for the matrix-valued statistics) by
+# compute_overlap_vs_observed()/compute_overlap_vs_observed_matrix() to
+# print.benchmark(), where the NA is shown as "NA (<note>)" rather than as a
+# number or a blank.
+overlap_note_non_finite <- "non-finite draws; see rgw_log/rlw_log"
+overlap_note_degenerate <- "too few or constant draws"
+
+# Collects the "note" attributes of a list of compute_overlap() results into
+# one named character vector (names = names(lst)), or NULL if none has one.
+collect_overlap_notes <- function(lst) {
+  notes <- vapply(lst, function(v) {
+    nt <- attr(v, "note")
+    if (is.null(nt)) NA_character_ else nt
+  }, character(1))
+  notes <- notes[!is.na(notes)]
+  if (length(notes) == 0) NULL else notes
 }
 
 # Which population the "Overlap with ..." column is computed against.
@@ -136,11 +162,15 @@ compute_overlap_vs_observed <- function(draws_combined) {
   }
   reference_draws <- draws_combined[[reference_name]]
   other_names <- setdiff(names(draws_combined), reference_name)
-  overlaps <- vapply(other_names, function(nm) {
+  overlaps_lst <- lapply(other_names, function(nm) {
     compute_overlap(reference_draws, draws_combined[[nm]])
-  }, numeric(1))
+  })
+  names(overlaps_lst) <- other_names
+  overlaps <- vapply(overlaps_lst, as.numeric, numeric(1))
   names(overlaps) <- other_names
   overlaps[reference_name] <- 1
+  # why an overlap is NA (if any), named by population -- see compute_overlap()
+  attr(overlaps, "notes") <- collect_overlap_notes(overlaps_lst)
   overlaps
 }
 
@@ -168,9 +198,16 @@ compute_overlap_vs_observed_matrix <- function(draws_combined) {
   overlaps <- lapply(other_names, function(nm) {
     other_mat <- draws_combined[[nm]]
     shared_cols <- intersect(cols, colnames(other_mat))
-    vapply(shared_cols, function(cn) {
+    ov_lst <- lapply(shared_cols, function(cn) {
       compute_overlap(reference_mat[, cn], other_mat[, cn])
-    }, numeric(1))
+    })
+    names(ov_lst) <- shared_cols
+    ov <- vapply(ov_lst, as.numeric, numeric(1))
+    names(ov) <- shared_cols
+    # why an overlap is NA (if any), named by hypothesis column -- see
+    # compute_overlap()
+    attr(ov, "notes") <- collect_overlap_notes(ov_lst)
+    ov
   })
   names(overlaps) <- other_names
   self_overlap <- rep(1, length(cols))
@@ -242,15 +279,51 @@ detect_intercept <- function(model) {
   }
 }
 
-# Compute Cohen's f based on group_means, N, and VCOV
-compute_cohens_f <- function(group_means, N, VCOV) {
+# Compute Cohen's f based on the group means, the group sizes N and the
+# (common) within-group / residual error variance sigma2:
+#   f = sqrt( sum_g N_g (mu_g - mu)^2 / sum(N) ) / sigma,
+# with mu the N-weighted grand mean (i.e. sqrt(SS_between / SS_within) with
+# SS_within = sum(N) * sigma2). See residual_variance_from_vcov() for how
+# sigma2 is obtained when no fitted model is available.
+# (Previously sigma2 was reconstructed from the covariance matrix of the
+# group means as VCOV * (N - 1); since Var(mean_g) = sigma2 / N_g, that
+# under-estimated sigma2 by a factor (N_g - 1) / N_g, so that f was too
+# large and generate_scaled_means() hit the wrong target f.)
+compute_cohens_f <- function(group_means, N, sigma2) {
   total_mean <- sum(group_means * N) / sum(N)
   ss_between <- sum(N * (group_means - total_mean)^2)
-  cov_matrix <- VCOV * (N - 1) # covmx based on N instead of N-1
-  ss_within <- sum(N * diag(cov_matrix)) # equates: summing over i = 1 to N
+  ss_within <- sum(N) * sigma2 # equates: summing sigma2 over i = 1 to N
   cohens_f <- sqrt(ss_between/ss_within)
-  
+
   return(cohens_f)
+}
+
+
+# Residual (within-group) error variance sigma2 from the covariance matrix of
+# the group means, for when no fitted model is available (input is est +
+# VCOV; with a fitted lm model, benchmark_means() uses sigma(fit)^2
+# directly). ASSUMPTION: the group means are independent sample means of
+# groups with a common error variance, so that Var(mean_g) = sigma2 / N_g,
+# i.e. sigma2 = N_g * VCOV[g, g] for every group g; sigma2 is the average of
+# these per-group values. If they differ by more than 'tol' (relative to
+# their mean), the assumption is apparently violated (e.g. unequal error
+# variances across groups, or estimates that are not plain group means) and
+# a warning is given, since Cohen's f (and thus the population means for a
+# given pop_es) is then only approximate.
+residual_variance_from_vcov <- function(N, VCOV, tol = 0.1) {
+  per_group <- N * diag(as.matrix(VCOV))
+  sigma2 <- mean(per_group)
+  rel_spread <- (max(per_group) - min(per_group)) / sigma2
+  if (is.finite(rel_spread) && rel_spread > tol) {
+    warning("\nrestriktor WARNING: The residual error variance (needed for Cohen's f) ",
+            "is derived from the covariance matrix of the estimates as N_g * VCOV[g, g], ",
+            "assuming independent group means with a common error variance. These ",
+            "per-group values differ considerably (", paste(signif(per_group, 4), collapse = ", "),
+            "), so this assumption seems violated; the (observed and population) ",
+            "Cohen's f values are only approximate. Their average (", signif(sigma2, 4),
+            ") is used.", call. = FALSE)
+  }
+  sigma2
 }
 
 
@@ -307,14 +380,14 @@ compute_cohens_f <- function(group_means, N, VCOV) {
 # only matters up to a common shift: c(3, 2, 1) and c(1, 0, -1) give the same
 # population means. The 'Observed' population in benchmark_means() uses the
 # observed estimates as-is, rather than going through this function.
-generate_scaled_means <- function(group_means, target_f, N, VCOV) {
+generate_scaled_means <- function(group_means, target_f, N, sigma2) {
   if (target_f == 0) {
     # If targeted effect size f is 0, then set all the means to 0.
     new_means <- rep(0, length(group_means))
   } else {
     grand_mean <- sum(group_means * N) / sum(N)
     deviations <- group_means - grand_mean
-    f_pattern <- compute_cohens_f(group_means, N, VCOV)
+    f_pattern <- compute_cohens_f(group_means, N, sigma2)
     if (!is.finite(f_pattern) || f_pattern <= 0 ||
         isTRUE(all.equal(unname(deviations), rep(0, length(deviations))))) {
       stop("\nrestriktor ERROR: The group means (", paste(group_means, collapse = ", "),
@@ -1090,15 +1163,17 @@ calculate_error_probability <- function(object, hypos, pref_hypo, est,
                                         VCOV, control, ...) {
   # Error probability based on complement of preferred hypothesis in data
   nr_hypos <- dim(object$result)[1]
-  if (nr_hypos == 2 && object$comparison == "complement") { 
-    if (object$type == 'goric') {
-      # TO DO also here re-run with GORICA, as we do for sample value as well?
-      #       is ws al opgelost als we goric en gorica resultaten gelijk maken!!!
-      #       Dus dan laten staan + re-run met gorica niet nodig dan ook!
-      error_prob <- 1 - object$result$goric.weights[pref_hypo]
-    } else {
-      error_prob <- 1 - object$result$gorica.weights[pref_hypo]
-    }
+  # The weights column of a goric object is named after its criterion:
+  # "goric.weights", "gorica.weights", "goricc.weights" or "goricac.weights"
+  # (see goric()). It is therefore selected by the object's type rather than
+  # hard-coded (previously 'gorica.weights' was used for every non-goric
+  # type, which gave numeric(0) for goricc/goricac objects).
+  weights_col <- function(fit) paste0(fit$type, ".weights")
+  if (nr_hypos == 2 && object$comparison == "complement") {
+    # TO DO also here re-run with GORICA, as we do for sample value as well?
+    #       is ws al opgelost als we goric en gorica resultaten gelijk maken!!!
+    #       Dus dan laten staan + re-run met gorica niet nodig dan ook!
+    error_prob <- 1 - object$result[[weights_col(object)]][pref_hypo]
   } else {
     if (pref_hypo == nr_hypos && object$comparison == "unconstrained") {
       error_prob <- "The unconstrained (i.e., the failsafe) containing all possible orderings is preferred."
@@ -1123,11 +1198,7 @@ calculate_error_probability <- function(object, hypos, pref_hypo, est,
                                     control = control, 
                                     ...)
       }
-      if (object$type == 'goric') {
-        error_prob <- results_goric_pref$result$goric.weights[2]
-      } else {
-        error_prob <- results_goric_pref$result$gorica.weights[2]
-      }
+      error_prob <- results_goric_pref$result[[weights_col(results_goric_pref)]][2]
     }
   }
   return(error_prob)
@@ -1341,7 +1412,7 @@ goric_percentile_test <- function(draws, sample_value, band = c(0.495, 0.505),
   fit <- goric(est, VCOV = VCOV, hypotheses = list(H1 = H1),
               comparison = "complement", type = "gorica",
               control = control, ...)
-  gw_H1 <- fit$result$gorica.weights[fit$result$model == "H1"]
+  gw_H1 <- fit$result[[paste0(fit$type, ".weights")]][fit$result$model == "H1"]
 
   list(percentile = 100 * phat, n = n, band = band,
       gw = gw_H1, converged = isTRUE(gw_H1 >= 0.5))
@@ -1657,7 +1728,13 @@ format_value <- function(value) {
 # Every other value in this column (and every value in every other column)
 # still goes through the normal format_value().
 format_overlap_value <- function(value) {
-  if (!is.na(value) && value == 1) {
+  if (is.na(value)) {
+    # An overlap that could not be computed (see compute_overlap()) is shown
+    # as "NA" (print_rounded_es_value() appends the reason, if known) rather
+    # than as a blank, so it is not mistaken for 'not applicable'.
+    return("NA")
+  }
+  if (value == 1) {
     return("1")
   }
   format_value(value)
@@ -1708,25 +1785,48 @@ overlap_column <- function(overlap_source, pop_es, n_rows, row_names = NULL,
   if (is.null(vals) || length(vals) == 0) {
     return(na_col)
   }
+  # Why an overlap is NA (see compute_overlap()): for gw/lw a single note per
+  # population (attribute "notes" on the vector overlap_source, which `[[`
+  # above drops); for rgw/rlw/ld one per hypothesis column (attribute on the
+  # population's own vector 'vals'). Carried along as a same-length character
+  # vector (NA where there is nothing to note), so that
+  # print_rounded_es_value() can print "NA (<note>)" in the overlap column.
+  notes <- if (is.null(names(vals))) attr(overlap_source, "notes")[pop_es] else attr(vals, "notes")
+  notes_full <- rep(NA_character_, length(vals))
+  names(notes_full) <- names(vals)
+  if (!is.null(notes) && !all(is.na(notes))) {
+    if (is.null(names(vals))) {
+      notes_full[] <- unname(notes)
+    } else {
+      notes_full[names(notes)] <- notes
+    }
+  }
   # rgw/rlw/ld case with the table's rownames available: align by name (see
   # align_by_hypothesis()).
   if (!is.null(names(vals)) && !is.null(row_names) && !is.null(pref_hypo_name)) {
-    return(align_by_hypothesis(vals, row_names, pref_hypo_name))
+    out <- align_by_hypothesis(vals, row_names, pref_hypo_name)
+    attr(out, "notes") <- align_by_hypothesis(notes_full, row_names, pref_hypo_name)
+    return(out)
   }
   vals <- unname(vals)
+  notes_full <- unname(notes_full)
   if (length(vals) == n_rows) {
-    return(vals)
+    return(structure(vals, notes = notes_full))
   }
   # gw/lw case: a single overlap value for the whole population, repeated
   # across every row (normally just one: the preferred hypothesis).
   if (length(vals) == 1) {
-    return(rep(vals, n_rows))
+    return(structure(rep(vals, n_rows), notes = rep(notes_full, n_rows)))
   }
   # Length mismatch that isn't the gw/lw broadcast case -- shouldn't
   # normally happen, but pad/truncate defensively rather than risk silently
   # mis-aligning a row with the wrong hypothesis's overlap value.
   out <- na_col
-  out[seq_len(min(n_rows, length(vals)))] <- vals[seq_len(min(n_rows, length(vals)))]
+  out_notes <- rep(NA_character_, n_rows)
+  keep <- seq_len(min(n_rows, length(vals)))
+  out[keep] <- vals[keep]
+  out_notes[keep] <- notes_full[keep]
+  attr(out, "notes") <- out_notes
   out
 }
 
@@ -1970,7 +2070,8 @@ print_grouped_header_table <- function(formatted_df, rn, hypo_rate_threshold = N
 # effect-size = Observed (Reference population)".
 print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset,
                                    is_reference = FALSE, hypo_rate_threshold = NULL,
-                                   threshold_rlw = NULL) {
+                                   threshold_rlw = NULL,
+                                   overlap_notes = attr(df, "overlap_notes")) {
   if (model_type == "benchmark_asymp") {
     pop_es_value <- gsub("pop_est = ", "", pop_es)
     label <- "Population estimates"
@@ -2007,6 +2108,15 @@ print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset,
   formatted_df <- do.call(cbind, formatted_cols)
   rownames(formatted_df) <- rownames(df)
   colnames(formatted_df) <- colnames(df)
+  # An NA overlap gets its reason appended, e.g. "NA (non-finite draws; see
+  # rgw_log/rlw_log)" -- 'overlap_notes' is the "notes" attribute of
+  # overlap_column()'s result (one entry per row, NA where nothing to note).
+  if (any(is_overlap_col) && !is.null(overlap_notes) &&
+      length(overlap_notes) == nrow(formatted_df)) {
+    j <- which(is_overlap_col)[1]
+    has_note <- !is.na(overlap_notes) & is.na(df[, j])
+    formatted_df[has_note, j] <- paste0("NA (", overlap_notes[has_note], ")")
+  }
   print_grouped_header_table(formatted_df, rownames(df), hypo_rate_threshold = hypo_rate_threshold,
                              threshold_rlw = threshold_rlw)
   cat("\n")

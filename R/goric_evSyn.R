@@ -36,23 +36,161 @@
 
 
 # -------------------------------------------------------------------------
-# Helper: validate and process order_studies argument.
-# Accepts a character string ("input_order", "ascending", "descending") or a
-# numeric vector specifying a custom study order (must be a permutation of 1:S).
-.validate_order_studies <- function(order_studies, S) {
+# Helper: validate and process the 'order_studies' argument.
+# Accepts a character string ("input_order", "ascending", "descending"; the
+# default vector of choices is taken as "input_order"), a numeric vector
+# specifying a custom study order (a permutation of 1:S), or a character
+# vector with the study names in the requested order (a permutation of
+# 'study_names'; mapped to the positions). Returns the character string or
+# the integer order; anything else gives a clear error.
+.evSyn_order_studies <- function(order_studies, S, study_names = NULL) {
+  choices <- c("input_order", "ascending", "descending")
+  if (is.null(order_studies)) {
+    return("input_order")
+  }
   if (is.numeric(order_studies)) {
     if (length(order_studies) != S) {
       stop("\nrestriktor ERROR: When 'order_studies' is a numeric vector, ",
            "its length (now, ", length(order_studies), ") must equal the number of studies (i.e., ", S, ").",
            call. = FALSE)
     }
-    if (!setequal(order_studies, 1:S)) {
+    if (anyNA(order_studies) || !setequal(order_studies, 1:S)) {
       stop("\nrestriktor ERROR: When 'order_studies' is a numeric vector, ",
            "it must be a permutation of 1:", S, ".",
            call. = FALSE)
     }
+    return(as.integer(order_studies))
   }
-  invisible(NULL)
+  if (is.character(order_studies) && !anyNA(order_studies)) {
+    if (identical(order_studies, choices)) {
+      return("input_order")
+    }
+    if (length(order_studies) == 1L && order_studies %in% choices) {
+      return(order_studies)
+    }
+    # The study names are matched exactly (before a possible abbreviation of
+    # the choices is considered), such that a study name that happens to be
+    # an abbreviation of one of the choices is never taken as that choice.
+    if (!is.null(study_names) && length(order_studies) == S &&
+        !anyDuplicated(order_studies) &&
+        setequal(order_studies, as.character(study_names))) {
+      return(match(order_studies, as.character(study_names)))
+    }
+    if (length(order_studies) == 1L) {
+      m <- pmatch(order_studies, choices)
+      if (!is.na(m)) {
+        return(choices[m])
+      }
+    }
+  }
+  stop("\nrestriktor ERROR: The argument 'order_studies' must be one of 'input_order', ",
+       "'ascending', 'descending', a numeric vector with a permutation of 1:", S,
+       ", or a character vector with a permutation of the study names in 'study_names'",
+       if (is.null(study_names)) " (which is not specified)",
+       ". Now, it is: ", paste(deparse(order_studies, nlines = 1), collapse = ""), ".",
+       call. = FALSE)
+}
+
+# Helper: check the elements of a list input ('object', or 'PT'): each element
+# must be a numeric vector without NA/NaN (infinite values are allowed) and
+# all elements must have the same length, i.e., the number of hypotheses must
+# be identical across studies (no silent recycling in rbind()). When 'ref'
+# (another such list, e.g., 'object' when checking 'PT') is given, the lengths
+# must also match those of 'ref', per study.
+.evSyn_check_list_input <- function(x, name = "object", ref = NULL, ref_name = "object") {
+  if (!is.list(x) || length(x) == 0 || !all(vapply(x, is.numeric, logical(1)))) {
+    stop("\nrestriktor ERROR: The argument '", name, "' must be a list of numeric vectors ",
+         "(one vector for each study).", call. = FALSE)
+  }
+  has_na <- vapply(x, anyNA, logical(1))
+  if (any(has_na)) {
+    stop("\nrestriktor ERROR: The argument '", name, "' contains NA or NaN values ",
+         "(study ", paste(which(has_na), collapse = ", "), "). ",
+         "Please remove or replace these values (infinite values are allowed).",
+         call. = FALSE)
+  }
+  len <- lengths(x)
+  if (length(unique(len)) > 1L) {
+    stop("\nrestriktor ERROR: The number of hypotheses must be identical across studies. ",
+         "The elements of '", name, "' have lengths (", paste(len, collapse = ", "), ").",
+         call. = FALSE)
+  }
+  if (!is.null(ref)) {
+    if (length(x) != length(ref)) {
+      stop("\nrestriktor ERROR: The number of elements in '", name, "' (", length(x),
+           ") must equal the number of elements in '", ref_name, "' (", length(ref),
+           "), i.e., the number of studies.", call. = FALSE)
+    }
+    if (!all(len == lengths(ref))) {
+      stop("\nrestriktor ERROR: The number of values in '", name, "' must match the ",
+           "number of values in '", ref_name, "' for each study. Found lengths (",
+           paste(len, collapse = ", "), ") versus (", paste(lengths(ref), collapse = ", "), ").",
+           call. = FALSE)
+    }
+  }
+  invisible(x)
+}
+
+# Helper: match a named weight vector (priorICweights, study_weights) to the
+# names of the hypotheses or studies. When the weights carry names, these
+# must be exactly the names in 'ref' (possibly in another order; the weights
+# are then re-ordered accordingly) or, when 'alias' is given (e.g., the
+# hypothesis names of the input vectors, which correspond one-to-one to the
+# labels in 'ref'), exactly the names in 'alias'. An error is given when the
+# names do not match. Returns the (re-ordered) weights without names; unnamed
+# weights are returned as is (they are matched by position).
+# Note: 'ref' may be numeric (e.g., study names that are years); the weights
+# are indexed by the names as character strings (not by position).
+.evSyn_match_weight_names <- function(w, ref, name = "priorICweights", what = "hypotheses",
+                                      alias = NULL) {
+  nms <- names(w)
+  if (is.null(nms)) {
+    return(w)
+  }
+  if (is.null(ref) || length(w) != length(ref)) {
+    # the length is checked (and reported) by check_weights()
+    return(unname(w))
+  }
+  ref <- as.character(ref)
+  if (!is.null(alias) && (length(alias) != length(ref) || anyDuplicated(alias))) {
+    alias <- NULL
+  }
+  if (!is.null(alias)) {
+    alias <- as.character(alias)
+  }
+  # the failsafe labels 'Complement'/'Unconstrained' may be given in any case
+  # (goric() uses 'complement'/'unconstrained')
+  norm_fs <- function(x) {
+    is_fs <- tolower(x) %in% c("complement", "unconstrained")
+    x[is_fs] <- tolower(x[is_fs])
+    x
+  }
+  nms_n <- norm_fs(nms)
+  ref_n <- norm_fs(ref)
+  if (anyNA(nms) || any(nms == "") || anyDuplicated(nms_n)) {
+    ok <- FALSE
+  } else if (setequal(nms_n, ref_n)) {
+    w <- w[match(ref_n, nms_n)]
+    names(w) <- ref
+    ok <- TRUE
+  } else if (!is.null(alias) && setequal(nms, alias)) {
+    # the names of the input are used (in any order); map them to the labels
+    w <- w[alias]
+    names(w) <- ref
+    ok <- TRUE
+  } else {
+    ok <- FALSE
+  }
+  if (!ok) {
+    stop("\nrestriktor ERROR: The names of '", name, "' (", paste(nms, collapse = ", "),
+         ") do not match the names of the ", what, " (", paste(ref, collapse = ", "),
+         if (!is.null(alias) && !identical(alias, ref)) {
+           paste0("; or the names of the input, i.e., ", paste(alias, collapse = ", "))
+         }, "). ",
+         "Please use exactly these names (in any order) or an unnamed vector ",
+         "(which is matched by position).", call. = FALSE)
+  }
+  unname(w[ref])
 }
 
 # -------------------------------------------------------------------------
@@ -107,10 +245,19 @@
 # Helper: validate 'study_weights' (length S, non-negative, finite, at least
 # one positive; zero weights are allowed). Returns a list with the study
 # weights (summing to 1 or to S, as before) and the study weights summing to S.
-.evSyn_check_study_weights <- function(study_weights, S) {
+# When the study weights carry names, these must be the study names (in
+# 'study_names', or "1", ..., "S" when not specified; in any order) and the
+# weights are matched to the studies by name (see .evSyn_match_weight_names).
+.evSyn_check_study_weights <- function(study_weights, S, study_names = NULL) {
   if (is.null(study_weights)) {
     study_weights <- rep(1/S, S)
   } else {
+    if (is.null(study_names) || length(study_names) != S) {
+      study_names <- as.character(seq_len(S))
+    }
+    study_weights <- .evSyn_match_weight_names(study_weights, study_names,
+                                               name = "study_weights",
+                                               what = "studies (see 'study_names')")
     study_weights <- check_weights(study_weights, name = "study_weights",
                                    length_expected = S,
                                    what = "one for each study",
@@ -127,10 +274,22 @@
 
 # Helper: validate 'priorICweights' (length NrHypos_incl, non-negative,
 # finite, at least one positive; rescaled such that they sum to 1).
-.evSyn_check_priorICweights <- function(priorICweights, NrHypos_incl) {
+# When the prior weights carry names, these must be the hypothesis names
+# (i.e., the column names of the output, in any order) and the prior weights
+# are matched to the hypotheses by name (see .evSyn_match_weight_names).
+# When the input vectors (or hypothesis sets) carry hypothesis names and these
+# differ from the labels in 'hnames' (because 'hypo_names' is given), the
+# names of the input ('input_names', in the order of 'hnames') are accepted
+# as well.
+.evSyn_check_priorICweights <- function(priorICweights, NrHypos_incl, hnames = NULL,
+                                        input_names = NULL) {
   if (is.null(priorICweights)) {
     return(rep(1/NrHypos_incl, NrHypos_incl))
   }
+  priorICweights <- .evSyn_match_weight_names(priorICweights, hnames,
+                                              name = "priorICweights",
+                                              what = "hypotheses (i.e., the column names of the output)",
+                                              alias = input_names)
   if (is.numeric(priorICweights) && !anyNA(priorICweights) &&
       all(is.finite(priorICweights)) &&
       !isTRUE(all.equal(sum(priorICweights), 1))) {
@@ -318,14 +477,44 @@
       object[[s]] <- object[[s]][ref]
     }
   }
-  if (!is.null(hypo_names) && length(hypo_names) == length(ref) &&
-      !setequal(hypo_names, ref)) {
-    warning("\nrestriktor WARNING: The names in 'hypo_names' (", paste(hypo_names, collapse = ", "),
-            ") differ from the hypothesis names of the input (", paste(ref, collapse = ", "),
-            "). The names in 'hypo_names' are used as labels, in the order of the input.",
-            call. = FALSE)
+  if (!is.null(hypo_names) && length(hypo_names) == length(ref)) {
+    if (!setequal(hypo_names, ref)) {
+      warning("\nrestriktor WARNING: The names in 'hypo_names' (", paste(hypo_names, collapse = ", "),
+              ") differ from the hypothesis names of the input (", paste(ref, collapse = ", "),
+              "). The names in 'hypo_names' are used as labels, in the order of the input.",
+              call. = FALSE)
+    } else if (!identical(as.character(hypo_names), ref)) {
+      .evSyn_warn_hypo_names_permuted(hypo_names, ref)
+    }
   }
   object
+}
+
+# Helper: the hypothesis names of the input vectors (after
+# .evSyn_check_input_names, i.e., identical across studies), or NULL when
+# (some of) the input vectors are unnamed. These names are accepted as an
+# alias of the labels (e.g., for a named 'priorICweights').
+.evSyn_input_hypo_names <- function(object) {
+  nms <- lapply(object, names)
+  has_names <- vapply(nms, function(x) !is.null(x) && all(!is.na(x)) && all(x != ""), logical(1))
+  if (!all(has_names) || anyDuplicated(nms[[1]])) {
+    return(NULL)
+  }
+  nms[[1]]
+}
+
+# Helper: warning when 'hypo_names' consists of the hypothesis names of the
+# input, but in another order. The names in 'hypo_names' are labels that are
+# applied in the order of the input (the hypotheses are not re-ordered), so
+# this is most likely not what the user intends.
+.evSyn_warn_hypo_names_permuted <- function(hypo_names, ref) {
+  warning("\nrestriktor WARNING: The names in 'hypo_names' (", paste(hypo_names, collapse = ", "),
+          ") are the hypothesis names of the input (", paste(ref, collapse = ", "),
+          ") in another order. The names in 'hypo_names' are used as labels, in the ",
+          "order of the input; the hypotheses are NOT re-ordered. If the hypotheses ",
+          "should be labelled by their own names, use 'hypo_names' in the order of the ",
+          "input (or leave 'hypo_names' unspecified).",
+          call. = FALSE)
 }
 
 # Helper: align a second, parallel input (e.g., the penalty values 'PT' that 
@@ -428,67 +617,112 @@ evSyn <- function(object, input_type = NULL, ...) {
     return(call_sub(evSyn_escalc, args, object))
   } 
   
-  if (!is.list(object) || !any(vapply(object, is.numeric, logical(1)))) {
+  if (!is.list(object) || length(object) == 0 ||
+      !all(vapply(object, is.numeric, logical(1)))) {
     stop("\nrestriktor ERROR: object must be a list of numeric vectors.", call. = FALSE)
   }
-  
-  checkListContent <- function(lst, fun, msg) {
-    if (!is.null(lst) && (!is.list(lst) || !any(vapply(lst, fun, logical(1))))) {
-      stop("restriktor ERROR: ", msg, call. = FALSE)
-    }
-  }
-  
-  checkListContent(lst = PT, fun = is.numeric, msg = "PT must be a list of numeric vectors.")
   
   if (!is.null(VCOV) && !is.null(PT)) {
     stop("\nrestriktor ERROR: both VCOV and PT are found, which confuses me.", call. = FALSE)
   }
   
-  # if they are weights, the sum of all vectors must be 1.
-  obj_isICweights <- all(abs(vapply(object, sum, numeric(1)) - 1) <= sqrt(.Machine$double.eps))
-  #
-  # Check if they are IC ratios: 
-  ## each vector should end with 1. # Note: not necessary!
-  #obj_isICratios <- all(vapply(object, function(x) tail(x, n = 1) == 1, logical(1)))
-  # There should be a (ratio) value of 1 in each study, so for all studies:
-  # The one then denotes the reference hypothesis.
-  # Later, it is check whether the same ref. hypo is used for all studies
-  #        and if needed altered the input such that it is the same (with a warning).
-  list_check <- lapply(object, function(x){any(x == 1)})
-  obj_isICratios <- all(unlist(list_check))
-  # All the other values should not all be zero;
-  # then, the input probably consists of weights.
-  # This is already checked above in obj_isICweights
-
   if (!is.null(VCOV)) {
+    # estimates (the number of estimates may differ across studies)
     return(call_sub(evSyn_est, args, object))
-    
-  } else if (!is.null(PT)) {
-    return(call_sub(evSyn_LL, args, object))
-    
-  } else if (obj_isICweights) {
-    if (!is.null(type_ev) && identical(type_ev, "equal")) {
-      message("\nrestriktor Message: When the input consists of weights, the equal-evidence approach is not possible. The added-evidence approach is used instead.")
-      args$type_ev <- "added"
-    }
-    return(call_sub(evSyn_ICweights, args, object))
-    
-  } else if (obj_isICratios) {
-    if (!is.null(type_ev) && identical(type_ev, "equal")) {
-      message("\nrestriktor Message: When the input consists of ratios of weights, the equal-evidence approach is not possible. The added-evidence approach is used instead.")
-      args$type_ev <- "added"   
-    }
-    return(call_sub(evSyn_ICratios, args, object))
-    
-  } else { # ICvalues
-    if (!is.null(type_ev) && identical(type_ev, "equal")) {
-      message("\nrestriktor Message: When the input consists of IC values, the equal-evidence approach is not possible. The added-evidence approach is used instead.")
-      args$type_ev <- "added"  
-    }
-    return(call_sub(evSyn_ICvalues, args, object))
   }
   
-  stop("\nrestriktor ERROR: I don't know how to handle the input.", call. = FALSE)
+  # From here on, the input is a list of vectors with log-likelihood values,
+  # IC values, IC weights, or ratios of IC weights: one value for each
+  # hypothesis, the same hypotheses in each study, no NA/NaN.
+  .evSyn_check_list_input(object, name = "object")
+
+  if (!is.null(PT)) {
+    .evSyn_check_list_input(PT, name = "PT", ref = object, ref_name = "object")
+    return(call_sub(evSyn_LL, args, object))
+  }
+
+  # Infer the input type from the values (IC weights, ratios of IC weights,
+  # or IC values; see .evSyn_detect_input_type) and say so. Note: when the
+  # equal-evidence approach is requested for these input types, the route
+  # functions fall back to the added-evidence approach (with a message).
+  detected <- .evSyn_detect_input_type(object)
+  message("\nrestriktor Message: ", detected$msg,
+          " Specify 'input_type' (i.e., 'icvalues', 'icweights', or 'icratios') ",
+          "to override the inferred input type.")
+  fun <- switch(detected$type,
+                icweights = evSyn_ICweights,
+                icratios  = evSyn_ICratios,
+                icvalues  = evSyn_ICvalues)
+  return(call_sub(fun, args, object))
+}
+
+# Helper: infer the input type of a list of numeric vectors (one for each
+# study), when 'input_type' is not specified:
+# - 'icweights': all values lie between 0 and 1 and the values of each study
+#                sum to 1. When the values of each study sum to 1 only
+#                approximately (within 1e-3; e.g., rounded weights), the input
+#                is ambiguous and an error is given (specify 'input_type').
+# - 'icratios':  all values are positive and there is a hypothesis (position)
+#                with a value of exactly 1 in each study (the reference
+#                hypothesis). When each study contains a value of 1, but the
+#                values are not all positive or the 1 is not at the same
+#                position in each study, the input is ambiguous (IC values
+#                may equal 1 as well) and an error is given.
+# - 'icvalues':  otherwise.
+# Returns a list with the inferred type and a message explaining the choice.
+.evSyn_detect_input_type <- function(object) {
+  tol_sum <- 1e-3
+  in01 <- all(vapply(object, function(x) all(x >= 0 & x <= 1), logical(1)))
+  sums <- vapply(object, sum, numeric(1))
+  if (in01 && all(abs(sums - 1) <= sqrt(.Machine$double.eps))) {
+    return(list(type = "icweights",
+                msg = paste0("The input is treated as IC weights (input_type = 'icweights'), ",
+                             "since the values of each study lie between 0 and 1 and sum to 1.")))
+  }
+  if (in01 && all(abs(sums - 1) <= tol_sum)) {
+    stop("\nrestriktor ERROR: The input type is ambiguous: the values of each study lie ",
+         "between 0 and 1 and sum approximately (but not exactly) to 1, as rounded IC ",
+         "weights do. Please specify 'input_type': 'icweights' (after rescaling the ",
+         "values of each study such that they sum to 1), 'icvalues', or 'icratios'.",
+         call. = FALSE)
+  }
+  has_one <- vapply(object, function(x) any(x == 1), logical(1))
+  if (all(has_one)) {
+    all_pos <- all(vapply(object, function(x) all(x > 0), logical(1)))
+    common  <- Reduce(intersect, lapply(object, function(x) which(x == 1)))
+    if (all_pos && length(common) > 0) {
+      return(list(type = "icratios",
+                  msg = paste0("The input is treated as ratios of IC weights (input_type = 'icratios'), ",
+                               "since all values are positive and hypothesis ", common[1],
+                               " has a value of exactly 1 in each study (the reference hypothesis). ",
+                               "Note that IC values may equal 1 as well; if the input consists of ",
+                               "IC values, specify input_type = 'icvalues'.")))
+    }
+    stop("\nrestriktor ERROR: The input type is ambiguous: each study contains a value of ",
+         "exactly 1 (as ratios of IC weights have for the reference hypothesis), but ",
+         if (!all_pos) "not all values are positive" else
+           "the value of 1 is not at the same position (hypothesis) in each study",
+         ". Please specify 'input_type': 'icratios' (ratios of IC weights) or 'icvalues' (IC values).",
+         call. = FALSE)
+  }
+  list(type = "icvalues",
+       msg = "The input is treated as IC values (input_type = 'icvalues').")
+}
+
+# Helper: for input consisting of IC values, IC weights, or ratios of IC
+# weights, the equal-evidence approach is not possible (there are no separate
+# log-likelihood and penalty values); the added-evidence approach is used
+# instead (with a message), as documented. Returns the matched 'type_ev'.
+.evSyn_type_ev_IC <- function(type_ev, what) {
+  # also an abbreviation of "equal" (e.g., "eq"), as accepted by match.arg()
+  is_equal <- is.character(type_ev) && length(type_ev) == 1L && !is.na(type_ev) &&
+    identical(pmatch(type_ev, c("added", "equal", "average")), 2L)
+  if (is_equal) {
+    message("\nrestriktor Message: When the input consists of ", what,
+            ", the equal-evidence approach is not possible. The added-evidence approach is used instead.")
+    type_ev <- "added"
+  }
+  match.arg(type_ev, c("added", "average"))
 }
 
 
@@ -504,6 +738,31 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
                       study_names = c(),
                       study_sample_nobs = NULL,
                       study_weights = NULL) {
+  
+  # Backwards compatibility: 'priorWeights' is renamed to 'priorICweights'.
+  # The deprecated argument is removed from the arguments that are passed on
+  # to goric() (which does not know it).
+  dots <- list(...)
+  priorICweights <- .evSyn_priorWeights_compat(priorICweights, dots)
+  dots$priorWeights <- NULL
+  
+  # 'Heq' (passed on to goric()): the equality-restricted version of the
+  # (single) order-restricted hypothesis is added to the set by goric() when
+  # it is compared to its complement; the result then consists of Heq, the
+  # hypothesis, and its complement. As in goric(), a hypothesis named 'Heq'
+  # (e.g., from a benchmark) is removed from the set(s) and regenerated.
+  Heq <- isTRUE(dots[["Heq"]])
+  if (Heq) {
+    drop_Heq <- function(h) {
+      if (is.list(h) && !is.null(names(h))) h[names(h) != "Heq"] else h
+    }
+    if (is.list(hypotheses) && length(hypotheses) > 0 &&
+        all(vapply(hypotheses, is.list, logical(1)))) {
+      hypotheses <- lapply(hypotheses, drop_Heq)
+    } else {
+      hypotheses <- drop_Heq(hypotheses)
+    }
+  }
   
   # Note: missing() must be evaluated before any assignment to 'comparison'.
   comparison_missing <- missing(comparison)
@@ -559,12 +818,6 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     type_ev <- "added"
   type_ev <- match.arg(type_ev)
   
-  if (missing(order_studies)) 
-    order_studies <- "input_order"
-  if (!is.numeric(order_studies)) {
-    order_studies <- match.arg(order_studies)
-  }
-  
   # number of primary studies
   S <- length(object)
   V <- length(VCOV)
@@ -584,9 +837,13 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   }
   
   # Check the study weights (zero weights are allowed; see .evSyn_cum_weighted)
-  study_weights <- .evSyn_check_study_weights(study_weights, S)
+  study_weights <- .evSyn_check_study_weights(study_weights, S, study_names)
   study_weights_S <- study_weights$study_weights_S # Now, they sum up to S
   study_weights <- study_weights$study_weights
+
+  # Check the order of the studies (character string, permutation of 1:S, or
+  # permutation of the study names)
+  order_studies <- .evSyn_order_studies(order_studies, S, study_names)
   
   # Ensure hypotheses are nested
   if (!all(vapply(hypotheses, is.list, logical(1)))) {
@@ -654,28 +911,63 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   if (comparison == "none") {
     NrHypos_incl <- NrHypos
   }
+  # Heq is only valid when a single order-restricted hypothesis is compared
+  # to its complement (as in goric(), with one warning instead of one per study)
+  if (Heq && !(comparison == "complement" && NrHypos == 1)) {
+    warning("\nrestriktor WARNING: The 'Heq' argument is ignored. ",
+            "The 'Heq' option is only valid when a single order-restricted hypothesis ",
+            "is compared to its complement (comparison = 'complement').",
+            call. = FALSE)
+    Heq <- FALSE
+    dots$Heq <- NULL
+  }
+  if (Heq) {
+    NrHypos_incl <- NrHypos_incl + 1 # nl, also Heq itself
+  }
   
-  if (is.null(hypo_names)) {
-    list_hypo_names <- lapply(hypotheses, names)
-    # each study must have the same hypotheses namen
-    element_hypo_names <- list_hypo_names[[1]]
-    # check if it is similar is the other lists, but also if the same order is used. 
-    # else try to fix the order if the same names are used, but in a different order.
-    check_name_in_list <- vapply(list_hypo_names, function(x) all(element_hypo_names == x), logical(1))
-    
-    # this should trigger the WARNING: list(list(Ha = H11), list(Hb = H21))
-    if (!is.null(element_hypo_names) && !all(unlist(check_name_in_list))) {
-      l_hnames <- vapply(list_hypo_names, function(x) paste0("(", x, ")", collapse = ', '), character(1))
-      warning(sprintf(
-        "\nrestriktor WARNING: The hypothesis names (%s) within each hypothesis set must be identical and appear in the same order. ",
-        paste(l_hnames, collapse = " and ")
-      ),
-      "Renaming hypotheses to 'H1', 'H2', ... instead.",
-      call. = FALSE)
-      element_hypo_names <- NULL
-      # just to be sure that all names are removed
-      #hypotheses <- lapply(hypotheses, function(x) { names(x) <- NULL; return(x) })
+  # Align the per-study hypothesis sets by name: when the hypotheses of all
+  # studies are named, each set must contain the same names as the set of
+  # study 1; the hypotheses are matched by name, so they may be given in
+  # another order (they are then re-ordered to the order of study 1), but
+  # different names give an error. When the hypotheses of some (but not all)
+  # studies are named, the hypotheses are matched by position (with a warning).
+  list_hypo_names <- lapply(hypotheses, names)
+  set_named <- vapply(list_hypo_names, function(x) {
+    !is.null(x) && all(!is.na(x)) && all(x != "")
+  }, logical(1))
+  if (all(set_named)) {
+    ref_names <- list_hypo_names[[1]]
+    if (anyDuplicated(ref_names)) {
+      stop("\nrestriktor ERROR: The hypothesis names within a hypothesis set must be unique. ",
+           "Found: ", paste(sQuote(ref_names), collapse = ", "), ".", call. = FALSE)
     }
+    for (s in seq_len(S)) {
+      if (anyDuplicated(list_hypo_names[[s]]) || !setequal(list_hypo_names[[s]], ref_names)) {
+        stop("\nrestriktor ERROR: The hypothesis names must be identical across the hypothesis ",
+             "sets of all studies (the hypotheses are matched by name). Study 1 uses (",
+             paste(ref_names, collapse = ", "), "), while study ", s, " uses (",
+             paste(list_hypo_names[[s]], collapse = ", "), "). Please use the same names ",
+             "in each set (or leave all hypotheses unnamed, in which case they are matched by position).",
+             call. = FALSE)
+      }
+      if (!identical(list_hypo_names[[s]], ref_names)) {
+        message("\nrestriktor Message: The hypotheses of study ", s, " are given in a ",
+                "different order than those of study 1. The hypotheses are matched by name.")
+        hypotheses[[s]] <- hypotheses[[s]][ref_names]
+      }
+    }
+  } else {
+    ref_names <- NULL
+    if (any(set_named)) {
+      warning("\nrestriktor WARNING: The hypothesis names are missing for some of the studies ",
+              "(or some hypotheses within a set are unnamed). The hypotheses are matched ",
+              "across studies by position and named 'H1', 'H2', ... (unless 'hypo_names' is given).",
+              call. = FALSE)
+    }
+  }
+
+  if (is.null(hypo_names)) {
+    element_hypo_names <- ref_names
   } else {
     if (length(hypo_names) != NrHypos) {
       stop("\nrestriktor ERROR: The argument 'hypo_names' should consist of ", NrHypos, " names, \n",
@@ -687,11 +979,12 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
            "Now, (some of) the elements are not characters.",
            call. = FALSE)
     }
+    if (!is.null(ref_names) && setequal(hypo_names, ref_names) &&
+        !identical(as.character(hypo_names), ref_names)) {
+      .evSyn_warn_hypo_names_permuted(hypo_names, ref_names)
+    }
     element_hypo_names <- hypo_names
   }
-  
-  # Check the prior IC weights (one for each hypothesis; rescaled to sum to 1)
-  priorICweights <- .evSyn_check_priorICweights(priorICweights, NrHypos_incl)
   
   if (NrHypos == 1 && comparison == "complement") {
     if (!is.null(element_hypo_names)) {
@@ -710,6 +1003,10 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
       names(h)[1:(length(hnames) - 1L)] <- hnames[-max(length(hnames))]  
       return(h)
     })
+    if (Heq) {
+      # goric() adds the equality-restricted hypothesis (named 'Heq') first
+      hnames <- c("Heq", hnames)
+    }
     ratio.weight_mu <- matrix(data = NA, nrow = S, ncol = 1)
   } else if (comparison == "none") {
     if (!is.null(element_hypo_names)) {
@@ -747,6 +1044,17 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     ratio.weight_mu <- matrix(data = NA, nrow = S, ncol = NrHypos_incl)
   }
   
+  # Check the prior IC weights (one for each hypothesis, incl. the failsafe
+  # hypothesis; matched by name when named; rescaled to sum to 1). When the
+  # hypotheses are named, these names (with 'Heq' and the failsafe hypothesis
+  # at their positions) are accepted as well, also when 'hypo_names' is given.
+  input_names <- NULL
+  if (!is.null(ref_names)) {
+    input_names <- hnames
+    input_names[Heq + seq_len(NrHypos)] <- ref_names
+  }
+  priorICweights <- .evSyn_check_priorICweights(priorICweights, NrHypos_incl, hnames,
+                                                input_names = input_names)
   
   LL_m <- LL_weights_m <- GORICA_m <- GORICA_weight_m <- PT <- matrix(data = NA, nrow = S, ncol = NrHypos_incl)
   colnames(LL_m) <- colnames(LL_weights_m) <- colnames(GORICA_m) <- colnames(GORICA_weight_m) <- colnames(PT) <- hnames
@@ -754,16 +1062,30 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   #
   study_sample_nobs <- unlist(study_sample_nobs) # when it comes from escalc, then it is a list
   for (s in 1:S) {
-    res_goric <- goric(object[[s]], VCOV = VCOV[[s]],
-                       hypotheses = hypotheses[[s]],
-                       type = type, comparison = comparison,
-                       sample_nobs = study_sample_nobs[s],
-                       ...)
+    # Note: the remaining arguments (dots, i.e., '...' without the deprecated
+    # 'priorWeights') are passed on to goric().
+    res_goric <- do.call(goric, c(list(object[[s]], VCOV = VCOV[[s]],
+                                       hypotheses = hypotheses[[s]],
+                                       type = type, comparison = comparison,
+                                       sample_nobs = study_sample_nobs[s]),
+                                  dots))
+    
+    # the number of models in the result of goric() must match the number
+    # of columns (e.g., goric() ignores 'Heq' when the hypothesis contains
+    # no inequality restrictions)
+    if (nrow(res_goric$result) != NrHypos_incl) {
+      stop("\nrestriktor ERROR: For study ", s, ", goric() returned ", nrow(res_goric$result),
+           " models (", paste(res_goric$result$model, collapse = ", "), "), while ",
+           NrHypos_incl, " were expected (", paste(hnames, collapse = ", "), ").",
+           if (Heq) " The 'Heq' option cannot be used for this set of hypotheses.",
+           call. = FALSE)
+    }
     
     if (comparison == "unconstrained") {
       ratio.weight_mu[s, ] <- res_goric$ratio.gw[, NrHypos_incl]
     } else if (comparison == "complement") {
-      ratio.weight_mu[s, ] <- res_goric$ratio.gw[1, NrHypos_incl]
+      # the (single) order-restricted hypothesis versus its complement
+      ratio.weight_mu[s, ] <- res_goric$ratio.gw[1 + Heq, NrHypos_incl]
     } 
     
     LL_m[s, ] <- res_goric$result$loglik
@@ -783,8 +1105,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   # Check if order of studies should be changed.
   if (is.numeric(order_studies)) {
     # User-specified numeric order vector
-    .validate_order_studies(order_studies, S)
-    orderStudies <- as.integer(order_studies)
+    orderStudies <- order_studies
     LL_m <- LL_m[orderStudies, , drop = FALSE]
     LL_weights_m <- LL_weights_m[orderStudies, , drop = FALSE]
     GORICA_m <- GORICA_m[orderStudies, , drop = FALSE]
@@ -852,10 +1173,17 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   CumulativeGoricaWeights[1:S, ] <- .evSyn_IC_weights_rows(CumulativeGorica[1:S, , drop = FALSE], priorICweights)
   
   # cumulative log-likelihood values (possibly weighted using study weights,
-  # in the same way as for the cumulative IC values)
+  # in the same way as for the cumulative IC values: summed, or averaged in
+  # the average-evidence approach); the log-likelihood weights are based on
+  # these, so that they are consistent with the cumulative IC values.
   # Note: priorICweights are not used for the log-likelihood weights, since 
   #       these are not IC weights (and there is no penalty term).
   Cumulative_LL <- .evSyn_cum_weighted(LL_m, study_weights_S)
+  if (type_ev == "average") {
+    # average-evidence approach: average of the log-likelihood values (over
+    # the positively weighted studies so far), like the IC and penalty values
+    Cumulative_LL <- Cumulative_LL / pmax(.evSyn_n_pos(study_weights_S), 1)
+  }
   Cumulative_LL <- matrix(Cumulative_LL, nrow = nrow(LL_m), 
                           dimnames = list(sequence, colnames(LL_m)))
   
@@ -890,7 +1218,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   
   # Output
   if (NrHypos == 1 && comparison == "complement") {
-    colnames(ratio.weight_mu) <- c(paste0(hnames[1], " vs. ", "Complement"))
+    colnames(ratio.weight_mu) <- c(paste0(hnames[1 + Heq], " vs. ", "Complement"))
     colnames(Final.ratio.LL.weights) <- colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(CumulativeGorica)))
   } else if (comparison == "none") {
     #colnames(ratio.weight_mu) <- c(paste0(hnames[1], " vs. ", "Complement"))
@@ -951,16 +1279,18 @@ evSyn_LL <- function(object, ..., PT = list(),
     type <- "gorica"
   type <- match.arg(type)
   
-  if (missing(order_studies)) 
-    order_studies <- "input_order"
-  if (!is.numeric(order_studies)) {
-    order_studies <- match.arg(order_studies)
+  # Backwards compatibility: 'priorWeights' is renamed to 'priorICweights'.
+  priorICweights <- .evSyn_priorWeights_compat(priorICweights, list(...))
+
+  # check the log-likelihood values (object) and the penalty values (PT):
+  # lists of numeric vectors without NA/NaN, with one value for each
+  # hypothesis, the same hypotheses in each study
+  if (length(PT) == 0) {
+    stop("\nrestriktor ERROR: PT must be a list of penalty values (one vector for each study).",
+         call. = FALSE)
   }
-  
-  # check if PT is a non-empty list
-  if ( !is.list(PT) && length(PT) == 0 ) {
-    stop("\nrestriktor ERROR: PT must be a list of penalty weights.", call. = FALSE)  
-  } 
+  .evSyn_check_list_input(object, name = "object")
+  .evSyn_check_list_input(PT, name = "PT", ref = object, ref_name = "object")
   
   # penalty factor: IC = -2 * LL + penalty_factor * PT
   if (!is.numeric(penalty_factor) || length(penalty_factor) != 1L || 
@@ -972,6 +1302,8 @@ evSyn_LL <- function(object, ..., PT = list(),
   # If the input vectors carry hypothesis names, these must denote the same 
   # hypotheses across studies (matched by name); otherwise matched by position.
   object <- .evSyn_check_input_names(object, hypo_names)
+  # the hypothesis names of the input (if any; accepted for a named 'priorICweights')
+  input_names <- .evSyn_input_hypo_names(object)
   # The penalty values must match the (possibly re-ordered) log-likelihood 
   # values per study: matched by name when named, otherwise by position.
   PT <- .evSyn_align_second_input(object, PT, name = "PT", object_name = "object")
@@ -980,6 +1312,10 @@ evSyn_LL <- function(object, ..., PT = list(),
   S <- length(LL_m)
   NrHypos <- length(LL_m[[1]]) - 1
   NrHypos_incl <- NrHypos + 1
+  
+  # Check the order of the studies (character string, permutation of 1:S, or
+  # permutation of the study names)
+  order_studies <- .evSyn_order_studies(order_studies, S, study_names)
   
   if (is.null(hypo_names)) {
     hnames <- paste0("H", 1:NrHypos_incl)
@@ -997,20 +1333,18 @@ evSyn_LL <- function(object, ..., PT = list(),
     hnames <- hypo_names
   }
   
-  # Check the prior IC weights (one for each hypothesis; rescaled to sum to 1)
-  priorICweights <- .evSyn_check_priorICweights(priorICweights, NrHypos_incl)
+  # Check the prior IC weights (one for each hypothesis; matched by name when
+  # named; rescaled to sum to 1)
+  priorICweights <- .evSyn_check_priorICweights(priorICweights, NrHypos_incl, hnames,
+                                                input_names = input_names)
   
   # Check the study weights (zero weights are allowed; see .evSyn_cum_weighted)
-  study_weights <- .evSyn_check_study_weights(study_weights, S)
+  study_weights <- .evSyn_check_study_weights(study_weights, S, study_names)
   study_weights_S <- study_weights$study_weights_S # Now, they sum up to S
   study_weights <- study_weights$study_weights
   
   LL_m <- do.call(rbind, lapply(LL_m, unname))
   PT <- do.call(rbind, lapply(PT, unname))
-  if (!all(dim(PT) == dim(LL_m))) {
-    stop("\nrestriktor ERROR: The number of penalty values (in 'PT') must match the number ",
-         "of log-likelihood values (in 'object') for each study.", call. = FALSE)
-  }
   IC <- -2 * LL_m + penalty_factor * PT
   #
   # TO DO: open question (Leonard/Rebecca): should study-specific weights include priorICweights in all routes? Currently est/gorica route does not, ICvalues/ICweights routes do.
@@ -1021,8 +1355,7 @@ evSyn_LL <- function(object, ..., PT = list(),
   # Check if order of studies should be changed.
   if (is.numeric(order_studies)) {
     # User-specified numeric order vector
-    .validate_order_studies(order_studies, S)
-    orderStudies <- as.integer(order_studies)
+    orderStudies <- order_studies
     LL_m <- LL_m[orderStudies, , drop = FALSE]
     PT <- PT[orderStudies, , drop = FALSE]
     IC <- IC[orderStudies, , drop = FALSE]
@@ -1079,6 +1412,11 @@ evSyn_LL <- function(object, ..., PT = list(),
   # Note: priorICweights are not used for the log-likelihood weights, since 
   #       these are not IC weights (and there is no penalty term).
   Cumulative_LL <- .evSyn_cum_weighted(LL_m, study_weights_S)
+  if (type_ev == "average") {
+    # average-evidence approach: average of the log-likelihood values (over
+    # the positively weighted studies so far), like the IC and penalty values
+    Cumulative_LL <- Cumulative_LL / pmax(.evSyn_n_pos(study_weights_S), 1)
+  }
   Cumulative_LL <- matrix(Cumulative_LL, nrow = nrow(LL_m), 
                           dimnames = list(sequence, colnames(LL_m)))
   # final cumulative log-likelihood value
@@ -1169,15 +1507,24 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
   
   if (missing(type_ev)) 
     type_ev <- "added"
-  type_ev <- match.arg(type_ev)
+  type_ev <- .evSyn_type_ev_IC(type_ev, "IC values")
   
   if (missing(type)) 
     type <- "gorica"
   type <- match.arg(type)
+
+  # Backwards compatibility: 'priorWeights' is renamed to 'priorICweights'.
+  priorICweights <- .evSyn_priorWeights_compat(priorICweights, list(...))
+
+  # check the input: a list of numeric vectors without NA/NaN, with one value
+  # for each hypothesis, the same hypotheses in each study
+  .evSyn_check_list_input(object, name = "object")
   
   # If the input vectors carry hypothesis names, these must denote the same 
   # hypotheses across studies (matched by name); otherwise matched by position.
   object <- .evSyn_check_input_names(object, hypo_names)
+  # the hypothesis names of the input (if any; accepted for a named 'priorICweights')
+  input_names <- .evSyn_input_hypo_names(object)
   
   IC <- object
   S  <- length(IC)
@@ -1207,19 +1554,19 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
     hnames <- hypo_names
   }
   
-  # Check the prior IC weights (one for each hypothesis; rescaled to sum to 1)
-  priorICweights <- .evSyn_check_priorICweights(priorICweights, NrHypos_incl)
+  # Check the prior IC weights (one for each hypothesis; matched by name when
+  # named; rescaled to sum to 1)
+  priorICweights <- .evSyn_check_priorICweights(priorICweights, NrHypos_incl, hnames,
+                                                input_names = input_names)
   
   # Check the study weights (zero weights are allowed; see .evSyn_cum_weighted)
-  study_weights <- .evSyn_check_study_weights(study_weights, S)
+  study_weights <- .evSyn_check_study_weights(study_weights, S, study_names)
   study_weights_S <- study_weights$study_weights_S # Now, they sum up to S
   study_weights <- study_weights$study_weights
   
-  if (missing(order_studies)) 
-    order_studies <- "input_order"
-  if (!is.numeric(order_studies)) {
-    order_studies <- match.arg(order_studies)
-  }
+  # Check the order of the studies (character string, permutation of 1:S, or
+  # permutation of the study names)
+  order_studies <- .evSyn_order_studies(order_studies, S, study_names)
   
   IC <- do.call(rbind, lapply(IC, unname))
   #
@@ -1229,8 +1576,7 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
   # Check if order of studies should be changed.
   if (is.numeric(order_studies)) {
     # User-specified numeric order vector
-    .validate_order_studies(order_studies, S)
-    orderStudies <- as.integer(order_studies)
+    orderStudies <- order_studies
     IC <- IC[orderStudies, , drop = FALSE]
     GORICA_weight_m <- GORICA_weight_m[orderStudies, , drop = FALSE]
   } else if (order_studies %in% c("ascending", "descending")) {
@@ -1355,7 +1701,7 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
   
   if (missing(type_ev)) 
     type_ev <- "added"
-  type_ev <- match.arg(type_ev)
+  type_ev <- .evSyn_type_ev_IC(type_ev, "IC weights")
   
   if (missing(type)) 
     type <- "gorica"
@@ -1363,10 +1709,16 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
   
   # Backwards compatibility: 'priorWeights' is renamed to 'priorICweights'.
   priorICweights <- .evSyn_priorWeights_compat(priorICweights, list(...))
+
+  # check the input: a list of numeric vectors without NA/NaN, with one value
+  # for each hypothesis, the same hypotheses in each study
+  .evSyn_check_list_input(object, name = "object")
   
   # If the input vectors carry hypothesis names, these must denote the same 
   # hypotheses across studies (matched by name); otherwise matched by position.
   object <- .evSyn_check_input_names(object, hypo_names)
+  # the hypothesis names of the input (if any; accepted for a named 'priorICweights')
+  input_names <- .evSyn_input_hypo_names(object)
   
   Weights <- object
   # Check whether weights between 0 and 1 (and sum to 1)
@@ -1411,28 +1763,27 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
     }
   }
   
-  # Check the prior IC weights (one for each hypothesis; rescaled to sum to 1)
-  priorICweights <- .evSyn_check_priorICweights(priorICweights, NrHypos_incl)
+  # Check the prior IC weights (one for each hypothesis; matched by name when
+  # named; rescaled to sum to 1)
+  priorICweights <- .evSyn_check_priorICweights(priorICweights, NrHypos_incl, hypo_names,
+                                                input_names = input_names)
   
   
   # Check the study weights (zero weights are allowed; see .evSyn_cum_weighted)
-  study_weights <- .evSyn_check_study_weights(study_weights, S)
+  study_weights <- .evSyn_check_study_weights(study_weights, S, study_names)
   study_weights_S <- study_weights$study_weights_S # Now, they sum up to S
   study_weights <- study_weights$study_weights
   
   
-  if (missing(order_studies)) 
-    order_studies <- "input_order"
-  if (!is.numeric(order_studies)) {
-    order_studies <- match.arg(order_studies)
-  }
+  # Check the order of the studies (character string, permutation of 1:S, or
+  # permutation of the study names)
+  order_studies <- .evSyn_order_studies(order_studies, S, study_names)
   
   orderStudies <- 1:S
   # Check if order of studies should be changed.
   if (is.numeric(order_studies)) {
     # User-specified numeric order vector
-    .validate_order_studies(order_studies, S)
-    orderStudies <- as.integer(order_studies)
+    orderStudies <- order_studies
     Weights <- Weights[orderStudies, , drop = FALSE]
   } else if (order_studies %in% c("ascending", "descending")) {
     # Order needs to be changed based on the overall preferred hypothesis.
@@ -1577,7 +1928,7 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
   
   if (missing(type_ev)) 
     type_ev <- "added"
-  type_ev <- match.arg(type_ev)
+  type_ev <- .evSyn_type_ev_IC(type_ev, "ratios of IC weights")
   
   if (missing(type)) 
     type <- "gorica"
@@ -1585,10 +1936,16 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
   
   # Backwards compatibility: 'priorWeights' is renamed to 'priorICweights'.
   priorICweights <- .evSyn_priorWeights_compat(priorICweights, list(...))
+
+  # check the input: a list of numeric vectors without NA/NaN, with one value
+  # for each hypothesis, the same hypotheses in each study
+  .evSyn_check_list_input(object, name = "object")
   
   # If the input vectors carry hypothesis names, these must denote the same 
   # hypotheses across studies (matched by name); otherwise matched by position.
   object <- .evSyn_check_input_names(object, hypo_names)
+  # the hypothesis names of the input (if any; accepted for a named 'priorICweights')
+  input_names <- .evSyn_input_hypo_names(object)
   
   # Determine reference hypothesis -- use in output headers
   # Which hypothesis is the best, for each study
@@ -1643,8 +2000,10 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
   names(Href) <- hypo_names[Href]
   
   
-  # Check the prior IC weights (one for each hypothesis; rescaled to sum to 1)
-  priorICweights <- .evSyn_check_priorICweights(priorICweights, NrHypos_incl)
+  # Check the prior IC weights (one for each hypothesis; matched by name when
+  # named; rescaled to sum to 1)
+  priorICweights <- .evSyn_check_priorICweights(priorICweights, NrHypos_incl, hypo_names,
+                                                input_names = input_names)
   # # If using ratios:
   # # Note that priorICweights is now also a ratio of hypotheses weights.
   # NrHypos_incl <- NrHypos
@@ -1668,22 +2027,19 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
   # }
   
   # Check the study weights (zero weights are allowed; see .evSyn_cum_weighted)
-  study_weights <- .evSyn_check_study_weights(study_weights, S)
+  study_weights <- .evSyn_check_study_weights(study_weights, S, study_names)
   study_weights_S <- study_weights$study_weights_S # Now, they sum up to S
   study_weights <- study_weights$study_weights
   
-  if (missing(order_studies)) 
-    order_studies <- "input_order"
-  if (!is.numeric(order_studies)) {
-    order_studies <- match.arg(order_studies)
-  }
+  # Check the order of the studies (character string, permutation of 1:S, or
+  # permutation of the study names)
+  order_studies <- .evSyn_order_studies(order_studies, S, study_names)
   
   orderStudies <- 1:S
   # Check if order of studies should be changed.
   if (is.numeric(order_studies)) {
     # User-specified numeric order vector
-    .validate_order_studies(order_studies, S)
-    orderStudies <- as.integer(order_studies)
+    orderStudies <- order_studies
     Weights <- Weights[orderStudies, , drop = FALSE]
   } else if (order_studies %in% c("ascending", "descending")) {
     # Order needs to be changed based on the overall preferred hypothesis.
@@ -1828,8 +2184,15 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
     type_ev <- "added"
   type_ev <- match.arg(type_ev)
 
+  # Backwards compatibility: 'priorWeights' is renamed to 'priorICweights'.
+  # The deprecated argument is removed from the arguments passed on to evSyn_LL().
+  dots <- list(...)
+  priorICweights <- .evSyn_priorWeights_compat(priorICweights, dots)
+  dots$priorWeights <- NULL
+
   # Check if all objects are of type "con_goric"
-  if (!all(vapply(object, function(x) inherits(x, "con_goric"), logical(1)))) {
+  if (!is.list(object) || length(object) == 0 ||
+      !all(vapply(object, function(x) inherits(x, "con_goric"), logical(1)))) {
     stop("\nrestriktor ERROR: the object must be a list with fitted objects from the goric() function", 
          call. = FALSE)
   }
@@ -1860,6 +2223,20 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
          call. = FALSE)
   }
   penalty_factor <- object_pf[1]
+  # A 'penalty_factor' passed via '...' must equal the one of the goric objects
+  # (it is not passed on to evSyn_LL() twice)
+  if (!is.null(dots[["penalty_factor"]])) {
+    if (!is.numeric(dots[["penalty_factor"]]) || length(dots[["penalty_factor"]]) != 1L ||
+        !isTRUE(all.equal(as.numeric(dots[["penalty_factor"]]), penalty_factor))) {
+      stop("\nrestriktor ERROR: The argument 'penalty_factor' (now, ",
+           paste(deparse(dots[["penalty_factor"]], nlines = 1), collapse = ""),
+           ") is taken from the goric objects (i.e., ", penalty_factor,
+           ") and cannot be changed in evSyn(). Please refit the goric objects ",
+           "with the requested 'penalty_factor' or do not specify it in evSyn().",
+           call. = FALSE)
+    }
+    dots$penalty_factor <- NULL
+  }
   
   # Identify the hypotheses by name (and, when available, by the hypothesis 
   # text), such that the studies are aligned to the hypothesis set of study 1:
@@ -1869,8 +2246,25 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
   # TO DO als small sample, dan ook sample_nobs nodig of kan het zonder?
   
   # Hypothesis names (incl. the possible failsafe hypothesis) from study 1
+  model_names <- as.character(object[[1]]$result$model)
   if (is.null(hypo_names)) {
-    hypo_names <- as.character(object[[1]]$result$model)
+    hypo_names <- model_names
+  } else if (length(hypo_names) == length(model_names) &&
+             setequal(hypo_names, model_names) &&
+             !identical(as.character(hypo_names), model_names)) {
+    # 'hypo_names' are labels, applied in the order of the hypotheses of the
+    # goric objects (the hypotheses are not re-ordered)
+    .evSyn_warn_hypo_names_permuted(hypo_names, model_names)
+  }
+  # A named 'priorICweights' may use the labels in 'hypo_names' or the
+  # hypothesis names of the goric objects (matched here; the length is
+  # checked by evSyn_LL())
+  if (!is.null(priorICweights) && !is.null(names(priorICweights)) &&
+      length(hypo_names) == length(model_names)) {
+    priorICweights <- .evSyn_match_weight_names(priorICweights, hypo_names,
+                                                name = "priorICweights",
+                                                what = "hypotheses (i.e., the column names of the output)",
+                                                alias = model_names)
   }
   
   # Create a list for the evSyn_LL.list function
@@ -1888,7 +2282,7 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
   )
   
   # Call the evSyn_LL.list function and return the result
-  result <- do.call(evSyn_LL, append(conList, list(...)))
+  result <- do.call(evSyn_LL, append(conList, dots))
   # Add the type from the goric objects (evSyn_LL does not carry type)
   result$type <- object[[1]]$type
   class(result) <- c(class(result), "evSyn_gorica")

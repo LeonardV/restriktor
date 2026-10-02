@@ -199,7 +199,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                                   control$tol)] <- 0L
     b.restr <- as.vector(b.restr)
       names(b.restr) <- names(b.unrestr)
-    fitted <- fit.glmc$fitted
+    fitted <- fit.glmc$fitted.values
     residuals <- residuals(fit.glmc, "working")
     # weights
     weights <- weights(fit.glmc, "working")

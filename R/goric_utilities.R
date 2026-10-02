@@ -3,7 +3,13 @@ coef.con_goric <- function(object, ...)  {
 }
 
 coef.gorica_est <- function(object, ...)  {
-  return(object$b.restr)
+  b <- object$b.restr
+  # defined parameters (':=') are appended, as coef.restriktor() does
+  if (!is.null(object$parTable$op) && any(object$parTable$op == ":=") &&
+      is.function(object$CON$def.function)) {
+    b <- c(b, object$CON$def.function(b))
+  }
+  b
 }
 
 coef_named_vector <- function(x, VCOV = NULL, ...)  {
@@ -20,17 +26,26 @@ coef_named_vector <- function(x, VCOV = NULL, ...)  {
       # TO DO eigenlijk nog checken of rownames bestaan
       names(est) <- rownames(VCOV)
     }
-    message("\nrestriktor Message: The coefficients from the fitted model have been converted into a vector. ",
-            "The coefficient names are taken from the row names of the covariance matrix (vcov). ",
-            "Use these names when specifying hypotheses. ",
-            "Note: replace any ':' characters with '.' in hypothesis labels."
-            )
-    # TO DO mlm: ws nog zeggen dat intercept dan wordt: DV..Intercept.
-    # TO DO mlm: Werkt dit wel voor mlm, bij mij volgens mij niet....
+    # the message about these names is given once in goric.lm() (see
+    # message_mlm_coef_names()), irrespective of the comparison
   } else {
     est <- coef(x)
   }
   return(est)
+}
+
+# Message (once, from goric.lm()) about the coefficient names of an mlm object:
+# the names of vcov() with ':' and '(' ')' replaced by '.', e.g., 'Age.GroupNo'
+# and 'Age..Intercept.' for the intercept of response 'Age'.
+message_mlm_coef_names <- function(object) {
+  labs <- gsub("[:()]", ".", rownames(vcov(object)))
+  message("\nrestriktor Message: The coefficient matrix of the mlm object has been ",
+          "converted into a vector. The coefficient names are the row names of ",
+          "the covariance matrix (vcov) with ':', '(' and ')' replaced by '.', ",
+          "e.g., 'y1..Intercept.' for the intercept of response 'y1'. ",
+          "Use these names when specifying hypotheses: ",
+          paste(sQuote(labs), collapse = ", "), ".")
+  invisible(labs)
 }
 
 # log-likelihood of the unrestricted model. logLik.lm() does not support
@@ -63,6 +78,17 @@ check_weights <- function(w, name = "priorICweights", length_expected = NULL,
   if (is.null(w)) {
     return(NULL)
   }
+  # a 1 x k (or k x 1) matrix is accepted as a vector
+  if (is.numeric(w) && !is.null(dim(w))) {
+    w <- as.vector(w)
+  }
+  if (!is.null(length_expected) && length(w) != length_expected) {
+    stop("\nrestriktor ERROR: The argument '", name, "' should consist of ",
+         length_expected, ngettext(length_expected, " element", " elements"),
+         if (!is.null(what)) paste0(", namely ", what),
+         ". It now consists of ", length(w), 
+         ngettext(length(w), " element.", " elements."), call. = FALSE)
+  }
   if (!is.numeric(w) || anyNA(w) || any(!is.finite(w))) {
     stop("\nrestriktor ERROR: The argument '", name, "' should be a numeric vector ",
          "with finite values (no NA, NaN, Inf).", call. = FALSE)
@@ -79,12 +105,6 @@ check_weights <- function(w, name = "priorICweights", length_expected = NULL,
     stop("\nrestriktor ERROR: The argument '", name, "' should contain at least ",
          "one positive value.", call. = FALSE)
   }
-  if (!is.null(length_expected) && length(w) != length_expected) {
-    stop("\nrestriktor ERROR: The argument '", name, "' should consist of ",
-         length_expected, " elements",
-         if (!is.null(what)) paste0(", namely ", what),
-         ". It now consists of ", length(w), " elements.", call. = FALSE)
-  }
   if (rescale && !isTRUE(all.equal(sum(w), 1))) {
     w <- w / sum(w)
   }
@@ -95,14 +115,26 @@ check_weights <- function(w, name = "priorICweights", length_expected = NULL,
 #   w_i = prior_i * exp(-IC_i / 2) / sum_j prior_j * exp(-IC_j / 2)
 # computed via log-sum-exp. A zero prior gives a zero weight (not NaN),
 # and very large IC differences do not underflow to 0/0.
+# An IC of -Inf (infinite support) gives weight 1 for that model (shared
+# equally among several models with IC = -Inf) and 0 for the others; a NaN/NA
+# IC gives NaN weights.
 ic_weights_log <- function(IC, prior = NULL) {
   if (is.null(prior)) {
     prior <- rep(1, length(IC))
   }
+  prior <- unname(prior)
   lw <- -IC / 2 + log(prior)              # log(0) = -Inf for a zero prior
   lw[prior == 0] <- -Inf
+  if (anyNA(lw)) {
+    return(rep(NaN, length(IC)))
+  }
+  if (any(lw == Inf)) {
+    w <- as.numeric(lw == Inf)
+    return(w / sum(w))
+  }
   m <- max(lw)
   if (!is.finite(m)) {
+    # all models have IC = Inf (or prior 0): no information at all
     return(rep(NaN, length(IC)))
   }
   w <- exp(lw - m)
@@ -191,6 +223,9 @@ message.VCOVvb <- function(...)  {
 }
 
 check.type <- function(type, class, ...)  {
+  # case-insensitive, like goric.default() (otherwise e.g. "GORICAC" would
+  # silently be turned into "gorica")
+  type <- tolower(type)
   if (type == "goric") {
     message("\nrestriktor Message: object of class ", class, " is only supported for",
             "type = 'gorica(c)'. The GORICA will be used, not the the GORIC.")
@@ -217,8 +252,14 @@ weight_ratio_matrix <- function(w, modelnames) {
   rw
 }
 
-calculate_model_comparison_metrics <- function(x, priorICweights) {
+calculate_model_comparison_metrics <- function(x, priorICweights, type = NULL) {
   modelnames <- as.character(x$model)
+  # the IC column is named after the type ('goric', 'gorica', ...); it is
+  # selected explicitly (x$goric would only partially match 'gorica')
+  if (is.null(type)) {
+    type <- intersect(c("goric", "goricc", "gorica", "goricac"), names(x))[1]
+  }
+  IC <- x[[type]]
   # All weights are computed on the log scale (log-sum-exp, see
   # ic_weights_log()): a zero prior gives a zero weight (not NaN) and large
   # IC differences do not result in 0/0.
@@ -231,25 +272,29 @@ calculate_model_comparison_metrics <- function(x, priorICweights) {
   penalty_rw = weight_ratio_matrix(penalty_weights, modelnames)
   
   ## goric
-  goric_weights = ic_weights_log(x$goric, priorICweights)
+  goric_weights = ic_weights_log(IC, priorICweights)
   goric_rw = weight_ratio_matrix(goric_weights, modelnames)
   
   # if user specified hypotheses is >= 2 and comparison = unconstrained
   # add extra column with goric weights excluding unconstrained model.
-  mn_unc_idx <- grep("unconstrained", modelnames)
-  if (length(modelnames) > 2 && length(mn_unc_idx) > 0 && 
+  # The special rows are identified by their exact (reserved) names; user
+  # hypotheses cannot carry these names (see goric.default()).
+  mn_unc_idx <- which(modelnames == "unconstrained")
+  if (length(modelnames) > 2 && length(mn_unc_idx) == 1L && 
       which.max(goric_weights) != mn_unc_idx) {
-    goric_weights_without_unc = ic_weights_log(x$goric[-mn_unc_idx], 
+    goric_weights_without_unc = ic_weights_log(IC[-mn_unc_idx], 
                                                priorICweights[-mn_unc_idx])
-    goric_weights_without_unc <- c(goric_weights_without_unc, NA)
+    goric_weights_without_unc <- append(goric_weights_without_unc, NA, 
+                                        after = mn_unc_idx - 1L)
   } else { goric_weights_without_unc <- NULL }
   
-  mn_heq_idx <- grep("Heq", modelnames)
-  if (length(modelnames) > 2 && length(mn_heq_idx) > 0 && 
+  mn_heq_idx <- which(modelnames == "Heq")
+  if (length(modelnames) > 2 && length(mn_heq_idx) == 1L && 
       which.max(goric_weights) != mn_heq_idx) {
-    goric_weights_without_heq = ic_weights_log(x$goric[-mn_heq_idx], 
+    goric_weights_without_heq = ic_weights_log(IC[-mn_heq_idx], 
                                                priorICweights[-mn_heq_idx])
-    goric_weights_without_heq <- c(NA, goric_weights_without_heq)
+    goric_weights_without_heq <- append(goric_weights_without_heq, NA, 
+                                        after = mn_heq_idx - 1L)
   } else { goric_weights_without_heq <- NULL }
   
   out <- list(loglik_weights = loglik_weights, 
@@ -276,7 +321,12 @@ PT_Amat_meq <- function(Amat, meq) {
   if (nrow(Amat) > 1) {
     # check for range restrictions, e.g., -1 < beta < 1
     idx_range_restrictions <- detect_range_restrictions(Amat)
-    # range restrictions are treated as equalities for computing PT (goric)
+    # range restrictions are treated as equalities for computing PT (goric).
+    # Note (design): a pair of opposite rows is a range irrespective of the
+    # bounds, so 'x1 > 1; x1 < 1' obtains the PT of the equality x1 = 1, and
+    # an inactive (non-binding) bound added to an inequality (e.g., 'x1 > 0;
+    # x1 < 100') changes the PT from that of one inequality to that of one
+    # equality. Only linearly independent rows are kept above.
     n_range_restrictions <- nrow(idx_range_restrictions)
     PT_meq <- meq + n_range_restrictions
     # reorder PT_Amat: ceq first, ciq second, needed for QP.solve()
@@ -457,16 +507,35 @@ calculate_weight_bar <- function(Amat, meq, VCOV, mix_weights, seed, control,
 
 
 # Construct the equality-restricted hypothesis (Heq) belonging to an 
-# order-restricted hypothesis by replacing '<' and '>' by '='. Redundant 
-# inequality restrictions (e.g., x1 > 0.2 when x1 > 0.5 is also specified, or 
-# an inequality implied by an equality restriction) are removed first. Otherwise, 
-# Heq would contain conflicting equality restrictions (x1 = 0.5 and x1 = 0.2).
-# If this does not work out, the plain substitution is returned.
+# order-restricted hypothesis by replacing '<' and '>' by '='. Before that,
+# inequality restrictions that are identical to another one (only the one 
+# with the largest rhs is kept, e.g., x1 > 0.2 is removed when x1 > 0.5 is 
+# also specified) or that are implied by an equality restriction are removed,
+# since the equality versions of those would conflict (x1 = 0.5 and x1 = 0.2).
+# Only exact duplicates of the Jacobian rows are recognised: an inequality
+# that is implied by a combination of others, or a scalar multiple of another
+# one, is not. In that case Heq is inconsistent and the error is caught when
+# fitting Heq (see fit_hypothesis()).
+# Returns NULL when no inequality restriction remains (Heq would be identical
+# to the hypothesis itself), and gives an error for a range restriction
+# (0 < x1 < 1), for which Heq is not defined. If the syntax cannot be parsed,
+# the plain substitution is returned.
 goric_heq_constraints <- function(object, hypothesis) {
-  Hceq_default <- gsub("<|>", "=", hypothesis)
-  if (!is.character(hypothesis)) {
-    return(Hceq_default)
+  heq_error <- function(...) {
+    stop(structure(class = c("restriktor_heq_error", "error", "condition"),
+                   list(message = paste0(...), call = NULL)))
   }
+  
+  # a constraint matrix (list(constraints =, rhs =, neq =)): all rows become
+  # equality restrictions, after the same redundancy/range checks
+  if (is.list(hypothesis)) {
+    return(goric_heq_constraints_matrix(hypothesis, heq_error))
+  }
+  if (!is.character(hypothesis)) {
+    stop("\nrestriktor ERROR: Heq = TRUE requires a character hypothesis or a ",
+         "list with a constraint matrix (constraints, rhs, neq).", call. = FALSE)
+  }
+  Hceq_default <- gsub("<|>", "=", hypothesis)
   
   Hceq <- tryCatch({
     singles <- unlist(lapply(hypothesis, function(h) {
@@ -480,7 +549,10 @@ goric_heq_constraints <- function(object, hypothesis) {
     is_ineq <- grepl("[<>]", singles) & !is_def
     is_eq   <- grepl("=", singles, fixed = TRUE) & !is_def & !is_ineq
     
-    if (sum(is_ineq) < 1L || (sum(is_ineq) < 2L && !any(is_eq))) {
+    if (sum(is_ineq) < 1L) {
+      # no inequality restrictions: Heq would equal the hypothesis itself
+      NULL
+    } else if (sum(is_ineq) < 2L && !any(is_eq)) {
       Hceq_default
     } else {
       # Amat row and rhs of each single restriction
@@ -501,7 +573,28 @@ goric_heq_constraints <- function(object, hypothesis) {
         c(r$key, r$key_neg)
       }))
       keys_ineq <- vapply(rows_ineq, `[[`, character(1), "key")
+      keys_ineq_neg <- vapply(rows_ineq, `[[`, character(1), "key_neg")
       rhs_ineq  <- vapply(rows_ineq, `[[`, numeric(1), "rhs")
+      
+      # range restrictions (a lower and an upper bound on the same linear
+      # combination, e.g., 0.2 < x1 < 0.5): Heq is not defined
+      is_range <- keys_ineq_neg %in% keys_ineq
+      if (any(is_range)) {
+        # the same bound on both sides (x1 > 1; x1 < 1) is an equality
+        same_bound <- vapply(seq_along(keys_ineq), function(i) {
+          j <- which(keys_ineq == keys_ineq_neg[i])
+          length(j) > 0L && isTRUE(all.equal(rhs_ineq[i], -rhs_ineq[j[1]]))
+        }, logical(1))
+        if (any(is_range & !same_bound)) {
+          heq_error("\nrestriktor ERROR: The equality-restricted hypothesis ",
+                    "(Heq) cannot be formed: the hypothesis contains a range ",
+                    "restriction (", 
+                    paste(singles[idx_ineq][is_range & !same_bound], collapse = "; "),
+                    "), for which there is no equality version. ",
+                    "Use Heq = FALSE or compare the hypothesis to an ",
+                    "equality-restricted hypothesis of your own.")
+        }
+      }
       
       drop <- rep(FALSE, length(singles))
       # inequalities implied by an equality restriction
@@ -511,13 +604,114 @@ goric_heq_constraints <- function(object, hypothesis) {
       dupl <- duplicated(keys_ineq[ord])
       drop[idx_ineq[ord][dupl]] <- TRUE
       
-      if (!any(drop)) {
+      if (!any(is_ineq & !drop)) {
+        # all inequalities are implied by the equality restrictions
+        NULL
+      } else if (!any(drop)) {
         Hceq_default
       } else {
         gsub("<|>", "=", paste(singles[!drop], collapse = "; "))
       }
     }
-  }, error = function(e) Hceq_default)
+  }, error = function(e) {
+    if (inherits(e, "restriktor_heq_error")) {
+      stop(e)
+    }
+    Hceq_default
+  })
   
   Hceq
+}
+
+# Heq for a hypothesis given as a constraint matrix (list(constraints =, 
+# rhs =, neq =)): the inequality rows become equality rows. As for the 
+# character version, inequality rows identical to an equality row or to 
+# another inequality row (the one with the largest rhs is kept) are removed
+# first; a range restriction (a row and its negative) gives an error.
+# Returns NULL when no inequality row remains.
+goric_heq_constraints_matrix <- function(hypothesis, heq_error) {
+  names(hypothesis) <- tolower(names(hypothesis))
+  Amat <- hypothesis$constraints
+  if (is.null(Amat)) {
+    stop("\nrestriktor ERROR: The list objects must be named 'constraints', ",
+         "'rhs' and 'neq'.", call. = FALSE)
+  }
+  if (!is.matrix(Amat)) {
+    Amat <- rbind(Amat)
+  }
+  bvec <- if (is.null(hypothesis$rhs)) rep(0, nrow(Amat)) else hypothesis$rhs
+  meq  <- if (is.null(hypothesis$neq)) 0L else as.integer(hypothesis$neq)
+  if (length(bvec) != nrow(Amat) || meq < 0L || meq > nrow(Amat)) {
+    stop("\nrestriktor ERROR: 'rhs' must have one element per row of ",
+         "'constraints' and 'neq' cannot exceed the number of rows.", call. = FALSE)
+  }
+  
+  key     <- apply(Amat, 1, function(r) paste(r + 0, collapse = "|"))
+  key_neg <- apply(Amat, 1, function(r) paste(-r + 0, collapse = "|"))
+  is_eq   <- seq_len(nrow(Amat)) <= meq
+  idx_ineq <- which(!is_eq)
+  if (length(idx_ineq) == 0L) {
+    return(NULL)
+  }
+  keys_ineq     <- key[idx_ineq]
+  keys_ineq_neg <- key_neg[idx_ineq]
+  rhs_ineq      <- bvec[idx_ineq]
+  keys_eq       <- c(key[is_eq], key_neg[is_eq])
+  
+  # range restrictions (a row and its negative, e.g., x1 > 0.2 and -x1 > -0.5)
+  is_range <- keys_ineq_neg %in% keys_ineq
+  if (any(is_range)) {
+    same_bound <- vapply(seq_along(keys_ineq), function(i) {
+      j <- which(keys_ineq == keys_ineq_neg[i])
+      length(j) > 0L && isTRUE(all.equal(rhs_ineq[i], -rhs_ineq[j[1]]))
+    }, logical(1))
+    if (any(is_range & !same_bound)) {
+      heq_error("\nrestriktor ERROR: The equality-restricted hypothesis ",
+                "(Heq) cannot be formed: the constraint matrix contains a range ",
+                "restriction (row(s) ", 
+                paste(idx_ineq[is_range & !same_bound], collapse = ", "),
+                "), for which there is no equality version. ",
+                "Use Heq = FALSE or compare the hypothesis to an ",
+                "equality-restricted hypothesis of your own.")
+    }
+  }
+  
+  drop <- rep(FALSE, nrow(Amat))
+  drop[idx_ineq[keys_ineq %in% keys_eq]] <- TRUE
+  ord <- order(-rhs_ineq)
+  drop[idx_ineq[ord][duplicated(keys_ineq[ord])]] <- TRUE
+  if (!any(!is_eq & !drop)) {
+    return(NULL)
+  }
+  list(constraints = Amat[!drop, , drop = FALSE], rhs = bvec[!drop], 
+       neq = sum(!drop))
+}
+
+# Fit one hypothesis (restriktor() or con_gorica_est()). For the generated
+# Heq hypothesis, an error about an inconsistent set of equality restrictions
+# (e.g., 'x1 > x2 > 0.1; x1 > 0.05' -> 'x1 = x2 = 0.1; x1 = 0.05') is
+# reported with a clear message instead of the raw quadprog/restriktor error;
+# any other error is re-thrown unchanged.
+fit_hypothesis <- function(name, fun, args) {
+  if (!identical(name, "Heq")) {
+    return(do.call(fun, args))
+  }
+  tryCatch(do.call(fun, args), error = function(e) {
+    msg <- trimws(gsub("\\s+", " ", conditionMessage(e)))
+    if (!grepl("constraints are inconsistent|constraints are conflicting|cannot exceed the number of constraints", msg)) {
+      stop(e)
+    }
+    heq_txt <- if (is.character(args$constraints)) {
+      paste(args$constraints, collapse = "; ")
+    } else {
+      "all rows of the constraint matrix as equalities"
+    }
+    stop("\nrestriktor ERROR: The equality-restricted hypothesis (Heq) cannot ",
+         "be formed for this hypothesis: replacing its inequality restrictions ",
+         "by equalities (", heq_txt, ") gives ",
+         "a set of restrictions that cannot be fitted (", msg, "). ",
+         "This happens when an inequality is implied by (a combination of) ",
+         "the other restrictions. Use Heq = FALSE or remove the redundant ",
+         "restriction(s).", call. = FALSE)
+  })
 }

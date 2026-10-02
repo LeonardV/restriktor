@@ -54,12 +54,16 @@ compute_complement_likelihood <- function(model.org, VCOV,
         ll[[l]]    <- logLik(Hc.restr)
       } else if (type %in% c("gorica", "goricac")) {
         ldots$mix_weights <- "none"
+        # only pass arguments that con_gorica_est() knows (e.g., 'se' is a
+        # restriktor() argument and would partially match 'seed')
         CALL.restr <- append(list(object      = b.unrestr,
                                   constraints = Amatx,
                                   rhs         = bvec[idx],
                                   neq         = 1,
                                   VCOV        = VCOV),
-                             ldots)
+                             ldots[intersect(names(ldots),
+                                             c("mix_weights", "seed", "control",
+                                               "verbose", "debug"))])
         Hc.restr   <- do.call("con_gorica_est", CALL.restr) 
         betas[[l]] <- Hc.restr$b.restr
         ll[[l]]    <- dmvnorm(c(b.unrestr - Hc.restr$b.restr), 

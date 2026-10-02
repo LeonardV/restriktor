@@ -89,6 +89,17 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
     title <- paste0("Benchmark: Log-likelihood-Difference Distribution for Preferred Hypothesis ", pref_hypo_name)
   }
   
+  # A benchmark of a single hypothesis with comparison = "none" has no
+  # alternative hypothesis to compare the preferred hypothesis against, so
+  # there are no ratios/differences to plot (0-column draw matrices).
+  if (output_type != "gw" && (is.null(DATA[[1]]) || ncol(DATA[[1]]) == 0)) {
+    stop("\nrestriktor ERROR: There is no alternative hypothesis to compare the preferred ",
+         "hypothesis '", pref_hypo_name, "' against (a single hypothesis with comparison = ",
+         "'none'), so there are no ratios/differences to plot for output_type = '",
+         output_type, "'. Use output_type = 'gw' (the GORIC(A) weights) instead.",
+         call. = FALSE)
+  }
+
   # -------------------------------------------------------------------------
   new_combined_values <- lapply(names(DATA), function(list_name) { 
     colnames <- colnames(DATA[[list_name]])
@@ -110,7 +121,8 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   row.names(df_long) <- NULL
   # A ratio (rgw/rlw) can be Inf when the alternative's weight underflows to
   # 0 (see compute_overlap() in goric_benchmark_utilities.R); a density
-  # cannot be estimated on such draws, so they are left out of the plot only.
+  # cannot be estimated on such draws, so they are left out of the plot only
+  # (a population without any finite draw is reported below).
   df_long$Value[!is.finite(df_long$Value)] <- NA
 
   if (inherits(x, "benchmark_asymp")) {
@@ -121,27 +133,71 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   
   # Rename the Group column to replace triple dots with equals sign
   df_long$Group <- factor(df_long$Group, levels = unique(df_long$Group))
-  
+  # population and hypothesis comparison per Group ("<population> (<pref>
+  # vs. <alternative>)"); for gw there is no comparison
+  if (output_type == "gw") {
+    df_long$Group <- paste(df_long$Group, "()")
+  }
+  df_long$Group_pop_values <- sub("\\s*\\(.*\\)", "", df_long$Group)
+  df_long$Group_hypo_comparison <- trimws(gsub("\\(|\\)", "", extract_in_parentheses(df_long$Group)))
+
+  # Populations without a single finite draw for a comparison (panel) cannot
+  # be shown as a density in that panel: say so, rather than silently leaving
+  # them out. Counted per population x comparison (a population can have only
+  # infinite ratios for one alternative and finite ones for another).
+  n_finite <- aggregate(Value ~ Group_pop_values + Group_hypo_comparison, data = df_long,
+                        function(v) sum(!is.na(v)), na.action = na.pass)
+  no_finite_rows <- n_finite[n_finite$Value == 0, , drop = FALSE]
+  no_finite <- unique(no_finite_rows$Group_pop_values)
+  no_finite <- vapply(no_finite, function(pop) {
+    comps <- no_finite_rows$Group_hypo_comparison[no_finite_rows$Group_pop_values == pop]
+    all_comps <- unique(n_finite$Group_hypo_comparison)
+    if (output_type == "gw" || length(all_comps) == 1 || all(all_comps %in% comps)) {
+      pop
+    } else {
+      paste0(pop, " (", paste(comps, collapse = "; "), ")")
+    }
+  }, character(1))
+  if (length(no_finite) > 0) {
+    if (nrow(no_finite_rows) == nrow(n_finite)) {
+      stop("\nrestriktor ERROR: None of the populations has finite draws for output_type = '",
+           output_type, "' (the ratios are all infinite), so no density can be plotted. ",
+           "See print(x, output_type = '", if (output_type == "rgw") "rgw_log" else "rlw_log",
+           "') for the (finite) log-ratios.", call. = FALSE)
+    }
+    message("\nrestriktor Message: The following population(s) have no finite draws for ",
+            "output_type = '", output_type, "' (all ratios are infinite) and are therefore ",
+            "not shown in the density plot (if only for some comparisons, these are given ",
+            "in parentheses): ", paste(no_finite, collapse = ", "), ". See ",
+            "print(x, output_type = '", if (output_type == "rgw") "rgw_log" else "rlw_log",
+            "') for the (finite) log-ratios.")
+  }
+
+  # Percentile lines: those of ONE population per plot -- the first
+  # population (in the order of the populations, i.e. by default 'No-effect',
+  # otherwise the first pop_es/pop_est supplied) that has finite draws for
+  # that comparison; the legend names this population (percentile_pop).
+  # aggregate() drops a Group whose values are all NA, so a population
+  # without finite draws is skipped automatically.
   percentile_df <- aggregate(Value ~ Group, data = df_long, function(x) {
     quantile(x, probs = percentiles, names = TRUE, na.rm = TRUE)
   })
-  
   percentile_df <- data.frame(Group = percentile_df$Group, percentile_df$Value, check.names = FALSE)
-  
-  n_plots <- ncol(DATA[[1]])
-  first_group <- levels(factor(df_long$Group))[1:n_plots]
-  first_group_data <- subset(df_long, Group %in% first_group)
-  # first groups are the ones with no-effect or ES = 0 (at least when the default is used, otherwise the first population est./size)
-  percentile_first_group <- percentile_df[percentile_df$Group %in% first_group, ]
+  percentile_df$Group_pop_values <- sub("\\s*\\(.*\\)", "", percentile_df$Group)
+  percentile_df$Group_hypo_comparison <- trimws(gsub("\\(|\\)", "", extract_in_parentheses(as.character(percentile_df$Group))))
+  pop_order <- levels(factor(df_long$Group_pop_values, levels = unique(df_long$Group_pop_values)))
+  percentile_df <- percentile_df[order(match(percentile_df$Group_pop_values, pop_order)), , drop = FALSE]
+  percentile_first_group <- percentile_df[!duplicated(percentile_df$Group_hypo_comparison), , drop = FALSE]
   rownames(percentile_first_group) <- NULL
+  percentile_first_group$percentile_pop <- percentile_first_group$Group_pop_values
+  percentile_first_group <- percentile_first_group[, c("Group_hypo_comparison", "percentile_pop",
+                                                       paste0(percentiles * 100, "%")), drop = FALSE]
   
-  group_color <- scales::brewer_pal(palette = "Set3")(length(unique(df_long$Group)))
+  group_color <- scales::brewer_pal(palette = "Set3")(length(unique(df_long$Group_pop_values)))
   first_group_color <- group_color[1]
 
   if (!output_type == "gw") {
     # sub plots per hypo, dus h1 vs h2, maar wel alle ES in dezelfde plot
-    df_long$Group_pop_values <- sub("\\s*\\(.*\\)", "", df_long$Group)
-    df_long$Group_hypo_comparison <- trimws(gsub("\\(|\\)", "",  extract_in_parentheses(df_long$Group)))
     sample_value <- setNames(as.vector(t(sample_value)), rownames(sample_value))
     
     sample_value_df <- data.frame(
@@ -150,18 +206,16 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
       first_group_color = first_group_color,
       stringsAsFactors = FALSE
     )
-    sample_value_df <- cbind(sample_value_df, percentile_first_group[-1])
+    sample_value_df <- merge(sample_value_df, percentile_first_group,
+                             by = "Group_hypo_comparison", all.x = TRUE, sort = FALSE)
     df_long$id_Pop <- 1:dim(df_long)[1]
     df_long <- merge(df_long, sample_value_df, by = "Group_hypo_comparison", all.x = TRUE)
     # Re-order because of legend for Populations
     df_long <- df_long[order(df_long$id_Pop), ]
   } else {
-    df_long$Group <- paste(df_long$Group, "()") 
-    df_long$Group_pop_values <- sub("\\s*\\(.*\\)", "", df_long$Group)
-    df_long$Group_hypo_comparison <- gsub("\\(|\\)", "",  extract_in_parentheses(df_long$Group))
     sample_value <- as.vector(sample_value)
     df_long <- suppressWarnings(cbind(df_long, sample_value, 
-                                      percentile_first_group,
+                                      percentile_first_group[, -1, drop = FALSE],
                                       first_group_color = first_group_color))
   }
   
@@ -226,7 +280,11 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
   # 
   percentile_values <- as.numeric(df_subset[, paste0(percentiles*100, "%")][1, ])
   #percentile_labels <- paste0("[", percentiles * 100, "]th Percentile = ", sprintf("%.3f", percentile_values))
-  percentile_labels <- paste0(percentiles * 100, "th Percentile = ", sprintf("%.3f", percentile_values))
+  # the legend names the population the percentile lines belong to (the
+  # first population with finite draws, see plot.benchmark())
+  percentile_pop <- df_subset$percentile_pop[1]
+  percentile_labels <- paste0(percentiles * 100, "th Percentile (", percentile_pop, ") = ",
+                              sprintf("%.3f", percentile_values))
   formatted_sample_value <- sprintf("Sample Value = %.3f", unique(df_subset$sample_value)[1])
   
   

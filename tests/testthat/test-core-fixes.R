@@ -120,7 +120,7 @@ test_that("goric: priorICweights validatie geeft duidelijke fouten", {
   expect_error(goric(est_cf, VCOV = VCOV_cf, hypotheses = hyp,
                      priorICweights = c(0.2, 0.3, 0.5)), "failsafe")
   expect_error(goric(est_cf, VCOV = VCOV_cf, hypotheses = hyp, comparison = "none",
-                     priorICweights = c(0.5, 0.5)), "should consist of 1 elements")
+                     priorICweights = c(0.5, 0.5)), "should consist of 1 element,")
   expect_error(goric(est_cf, VCOV = VCOV_cf, hypotheses = hyp,
                      priorICweights = c(0.2, 0.3, 0.5)), "should consist of 2 elements")
   expect_error(goric(est_cf, VCOV = VCOV_cf, hypotheses = hyp,

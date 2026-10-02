@@ -118,9 +118,24 @@ summary.con_goric <- function(object, brief = TRUE,
         print.gap = 2, quote = FALSE, right = TRUE)
   cat("---\n")
   
-  if (comparison == "complement") {
-    cat("The order-restricted hypothesis", sQuote(objectnames[1]), "has", 
-        sprintf("%.2f", as.numeric(ratio.gw[1,2])), "times more support than its complement.\n\n")
+  if (comparison == "complement" && length(which.max(x$result[, 7])) == 0L) {
+    # all IC weights are NaN (e.g., non-finite penalties): no conclusion
+    message("Note: The IC weights are not available (NaN), e.g., because the ",
+            "penalty term is not finite. No conclusion can be drawn.")
+  } else if (comparison == "complement") {
+    # the order-restricted hypothesis (not Heq) vs. its complement, by name
+    hm <- objectnames[objectnames != "Heq"][1]
+    best_hypo_name <- x$result$model[which.max(x$result[, 7])]
+    if (isTRUE(x$Heq) && best_hypo_name == "Heq") {
+      cat("The equality-restricted hypothesis (Heq) is the best in the set, as it",
+          "has the highest GORIC(A) weight. Since the order-restricted hypothesis",
+          sQuote(hm), "contains Heq, inspecting the relative support of", sQuote(hm),
+          "versus its complement is not meaningful.\n\n")
+    } else {
+      cat(support_sentence(hm, "complement", x$ratio.gw[hm, "vs. complement"],
+                           a_label = paste("The order-restricted hypothesis", sQuote(hm)),
+                           b_label = "its complement"), ".\n\n", sep = "")
+    }
   } 
   
   
@@ -135,9 +150,8 @@ summary.con_goric <- function(object, brief = TRUE,
       cat("\nRatio GORICAC-weights:\n") 
     }
     
-    ratio.gw <- apply(x$ratio.gw, 2, sprintf, fmt = dig)
+    ratio.gw <- fmt_ratio_matrix(x$ratio.gw, dig)
     rownames(ratio.gw) <- mark_best_hypo(rownames(x$ratio.gw), x)
-    class(ratio.gw) <- "numeric"
     
     if (max(ratio.gw, na.rm = TRUE) >= 1e4) {
       print(format(ratio.gw, digits = digits, scientific = TRUE, trim = TRUE), 
@@ -151,9 +165,8 @@ summary.con_goric <- function(object, brief = TRUE,
   
   if (!is.null(x$ratio.lw)) {
     cat("\nRatio loglik-weights:\n")
-    ratio.lw <- apply(x$ratio.lw, 2, sprintf, fmt = dig)
+    ratio.lw <- fmt_ratio_matrix(x$ratio.lw, dig)
     rownames(ratio.lw) <- mark_best_hypo(rownames(x$ratio.lw), x) 
-    class(ratio.lw) <- "numeric"
     
     if (max(ratio.lw, na.rm = TRUE) >= 1e4) {
       print(format(ratio.lw, digits = digits, scientific = TRUE, trim = TRUE), 
@@ -167,9 +180,8 @@ summary.con_goric <- function(object, brief = TRUE,
   
   if (!is.null(x$ratio.pw)) {
     cat("\nRatio penalty-weights:\n")
-    ratio.pw <- apply(x$ratio.pw, 2, sprintf, fmt = dig)
+    ratio.pw <- fmt_ratio_matrix(x$ratio.pw, dig)
     rownames(ratio.pw) <- mark_best_hypo(rownames(x$ratio.pw), x)
-    class(ratio.pw) <- "numeric"
     
     if (max(ratio.pw, na.rm = TRUE) >= 1e4) {
       print(format(ratio.pw, digits = digits, scientific = TRUE, trim = TRUE), 
@@ -183,31 +195,29 @@ summary.con_goric <- function(object, brief = TRUE,
   
   if (!brief) {
     cat("\n\nOrder-restricted coefficients:\n")
-    coefs <- trimws(apply(x$ormle$b.restr, 2, sprintf, fmt = dig))
+    # (matrix(): apply() would drop the dimensions for a single hypothesis)
+    b_restr <- as.matrix(x$ormle$b.restr)
+    coefs <- matrix(trimws(sprintf(dig, b_restr)), nrow = nrow(b_restr), 
+                    ncol = ncol(b_restr), dimnames = dimnames(b_restr))
     coefs[coefs == "NA"] <- ""
-    rownames(coefs) <- rownames(x$ormle$b.restr)
     # print(format(coefs, digits = digits, scientific = TRUE, trim = TRUE), 
     #       print.gap = 2, quote = FALSE, right = TRUE) 
     # 
     print(coefs, scientific = TRUE, right = TRUE, quote = FALSE, print.gap = 2)
     cat("---\n")
     
-    vnames <- names(x$ormle$b.restr)
+    # names of the columns of the constraint matrices: the matrix's own 
+    # column names or, if absent, the names of the (non-defined) parameters,
+    # i.e., the first ncol(Amat) columns of b.restr (the defined parameters
+    # (':=') are appended after the parameters and have no column in Amat)
+    vnames <- colnames(as.matrix(x$ormle$b.restr))
     vnames_len <- length(x$objectList)
-    first_na <- apply(x$ormle$b.restr[1:vnames_len, , drop = FALSE], 1, function(x) { which(is.na(x))[1] }) -1 
-    first_na[is.na(first_na)] <- 0
-    
-    selected_names <- list()
-    for (i in seq_len(length(first_na))) {
-      if (first_na[i] == 0) {
-        selected_names[[i]] <- vnames
-      } else {
-        selected_names[[i]] <- vnames[1:first_na[i]]
-      }
-    }
     
     fn <- function(Amat, bvec, meq, iact, vnames) {
-      colnames(Amat) <- vnames
+      Amat <- as.matrix(Amat)
+      if (is.null(colnames(Amat))) {
+        colnames(Amat) <- vnames[seq_len(ncol(Amat))]
+      }
       out.rest <- cbind(round(Amat, 4), c(rep("   ==", meq), rep("   >=", nrow(Amat) - 
                                                                    meq)), bvec, " ")
       rownames(out.rest) <- paste(seq_len(nrow(out.rest)), ":", sep = "")
@@ -226,18 +236,17 @@ summary.con_goric <- function(object, brief = TRUE,
     conMat <- list()
     for (i in 1:vnames_len) {
       conMat[[i]] <- fn(Amat = Amat[[i]], bvec = bvec[[i]], meq = meq[[i]], 
-                        iact = iact[[i]], vnames = selected_names[[i]])  
+                        iact = iact[[i]], vnames = vnames)  
     }
     names(conMat) <- x$objectNames
     
     if (comparison == "complement") {
-      conMat$complement <- paste("not", x$objectNames) 
+      # the complement of the order-restricted hypothesis (not of Heq)
+      conMat$complement <- paste("not", setdiff(x$objectNames, "Heq"))
     }
     
     cat("\nRestriction matrices:\n")
     print(conMat, quote = FALSE, scientific = FALSE)
-    
-    #invisible(x)
   } else {
     if (!is.null(object$hypotheses_usr)) {
       cat("\norder-restricted hypotheses:\n\n")
@@ -248,6 +257,16 @@ summary.con_goric <- function(object, brief = TRUE,
       }
     }
   }
-  #cat("\n")
-  #message(x$messages$mix_weights)
+  # the summary is printed above; the goric object is returned invisibly
+  # (so that print(summary(x)) does not end with a stray 'NULL')
+  invisible(object)
+}
+
+# format a ratio matrix (also a 1 x 1 one) with sprintf, keeping its
+# dimensions and dimnames (apply() would drop them for a single hypothesis)
+fmt_ratio_matrix <- function(m, dig) {
+  out <- matrix(sprintf(dig, m), nrow = nrow(m), ncol = ncol(m), 
+                dimnames = dimnames(m))
+  class(out) <- "numeric"
+  out
 }

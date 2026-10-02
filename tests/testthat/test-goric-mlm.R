@@ -17,12 +17,53 @@ ll_mv_ref <- sum(mvtnorm::dmvnorm(E_mv, sigma = crossprod(E_mv) / nrow(E_mv), lo
 
 run_goric_mv <- function(...) suppressMessages(goric(fit_mv, ...))
 
+# onafhankelijke referentiewaarden voor H_mv: de ongerestricteerde schattingen
+# als vector (volgorde en namen van vcov(), zoals in ormle$b.restr) en de
+# restricties (Age:GroupPassive = 0 en Age:GroupNo - Age:GroupPassive >= 0)
+b_mv_unr <- setNames(as.vector(coef(fit_mv)), rownames(vcov(fit_mv)))
+check_H_mv <- function(b) {
+  isTRUE(all.equal(unname(b["Age:GroupPassive"]), 0, tolerance = 1e-8)) &&
+    b["Age:GroupNo"] - b["Age:GroupPassive"] >= -1e-8
+}
+
 test_that("goric mlm: alle combinaties van comparison en type draaien", {
   for (cmp in c("complement", "unconstrained", "none")) {
     for (ty in c("goric", "gorica")) {
       res <- run_goric_mv(hypotheses = list(H1 = H_mv), comparison = cmp, type = ty)
       expect_s3_class(res, "con_goric")
       expect_true(all(is.finite(res$result[[ty]])))
+      # IC = -2 * loglik + 2 * penalty
+      expect_equal(res$result[[ty]], -2 * res$result$loglik + 2 * res$result$penalty,
+                   tolerance = 1e-10)
+      # de IC-gewichten sommeren tot 1 en volgen uit de IC-waarden
+      w <- res$result[[paste0(ty, ".weights")]]
+      expect_equal(sum(w), 1, tolerance = 1e-10)
+      ic <- res$result[[ty]]
+      expect_equal(w, exp(-(ic - min(ic)) / 2) / sum(exp(-(ic - min(ic)) / 2)),
+                   tolerance = 1e-8)
+      # de gerestricteerde schattingen van H1 voldoen aan de restricties
+      b_H1 <- unlist(res$ormle$b.restr["H1", names(b_mv_unr)])
+      expect_true(check_H_mv(b_H1))
+      # loglik van H1 <= loglik van het ongerestricteerde model (bij goric de
+      # MVN-loglik; bij gorica 0 = dmvnorm(0) is het maximum)
+      ll_max <- if (ty == "goric") ll_mv_ref else
+        mvtnorm::dmvnorm(rep(0, length(b_mv_unr)), sigma = res$VCOV, log = TRUE)
+      expect_true(res$result$loglik[1] <= ll_max + 1e-8)
+      if (cmp != "none") {
+        # complement/unconstrained: loglik <= ongerestricteerd en >= H1
+        expect_true(res$result$loglik[2] <= ll_max + 1e-8)
+        expect_true(res$result$loglik[2] >= res$result$loglik[1] - 1e-8)
+        # de ongerestricteerde schattingen staan in de laatste rij
+        if (cmp == "unconstrained") {
+          expect_equal(unlist(res$ormle$b.restr["unconstrained", names(b_mv_unr)]),
+                       b_mv_unr, tolerance = 1e-8)
+        }
+        # PT van het ongerestricteerde model = 1 + p (goric) resp. p (gorica)
+        if (cmp == "unconstrained") {
+          expect_equal(res$result$penalty[2],
+                       length(b_mv_unr) + (ty == "goric"), tolerance = 1e-10)
+        }
+      }
     }
   }
 })

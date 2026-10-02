@@ -100,19 +100,40 @@ test_that("benchmark_means: scalaire alt_group_size gelijk aan rep(alt, ngroups)
 })
 
 
-test_that("benchmark: priorICweights worden doorgegeven (pref_hypo_name)", {
+test_that("benchmark: priorICweights worden doorgegeven (gewichten, niet alleen pref_hypo_name)", {
   hypos <- list(H1 = h1_bm, H2 = "group1 = group2 = group3")
+  priors <- c(0.001, 0.999)
   g_prior <- goric(fit_bm, hypotheses = hypos, comparison = "none",
-                   priorICweights = c(0.001, 0.999))
+                   priorICweights = priors)
   best <- g_prior$result$model[which.max(g_prior$result[, 7])]
   g_flat <- goric(fit_bm, hypotheses = hypos, comparison = "none")
-  # de priors veranderen de voorkeurshypothese
-  expect_false(identical(best, g_flat$result$model[which.max(g_flat$result[, 7])]))
+  # de priors veranderen de voorkeurshypothese (H1 -> H2)
+  expect_equal(best, "H2")
+  expect_equal(g_flat$result$model[which.max(g_flat$result[, 7])], "H1")
 
-  b_m <- quiet(benchmark(g_prior, model_type = "means", iter = 20, seed = 1))
-  expect_equal(b_m$pref_hypo_name, best)
-  b_a <- quiet(benchmark(g_prior, model_type = "asymp", iter = 20, seed = 1))
-  expect_equal(b_a$pref_hypo_name, best)
+  for (mt in c("means", "asymp")) {
+    b_f <- quiet(benchmark(g_flat, model_type = mt, iter = 20, seed = 1))
+    b_p <- quiet(benchmark(g_prior, model_type = mt, iter = 20, seed = 1))
+    expect_equal(b_p$pref_hypo_name, best)
+    # 'Sample' gewicht = gorica-gewicht (de benchmark zet goric om in gorica)
+    # met dezelfde priors
+    g_prior_a <- goric(fit_bm, hypotheses = hypos, comparison = "none",
+                       type = "gorica", priorICweights = priors)
+    expect_equal(b_p$benchmarks$goric_weights[[2]][1, "Sample"],
+                 g_prior_a$result$gorica.weights[2])
+    # dezelfde seed geeft dezelfde simulatie-schattingen, dus per draw:
+    # log(w_H2 / w_H1 | prior) = log(w_H2 / w_H1 | flat) + log(p2 / p1),
+    # ofwel rgw_log_prior[H2 vs. H1] = -rgw_log_flat[H1 vs. H2] + log(p2/p1)
+    for (pop in names(b_f$combined_values$rgw_log_combined)) {
+      lr_f <- b_f$combined_values$rgw_log_combined[[pop]][, "vs. H2"]
+      lr_p <- b_p$combined_values$rgw_log_combined[[pop]][, "vs. H1"]
+      expect_equal(unname(lr_p), unname(-lr_f + log(priors[2] / priors[1])),
+                   tolerance = 1e-8)
+    }
+    # en de gewichten zelf verschillen dus (de priors zijn niet genegeerd)
+    expect_false(isTRUE(all.equal(b_f$combined_values$gw_combined[[2]],
+                                  b_p$combined_values$gw_combined[[2]])))
+  }
 })
 
 
@@ -244,14 +265,23 @@ test_that("compute_cohens_f: komt overeen met de onafhankelijke referentieformul
 })
 
 
-test_that("benchmark_means: Cohen's f op basis van sigma(fit); pop_es wordt echt bereikt", {
-  s <- sigma(fit_bm)
-  # waargenomen f volgens de referentieformule met sigma(fit)
+test_that("benchmark_means: Cohen's f op basis van sigma2 = RSS/N (simulatievariantie); pop_es wordt echt bereikt", {
+  N_tot <- sum(n_g)
+  # residuele variantie van de simulatie: de draws komen uit object$VCOV =
+  # vcov(fit) * (N - k) / N, dus sigma2 = RSS / N (ML), niet sigma(fit)^2
+  s2 <- sum(residuals(fit_bm)^2) / N_tot
+  expect_equal(s2, sigma(fit_bm)^2 * (N_tot - 3) / N_tot)
+  expect_equal(unname(n_g * diag(g_compl$VCOV)), rep(s2, 3))
+  s <- sqrt(s2)
   b <- quiet(benchmark(g_compl, model_type = "means", iter = 10, seed = 1))
-  expect_equal(b$res_var, s^2)
+  expect_equal(b$res_var, s2)
+  # waargenomen f = standaard plug-in sqrt(SS_between / SS_within) = sqrt(SSB / RSS)
   expect_equal(b$cohens_f_observed, cohens_f_ref(coef(fit_bm), n_g, s))
+  ssb <- sum(n_g * (coef(fit_bm) - weighted.mean(coef(fit_bm), n_g))^2)
+  expect_equal(b$cohens_f_observed, unname(sqrt(ssb / sum(residuals(fit_bm)^2))))
   expect_equal(unname(b$pop_es["Observed"]), b$cohens_f_observed)
-  # gevraagde pop_es wordt bereikt (gecontroleerd op pop_group_means)
+  # gevraagde pop_es wordt bereikt (gecontroleerd op pop_group_means), t.o.v.
+  # de foutvariantie van de draws
   b2 <- quiet(benchmark(g_compl, model_type = "means", iter = 10, seed = 1,
                         pop_es = c(0.25, 0.5)))
   expect_equal(unname(apply(b2$pop_group_means, 1, cohens_f_ref, N = n_g, s = s)),
@@ -259,22 +289,29 @@ test_that("benchmark_means: Cohen's f op basis van sigma(fit); pop_es wordt echt
   # alt_group_size: zelfde sigma2, f ten opzichte van de nieuwe groepsgroottes
   b3 <- quiet(benchmark(g_compl, model_type = "means", iter = 10, seed = 1,
                         alt_group_size = 50, pop_es = 0.3))
-  expect_equal(b3$res_var, s^2)
+  expect_equal(b3$res_var, s2)
   expect_equal(cohens_f_ref(b3$pop_group_means[1, ], rep(50, 3), s), 0.3)
-  # ANCOVA: residuele variantie van het model (na correctie voor de covariaat)
+  # ANCOVA: residuele variantie van het model (na correctie voor de covariaat), RSS/N
   fit_ancova <- lm(y ~ -1 + group + x, data = df_bm)
   g_ancova <- goric(fit_ancova, hypotheses = list(H1 = h1_bm), comparison = "complement")
   ba <- quiet(benchmark(g_ancova, model_type = "means", iter = 10, seed = 1))
-  expect_equal(ba$res_var, sigma(fit_ancova)^2)
+  expect_equal(ba$res_var, sum(residuals(fit_ancova)^2) / N_tot)
   expect_equal(ba$cohens_f_observed,
-               cohens_f_ref(coef(fit_ancova)[1:3], n_g, sigma(fit_ancova)))
-  # schattingen + VCOV (vcov(fit)): sigma2 = n_g * VCOV[g, g] = sigma(fit)^2
-  g_est <- goric(coef(fit_bm), VCOV = vcov(fit_bm), hypotheses = list(H1 = h1_bm),
-                 comparison = "complement")
+               cohens_f_ref(coef(fit_ancova)[1:3], n_g, sqrt(ba$res_var)))
+  # schattingen + VCOV: sigma2 = n_g * VCOV[g, g]; met vcov(fit) * (N - k) / N
+  # (de VCOV van het goric-object) gelijk aan de lm-route
+  g_est <- goric(coef(fit_bm), VCOV = vcov(fit_bm) * (N_tot - 3) / N_tot,
+                 hypotheses = list(H1 = h1_bm), comparison = "complement")
   be <- quiet(benchmark(g_est, model_type = "means", iter = 10, seed = 1,
                         group_size = n_g))
-  expect_equal(be$res_var, s^2)
+  expect_equal(be$res_var, s2)
   expect_equal(be$cohens_f_observed, b$cohens_f_observed)
+  # met vcov(fit) zelf: sigma2 = sigma(fit)^2 (consistent met die eigen VCOV)
+  g_est2 <- goric(coef(fit_bm), VCOV = vcov(fit_bm), hypotheses = list(H1 = h1_bm),
+                  comparison = "complement")
+  be2 <- quiet(benchmark(g_est2, model_type = "means", iter = 10, seed = 1,
+                         group_size = n_g))
+  expect_equal(be2$res_var, sigma(fit_bm)^2)
 })
 
 
@@ -298,7 +335,13 @@ test_that("benchmark: error_prob voor goricac is een enkel getal (type-afhankeli
               type = "goricac", sample_nobs = 8)
   bc <- quiet(benchmark(gc, iter = 10, seed = 1))
   expect_length(bc$error_prob_pref_hypo, 1)
-  expect_equal(bc$error_prob_pref_hypo, 0.02129459, tolerance = 1e-6)
+  # onafhankelijk uit de definitie: de foutkans is het goricac-gewicht van het
+  # complement, w_c = exp(-IC_c / 2) / sum_j exp(-IC_j / 2), berekend uit de
+  # IC-waarden (niet uit de gewichtenkolom)
+  IC <- gc$result$goricac
+  w_ref <- exp(-(IC - min(IC)) / 2) / sum(exp(-(IC - min(IC)) / 2))
+  expect_equal(bc$error_prob_pref_hypo, w_ref[2])
+  expect_true(bc$error_prob_pref_hypo > 0 && bc$error_prob_pref_hypo < 0.5)
   expect_equal(bc$error_prob_pref_hypo, gc$result$goricac.weights[2])
   # ook via de herfit (comparison = 'unconstrained' met meer hypothesen)
   gc2 <- goric(est, VCOV = diag(3), hypotheses = list(H1 = "x < y < z", H2 = "x > y"),
@@ -329,7 +372,7 @@ test_that("benchmark_means: negatieve groepsgemiddelden behouden de volgorde; Ob
                         pop_es = c(0.2, 0.5)))
   for (i in 1:2) {
     expect_equal(order(b2$pop_group_means[i, ]), order(coef(f_neg)))
-    expect_equal(cohens_f_ref(b2$pop_group_means[i, ], b2$group_size, sigma(f_neg)),
+    expect_equal(cohens_f_ref(b2$pop_group_means[i, ], b2$group_size, sqrt(b2$res_var)),
                  unname(b2$pop_es[i]))
   }
 })
@@ -402,8 +445,9 @@ test_that("benchmark_means: ratio_pop_means bepaalt het patroon van de populatie
   expect_true(all(diff(b_321$pop_group_means[2, ]) < 0))
   expect_equal(unname(b_321$pop_group_means[2, ]), -unname(pm))
   # effectgrootte klopt
-  expect_equal(cohens_f_ref(pm, b_123$group_size, sigma(fit_bm)),
+  expect_equal(cohens_f_ref(pm, b_123$group_size, sqrt(b_123$res_var)),
                unname(b_123$pop_es[2]))
+  expect_equal(b_123$res_var, sum(residuals(fit_bm)^2) / sum(n_g))
   # verschuiving maakt niet uit
   b_shift <- quiet(benchmark(g_compl, model_type = "means", iter = 10, seed = 1,
                              ratio_pop_means = c(11, 12, 13)))

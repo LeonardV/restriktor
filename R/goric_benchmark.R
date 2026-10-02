@@ -70,13 +70,6 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   # 'iter' is used as-is (single fixed-size run, as before).
   user_iter <- iter
 
-  if (length(control) == 1) {
-    control <- object$objectList[[1]]$control
-  }
-
-  mix_weights <- attr(object$objectList[[1]]$wt.bar, "method")
-  penalty_factor <- object$penalty_factor
-
   # Check:
   if (!inherits(object, "con_goric")) {
     stop(paste("\nrestriktor ERROR:",
@@ -85,6 +78,17 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
                paste(class(object), collapse = ", ")
     ), call. = FALSE)
   }
+  check_benchmark_weights(object)
+
+  # no user-specified control options: use those of the goric object
+  # (previously 'length(control) == 1', which silently discarded a control
+  # list with exactly one option)
+  if (length(control) == 0) {
+    control <- object$objectList[[1]]$control
+  }
+
+  mix_weights <- attr(object$objectList[[1]]$wt.bar, "method")
+  penalty_factor <- object$penalty_factor
 
   validate_iter_args(iter, iter_min = iter_min, iter_step = iter_step,
                      iter_max = iter_max, iter_stability_tol = iter_stability_tol,
@@ -111,6 +115,12 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
 
   # Hypotheses
   hypos <- object$hypotheses_usr
+  if (is.null(hypos)) {
+    stop("\nrestriktor ERROR: benchmark() requires hypotheses specified as text ",
+         "(e.g., 'x1 > x2'); the GORIC(A) object was fitted with hypotheses given ",
+         "as constraint matrices, which are not (yet) supported by benchmark().",
+         call. = FALSE)
+  }
   nr_hypos <- dim(object$result)[1]
   Heq <- object$Heq
 
@@ -122,11 +132,18 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   form_model_org <- formula(object$model.org)
 
   # Which coefficients are group means? 
-  # NOTE (ANCOVA, e.g. lm(y ~ -1 + group + x)): only the coefficients that
-  # belong to factor (or character/logical) terms of the original model fit
-  # are treated as group means. The effect size (Cohen's f), the group sizes
-  # and the scaling of the population means all refer to these group means
-  # only; the coefficients of continuous covariates are nuisance parameters
+  # NOTE (covariates, e.g. lm(y ~ -1 + group + x) or lm(y ~ -1 + group + sex)):
+  # only the coefficients of the factor (or character/logical) term that the
+  # hypotheses refer to are treated as group means (the first factor term if
+  # the hypotheses refer to no coefficient at all): without an intercept, R
+  # codes the first factor term as cell means (one indicator per group),
+  # while any further factor term is coded as contrasts (differences with its
+  # reference level), which are not means and have no group size; hypotheses
+  # on such contrasts, on covariates or on coefficients of several terms give
+  # an error (use model_type = 'asymp' then). The effect size
+  # (Cohen's f), the group sizes and the scaling of the population means all
+  # refer to these group means only; all other coefficients (continuous
+  # covariates and the contrasts of further factors) are nuisance parameters
   # here: they are kept fixed at their observed estimates in every
   # population (also under 'No-effect') and their (co)variances are rescaled
   # with the overall sample size (sum(N)/sum(alt_group_size)) when
@@ -137,7 +154,20 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   fitLM <- object$model.org
   group_idx <- seq_len(n_coef)
   N_lm <- NULL
+  group_term_label <- NULL
+  group_size_problem <- NULL
   if (!is.null(fitLM) && inherits(fitLM, "lm")) {
+    # A model with an intercept (e.g. y ~ group) has an intercept and
+    # contrasts as coefficients, not group means (benchmark() already rejects
+    # this; benchmark_means() can also be called directly).
+    if (isTRUE(attr(terms(fitLM), "intercept") == 1)) {
+      stop("\nrestriktor ERROR: The model fit underlying the GORIC(A) object has an ",
+           "intercept (e.g., lm(y ~ group)), so its coefficients are an intercept and ",
+           "contrasts (differences with the reference group), not group means. ",
+           "model_type = 'means' requires the group means as coefficients: please refit ",
+           "the model without an intercept (e.g., lm(y ~ -1 + group)), formulate the ",
+           "hypotheses in terms of the group means, and re-run goric().", call. = FALSE)
+    }
     group_info <- tryCatch({
       tt <- terms(fitLM)
       mf <- model.frame(fitLM)
@@ -146,33 +176,117 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
       vars <- rownames(fac)
       if (attr(tt, "response") > 0) vars <- vars[-attr(tt, "response")]
       # factor variables in the model frame (response and "(weights)" etc. excluded)
-      group_vars <- intersect(rownames(fac)[-attr(tt, "response")], names(mf))
+      group_vars <- intersect(vars, names(mf))
       group_vars <- group_vars[vapply(mf[group_vars], is_group_var, logical(1))]
-      # terms that consist of factor variables only
-      group_terms <- which(apply(fac[, , drop = FALSE] > 0, 2, function(v) {
-        all(rownames(fac)[v] %in% group_vars)
+      # terms that consist of factor variables only; the first of these is
+      # the (cell-means coded) grouping term
+      factor_terms <- which(apply(fac[, , drop = FALSE] > 0, 2, function(v) {
+        any(v) && all(rownames(fac)[v] %in% group_vars)
       }))
+      if (length(factor_terms) == 0) stop("no factor term")
       assign <- attr(model.matrix(fitLM), "assign")
-      idx <- which(assign %in% group_terms)
-      # group sizes: (interaction-)cell counts of the factor variables only.
-      # table() returns a 1-D array with a 'dim' attribute; c() strips it to
-      # a plain named vector (otherwise arithmetic with N in
-      # compute_cohens_f() fails with "non-conformable arrays").
-      counts <- if (length(group_vars) > 0) c(do.call(table, mf[group_vars])) else NULL
-      list(idx = idx, counts = counts)
+      # The grouping term is the factor term the hypotheses are about: the
+      # one whose coefficients contain ALL coefficients referred to in the
+      # hypotheses (the columns of the constraint matrices with a non-zero
+      # entry; ':=' definitions are already resolved there). Previously the
+      # first factor term was taken, so that for lm(y ~ -1 + sex + group)
+      # with hypotheses on 'group' the sex means were benchmarked while the
+      # hypothesised group coefficients were kept fixed in every population.
+      ref_idx <- integer(0)
+      if (is.list(object$constraints) && length(object$constraints) > 0) {
+        Amat <- do.call(rbind, lapply(object$constraints, function(A) {
+          A <- as.matrix(A)
+          if (ncol(A) == n_coef) A else NULL
+        }))
+        if (!is.null(Amat)) ref_idx <- which(colSums(abs(Amat)) > 0)
+      }
+      hyp_problem <- NULL
+      if (length(ref_idx) > 0) {
+        candidates <- factor_terms[vapply(factor_terms, function(tm) {
+          all(ref_idx %in% which(assign == tm))
+        }, logical(1))]
+        group_term <- if (length(candidates) > 0) candidates[1] else NA
+        if (is.na(group_term)) {
+          hyp_problem <- paste0(
+            "The hypotheses refer to the coefficient(s) ",
+            paste(names(group_means)[ref_idx], collapse = ", "),
+            ", which do not belong to a single factor (grouping) term of the fitted ",
+            "model (they include covariates or coefficients of different terms).")
+        } else if (length(which(assign == group_term)) !=
+                   length(c(do.call(table, mf[rownames(fac)[fac[, group_term] > 0]])))) {
+          hyp_problem <- paste0(
+            "The hypotheses refer to the coefficient(s) ",
+            paste(names(group_means)[ref_idx], collapse = ", "),
+            " of the factor term '", colnames(fac)[group_term], "', but this term is ",
+            "coded as contrasts (differences with its reference level), not as group ",
+            "means, since it is not the first factor term of the model (e.g., ",
+            "lm(y ~ -1 + sex + group)); refit the model with this term first (e.g., ",
+            "lm(y ~ -1 + group + sex)) and formulate the hypotheses in terms of its ",
+            "group means.")
+        }
+      } else {
+        group_term <- factor_terms[1]
+      }
+      if (!is.null(hyp_problem)) {
+        # (no return(): that would return from benchmark_means() itself)
+        list(hyp_problem = hyp_problem)
+      } else {
+        term_vars <- rownames(fac)[fac[, group_term] > 0]
+        idx <- which(assign == group_term)
+        # group sizes: (interaction-)cell counts of the factor variable(s) of
+        # the grouping term. table() returns a 1-D array with a 'dim'
+        # attribute; c() strips it to a plain named vector (otherwise
+        # arithmetic with N in compute_cohens_f() fails with "non-conformable
+        # arrays").
+        counts <- c(do.call(table, mf[term_vars]))
+        list(idx = idx, counts = counts, label = colnames(fac)[group_term])
+      }
     }, error = function(e) NULL)
+    if (!is.null(group_info$hyp_problem)) {
+      stop("\nrestriktor ERROR: benchmark_means() requires hypotheses on the group means ",
+           "of a single factor term (e.g., lm(y ~ -1 + group) with hypotheses on ",
+           "group1, group2, ...). ", group_info$hyp_problem, " Alternatively, use ",
+           "model_type = 'asymp' (benchmark_asymp()), which benchmarks the estimates ",
+           "themselves.", call. = FALSE)
+    }
     if (!is.null(group_info) && length(group_info$idx) > 0) {
       group_idx <- group_info$idx
-      # only usable if there is one count per group mean (e.g., not for an
-      # additive model with multiple factors).
+      group_term_label <- group_info$label
+      # only usable if there is one count per group mean (i.e., the term is
+      # coded as cell means).
       if (length(group_info$counts) == length(group_idx)) {
         N_lm <- group_info$counts
+      } else {
+        group_size_problem <- paste0(
+          "The group sizes could not be derived from the fitted model: the ",
+          length(group_idx), " coefficient(s) of the term '", group_term_label,
+          "' (", paste(names(group_means)[group_idx], collapse = ", "),
+          ") do not correspond to the ", length(group_info$counts),
+          " cell(s) of that term, so they are apparently not cell means.")
       }
+    } else {
+      group_size_problem <- paste0(
+        "The group sizes could not be derived from the fitted model, since it has ",
+        "no factor (grouping) variable, so it is unclear which coefficients are ",
+        "group means. All coefficients are treated as group means.")
     }
+  } else {
+    group_size_problem <- paste0(
+      "The group sizes could not be retrieved from the goric object, since only ",
+      "estimates and their covariance matrix were used as input (all estimates are ",
+      "treated as group means).")
   }
   # number of groups (covariates not included)
   ngroups <- length(group_idx)
   covariate_idx <- setdiff(seq_len(n_coef), group_idx)
+  if (length(covariate_idx) > 0 && !is.null(group_term_label)) {
+    message("\nrestriktor Message: The coefficients of the term '", group_term_label,
+            "' (", paste(names(group_means)[group_idx], collapse = ", "),
+            ") are treated as the group means. The other coefficient(s) (",
+            paste(names(group_means)[covariate_idx], collapse = ", "),
+            ") are treated as covariates: they are not part of Cohen's f and are kept ",
+            "at their observed estimates in every population (also under 'No-effect').")
+  }
 
   # Pattern of the population means (see generate_scaled_means()): by
   # default the observed group means; otherwise the user-specified
@@ -217,10 +331,9 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   } else if (!is.null(N_lm)) { # so, not user specified
     N <- N_lm
   } else {
-    stop("\nrestriktor ERROR: The group sizes could not be retrieved from the goric object ",
-         "(e.g., because only estimates and their covariance matrix were used as input). ",
-         "Please specify them by the argument 'group_size'; e.g., group_size = 100 ",
-         "or group_size = c(75, 100, 120).", call. = FALSE)
+    stop("\nrestriktor ERROR: ", group_size_problem,
+         " Please specify the group sizes by the argument 'group_size'; e.g., ",
+         "group_size = 100 or group_size = c(75, 100, 120).", call. = FALSE)
   }
   N <- as.vector(N)
   names(N) <- names(group_means)[group_idx]
@@ -229,10 +342,18 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
 
   # Residual (within-group) error variance sigma2, used for Cohen's f (the
   # observed f and the scaling of the population means to 'pop_es', see
-  # compute_cohens_f()/generate_scaled_means()). With a fitted lm model it
-  # is the model's residual variance sigma(fit)^2 (for an ANCOVA this is the
-  # residual variance after adjusting for the covariates, which is what
-  # Cohen's f refers to). Without a model (input is est + VCOV) it is
+  # compute_cohens_f()/generate_scaled_means()). It is the error variance
+  # the simulation is based on: the draws are generated from VCOV, which for
+  # a fitted lm model is vcov(fit) * (N - k) / N, i.e. based on the ML
+  # estimate sigma2 = RSS / N (see VCOV.unbiased()), so that Var(mean_g) =
+  # sigma2 / N_g. With a fitted lm model, sigma2 is therefore RSS / N (for a
+  # one-way design this equals N_g * VCOV[g, g] for every group; for an
+  # ANCOVA it is the residual variance after adjusting for the covariates,
+  # which is what Cohen's f refers to); the observed f is then the usual
+  # plug-in value sqrt(SS_between / SS_within). (Previously sigma(fit)^2 =
+  # RSS / (N - k) was used here, so that the population means for a given
+  # pop_es had an effective f of pop_es * sqrt(N / (N - k)) relative to the
+  # draws' own error variance.) Without a model (input is est + VCOV) it is
   # derived from VCOV as the average of N_g * VCOV[g, g], assuming
   # independent group means with a common error variance -- see
   # residual_variance_from_vcov(), which warns if that assumption seems
@@ -241,9 +362,39 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   # (which scales VCOV[g, g] by N_g / alt_N_g, i.e. keeps Var(mean_g) =
   # sigma2 / N_g for the new group sizes), so the same sigma2 applies to the
   # alternative group sizes -- and to the simulation, which draws from VCOV.
+  # N is the sample size of the FITTED MODEL (nobs(fitLM)): the VCOV of the
+  # object is vcov(fit) * (N - k) / N with that N (see VCOV.unbiased()), also
+  # when a different 'sample_nobs' was given to goric() -- which goric()
+  # accepts with a message, and stores as object$sample_nobs. Using
+  # object$sample_nobs here (as was done briefly) gave sigma2 = RSS /
+  # sample_nobs, i.e. an f and population means that do not belong to the
+  # draws.
   sigma2 <- NULL
-  if (!is.null(fitLM) && inherits(fitLM, "lm")) {
-    sigma2 <- tryCatch(sigma(fitLM)^2, error = function(e) NULL)
+  if (!is.null(fitLM) && inherits(fitLM, "lm") && !inherits(fitLM, "glm") &&
+      !isTRUE(object$objectList[[1]]$missing == "fiml")) {
+    # A weighted fit (lm(..., weights = w)) is not supported: its VCOV gives
+    # Var(mean_g) = sigma2_w / sum(w_g), not sigma2 / N_g, so neither the
+    # group sizes nor a single residual variance describe the draws.
+    w_lm <- tryCatch(stats::weights(fitLM), error = function(e) NULL)
+    if (!is.null(w_lm) && any(w_lm != 1)) {
+      stop("\nrestriktor ERROR: The model fit underlying the GORIC(A) object is a ",
+           "weighted fit (lm(..., weights = )). The covariance matrix of weighted ",
+           "estimates does not correspond to the group sizes and a single residual ",
+           "error variance, which benchmark_means() needs for Cohen's f and the ",
+           "population means. Please use model_type = 'asymp' (benchmark_asymp()) ",
+           "instead, or refit the model without weights.", call. = FALSE)
+    }
+    N_model <- tryCatch(stats::nobs(fitLM), error = function(e) NULL)
+    # a vector of group sizes is summed (as goric() does)
+    if (is.numeric(object$sample_nobs) && length(object$sample_nobs) >= 1 &&
+        is.numeric(N_model) && length(N_model) == 1 && sum(object$sample_nobs) != N_model) {
+      message("\nrestriktor Message: The 'sample_nobs' of the GORIC(A) object (",
+              sum(object$sample_nobs), ") differs from the sample size of the fitted model (",
+              N_model, "). The benchmark uses the model-based sample size, on which ",
+              "the covariance matrix of the estimates is based.")
+    }
+    sigma2 <- tryCatch(stats::deviance(fitLM) / N_model, # RSS / N
+                       error = function(e) NULL)
     if (!is.numeric(sigma2) || length(sigma2) != 1 || !is.finite(sigma2)) {
       sigma2 <- NULL
     }
@@ -251,6 +402,12 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   if (is.null(sigma2)) {
     sigma2 <- residual_variance_from_vcov(N, VCOV_orig[group_idx, group_idx, drop = FALSE])
   }
+
+  ## Compute observed Cohens f
+  # (based on the group means only -- see the note on covariates above -- and
+  # on the group sizes of the data, also when alt_group_size is specified)
+  cohens_f_observed <- compute_cohens_f(group_means[group_idx], N, sigma2)
+  cohens_f_alt_group_size <- NULL
 
   # If alt_group_size specified, adjust VCOV accordingly
   # Notably, VCOV is based on N not N-k (i.e., sum(N) - ngroups)
@@ -271,6 +428,10 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     VCOV <- VCOV_orig * sqrt(outer(scale_coef, scale_coef))
     N <- alt_N
     names(N) <- names(group_means)[group_idx]
+    # Cohen's f of the observed group means with the alternative group sizes
+    # (as weights); differs from cohens_f_observed only for unequal
+    # alternative group sizes. Printed separately by print.benchmark().
+    cohens_f_alt_group_size <- compute_cohens_f(group_means[group_idx], N, sigma2)
     #
     # The sample gorica(c) value must also be adjusted, 
     # thus we need to fit a new goric-object
@@ -315,11 +476,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
       ...
     )
   
-  
-
-  ## Compute observed Cohens f
-  # (based on the group means only; see the note on covariates above)
-  cohens_f_observed <- compute_cohens_f(group_means[group_idx], N, sigma2)
+  check_benchmark_weights(object, refit = TRUE)
 
   # effect size population
   default_pop_es <- is.null(pop_es)
@@ -342,6 +499,8 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
       names(pop_es) <- rnames
     }
   }
+  rnames <- unique_population_names(rnames, "pop_es")
+  names(pop_es) <- rnames
 
   es <- pop_es
   nr_es <- length(es)
@@ -364,7 +523,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     }
     means_pop
   }))
-  colnames(means_pop_all) <- colnames(coef(object))
+  colnames(means_pop_all) <- names(group_means)
   rownames(means_pop_all) <- paste0("pop_es = ", pop_es)
 
   # preferred hypothesis
@@ -390,13 +549,20 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     object = object, iter = user_iter,
     type = type, sample_nobs = sum(N),
     es_labels = paste0(es, " (", names(es), ")"),
+    # the 'Observed' population has the observed effect size, but -- with
+    # ratio_pop_means -- not the observed means (see B24/print.benchmark())
+    observed_label = if (is.null(ratio_pop_means)) {
+      "the 'Observed' population"
+    } else {
+      "the 'Observed' population (observed effect size; means from ratio_pop_means)"
+    },
     band = iter_adequacy_band,
     stability_tol = iter_stability_tol,
     iter_min = iter_min, iter_step = iter_step, iter_max = iter_max,
     ...
   )
   parallel_function_results <- sim$parallel_function_results
-  iter <- sim$iter # final number of draws actually used, per category
+  iter <- sim$iter # final number of SUCCESSFUL draws, per population
 
   # get benchmark results
   benchmark_results <- get_results_benchmark(parallel_function_results,
@@ -409,7 +575,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   if (!is.null(user_iter)) {
     # Fixed 'iter': run_benchmark_simulation() does not auto-grow or message
     # in this case, so do the (non-growing) adequacy check here instead.
-    bias_check <- check_iter_adequacy(benchmark_results, "pop_es = Observed", iter,
+    bias_check <- check_iter_adequacy(benchmark_results, "pop_es = Observed", user_iter,
                         band = iter_adequacy_band,
                         iter_min = iter_min, iter_step = iter_step, iter_max = iter_max,
                         stability_tol = iter_stability_tol,
@@ -437,7 +603,8 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     group_means_observed = group_means,
     #ratio_group_means.data = ratio_data,
     cohens_f_observed = cohens_f_observed,
-    res_var = sigma2, # residual error variance used for Cohen's f
+    cohens_f_alt_group_size = cohens_f_alt_group_size,
+    res_var = sigma2, # residual error variance (RSS / N) used for Cohen's f
     pop_es = pop_es, 
     pop_group_means = means_pop_all,
     ratio_pop_means = ratio_pop_means,
@@ -516,7 +683,15 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     median_bias_check_gw = bias_check$median_bias_check_gw,
     median_bias_check_lw = bias_check$median_bias_check_lw,
     #
-    iter = iter
+    # number of successful draws per population (a single number when it is
+    # the same for every population); see also iter_requested and the
+    # failed/warned draw counts from run_benchmark_simulation().
+    iter = iter,
+    iter_requested = sim$iter_requested,
+    n_failed_draws = sim$n_failed_draws,
+    n_warned_draws = sim$n_warned_draws,
+    draw_errors = sim$draw_errors,
+    draw_warnings = sim$draw_warnings
   )
 
   class(OUT) <- c("benchmark_means", "benchmark", "list")
@@ -553,13 +728,6 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   # TO DO als in means nog 'group_size' argument dan ms hier zeggen dat dat sample_size moet zijn?
   #       NB alleen nodig als alt_sample_size nodig is...
     
-  if (length(control) == 1) {
-    control <- object$objectList[[1]]$control
-  }
-  
-  mix_weights <- attr(object$objectList[[1]]$wt.bar, "method")
-  penalty_factor <- object$penalty_factor
-  
   # Check if object is of class con_goric
   if (!inherits(object, "con_goric")) {
     stop(paste("\nrestriktor ERROR:", 
@@ -567,6 +735,17 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
                "However, it belongs to the following class(es):", 
                paste(class(object), collapse = ", ")), call. = FALSE)
   }
+  check_benchmark_weights(object)
+
+  # no user-specified control options: use those of the goric object
+  # (previously 'length(control) == 1', which silently discarded a control
+  # list with exactly one option)
+  if (length(control) == 0) {
+    control <- object$objectList[[1]]$control
+  }
+  
+  mix_weights <- attr(object$objectList[[1]]$wt.bar, "method")
+  penalty_factor <- object$penalty_factor
  
   validate_iter_args(iter, iter_min = iter_min, iter_step = iter_step,
                      iter_max = iter_max, iter_stability_tol = iter_stability_tol,
@@ -595,6 +774,12 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   # Note that -- assuming an lm object was used -- VCOV is the unbiased cov.mx estimate.
   # It is also mentioned in tutorials, so if user specified it, they could have made this asjustment....
   hypos <- object$hypotheses_usr
+  if (is.null(hypos)) {
+    stop("\nrestriktor ERROR: benchmark() requires hypotheses specified as text ",
+         "(e.g., 'x1 > x2'); the GORIC(A) object was fitted with hypotheses given ",
+         "as constraint matrices, which are not (yet) supported by benchmark().",
+         call. = FALSE)
+  }
   
   if (is.null(pop_est)) {
     check_rhs_constants(object$rhs)
@@ -625,8 +810,17 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     pop_est <- matrix(rbind(NE, est_sample), nrow = 2)
     row.names(pop_est) <- c("No-effect", "Observed")
   } else {
-    if (is.vector(pop_est)) {
-      pop_est <- matrix(pop_est, nrow = 1, ncol = length(pop_est))
+    if (is.data.frame(pop_est)) {
+      pop_est <- as.matrix(pop_est)
+    }
+    if (is.vector(pop_est) && is.null(dim(pop_est))) {
+      pop_est <- matrix(pop_est, nrow = 1, ncol = length(pop_est),
+                        dimnames = list(NULL, names(pop_est)))
+    }
+    if (!is.matrix(pop_est) || !is.numeric(pop_est) || anyNA(pop_est)) {
+      stop("\nrestriktor ERROR: The argument 'pop_est' should be a numeric vector (one ",
+           "population) or a numeric matrix / data.frame (one row per population) with ",
+           "one column per estimate, without missing values.", call. = FALSE)
     }
   }
   
@@ -646,9 +840,30 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
       row.names(pop_est) <- rnames
     }
   }  
+  rnames <- unique_population_names(rnames, "pop_est")
+  row.names(pop_est) <- rnames
   
   colnames(pop_est) <- names(est_sample)
   N <- object$sample_nobs #length(object$model.org$residuals)
+  # For an object based on a fitted lm model, the sample size is that of the
+  # model (nobs(fit)): its VCOV is based on that N (see VCOV.unbiased()),
+  # also when a different 'sample_nobs' was given to goric() (accepted with
+  # a message and stored as object$sample_nobs), so the alt_sample_size
+  # rescaling and the goricac should use the model's N as well.
+  # (Not for a FIML fit: its VCOV and N are the FIML ones, not those of the lm.)
+  if (inherits(object$model.org, "lm") && !inherits(object$model.org, "mlm") &&
+      !isTRUE(object$objectList[[1]]$missing == "fiml")) {
+    N_model <- tryCatch(stats::nobs(object$model.org), error = function(e) NULL)
+    if (is.numeric(N_model) && length(N_model) == 1 && is.finite(N_model) && N_model > 0) {
+      if (is.numeric(N) && length(N) >= 1 && sum(N) != N_model) {
+        message("\nrestriktor Message: The 'sample_nobs' of the GORIC(A) object (",
+                sum(N), ") differs from the sample size of the fitted model (", N_model,
+                "). The benchmark uses the model-based sample size, on which the ",
+                "covariance matrix of the estimates is based.")
+      }
+      N <- N_model
+    }
+  }
   
   # modeltype
   type <- switch(object$type,
@@ -663,17 +878,47 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
                  object$type)
   
   
-  # Original sample size: from the goric object, else from 'sample_size'
-  if ((is.null(N) || all(N == 0)) && !is.null(sample_size)) {
+  # Original sample size: from the goric object (a fitted model, or
+  # sample_nobs given to goric()), else from 'sample_size'. A user-specified
+  # 'sample_size' that differs from the object's is used, with a message
+  # (previously it was silently ignored whenever the object had one). A
+  # vector of group sizes is accepted and summed (as goric() does).
+  if (!is.null(sample_size)) {
+    if (!is.numeric(sample_size) || length(sample_size) < 1 || anyNA(sample_size) ||
+        any(!is.finite(sample_size)) || any(sample_size <= 0)) {
+      stop("\nrestriktor ERROR: The argument 'sample_size' should be a positive number ",
+           "(the total sample size) or a vector of positive group sizes.", call. = FALSE)
+    }
+    if (!(is.null(N) || all(N == 0)) && sum(N) != sum(sample_size)) {
+      message("\nrestriktor Message: The argument 'sample_size' (total: ", sum(sample_size),
+              ") differs from the sample size of the goric object (", sum(N), "). The ",
+              "function proceeded with the user-specified 'sample_size'.")
+    }
     N <- sample_size
   }
-  # Controleer op alternatieve steekproefgrootte
+  # Alternative sample size: the covariance matrix of the estimates scales
+  # with the ratio of the TOTAL sample sizes (a single factor, so the result
+  # is symmetric like VCOV itself; the design proportions are kept). A vector
+  # of alternative group sizes is summed. (Previously 'VCOV * N / alt' was
+  # computed element-wise, which for a vector 'sample_size' recycled N over
+  # the matrix: wrong scaling and a non-symmetric result.)
   if (!is.null(alt_sample_size)) {
     # Controleer of de originele steekproefgrootte beschikbaar is
     if (is.null(N) || all(N == 0)) {
       stop("\nrestriktor ERROR: Please provide the original sample size(s) using the argument `sample_size`.", call. = FALSE)
     }
-    VCOV <- VCOV * N / alt_sample_size
+    if (!is.numeric(alt_sample_size) || length(alt_sample_size) < 1 || anyNA(alt_sample_size) ||
+        any(!is.finite(alt_sample_size)) || any(alt_sample_size <= 0)) {
+      stop("\nrestriktor ERROR: The argument 'alt_sample_size' should be a positive number ",
+           "(the alternative total sample size) or a vector of positive group sizes.",
+           call. = FALSE)
+    }
+    VCOV <- VCOV * (sum(N) / sum(alt_sample_size))
+    if (!isSymmetric(unname(VCOV))) {
+      stop("\nrestriktor ERROR: The covariance matrix rescaled to 'alt_sample_size' is not ",
+           "symmetric, so the covariance matrix of the GORIC(A) object is apparently not ",
+           "symmetric.", call. = FALSE)
+    }
     N <- alt_sample_size
   }
   # The goricac requires the sample size (also for every benchmark draw)
@@ -703,8 +948,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     Heq = Heq,
     ...
   )
-  
-  
+  check_benchmark_weights(object, refit = TRUE)
   
   if (is.null(quant)) {
     quant <- c(.05, .35, .50, .65, .95)
@@ -733,7 +977,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     ...
   )
   parallel_function_results <- sim$parallel_function_results
-  iter <- sim$iter # final number of draws actually used, per category
+  iter <- sim$iter # final number of SUCCESSFUL draws, per population
 
   benchmark_results <- get_results_benchmark(parallel_function_results, object, pref_hypo,
                                              pref_hypo_name, quant, names_quant, nr_hypos,
@@ -743,7 +987,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   if (!is.null(user_iter)) {
     # Fixed 'iter': run_benchmark_simulation() does not auto-grow or message
     # in this case, so do the (non-growing) adequacy check here instead.
-    bias_check <- check_iter_adequacy(benchmark_results, "pop_est = Observed", iter,
+    bias_check <- check_iter_adequacy(benchmark_results, "pop_est = Observed", user_iter,
                         band = iter_adequacy_band,
                         iter_min = iter_min, iter_step = iter_step, iter_max = iter_max,
                         stability_tol = iter_stability_tol,
@@ -837,7 +1081,13 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     median_bias_check_gw = bias_check$median_bias_check_gw,
     median_bias_check_lw = bias_check$median_bias_check_lw,
     #
-    iter = iter
+    # see benchmark_means()
+    iter = iter,
+    iter_requested = sim$iter_requested,
+    n_failed_draws = sim$n_failed_draws,
+    n_warned_draws = sim$n_warned_draws,
+    draw_errors = sim$draw_errors,
+    draw_warnings = sim$draw_warnings
   )
 
   class(OUT) <- c("benchmark_asymp", "benchmark", "list")

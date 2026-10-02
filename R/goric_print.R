@@ -3,49 +3,6 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   type <- x$type
   comparison <- x$comparison
   
-  # # TO DO HIER
-  # # Determine best hypo vs its complement (and thus conditional error prob.),
-  # # but only if it is not Hunc or when complement&Heq not Hc.
-  # best_Hypo_ICw <- which.max(x$result$goric.weights)
-  # best_Hypo_ICw_name <- x$result$model[best_Hypo_ICw]
-  # messagePrW <- FALSE
-  # if ( (comparison != "complement" && best_Hypo_ICw_name != "unconstrained") || (x$Heq && best_Hypo_ICw_name != "complement") ) {
-  #   Hypo_best <- unlist(x$hypotheses_usr[best_Hypo_ICw], use.names = F)
-  #   if (any(x$priorICweights != x$priorICweights[1])) {
-  #     priorICweights_best <- c(x$priorICweights[best_Hypo_ICw], 1-x$priorICweights[best_Hypo_ICw]) 
-  #     messagePrW <- TRUE
-  #     # TO DO make note mbt hoe priorICweights gemaakt nu! als niet vooraf gelijk dan
-  #   } else {
-  #     priorICweights_best <- c(0.5, 0.5)
-  #   }
-  #   inputList <- list(x$model.org, #x$objectList$H1,
-  #                       type = type, sample_nobs = x$sample_nobs,
-  #                     hypotheses = list(Hbest = Hypo_best),
-  #                     comparison = "complement",
-  #                     priorICweights = priorICweights_best,
-  #                     Heq = FALSE,
-  #                     penalty_factor = x$penalty_factor) 
-  #   goric_HbestVsHc <- do.call(goric.default, inputList)
-  #   #
-  #   ICratio_HbestVsHc <- goric_HbestVsHc$ratio.gw[1,2]
-  #   errorProb_Hbest <- goric_HbestVsHc$result$goric.weights[2]
-  # } else if (comparison == "complement" && !x$Heq) {
-  #   # If already H1 vs Hc, then we can also report on cond. error prob.
-  #   ICratio_HbestVsHc <- NULL # Null, such that Future info does not appear in output
-  #   errorProb_Hbest <- x$result$goric.weights[2]
-  # } else {
-  #   ICratio_HbestVsHc <- NULL
-  #   errorProb_Hbest <- NULL
-  # }
-  # # TO DO HIER Verwerk bovenstaande in output (print en summary)
-  # # print: dan had dit ms al eerder gedaan moeten worden?
-  # # summary: hieronder poging, maar niet mooi nog.
-  # # Gedachte (maar ws niet): Ms ook onderdeel van 'goric_object$result' laten zijn, 
-  # #                          al wordt die tabel dan wel nog weer langer... dus ws niet doen, 
-  # #                          dan ook minder duidelijk dat het posthoc is...
-  # #          Wel opvraagbaar laten zijn!
-  
-  
   dig <- paste0("%6.", digits, "f")
   #x2 <- lapply(x$result[-1], sprintf, fmt = dig)
   x2 <- as.data.frame(lapply(x$result[, -1], function(column) {
@@ -182,7 +139,12 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   overlap_unique_combinations <- unique(overlap_sorted_vector)
   
   # remove all combinations involving unconstrained. They overlap by definition
-  overlap_unique_combinations <- overlap_unique_combinations[!grepl("unconstrained", overlap_unique_combinations)]
+  # (exact match on the model name; a hypothesis named, e.g., 'unconstrained1' is kept)
+  # (as.character: an empty list when there is no overlap)
+  overlap_unique_combinations <- as.character(overlap_unique_combinations)
+  overlap_unique_combinations <- overlap_unique_combinations[!vapply(
+    strsplit(overlap_unique_combinations, " vs. ", fixed = TRUE), 
+    function(s) "unconstrained" %in% s, logical(1))]
   
   overlap_hypo <- gsub("vs\\.", "", overlap_unique_combinations)
   overlap_hypo <- strsplit(overlap_hypo, " ")
@@ -190,6 +152,12 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   overlap_hypo <- overlap_hypo[overlap_hypo != ""]
   
   best_hypo <- which.max(x$result[, 7])
+  if (length(best_hypo) == 0L) {
+    # all IC weights are NaN (e.g., non-finite penalties): no conclusion
+    message("---\nNote: The IC weights are not available (NaN), e.g., because the ",
+            "penalty term is not finite. No conclusion can be drawn.")
+    return(invisible(x))
+  }
   best_hypo_name <- x$result$model[best_hypo]
   best_hypo_overlap <- best_hypo_name %in% overlap_hypo
   
@@ -221,51 +189,19 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   }
   
   if (comparison == "complement" && length(overlap_unique_combinations) == 0 && !x$Heq) {
-    formatted_numbers <- sprintf("%.3f %.3f", x$result[[7]][1], x$result[[7]][2])
-    numbers <- strsplit(formatted_numbers, " ")[[1]]
-    if (as.numeric(numbers[1]) / as.numeric(numbers[2]) > 1) {
-      if (x$ratio.gw[1, 2] > 10000) {
-        support_ratio <- sprintf("%.2e", x$ratio.gw[1, 2])
-      } else {
-        support_ratio <- sprintf("%.2f", x$ratio.gw[1, 2])
-      }
-      cat(paste0("The order-restricted hypothesis ", sQuote(objectnames[1]), 
-                 " has ", support_ratio, " times more support than its complement."))
-    } else if (as.numeric(numbers[1]) / as.numeric(numbers[2]) < 1) {
-      result <- paste(numbers[1], "/", numbers[2], "< 1", sep = " ")
-      gw_c <- as.numeric(numbers[2]) / as.numeric(numbers[1])
-      if (gw_c > 10000) {
-        support_ratio_c <- sprintf("%.2e", gw_c)
-      } else {
-        support_ratio_c <- sprintf("%.2f", gw_c)
-      }
-      cat("The order-restricted hypothesis", sQuote(objectnames[1]), 
-          "has less support (namely, ", result, 
-          "times more support) than its complement.",
-      "That is, the complement has", support_ratio_c, "times more support than", sQuote(objectnames[1]))      
-    } else {
-      result <- paste(numbers[1], "/", numbers[2], "= 1", sep = " ")
-      cat("The order-restricted hypothesis", sQuote(objectnames[1]), "and the complement have equal support:", result)      
-    }
-    # cat(paste0("---\nThe order-restricted hypothesis ", objectname1, 
-    #            " has ", support_ratio, " times more support than its complement.\n\n"))
-    #
-    # # TO DO HIER maak mooier en ms nog onderdeel van een opvraagbare lijst ofzo
-    # if (!is.null(errorProb_Hbest)) {
-    #   message(paste0("\nThe conditional error probability, that is, the probability ",
-    #   "(given the data) that this conclusion is incorrect, is ", round(errorProb_Hbest, 2), "."))
-    # }
+    cat(support_sentence(objectnames[1], "complement", 
+                         x$ratio.gw[objectnames[1], "vs. complement"],
+                         a_label = paste("The order-restricted hypothesis", 
+                                         sQuote(objectnames[1])),
+                         b_label = "its complement"), ".", sep = "")
   } else if (comparison == "complement" && x$Heq) { 
     modelnames <- x$result$model[!x$result$model == "Heq"]
     if (best_hypo_name != "Heq") {
-      goric_weights_without_heq <- x$result[, 8][!is.na(x$result[, 8])]
-      goric_rw_without_heq <- goric_weights_without_heq %*% t(1/goric_weights_without_heq)
-      diag(goric_rw_without_heq) <- 1L
-      colnames(goric_rw_without_heq) <- paste0("vs. ", modelnames)
-      goric_rw_without_heq_best_hypo <- goric_rw_without_heq[best_hypo-1, ]
-      goric_rw_without_heq_best_hypo <- goric_rw_without_heq_best_hypo[goric_rw_without_heq_best_hypo != 1]
-      goric_rw_without_heq_best_hypo <- sapply(goric_rw_without_heq_best_hypo, format_value)
+      # ratios of the best hypothesis vs. the other models, taken by name 
+      # from the ratio matrix (the ratios do not depend on the renormalisation
+      # without Heq); only the best hypothesis itself is left out
       best_hypos_rest <- paste(df$model[!df$model %in% c(best_hypo_name, "Heq")])
+      ratios_best <- x$ratio.gw[best_hypo_name, paste0("vs. ", best_hypos_rest)]
       
       if (best_hypo_name == "complement") {
         message <- paste0("- The complement is the best in the set, as it has the highest GORIC(A) weight.",
@@ -280,16 +216,9 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       } 
 
       for (i in seq_along(best_hypos_rest)) {
-        message <- paste0(message, "\n  * ", sQuote(best_hypo_name), " is ", 
-                          goric_rw_without_heq_best_hypo[i], 
-                          " times more supported than ", sQuote(best_hypos_rest[i]))
-
-        # Voeg punt toe, behalve als het de laatste hypothese is
-        if (i < length(best_hypos_rest)) {
-          message <- paste0(message, ".")
-        } else {
-          message <- paste0(message, ".")
-        }
+        message <- paste0(message, "\n  * ", 
+                          support_sentence(best_hypo_name, best_hypos_rest[i], 
+                                           ratios_best[i]), ".")
       }
       cat(paste0(message, "\n"))
     } else {
@@ -303,44 +232,29 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       cat(paste0(message, "\n"))
     }
   } else if (comparison == "none" && length(overlap_unique_combinations) == 0 && length(df$model) == 2) {
-    class(x$ratio.gw) <- "numeric"
-    if (x$ratio.gw[1, 2] > 10000) {
-      support_ratio <- sprintf("%.2e", x$ratio.gw[1, 2])
-    } else {
-      support_ratio <- sprintf("%.2f", x$ratio.gw[1, 2])
-    }
-    objectname1 <- sQuote(objectnames[1])
-    objectname2 <- sQuote(objectnames[2])
-    cat(paste0("The order-restricted hypothesis ", objectname1, 
-               " has ", support_ratio, " times more support than ", objectname2, ".\n\n"))
+    cat(paste0(support_sentence(objectnames[1], objectnames[2], 
+                                x$ratio.gw[objectnames[1], paste0("vs. ", objectnames[2])],
+                                a_label = paste("The order-restricted hypothesis", 
+                                                sQuote(objectnames[1]))),
+               ".\n\n"))
   } else if (comparison == "unconstrained" && length(overlap_unique_combinations) == 0 && length(df$model) == 2) { 
-    formatted_numbers <- sprintf("%.3f %.3f", x$result[[7]][1], x$result[[7]][2])
-    numbers <- strsplit(formatted_numbers, " ")[[1]]
-    if (as.numeric(numbers[1]) / as.numeric(numbers[2]) > 1) {
-      result <- paste(numbers[1], "/", numbers[2], "> 1", sep = " ")
-      cat("The order-restricted hypothesis", sQuote(objectnames[1]), "has", result, "times more support than the unconstrained.\n\n")
-    } else if (as.numeric(numbers[1]) / as.numeric(numbers[2]) < 1) {
-      result <- paste(numbers[1], "/", numbers[2], "< 1", sep = " ")
-      cat("The order-restricted hypothesis", sQuote(objectnames[1]), 
-          "has less support (namely, ", result, 
-          "times more support) than the unconstrained.\n\n")
-    } else {
-      result <- paste(numbers[1], "/", numbers[2], "= 1", sep = " ")
-      cat("The order-restricted hypothesis", sQuote(objectnames[1]), "and the unconstrained have equal support:", result, "\n\n")      
-    }
+    cat(paste0(support_sentence(objectnames[1], "unconstrained", 
+                                x$ratio.gw[objectnames[1], "vs. unconstrained"],
+                                a_label = paste("The order-restricted hypothesis", 
+                                                sQuote(objectnames[1])),
+                                b_label = "the unconstrained"),
+               ".\n\n"))
   } else if ( (comparison == "unconstrained" && length(df$model) > 2) )  {
     #best_hypo <- which.max(x$result[, 7])
     #best_hypo_name <- x$result$model[best_hypo]
     modelnames <- x$result$model[!x$result$model == "unconstrained"]
     if (best_hypo_name != "unconstrained") {
-      goric_weights_without_unc <- x$result[, 8][!is.na(x$result[, 8])]
-      goric_rw_without_unc <- goric_weights_without_unc %*% t(1/goric_weights_without_unc)
-      diag(goric_rw_without_unc) <- 1L
-      colnames(goric_rw_without_unc) <- paste0("vs. ", modelnames)
-      goric_rw_without_unc_best_hypo <- goric_rw_without_unc[best_hypo, ]
-      goric_rw_without_unc_best_hypo <- goric_rw_without_unc_best_hypo[goric_rw_without_unc_best_hypo != 1]
-      goric_rw_without_unc_best_hypo <- sapply(goric_rw_without_unc_best_hypo, format_value)
+      # ratios of the best hypothesis vs. the other hypotheses, taken by name
+      # from the ratio matrix (the ratios do not depend on the renormalisation
+      # without the unconstrained model); only the best hypothesis itself is
+      # left out, so ties (ratio 1) are reported as such
       best_hypos_rest <- paste(df$model[!df$model %in% c(best_hypo_name, "unconstrained")])
+      ratios_best <- x$ratio.gw[best_hypo_name, paste0("vs. ", best_hypos_rest)]
       # Step 1: Check if the best hypothesis in the set is not weak
       message <- paste0("- The order-restricted hypothesis ", sQuote(best_hypo_name), 
                         " is the best in the set, as it has the highest GORIC(A) weight.")
@@ -352,25 +266,13 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       " the other order-restricted hypotheses:")
       
       for (i in seq_along(best_hypos_rest)) {
-        if (best_hypo_overlap & best_hypos_rest[i] %in% overlap_hypo) {
-          # Als er overlap is, voeg toe dat de relatieve support zijn maximum heeft bereikt
-          message <- paste0(message, "\n  * ", sQuote(best_hypo_name), " is ", 
-                            goric_rw_without_unc_best_hypo[i], 
-                            " times more supported than ", sQuote(best_hypos_rest[i]), 
-                            " (This relative support reached its maximum, see Note)")
-        } else {
-          # Als er geen overlap is, geef normale relatieve support
-          message <- paste0(message, "\n  * ", sQuote(best_hypo_name), " is ", 
-                            goric_rw_without_unc_best_hypo[i], 
-                            " times more supported than ", sQuote(best_hypos_rest[i]))
-        }
-        
-        # Voeg punt toe, behalve als het de laatste hypothese is
-        if (i < length(best_hypos_rest)) {
-          message <- paste0(message, ".")
-        } else {
-          message <- paste0(message, ".")
-        }
+        # in case of overlap, add that the relative support reached its maximum
+        max_note <- if (best_hypo_overlap & best_hypos_rest[i] %in% overlap_hypo) {
+          " (This relative support reached its maximum, see Note)"
+        } else { "" }
+        message <- paste0(message, "\n  * ", 
+                          support_sentence(best_hypo_name, best_hypos_rest[i], 
+                                           ratios_best[i], max_note = max_note), ".")
       }
       cat(paste0(message, "\n"))
     } else {
@@ -389,36 +291,20 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     #best_hypo_name <- x$result$model[best_hypo]
     modelnames <- x$result$model
     
-    goric_rw <- x$ratio.gw
-    goric_rw_best_hypo <- goric_rw[best_hypo, ]
-    #goric_rw_best_hypo <- goric_rw_best_hypo[goric_rw_best_hypo != 1]
-    # Should not filter on the value 1, but on the name 'best_hypo_name':
-    filterout_best <- names(goric_rw[best_hypo, ]) != paste0("vs. ", best_hypo_name)
-    goric_rw_best_hypo <- goric_rw_best_hypo[filterout_best]
-    # 
-    goric_rw_best_hypo <- sapply(goric_rw_best_hypo, format_value)
+    # ratios of the best hypothesis vs. the other hypotheses, by name
     best_hypos_rest <- paste(df$model[!df$model %in% best_hypo_name])
+    ratios_best <- x$ratio.gw[best_hypo_name, paste0("vs. ", best_hypos_rest)]
     
     message <- ""
     for (i in seq_along(best_hypos_rest)) {
-      if (best_hypo_overlap & best_hypos_rest[i] %in% overlap_hypo) {
-        # Als er overlap is, voeg toe dat de relatieve support zijn maximum heeft bereikt
-        message <- paste0(message, "  * ", sQuote(best_hypo_name), " is ", 
-                          goric_rw_best_hypo[i], 
-                          " times more supported than ", sQuote(best_hypos_rest[i]), 
-                          " (This relative support reached its maximum, see Note)")
-      } else {
-        # Als er geen overlap is, geef normale relatieve support
-        message <- paste0(message, "  * ", sQuote(best_hypo_name), " is ", 
-                          goric_rw_best_hypo[i], 
-                          " times more supported than ", sQuote(best_hypos_rest[i]))
-      }
-      # Voeg punt toe, behalve als het de laatste hypothese is
-      if (i < length(best_hypos_rest)) {
-        message <- paste0(message, ".\n")
-      } else {
-        message <- paste0(message, ".")
-      }
+      # in case of overlap, add that the relative support reached its maximum
+      max_note <- if (best_hypo_overlap & best_hypos_rest[i] %in% overlap_hypo) {
+        " (This relative support reached its maximum, see Note)"
+      } else { "" }
+      message <- paste0(message, "  * ", 
+                        support_sentence(best_hypo_name, best_hypos_rest[i], 
+                                         ratios_best[i], max_note = max_note), 
+                        if (i < length(best_hypos_rest)) ".\n" else ".")
     }
     cat(paste0(message, "\n"))
   } else if (length(overlap_unique_combinations) == 0 && length(df$model) > 2) {
@@ -433,9 +319,8 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
         cat("---\n\nRatio GORICAC-weights:\n") 
       }
       
-      ratio.gw <- apply(x$ratio.gw, 2, sprintf, fmt = dig)
+      ratio.gw <- fmt_ratio_matrix(x$ratio.gw, dig)
       rownames(ratio.gw) <- mark_best_hypo(rownames(x$ratio.gw), x)
-      class(ratio.gw) <- "numeric"
       
       if (max(ratio.gw, na.rm = TRUE) >= 1e4) {
         print(format(ratio.gw, digits = digits, scientific = TRUE, trim = TRUE), 
@@ -446,19 +331,6 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       }
     }
   } 
-  
-  # # TO DO HIER maak mooier en ms nog onderdeel van een opvraagbare lijst ofzo
-  # if (!is.null(ICratio_HbestVsHc) && !is.null(errorProb_Hbest)) {
-  #   message(paste0("\nrestriktor Future research information based on a post-hoc analysis: \n",
-  #   "The best hypothesis ", best_hypo_name, " is ", round(ICratio_HbestVsHc, 2), 
-  #   "times more likely than its complement. \n",
-  #   "The conditional error probability, that is, the probability ",
-  #   "(given the data) that this conclusion is incorrect, is ", round(errorProb_Hbest, 2), "."))
-  #   #
-  #   if (messagePrW) {
-  #     message(paste0("\nThis result is based on rescaling the priorICweights to: ", priorICweights_best))
-  #   }
-  # }
   
   # Above the best hypothesis is determined based on ICweights.
   # In the case of unequal priorICweights, this can differ from conclusion based on ICvalues.
@@ -483,6 +355,55 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
 # vang ze dus op en geef ze niet direct (niet tijdens runnen en niet bij print).
 #
 # TO DO veel output (bvb warnings, conclusion) is doorlopende tekst zonder 'line breaks' en dus in de pdf zie je maar de helft; het is beter om line breaks toe te voegen, zodat de output nooit meer is dan 76 karakters.
+
+# Format a ratio of IC weights for the conclusion text: 3 decimals, scientific
+# notation for very large (>= 1e4) or very small (< 1e-2) ratios.
+format_support_ratio <- function(r) {
+  if (!is.finite(r)) {
+    return(as.character(r))
+  }
+  if (r >= 1e4 || (r > 0 && r < 1e-2)) {
+    sprintf("%.2e", r)
+  } else {
+    sprintf("%.3f", r)
+  }
+}
+
+# Sentence describing the relative support of model 'a' versus model 'b',
+# given the ratio r = weight(a) / weight(b) (taken from x$ratio.gw by name).
+# Handles ties (r == 1), r < 1 (phrased from the better supported model),
+# a zero weight (r = Inf or 0) and two zero weights (r = NaN).
+# 'a_label' is used for 'a' at the start of the sentence (e.g., "The 
+# order-restricted hypothesis 'H1'"); 'b_label' is used for 'b' (e.g., 
+# "its complement"). When the sentence starts with 'b' (r == 0), its label
+# is capitalised.
+support_sentence <- function(a, b, r, a_label = sQuote(a), b_label = sQuote(b), 
+                             max_note = "") {
+  if (is.nan(r) || is.na(r)) {
+    return(paste0(a_label, " and ", b_label, " both have an IC weight of 0; ",
+                  "their relative support is undefined"))
+  }
+  if (r == 1) {
+    return(paste0(a_label, " and ", b_label, " have equal support", max_note))
+  }
+  if (r > 1) {
+    if (is.infinite(r)) {
+      return(paste0(a_label, " is infinitely more supported than ", b_label,
+                    " (which has an IC weight of 0)"))
+    }
+    return(paste0(a_label, " is ", format_support_ratio(r), 
+                  " times more supported than ", b_label, max_note))
+  }
+  # r < 1: phrase from the better supported model
+  if (r == 0) {
+    b_start <- paste0(toupper(substr(b_label, 1, 1)), substring(b_label, 2))
+    return(paste0(b_start, " is infinitely more supported than ", sQuote(a),
+                  " (which has an IC weight of 0)"))
+  }
+  paste0(a_label, " has less support than ", b_label, ": ", b_label, " is ",
+         format_support_ratio(1 / r), " times more supported than ", sQuote(a),
+         max_note)
+}
 
 # add " (best)" to the name of the best hypothesis (highest GORIC(A) weight);
 # only used for the printed copies of the ratio matrices.

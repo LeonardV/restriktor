@@ -301,8 +301,8 @@ compute_cohens_f <- function(group_means, N, sigma2) {
 
 # Residual (within-group) error variance sigma2 from the covariance matrix of
 # the group means, for when no fitted model is available (input is est +
-# VCOV; with a fitted lm model, benchmark_means() uses sigma(fit)^2
-# directly). ASSUMPTION: the group means are independent sample means of
+# VCOV; with a fitted lm model, benchmark_means() uses RSS/N = 
+# deviance(fit)/nobs(fit) directly). ASSUMPTION: the group means are independent sample means of
 # groups with a common error variance, so that Var(mean_g) = sigma2 / N_g,
 # i.e. sigma2 = N_g * VCOV[g, g] for every group g; sigma2 is the average of
 # these per-group values. If they differ by more than 'tol' (relative to
@@ -475,102 +475,39 @@ extract_draw_results <- function(results_goric, pref_hypo) {
   )
 }
 
-# this function is called from the goric_benchmark_anova() function
-parallel_function_means <- function(i, N, var_e, means_pop,
-                                    hypos, pref_hypo, comparison, ngroups, sample,
-                                    control, form_model_org, mix_weights,
-                                    penalty_factor, type = "gorica",
-                                    sample_nobs = sum(N), ...) {
-
-  # Sample residuals
-  #epsilon <- rnorm(sum(N), sd = sqrt(var_e/sum(N)))
-  # TO DO ws delete:
-  #VCOV <- diag(ngroups)
-  #diag(VCOV) <- var_e
-  # TO DO bovenstaande neemt nu gelijke varianties, wat niet klopt als ongelijke groepsgroottes
-  # TO DO deze functie wordt denk ik niet meer gebruikt...
-  VCOV <- diag(var_e, ngroups) * N[1]/N
-  est <- as.vector(mvtnorm::rmvnorm(n = 1, mean = means_pop, sigma = VCOV))
-  names(est) <- names(means_pop)
-
-  # original model formula
-  # if (length(form_model_org) > 0) {
-  #   model <- form_model_org
-  #   lhs <- all.vars(model)[1]
-  #   sample[[lhs]] <- as.matrix(sample[, 2:(1 + ngroups)]) %*% matrix(means_pop,
-  #                                                                    nrow = ngroups) + epsilon
-  #   df_boot <- data.frame(lhs = sample[[lhs]], sample[, 2:(1 + ngroups)])
-  #   colnames(df_boot)[1] <- lhs
-  #
-  #   has_intercept <- attr(terms(model), "intercept") == 1
-  #   rhs <- as.character(attr(terms(model), "term.labels"))
-  #
-  #   # Create the RHS with all other variables and optionally the intercept
-  #   if (has_intercept) {
-  #     new_rhs <- "."
-  #   } else {
-  #     new_rhs <- "-1 + ."
-  #   }
-  #
-  #   # Create the new formula
-  #   new_model <- as.formula(paste(lhs, "~", new_rhs))
-  # } else {
-  #   new_model <- y ~ 0 + .
-  #   # Generate data
-  #   sample$y <- as.matrix(sample[, 2:(1 + ngroups)]) %*% matrix(means_pop,
-  #                                                               nrow = ngroups) + epsilon
-  #   df_boot <- data.frame(y = sample$y, sample[, 2:(1 + ngroups)])
-  # }
-
-
-  # Obtain fit
-  #fit_boot <- lm(new_model, data = df_boot)
-
-  results_goric <- tryCatch(
-    {
-      # Voer de goric functie uit
-      goric(est,
-            VCOV = VCOV,
-            hypotheses = hypos,
-            comparison = comparison,
-            # same criterion (gorica/goricac) and sample size as the
-            # benchmarked object
-            type = type,
-            sample_nobs = sample_nobs,
-            control = control,
-            mix_weights = mix_weights,
-            ...)
-    },
-    error = function(e) {
-      # error message
-      message(paste("\nrestriktor ERROR: Error in iteration", i, ":", e$message))
-      return(NULL)
-    },
-    warning = function(w) {
-      # warning message
-      message(paste("\nrestriktor WARNING: Warning in iteration", i, ":", w$message))
-      return(NULL)
-    }
-  )
-
-  if (is.null(results_goric)) {
-    return(NULL)
-  }
-
-  # Return the relevant results
-  extract_draw_results(results_goric, pref_hypo)
-}
-
-
 # model_type = "asymp" ----------------------------------------------------
 
-# this function is called from the benchmark_asymp() function
+# A benchmark draw that failed: the worker (parallel_function_asymp())
+# returns an empty list with attribute "error" (the error message) for a
+# draw in which goric() gave an error; NULL is also treated as failed (for
+# safety). Warnings inside a draw do NOT fail it -- see the worker.
+draw_failed <- function(x) {
+  is.null(x) || !is.null(attr(x, "error"))
+}
+
+# Worker for every benchmark draw (called from run_benchmark_simulation(),
+# for both benchmark_means() and benchmark_asymp()): goric() on the i-th
+# simulated estimate.
+#
+# NOTE on warnings and errors inside a draw: a warning given by goric()
+# (e.g. a cosmetic one about the storage of ':=' definitions, or the
+# non-convergence of the mix_weights bootstrap) does not invalidate the
+# result -- goric() still returns a valid result -- so such warnings are
+# muffled and the draw is KEPT; the warning messages are returned as
+# attribute "warnings" and summarized (number of draws with a warning, first
+# message) by run_benchmark_simulation(). Only an error invalidates a draw:
+# the draw is then dropped (an empty list with attribute "error", see
+# draw_failed()) and counted/reported likewise. (Previously every warning
+# turned the draw into a dropped one -- so that with ':=' hypotheses, where
+# every goric(est, VCOV) call warned, all draws were dropped and the
+# benchmark crashed with "attempt to set an attribute on NULL" -- and only
+# a per-draw console message remained as a trace.)
 parallel_function_asymp <- function(i, est, VCOV, hypos, pref_hypo, comparison,
                                     type, control, mix_weights, penalty_factor,
                                     priorICweights = NULL, sample_nobs = NULL, ...) {
+  warns <- character(0)
   results_goric <- tryCatch(
-    {
-      # Voer de goric functie uit
+    withCallingHandlers(
       goric(est[i, ], VCOV = VCOV,
             hypotheses = hypos,
             comparison = comparison,
@@ -582,38 +519,81 @@ parallel_function_asymp <- function(i, est, VCOV, hypos, pref_hypo, comparison,
             mix_weights = mix_weights,
             penalty_factor = penalty_factor,
             priorICweights = priorICweights,
-            ...)
-    },
+            ...),
+      warning = function(w) {
+        warns <<- c(warns, conditionMessage(w))
+        invokeRestart("muffleWarning")
+      }
+    ),
     error = function(e) {
-      # error message 
-      message(paste("\nrestriktor ERROR: Error in iteration", i, ":", e$message))
-      return(NULL)  
-    },
-    warning = function(w) {
-      # warning message
-      message(paste("\nrestriktor WARNING: Warning in iteration", i, ":", w$message))
-      return(NULL)  
+      structure(list(), error = conditionMessage(e))
     }
   )
-  
-  if (is.null(results_goric)) {
-    return(NULL)
+
+  if (draw_failed(results_goric)) {
+    return(results_goric)
   }
 
-  return(extract_draw_results(results_goric, pref_hypo))
+  out <- extract_draw_results(results_goric, pref_hypo)
+  if (length(warns) > 0) {
+    attr(out, "warnings") <- warns
+  }
+  out
 }
 
 
 # Define a function to extract and combine values from all elements in each pop_es list
 extract_and_combine_values <- function(pop_es_list, value_name) {
-  empty_lists_count <- sum(sapply(pop_es_list, is.null))
-  #print(empty_lists_count)
-  # remove empty lists (is.na)
-  #pop_es_list <- pop_es_list[!sapply(pop_es_list, function(x) any(is.na(x)))]
-  out <- do.call(rbind, lapply(pop_es_list, function(sub_list) sub_list[[value_name]]))
+  failed <- vapply(pop_es_list, draw_failed, logical(1))
+  empty_lists_count <- sum(failed)
+  out <- do.call(rbind, lapply(pop_es_list[!failed], function(sub_list) sub_list[[value_name]]))
   attr(out, "empty_lists_count") <- empty_lists_count
   
   return(out)
+}
+
+
+# Stops with a clear message when the GORIC(A) weights of a goric object are
+# NA/NaN (e.g. goricac with an infinite small-sample penalty when
+# sample_nobs <= number of parameters + 1): such an object cannot be
+# benchmarked (previously this surfaced much later as "attempt to select
+# less than one element"). 'refit = TRUE' for the object refitted inside
+# benchmark_means()/benchmark_asymp() (with alt_group_size/alt_sample_size
+# and/or the goric -> gorica conversion).
+check_benchmark_weights <- function(object, refit = FALSE) {
+  w <- object$result[[paste0(object$type, ".weights")]]
+  if (is.null(w)) w <- object$result[, ncol(object$result)]
+  if (anyNA(w) || any(!is.finite(w))) {
+    what <- if (refit) {
+      paste0("the GORIC(A) object refitted for the benchmark (type '", object$type,
+             "', sample size ", if (is.null(object$sample_nobs)) "NULL" else object$sample_nobs,
+             ")")
+    } else {
+      paste0("the GORIC(A) object (type '", object$type, "')")
+    }
+    stop("\nrestriktor ERROR: The ", object$type, " weights of ", what, " are NA/NaN ",
+         "(", paste(signif(w, 4), collapse = ", "), "), so it cannot be benchmarked. ",
+         "This happens, for instance, for the goricac when the sample size is not larger ",
+         "than the number of parameters + 1, so that its small-sample penalty is infinite; ",
+         "check the goric object (and the sample size) first.", call. = FALSE)
+  }
+  invisible(TRUE)
+}
+
+
+# Population names (names of pop_es / rownames of pop_est) must be unique:
+# the results are stored per population by name. Duplicates are made unique
+# with make.unique(), with a message. (Previously duplicate names crashed
+# with "invalid 'type' (list) of argument".)
+unique_population_names <- function(rnames, what = "pop_es") {
+  if (anyDuplicated(rnames)) {
+    new_names <- make.unique(rnames)
+    message("\nrestriktor Message: The population names of '", what, "' are not unique (",
+            paste(rnames[duplicated(rnames)], collapse = ", "), "). They have been made ",
+            "unique: ", paste(new_names, collapse = ", "), ".")
+    rnames <- new_names
+  }
+  rnames
 }
 
 
@@ -1494,11 +1474,15 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
                                      # criterion (gorica/goricac) and sample
                                      # size used for every draw: the same as
                                      # those of the (refitted) benchmarked
-                                     # 'object', so that the 'Sample' value and
-                                     # the benchmark distribution are based on
+                                     # 'object', so that the 'Sample' value
+                                     # and the benchmark distribution are based on
                                      # the same criterion.
                                      type = object$type,
-                                     sample_nobs = object$sample_nobs, ...) {
+                                     sample_nobs = object$sample_nobs,
+                                     # how the 'Observed' population is
+                                     # referred to in the messages below
+                                     observed_label = "the 'Observed' population",
+                                     ...) {
   if (type == "goricac" && is.null(sample_nobs)) {
     stop("\nrestriktor ERROR: The benchmark is based on the GORICAC (goricac), which ",
          "requires the sample size. Please specify it via the argument 'sample_size' ",
@@ -1508,6 +1492,9 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
   auto_iter <- is.null(iter)
   sample_gw <- object$result[pref_hypo, 7]
   sample_lw <- object$result$loglik.weights[pref_hypo]
+  # The populations are indexed by POSITION throughout (the names are made
+  # unique by benchmark_means()/benchmark_asymp(), but position is what the
+  # results are accumulated by).
   obs_pos   <- which(rnames == "Observed")
 
   parallel_function_results <- vector("list", nr_es)
@@ -1537,7 +1524,15 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
   chk_gw <- NULL
   chk_lw <- NULL
 
-  progressr::handlers(progressr::handler_txtprogressbar(char = ">"))
+  # Successful draws per population (see the worker: a draw only fails on an
+  # error in goric(); warnings are muffled and the draw is kept).
+  n_ok <- function(pos) {
+    sum(!vapply(parallel_function_results[[pos]], draw_failed, logical(1)))
+  }
+  # Progress bar for this call only: the handler is passed to
+  # with_progress() rather than set globally via progressr::handlers(), so
+  # the user's own (global) progressr handlers are left untouched.
+  progress_handler <- progressr::handler_txtprogressbar(char = ">")
 
   repeat {
     n_new <- target - n_done
@@ -1575,10 +1570,10 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
           future.seed = TRUE # Ensures safe and reproducible random number generation
         )
 
-        key <- paste0(name_prefix, rnames[teller_es])
-        parallel_function_results[[key]] <- c(parallel_function_results[[key]], new_results)
+        parallel_function_results[[teller_es]] <- c(parallel_function_results[[teller_es]],
+                                                    new_results)
       }
-    })
+    }, handlers = progress_handler)
 
     batch_sizes <- c(batch_sizes, as.integer(target - n_done))
     n_done <- target
@@ -1586,15 +1581,21 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
     if (!auto_iter) break # fixed iter: exactly one round, done
 
     if (length(obs_pos) == 1) {
-      obs_key <- paste0(name_prefix, "Observed")
-      gw_draws <- vapply(parallel_function_results[[obs_key]], function(x) {
-        if (is.null(x)) NA_real_ else as.numeric(x$gw)
+      gw_draws <- vapply(parallel_function_results[[obs_pos]], function(x) {
+        if (draw_failed(x)) NA_real_ else as.numeric(x$gw)
       }, numeric(1))
-      lw_draws <- vapply(parallel_function_results[[obs_key]], function(x) {
-        if (is.null(x)) NA_real_ else as.numeric(x$lw)
+      lw_draws <- vapply(parallel_function_results[[obs_pos]], function(x) {
+        if (draw_failed(x)) NA_real_ else as.numeric(x$lw)
       }, numeric(1))
       gw_draws <- gw_draws[!is.na(gw_draws)]
       lw_draws <- lw_draws[!is.na(lw_draws)]
+      if (length(gw_draws) == 0) {
+        # every draw of the 'Observed' population failed so far: nothing to
+        # check; the failures are reported (and, if they persist, turned
+        # into an error) after the loop.
+        stabilized <- TRUE
+        chk_gw <- chk_lw <- NULL
+      } else {
       # Informational only, for now -- see the note above goric_percentile_test().
       chk_gw <- goric_percentile_test(gw_draws, sample_gw, band = band, control = control)
       chk_lw <- goric_percentile_test(lw_draws, sample_lw, band = band, control = control)
@@ -1618,6 +1619,7 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
       stabilized <- n_stable_rounds >= 2L
       prev_percentile_gw <- chk_gw$percentile
       prev_percentile_lw <- chk_lw$percentile
+      }
     } else {
       # No "Observed" category (custom pop_es/pop_est) -- nothing to check
       # against, so stop growing after the first (iter_min-sized) batch.
@@ -1632,6 +1634,9 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
         # by iter_max.
         n_last <- if (length(batch_sizes) > 1) batch_sizes[length(batch_sizes)] else NA
         n_last2 <- if (length(batch_sizes) > 2) sum(utils::tail(batch_sizes, 2)) else NA
+        # the number of draws reported is the number of SUCCESSFUL draws
+        # (failed draws, if any, are reported separately below)
+        n_used <- n_ok(obs_pos)
         percentiles_txt <- paste0(
           "For output_type = 'gw', the percentile is ", sprintf("%.1f", chk_gw$percentile),
           "; for output_type = 'lw', the percentile is ", sprintf("%.1f", chk_lw$percentile),
@@ -1640,9 +1645,9 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
         if (stabilized) {
           message(
             "\nrestriktor Message: 'iter' was not specified, so it was set automatically.\n",
-            "Using iter = ", n_done, " draws, the percentile of the value based on your data ",
+            "Using iter = ", n_used, " draws, the percentile of the value based on your data ",
             "(called the 'Sample' value in the output) within the benchmark distribution under ",
-            "the 'Observed' population has stabilized: in each of the last two rounds of added ",
+            observed_label, " has stabilized: in each of the last two rounds of added ",
             "draws (", n_last2, " draws in total), it changed by less than ", stability_tol,
             " percentage point(s).\n",
             percentiles_txt,
@@ -1659,11 +1664,11 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
             paste0("since there were no further draws to compare the percentile against ",
                    "(iter_min >= iter_max), it could not be checked whether the percentile of ",
                    "the value based on your data (called the 'Sample' value in the output) within ",
-                   "the benchmark distribution under the 'Observed' population has stabilized.\n")
+                   "the benchmark distribution under ", observed_label, " has stabilized.\n")
           } else {
             paste0("since the percentile of the value based on your data (called the 'Sample' ",
-                   "value in the output) within the benchmark distribution under the 'Observed' ",
-                   "population had not (yet) stabilized: it did not stay within ", stability_tol,
+                   "value in the output) within the benchmark distribution under ", observed_label,
+                   " had not (yet) stabilized: it did not stay within ", stability_tol,
                    " percentage point(s) for two consecutive rounds of added draws (over the last ",
                    n_last, " draws, it changed by ",
                    if (n_stable_rounds > 0) "less than " else "", stability_tol,
@@ -1673,7 +1678,7 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
           message(
             "\nrestriktor Message: 'iter' was not specified, so it was ",
             if (is.na(n_last)) "set to" else "increased automatically up to",
-            " its maximum of iter = ", n_done, " draws (iter_max = ", iter_max, "), ",
+            " its maximum of iter = ", n_used, " draws (iter_max = ", iter_max, "), ",
             reason,
             percentiles_txt,
             "Consider re-running with a manually specified, larger 'iter' (or a larger ",
@@ -1687,7 +1692,60 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
     target <- min(n_done + iter_step, iter_max)
   }
 
-  list(parallel_function_results = parallel_function_results, iter = n_done,
+  # Accounting of failed draws (goric() error: dropped) and draws with a
+  # (muffled) warning (kept), per population -- see parallel_function_asymp().
+  pop_names <- names(parallel_function_results)
+  n_failed <- integer(nr_es)
+  n_warned <- integer(nr_es)
+  first_error <- rep(NA_character_, nr_es)
+  first_warning <- rep(NA_character_, nr_es)
+  for (teller_es in seq_len(nr_es)) {
+    res <- parallel_function_results[[teller_es]]
+    failed <- vapply(res, draw_failed, logical(1))
+    warned <- vapply(res, function(x) !is.null(attr(x, "warnings")), logical(1))
+    n_failed[teller_es] <- sum(failed)
+    n_warned[teller_es] <- sum(warned)
+    if (any(failed)) {
+      first_error[teller_es] <- attr(res[[which(failed)[1]]], "error")
+    }
+    if (any(warned)) {
+      first_warning[teller_es] <- attr(res[[which(warned)[1]]], "warnings")[1]
+    }
+  }
+  names(n_failed) <- names(n_warned) <- names(first_error) <- names(first_warning) <- pop_names
+  n_success <- as.integer(n_done) - n_failed
+  names(n_success) <- pop_names
+  if (any(n_success == 0)) {
+    bad <- which(n_success == 0)[1]
+    stop("\nrestriktor ERROR: All ", n_done, " benchmark draws for the population '",
+         pop_names[bad], "' failed (goric() gave an error for every draw), so no ",
+         "benchmark can be computed. The (first) error message was:\n  ",
+         first_error[bad], call. = FALSE)
+  }
+  if (any(n_warned > 0)) {
+    message("\nrestriktor Message: In ", sum(n_warned), " of the ", n_done * nr_es,
+            " benchmark draws (",
+            paste0(pop_names, ": ", n_warned, " of ", n_done, collapse = "; "),
+            "), goric() gave a warning. These warnings were muffled and the draws were ",
+            "kept (a warning does not invalidate the GORIC(A) result of a draw). The first ",
+            "warning message was:\n  ", trimws(first_warning[!is.na(first_warning)][1]))
+  }
+  if (any(n_failed > 0)) {
+    message("\nrestriktor Message: ", sum(n_failed), " of the ", n_done * nr_es,
+            " benchmark draws (",
+            paste0(pop_names, ": ", n_failed, " of ", n_done, collapse = "; "),
+            ") failed (goric() gave an error) and were discarded; the benchmark is based on ",
+            "the remaining draws (", paste0(pop_names, ": ", n_success, collapse = "; "),
+            "). The first error message was:\n  ", trimws(first_error[!is.na(first_error)][1]))
+  }
+  # the number of successful draws: a single number when it is the same for
+  # every population (the usual case: no failed draws), else one per population
+  iter_out <- if (length(unique(n_success)) == 1) unname(n_success[1]) else n_success
+
+  list(parallel_function_results = parallel_function_results, iter = iter_out,
+      iter_requested = as.integer(n_done),
+      n_failed_draws = n_failed, n_warned_draws = n_warned,
+      draw_errors = first_error, draw_warnings = first_warning,
       median_bias_check_gw = chk_gw, median_bias_check_lw = chk_lw)
 }
 
@@ -2066,12 +2124,13 @@ print_grouped_header_table <- function(formatted_df, rn, hypo_rate_threshold = N
 # called by the benchmark.print() function. is_reference: TRUE when 'pop_es'
 # is the reference population that overlap/pctl_medianRefPop are computed
 # against (see determine_overlap_reference()/x$overlap_reference) -- appends
-# "(Reference population)" to the printed population label, e.g. "Population
+# 'reference_label' to the printed population label, e.g. "Population
 # effect-size = Observed (Reference population)".
 print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset,
                                    is_reference = FALSE, hypo_rate_threshold = NULL,
                                    threshold_rlw = NULL,
-                                   overlap_notes = attr(df, "overlap_notes")) {
+                                   overlap_notes = attr(df, "overlap_notes"),
+                                   reference_label = "(Reference population)") {
   if (model_type == "benchmark_asymp") {
     pop_es_value <- gsub("pop_est = ", "", pop_es)
     label <- "Population estimates"
@@ -2080,7 +2139,7 @@ print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset,
     label <- "Population effect-size"
   }
   if (is_reference) {
-    pop_es_value <- paste0(pop_es_value, " (Reference population)")
+    pop_es_value <- paste0(pop_es_value, " ", reference_label)
   }
   cat(sprintf("%s = %s%s%s\n", label, text_color, pop_es_value, reset))
 

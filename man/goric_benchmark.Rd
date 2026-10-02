@@ -47,11 +47,21 @@
   model_type = "asymp" (default). See details for more information about \code{asymp}.}
   \item{x}{An object of class \code{benchmark} (i.e., of class
   \code{benchmark_means} or \code{benchmark_asymp}).}
-  \item{pop_es}{A scalar or a vector of population Cohen's f (effect-size) values. 
-  By default, it benchmarks ES = 0 (no-effect) and the observed Cohen's f.}
-  \item{pop_est}{A 1 x k vector or an n x k matrix of population 
-  estimates to benchmark. By default, all estimates are set to zero (no-effect) 
-  and the observed estimates from the sample are used.}
+  \item{pop_es}{A scalar or a vector of population Cohen's f (effect-size) values 
+  (names, if given, are used as population names and are made unique if needed). 
+  By default, it benchmarks ES = 0 ('No-effect': all group means equal) and the 
+  observed Cohen's f ('Observed': the observed group means, or -- if 
+  \code{ratio_pop_means} is specified -- that pattern of means scaled to the 
+  observed Cohen's f; the latter is indicated in the printed output).}
+  \item{pop_est}{A 1 x k vector or an n x k matrix (or data.frame) of 
+  population estimates to benchmark (one row per population; the row names 
+  are used as population names and are made unique if needed). By default, two 
+  populations are used: 'No-effect', in which the estimates are those under 
+  the preferred hypothesis with its inequalities replaced by equalities (e.g., 
+  for \code{"group1 < group2 < group3"}, all means equal to the (precision-weighted) 
+  grand mean; the projection of the observed estimates onto that equality 
+  model, so not necessarily zeros), and 'Observed', the observed estimates 
+  from the sample.}
   \item{ratio_pop_means}{A 1 x k vector denoting the pattern of the k
   population group means, that is, the relative differences between them. For
   each value in \code{pop_es}, the population means are this pattern (centered
@@ -77,13 +87,25 @@
   converge (and thus to see the maximum value of the weights). If a scalar is 
   specified, it is assumed that each group is of that size. By default, the group 
   sizes from the data are used.}
-  \item{sample_size}{A scalar to denote the (total) sample sizes. Only used if 
-  the GORIC object is based on estimates and their covariance matrix (instead 
-  of on a model/fit object) or \code{alt_sample_size} is not \code{NULL}. }
-  \item{alt_sample_size}{A scalar to denote an alternative sample size if you 
-  want to use a different sample size from the one in the data. This can be used, 
-  for example, to see the values to which the GORIC(A) weights will converge 
-  (and thus to see the maximum value of the weights).}
+  \item{sample_size}{The (total) sample size of the data: a scalar, or a vector 
+  of group sizes (which is summed, as in \code{goric}). It is needed when 
+  \code{alt_sample_size} is specified (to rescale the covariance matrix) and 
+  for the \code{goricac}. If the GORIC(A) object is based on a fitted model 
+  (or \code{sample_nobs} was given to \code{goric}), the sample size is taken 
+  from that object by default (for an \code{lm} model the sample size of the 
+  model, \code{nobs(fit)}, on which its covariance matrix is based -- also if a 
+  different \code{sample_nobs} was given to \code{goric}, with a message); a 
+  user-specified \code{sample_size} overrides 
+  it, with a message if they differ. If the GORIC(A) object is based on 
+  estimates and their covariance matrix, \code{sample_size} must be specified 
+  in those cases.}
+  \item{alt_sample_size}{An alternative (total) sample size, if you want to use 
+  a different sample size from the one in the data: a scalar, or a vector of 
+  group sizes (which is summed). The covariance matrix of the estimates is then 
+  multiplied by \code{sum(sample_size) / sum(alt_sample_size)}, that is, the 
+  ratio of the total sample sizes (the design proportions are kept). This can 
+  be used, for example, to see the values to which the GORIC(A) weights will 
+  converge (and thus to see the maximum value of the weights).}
   \item{quant}{Quantiles for benchmarking results. Defaults 5\%, 35\%, 50\%, 65\%, 95\%.}
   \item{iter}{The number of iterations (bootstrap draws) per population for 
   benchmarking. Defaults to \code{NULL}, in which case the number of draws is 
@@ -153,7 +175,12 @@
   \item{percentiles}{A numeric vector specifying the percentiles (as proportions, 
   e.g. \code{c(0.05, 0.95)}) to be shown. By default (\code{NULL}), the 
   percentiles used for benchmarking (see \code{quant}) are shown. Otherwise, 
-  they are recomputed from the stored draws, without rerunning the benchmark.}
+  they are recomputed from the stored draws, without rerunning the benchmark. 
+  In \code{plot.benchmark}, the percentile lines are those of one population 
+  only: the first population (by default 'No-effect'; otherwise the first 
+  \code{pop_es}/\code{pop_est} supplied) that has finite draws; the legend 
+  names this population. A population without finite draws (e.g., all ratios 
+  infinite) is not shown in the density plot, with a message.}
   \item{x_lim}{A numeric vector of length 2 specifying the x-axis limits. Defaults to \code{c()}.}
   \item{log_scale}{logical, If TRUE, The x-axis is transformed using a base-10 logarithmic scale.
         This transformation adjusts the way the data is visualized on the x-axis, but does not 
@@ -184,29 +211,59 @@
   \code{plot.benchmark} generates density plots for benchmark analyses of objects 
   of class \code{benchmark}. 
   
-  If \code{object} is based on an \code{lm} model with (continuous) covariates 
-  (e.g., \code{lm(y ~ -1 + group + x)}), \code{benchmark_means} treats only the 
-  coefficients of the factor variable(s) as group means: Cohen's f, the group 
-  sizes and the population means (\code{pop_es}) refer to these group means 
-  only, while the covariate coefficients are kept at their observed estimates 
-  in each population. If \code{object} is based on estimates and their 
-  covariance matrix, all estimates are treated as group means.
+  \code{benchmark_means} requires the group means as coefficients, that is, 
+  a model fitted without an intercept (e.g., \code{lm(y ~ -1 + group)}); a 
+  model with an intercept (\code{lm(y ~ group)}, whose coefficients are an 
+  intercept and contrasts) gives an error. If \code{object} is based on an 
+  \code{lm} model with further terms -- continuous covariates (e.g., 
+  \code{lm(y ~ -1 + group + x)}) and/or further factors (e.g., 
+  \code{lm(y ~ -1 + group + sex)}, where the second factor is coded as 
+  contrasts) -- \code{benchmark_means} treats only the coefficients of the 
+  factor term that the hypotheses refer to (\code{group}) as group means: 
+  Cohen's f, the group sizes (by default the cell counts of that factor) and 
+  the population means (\code{pop_es}) refer to these group means only, 
+  while all other coefficients are kept at their observed estimates in each 
+  population (also under 'No-effect'); a message says which coefficients are 
+  treated as group means. The hypotheses must refer to the group means of a 
+  single factor term: hypotheses on covariates, on the contrasts of a further 
+  factor (e.g., \code{sexm}, or \code{group2} in \code{lm(y ~ -1 + sex + 
+  group)}, where \code{group} is not the first factor term) or on 
+  coefficients of several terms give an error (use \code{model_type = 
+  "asymp"} then). A weighted fit (\code{lm(..., weights = )}) is not 
+  supported by \code{benchmark_means} (its covariance matrix does not 
+  correspond to the group sizes and a single residual variance); use 
+  \code{model_type = "asymp"}. If \code{object} is based on estimates and 
+  their covariance matrix, all estimates are treated as group means.
 
   For \code{benchmark_means}, Cohen's f is defined as
   \eqn{f = \sqrt{\sum_g N_g (\mu_g - \mu)^2 / \sum_g N_g} / \sigma}, with
   \eqn{\mu} the (group-size weighted) grand mean of the group means and
-  \eqn{\sigma^2} the residual (within-group) error variance. If
-  \code{object} is based on a fitted \code{lm} model, \eqn{\sigma^2} is the
-  residual variance of that model (\code{sigma(fit)^2}; for a model with
-  covariates, the residual variance after adjusting for them). If
-  \code{object} is based on estimates and their covariance matrix,
+  \eqn{\sigma^2} the residual (within-group) error variance that the 
+  benchmark simulation is based on. If \code{object} is based on a fitted 
+  \code{lm} model, \eqn{\sigma^2} is the maximum-likelihood residual 
+  variance \eqn{RSS / N} (with \eqn{N} the sample size of the fitted model, 
+  \code{nobs(fit)}, also if a different \code{sample_nobs} was given to 
+  \code{goric}; for a model with covariates, the residual variance after 
+  adjusting for them), since the 
+  draws are generated from the covariance matrix of the GORIC(A) object, which 
+  is based on \eqn{RSS / N} (and not on \eqn{RSS / (N - k)} as 
+  \code{vcov(fit)} and \code{sigma(fit)^2}); the observed Cohen's f is then 
+  the usual plug-in value \eqn{\sqrt{SS_{between} / SS_{within}}}, and for a 
+  one-way design \eqn{\sigma^2 = N_g \cdot \mathrm{VCOV}[g, g]} for every 
+  group. If \code{object} is based on estimates and their covariance matrix,
   \eqn{\sigma^2} is derived from that covariance matrix as the average of
   \eqn{N_g \cdot \mathrm{VCOV}[g, g]} over the groups, which assumes that the
   estimates are independent group means with a common error variance (so
   that \eqn{\mathrm{Var}(\hat{\mu}_g) = \sigma^2 / N_g}); a warning is given
   if the per-group values \eqn{N_g \cdot \mathrm{VCOV}[g, g]} differ by more
   than 10\% (relative to their average), since Cohen's f is then only
-  approximate. The residual variance used is returned as \code{res_var}.
+  approximate. The residual variance used is returned as \code{res_var}. In 
+  both cases, the population means for a given \code{pop_es} thus have that 
+  Cohen's f relative to the error variance of the simulated draws. The observed 
+  Cohen's f (\code{cohens_f_observed}) is always computed with the group sizes 
+  of the data; with (unequal) \code{alt_group_size}, the Cohen's f of the 
+  observed means with those group sizes is returned (and printed) separately 
+  as \code{cohens_f_alt_group_size}.
   The population means for a value of
   \code{pop_es} are obtained by scaling the deviations of the pattern of
   means (the observed group means, or \code{ratio_pop_means}) from their
@@ -218,6 +275,17 @@
   and \code{goricc} are converted to \code{gorica} and \code{goricac},
   respectively, since the draws are based on estimates and their covariance
   matrix) and, for the \code{goricac}, the same sample size.
+
+  In every benchmark draw, \code{goric} is applied to the simulated estimates. 
+  A warning given by \code{goric} in a draw does not invalidate that draw: 
+  such warnings are muffled, the draw is kept, and the number of draws with a 
+  warning (and the first warning message) is reported in a message and in the 
+  printed output. Only an error in \code{goric} discards a draw; the number of 
+  discarded draws (and the first error message) is reported likewise, and the 
+  output element \code{iter} gives the number of successful draws (a single 
+  number if it is the same for every population, otherwise one per 
+  population; \code{iter_requested} gives the requested number). If all draws 
+  of a population fail, an error is given.
 
   The benchmark function leverages the \pkg{future} package for parallel processing, 
   allowing users to speed up computations by distributing tasks across multiple 
@@ -307,7 +375,8 @@ fit_gorica <- goric(anova_result, hypotheses = list(h1=h1),
                     comparison = "complement", type = "gorica")
 
 # by default: no-effect \& estimates from the sample are used
-benchmark_results_asymp <- benchmark(fit_gorica, sample_size = 30, iter = 5,
+# (the sample size is taken from the fitted model)
+benchmark_results_asymp <- benchmark(fit_gorica, iter = 5,
                                      model_type = "asymp")
 print(benchmark_results_asymp)
 }
@@ -316,7 +385,7 @@ print(benchmark_results_asymp)
 # specify custom population estimates
 my_pop_est <- rbind("no" = c(0,0,0,0), "observed"= coef(anova_result))
 
-benchmark_results_asymp <- benchmark(fit_gorica, sample_size = 30, 
+benchmark_results_asymp <- benchmark(fit_gorica, 
                                      iter = 5, pop_est = my_pop_est,
                                      model_type = "asymp")
 print(benchmark_results_asymp)

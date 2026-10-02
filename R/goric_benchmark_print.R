@@ -83,10 +83,18 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
   # rate_rlw is hidden for "No-effect" for the same reason.
   x$rate_rlw[NE_names] <- as.numeric(NA)
   
-  # number of failed bootstrap runs
-  empty_lists_count <- sapply(x$combined_values$gw_combined, function(x) { 
-    attr(x, "empty_lists_count") } )
-  #max_empty_lists_count <- max(empty_lists_count)
+  # number of failed bootstrap draws per population (goric() error in that
+  # draw, see parallel_function_asymp()); x$n_failed_draws for a benchmark
+  # object that stores it, else (older object) the "empty_lists_count"
+  # attribute of the combined draws
+  empty_lists_count <- if (!is.null(x$n_failed_draws)) {
+    x$n_failed_draws
+  } else {
+    sapply(x$combined_values$gw_combined, function(x) {
+      attr(x, "empty_lists_count") })
+  }
+  # number of requested draws (x$iter counts the successful draws)
+  iter_requested <- if (!is.null(x$iter_requested)) x$iter_requested else max(x$iter)
   
   model_type <- class(x)[1]
   goric_type <- toupper(x$type)
@@ -108,6 +116,7 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
     group_size <- x$group_size
     ngroups <- x$ngroups
     cohens_f_observed <- x$cohens_f_observed
+    cohens_f_alt_group_size <- x$cohens_f_alt_group_size
   } else if (inherits(x, "benchmark_asymp")) {
     pop_est <- x$pop_est
     formatted_values <- sprintf("%.3f", pop_est)
@@ -181,6 +190,13 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
     cat(sprintf("Ratio of Population Means: %s%s%s\n", green, paste(sprintf("%.3f", ratio_pop_means), collapse = ", "), reset))
     cat(sprintf("Population Effect-Sizes (Cohens f): %s%s%s\n", green,  paste(formatted_values, collapse = ", "), reset))
     cat(sprintf("Observed Effect-Size (Cohens f): %s%s%s\n", green, sprintf("%.3f", cohens_f_observed), reset))
+    # with (unequal) alternative group sizes, the observed means have another
+    # Cohen's f w.r.t. those group sizes -- see benchmark_means()
+    if (!is.null(cohens_f_alt_group_size) &&
+        !isTRUE(all.equal(cohens_f_alt_group_size, cohens_f_observed))) {
+      cat(sprintf("Effect-Size (Cohens f) of the Observed Means with alt_group_size: %s%s%s\n",
+                  green, sprintf("%.3f", cohens_f_alt_group_size), reset))
+    }
   } else {
     print_formatted_matrix(formatted_values, green, reset)
   }
@@ -188,17 +204,28 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
   cat("\n")
   
 # -------------------------------------------------------------------------
-  R <- x$iter
+  R <- iter_requested
   succesful_draws <- R - empty_lists_count
   if (any(succesful_draws < R)) { 
     cat("Number of requested bootstrap draws:", R, "\n")
     for (i in seq_along(succesful_draws)) {
       cat(sprintf("  Number of successful bootstrap draws for %*s: %s\n", 
                   10, names(succesful_draws)[i], succesful_draws[i]))
+      # why the draws failed (first error message per population), if stored
+      if (!is.null(x$draw_errors) && !is.na(x$draw_errors[i]) && succesful_draws[i] < R) {
+        cat(sprintf("    (first error: %s)\n", trimws(x$draw_errors[i])))
+      }
     }
     text_msg <- paste("Advise: If a substantial number of bootstrap draws fail to converge,", 
                       "it is advisable to increase the number of bootstrap iterations.")
     message("---\n", text_msg)
+  }
+  # draws in which goric() gave a (muffled) warning; these draws were kept
+  if (!is.null(x$n_warned_draws) && any(x$n_warned_draws > 0)) {
+    cat("Number of bootstrap draws with a (muffled) goric() warning:",
+        paste0(names(x$n_warned_draws), ": ", x$n_warned_draws, collapse = "; "), "\n")
+    first_w <- x$draw_warnings[!is.na(x$draw_warnings)][1]
+    cat("  (these draws were kept; first warning:", trimws(first_w), ")\n")
   }
 
   # Normalize output_type to lowercase
@@ -215,6 +242,17 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
     paste0("Overlap with ", gsub("^(pop_es|pop_est) = ", "", x$overlap$reference))
   } else {
     "Overlap with Observed"
+  }
+  # Label appended to the reference population (see print_rounded_es_value()).
+  # With ratio_pop_means, the default 'Observed' population has the observed
+  # effect size, but its means follow the pattern in ratio_pop_means (not
+  # the observed means) -- say so.
+  reference_label <- if (inherits(x, "benchmark_means") && !is.null(x$ratio_pop_means) &&
+                         !is.null(x$overlap$reference) &&
+                         grepl("= Observed$", x$overlap$reference)) {
+    "(Reference population; observed effect size, means from ratio_pop_means)"
+  } else {
+    "(Reference population)"
   }
 
   # 'percentiles', if supplied, overrides which percentiles are shown in
@@ -264,7 +302,8 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
         for (pop_es in names(x$benchmarks$goric_weights)) {
           print_rounded_es_value(x$benchmarks$goric_weights[[pop_es]], pop_es,
                                  model_type, green, reset,
-                                 is_reference = identical(pop_es, x$overlap$reference))
+                                 is_reference = identical(pop_es, x$overlap$reference),
+                                 reference_label = reference_label)
         }
       }, nchar(text_gw), text_color = blue, reset = reset
     )
@@ -298,7 +337,8 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
         for (pop_es in names(x$benchmarks$ll_weights)) {
           print_rounded_es_value(x$benchmarks$ll_weights[[pop_es]], pop_es,
                                  model_type, green, reset,
-                                 is_reference = identical(pop_es, x$overlap$reference))
+                                 is_reference = identical(pop_es, x$overlap$reference),
+                                 reference_label = reference_label)
         }
       }, nchar(text_lw), text_color = blue, reset = reset
     )
@@ -357,6 +397,7 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
           print_rounded_es_value(x$benchmarks$ratio_goric_weights[[pop_es]], pop_es,
                                  model_type, green, reset,
                                  is_reference = identical(pop_es, x$overlap$reference),
+                                 reference_label = reference_label,
                                  hypo_rate_threshold = hypo_rate_threshold)
         }
       }, nchar(text_rgw), text_color = blue, reset = reset
@@ -399,7 +440,8 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
         for (pop_es in names(x$benchmarks$ratio_goric_weights_log)) {
           print_rounded_es_value(x$benchmarks$ratio_goric_weights_log[[pop_es]], pop_es,
                                  model_type, green, reset,
-                                 is_reference = identical(pop_es, x$overlap$reference))
+                                 is_reference = identical(pop_es, x$overlap$reference),
+                                 reference_label = reference_label)
         }
       }, nchar(text_rgw_log), text_color = blue, reset = reset
     )
@@ -445,6 +487,7 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
           print_rounded_es_value(x$benchmarks$ratio_ll_weights[[pop_es]], pop_es,
                                  model_type, green, reset,
                                  is_reference = identical(pop_es, x$overlap$reference),
+                                 reference_label = reference_label,
                                  threshold_rlw = threshold_rlw)
         }
       }, nchar(text_rlw), text_color = blue, reset = reset
@@ -480,7 +523,8 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
         for (pop_es in names(x$benchmarks$ratio_ll_weights_log)) {
           print_rounded_es_value(x$benchmarks$ratio_ll_weights_log[[pop_es]], pop_es,
                                  model_type, green, reset,
-                                 is_reference = identical(pop_es, x$overlap$reference))
+                                 is_reference = identical(pop_es, x$overlap$reference),
+                                 reference_label = reference_label)
         }
       }, nchar(text_rlw_log), text_color = blue, reset = reset
     )
@@ -514,7 +558,8 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
         for (pop_es in names(x$benchmarks$difLL)) {
           print_rounded_es_value(x$benchmarks$difLL[[pop_es]], pop_es, model_type,
                                  green, reset,
-                                 is_reference = identical(pop_es, x$overlap$reference))
+                                 is_reference = identical(pop_es, x$overlap$reference),
+                                 reference_label = reference_label)
         }
       }, nchar(text_ld), text_color = blue, reset = reset
     )

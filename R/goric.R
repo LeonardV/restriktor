@@ -20,36 +20,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
   #Run dan ook h vs hc en neem samen met results set+unc.
   # TO DO: In Help doc: meest zinvol als andere hypo in h. 
   #
-  # TO DO Gebruik evt iets van onderstaande code, waarbij
-  # IC_allHunc -> hypos vs unc -- kan evt ook zonder Hunc trouwens
-  # IC_HmHc -> 1 van de hypos vs its complement
-  #
-  # Combine these results (dan dus 3 hypos en compl van 1 van de 3 en geen failsafe!):
-  # nrHypo <- num_hypotheses + 1
-  # IC_all <- matrix(NA, nrow = nrHypo, ncol = 6)
-  # if(is.numeric(add_Hc) {
-  #   nameCompl <- paste0("Complement of ", IC_HmHc$result$model[add_Hc])
-  #   nr_Hm <- add_Hc
-  # } else {
-  #   nameCompl <- paste0("Complement of ", add_Hc)
-  #   nr_Hm <- which(IC_HmHc$result$model == add_Hc)
-  # }
-  # rownames(IC_all) <- c(IC_allHunc$result$model[1:num_hypotheses], nameCompl)
-  # colnames(IC_all) <- colnames(IC_allHunc$result[2:7])
-  # IC_all[,1] <- c(IC_allHunc$result$loglik[1:num_hypotheses], IC_HmHc$result$loglik[nr_Hm])
-  # IC_all[,2] <- c(IC_allHunc$result$penalty[1:num_hypotheses], IC_HmHc$result$penalty[nr_Hm])
-  # IC_all[,3] <- c(IC_allHunc$result$gorica[1:num_hypotheses], IC_HmHc$result$gorica[nr_Hm])
-  # IC_all[,4] <- calc_ICweights(-2*c(IC_allHunc$result$loglik[1:num_hypotheses], IC_HmHc$result$loglik[nr_Hm]))$IC_weights
-  # IC_all[,5] <- calc_ICweights(2*c(IC_allHunc$result$penalty[1:num_hypotheses], IC_HmHc$result$penalty[nr_Hm]))$IC_weights
-  # IC_all[,6] <- calc_ICweights(c(IC_allHunc$result$gorica[1:num_hypotheses], IC_HmHc$result$gorica[nr_Hm]))$IC_weights
-  # #
-  # # Result 3 hypos vs their complement
-  # round(IC_all, 3)
-  # #
-  # # Ratio of GORICA weights:
-  # GWs <- calc_ICweights(c(IC_allHunc$result$gorica[1:num_hypotheses], IC_HmHc$result$gorica[nr_Hm]))
-  # GWs$ratio_IC_weights
-  
 
   if (is.null(hypotheses) || !is.list(hypotheses)) {
     stop(paste("\nrestriktor ERROR: The 'hypotheses' argument is missing or not a list.",
@@ -61,9 +31,25 @@ goric.default <- function(object, ..., hypotheses = NULL,
     stop("\nrestriktor ERROR: the penalty factor must be a single number >= 0.", call. = FALSE)
   }
   
-  # Heq kan uit benchmarks komen met hypotheses$Heq al aanwezig. Staat altijd als eerste.
-  if (isTRUE(Heq) && !is.null(hypotheses$Heq)) {
-    hypotheses <- hypotheses[-1]
+  # The hypotheses can come from a benchmark with the generated 'Heq' already
+  # included (as a named element); it is removed by its exact name and 
+  # regenerated below.
+  if (isTRUE(Heq) && "Heq" %in% names(hypotheses)) {
+    hypotheses <- hypotheses[names(hypotheses) != "Heq"]
+  }
+  if (length(hypotheses) == 0L) {
+    stop("\nrestriktor ERROR: The 'hypotheses' argument does not contain any hypothesis.",
+         call. = FALSE)
+  }
+  # 'Heq', 'complement' and 'unconstrained' are reserved for the models that
+  # goric() adds itself; they cannot be used as names of the hypotheses.
+  reserved_names <- c("Heq", "complement", "unconstrained")
+  if (any(names(hypotheses) %in% reserved_names)) {
+    stop("\nrestriktor ERROR: The hypothesis name(s) ", 
+         paste(sQuote(intersect(names(hypotheses), reserved_names)), collapse = ", "),
+         " cannot be used: the names 'Heq', 'complement' and 'unconstrained' are ",
+         "reserved for the models that goric() adds to the set. ",
+         "Please rename the hypothesis/-es.", call. = FALSE)
   }
   
   num_hypotheses <- length(hypotheses)
@@ -99,36 +85,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
     ), call. = FALSE)
     Heq <- FALSE
   }
-  
-  NrHypos_incl <- num_hypotheses
-  if (comparison %in% c("unconstrained", "complement")) {
-    NrHypos_incl <- NrHypos_incl + 1
-  }
-  if (isTRUE(Heq)) {
-    NrHypos_incl <- NrHypos_incl + 1 # nl, also Heq itself
-  }
-  
-  if (is.null(priorICweights)) {
-    priorICweights <- rep(1/(NrHypos_incl), (NrHypos_incl))
-  } else {
-    # description of the expected elements (used in the error message)
-    what <- if (isTRUE(Heq)) {
-      "one for Heq, one for the informative hypothesis, and one for its complement"
-    } else if (comparison %in% c("unconstrained", "complement")) {
-      "one for each informative hypothesis and one for the failsafe hypothesis"
-    } else { # comparison == "none"
-      "one for each informative hypothesis"
-    }
-    sum_priorICweights <- if (is.numeric(priorICweights)) sum(priorICweights) else NA
-    # checks: numeric, finite, non-negative, not all zero, correct length;
-    # rescaled to sum 1
-    priorICweights <- check_weights(priorICweights, "priorICweights", 
-                                    length_expected = NrHypos_incl, what = what)
-    if (!isTRUE(all.equal(sum_priorICweights, 1))) {
-      message("\nrestriktor Message: The argument 'priorICweights' should add up to 1. It has been rescaled accordingly.")
-    }
-  }
-  
   
   if (!is.null(VCOV)) {
     # check if scalar
@@ -205,9 +161,81 @@ goric.default <- function(object, ..., hypotheses = NULL,
     ldots$mix_weights <- "boot"
   }
 
-  if (length(hypotheses) == 1L && isTRUE(Heq) && comparison != "none") {
+  # names of the user hypotheses as they appear in the result table (unnamed
+  # hypotheses are named H1, H2, ...; see 'objectnames' below)
+  hypo_names <- names(hypotheses)
+  if (is.null(hypo_names)) {
+    hypo_names <- rep("", num_hypotheses)
+  }
+  hypo_names[hypo_names == ""] <- paste0("H", which(hypo_names == ""))
+  
+  if (length(hypotheses) == 1L && isTRUE(Heq) && comparison == "complement") {
+    # NULL: no inequality restrictions remain, Heq would equal the hypothesis
     Hceq <- goric_heq_constraints(object, hypotheses[[1]])
-    hypotheses <- append(list(Heq = Hceq), hypotheses)
+    if (is.null(Hceq)) {
+      message("\nrestriktor Message: The 'Heq' argument is ignored. The hypothesis ",
+              "contains no inequality restrictions (after removing redundant ones), ",
+              "so its equality-restricted version (Heq) would be identical to the ",
+              "hypothesis itself.")
+      Heq <- FALSE
+    } else {
+      hypotheses <- append(list(Heq = Hceq), hypotheses)
+    }
+  }
+  
+  # number of models in the set (after the decision on Heq)
+  NrHypos_incl <- num_hypotheses
+  if (comparison %in% c("unconstrained", "complement")) {
+    NrHypos_incl <- NrHypos_incl + 1
+  }
+  if (isTRUE(Heq)) {
+    NrHypos_incl <- NrHypos_incl + 1 # nl, also Heq itself
+  }
+  # names of the models in the set, in the order of the result table
+  model_names <- c(if (isTRUE(Heq)) "Heq", hypo_names,
+                   if (comparison %in% c("unconstrained", "complement")) comparison)
+  
+  if (is.null(priorICweights)) {
+    priorICweights <- rep(1/(NrHypos_incl), (NrHypos_incl))
+  } else {
+    # description of the expected elements (used in the error message)
+    what <- if (isTRUE(Heq)) {
+      "one for Heq, one for the informative hypothesis, and one for its complement"
+    } else if (comparison %in% c("unconstrained", "complement")) {
+      "one for each informative hypothesis and one for the failsafe hypothesis"
+    } else { # comparison == "none"
+      "one for each informative hypothesis"
+    }
+    # a 1 x k matrix is accepted as a vector
+    if (is.numeric(priorICweights) && !is.null(dim(priorICweights))) {
+      priorICweights <- as.vector(priorICweights)
+    }
+    sum_priorICweights <- if (is.numeric(priorICweights)) sum(priorICweights) else NA
+    # checks: numeric, finite, non-negative, not all zero, correct length;
+    # rescaled to sum 1
+    priorICweights <- check_weights(priorICweights, "priorICweights", 
+                                    length_expected = NrHypos_incl, what = what)
+    if (!isTRUE(all.equal(sum_priorICweights, 1))) {
+      message("\nrestriktor Message: The argument 'priorICweights' should add up to 1. It has been rescaled accordingly.")
+    }
+    # named prior weights are matched to the model names (and reordered
+    # accordingly); the names must then be exactly the model names
+    prior_names <- names(priorICweights)
+    if (!is.null(prior_names)) {
+      # the failsafe model may be called 'complement' or 'unconstrained'
+      prior_names[prior_names %in% c("complement", "unconstrained")] <- 
+        if (comparison == "none") "" else comparison
+      if (anyDuplicated(prior_names) || !setequal(prior_names, model_names)) {
+        stop("\nrestriktor ERROR: The names of 'priorICweights' (", 
+             paste(sQuote(names(priorICweights)), collapse = ", "),
+             ") do not match the names of the models in the set (",
+             paste(sQuote(model_names), collapse = ", "), 
+             "). Either use exactly these names or give the weights unnamed, ",
+             "in the order of the result table.", call. = FALSE)
+      }
+      names(priorICweights) <- prior_names
+      priorICweights <- priorICweights[model_names]
+    }
   }
 
   constraints <- hypotheses
@@ -222,6 +250,28 @@ goric.default <- function(object, ..., hypotheses = NULL,
   ans <- list()
   
   object_class <- class(object)
+  
+  # small-sample correction (goricc/goricac): the penalty N (p + 1) / (N - p - 2)
+  # is only defined for N - p - 2 > 0 (otherwise infinite or negative penalties
+  # and NaN weights); check this before fitting, for every comparison.
+  if (type %in% c("goricc", "goricac")) {
+    if ("numeric" %in% object_class) {
+      N_ss <- if (is.null(sample_nobs)) NULL else sum(sample_nobs)
+      p_ss <- length(object)
+    } else if (any(object_class %in% c("aov","lm","rlm","glm","mlm"))) {
+      N_ss <- NROW(residuals(object))
+      p_ss <- length(coef(object))
+    } else {
+      N_ss <- NULL
+    }
+    if (!is.null(N_ss) && N_ss - p_ss - 2 <= 0) {
+      stop("\nrestriktor ERROR: The sample size is too small for the small-sample ",
+           "correction of type = '", type, "': N - p - 2 must be larger than 0, ",
+           "but N = ", N_ss, " and p = ", p_ss, " (number of parameters). ",
+           "Use type = '", sub("c$", "", type), "' or a larger sample.", 
+           call. = FALSE)
+    }
+  }
   
   if (any(object_class %in% c("aov","lm","rlm","glm","mlm")) && isConChar) { 
     # TO DO in mlm geeft coef() een matrix, je moet dan as.vector doen (coef.named.vector(...)).
@@ -276,10 +326,10 @@ goric.default <- function(object, ..., hypotheses = NULL,
     class(object) <- append(class(object), "goric")
     
     # fit restriktor object for each hypothesis
-    conList <- lapply(constraints, function(constraint) {
+    conList <- lapply(seq_along(constraints), function(i) {
       CALL.restr <- append(list(object      = object, 
-                                constraints = constraint), ldots)
-      do.call("restriktor", CALL.restr)
+                                constraints = constraints[[i]]), ldots)
+      fit_hypothesis(names(constraints)[i], "restriktor", CALL.restr)
     })
     names(conList) <- names(constraints)
     # compute summary for each restriktor object. 
@@ -329,12 +379,13 @@ goric.default <- function(object, ..., hypotheses = NULL,
     ldots$se <- "none"
     class(object) <- append(class(object), "goric")
     # fit restriktor object for each hypothesis
-    conList <- lapply(constraints, function(constraint) {
+    conList <- lapply(seq_along(constraints), function(i) {
+      constraint <- constraints[[i]]
       CALL.restr <- append(list(object      = object,
                                 constraints = constraint$constraints,
                                 rhs         = constraint$rhs,
                                 neq         = constraint$neq), ldots)
-      do.call("restriktor", CALL.restr)
+      fit_hypothesis(names(constraints)[i], "restriktor", CALL.restr)
     })
     
     names(conList) <- names(constraints)
@@ -380,12 +431,12 @@ goric.default <- function(object, ..., hypotheses = NULL,
     }
     
     # fit restriktor object for each hypothesis
-    conList <- lapply(constraints, function(constraint) {
+    conList <- lapply(seq_along(constraints), function(i) {
       CALL.restr <- append(list(object      = object, 
-                                constraints = constraint,
+                                constraints = constraints[[i]],
                                 VCOV        = as.matrix(VCOV)), 
                                 ldots)
-      do.call("con_gorica_est", CALL.restr)
+      fit_hypothesis(names(constraints)[i], "con_gorica_est", CALL.restr)
     })
     
     names(conList) <- names(constraints)
@@ -417,13 +468,14 @@ goric.default <- function(object, ..., hypotheses = NULL,
              call. = FALSE)
       }
     }
-    conList <- lapply(constraints, function(constraint) {
+    conList <- lapply(seq_along(constraints), function(i) {
+      constraint <- constraints[[i]]
       CALL.restr <- append(list(object      = object,
                                 VCOV        = as.matrix(VCOV),
                                 constraints = constraint$constraints,
                                 rhs         = constraint$rhs,
                                 neq         = constraint$neq), ldots)
-      do.call("con_gorica_est", CALL.restr)
+      fit_hypothesis(names(constraints)[i], "con_gorica_est", CALL.restr)
     })
     names(conList) <- names(constraints)
     
@@ -526,6 +578,13 @@ goric.default <- function(object, ..., hypotheses = NULL,
   if (type %in% c("goric", "goricc")) {
     llm <- logLik(conList[[Hm]])
   } else if (type %in% c("gorica", "goricac")) {
+    # TO DO (open methodological decision for the authors): for fitted model
+    #       objects (lm/glm/mlm) the gorica uses the ML restricted estimates
+    #       b.restr of the restriktor fit, not the projection of b.unrestr under
+    #       VCOV (as the numeric est + VCOV route does). For glm and for mlm with
+    #       >= 2 equality restrictions these differ slightly (mlm: ~1e-4 in
+    #       b.restr, since the restricted fit uses the restricted residual
+    #       covariance matrix).
     llm <- dmvnorm(c(b.unrestr - b.restr), sigma = VCOV, log = TRUE)
     #llm <- mnormt::dmnorm(c(b.unrestr - b.restr), varcov = VCOV, log = FALSE) 
   }
@@ -692,7 +751,20 @@ goric.default <- function(object, ..., hypotheses = NULL,
   ans$objectNames <- objectnames
   
   # calculate LL, PT, goric weights and ratios
-  model_comparison_metrics <- calculate_model_comparison_metrics(df, priorICweights)
+  # the IC column is named after the type (e.g., 'goricc'); for 
+  # comparison = "none" this has not been done yet
+  names(df)[4] <- type
+  
+  if (any(!is.finite(df$penalty))) {
+    warning("\nrestriktor WARNING: The penalty term is not finite for ", 
+            paste(sQuote(df$model[!is.finite(df$penalty)]), collapse = ", "),
+            " (e.g., the sample size is too small for the small-sample ",
+            "correction of type = 'goricc'/'goricac'). The corresponding IC ",
+            "value(s) and IC weights are not meaningful.", call. = FALSE)
+  }
+  
+  model_comparison_metrics <- calculate_model_comparison_metrics(df, priorICweights, 
+                                                                 type = type)
   
   df$loglik.weights  <- model_comparison_metrics$loglik_weights
   df$penalty.weights <- model_comparison_metrics$penalty_weights
@@ -701,13 +773,9 @@ goric.default <- function(object, ..., hypotheses = NULL,
   df$goric.weights_without_heq <- model_comparison_metrics$goric_weights_without_heq
   
   names(df)[4] <- type
-  names(df)[7] <- paste0(type, ".weights")
-  if (!is.null(df$goric.weights_without_unc)) {
-    names(df)[8] <- paste0(type, ".weights_without_unc")
-  }
-  if (!is.null(df$goric.weights_without_heq)) {
-    names(df)[8] <- paste0(type, ".weights_without_heq")
-  }
+  names(df)[names(df) == "goric.weights"] <- paste0(type, ".weights")
+  names(df)[names(df) == "goric.weights_without_unc"] <- paste0(type, ".weights_without_unc")
+  names(df)[names(df) == "goric.weights_without_heq"] <- paste0(type, ".weights_without_heq")
   
   rownames(df) <- NULL
 
@@ -723,7 +791,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
   # rownames of ans$ratio.gw/pw/lw remain the hypothesis names.
  
   
-  # list all object estimates
+  # list all object estimates (restricted estimates followed by the defined
+  # parameters (':='), if any; see coef.restriktor() and coef.gorica_est())
   coefs_list <- lapply(conList, function(x) {
     if (inherits(x, "conMLM")) {
       # mlm: coefficient matrix as a named vector (order and names of vcov()),
@@ -737,43 +806,36 @@ goric.default <- function(object, ..., hypotheses = NULL,
       coef(x, which = "restr")
     }
   })
-  coefs <- list_to_df_rows(coefs_list)
+  
+  # defined parameters evaluated at a given vector of estimates, over all
+  # hypotheses (each defined parameter once)
+  defined_values <- function(b) {
+    out <- lapply(conList, function(x) {
+      if (is.function(x$CON$def.function) && !is.null(body(x$CON$def.function))) {
+        x$CON$def.function(b)
+      } else {
+        NULL
+      }
+    })
+    out <- do.call(c, unname(out))
+    out[!duplicated(names(out))]
+  }
   
   if (comparison == "complement") {
-    # does def function exists
-    if (is.function(conList[[1]]$CON$def.function) &&
-        !is.null(body(conList[[1]]$CON$def.function))) {
-      betasc_def <- conList[[1]]$CON$def.function(betasc)  
-      one_vec <- betasc
-      one_vec <- one_vec[!duplicated(names(one_vec))]
-      one_vec_full <- c(one_vec, betasc_def)
-      coefs <- rbind(coefs, one_vec_full)
-    } else {
-      one_vec <- betasc
-      one_vec <- one_vec[!duplicated(names(one_vec))]
-      one_vec_full <- c(one_vec, rep(NA_real_, ncol(coefs) - length(one_vec)))
-      coefs <- rbind(coefs, one_vec_full)
-    }
-    rownames(coefs) <- c(objectnames, "complement")
+    one_vec <- betasc[!duplicated(names(betasc))]
+    coefs_list$complement <- c(one_vec, defined_values(one_vec))
+    rownames_coefs <- c(objectnames, "complement")
   } else if (comparison == "unconstrained") {
     b_unrestr <- coef_vec_mlm(conList[[1]]$b.unrestr, conList[[1]]$model.org)
-    exists_def <- sapply(conList, FUN = function(x) {
-      is.function(x$CON$def.function) && !is.null(body(x$CON$def.function))
-    })
-    one_vec <- b_unrestr
-    one_vec <- one_vec[!duplicated(names(one_vec))]
-    
-    if (any(exists_def)) {
-      betas_unc_def <- sapply(conList[exists_def], FUN = function(x) x$CON$def.function(b_unrestr))
-      one_vec_full <- c(one_vec, betas_unc_def)
-      coefs <- rbind(coefs, one_vec_full)
-    } else {
-      coefs <- rbind(coefs, one_vec)
-    }
-    rownames(coefs) <- c(objectnames, "unconstrained")
+    one_vec <- b_unrestr[!duplicated(names(b_unrestr))]
+    coefs_list$unconstrained <- c(one_vec, defined_values(one_vec))
+    rownames_coefs <- c(objectnames, "unconstrained")
   } else {
-    rownames(coefs) <- objectnames
+    rownames_coefs <- objectnames
   }
+  # rows with different sets of names are aligned by name (NA if absent)
+  coefs <- list_to_df_rows(coefs_list)
+  rownames(coefs) <- rownames_coefs
   
   # Extracting and naming in one step for each attribute
   attributes <- c("constraints", "rhs", "neq")
@@ -806,34 +868,9 @@ goric.default <- function(object, ..., hypotheses = NULL,
   return(ans)
 }
 
-# TO DO HIER
-# maak obv onderstaande code de mogelijkheid tot comparison = compl_1stHypo oid.
-# Geeft wel message dat dit alleen zinnig is als andere gespecificeerd hypo's in 1e hypo vallen;
-# dan is compl van 1e hypo nl compl van set en dat ws liever dan dan de unc.
-# Dan 2x goric runnen en dan samennemen:
-#
-# # Evaluate all hypotheses with unconstrained (default):
-# set.seed(123)
-# goric_allHunc <- goric(..., hypotheses = list(...)))
-# # Also evaluate 1st hypo vs its complement (default):
-# set.seed(123)
-# goric_H1Hc <- goric(..., hypotheses = list(H... = H...))
-# # Combine these results:
-# goric_all <- matrix(NA, nrow = 4, ncol = 6)
-# nameCompl <- paste0("complement of ", goric_H1Hc$result$model[1])
-# rownames(goric_all) <- c(goric_allHunc$result$model[1:3], nameCompl)
-# colnames(goric_all) <- colnames(goric_allHunc$result[2:7])
-# goric_all[,1] <- c(goric_allHunc$result$loglik[1:3], goric_H1Hc$result$loglik[2])
-# goric_all[,2] <- c(goric_allHunc$result$penalty[1:3], goric_H1Hc$result$penalty[2])
-# goric_all[,3] <- c(goric_allHunc$result$gorica[1:3], goric_H1Hc$result$gorica[2])
-# goric_all[,4] <- calc_ICweights(-2*c(goric_allHunc$result$loglik[1:3], goric_H1Hc$result$loglik[2]))$IC_weights
-# goric_all[,5] <- calc_ICweights(2*c(goric_allHunc$result$penalty[1:3], goric_H1Hc$result$penalty[2]))$IC_weights
-# goric_all[,6] <- calc_ICweights(c(goric_allHunc$result$gorica[1:3], goric_H1Hc$result$gorica[2]))$IC_weights
-# # Ratio of GORICA weights:
-# GWs <- calc_ICweights(c(goric_allHunc$result$gorica[1:3], goric_H1Hc$result$gorica[2]))
-# GWs$ratio_IC_weights
-
-
+# TO DO: add the possibility to compare the first hypothesis to its complement
+#        (comparison = "complement_1stHypo" or similar): run goric() twice and
+#        combine the results.
 
 
 # object of class lm ------------------------------------------------------
@@ -865,6 +902,11 @@ goric.lm <- function(object, ..., hypotheses = NULL,
          "objects of class mlm: the small-sample correction for a multivariate ",
          "residual covariance matrix has not been derived/validated. ",
          "Use type = 'goric' or 'gorica'.", call. = FALSE)
+  }
+
+  if (inherits(object, "mlm")) {
+    # the coefficient names to be used in the hypotheses (e.g., 'y1..Intercept.')
+    message_mlm_coef_names(object)
   }
 
   objectList <- list(...)

@@ -161,7 +161,7 @@ test_that("order_studies = 'ascending'/'descending' werkt voor ICweights en ICra
 # 7. Href zonder gemeenschappelijke referentiehypothese --------------------------
 test_that("ICratios zonder gemeenschappelijke referentie: Href gevonden en input herschaald", {
   expect_message(
-    res <- evSyn(list(c(1, 1, .5), c(.5, .2, 1), c(2, 1, 3))),
+    res <- evSyn(list(c(1, 1, .5), c(.5, .2, 1), c(2, 1, 3)), input_type = "icratios"),
     "Not all studies used the same reference hypothesis"
   )
   expect_equal(unname(res$Href), 1)
@@ -184,6 +184,7 @@ test_that("ICratios: gemeenschappelijke referentie wordt gevonden (ook niet de e
 # 8. Labels in de summary van ICratios -------------------------------------------
 test_that("ICratios summary: juiste referentiehypothese en studienamen", {
   res <- suppressMessages(evSyn(list(c(1, 1, .5), c(.5, .2, 1), c(2, 1, 3)),
+                                input_type = "icratios",
                                 study_names = c("A", "B", "C")))
   expect_equal(rownames(res$GORICA_weight_m), c("A", "B", "C"))
   out <- capture.output(print(summary(res)))

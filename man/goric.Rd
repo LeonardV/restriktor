@@ -164,7 +164,17 @@ comparable to the Akaike weights.
   effectively testing the hypothesis that the parameters satisfy exact equality 
   rather than inequality. Heq is only used when one order-restricted hypothesis 
   is compared to its complement; otherwise it is ignored (with a warning). 
-  Defaults to \code{FALSE}.}
+  If the hypothesis contains no inequality constraints (after removing 
+  inequalities that are implied by its equality constraints), Heq would be 
+  identical to the hypothesis itself and is ignored (with a message). 
+  Redundant inequality constraints that are identical to another one (e.g., 
+  \code{x1 > 0.2} when \code{x1 > 0.5} is also specified) are removed before 
+  Heq is formed; if the equality version is nevertheless inconsistent (e.g., 
+  an inequality implied by a combination of other constraints) or if the 
+  hypothesis contains a range constraint (e.g., \code{0 < x1 < 1}), Heq 
+  cannot be formed and an error is given. The names \code{"Heq"}, 
+  \code{"complement"} and \code{"unconstrained"} are reserved and cannot be 
+  used as names of the hypotheses. Defaults to \code{FALSE}.}
   
   \item{priorICweights}{numeric vector with the prior weights of the models in 
   the set; it represents the (relative) prior belief in each model. One 
@@ -177,7 +187,12 @@ comparable to the Akaike weights.
   weights thus reflect the relative a priori likeliness of the models.
   An error is given if the weights are not numeric, contain missing or 
   negative values, are all zero, or if the number of weights does not equal 
-  the number of models in the set.
+  the number of models in the set. A \code{1 x k} matrix is accepted as a 
+  vector. If the weights are named, the names must be exactly the names of 
+  the models in the set (i.e., \code{"Heq"}, the names of the hypotheses, and 
+  \code{"complement"} or \code{"unconstrained"}); the weights are then 
+  matched by name (irrespective of their order) and stored in the order of 
+  the result table. Unnamed weights are used in the order given.
   Notably, the priorICweights will be used in the determining the (ratios of) IC weights;
   so, not in the other output, like the IC values but also not the log likelihood weights or penalty weights.}
   

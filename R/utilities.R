@@ -307,6 +307,13 @@ robWeights <- function(w, eps = 0.1/length(w), eps1 = 0.001, ...) {
 
 
 format_numeric <- function(x, digits = 3) {
+  # NA, NaN and Inf are printed as such (no error)
+  if (length(x) != 1L || is.na(x)) {
+    return(if (length(x) == 1L && is.nan(x)) "NaN" else "NA")
+  }
+  if (!is.finite(x)) {
+    return(as.character(x))
+  }
   if (abs(x) <= 1e-8) {
     format(0, nsmall = digits)
   } else if (abs(x) >= 1e3 || abs(x) <= 1e-3) {

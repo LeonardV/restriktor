@@ -116,6 +116,13 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     ## In case of abs() the constraints may incorrectly be considered as non-linear. 
     ## Here, we remove the abs() from the constraint function which is redundant 
     ## for determining if the constraints are linear. 
+    # TO DO (open methodological decision for the authors): 'abs(x1) < c' is
+    #       linearised to a single row whose sign depends on the sign of the
+    #       estimate (x1 >= -c when x1 < 0, x1 <= c otherwise), so the penalty
+    #       is that of one inequality (e.g., 1.5), whereas the equivalent range
+    #       '-c < x1 < c' gives two rows and the penalty of a range (treated as
+    #       an equality, e.g., 1.0). Expanding abs(a) < c into 'a < c; -a < c'
+    #       would make both notations equivalent (changes penalties for abs()).
     
     # check if any abs() function exists in string. 
     if (any(grepl("abs\\(.*\\)", c(LIST$lhs, LIST$rhs)))) {

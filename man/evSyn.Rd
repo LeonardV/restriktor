@@ -120,6 +120,13 @@ xlab_unordered = NULL, angle_x = 30, \dots)
     these must denote the same hypotheses across studies (matched by name); 
     in case of log-likelihood values, the corresponding penalty values in \code{PT}
     are matched to these by name as well (see \code{PT}).
+    In all cases, the number of hypotheses must be identical across studies
+    (an error is given otherwise), and the input vectors may not contain
+    \code{NA} or \code{NaN} values (infinite values are allowed).
+    When the input consists of estimates and a different set of hypotheses is used
+    for each study (see \code{hypotheses}), the hypotheses are matched across
+    studies by name when all hypotheses are named (the names must then be identical
+    across the sets, but may be given in another order), and by position otherwise.
   }
   
   \item{input_type}{
@@ -133,7 +140,22 @@ xlab_unordered = NULL, angle_x = 30, \dots)
     \item{\code{"gorica"}}{Indicates that the input is of class goric from the \code{goric} function. Invokes the \code{evSyn_gorica()} function.}
     \item{\code{"escalc"}}{Indicates that the input is of class escalc from the \pkg{metafor} package (or a regular data.frame using the same labelling). Invokes the \code{evSyn_escalc()} function.}
   }
-  If \code{input_type} is \code{NULL}, the function attempts to infer the input type based on the structure of the \code{object} and other arguments.
+  If \code{input_type} is \code{NULL}, the function attempts to infer the input type based on the structure of the \code{object} and other arguments:
+  a list of goric objects, an escalc object (or data.frame), a list of vectors together with \code{VCOV} (estimates),
+  or together with \code{PT} (log-likelihood values).
+  For a list of numeric vectors without \code{VCOV} or \code{PT}, the input type is inferred from the values:
+  \itemize{
+    \item \code{"icweights"} when all values lie between 0 and 1 and the values of each study sum to 1;
+    \item \code{"icratios"} when all values are positive and there is a hypothesis (position) with a value of exactly 1 in each study (the reference hypothesis);
+    \item \code{"icvalues"} otherwise.
+  }
+  A message states which input type is used.
+  Since IC values can also lie between 0 and 1 or equal 1, the input is considered ambiguous,
+  and an error is given, when the values of each study sum only approximately (but not exactly) to 1
+  (e.g., rounded weights), or when each study contains a value of exactly 1 but the values are not all positive
+  or the 1 is not at the same position in each study (e.g., ratios without a common reference hypothesis).
+  In these cases, and whenever the input could be misinterpreted (e.g., IC values that happen to contain a 1),
+  \code{input_type} should be specified explicitly.
 }
   
   \item{VCOV}{a list of covariance matrices of the (standardized) parameter estimates 
@@ -150,7 +172,8 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   \item{penalty_factor}{a single non-negative number: the factor with which the penalty is
   multiplied in the information criterion, that is, IC = -2 * log-likelihood + \code{penalty_factor} * penalty
   (default 2; see \code{\link{goric}}). When the input consists of goric objects,
-  the \code{penalty_factor} used in those objects is used (which must be the same for all objects).}
+  the \code{penalty_factor} used in those objects is used (which must be the same for all objects);
+  specifying another \code{penalty_factor} in \code{evSyn} then gives an error.}
   
   \item{x}{an object of class \code{evSyn}}
 
@@ -159,7 +182,12 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   Average-evidence approach (\code{type_ev = "average"}). See details for more 
   information. Notably, when the input is a list of i) GORIC(A) values, ii) GORIC(A) weights, 
   or iii) ratios of GORIC(A) weights, equal-evidence approach is not possible 
-  (the added-evidence approach is then used instead).}
+  (the added-evidence approach is then used instead, with a message; also when
+  \code{input_type} is specified).
+  In the average-evidence approach, the cumulative log-likelihood values (when available)
+  are averaged over the studies as well (like the penalty and IC values), and the
+  log-likelihood weights are based on these averages; in the added- and equal-evidence
+  approaches, the cumulative log-likelihood values are sums.}
 
   \item{type}{If \code{"gorica"}, a proxy for the log-likihood is calculated by assuming that 
   the parameter estimates (of interest) are multivariate normally distributed. 
@@ -172,6 +200,11 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   the syntax structure should be as follows: "hypotheses = list(H1, H2, \ldots)". 
   However, if a different set of hypotheses is applied to each study, the syntax 
   structure should be as follows: hypotheses = list(set1 = list(H11, H12), set2 = list(H21, H22)).
+  When the hypotheses within the sets are named (e.g., list(set1 = list(Ha = H11, Hb = H12),
+  set2 = list(Hb = H22, Ha = H21))), the hypotheses are matched across studies by name
+  (so, they may be given in another order; the names must be identical across the sets,
+  an error is given otherwise); when they are unnamed, they are matched by position
+  (so, the hypotheses across each set must be ordered in a similar manner).
   See \code{\link{goric}} how to specify the hypotheses syntax or see the example 
   section below.}
 
@@ -180,11 +213,26 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   By default, if one user-specified hypothesis, "\code{comparison = 'complement'}" 
   (also when a different set of hypotheses is used for each study and each set consists of one hypothesis); 
   if multiple user-specified hypotheses, "\code{comparison = 'unconstrained'}".
-  Note that the complement can only be computed for one model/hypothesis at a time.} 
+  Note that the complement can only be computed for one model/hypothesis at a time.
+  When the input consists of estimates, the remaining arguments (\dots) are passed on to
+  \code{\link{goric}} (e.g., \code{Heq = TRUE}: when a single hypothesis is compared to its
+  complement, the equality-restricted version of the hypothesis ('Heq', see \code{goric})
+  is then added to the set, such that the output has the columns Heq, the hypothesis, and
+  Complement; a hypothesis named 'Heq' in \code{hypotheses} is removed and regenerated, as in
+  \code{goric}; with another \code{comparison} or more than one hypothesis, \code{Heq} is
+  ignored with a warning).} 
 
   \item{hypo_names}{character vector for labelling the hypotheses. By default, the
   names are set to H1, H2, \ldots; when the input consists of goric objects, the
-  hypothesis names of (the first of) these objects are used by default.}
+  hypothesis names of (the first of) these objects are used by default.
+  The labels are applied in the order of the input (i.e., the order of the
+  hypotheses in the first study); the hypotheses are not re-ordered to match
+  \code{hypo_names}. Therefore, a warning is given when \code{hypo_names}
+  consists of the hypothesis names of the input (i.e., the names of the input
+  vectors or of the hypotheses in the goric objects) in another order.
+  The names in \code{hypo_names} are the labels used in the output (i.e., the column
+  names); a named \code{priorICweights} may use these labels or the hypothesis names of
+  the input (see \code{priorICweights}).}
 
   \item{priorICweights}{vector that represents the prior belief for the specified hypotheses. 
   By default, equal prior weights are used (i.e., 1/(#hypotheses)). 
@@ -197,6 +245,15 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   The vector should consist of one element for each hypothesis, including a possible 
   failsafe hypothesis (i.e., the unconstrained or complement hypothesis); 
   so, its length equals the number of columns in the output.
+  An unnamed vector is matched to the hypotheses by position (i.e., the order of the
+  columns in the output). When the vector carries names, these must be exactly the
+  hypothesis names used in the output (i.e., the column names, which include the name of
+  the failsafe hypothesis; in any order) and the prior weights are matched to the
+  hypotheses by name; an error is given when the names do not match.
+  When the input vectors (or the hypotheses in \code{hypotheses} or in the goric objects)
+  carry names and \code{hypo_names} is used to label the hypotheses otherwise, the names
+  of the input (together with the name of the failsafe hypothesis, e.g., 'Unconstrained')
+  are accepted as well.
   Notably, the priorICweights will be used in the cumulative and final results of evidence synthesis
   (and in \code{leave1studyout}).
   When the input consists of IC values, IC weights, or ratios of IC weights, they are also 
@@ -208,13 +265,18 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   When ordering the studies with 'order_studies' = \code{"ascending"} or \code{"descending"},
   the preferred hypothesis is the one with the highest final (prior-weighted) IC weight.
   Notably, \code{priorICweights} was previously called \code{priorWeights}; 
-  this argument name is deprecated (it still works, with a warning).}
+  this argument name is deprecated (it still works, with a warning, also when
+  calling \code{evSyn_est}, \code{evSyn_LL}, \code{evSyn_ICvalues}, \code{evSyn_ICweights},
+  \code{evSyn_ICratios}, or \code{evSyn_gorica} directly; an error is given when
+  both argument names are used).}
   
   \item{output_type}{a plot option. If "\code{gorica_weights}" (default), 
   a plot with the cumulative goric(a)
   weights and goric(a) weights per study is displayed. If "\code{ll_weights}",
   a plot with the cumulative log-likelihood weights and log-likelihood weights 
-  per study is displayed.}
+  per study is displayed; this is only possible when the input consisted of
+  estimates, log-likelihood and penalty values, or goric objects (an error is
+  given for input consisting of IC values, IC weights, or ratios of IC weights).}
   
   \item{xlab_unordered}{a character vector specifying the original (unordered) 
   study labels. This argument should be used when studies have been re-ordered using
@@ -237,8 +299,15 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   'study_sample_nobs' column, which by default is labelled "ni".}
   
   \item{study_weights}{ 
-  a numeric vector specifying the weight for each study, which should sum to 1 or S, with S the number of studies.
+  a numeric vector specifying the weight for each study, which should sum to 1 or S, with S the number of studies
+  (when the weights sum to another positive number, they are rescaled such that they sum to 1, with a message).
   If \code{NULL} (default), all studies are assumed to have equal weight. 
+  An unnamed vector is matched to the studies by position (i.e., the input order).
+  When the vector carries names, these must be exactly the study names (i.e.,
+  \code{study_names}, or "1", "2", \ldots when \code{study_names} is not specified;
+  in any order; numeric study names, e.g., years, are matched as character strings)
+  and the weights are matched to the studies by name; an error is given when the
+  names do not match.
   Note that study-specific sample size is already taken into account via 'VCOV'.
   When provided, the study weights will be used to conduct weighted evidence synthesis.
   %Weighted evidence synthesis is possible when the GORIC(A) values can be calculated.
@@ -268,7 +337,7 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   the ordering itself is based on the study-specific support for that hypothesis.}
   
   \item{order_studies}{
-  either a i) character string or ii) numeric vector:
+  either a i) character string, ii) numeric vector, or iii) character vector with study names:
   i) A character string that determines how studies are ordered in the output and plots. 
   If \code{"input_order"} (default), studies are displayed in the order they were 
   provided. If \code{"ascending"} or \code{"descending"}, studies are ordered based 
@@ -277,9 +346,15 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   The preferred hypothesis is the hypothesis with the highest final (prior-weighted and
   study-weighted) IC weight; the (study-specific) support for it is based on the
   study-specific IC weights.
-  ii) A numeric vector with length the number of studies (S). 
+  ii) A numeric vector with length the number of studies (S), that is, a permutation of 1:S.
   This vector then gives the ordering of studies to be used, which one could base on, 
   say, year of the study.
+  iii) A character vector with the study names (see \code{study_names}, which must then
+  be specified) in the requested order; this is translated to the corresponding
+  permutation of 1:S. The study names are matched exactly (a study name that happens
+  to be an abbreviation of one of the character strings in i) is not taken as such).
+  Any other input (e.g., a list, a logical, or study names that do not match
+  \code{study_names}) gives an error.
   Notably, when order_studies equals "input_order", the ordering 1:S is used.}
   
   \item{xlab}{a vector specifying custom labels for the x-axis (be aware that 
@@ -380,8 +455,8 @@ one of the S studies. For each reduced set, the aggregated IC values per hypothe
 are computed using the same \code{type_ev} as in the original \code{evSyn} call:
 \itemize{
   \item \code{"added"}: column sums of the IC matrix with study \emph{s} removed.
-  \item \code{"equal"}: the column means of the PT matrix minus column sums of the LL matrix with study \emph{s}
-    removed.
+  \item \code{"equal"}: -2 times the column sums of the LL matrix plus \code{penalty_factor}
+    times the column means of the PT matrix, with study \emph{s} removed.
   \item \code{"average"}: column means of the IC matrix with study \emph{s} removed.
 }
 If study weights were used in the \code{evSyn} call, these sums and means are 
@@ -389,8 +464,9 @@ weighted sums and means, where the weights of the remaining studies are rescaled
 in the same way as in \code{evSyn}. 
 Likewise, the IC weights are determined using the \code{priorICweights} of the 
 \code{evSyn} call.
-The hypothesis with the lowest aggregated IC value and thus highest aggregtaed IC weight 
-is identified as the preferred hypothesis for that reduced set. 
+The hypothesis with the highest aggregated IC weight (that is, taking into account the
+\code{priorICweights}; without prior weights, this is the hypothesis with the lowest
+aggregated IC value) is identified as the preferred hypothesis for that reduced set.
 \cr
 Notably, when leaving a study out, the combined sample size lowers. 
 Therefore, the maximum log-likelihood goes down and thus the IC values go up (become less negative).
@@ -413,14 +489,16 @@ for the theory-based hypotheses.
   \item{\code{OverallGorica} (or \code{OverallGoric}, \code{OverallGoricc}, 
     \code{OverallGoricac})}{a numeric matrix of dimension S x H (studies by 
     hypotheses) containing the aggregated IC values when the corresponding study 
-    is left out. Row names are of the form \code{"Leave '<study name>' out:"}.}
+    is left out. Row names are of the form \code{"Leave Study <s> out:"} when the
+    studies are not named (i.e., numbered 1, \ldots, S), and
+    \code{"Leave study nr. <s> called '<study name>' out:"} otherwise.}
   \item{\code{OverallGoricaWeights} (or \code{OverallGoricWeights}, \code{OverallGoriccWeights}, 
     \code{OverallGoricacWeights})}{a numeric matrix of dimension S x H (studies by 
     hypotheses) containing the aggregated IC weights when the corresponding study 
-    is left out. Row names are of the form \code{"Leave '<study name>' out:"}.}
+    is left out. Row names are as in \code{OverallGorica}.}
   \item{\code{OverallPrefHypo}}{a character matrix of dimension S x 1 giving the 
-    name of the preferred hypothesis (i.e., the one with the lowest aggregated IC 
-    value) for each leave-one-out set.}
+    name of the preferred hypothesis (i.e., the one with the highest aggregated
+    IC weight, taking into account the \code{priorICweights}) for each leave-one-out set.}
   \item{\code{type_ev}}{the evidence-synthesis approach used, inherited from the 
     input \code{evSyn} object.}
   \item{\code{type}}{the IC type used (\code{"goric"}, \code{"goricc"}, 
@@ -681,7 +759,9 @@ plot(evS_LL_equal)
 goric.values <- as.list(data.frame(t(myGORICs)))
 
 # Evidence synthesis (added-evidence)
-evS_Gv <- evSyn(goric.values, 
+# Note: the input type is specified explicitly, since IC values that happen to
+# contain a value of 1 could otherwise be mistaken for ratios of IC weights.
+evS_Gv <- evSyn(goric.values, input_type = "icvalues",
                 hypo_names = colnames(myGORICs))
 evS_Gv
 plot(evS_Gv)

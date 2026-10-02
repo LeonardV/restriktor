@@ -3,6 +3,7 @@ capitalize_first_letter <- function(input_string) {
   paste0(toupper(substring(input_string, 1, 1)), substring(input_string, 2))
 }
 
+# [CHANGE 2026-10 | audit] N7: new remove_self_row()/remove_self_col(): drop the preferred hypothesis' self-comparison by name (replaces remove_single_value_rows/col, which dropped by value)
 # used in get_results_benchmark(): drop the preferred hypothesis'
 # self-comparison (ratio = 1, log-ratio/difference = 0 by construction) BY
 # NAME -- the row 'self_row' of a benchmark table, or the column 'self_col'
@@ -21,6 +22,7 @@ remove_self_row <- function(data, self_row) {
 remove_self_col <- function(data, self_col) {
   if (is.null(data) || is.null(colnames(data))) return(data)
   data[, colnames(data) != self_col, drop = FALSE]
+# [/CHANGE 2026-10]
 }
 
 # Function to filter columns based on exact matching of hypothesis_comparison
@@ -48,6 +50,7 @@ calculate_power <- function(density_h1, critical_value) {
   sum(density_h1$y[density_h1$x > critical_value]) * mean(diff(density_h1$x))
 }
 
+# [CHANGE 2026-10 | Rebecca] new function compute_overlap(): overlapping coefficient of two benchmark distributions (kernel densities on a common grid)
 # Overlapping coefficient (OVL) between two samples' distributions: the
 # proportion of area shared by their kernel density estimates -- 1 = fully
 # overlapping (identical) distributions, 0 = no overlap at all. This is the
@@ -61,6 +64,7 @@ calculate_power <- function(density_h1, critical_value) {
 # this does not respect the [0, 1] bounds that 'gw'/'lw' are constrained to
 # -- a Gaussian kernel can put a little mass just outside that range, same
 # as it would visually spill past the axis limits in a density plot.
+# [CHANGE 2026-10 | audit] E5/O10: note on infinite draws; the overlap is NA (with a note) when a sample contains non-finite draws
 #
 # NOTE on infinite draws: a ratio of weights (rgw/rlw) can be Inf when the
 # alternative's weight underflows to 0 (the ratios are formed on the log
@@ -78,7 +82,9 @@ calculate_power <- function(density_h1, critical_value) {
 # a non-finite draw; the log-ratio output_types (rgw_log/rlw_log) are always
 # finite, so their overlap is always available and is the quantity to look
 # at in such cases.
+# [/CHANGE 2026-10]
 compute_overlap <- function(draws1, draws2, n = 512) {
+  # [CHANGE 2026-10 | audit] E5/O10: NA (with note) for non-finite draws instead of a crash on Inf
   if (any(!is.finite(draws1)) || any(!is.finite(draws2))) {
     return(structure(NA_real_, note = overlap_note_non_finite))
   }
@@ -87,6 +93,7 @@ compute_overlap <- function(draws1, draws2, n = 512) {
     # Can't fit a (non-degenerate) density on too few draws, or on draws
     # that are all identical (zero variance) -- not enough information for
     # an overlap coefficient to be meaningful.
+    # [CHANGE 2026-10 | audit] E5/O10: NA with note (degenerate draws)
     return(structure(NA_real_, note = overlap_note_degenerate))
   }
   rng <- range(c(draws1, draws2))
@@ -101,11 +108,14 @@ compute_overlap <- function(draws1, draws2, n = 512) {
     density(draws2, kernel = "gaussian", bw = "nrd0", from = from, to = to, n = n),
     error = function(e) NULL
   )
+  # [CHANGE 2026-10 | audit] E5/O10: NA with note when density() fails
   if (is.null(d1) || is.null(d2)) return(structure(NA_real_, note = overlap_note_degenerate))
   dx <- mean(diff(d1$x))
   min(sum(pmin(d1$y, d2$y)) * dx, 1) # cap at 1 for the (rare) numerical-integration overshoot
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] E5/O10: reasons for NA overlaps (notes) and new collect_overlap_notes()
 # The reasons compute_overlap() can return NA, as stored in its "note"
 # attribute and propagated (as attribute "notes" -- named by population, or
 # by hypothesis column for the matrix-valued statistics) by
@@ -125,7 +135,9 @@ collect_overlap_notes <- function(lst) {
   notes <- notes[!is.na(notes)]
   if (length(notes) == 0) NULL else notes
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | Rebecca] new function determine_overlap_reference(): reference population for the overlap column ("Observed", else the last population)
 # Which population the "Overlap with ..." column is computed against.
 # Prefers the "Observed" category when one is present (the usual case: the
 # default 'No-effect' plus the user's actually-observed estimates). When
@@ -144,7 +156,9 @@ determine_overlap_reference <- function(pop_names) {
   }
   pop_names[length(pop_names)]
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | Rebecca] new function compute_overlap_vs_observed(): overlap of the reference population with each other population (gw/lw)
 # Overlap of the reference population's (see determine_overlap_reference())
 # benchmark distribution against EACH other population present -- by default
 # just 'No-effect', but there can be more than one if the user supplied
@@ -162,18 +176,23 @@ compute_overlap_vs_observed <- function(draws_combined) {
   }
   reference_draws <- draws_combined[[reference_name]]
   other_names <- setdiff(names(draws_combined), reference_name)
+  # [CHANGE 2026-10 | audit] E5/O10: keep the per-population overlap results to collect the notes of NA overlaps
   overlaps_lst <- lapply(other_names, function(nm) {
     compute_overlap(reference_draws, draws_combined[[nm]])
   })
   names(overlaps_lst) <- other_names
   overlaps <- vapply(overlaps_lst, as.numeric, numeric(1))
+  # [/CHANGE 2026-10]
   names(overlaps) <- other_names
   overlaps[reference_name] <- 1
+  # [CHANGE 2026-10 | audit] E5/O10: notes of NA overlaps as attribute
   # why an overlap is NA (if any), named by population -- see compute_overlap()
   attr(overlaps, "notes") <- collect_overlap_notes(overlaps_lst)
   overlaps
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | Rebecca] new function compute_overlap_vs_observed_matrix(): overlap per hypothesis column (rgw/rlw/ld)
 # Same idea as compute_overlap_vs_observed(), but for the matrix-valued
 # per-draw statistics ('rgw'/'rlw'/'ld'): each population's entry is a
 # matrix with one column per alternative hypothesis being compared against
@@ -183,6 +202,7 @@ compute_overlap_vs_observed <- function(draws_combined) {
 # vector of 1s, one per column) of named numeric vectors (named by
 # hypothesis column). Returns NULL under the same conditions as
 # compute_overlap_vs_observed() (no populations at all), or when there are
+# [CHANGE 2026-10 | audit] N7: comment (no columns when no successful draws)
 # no columns to compare (e.g. no successful draws at all).
 compute_overlap_vs_observed_matrix <- function(draws_combined) {
   reference_name <- determine_overlap_reference(names(draws_combined))
@@ -198,6 +218,7 @@ compute_overlap_vs_observed_matrix <- function(draws_combined) {
   overlaps <- lapply(other_names, function(nm) {
     other_mat <- draws_combined[[nm]]
     shared_cols <- intersect(cols, colnames(other_mat))
+    # [CHANGE 2026-10 | audit] E5/O10: keep the per-column overlap results and their notes of NA overlaps
     ov_lst <- lapply(shared_cols, function(cn) {
       compute_overlap(reference_mat[, cn], other_mat[, cn])
     })
@@ -208,6 +229,7 @@ compute_overlap_vs_observed_matrix <- function(draws_combined) {
     # compute_overlap()
     attr(ov, "notes") <- collect_overlap_notes(ov_lst)
     ov
+    # [/CHANGE 2026-10]
   })
   names(overlaps) <- other_names
   self_overlap <- rep(1, length(cols))
@@ -215,6 +237,7 @@ compute_overlap_vs_observed_matrix <- function(draws_combined) {
   overlaps[[reference_name]] <- self_overlap
   overlaps
 }
+# [/CHANGE 2026-10]
 
 # Function to calculate density
 # calculate_density <- function(data, var, sample_value) {
@@ -279,6 +302,7 @@ detect_intercept <- function(model) {
   }
 }
 
+# [CHANGE 2026-10 | audit] A12/E1: Cohen's f from a common residual variance sigma2 (was reconstructed from VCOV * (N - 1), which under-estimated sigma2)
 # Compute Cohen's f based on the group means, the group sizes N and the
 # (common) within-group / residual error variance sigma2:
 #   f = sqrt( sum_g N_g (mu_g - mu)^2 / sum(N) ) / sigma,
@@ -293,12 +317,15 @@ compute_cohens_f <- function(group_means, N, sigma2) {
   total_mean <- sum(group_means * N) / sum(N)
   ss_between <- sum(N * (group_means - total_mean)^2)
   ss_within <- sum(N) * sigma2 # equates: summing sigma2 over i = 1 to N
+# [/CHANGE 2026-10]
+  # [CHANGE 2026-10 | Rebecca] Cohen's f as sqrt(SS_between / SS_within)
   cohens_f <- sqrt(ss_between/ss_within)
 
   return(cohens_f)
 }
 
 
+# [CHANGE 2026-10 | audit] A12: new residual_variance_from_vcov(): sigma2 = mean(N_g * VCOV[g, g]) for est + VCOV input, with a warning if the per-group values differ
 # Residual (within-group) error variance sigma2 from the covariance matrix of
 # the group means, for when no fitted model is available (input is est +
 # VCOV; with a fitted lm model, benchmark_means() uses RSS/N = 
@@ -325,6 +352,7 @@ residual_variance_from_vcov <- function(N, VCOV, tol = 0.1) {
   }
   sigma2
 }
+# [/CHANGE 2026-10]
 
 
 # Compute ratio data based on group_means
@@ -365,6 +393,7 @@ residual_variance_from_vcov <- function(N, VCOV, tol = 0.1) {
 # }
 
 
+# [CHANGE 2026-10 | audit] E1: generate_scaled_means() keeps the pattern of the means (centered deviations x positive factor; was division by min(), which flipped the ordering); clear error for all-equal means
 # Population means with Cohen's f equal to 'target_f', keeping the PATTERN of
 # 'group_means' (the observed group means, or a user-specified
 # ratio_pop_means): the deviations from the (N-weighted) grand mean -- the
@@ -401,6 +430,7 @@ generate_scaled_means <- function(group_means, target_f, N, sigma2) {
     new_means <- deviations * d
   }
   names(new_means) <- names(group_means)
+# [/CHANGE 2026-10]
 
   return(new_means)
 }
@@ -432,6 +462,8 @@ generate_scaled_means <- function(group_means, target_f, N, sigma2) {
 #   return(means_pop_all)  
 # }
 
+# [CHANGE 2026-10 | audit] removed: parallel_function_means() (dead code, B11/X8); benchmark_means() uses run_benchmark_simulation() with parallel_function_asymp()
+# [CHANGE 2026-10 | audit] E5/E11: new compute_log_ratios()/extract_draw_results(): ratios of weights formed on the log scale (finite) and per-draw statistics for the workers
 # Log of the ratio of the preferred hypothesis' GORIC(A) weight (rgw) and
 # log-likelihood weight (rlw) to that of every hypothesis in a goric object,
 # computed directly from the IC and log-likelihood values (and the prior IC
@@ -474,7 +506,9 @@ extract_draw_results <- function(results_goric, pref_hypo) {
     ld  = ld # loglik difference
   )
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] A9: new draw_failed(); worker parallel_function_asymp() muffles goric() warnings (draw kept, messages returned) and only drops a draw on an error; E2: same criterion/sample size, N3: priors of the object
 # model_type = "asymp" ----------------------------------------------------
 
 # A benchmark draw that failed: the worker (parallel_function_asymp())
@@ -539,11 +573,13 @@ parallel_function_asymp <- function(i, est, VCOV, hypos, pref_hypo, comparison,
     attr(out, "warnings") <- warns
   }
   out
+# [/CHANGE 2026-10]
 }
 
 
 # Define a function to extract and combine values from all elements in each pop_es list
 extract_and_combine_values <- function(pop_es_list, value_name) {
+  # [CHANGE 2026-10 | audit] A9: failed draws detected via draw_failed()
   failed <- vapply(pop_es_list, draw_failed, logical(1))
   empty_lists_count <- sum(failed)
   out <- do.call(rbind, lapply(pop_es_list[!failed], function(sub_list) sub_list[[value_name]]))
@@ -553,6 +589,7 @@ extract_and_combine_values <- function(pop_es_list, value_name) {
 }
 
 
+# [CHANGE 2026-10 | audit] B31: new check_benchmark_weights(): clear error when the GORIC(A) weights are NA/NaN (e.g., goricac with infinite penalty)
 # Stops with a clear message when the GORIC(A) weights of a goric object are
 # NA/NaN (e.g. goricac with an infinite small-sample penalty when
 # sample_nobs <= number of parameters + 1): such an object cannot be
@@ -579,8 +616,10 @@ check_benchmark_weights <- function(object, refit = FALSE) {
   }
   invisible(TRUE)
 }
+# [/CHANGE 2026-10]
 
 
+# [CHANGE 2026-10 | audit] B34: new unique_population_names(): duplicate population names made unique (was a crash)
 # Population names (names of pop_es / rownames of pop_est) must be unique:
 # the results are stored per population by name. Duplicates are made unique
 # with make.unique(), with a message. (Previously duplicate names crashed
@@ -595,10 +634,12 @@ unique_population_names <- function(rnames, what = "pop_es") {
   }
   rnames
 }
+# [/CHANGE 2026-10]
 
 
 ## 
 get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
+                                  # [CHANGE 2026-10 | Rebecca] thresholds for hypothesis_rate and rate_rlw passed in
                                   quant, names_quant, nr.hypos,
                                   hypo_rate_threshold = 1,
                                   threshold_rlw = 1) {
@@ -606,10 +647,12 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   
     # Use lapply to apply the extract_and_combine_values function to each element in the results list
   gw_combined  <- lapply(results, function(pop_es_list) extract_and_combine_values(pop_es_list, "gw"))
+  # [CHANGE 2026-10 | Rebecca] draws of the log-likelihood weights (lw)
   lw_combined  <- lapply(results, function(pop_es_list) extract_and_combine_values(pop_es_list, "lw"))
   rgw_combined <- lapply(results, function(pop_es_list) extract_and_combine_values(pop_es_list, "rgw"))
   rlw_combined <- lapply(results, function(pop_es_list) extract_and_combine_values(pop_es_list, "rlw"))
   ld_combined  <- lapply(results, function(pop_es_list) extract_and_combine_values(pop_es_list, "ld"))
+  # [CHANGE 2026-10 | audit] E5/E11: draws of the log-ratios (always finite) and the Sample values of the (log-)ratios computed on the log scale
   # log(rgw)/log(rlw), as computed per draw on the log scale (see
   # compute_log_ratios()): always finite, also when rgw/rlw itself is Inf.
   rgw_log_combined <- lapply(results, function(pop_es_list) extract_and_combine_values(pop_es_list, "rgw_log"))
@@ -618,13 +661,16 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   # draws (on the log scale; the ratio is exp() of the log-ratio).
   sample_log_ratios <- compute_log_ratios(object$result, object$type,
                                           object$priorICweights, pref_hypo)
+  # [/CHANGE 2026-10]
 
+  # [CHANGE 2026-10 | Rebecca] reference population for the "Pctl. median ref. pop." and overlap columns, determined once
   # Which population the "median ref. pop." columns below (and the "Overlap
   # with ..." column -- see overlap_reference_pop further down, which now
   # just reuses this) are computed against: "Observed" when present, else
   # the last pop_es/pop_est population supplied. Determined once here, since
   # it doesn't depend on gw/lw/rgw/etc. -- see determine_overlap_reference().
   reference_pop_name <- determine_overlap_reference(names(gw_combined))
+  # [/CHANGE 2026-10]
 
   # Calculate CI_benchmarks_gw for each pop_es category
   CI_benchmarks_gw <- lapply(gw_combined, function(gw_values) {
@@ -637,6 +683,7 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
 
   })
 
+  # [CHANGE 2026-10 | Rebecca] percentile of the Sample value (Pctl. Sample) and of the reference population's median (Pctl. median ref. pop.) for gw; new lw benchmarks with the same columns
   # Percentile of the observed goric(a) weight ('Sample' value) within its
   # own benchmark distribution, for each pop_es category (0-100 scale,
   # matching the others). Column/print header is "Pctl. Sample".
@@ -705,35 +752,41 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     out
   })
   names(pctl_medianRefPop_lw) <- names(lw_combined)
+  # [/CHANGE 2026-10]
 
 
   # Initialize matrices to store CI benchmarks for current pop_es category
   CI_benchmarks_rgw <- matrix(NA, nrow = nr.hypos, ncol = 1 + length(quant))
   CI_benchmarks_rlw <- matrix(NA, nrow = nr.hypos, ncol = 1 + length(quant))
   CI_benchmarks_rlw_ge1 <- matrix(NA, nrow = nr.hypos, ncol = 1 + length(quant))
+  # [CHANGE 2026-10 | Rebecca] tables for the log-ratios rgw_log/rlw_log
   CI_benchmarks_rgw_log <- matrix(NA, nrow = nr.hypos, ncol = 1 + length(quant))
   CI_benchmarks_rlw_log <- matrix(NA, nrow = nr.hypos, ncol = 1 + length(quant))
   CI_benchmarks_ld <- matrix(NA, nrow = nr.hypos, ncol = 1 + length(quant))
   CI_benchmarks_ld_ge0 <- matrix(NA, nrow = nr.hypos, ncol = 1 + length(quant))
 
   # Fill the first column with sample values
+  # [CHANGE 2026-10 | audit] E5/E11: Sample values of the ratios and log-ratios from compute_log_ratios() (exp of the log-ratio)
   CI_benchmarks_rgw[, 1] <- exp(sample_log_ratios$rgw_log)
   CI_benchmarks_rlw[, 1] <- exp(sample_log_ratios$rlw_log)
   CI_benchmarks_rgw_log[, 1] <- sample_log_ratios$rgw_log
   CI_benchmarks_rlw_log[, 1] <- sample_log_ratios$rlw_log
   # folded to >= 1: exp(|log-ratio|)
   CI_benchmarks_rlw_ge1[, 1] <- exp(abs(sample_log_ratios$rlw_log))
+  # [/CHANGE 2026-10]
   CI_benchmarks_ld[, 1] <- object$result$loglik[pref_hypo] - object$result$loglik 
   CI_benchmarks_ld_ge0[, 1] <- abs(object$result$loglik[pref_hypo] - object$result$loglik) 
   
   CI_benchmarks_rgw_all <- list()
   CI_benchmarks_rlw_all <- list()
   CI_benchmarks_rlw_ge1_all <- list()
+  # [CHANGE 2026-10 | Rebecca] lists for the rgw_log/rlw_log tables
   CI_benchmarks_rgw_log_all <- list()
   CI_benchmarks_rlw_log_all <- list()
   CI_benchmarks_ld_all <- list()
   CI_benchmarks_ld_ge0_all <- list()
 
+  # [CHANGE 2026-10 | Rebecca] lists for the Pctl. Sample / Pctl. median ref. pop. results; reference population's medians per output type
   pctl_Sample_rgw_all <- list()
   pctl_Sample_rlw_all <- list()
   pctl_Sample_rlw_ge1_all <- list()
@@ -758,6 +811,7 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   # rlw_log_combined lists aren't built until after this loop (see below).
   ref_median_rgw <- apply(rgw_combined[[reference_pop_name]], 2, median, na.rm = TRUE)
   ref_median_rlw <- apply(rlw_combined[[reference_pop_name]], 2, median, na.rm = TRUE)
+  # [CHANGE 2026-10 | audit] E5: reference medians of the log-ratios from the log-scale draws
   ref_median_rgw_log <- apply(rgw_log_combined[[reference_pop_name]], 2, median, na.rm = TRUE)
   ref_median_rlw_log <- apply(rlw_log_combined[[reference_pop_name]], 2, median, na.rm = TRUE)
   ref_median_ld <- apply(ld_combined[[reference_pop_name]], 2, median, na.rm = TRUE)
@@ -769,6 +823,7 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   ref_rlw_ge1[ref_rlw_ge1 < 1] <- 1 / ref_rlw_ge1[ref_rlw_ge1 < 1]
   ref_median_rlw_ge1 <- apply(ref_rlw_ge1, 2, median, na.rm = TRUE)
   ref_median_ld_ge0 <- apply(abs(ld_combined[[reference_pop_name]]), 2, median, na.rm = TRUE)
+  # [/CHANGE 2026-10]
 
   # Loop through each pop_es category to fill in the CI benchmark lists
   for (name in names(results)) {
@@ -781,6 +836,7 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     rlw_ge1[rlw_combined_values < 1] <- 1 / rlw_combined_values[rlw_combined_values < 1]
     ld_ge0 <- abs(ld_combined_values)
 
+    # [CHANGE 2026-10 | Rebecca] rgw_log/rlw_log: log of the ratios per draw (scale-invariant, symmetric around 0)
     # log(rgw)/log(rlw) -- a scale-invariant, symmetric-around-0 alternative
     # to rgw/rlw themselves: log(rgw)/log(rlw) equals the log-odds (logit) of
     # the corresponding pairwise-rescaled weight (e.g. lw_pref/(lw_pref+lw_k)),
@@ -794,22 +850,27 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     # ratio -- and so out of its log -- exactly, per draw). Self-comparison
     # (pref vs pref) is log(1) = 0 here, rather than the 1 that rgw/rlw use,
     # so it gets cleaned via the 0-baseline (like ld) rather than the
+    # [CHANGE 2026-10 | audit] E5/E11: log-ratios taken from the log-scale draws (finite also when the ratio is Inf)
     # 1-baseline used for rgw/rlw below. Taken from the draws' own log-scale
     # computation (compute_log_ratios()) rather than as log() of the ratio,
     # so these are finite even when the ratio itself overflowed to Inf.
     rgw_log_combined_values <- rgw_log_combined[[name]]
     rlw_log_combined_values <- rlw_log_combined[[name]]
+    # [/CHANGE 2026-10]
+    # [/CHANGE 2026-10]
     
     # Loop through the hypotheses and calculate the quantiles
     for (j in seq_len(nr.hypos)) {
       CI_benchmarks_rgw[j, 2:(1 + length(quant))] <- quantile(rgw_combined_values[, j], quant, na.rm = TRUE)
       CI_benchmarks_rlw[j, 2:(1 + length(quant))] <- quantile(rlw_combined_values[, j], quant, na.rm = TRUE)
       CI_benchmarks_rlw_ge1[j, 2:(1 + length(quant))] <- quantile(rlw_ge1[, j], quant, na.rm = TRUE)
+      # [CHANGE 2026-10 | Rebecca] quantiles of the log-ratios
       CI_benchmarks_rgw_log[j, 2:(1 + length(quant))] <- quantile(rgw_log_combined_values[, j], quant, na.rm = TRUE)
       CI_benchmarks_rlw_log[j, 2:(1 + length(quant))] <- quantile(rlw_log_combined_values[, j], quant, na.rm = TRUE)
       CI_benchmarks_ld[j, 2:(1 + length(quant))] <- quantile(ld_combined_values[, j], quant, na.rm = TRUE)
       CI_benchmarks_ld_ge0[j, 2:(1 + length(quant))] <- quantile(ld_ge0[, j], quant, na.rm = TRUE)
     }
+    # [CHANGE 2026-10 | Rebecca] per hypothesis: percentile of the Sample value and of the reference population's median within this population's distribution (incl. rgw_log/rlw_log, rlw_ge1, ld_ge0); stored per population
     # Loop through the hypotheses and calculate the percentile of the sample
     # finding ('Sample' value; pctl_Sample_* below) as well as the percentile
     # of the reference population's own median value within this
@@ -905,15 +966,18 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     medianRefPop_rlw_log_all[[name]] <- medianRefPop_rlw_log
     medianRefPop_ld_all[[name]] <- medianRefPop_ld
     medianRefPop_ld_ge0_all[[name]] <- medianRefPop_ld_ge0
+    # [/CHANGE 2026-10]
 
     # Set column names for the CI benchmarks
     colnames(CI_benchmarks_rgw) <- colnames(CI_benchmarks_rlw) <-
+      # [CHANGE 2026-10 | Rebecca] column names incl. rgw_log/rlw_log tables
       colnames(CI_benchmarks_rlw_ge1) <- colnames(CI_benchmarks_rgw_log) <-
       colnames(CI_benchmarks_rlw_log) <- colnames(CI_benchmarks_ld) <-
       colnames(CI_benchmarks_ld_ge0) <- names_quant
 
     # Set row names for the CI benchmarks
     rownames(CI_benchmarks_rgw) <- rownames(CI_benchmarks_rlw) <-
+      # [CHANGE 2026-10 | Rebecca] row names incl. rgw_log/rlw_log tables
       rownames(CI_benchmarks_rlw_ge1) <- rownames(CI_benchmarks_rgw_log) <-
       rownames(CI_benchmarks_rlw_log) <- rownames(CI_benchmarks_ld) <-
       rownames(CI_benchmarks_ld_ge0) <- paste(pref_hypo_name, names(object$ratio.gw[pref_hypo, ]))
@@ -922,12 +986,14 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     CI_benchmarks_rgw_all[[name]] <- CI_benchmarks_rgw
     CI_benchmarks_rlw_all[[name]] <- CI_benchmarks_rlw
     CI_benchmarks_rlw_ge1_all[[name]] <- CI_benchmarks_rlw_ge1
+    # [CHANGE 2026-10 | Rebecca] store the rgw_log/rlw_log tables
     CI_benchmarks_rgw_log_all[[name]] <- CI_benchmarks_rgw_log
     CI_benchmarks_rlw_log_all[[name]] <- CI_benchmarks_rlw_log
     CI_benchmarks_ld_all[[name]] <- CI_benchmarks_ld
     CI_benchmarks_ld_ge0_all[[name]] <- CI_benchmarks_ld_ge0
   }
   
+  # [CHANGE 2026-10 | audit] N7: drop the self-comparison row by name (remove_self_row) from every table, in the same way for every output type
   # The preferred hypothesis' self-comparison (always 1 for the ratios, 0 for
   # the log-ratios and log-likelihood differences) is dropped -- by name, and
   # in exactly the same way for every output_type and population -- from
@@ -950,10 +1016,12 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     remove_self_row(pop_es_list, self_row)
   })
 
+  # [CHANGE 2026-10 | Rebecca] cleaned rgw_log table
   CI_benchmarks_rgw_log_all_cleaned <- lapply(CI_benchmarks_rgw_log_all, function(pop_es_list) {
     remove_self_row(pop_es_list, self_row)
   })
 
+  # [CHANGE 2026-10 | Rebecca] cleaned rlw_log table
   CI_benchmarks_rlw_log_all_cleaned <- lapply(CI_benchmarks_rlw_log_all, function(pop_es_list) {
     remove_self_row(pop_es_list, self_row)
   })
@@ -965,7 +1033,10 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   CI_benchmarks_ld_ge0_all_cleaned <- lapply(CI_benchmarks_ld_ge0_all, function(pop_es_list) {
     remove_self_row(pop_es_list, self_row)
   })
+  # [/CHANGE 2026-10]
 
+  # [CHANGE 2026-10 | Rebecca] align the Pctl. Sample / Pctl. median ref. pop. matrices with the cleaned tables by row name (align_rows)
+  # [CHANGE 2026-10 | audit] N7: comment (remove_self_row)
   # remove_self_row() drops the preferred hypothesis' self-comparison
   # row from the benchmarks_* matrices above (ratio/difference vs. itself is
   # always 1 or 0). The percentile_*_all matrices were never subject to that
@@ -993,7 +1064,9 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   pctl_medianRefPop_rlw_log_all_cleaned <- align_rows(medianRefPop_rlw_log_all, CI_benchmarks_rlw_log_all_cleaned)
   pctl_medianRefPop_ld_all_cleaned <- align_rows(medianRefPop_ld_all, CI_benchmarks_ld_all_cleaned)
   pctl_medianRefPop_ld_ge0_all_cleaned <- align_rows(medianRefPop_ld_ge0_all, CI_benchmarks_ld_ge0_all_cleaned)
+  # [/CHANGE 2026-10]
 
+  # [CHANGE 2026-10 | audit] N7: drop the self-comparison column by name (remove_self_col) from all draws
   rgw_combined <- lapply(rgw_combined, function(pop_es_list) {
     remove_self_col(pop_es_list, self_col)
   })
@@ -1002,6 +1075,7 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     remove_self_col(pop_es_list, self_col)
   })
 
+  # [CHANGE 2026-10 | Rebecca] rgw_log/rlw_log draws
   rgw_log_combined <- lapply(rgw_log_combined, function(pop_es_list) {
     remove_self_col(pop_es_list, self_col)
   })
@@ -1013,7 +1087,9 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   ld_combined <- lapply(ld_combined, function(pop_es_list) {
     remove_self_col(pop_es_list, self_col)
   })
+  # [/CHANGE 2026-10]
 
+  # [CHANGE 2026-10 | Rebecca] hypothesis_rate (rgw > hypo_rate_threshold) and rate_rlw (rlw > threshold_rlw) stored on the object
   # Rate at which each alternative hypothesis's ratio-GORIC(A)-weight
   # bootstrap draws exceed a threshold q (default 1, i.e. how often the
   # alternative hypothesis is preferred over the preferred hypothesis within
@@ -1061,7 +1137,9 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   # rlw doesn't carry that same interpretation, so calling it a "hypothesis
   # rate" would be misleading -- it's just the exceedance rate of rlw.
   rate_rlw <- lapply(rlw_combined, calculate_hypothesis_rate, q = threshold_rlw)
+  # [/CHANGE 2026-10]
 
+  # [CHANGE 2026-10 | Rebecca] overlap of the reference population with the other populations, per output type
   # Overlap (0-1 overlapping coefficient) between the reference population's
   # benchmark distribution and each other population's -- the numeric
   # counterpart of the overlap visible when plotting them together. The
@@ -1084,17 +1162,21 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   overlap_rgw_log <- compute_overlap_vs_observed_matrix(rgw_log_combined)
   overlap_rlw_log <- compute_overlap_vs_observed_matrix(rlw_log_combined)
   overlap_ld  <- compute_overlap_vs_observed_matrix(ld_combined)
+  # [/CHANGE 2026-10]
 
   OUT <- list(
     benchmarks_gw = CI_benchmarks_gw,
+    # [CHANGE 2026-10 | Rebecca] lw benchmarks
     benchmarks_lw = CI_benchmarks_lw,
     benchmarks_rgw = CI_benchmarks_rgw_all_cleaned,
     benchmarks_rlw = CI_benchmarks_rlw_all_cleaned,
     benchmarks_rlw_ge1 = CI_benchmarks_rlw_ge1_all_cleaned,
+    # [CHANGE 2026-10 | Rebecca] rgw_log/rlw_log benchmarks
     benchmarks_rgw_log = CI_benchmarks_rgw_log_all_cleaned,
     benchmarks_rlw_log = CI_benchmarks_rlw_log_all_cleaned,
     benchmarks_difLL = CI_benchmarks_ld_all_cleaned,
     benchmarks_absdifLL = CI_benchmarks_ld_ge0_all_cleaned,
+    # [CHANGE 2026-10 | Rebecca] new output fields: Pctl. Sample, Pctl. median ref. pop., overlap (with reference), hypothesis_rate/rate_rlw with thresholds
     pctl_Sample_gw  = pctl_Sample_gw,
     pctl_Sample_lw  = pctl_Sample_lw,
     pctl_Sample_rgw = pctl_Sample_rgw_all_cleaned,
@@ -1125,10 +1207,13 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     hypo_rate_threshold = hypo_rate_threshold,
     rate_rlw = rate_rlw,
     threshold_rlw = threshold_rlw,
+    # [/CHANGE 2026-10]
     combined_values = list(gw_combined = gw_combined,
+                           # [CHANGE 2026-10 | Rebecca] lw draws
                            lw_combined = lw_combined,
                            rgw_combined = rgw_combined,
                            rlw_combined = rlw_combined,
+                           # [CHANGE 2026-10 | Rebecca] rgw_log/rlw_log draws
                            rgw_log_combined = rgw_log_combined,
                            rlw_log_combined = rlw_log_combined,
                            ld_combined = ld_combined)
@@ -1143,22 +1228,26 @@ calculate_error_probability <- function(object, hypos, pref_hypo, est,
                                         VCOV, control, ...) {
   # Error probability based on complement of preferred hypothesis in data
   nr_hypos <- dim(object$result)[1]
+  # [CHANGE 2026-10 | audit] E2: weights column selected by the criterion type (hard-coded 'gorica.weights' gave numeric(0) for goricc/goricac)
   # The weights column of a goric object is named after its criterion:
   # "goric.weights", "gorica.weights", "goricc.weights" or "goricac.weights"
   # (see goric()). It is therefore selected by the object's type rather than
   # hard-coded (previously 'gorica.weights' was used for every non-goric
   # type, which gave numeric(0) for goricc/goricac objects).
   weights_col <- function(fit) paste0(fit$type, ".weights")
+  # [/CHANGE 2026-10]
   if (nr_hypos == 2 && object$comparison == "complement") {
     # TO DO also here re-run with GORICA, as we do for sample value as well?
     #       is ws al opgelost als we goric en gorica resultaten gelijk maken!!!
     #       Dus dan laten staan + re-run met gorica niet nodig dan ook!
+    # [CHANGE 2026-10 | audit] E2: weights column by type
     error_prob <- 1 - object$result[[weights_col(object)]][pref_hypo]
   } else {
     if (pref_hypo == nr_hypos && object$comparison == "unconstrained") {
       error_prob <- "The unconstrained (i.e., the failsafe) containing all possible orderings is preferred."
     } else {
       H_pref <- hypos[[pref_hypo]]
+      # [CHANGE 2026-10 | audit] error probability: same penalty_factor as the (refitted) object instead of the default; priors not applied to the two-model comparison
       # The preferred hypothesis is compared with its complement using the
       # same criterion (gorica/gorica(c)), sample size and penalty_factor as
       # the (refitted) benchmarked object (otherwise, the error probability
@@ -1170,10 +1259,12 @@ calculate_error_probability <- function(object, hypos, pref_hypo, est,
       if (is.null(penalty_factor)) {
         penalty_factor <- 2
       }
+      # [/CHANGE 2026-10]
       if (is.null(object$model.org)) {
         results_goric_pref <- goric(est, VCOV = VCOV,
                                     hypotheses = list(H_pref = H_pref),
                                     comparison = "complement",
+                                    # [CHANGE 2026-10 | audit] E2: same criterion, sample size and penalty_factor as the benchmarked object
                                     type = object$type,
                                     sample_nobs = object$sample_nobs,
                                     penalty_factor = penalty_factor,
@@ -1185,10 +1276,12 @@ calculate_error_probability <- function(object, hypos, pref_hypo, est,
                                     hypotheses = list(H_pref = H_pref),
                                     comparison = "complement",
                                     type = object$type,
+                                    # [CHANGE 2026-10 | audit] same penalty_factor as the benchmarked object
                                     penalty_factor = penalty_factor,
                                     control = control, 
                                     ...)
       }
+      # [CHANGE 2026-10 | audit] E2: weights column by type
       error_prob <- results_goric_pref$result[[weights_col(results_goric_pref)]][2]
     }
   }
@@ -1196,6 +1289,7 @@ calculate_error_probability <- function(object, hypos, pref_hypo, est,
 }
 
 
+# [CHANGE 2026-10 | Rebecca] new function check_iter_adequacy(): stability check of the Sample value's percentile for a fixed iter (messages), with informational median-bias check
 # Diagnostic check: is 'iter' large enough for a stable benchmark?
 #
 # NOTE on what "stable" means here -- and what it deliberately does NOT mean.
@@ -1324,12 +1418,14 @@ check_iter_adequacy <- function(benchmark_results, observed_name, iter,
       "\nrestriktor Message: For the user-specified 'iter' = ", iter, ", the percentile of the ",
       "value based on your data (called the 'Sample' value in the output) within the benchmark ",
       "distribution under the 'Observed' population has not (yet) stabilized: it changed by ",
+      # [CHANGE 2026-10 | audit] N8: message states stability_tol; note when iter_stability_tol <= 0
       stability_tol, " percentage point(s) or more over the last 20% of the draws",
       if (stability_tol <= 0) {
         paste0(" (note that with iter_stability_tol = ", stability_tol, ", the percentile ",
                "can never be considered stable)")
       } else "",
       ".\n",
+      # [/CHANGE 2026-10]
       "For output_type = 'gw', ", describe_type(percentile_gw_80, percentile_gw_full), "\n",
       "For output_type = 'lw', ", describe_type(percentile_lw_80, percentile_lw_full), "\n",
       closing, suggest_default()
@@ -1356,8 +1452,10 @@ check_iter_adequacy <- function(benchmark_results, observed_name, iter,
   invisible(list(median_bias_check_gw = median_bias_check_gw,
                 median_bias_check_lw = median_bias_check_lw))
 }
+# [/CHANGE 2026-10]
 
 
+# [CHANGE 2026-10 | Rebecca] new function goric_percentile_test(): GORICA-based test whether the Sample value is near the median of the draws (informational)
 # Is 'sample_value' consistent with being the median of 'draws'? Rather than
 # a binomial test against p = 0.5, this expresses "close to the median" as a
 # small, fixed interval around 0.5 (band -- a region of practical
@@ -1403,19 +1501,23 @@ goric_percentile_test <- function(draws, sample_value, band = c(0.495, 0.505),
   fit <- goric(est, VCOV = VCOV, hypotheses = list(H1 = H1),
               comparison = "complement", type = "gorica",
               control = control, ...)
+  # [CHANGE 2026-10 | audit] E2: weights column by type
   gw_H1 <- fit$result[[paste0(fit$type, ".weights")]][fit$result$model == "H1"]
 
   list(percentile = 100 * phat, n = n, band = band,
       gw = gw_H1, converged = isTRUE(gw_H1 >= 0.5))
 }
+# [/CHANGE 2026-10]
 
 
+# [CHANGE 2026-10 | Rebecca] description of run_benchmark_simulation() (adaptive iter)
 # Run the pop_es/pop_est simulation loop used by benchmark_means()/
 # benchmark_asymp(), growing the number of draws adaptively when the user
 # leaves 'iter' unspecified (iter = NULL): start at iter_min draws and, if
 # the "Observed" population's percentile (for output_type = 'gw' and/or
 # 'lw') is still changing meaningfully round to round, add iter_step more
 # draws -- WITHOUT discarding or redrawing the ones already computed --
+# [CHANGE 2026-10 | audit] N8: stop after two consecutive stable rounds
 # repeating until the percentile has stabilized (i.e., stayed within
 # stability_tol for two consecutive rounds) or iter_max is reached.
 # Growth is deliberately based on STABILITY of the percentile, not on
@@ -1433,7 +1535,9 @@ goric_percentile_test <- function(draws, sample_value, band = c(0.495, 0.505),
 # median_bias_check_gw/median_bias_check_lw = <the last round's
 # goric_percentile_test() result, informational only -- see the note above
 # that function>).
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] N8: new validate_iter_args(): validation of iter, iter_min/step/max, iter_stability_tol and iter_adequacy_band
 # Checks the iter-related arguments of benchmark_means()/benchmark_asymp()
 # up front, so that invalid values give a clear error instead of an obscure
 # failure (or an endless/empty loop) inside run_benchmark_simulation().
@@ -1472,8 +1576,10 @@ validate_iter_args <- function(iter, iter_min, iter_step, iter_max,
   }
   invisible(TRUE)
 }
+# [/CHANGE 2026-10]
 
 
+# [CHANGE 2026-10 | Rebecca] new function run_benchmark_simulation(): simulation loop for benchmark_means()/benchmark_asymp() with adaptive iter (grow by iter_step until the percentile is stable), parallel draws and progress messages
 run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
                                      colnames_vec, VCOV, hypos, pref_hypo,
                                      comparison, control, mix_weights,
@@ -1481,6 +1587,7 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
                                      es_labels = rnames,
                                      iter_min = 500, iter_step = 100,
                                      iter_max = 2000, band = c(0.495, 0.505),
+                                     # [CHANGE 2026-10 | audit] E2/B24: arguments stability_tol, type, sample_nobs (same criterion/sample size as the object) and observed_label
                                      stability_tol = 1,
                                      # criterion (gorica/goricac) and sample
                                      # size used for every draw: the same as
@@ -1494,15 +1601,19 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
                                      # referred to in the messages below
                                      observed_label = "the 'Observed' population",
                                      ...) {
+                                     # [/CHANGE 2026-10]
+  # [CHANGE 2026-10 | audit] E2: goricac requires the sample size
   if (type == "goricac" && is.null(sample_nobs)) {
     stop("\nrestriktor ERROR: The benchmark is based on the GORICAC (goricac), which ",
          "requires the sample size. Please specify it via the argument 'sample_size' ",
          "(benchmark_asymp) or 'group_size' (benchmark_means).", call. = FALSE)
   }
+  # [/CHANGE 2026-10]
 
   auto_iter <- is.null(iter)
   sample_gw <- object$result[pref_hypo, 7]
   sample_lw <- object$result$loglik.weights[pref_hypo]
+  # [CHANGE 2026-10 | audit] B34: comment: populations indexed by position (names made unique)
   # The populations are indexed by POSITION throughout (the names are made
   # unique by benchmark_means()/benchmark_asymp(), but position is what the
   # results are accumulated by).
@@ -1520,12 +1631,14 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
   # exists to compare against.
   prev_percentile_gw <- NA_real_
   prev_percentile_lw <- NA_real_
+  # [CHANGE 2026-10 | audit] N8: count consecutive stable rounds and the batch sizes of added draws
   # Number of consecutive rounds in which the percentile stayed within
   # stability_tol (for both 'gw' and 'lw'), and the sizes of the batches of
   # draws added in those rounds (the last batch can be smaller than
   # iter_step when it is capped by iter_max).
   n_stable_rounds <- 0L
   batch_sizes <- integer(0)
+  # [/CHANGE 2026-10]
 
   # NULL unless/until computed inside the repeat loop below -- stays NULL for
   # a fixed, user-specified 'iter' (auto_iter = FALSE), since that path
@@ -1535,6 +1648,7 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
   chk_gw <- NULL
   chk_lw <- NULL
 
+  # [CHANGE 2026-10 | audit] A9: successful draws per population; B32: progress handler local to this call (global progressr handlers untouched)
   # Successful draws per population (see the worker: a draw only fails on an
   # error in goric(); warnings are muffled and the draw is kept).
   n_ok <- function(pos) {
@@ -1544,6 +1658,7 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
   # with_progress() rather than set globally via progressr::handlers(), so
   # the user's own (global) progressr handlers are left untouched.
   progress_handler <- progressr::handler_txtprogressbar(char = ">")
+  # [/CHANGE 2026-10]
 
   repeat {
     n_new <- target - n_done
@@ -1566,10 +1681,12 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
           parallel_function_asymp(i,
                                   est = est_full, VCOV = VCOV,
                                   hypos = hypos, pref_hypo = pref_hypo,
+                                  # [CHANGE 2026-10 | audit] E2: same criterion (gorica/goricac) and sample size for every draw
                                   comparison = comparison, type = type,
                                   sample_nobs = sample_nobs,
                                   control = control, mix_weights = mix_weights,
                                   penalty_factor = penalty_factor,
+                                  # [CHANGE 2026-10 | audit] N3: prior weights of the goric object
                                   # same prior weights as the (refitted) goric object
                                   priorICweights = object$priorICweights,
                                   Heq = Heq, ...)
@@ -1581,25 +1698,31 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
           future.seed = TRUE # Ensures safe and reproducible random number generation
         )
 
+        # [CHANGE 2026-10 | audit] A9: append the new draws (incl. failed ones, for the accounting below)
         parallel_function_results[[teller_es]] <- c(parallel_function_results[[teller_es]],
                                                     new_results)
       }
+    # [CHANGE 2026-10 | audit] B32: local progress handler
     }, handlers = progress_handler)
 
+    # [CHANGE 2026-10 | audit] N8: record the size of this batch of draws
     batch_sizes <- c(batch_sizes, as.integer(target - n_done))
     n_done <- target
 
     if (!auto_iter) break # fixed iter: exactly one round, done
 
     if (length(obs_pos) == 1) {
+      # [CHANGE 2026-10 | audit] A9: failed draws (draw_failed) give NA
       gw_draws <- vapply(parallel_function_results[[obs_pos]], function(x) {
         if (draw_failed(x)) NA_real_ else as.numeric(x$gw)
       }, numeric(1))
+      # [CHANGE 2026-10 | audit] A9: failed draws (draw_failed) give NA
       lw_draws <- vapply(parallel_function_results[[obs_pos]], function(x) {
         if (draw_failed(x)) NA_real_ else as.numeric(x$lw)
       }, numeric(1))
       gw_draws <- gw_draws[!is.na(gw_draws)]
       lw_draws <- lw_draws[!is.na(lw_draws)]
+      # [CHANGE 2026-10 | audit] A9: no successful draw of the 'Observed' population yet: nothing to check (failures reported after the loop)
       if (length(gw_draws) == 0) {
         # every draw of the 'Observed' population failed so far: nothing to
         # check; the failures are reported (and, if they persist, turned
@@ -1607,6 +1730,7 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
         stabilized <- TRUE
         chk_gw <- chk_lw <- NULL
       } else {
+      # [/CHANGE 2026-10]
       # Informational only, for now -- see the note above goric_percentile_test().
       chk_gw <- goric_percentile_test(gw_draws, sample_gw, band = band, control = control)
       chk_lw <- goric_percentile_test(lw_draws, sample_lw, band = band, control = control)
@@ -1616,20 +1740,24 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
       # the long note above check_iter_adequacy() for why the percentile
       # need not be near 50 at all, even once it has fully stabilized.
       # FALSE (not NA) on the very first round, since there is no earlier
+      # [CHANGE 2026-10 | audit] N8: comment: the percentile has to be stable for two consecutive rounds
       # percentile yet to compare against. Since a percentile can drift by a
       # percentage point or two by chance alone, a single round-to-round
       # comparison could call "stabilized" too eagerly; therefore, the
       # percentile has to stay within stability_tol for TWO consecutive
       # rounds (i.e., over the last two batches of added draws) before the
       # growing stops.
+      # [/CHANGE 2026-10]
       stable_gw <- isTRUE(!is.na(prev_percentile_gw) &&
                             abs(chk_gw$percentile - prev_percentile_gw) < stability_tol)
       stable_lw <- isTRUE(!is.na(prev_percentile_lw) &&
                             abs(chk_lw$percentile - prev_percentile_lw) < stability_tol)
+      # [CHANGE 2026-10 | audit] N8: stop growing only after two consecutive stable rounds
       n_stable_rounds <- if (stable_gw && stable_lw) n_stable_rounds + 1L else 0L
       stabilized <- n_stable_rounds >= 2L
       prev_percentile_gw <- chk_gw$percentile
       prev_percentile_lw <- chk_lw$percentile
+      # [CHANGE 2026-10 | audit] A9: end of the else-branch (successful draws available)
       }
     } else {
       # No "Observed" category (custom pop_es/pop_est) -- nothing to check
@@ -1640,6 +1768,7 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
 
     if (stabilized || n_done >= iter_max) {
       if (auto_iter && !is.null(chk_gw)) {
+        # [CHANGE 2026-10 | audit] N8/A9: actual batch sizes and the number of successful draws for the messages
         # number of draws over which the last (one or two) comparison(s)
         # were made; the last batch can be smaller than iter_step if capped
         # by iter_max.
@@ -1653,20 +1782,25 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
           "; for output_type = 'lw', the percentile is ", sprintf("%.1f", chk_lw$percentile),
           ".\n"
         )
+        # [/CHANGE 2026-10]
         if (stabilized) {
           message(
             "\nrestriktor Message: 'iter' was not specified, so it was set automatically.\n",
+            # [CHANGE 2026-10 | audit] A9: number of successful draws
             "Using iter = ", n_used, " draws, the percentile of the value based on your data ",
             "(called the 'Sample' value in the output) within the benchmark distribution under ",
+            # [CHANGE 2026-10 | audit] N8/B24: message: stable over the last two rounds (observed_label)
             observed_label, " has stabilized: in each of the last two rounds of added ",
             "draws (", n_last2, " draws in total), it changed by less than ", stability_tol,
             " percentage point(s).\n",
             percentiles_txt,
+            # [/CHANGE 2026-10]
             "So, no further draws were added. Note that this percentile is not necessarily ",
             "expected to be near 50 -- that need not indicate a problem, particularly when ",
             "(some of) the hypotheses are close to being (an) equality constraint(s)."
           )
         } else {
+          # [CHANGE 2026-10 | audit] N8: reason why the percentile did not stabilize (tol <= 0, iter_min >= iter_max, or not stable)
           reason <- if (stability_tol <= 0) {
             paste0("since iter_stability_tol = ", stability_tol, ", the percentile can never be ",
                    "considered stable (it would have to change by less than ", stability_tol,
@@ -1686,7 +1820,9 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
                    " percentage point(s)", if (n_stable_rounds > 0) "" else " or more",
                    ").\n")
           }
+          # [/CHANGE 2026-10]
           message(
+            # [CHANGE 2026-10 | audit] N8/A9: message when iter_max is reached (successful draws, reason, percentiles)
             "\nrestriktor Message: 'iter' was not specified, so it was ",
             if (is.na(n_last)) "set to" else "increased automatically up to",
             " its maximum of iter = ", n_used, " draws (iter_max = ", iter_max, "), ",
@@ -1694,6 +1830,7 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
             percentiles_txt,
             "Consider re-running with a manually specified, larger 'iter' (or a larger ",
             "'iter_max') for a more stable benchmark."
+            # [/CHANGE 2026-10]
           )
         }
       }
@@ -1703,6 +1840,7 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
     target <- min(n_done + iter_step, iter_max)
   }
 
+  # [CHANGE 2026-10 | audit] A9: accounting of failed (dropped) and warned (kept) draws per population with first messages; error if all draws of a population failed; iter = successful draws
   # Accounting of failed draws (goric() error: dropped) and draws with a
   # (muffled) warning (kept), per population -- see parallel_function_asymp().
   pop_names <- names(parallel_function_results)
@@ -1757,8 +1895,10 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
       iter_requested = as.integer(n_done),
       n_failed_draws = n_failed, n_warned_draws = n_warned,
       draw_errors = first_error, draw_warnings = first_warning,
+  # [/CHANGE 2026-10]
       median_bias_check_gw = chk_gw, median_bias_check_lw = chk_lw)
 }
+# [/CHANGE 2026-10]
 
 
 calculate_hypothesis_rate <- function(x, q = 1) {
@@ -1789,6 +1929,7 @@ format_value <- function(value) {
   }
 }
 
+# [CHANGE 2026-10 | Rebecca] new function format_overlap_value(): self-overlap printed as "1"
 # Used only for the "Overlap with ..." column: an overlap of exactly 1 there
 # is always the reference population's own (self-)entry, fixed at 1 by
 # construction rather than actually computed (see compute_overlap_vs_observed()/
@@ -1797,6 +1938,7 @@ format_value <- function(value) {
 # Every other value in this column (and every value in every other column)
 # still goes through the normal format_value().
 format_overlap_value <- function(value) {
+  # [CHANGE 2026-10 | audit] E5/O10: an NA overlap is printed as "NA" (reason appended by print_rounded_es_value())
   if (is.na(value)) {
     # An overlap that could not be computed (see compute_overlap()) is shown
     # as "NA" (print_rounded_es_value() appends the reason, if known) rather
@@ -1804,11 +1946,14 @@ format_overlap_value <- function(value) {
     return("NA")
   }
   if (value == 1) {
+  # [/CHANGE 2026-10]
     return("1")
   }
   format_value(value)
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | Rebecca] new function format_median_ref_pop_value(): reference population's own entry printed as "50"
 # Used only for the "Pctl. median ref. pop." column: the reference
 # population's own row there is hardcoded to exactly 50 by construction
 # (see get_results_benchmark()'s pctl_medianRefPop_* computation, and its
@@ -1824,8 +1969,10 @@ format_median_ref_pop_value <- function(value) {
   }
   format_value(value)
 }
+# [/CHANGE 2026-10]
 
 
+# [CHANGE 2026-10 | Rebecca] new function overlap_column(): builds the "Overlap with <reference>" column for the printed tables
 # Builds the "Overlap with Observed" column added to each output_type's
 # per-population benchmark table in print.benchmark(). 'overlap_source' is
 # the relevant overlap_* field on the benchmark object: for gw/lw it is a
@@ -1834,6 +1981,7 @@ format_median_ref_pop_value <- function(value) {
 # vector named by alternative hypothesis (there can be more than one per
 # population). 'n_rows' is the number of rows in the benchmark table this
 # column is being attached to (nrow() of e.g. benchmarks_ratio_goric_weights
+# [CHANGE 2026-10 | audit] N7: values aligned with the table rows by name (row_names, pref_hypo_name)
 # [[pop_es]]). For rgw/rlw/ld, the values are aligned with the table's rows
 # BY NAME when 'row_names' and 'pref_hypo_name' are supplied (see
 # align_by_hypothesis()); otherwise by position. For gw/lw the single
@@ -1842,6 +1990,7 @@ format_median_ref_pop_value <- function(value) {
 # (defensively) a length mismatch.
 overlap_column <- function(overlap_source, pop_es, n_rows, row_names = NULL,
                            pref_hypo_name = NULL) {
+# [/CHANGE 2026-10]
   na_col <- rep(NA_real_, n_rows)
   if (is.null(overlap_source) || !(pop_es %in% names(overlap_source))) {
     # Note: for the gw/lw case, overlap_source is a plain named vector, and
@@ -1854,6 +2003,7 @@ overlap_column <- function(overlap_source, pop_es, n_rows, row_names = NULL,
   if (is.null(vals) || length(vals) == 0) {
     return(na_col)
   }
+  # [CHANGE 2026-10 | audit] E5/O10 + N7: carry the notes of NA overlaps along; align values and notes by hypothesis name
   # Why an overlap is NA (see compute_overlap()): for gw/lw a single note per
   # population (attribute "notes" on the vector overlap_source, which `[[`
   # above drops); for rgw/rlw/ld one per hypothesis column (attribute on the
@@ -1877,29 +2027,37 @@ overlap_column <- function(overlap_source, pop_es, n_rows, row_names = NULL,
     attr(out, "notes") <- align_by_hypothesis(notes_full, row_names, pref_hypo_name)
     return(out)
   }
+  # [/CHANGE 2026-10]
   vals <- unname(vals)
+  # [CHANGE 2026-10 | audit] E5/O10: notes without names
   notes_full <- unname(notes_full)
   if (length(vals) == n_rows) {
+    # [CHANGE 2026-10 | audit] E5/O10: return the notes as attribute
     return(structure(vals, notes = notes_full))
   }
   # gw/lw case: a single overlap value for the whole population, repeated
   # across every row (normally just one: the preferred hypothesis).
   if (length(vals) == 1) {
+    # [CHANGE 2026-10 | audit] E5/O10: return the notes as attribute
     return(structure(rep(vals, n_rows), notes = rep(notes_full, n_rows)))
   }
   # Length mismatch that isn't the gw/lw broadcast case -- shouldn't
   # normally happen, but pad/truncate defensively rather than risk silently
   # mis-aligning a row with the wrong hypothesis's overlap value.
   out <- na_col
+  # [CHANGE 2026-10 | audit] E5/O10: notes for the padded/truncated case
   out_notes <- rep(NA_character_, n_rows)
   keep <- seq_len(min(n_rows, length(vals)))
   out[keep] <- vals[keep]
   out_notes[keep] <- notes_full[keep]
   attr(out, "notes") <- out_notes
+  # [/CHANGE 2026-10]
   out
 }
+# [/CHANGE 2026-10]
 
 
+# [CHANGE 2026-10 | Rebecca] new function recompute_percentile_table(): recompute the Sample + percentile columns at print time for user-supplied percentiles
 # Rebuilds the "Sample" + percentile% columns of an already-built benchmark
 # table (e.g. x$benchmarks_goric_weights[[pop_es]]) at PRINT time, for a
 # caller-supplied set of percentiles, instead of using the percentiles that
@@ -1916,6 +2074,7 @@ overlap_column <- function(overlap_source, pop_es, n_rows, row_names = NULL,
 # 'existing_mat', in the same order -- gw/lw and rgw/rlw/rgw_log/rlw_log/ld
 # align this way throughout the codebase, e.g. overlap_column() above relies
 # on the same positional correspondence) for rgw/rlw/rgw_log/rlw_log/ld.
+# [CHANGE 2026-10 | audit] N7: new align_by_hypothesis(): align per-hypothesis values (hypothesis_rate, rate_rlw, overlap) with the table rows by name
 # Aligns a vector of per-alternative-hypothesis values (e.g. hypothesis_rate,
 # rate_rlw or overlap; named by the draws' column names, like "vs. H2") with
 # the rows of a benchmark table (rownames "<preferred hypothesis> vs. H2", see
@@ -1935,7 +2094,9 @@ align_by_hypothesis <- function(vals, row_names, pref_hypo_name) {
   unname(vals[match(row_names, paste(pref_hypo_name, names(vals)))])
 }
 
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] N7: argument pref_hypo_name (alignment by name)
 recompute_percentile_table <- function(existing_mat, combined_data, percentiles,
                                        pref_hypo_name = NULL) {
   sample_col <- existing_mat[, 1, drop = FALSE]
@@ -1946,6 +2107,7 @@ recompute_percentile_table <- function(existing_mat, combined_data, percentiles,
     new_mat <- matrix(c(sample_col, q), nrow = nrow(existing_mat))
   } else {
     # rgw/rlw/rgw_log/rlw_log/ld case: one column of draws per row (hypothesis).
+    # [CHANGE 2026-10 | audit] N7: draw columns matched to the table rows by name (else by position); robust matrix shape for a single percentile or no rows
     # Columns of draws are matched to the table's rows by name (see
     # align_by_hypothesis()) when possible, otherwise by position.
     col_idx <- seq_len(nrow(existing_mat))
@@ -1959,14 +2121,17 @@ recompute_percentile_table <- function(existing_mat, combined_data, percentiles,
     }, numeric(length(percentiles)))
     # one row per table row, also for a single percentile or no rows at all
     q <- matrix(q, nrow = length(col_idx), ncol = length(percentiles), byrow = TRUE)
+    # [/CHANGE 2026-10]
     new_mat <- cbind(sample_col, q)
   }
   colnames(new_mat) <- c("Sample", pct_names)
   rownames(new_mat) <- rownames(existing_mat)
   new_mat
 }
+# [/CHANGE 2026-10]
 
 
+# [CHANGE 2026-10 | Rebecca] new function format_threshold_display(): threshold shown in the column header
 # Displays a hypo_rate_threshold value for the "hypothesis_rate" column
 # header below -- e.g. 1 -> "1", 1.5 -> "1.5" -- without the trailing
 # ".000" sprintf("%.3f")-style formatting used elsewhere in this file would
@@ -1977,7 +2142,9 @@ format_threshold_display <- function(q) {
   }
   as.character(q)
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | Rebecca] new function header_lines_for_columns(): two-line (grouped) column headers for the printed tables
 # Column-header display text for print_grouped_header_table() below, keyed
 # off the (internal, formatter-matching) column names already set on the
 # benchmark tables by print.benchmark() -- "Sample", a percentile like "5%",
@@ -2058,7 +2225,9 @@ header_lines_for_columns <- function(colnames_vec, hypo_rate_threshold = NULL,
   }
   list(line1 = line1, line2 = line2, group = group)
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | Rebecca] new function print_grouped_header_table(): prints a table with a two-line header with merged group labels
 # Prints 'formatted_df' (a character matrix, already formatted -- see
 # print_rounded_es_value() below) with a 2-line column header, where
 # columns sharing the same non-NA 'group' (from header_lines_for_columns())
@@ -2130,15 +2299,19 @@ print_grouped_header_table <- function(formatted_df, rn, hypo_rate_threshold = N
         paste(mapply(pad_left, formatted_df[i, ], col_w), collapse = " "), "\n", sep = "")
   }
 }
+# [/CHANGE 2026-10]
 
 
+# [CHANGE 2026-10 | Rebecca] print_rounded_es_value(): reference-population label, thresholds, per-column formatters (overlap, median ref. pop.), grouped two-line header
 # called by the benchmark.print() function. is_reference: TRUE when 'pop_es'
 # is the reference population that overlap/pctl_medianRefPop are computed
 # against (see determine_overlap_reference()/x$overlap_reference) -- appends
+# [CHANGE 2026-10 | audit] B24: configurable reference_label
 # 'reference_label' to the printed population label, e.g. "Population
 # effect-size = Observed (Reference population)".
 print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset,
                                    is_reference = FALSE, hypo_rate_threshold = NULL,
+                                   # [CHANGE 2026-10 | audit] E5/B24: arguments threshold_rlw, overlap_notes and reference_label
                                    threshold_rlw = NULL,
                                    overlap_notes = attr(df, "overlap_notes"),
                                    reference_label = "(Reference population)") {
@@ -2150,6 +2323,7 @@ print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset,
     label <- "Population effect-size"
   }
   if (is_reference) {
+    # [CHANGE 2026-10 | audit] B24: reference_label appended
     pop_es_value <- paste0(pop_es_value, " ", reference_label)
   }
   cat(sprintf("%s = %s%s%s\n", label, text_color, pop_es_value, reset))
@@ -2178,6 +2352,7 @@ print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset,
   formatted_df <- do.call(cbind, formatted_cols)
   rownames(formatted_df) <- rownames(df)
   colnames(formatted_df) <- colnames(df)
+  # [CHANGE 2026-10 | audit] E5/O10: the reason of an NA overlap is appended ("NA (<note>)")
   # An NA overlap gets its reason appended, e.g. "NA (non-finite draws; see
   # rgw_log/rlw_log)" -- 'overlap_notes' is the "notes" attribute of
   # overlap_column()'s result (one entry per row, NA where nothing to note).
@@ -2187,8 +2362,10 @@ print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset,
     has_note <- !is.na(overlap_notes) & is.na(df[, j])
     formatted_df[has_note, j] <- paste0("NA (", overlap_notes[has_note], ")")
   }
+  # [/CHANGE 2026-10]
   print_grouped_header_table(formatted_df, rownames(df), hypo_rate_threshold = hypo_rate_threshold,
                              threshold_rlw = threshold_rlw)
+# [/CHANGE 2026-10]
   cat("\n")
 }
 

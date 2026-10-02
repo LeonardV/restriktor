@@ -249,6 +249,7 @@ conRLM.rlm <- function(object, constraints = NULL, se = "standard",
     b.restr[abs(b.restr) < ifelse(is.null(control$tol), 
                                   sqrt(.Machine$double.eps), 
                                   control$tol)] <- 0L
+    # [CHANGE 2026-10 | audit] B9: no partial matching on $fitted (use $fitted.values)
     fitted <- rfit$fitted.values
     residuals <- rfit$residuals
     # psi(resid/scale) these are the weights used for downweighting the cases.

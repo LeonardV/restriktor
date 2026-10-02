@@ -1,3 +1,4 @@
+# [CHANGE 2026-10 | audit] new file: regression tests for the fixes in goric.default() and remove_redundant_constraints() (E4, E7, E13, R6, R7)
 # =============================================================================
 # Tests: fixes in goric.default en remove_redundant_constraints
 # =============================================================================

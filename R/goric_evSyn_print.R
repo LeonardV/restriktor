@@ -43,10 +43,12 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     cat("Information criteria weights (summing to 1)\n")
   } else if (inherits(x, "evSyn_ICratios")) {
     cat(paste("\nInput type 'icratios' detected: "))
+    # [CHANGE 2026-10 | Rebecca] wording of the ICratios header
     #cat("Ratio of information criteria weights (each vector ends with 1)\n") # Note: not necessary!
     cat("Ratio of information criteria weights (each study has at least one 1)\n")
   } 
   
+  # [CHANGE 2026-10 | Rebecca] print final LL weights and GORICA weights side by side (LL-only branch added)
   cat("\n")
   cat("---\n")
   
@@ -78,9 +80,11 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     #cat("---\n")
     cat("\n")
   } else if (!is.null(x[["Cumulative_GORICA_weights"]])) {
+  # [/CHANGE 2026-10]
     cat(paste0("\nFinal ", type_label, " weights:\n"))
     cgw <- sapply(x[["Cumulative_GORICA_weights"]]["Final", , drop = FALSE], 
                   FUN = function(x) format_numeric(x, digits = digits))
+    # [CHANGE 2026-10 | Rebecca] final GORICA weights printed as a one-column table
     # names(cgw) <- colnames(x[["Cumulative_GORICA_weights"]])
     # print(cgw, print.gap = 2, quote = FALSE, right = TRUE)
     cw <- matrix(cgw, ncol = 1)
@@ -90,6 +94,7 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     print(cw, print.gap = 2, quote = FALSE, right = TRUE, col.names = FALSE)
     #write.table(format(cw, justify="right"), col.names = FALSE, quote = F, sep = "              ")
     cat("\n")
+    # [/CHANGE 2026-10]
     cat("---\n")
   }
   

@@ -3,6 +3,7 @@ coef.con_goric <- function(object, ...)  {
 }
 
 coef.gorica_est <- function(object, ...)  {
+  # [CHANGE 2026-10 | audit] A13: coef.gorica_est() appends the defined parameters (:=)
   b <- object$b.restr
   # defined parameters (':=') are appended, as coef.restriktor() does
   if (!is.null(object$parTable$op) && any(object$parTable$op == ":=") &&
@@ -10,6 +11,7 @@ coef.gorica_est <- function(object, ...)  {
     b <- c(b, object$CON$def.function(b))
   }
   b
+  # [/CHANGE 2026-10]
 }
 
 coef_named_vector <- function(x, VCOV = NULL, ...)  {
@@ -26,6 +28,7 @@ coef_named_vector <- function(x, VCOV = NULL, ...)  {
       # TO DO eigenlijk nog checken of rownames bestaan
       names(est) <- rownames(VCOV)
     }
+    # [CHANGE 2026-10 | audit] B5: message about the mlm coefficient names moved to goric.lm() (message_mlm_coef_names())
     # the message about these names is given once in goric.lm() (see
     # message_mlm_coef_names()), irrespective of the comparison
   } else {
@@ -34,6 +37,7 @@ coef_named_vector <- function(x, VCOV = NULL, ...)  {
   return(est)
 }
 
+# [CHANGE 2026-10 | audit] B5: new function message_mlm_coef_names(): message with the mlm coefficient names to use in hypotheses
 # Message (once, from goric.lm()) about the coefficient names of an mlm object:
 # the names of vcov() with ':' and '(' ')' replaced by '.', e.g., 'Age.GroupNo'
 # and 'Age..Intercept.' for the intercept of response 'Age'.
@@ -47,7 +51,9 @@ message_mlm_coef_names <- function(object) {
           paste(sQuote(labs), collapse = ", "), ".")
   invisible(labs)
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] M1: new function loglik_unrestr(): unrestricted log-likelihood, also for mlm
 # log-likelihood of the unrestricted model. logLik.lm() does not support
 # multiple responses, so for mlm objects con_loglik_lm() is used.
 loglik_unrestr <- function(model.org)  {
@@ -57,7 +63,9 @@ loglik_unrestr <- function(model.org)  {
     logLik(model.org)
   }
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] M3: new function coef_vec_mlm(): mlm coefficient matrix as a named vector in vcov() order
 # For mlm objects the coefficients form a p x ny matrix. Convert it to a
 # vector in the order of vcov(), with the names of vcov() (e.g., 'Age:GroupNo').
 # Other objects are returned as is.
@@ -67,7 +75,9 @@ coef_vec_mlm <- function(b, model.org)  {
   }
   b
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] E6/N2/B2: new function check_weights(): central validation of priorICweights/study_weights
 # Central validation of weight vectors (priorICweights, study_weights):
 # finite, non-negative, positive sum and (optionally) a given length.
 # Returns the weights rescaled to sum 1 (if rescale = TRUE). Zero weights are
@@ -110,7 +120,9 @@ check_weights <- function(w, name = "priorICweights", length_expected = NULL,
   }
   w
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] E7/E11/B14: new function ic_weights_log(): IC weights via log-sum-exp (prior 0 -> weight 0; -Inf/NaN IC handled)
 # Numerically stable (prior-weighted) IC weights:
 #   w_i = prior_i * exp(-IC_i / 2) / sum_j prior_j * exp(-IC_j / 2)
 # computed via log-sum-exp. A zero prior gives a zero weight (not NaN),
@@ -140,6 +152,7 @@ ic_weights_log <- function(IC, prior = NULL) {
   w <- exp(lw - m)
   w / sum(w)
 }
+# [/CHANGE 2026-10]
 
 check_sample_nobs <- function(sample_nobs, ...)  {
   if (length(sample_nobs) > 1) { 
@@ -158,6 +171,7 @@ check_N_with_sample_nobs <- function(N, sample_nobs, ...)  {
   # Check on N
   if (!is.null(sample_nobs) && sample_nobs != N) {
     message(paste0(
+    # [CHANGE 2026-10 | Rebecca] message wording
     "\nrestriktor Message: The (specified) 'sample_nobs' (or its sum = ", sample_nobs, 
     ") differs from the sample size derived from the fitted model (", N, "). ",
     "The model-based value is used instead."
@@ -198,6 +212,7 @@ VCOV.unbiased <- function(model.org, sample_nobs = NULL, ...)  {
   #if(!is.null(N) && sample_nobs != N) {
   if (!is.null(N) && !is.null(sample_nobs) && sample_nobs != N) {
     message(paste0(
+    # [CHANGE 2026-10 | Rebecca] message wording
     "\nrestriktor Message: The (specified) 'sample_nobs' (or its sum = ", sample_nobs, 
     ") differs from the sample size determined from the fitted model (", N, "). ",
     "The unbiased covariance matrix is computed using the model-based value."
@@ -223,9 +238,11 @@ message.VCOVvb <- function(...)  {
 }
 
 check.type <- function(type, class, ...)  {
+  # [CHANGE 2026-10 | audit] type is case-insensitive (as in goric.default())
   # case-insensitive, like goric.default() (otherwise e.g. "GORICAC" would
   # silently be turned into "gorica")
   type <- tolower(type)
+  # [/CHANGE 2026-10]
   if (type == "goric") {
     message("\nrestriktor Message: object of class ", class, " is only supported for",
             "type = 'gorica(c)'. The GORICA will be used, not the the GORIC.")
@@ -242,6 +259,7 @@ check.type <- function(type, class, ...)  {
   return(type)
 }
 
+# [CHANGE 2026-10 | audit] E7: new function weight_ratio_matrix(): ratio matrix of weights (0 and Inf handled)
 # ratio of weights w_i / w_j. A zero weight gives 0 (row) or Inf (column);
 # 0/0 (NaN) only occurs for two zero weights, the diagonal is set to 1.
 weight_ratio_matrix <- function(w, modelnames) {
@@ -251,7 +269,9 @@ weight_ratio_matrix <- function(w, modelnames) {
   colnames(rw) <- paste0("vs. ", modelnames)
   rw
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] B9/E7/B1: calculate_model_comparison_metrics(): priorICweights and type arguments; IC column by exact name (no partial matching); all weights via ic_weights_log(); Heq/unconstrained rows by exact name
 calculate_model_comparison_metrics <- function(x, priorICweights, type = NULL) {
   modelnames <- as.character(x$model)
   # the IC column is named after the type ('goric', 'gorica', ...); it is
@@ -295,6 +315,7 @@ calculate_model_comparison_metrics <- function(x, priorICweights, type = NULL) {
                                                priorICweights[-mn_heq_idx])
     goric_weights_without_heq <- append(goric_weights_without_heq, NA, 
                                         after = mn_heq_idx - 1L)
+                                        # [/CHANGE 2026-10]
   } else { goric_weights_without_heq <- NULL }
   
   out <- list(loglik_weights = loglik_weights, 
@@ -304,6 +325,7 @@ calculate_model_comparison_metrics <- function(x, priorICweights, type = NULL) {
               goric_weights_without_heq = goric_weights_without_heq,
               loglik_rw = loglik_rw,
               penalty_rw = penalty_rw,
+              # [CHANGE 2026-10 | Rebecca] priorICweights returned
               goric_rw = goric_rw,
               priorICweights = priorICweights)
   
@@ -321,12 +343,14 @@ PT_Amat_meq <- function(Amat, meq) {
   if (nrow(Amat) > 1) {
     # check for range restrictions, e.g., -1 < beta < 1
     idx_range_restrictions <- detect_range_restrictions(Amat)
+    # [CHANGE 2026-10 | audit] B7: design note on range restrictions and the PT
     # range restrictions are treated as equalities for computing PT (goric).
     # Note (design): a pair of opposite rows is a range irrespective of the
     # bounds, so 'x1 > 1; x1 < 1' obtains the PT of the equality x1 = 1, and
     # an inactive (non-binding) bound added to an inequality (e.g., 'x1 > 0;
     # x1 < 100') changes the PT from that of one inequality to that of one
     # equality. Only linearly independent rows are kept above.
+    # [/CHANGE 2026-10]
     n_range_restrictions <- nrow(idx_range_restrictions)
     PT_meq <- meq + n_range_restrictions
     # reorder PT_Amat: ceq first, ciq second, needed for QP.solve()
@@ -506,6 +530,7 @@ calculate_weight_bar <- function(Amat, meq, VCOV, mix_weights, seed, control,
 
 
 
+# [CHANGE 2026-10 | audit] B3/B4: new function goric_heq_constraints(): Heq of a hypothesis (redundant/implied inequalities removed, ranges refused, NULL without inequalities)
 # Construct the equality-restricted hypothesis (Heq) belonging to an 
 # order-restricted hypothesis by replacing '<' and '>' by '='. Before that,
 # inequality restrictions that are identical to another one (only the one 
@@ -622,7 +647,9 @@ goric_heq_constraints <- function(object, hypothesis) {
   
   Hceq
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] B4: new function goric_heq_constraints_matrix(): Heq for constraint-matrix hypotheses
 # Heq for a hypothesis given as a constraint matrix (list(constraints =, 
 # rhs =, neq =)): the inequality rows become equality rows. As for the 
 # character version, inequality rows identical to an equality row or to 
@@ -686,7 +713,9 @@ goric_heq_constraints_matrix <- function(hypothesis, heq_error) {
   list(constraints = Amat[!drop, , drop = FALSE], rhs = bvec[!drop], 
        neq = sum(!drop))
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] B4: new function fit_hypothesis(): fit one hypothesis, clear error when Heq is infeasible
 # Fit one hypothesis (restriktor() or con_gorica_est()). For the generated
 # Heq hypothesis, an error about an inconsistent set of equality restrictions
 # (e.g., 'x1 > x2 > 0.1; x1 > 0.05' -> 'x1 = x2 = 0.1; x1 = 0.05') is
@@ -715,3 +744,4 @@ fit_hypothesis <- function(name, fun, args) {
          "restriction(s).", call. = FALSE)
   })
 }
+# [/CHANGE 2026-10]

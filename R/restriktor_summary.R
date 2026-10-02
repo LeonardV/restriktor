@@ -15,6 +15,7 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
   goric <- tolower(goric)
   stopifnot(goric %in% c("goric", "goricc", "gorica", "goricac", "none"))
   
+  # [CHANGE 2026-10 | audit] B5/E13: goricc/goricac not available for mlm (consistent with goric())
   # the small-sample correction has not been derived for a multivariate
   # residual covariance matrix (see also goric.lm())
   if (inherits(z, "conMLM") && goric %in% c("goricc", "goricac")) {
@@ -24,6 +25,7 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
          "Use goric = 'goric' or 'gorica'.", call. = FALSE)
   }
   
+  # [/CHANGE 2026-10]
   # bty = "stud" needs bootstrap variances
   if (bootCIs && !(bty %in% c("norm", "basic", "perc", "bca"))) {
     if (bty == "stud") {
@@ -210,6 +212,7 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
     
     # compute penalty term based on simulated level probabilities (wt.bar)
     # The value 1 is the penalty for estimating the variance/dispersion parameter.
+    # [CHANGE 2026-10 | audit] M2/E13: TO DO on the mlm penalty for the residual (co)variance
     # TO DO mlm: for mlm objects a residual covariance matrix with ny*(ny+1)/2
     #       free parameters is estimated instead of one variance. A choice 
     #       still has to be made whether to use 1 or ny*(ny+1)/2 (see also 
@@ -217,6 +220,7 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
     #       The small-sample correction (goricc) for mlm objects is blocked in
     #       goric.lm() until it has been derived for a multivariate residual
     #       covariance matrix.
+    # [/CHANGE 2026-10]
     if (goric %in% c("goric", "gorica")) {
       PT <- penalty_goric(Amat        = ans$PT_Amat,  
                           meq         = ans$PT_meq, 
@@ -227,6 +231,7 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
         PT <- PT - 1 
       }
     } else if (goric %in% c("goricc", "goricac")) {
+      # [CHANGE 2026-10 | audit] goricc/goricac with N - p - 2 <= 0 give an error
       # the small-sample correction N(k+1)/(N-k-2) requires N - p - 2 > 0
       # (otherwise the penalty would silently become infinite or negative)
       N_ss <- NROW(r)
@@ -236,10 +241,12 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
              "correction of type = '", goric, "': N - p - 2 must be larger than 0, ",
              "but N = ", N_ss, " and p = ", p_ss, ".", call. = FALSE)
       }
+      # [/CHANGE 2026-10]
       PT <- penalty_goric(Amat        = ans$PT_Amat,
                           meq         = ans$PT_meq, 
                           LP          = wt.bar, 
                           correction  = TRUE, 
+                          # [CHANGE 2026-10 | audit] M2: sample size via NROW() (length() counted N x ny for mlm)
                           sample.nobs = NROW(r)) # NROW: r is a N x ny matrix for mlm
       if (goric == "goricac") {
         PT <- PT - 1 

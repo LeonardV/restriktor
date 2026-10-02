@@ -68,12 +68,14 @@ penalty_goric <- function(Amat, meq, LP, correction = FALSE,
 }
 
 
+# [CHANGE 2026-10 | audit] E13: TO DO on the mlm penalty for the residual (co)variance; goricc/goricac blocked for mlm
 # TO DO mlm: the 1 in the penalty terms below is the penalty for the residual
 #       variance. For mlm objects ny*(ny+1)/2 (co)variances are estimated. A 
 #       choice still has to be made whether to use 1 or ny*(ny+1)/2.
 #       The small-sample correction (goricc/goricac, correction = TRUE) for
 #       mlm objects is blocked in goric.lm() until it has been derived for a
 #       multivariate residual covariance matrix.
+# [/CHANGE 2026-10]
 penalty_complement_goric <- function(Amat, meq, type, wt.bar, 
                                      sample.nobs = NULL, debug = FALSE) {
   # compute the number of free parameters f in the complement

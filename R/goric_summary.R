@@ -118,6 +118,7 @@ summary.con_goric <- function(object, brief = TRUE,
         print.gap = 2, quote = FALSE, right = TRUE)
   cat("---\n")
   
+  # [CHANGE 2026-10 | audit] A1/B31: Heq branch (order-restricted hypothesis vs. complement by name), NaN-weights note, sentence via support_sentence()
   if (comparison == "complement" && length(which.max(x$result[, 7])) == 0L) {
     # all IC weights are NaN (e.g., non-finite penalties): no conclusion
     message("Note: The IC weights are not available (NaN), e.g., because the ",
@@ -136,6 +137,7 @@ summary.con_goric <- function(object, brief = TRUE,
                            a_label = paste("The order-restricted hypothesis", sQuote(hm)),
                            b_label = "its complement"), ".\n\n", sep = "")
     }
+    # [/CHANGE 2026-10]
   } 
   
   
@@ -150,6 +152,7 @@ summary.con_goric <- function(object, brief = TRUE,
       cat("\nRatio GORICAC-weights:\n") 
     }
     
+    # [CHANGE 2026-10 | audit] A3: fmt_ratio_matrix() keeps dims for one hypothesis; R5: '(best)' only in the printed rownames
     ratio.gw <- fmt_ratio_matrix(x$ratio.gw, dig)
     rownames(ratio.gw) <- mark_best_hypo(rownames(x$ratio.gw), x)
     
@@ -165,6 +168,7 @@ summary.con_goric <- function(object, brief = TRUE,
   
   if (!is.null(x$ratio.lw)) {
     cat("\nRatio loglik-weights:\n")
+    # [CHANGE 2026-10 | audit] A3: fmt_ratio_matrix() keeps dims for one hypothesis; R5: '(best)' only in the printed rownames
     ratio.lw <- fmt_ratio_matrix(x$ratio.lw, dig)
     rownames(ratio.lw) <- mark_best_hypo(rownames(x$ratio.lw), x) 
     
@@ -180,10 +184,12 @@ summary.con_goric <- function(object, brief = TRUE,
   
   if (!is.null(x$ratio.pw)) {
     cat("\nRatio penalty-weights:\n")
+    # [CHANGE 2026-10 | audit] A3: fmt_ratio_matrix() keeps dims for one hypothesis; R5: '(best)' only in the printed rownames
     ratio.pw <- fmt_ratio_matrix(x$ratio.pw, dig)
     rownames(ratio.pw) <- mark_best_hypo(rownames(x$ratio.pw), x)
     
     if (max(ratio.pw, na.rm = TRUE) >= 1e4) {
+      # [CHANGE 2026-10 | audit] R5: print the formatted copy (with '(best)')
       print(format(ratio.pw, digits = digits, scientific = TRUE, trim = TRUE), 
             print.gap = 2, quote = FALSE, right = TRUE)
     } else {
@@ -195,10 +201,12 @@ summary.con_goric <- function(object, brief = TRUE,
   
   if (!brief) {
     cat("\n\nOrder-restricted coefficients:\n")
+    # [CHANGE 2026-10 | audit] A3: coefficient table via matrix() (apply() drops the dims for one hypothesis)
     # (matrix(): apply() would drop the dimensions for a single hypothesis)
     b_restr <- as.matrix(x$ormle$b.restr)
     coefs <- matrix(trimws(sprintf(dig, b_restr)), nrow = nrow(b_restr), 
                     ncol = ncol(b_restr), dimnames = dimnames(b_restr))
+                    # [/CHANGE 2026-10]
     coefs[coefs == "NA"] <- ""
     # print(format(coefs, digits = digits, scientific = TRUE, trim = TRUE), 
     #       print.gap = 2, quote = FALSE, right = TRUE) 
@@ -206,18 +214,22 @@ summary.con_goric <- function(object, brief = TRUE,
     print(coefs, scientific = TRUE, right = TRUE, quote = FALSE, print.gap = 2)
     cat("---\n")
     
+    # [CHANGE 2026-10 | audit] A13: column names of the constraint matrices from b.restr (defined parameters are appended)
     # names of the columns of the constraint matrices: the matrix's own 
     # column names or, if absent, the names of the (non-defined) parameters,
     # i.e., the first ncol(Amat) columns of b.restr (the defined parameters
     # (':=') are appended after the parameters and have no column in Amat)
     vnames <- colnames(as.matrix(x$ormle$b.restr))
+    # [/CHANGE 2026-10]
     vnames_len <- length(x$objectList)
     
     fn <- function(Amat, bvec, meq, iact, vnames) {
+      # [CHANGE 2026-10 | audit] A13: column names only set when absent; as.matrix for a single row
       Amat <- as.matrix(Amat)
       if (is.null(colnames(Amat))) {
         colnames(Amat) <- vnames[seq_len(ncol(Amat))]
       }
+      # [/CHANGE 2026-10]
       out.rest <- cbind(round(Amat, 4), c(rep("   ==", meq), rep("   >=", nrow(Amat) - 
                                                                    meq)), bvec, " ")
       rownames(out.rest) <- paste(seq_len(nrow(out.rest)), ":", sep = "")
@@ -236,11 +248,13 @@ summary.con_goric <- function(object, brief = TRUE,
     conMat <- list()
     for (i in 1:vnames_len) {
       conMat[[i]] <- fn(Amat = Amat[[i]], bvec = bvec[[i]], meq = meq[[i]], 
+                        # [CHANGE 2026-10 | audit] A13: same vnames for all hypotheses (selected_names removed)
                         iact = iact[[i]], vnames = vnames)  
     }
     names(conMat) <- x$objectNames
     
     if (comparison == "complement") {
+      # [CHANGE 2026-10 | audit] A1: complement of the order-restricted hypothesis, not of Heq
       # the complement of the order-restricted hypothesis (not of Heq)
       conMat$complement <- paste("not", setdiff(x$objectNames, "Heq"))
     }
@@ -257,11 +271,14 @@ summary.con_goric <- function(object, brief = TRUE,
       }
     }
   }
+  # [CHANGE 2026-10 | audit] B10: object returned invisibly (no stray 'NULL' after print(summary(x)))
   # the summary is printed above; the goric object is returned invisibly
   # (so that print(summary(x)) does not end with a stray 'NULL')
   invisible(object)
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] A3: new function fmt_ratio_matrix(): format a ratio matrix keeping dims/dimnames
 # format a ratio matrix (also a 1 x 1 one) with sprintf, keeping its
 # dimensions and dimnames (apply() would drop them for a single hypothesis)
 fmt_ratio_matrix <- function(m, dig) {
@@ -269,4 +286,5 @@ fmt_ratio_matrix <- function(m, dig) {
                 dimnames = dimnames(m))
   class(out) <- "numeric"
   out
+  # [/CHANGE 2026-10]
 }

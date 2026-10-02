@@ -82,9 +82,11 @@ conMLM.mlm <- function(object, constraints = NULL, se = "none",
                                  bvec        = bvec,
                                  meq         = meq,
                                  debug       = debug)
+    # [CHANGE 2026-10 | Rebecca] typo in comment
     # a list with useful information about the restrictions.}
     CON <- restr.OUT$CON
     # a parameter table with information about the observed variables in the object
+    # [CHANGE 2026-10 | Rebecca] typo in comment
     # and the imposed restrictions.}
     parTable <- restr.OUT$parTable
     # constraints matrix

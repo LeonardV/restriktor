@@ -189,6 +189,7 @@ conLM.lm <- function(object, constraints = NULL, se = "standard",
   timing$constraints <- (proc.time()[3] - start.time)
   start.time <- proc.time()[3]
   
+  # [CHANGE 2026-10 | Rebecca] typo in comment
   # compute residual degrees of freedom, corrected for equality constraints.
   df.residual <- n - (p - qr(Amat[seq_len(meq), , drop = FALSE])$rank)
   

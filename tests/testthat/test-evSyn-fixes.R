@@ -1,3 +1,4 @@
+# [CHANGE 2026-10 | audit] new file: regression tests for the evSyn() fixes (comparison default, priorWeights deprecation, priorICweights, study_weights, order_studies, leave1studyout, Href)
 # Tests voor bugfixes in evSyn() (comparison-default, priorWeights-deprecatie,
 # priorICweights per studie, study_weights & volgorde, LL weights,
 # leave1studyout, order_studies voor ICweights/ICratios, Href, foutmeldingen).

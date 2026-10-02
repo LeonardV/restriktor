@@ -59,6 +59,7 @@ To aid qualifying or labeling the height/size of support for the preferred hypot
 
 The benchmarks are based on (user-specified) sets of population parameter values (as is also used in a power analysis when performing a null hypothesis test). For an ANOVA, the set of population parameter values can be obtained by specifying a population effect size (i.e., Cohen's $f$) and a specific ratio of population means (which by default is the ratio of sample means, that is, the ratio of means found in the data). For all types of statistical models (including ANOVA), one can specify the set of population parameter values themselves.  
 We advise on using a null as a reference population, that is, assuming that one or more equalities (instead of the hypothesized inequalities) hold true in the population. Then, you obtain insight in how (un)likely your results are when one or more equalities are true. The extremer your finding, the more support for your informative, theory-based, inequality-constrained hypothesis.  
+<!-- [CHANGE 2026-10 | audit] B25: No-effect population described as equal means / equalities (not zeros) -->
 By default, a null population ('No-effect') and a population based on the sample effect size -- or sample parameter values -- ('Observed') is used. In the null population, the effect size is zero (`model_type = "means"`: all group means equal) or -- for `model_type = "asymp"` -- the parameter values are those under the preferred hypothesis with its inequalities replaced by equalities (e.g., for $H_1: \mu_1 > \mu_2 > \mu_3$ all three means equal; so, the parameter values are not necessarily zero). 
 
 Additionally, the function renders log-likelihood benchmarks, that is, benchmarks for the ratio of log-likelihood (loglik) weights of the preferred hypothesis versus the other hypotheses in the set and for the differences in loglik values of the preferred hypothesis versus the other hypotheses in the set. Note that the log-likelihood benchmarks (under a null population) give insight into the distribution of loglik weights ratios and of the loglik differences in case some or all of the group means or model parameters would be the same or zero (depending in the type of null). When you calculate these loglik benchmarks for a population in which one or more of the hypothesized inequalities is set to an equality, these loglik benchmarks are helpful in determining support for a boundary hypothesis (if of interest). This will be illustrated in the third example below. Bear in mind that research (e.g., a simulation study) is needed to obtain more insight into whether and how well the log-likelihood benchmarks work.  
@@ -122,6 +123,7 @@ If your preferred hypothesis does not have the highest fit and you want to inspe
 ### Defaults
 Once more, we advise on inspecting populations in which some of the inequalities of your hypothesis/-es of interest are set to equalities. This can also be very helpful if the log-likelihood values seem to be close: This way, you can also check for the support of a boundary hypothesis; as discussed below in Example 3.  
 
+<!-- [CHANGE 2026-10 | audit] B25: No-effect population described as equal means / equalities (not zeros) -->
 By default, two populations are used: i) a null population ('No-effect') in which the population effect size is set to 0 ('model_type = "means"': all group means equal) -- or, for 'model_type = "asymp"', the population parameter values are those under the preferred hypothesis with its inequalities set to equalities (e.g., all means equal; thus not necessarily 0) -- and ii) a population based on the observed effect size ('model_type = "means"') -- or observed parameter values ('model_type = "asymp"', the default). One can overrule this by using the `pop_es` or `pop_est` argument, respectively; as discussed below in Example 3.
 
 
@@ -129,10 +131,12 @@ By default, two populations are used: i) a null population ('No-effect') in whic
 ```{r, warning=F, message=F, eval=FALSE}
 # If ANOVA model:
 
+# [CHANGE 2026-10 | audit] N8/N15: describe adaptive iter (iter = NULL) and the 'ncpus' argument
 # In practise you may want to increase the number of iter, say 2000 (or leave 'iter' at 
 # its default, iter = NULL, such that the number of draws is set automatically), and use
 # parallel computing via the argument 'ncpus' (e.g., ncpus = 8). 
 # Alternatively, set up your own parallel plan beforehand, which is then used:
+# [/CHANGE 2026-10]
 # future::plan(multisession, workers = 8) # windows machines
 # future::plan(multicore, workers = 8) # unix machines
 benchmarks_means <- benchmark(goric_object, model_type = "means", iter = 400)
@@ -282,6 +286,7 @@ times more supported than its complement. The probability that $H_1$ is not the 
 Based on the benchmarks, you can check how plausible your finding is (given the assumed population parameters and given the sample size).
 If you want to compare your results with the situation in which one or more equalities hold true, use a null population (here, an effect size of 0, indicating that the three means are equal). Then, you obtain insight into how (un)likely / how extreme your finding (based on inequalities) is.^[Note that the benchmarks are based on the GORICA, not GORIC. Therefore, in case you used the GORIC, the reported sample value in the benchmark output may differ somewhat from your finding (in the goric output). For those interested: This has to do with using a different scaling of the covariance matrix; namely, dividing by N vs N-1.]
 
+<!-- [CHANGE 2026-10 | audit] R1: field name x$benchmarks$ratio_goric_weights (vignette did not knit) -->
 When assuming that there is no effect in the population (i.e., under the null), that is, all three group means are equal, the ratio of GORIC weights of $H_1$ versus its complement (i.e., `r round(results_1c$ratio.gw[1,2], 2)`) is larger than the 95th percentile (i.e., `r round(benchmarks_1c$benchmarks$ratio_goric_weights[[1]][1, "95%"], 2)`).
 Hence, our finding is very extreme if the null would be true. Using the table with cut-off values above, this indicates that there is very large (tremendous) support, when assuming no population effect size (given a group size of 40 for each of the 3 groups).
 
@@ -292,6 +297,7 @@ Additionally, when inspecting the distributions of the ratio of GORIC weights of
 hypo_rate <- print(benchmarks_1c, hypo_rate_threshold = 1)
 hyporate <- hypo_rate$hypothesis_rate[[2]]
 ```
+<!-- [CHANGE 2026-10 | audit] R1: nested field names; observed population reported via pop_est (pop_es is empty for asymp) -->
 The output regarding the 'Ratio-of-GORIC-weights' also gives the *hypothesis rate* under the observed values (either the observed effect size ('model_type = "means"') or observed parameter estimates ('model_type = "asymp"', the default)). That is, it gives the proportion of time the hypothesis is chosen (when compared to the mentioned competing hypothesis; here, `r rownames(benchmarks_1c$benchmarks$ratio_goric_weights[[2]])`), assuming that the population values equal the observed values.  
 Here, the hypothesis rate is `r hyporate`, meaning that, when the population parameter values equal the observed ones (i.e., `r paste(round(benchmarks_1c$pop_est[2, ], 2), collapse = ", ")`), the number of times `r benchmarks_1c$pref_hypo_name` is selected versus the competing one (here, `r rownames(benchmarks_1c$benchmarks$ratio_goric_weights[[2]])`) is `r 100*hyporate`%.
 By default, a threshold of 1 is used, meaning that if the ratio of GORIC weights is greater than 1, `r benchmarks_1c$pref_hypo_name` is selected. If you want to use another threshold, say 2, then use the following code:
@@ -564,6 +570,7 @@ Hence, we found that there is support for a boundary hypothesis (or even two). T
 
 
 *Population information*:  
+<!-- [CHANGE 2026-10 | audit] A12: observed Cohen's f .363 (sigma^2 = RSS/N, consistent with the simulation) -->
 In the data generation, we used a ratio of population means of 2.5:2.5:1; implying that the boundary of $H_1$ and its complement is correct (and that $H_1$ is preferred over its complement, since it is more parsimonious). More specifically, we used population mean values of approximately 0.88, 0.88, and 0.35. This implies that Cohen's $f$ is .25; thus, there is a medium population effect size. We then sampled 40 observations per group, ran an ANOVA (with three groups), and applied the GORIC. Notably, the sample/observed effect size is .363 (with sample means of 0.877, 0.949, and 0.264).  
 When we would sample more observations, the GORIC(A) weight for $H_1$ converges to 1 (denoting full support for $H_1$). Note that the error probability then goes to 0 and the the ratio of GORIC(A) weights of $H_1$ versus its complement then goes to infinity. Nevertheless, this is not of interest now, now we are interested in the closeness of log-likelihood values. 
 

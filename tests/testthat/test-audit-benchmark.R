@@ -1,3 +1,4 @@
+# [CHANGE 2026-10 | audit] new file: regression tests for the audit findings on the benchmark functions (A9-A12, B26-B35)
 # =============================================================================
 # Tests: bevindingen uit de audit van de benchmark-functies (ronde 4)
 # =============================================================================

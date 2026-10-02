@@ -5,6 +5,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
                           comparison = NULL, type = "goric", 
                           VCOV = NULL, sample_nobs = NULL,
                           penalty_factor = 2,
+                          # [CHANGE 2026-10 | Rebecca] new argument priorICweights (signature reformatted); TO DO notes on add_Hc/posthoc
                           Heq = FALSE, 
                           priorICweights = NULL,
                           control = list(), debug = FALSE) {
@@ -20,6 +21,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   #Run dan ook h vs hc en neem samen met results set+unc.
   # TO DO: In Help doc: meest zinvol als andere hypo in h. 
   #
+  # [/CHANGE 2026-10]
 
   if (is.null(hypotheses) || !is.list(hypotheses)) {
     stop(paste("\nrestriktor ERROR: The 'hypotheses' argument is missing or not a list.",
@@ -31,6 +33,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     stop("\nrestriktor ERROR: the penalty factor must be a single number >= 0.", call. = FALSE)
   }
   
+  # [CHANGE 2026-10 | audit] B1: Heq element matched by exact name; empty hypothesis list and reserved hypothesis names (Heq/complement/unconstrained) refused
   # The hypotheses can come from a benchmark with the generated 'Heq' already
   # included (as a named element); it is removed by its exact name and 
   # regenerated below.
@@ -50,6 +53,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
          " cannot be used: the names 'Heq', 'complement' and 'unconstrained' are ",
          "reserved for the models that goric() adds to the set. ",
          "Please rename the hypothesis/-es.", call. = FALSE)
+         # [/CHANGE 2026-10]
   }
   
   num_hypotheses <- length(hypotheses)
@@ -68,8 +72,10 @@ goric.default <- function(object, ..., hypotheses = NULL,
   }
   
   comparison <- match.arg(comparison, c("unconstrained", "complement", "none"))
+  # [CHANGE 2026-10 | Rebecca] TO DO note
   # TO DO add: complement_1stHypo oid
   
+    # [CHANGE 2026-10 | audit] R7: removed: error for Heq = TRUE with >1 hypothesis (Heq is now ignored with a warning, see below)
     # complement met meerdere hypotheses => forceren naar unconstrained
   if (comparison == "complement" && num_hypotheses > 1L) {
     warning("\nrestriktor WARNING: More than one hypothesis provided. Therefore, 'comparison' set to 'unconstrained'.",
@@ -81,6 +87,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   if (comparison %in% c("unconstrained", "none") && isTRUE(Heq)) {
     warning(paste(
       "\nrestriktor WARNING: The 'Heq' argument is ignored.",
+      # [CHANGE 2026-10 | Rebecca] wording of the warning message
       "The 'Heq' option is only valid when the order-restricted hypothesis is compared to its complement."
     ), call. = FALSE)
     Heq <- FALSE
@@ -161,6 +168,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     ldots$mix_weights <- "boot"
   }
 
+  # [CHANGE 2026-10 | audit] B2/N2/B3: model names; Heq via goric_heq_constraints() (ignored without inequalities); priorICweights validated with check_weights(), matrix and named input matched to the model names (replaces Rebecca's priorICweights block)
   # names of the user hypotheses as they appear in the result table (unnamed
   # hypotheses are named H1, H2, ...; see 'objectnames' below)
   hypo_names <- names(hypotheses)
@@ -236,6 +244,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
       names(priorICweights) <- prior_names
       priorICweights <- priorICweights[model_names]
     }
+    # [/CHANGE 2026-10]
   }
 
   constraints <- hypotheses
@@ -251,6 +260,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   
   object_class <- class(object)
   
+  # [CHANGE 2026-10 | audit] goricc/goricac with N - p - 2 <= 0 give an error (checked before fitting)
   # small-sample correction (goricc/goricac): the penalty N (p + 1) / (N - p - 2)
   # is only defined for N - p - 2 > 0 (otherwise infinite or negative penalties
   # and NaN weights); check this before fitting, for every comparison.
@@ -272,12 +282,14 @@ goric.default <- function(object, ..., hypotheses = NULL,
            call. = FALSE)
     }
   }
+  # [/CHANGE 2026-10]
   
   if (any(object_class %in% c("aov","lm","rlm","glm","mlm")) && isConChar) { 
     # TO DO in mlm geeft coef() een matrix, je moet dan as.vector doen (coef.named.vector(...)).
     #       Maakt dat in dit deel nog uit? Ik zie het niet, graag ff checken of dat klopt.
     #       Dan ook in volgende 'if' evt.
     # TO DO voor mlm krijg je  namen die niet werken in goric... Hoe dat aanpassen?
+    # [CHANGE 2026-10 | Rebecca] TO DO notes on mlm support
     # TO DO maak geschikt voor mlm!
     #class(fit)
     #[1] "mlm" "lm" 
@@ -313,6 +325,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     #
     # Ondertussen een error, maar die ms al door andere code-wijzigingen komt:
     #Error in fBody[[i]] : no such index at level 2
+    # [/CHANGE 2026-10]
     
     
     # standard errors are not needed
@@ -326,16 +339,19 @@ goric.default <- function(object, ..., hypotheses = NULL,
     class(object) <- append(class(object), "goric")
     
     # fit restriktor object for each hypothesis
+    # [CHANGE 2026-10 | audit] B4: fit_hypothesis(): fit per hypothesis with the hypothesis name in error messages
     conList <- lapply(seq_along(constraints), function(i) {
       CALL.restr <- append(list(object      = object, 
                                 constraints = constraints[[i]]), ldots)
       fit_hypothesis(names(constraints)[i], "restriktor", CALL.restr)
+      # [/CHANGE 2026-10]
     })
     names(conList) <- names(constraints)
     # compute summary for each restriktor object. 
     isSummary <- lapply(conList, function(x) summary(x, 
                                                      goric          = type,
                                                      sample.nobs    = sample_nobs,
+                                                     # [CHANGE 2026-10 | Rebecca] priorICweights passed to summary()
                                                      penalty_factor = penalty_factor,
                                                      priorICweights = priorICweights))
     
@@ -379,6 +395,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     ldots$se <- "none"
     class(object) <- append(class(object), "goric")
     # fit restriktor object for each hypothesis
+    # [CHANGE 2026-10 | audit] B4: fit_hypothesis(): fit per hypothesis with the hypothesis name in error messages
     conList <- lapply(seq_along(constraints), function(i) {
       constraint <- constraints[[i]]
       CALL.restr <- append(list(object      = object,
@@ -386,6 +403,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
                                 rhs         = constraint$rhs,
                                 neq         = constraint$neq), ldots)
       fit_hypothesis(names(constraints)[i], "restriktor", CALL.restr)
+      # [/CHANGE 2026-10]
     })
     
     names(conList) <- names(constraints)
@@ -394,6 +412,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     isSummary <- lapply(conList, function(x) summary(x, 
                                                      goric          = type,
                                                      sample.nobs    = sample_nobs,
+                                                     # [CHANGE 2026-10 | Rebecca] priorICweights passed to summary()
                                                      penalty_factor = penalty_factor,
                                                      priorICweights   = priorICweights))
     
@@ -431,12 +450,14 @@ goric.default <- function(object, ..., hypotheses = NULL,
     }
     
     # fit restriktor object for each hypothesis
+    # [CHANGE 2026-10 | audit] B4: fit_hypothesis(): fit per hypothesis with the hypothesis name in error messages
     conList <- lapply(seq_along(constraints), function(i) {
       CALL.restr <- append(list(object      = object, 
                                 constraints = constraints[[i]],
                                 VCOV        = as.matrix(VCOV)), 
                                 ldots)
       fit_hypothesis(names(constraints)[i], "con_gorica_est", CALL.restr)
+      # [/CHANGE 2026-10]
     })
     
     names(conList) <- names(constraints)
@@ -446,6 +467,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     isSummary <- lapply(conList, function(x) summary(x, 
                                                      type           = type,
                                                      sample.nobs    = sample_nobs,
+                                                     # [CHANGE 2026-10 | Rebecca] priorICweights passed to summary()
                                                      penalty_factor = penalty_factor,
                                                      priorICweights   = priorICweights)) 
   } else if ("numeric" %in% object_class && !isConChar) {
@@ -468,6 +490,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
              call. = FALSE)
       }
     }
+    # [CHANGE 2026-10 | audit] B4: fit_hypothesis(): fit per hypothesis with the hypothesis name in error messages
     conList <- lapply(seq_along(constraints), function(i) {
       constraint <- constraints[[i]]
       CALL.restr <- append(list(object      = object,
@@ -476,12 +499,14 @@ goric.default <- function(object, ..., hypotheses = NULL,
                                 rhs         = constraint$rhs,
                                 neq         = constraint$neq), ldots)
       fit_hypothesis(names(constraints)[i], "con_gorica_est", CALL.restr)
+      # [/CHANGE 2026-10]
     })
     names(conList) <- names(constraints)
     
     isSummary <- lapply(conList, function(x) summary(x, 
                                                      type           = type,
                                                      sample.nobs    = sample_nobs,
+                                                     # [CHANGE 2026-10 | Rebecca] priorICweights passed to summary()
                                                      penalty_factor = penalty_factor,
                                                      priorICweights   = priorICweights)) 
   } else {
@@ -527,6 +552,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     #if (inherits(object, "numeric")) {
     if (inherits(conList[[Hm]]$b.unrestr, "numeric")) {
       #b.unrestr <- object
+      # [CHANGE 2026-10 | Rebecca] TO DO comment wording
       # TO DO - hier gaat het fout als selectie param in hypo
       b.unrestr <- conList[[Hm]]$b.unrestr
       #
@@ -578,6 +604,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   if (type %in% c("goric", "goricc")) {
     llm <- logLik(conList[[Hm]])
   } else if (type %in% c("gorica", "goricac")) {
+    # [CHANGE 2026-10 | audit] B6: TO DO on gorica for fitted models (ML restricted estimate vs. projection under VCOV; open decision)
     # TO DO (open methodological decision for the authors): for fitted model
     #       objects (lm/glm/mlm) the gorica uses the ML restricted estimates
     #       b.restr of the restriktor fit, not the projection of b.unrestr under
@@ -585,6 +612,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     #       >= 2 equality restrictions these differ slightly (mlm: ~1e-4 in
     #       b.restr, since the restricted fit uses the restricted residual
     #       covariance matrix).
+    # [/CHANGE 2026-10]
     llm <- dmvnorm(c(b.unrestr - b.restr), sigma = VCOV, log = TRUE)
     #llm <- mnormt::dmnorm(c(b.unrestr - b.restr), varcov = VCOV, log = FALSE) 
   }
@@ -633,6 +661,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
                 # observed-data log-likelihood of the unrestricted (saturated) model
                 llu <- conList[[1]]$fiml$loglik.unrestr
               } else {
+                # [CHANGE 2026-10 | audit] M1: loglik_unrestr() instead of logLik() (mlm support)
                 llu <- loglik_unrestr(ans$model.org)
               }
             } else if (type %in% c("gorica", "goricac")) {
@@ -647,6 +676,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
             }
             
             if (type %in% c("goric", "gorica")) {
+              # [CHANGE 2026-10 | audit] TO DO on the mlm penalty for the residual (co)variance (E13: goricc/goricac blocked for mlm)
               # TO DO mlm: the 1 is the penalty for the residual variance (sigma^2).
               #       For mlm objects a residual covariance matrix with 
               #       ny*(ny+1)/2 free parameters is estimated. A choice still 
@@ -655,6 +685,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
               #       Note: type = 'goricc'/'goricac' is blocked for mlm objects
               #       (see goric.lm()) until the small-sample correction for a
               #       multivariate residual covariance matrix has been derived.
+              # [/CHANGE 2026-10]
               PTu <- 1 + ncol(VCOV)
             } else if (type %in% c("goricc", "goricac")) {
               
@@ -751,6 +782,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   ans$objectNames <- objectnames
   
   # calculate LL, PT, goric weights and ratios
+  # [CHANGE 2026-10 | audit] B31: IC column named before the metrics; warning for non-finite penalties; priorICweights and type passed to calculate_model_comparison_metrics()
   # the IC column is named after the type (e.g., 'goricc'); for 
   # comparison = "none" this has not been done yet
   names(df)[4] <- type
@@ -765,6 +797,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   
   model_comparison_metrics <- calculate_model_comparison_metrics(df, priorICweights, 
                                                                  type = type)
+                                                                 # [/CHANGE 2026-10]
   
   df$loglik.weights  <- model_comparison_metrics$loglik_weights
   df$penalty.weights <- model_comparison_metrics$penalty_weights
@@ -773,9 +806,11 @@ goric.default <- function(object, ..., hypotheses = NULL,
   df$goric.weights_without_heq <- model_comparison_metrics$goric_weights_without_heq
   
   names(df)[4] <- type
+  # [CHANGE 2026-10 | audit] weight columns renamed by name instead of by position
   names(df)[names(df) == "goric.weights"] <- paste0(type, ".weights")
   names(df)[names(df) == "goric.weights_without_unc"] <- paste0(type, ".weights_without_unc")
   names(df)[names(df) == "goric.weights_without_heq"] <- paste0(type, ".weights_without_heq")
+  # [/CHANGE 2026-10]
   
   rownames(df) <- NULL
 
@@ -783,14 +818,17 @@ goric.default <- function(object, ..., hypotheses = NULL,
   ans$ratio.gw <- model_comparison_metrics$goric_rw
   ans$ratio.pw <- model_comparison_metrics$penalty_rw
   ans$ratio.lw <- model_comparison_metrics$loglik_rw
+  # [CHANGE 2026-10 | Rebecca] ans$best_hypo added
   #
   best_hypo <- which.max(df[, 7])
   ans$best_hypo <- best_hypo
+  # [CHANGE 2026-10 | audit] R5: '(best)' only in the printed ratio matrices, rownames unchanged
   # Note: the " (best)" marker is only added to the printed copies of the 
   # ratio matrices (see print.con_goric / summary.con_goric), such that the 
   # rownames of ans$ratio.gw/pw/lw remain the hypothesis names.
  
   
+  # [CHANGE 2026-10 | audit] A13/M3: coefficient table: mlm coefficients as named vector (coef_vec_mlm), defined parameters (:=) for all routes incl. complement/unconstrained, rows aligned by name
   # list all object estimates (restricted estimates followed by the defined
   # parameters (':='), if any; see coef.restriktor() and coef.gorica_est())
   coefs_list <- lapply(conList, function(x) {
@@ -836,6 +874,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   # rows with different sets of names are aligned by name (NA if absent)
   coefs <- list_to_df_rows(coefs_list)
   rownames(coefs) <- rownames_coefs
+  # [/CHANGE 2026-10]
   
   # Extracting and naming in one step for each attribute
   attributes <- c("constraints", "rhs", "neq")
@@ -853,6 +892,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
   ans$type <- type
   ans$penalty_factor <- penalty_factor
   ans$Heq <- Heq
+  # [CHANGE 2026-10 | Rebecca] store priorICweights in the result
   ans$priorICweights <- priorICweights
 
   # Assign class based on type\
@@ -868,9 +908,11 @@ goric.default <- function(object, ..., hypotheses = NULL,
   return(ans)
 }
 
+# [CHANGE 2026-10 | audit] TO DO: comparison with the complement of the first hypothesis (from Rebecca's TO DO)
 # TO DO: add the possibility to compare the first hypothesis to its complement
 #        (comparison = "complement_1stHypo" or similar): run goric() twice and
 #        combine the results.
+# [/CHANGE 2026-10]
 
 
 # object of class lm ------------------------------------------------------
@@ -894,6 +936,7 @@ goric.lm <- function(object, ..., hypotheses = NULL,
     missing <- "none"
   }
 
+  # [CHANGE 2026-10 | audit] E13: goricc/goricac blocked for mlm objects; B5: message with the mlm coefficient names to use in hypotheses
   # The small-sample correction (goricc/goricac) has only been derived for a
   # single residual variance; for a multivariate residual covariance matrix
   # (ny*(ny+1)/2 parameters) it has not been derived/validated yet.
@@ -908,6 +951,7 @@ goric.lm <- function(object, ..., hypotheses = NULL,
     # the coefficient names to be used in the hypotheses (e.g., 'y1..Intercept.')
     message_mlm_coef_names(object)
   }
+  # [/CHANGE 2026-10]
 
   objectList <- list(...)
 
@@ -942,6 +986,7 @@ goric.lm <- function(object, ..., hypotheses = NULL,
     objectList$missing     <- NULL
     objectList$auxiliary   <- NULL
     if (is.null(objectList$sample_nobs)) {
+      # [CHANGE 2026-10 | audit] M2: sample size via NROW() (length() counted N x ny for mlm)
       # NROW: for mlm objects the residuals form an N x ny matrix
       objectList$sample_nobs <- NROW(residuals(object))
     }

@@ -859,6 +859,7 @@ test_that("edge: fout bij (bijna-)singuliere VCOV", {
 # Edge cases: Heq parameter
 # =============================================================================
 
+# [CHANGE 2026-10 | audit] R7: Heq = TRUE with >1 hypothesis gives a warning (Heq ignored) instead of an error
 test_that("edge: Heq = TRUE met >1 hypothese geeft waarschuwing en Heq wordt genegeerd", {
   expect_warning(
     result <- goric(est_3, VCOV = VCOV_3, type = "gorica",
@@ -868,6 +869,7 @@ test_that("edge: Heq = TRUE met >1 hypothese geeft waarschuwing en Heq wordt gen
   )
   expect_false(result$Heq)
   expect_false("Heq" %in% result$result$model)
+  # [/CHANGE 2026-10]
 })
 
 test_that("edge: Heq = TRUE met comparison='unconstrained' geeft waarschuwing", {

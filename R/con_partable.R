@@ -4,6 +4,7 @@ con_partable <- function(object, est = FALSE, label = FALSE,
 
     #  we first check the class of object
     if (!(class(object)[1] %in% c("lm", "aov", "rlm", "glm", "mlm"))) {
+       # [CHANGE 2026-10 | Rebecca] mention aov in error message
        stop("restriktor ERROR: It only works for aov, lm, mlm, rlm, and glm")
      }
 
@@ -15,14 +16,17 @@ con_partable <- function(object, est = FALSE, label = FALSE,
 
     predCoef <- coef(object)
     if (class(object)[1] == "mlm") {
+      # [CHANGE 2026-10 | Rebecca] M4: mlm: response names from columns, predictor names from rows of the coef matrix
       #predNames <- colnames(predCoef) 
       #
       responseName <- colnames(predCoef)
       predNames <- rownames(predCoef)
+      # [/CHANGE 2026-10]
     } else {
       predNames <- names(predCoef)
     }
     
+    # [CHANGE 2026-10 | Rebecca] M4: mlm: repeat each response name for all predictors
     lhs <- rep(responseName, each = length(predNames))
      op <- rep("~", length(predNames))
     rhs <- predNames
@@ -33,11 +37,13 @@ con_partable <- function(object, est = FALSE, label = FALSE,
         op[int.idx] <- "~1"
         rhs[int.idx] <- ""
     }
+    # [CHANGE 2026-10 | Rebecca] M4: mlm: repeat op/rhs for every response
     #
     if (class(object)[1] == "mlm") {
       op <- rep(op, length(responseName))
       rhs <- rep(rhs, length(responseName))
     }
+    # [/CHANGE 2026-10]
 
     # always add residual variance?
     #lhs <- c(lhs, responseName)
@@ -58,10 +64,12 @@ con_partable <- function(object, est = FALSE, label = FALSE,
     if (label) {
         # partable$label <- c(predNames, responseName)
         partable$label <- predNames
+        # [CHANGE 2026-10 | Rebecca] M4: mlm: labels per parameter as in vcov() (e.g. Age.GroupNo)
         #
         if (class(object)[1] == "mlm") {
           partable$label <- rownames(vcov(object))
         }
+        # [/CHANGE 2026-10]
 
         # convert all ':' to '.'
         partable$label <- gsub("[:()]", ".", partable$label)

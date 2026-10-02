@@ -1,3 +1,4 @@
+# [CHANGE 2026-10 | audit] new file: regression tests for the audit findings on evSyn() (A6, A7, A8/B20, B13-B23)
 # Regressietests n.a.v. de audit (review4) van evSyn(): uitlijning van
 # hypothesesets op naam (A6), ongelijke aantallen hypothesen (A7),
 # auto-detectie van het invoertype (A8/B20), hypo_names als permutatie (B13),

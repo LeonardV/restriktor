@@ -303,6 +303,7 @@ test_that("con_constraints verwijdert redundante constraints", {
   VCOV <- diag(2)
   
   # Twee identieke restricties: x1 >= 1 en x1 >= 2
+  # [CHANGE 2026-10 | audit] R6: comment corrected (x1 >= 2 is kept)
   # Na remove_redundant_constraints blijft alleen x1 >= 2 over (strengste)
   Amat <- matrix(c(1, 0,
                    1, 0), nrow = 2, byrow = TRUE)

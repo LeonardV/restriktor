@@ -23,6 +23,7 @@ compute_complement_likelihood <- function(model.org, VCOV,
     if (type %in% c("goric", "goricc")) {
       # for missing = "fiml" the unrestricted observed-data log-likelihood is
       # supplied via ll.unrestr; logLik(model.org) would be the listwise value
+      # [CHANGE 2026-10 | audit] M1: loglik_unrestr() instead of logLik() (mlm support)
       llc <- if (!is.null(ll.unrestr)) ll.unrestr else loglik_unrestr(model.org)
       betasc <- b.unrestr
     } else if (type %in% c("gorica", "goricac")) {
@@ -34,6 +35,7 @@ compute_complement_likelihood <- function(model.org, VCOV,
     }
     # if any constraints are violated LL_c = LL_u
   } else if (nrow(Amat) > meq && !(all(c(Amat) == 0L))) {
+    # [CHANGE 2026-10 | audit] TO DO on the complement of a hypothesis with equality and inequality restrictions (open decision)
     # TO DO (open methodological decision, Leonard/Rebecca): when H contains
     # equality AND inequality restrictions and the equalities hold exactly in
     # the data, the complement is taken as the best boundary of the
@@ -43,6 +45,7 @@ compute_complement_likelihood <- function(model.org, VCOV,
     # H" (unrestricted log-likelihood whenever H has an equality), or keep the
     # equalities and only reverse the inequalities -- consistently in both
     # cases.
+    # [/CHANGE 2026-10]
     nr <- seq_len(nrow(Amat))
     ll <- vector("list", length(nr))
     betas <- vector("list", length(nr))
@@ -59,10 +62,12 @@ compute_complement_likelihood <- function(model.org, VCOV,
                              ldots[intersect(names(ldots),
                                              c("missing", "auxiliary", "control"))])
         Hc.restr <- do.call("restriktor", CALL.restr)
+        # [CHANGE 2026-10 | audit] M3: coef_vec_mlm(): coefficient vector in vcov() order for mlm
         betas[[l]] <- coef_vec_mlm(coef(Hc.restr), model.org)
         ll[[l]]    <- logLik(Hc.restr)
       } else if (type %in% c("gorica", "goricac")) {
         ldots$mix_weights <- "none"
+        # [CHANGE 2026-10 | audit] B8: pass only con_gorica_est() arguments ('se' would partially match 'seed')
         # only pass arguments that con_gorica_est() knows (e.g., 'se' is a
         # restriktor() argument and would partially match 'seed')
         CALL.restr <- append(list(object      = b.unrestr,
@@ -73,6 +78,7 @@ compute_complement_likelihood <- function(model.org, VCOV,
                              ldots[intersect(names(ldots),
                                              c("mix_weights", "seed", "control",
                                                "verbose", "debug"))])
+                                               # [/CHANGE 2026-10]
         Hc.restr   <- do.call("con_gorica_est", CALL.restr) 
         betas[[l]] <- Hc.restr$b.restr
         ll[[l]]    <- dmvnorm(c(b.unrestr - Hc.restr$b.restr), 
@@ -88,6 +94,7 @@ compute_complement_likelihood <- function(model.org, VCOV,
     betasc <- betas[[ll.idx]]
   } else if (nrow(Amat) == meq) {
     if (type %in% c("goric", "goricc")) {
+      # [CHANGE 2026-10 | audit] M1: loglik_unrestr() instead of logLik() (mlm support)
       llc <- if (!is.null(ll.unrestr)) ll.unrestr else loglik_unrestr(model.org)
       betasc <- b.unrestr
     } else if (type %in% c("gorica", "goricac")) {

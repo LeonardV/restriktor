@@ -33,6 +33,7 @@ benchmark <- function(object, model_type = c("asymp", "means"), ...) {
 
 benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
                             group_size = NULL, alt_group_size = NULL,
+                            # [CHANGE 2026-10 | Rebecca] adaptive iter (iter = NULL) with iter_min/iter_step/iter_max, adequacy band and stability tol; thresholds hypo_rate_threshold and threshold_rlw
                             quant = NULL, iter = NULL,
                             control = list(),
                             ncpus = 1, seed = NULL,
@@ -62,11 +63,15 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
                             # so that label would be misleading here. Stored on the
                             # returned object as x$threshold_rlw.
                             threshold_rlw = 1, ...) {
+                            # [/CHANGE 2026-10]
 
+  # [CHANGE 2026-10 | audit] N8: comment: adaptive iter stops after two consecutive stable rounds
   # iter = NULL (the default): start at iter_min (500) draws and grow by
   # iter_step (100) at a time, up to iter_max (2000), stopping as soon as the
   # "Observed" population's percentile has been stable for two consecutive
   # rounds -- see run_benchmark_simulation(). A user-supplied numeric
+  # [/CHANGE 2026-10]
+  # [CHANGE 2026-10 | Rebecca] adaptive iter: keep the user-specified iter (NULL = adaptive)
   # 'iter' is used as-is (single fixed-size run, as before).
   user_iter <- iter
 
@@ -78,6 +83,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
                paste(class(object), collapse = ", ")
     ), call. = FALSE)
   }
+  # [CHANGE 2026-10 | audit] B31: check the goric object for NaN weights; B28: a control list with one option is no longer discarded
   check_benchmark_weights(object)
 
   # no user-specified control options: use those of the goric object
@@ -89,7 +95,9 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
 
   mix_weights <- attr(object$objectList[[1]]$wt.bar, "method")
   penalty_factor <- object$penalty_factor
+  # [/CHANGE 2026-10]
 
+  # [CHANGE 2026-10 | audit] N8: validate iter, iter_min/step/max, stability tol and band
   validate_iter_args(iter, iter_min = iter_min, iter_step = iter_step,
                      iter_max = iter_max, iter_stability_tol = iter_stability_tol,
                      iter_adequacy_band = iter_adequacy_band)
@@ -97,6 +105,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   if (!is.null(seed)) set.seed(seed)
   if (!exists(".Random.seed", envir = .GlobalEnv)) runif(1)
 
+  # [CHANGE 2026-10 | Rebecca] ncpus > 1: set up a parallel future plan for this call (restored on exit)
   # If ncpus > 1 but no parallel plan is active yet, set one up for the
   # duration of this call (restored automatically on exit) so the
   # future_lapply() calls below actually run in parallel, instead of ncpus
@@ -111,26 +120,31 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     } else {
       future::plan(future::multicore, workers = ncpus)
     }
+  # [/CHANGE 2026-10]
   }
 
   # Hypotheses
   hypos <- object$hypotheses_usr
+  # [CHANGE 2026-10 | audit] clear error when the hypotheses were given as constraint matrices (no text)
   if (is.null(hypos)) {
     stop("\nrestriktor ERROR: benchmark() requires hypotheses specified as text ",
          "(e.g., 'x1 > x2'); the GORIC(A) object was fitted with hypotheses given ",
          "as constraint matrices, which are not (yet) supported by benchmark().",
          call. = FALSE)
   }
+  # [/CHANGE 2026-10]
   nr_hypos <- dim(object$result)[1]
   Heq <- object$Heq
 
   # Unrestricted (adjusted) group_means
   group_means <- object$b.unrestr
+  # [CHANGE 2026-10 | audit] A11: number of coefficients (group means + covariates)
   n_coef <- length(group_means)
 
   # original model fit (if exists)
   form_model_org <- formula(object$model.org)
 
+  # [CHANGE 2026-10 | audit] A11/R3/O2: only the factor term the hypotheses refer to gives group means; covariates kept fixed; group sizes (N_lm) derived from the model
   # Which coefficients are group means? 
   # NOTE (covariates, e.g. lm(y ~ -1 + group + x) or lm(y ~ -1 + group + sex)):
   # only the coefficients of the factor (or character/logical) term that the
@@ -287,7 +301,9 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
             ") are treated as covariates: they are not part of Cohen's f and are kept ",
             "at their observed estimates in every population (also under 'No-effect').")
   }
+  # [/CHANGE 2026-10]
 
+  # [CHANGE 2026-10 | audit] E9: validate ratio_pop_means (one value per group) and name it
   # Pattern of the population means (see generate_scaled_means()): by
   # default the observed group means; otherwise the user-specified
   # ratio_pop_means (one value per group).
@@ -302,8 +318,10 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     ratio_pop_means <- as.vector(ratio_pop_means)
     names(ratio_pop_means) <- names(group_means)[group_idx]
   }
+  # [/CHANGE 2026-10]
 
   # # Number of subjects per group
+  # [CHANGE 2026-10 | Rebecca] group_size: user-specified (checked against the lm object) or taken from the lm object
   # NOTE: This is needed to rescale vcov based on alt_group_size.
   #       and also for calculating Cohens f. 
   if (!is.null(group_size)) { # So, user specified it as input
@@ -313,14 +331,17 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
       if (length(group_size) == ngroups) {
         N <- group_size
       } else { # so, length incorrect
+        # [CHANGE 2026-10 | audit] N10: informative error for a group_size of the wrong length
         stop("\nrestriktor ERROR: The argument 'group_size' should be of length 1 or of length ", 
              ngroups, ". It is currently of length ", length(group_size), 
              ". It should be a scalar if all groups have the same size (e.g., group_size = 100)",
              " or a vector with for each group its group size (e.g., group_size = c(75, 100, 120)).", 
              call. = FALSE)
+        # [/CHANGE 2026-10]
       }
     }
     # Check whether same as obtained from lm object.
+    # [CHANGE 2026-10 | audit] N10: compare with any() (was all()) and use message() instead of print()
     if (!is.null(N_lm) && (length(N) != length(N_lm) || any(N != N_lm))) {
       message("\nrestriktor Message: The argument 'group_size' differs from the group sizes ",
               "retrieved from the lm object. The function proceeded with the user-specified ",
@@ -329,17 +350,22 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
               "; and, based on the lm object, N = ", paste(N_lm, collapse = ", "), ".")
     }
   } else if (!is.null(N_lm)) { # so, not user specified
+    # [/CHANGE 2026-10]
     N <- N_lm
+  # [CHANGE 2026-10 | audit] N9: clear error when the group sizes cannot be derived (e.g., est + VCOV input)
   } else {
     stop("\nrestriktor ERROR: ", group_size_problem,
          " Please specify the group sizes by the argument 'group_size'; e.g., ",
          "group_size = 100 or group_size = c(75, 100, 120).", call. = FALSE)
+  # [/CHANGE 2026-10]
   }
+  # [CHANGE 2026-10 | audit] A11: N as named vector (group means only)
   N <- as.vector(N)
   names(N) <- names(group_means)[group_idx]
   
   VCOV <- VCOV_orig <- object$VCOV # Is already based on N (so, not N-k)
 
+  # [CHANGE 2026-10 | audit] A12: residual variance sigma2 = RSS/N (consistent with the simulated draws); from VCOV for est+VCOV input; weighted lm rejected
   # Residual (within-group) error variance sigma2, used for Cohen's f (the
   # observed f and the scaling of the population means to 'pop_es', see
   # compute_cohens_f()/generate_scaled_means()). It is the error variance
@@ -402,18 +428,22 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   if (is.null(sigma2)) {
     sigma2 <- residual_variance_from_vcov(N, VCOV_orig[group_idx, group_idx, drop = FALSE])
   }
+  # [/CHANGE 2026-10]
 
+  # [CHANGE 2026-10 | audit] A12/A11/B27: observed Cohen's f on the group means only, with sigma2 and the original group sizes
   ## Compute observed Cohens f
   # (based on the group means only -- see the note on covariates above -- and
   # on the group sizes of the data, also when alt_group_size is specified)
   cohens_f_observed <- compute_cohens_f(group_means[group_idx], N, sigma2)
   cohens_f_alt_group_size <- NULL
 
+  # [/CHANGE 2026-10]
   # If alt_group_size specified, adjust VCOV accordingly
   # Notably, VCOV is based on N not N-k (i.e., sum(N) - ngroups)
   if (!is.null(alt_group_size)) {
   
     if (length(alt_group_size) != 1 && length(alt_group_size) != ngroups) {
+      # [CHANGE 2026-10 | audit] B3/O2/B27: alt_group_size: error (was return of a string), rep_len to ngroups, symmetric VCOV rescaling (covariates by total N), Cohen's f under alt sizes
       stop("\nrestriktor ERROR: The argument 'alt_group_size' should be of length 1 or ",
            ngroups, " (or NULL) but not of length ", length(alt_group_size), ".", 
            call. = FALSE)
@@ -432,6 +462,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     # (as weights); differs from cohens_f_observed only for unequal
     # alternative group sizes. Printed separately by print.benchmark().
     cohens_f_alt_group_size <- compute_cohens_f(group_means[group_idx], N, sigma2)
+      # [/CHANGE 2026-10]
     #
     # The sample gorica(c) value must also be adjusted, 
     # thus we need to fit a new goric-object
@@ -468,6 +499,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
       control = control,
       mix_weights = mix_weights,
       penalty_factor = penalty_factor,
+      # [CHANGE 2026-10 | audit] N3: pass the prior weights of the goric object
       # same prior weights as in the goric object, so that the preferred
       # hypothesis (and the weights) match those of the goric object
       priorICweights = object$priorICweights,
@@ -476,9 +508,11 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
       ...
     )
   
+  # [CHANGE 2026-10 | audit] B31: check the refitted object for NaN weights
   check_benchmark_weights(object, refit = TRUE)
 
   # effect size population
+  # [CHANGE 2026-10 | audit] E9/B24: remember whether the default populations are used
   default_pop_es <- is.null(pop_es)
   if (default_pop_es) {
     pop_es <- c(0, cohens_f_observed)
@@ -499,12 +533,14 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
       names(pop_es) <- rnames
     }
   }
+  # [CHANGE 2026-10 | audit] B34: make duplicate population names unique
   rnames <- unique_population_names(rnames, "pop_es")
   names(pop_es) <- rnames
 
   es <- pop_es
   nr_es <- length(es)
 
+  # [CHANGE 2026-10 | audit] E1/E9: population means from the pattern (observed means or ratio_pop_means) scaled to pop_es; covariates kept at their estimates
   # Population means per pop_es: the pattern of the means (the observed group
   # means by default, or 'ratio_pop_means' if specified) scaled such that
   # Cohen's f equals pop_es, see generate_scaled_means(). Only the group means
@@ -524,6 +560,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     means_pop
   }))
   colnames(means_pop_all) <- names(group_means)
+  # [/CHANGE 2026-10]
   rownames(means_pop_all) <- paste0("pop_es = ", pop_es)
 
   # preferred hypothesis
@@ -537,9 +574,11 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     names_quant <- c("Sample", paste0(as.character(quant*100), "%"))
   }
 
+  # [CHANGE 2026-10 | audit] E2: comment: draws use the same criterion and sample size as the refitted object
   # The draws are evaluated with the same criterion (gorica/goricac) and
   # sample size as the (refitted) object above, so that the 'Sample' value
   # and the benchmark distribution are based on the same criterion.
+  # [CHANGE 2026-10 | Rebecca] simulation via run_benchmark_simulation() (adaptive iter, parallel, progress messages)
   sim <- run_benchmark_simulation(
     nr_es = nr_es, rnames = rnames, name_prefix = "pop_es = ",
     center_matrix = means_pop_all, colnames_vec = names(group_means),
@@ -547,8 +586,10 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     comparison = object$comparison, control = control,
     mix_weights = mix_weights, penalty_factor = penalty_factor, Heq = Heq,
     object = object, iter = user_iter,
+    # [CHANGE 2026-10 | audit] E2: same criterion (gorica/goricac) and sample size as the refitted object
     type = type, sample_nobs = sum(N),
     es_labels = paste0(es, " (", names(es), ")"),
+    # [CHANGE 2026-10 | audit] B24: label of the 'Observed' population in the messages
     # the 'Observed' population has the observed effect size, but -- with
     # ratio_pop_means -- not the observed means (see B24/print.benchmark())
     observed_label = if (is.null(ratio_pop_means)) {
@@ -556,25 +597,32 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     } else {
       "the 'Observed' population (observed effect size; means from ratio_pop_means)"
     },
+    # [/CHANGE 2026-10]
     band = iter_adequacy_band,
     stability_tol = iter_stability_tol,
     iter_min = iter_min, iter_step = iter_step, iter_max = iter_max,
     ...
+  # [/CHANGE 2026-10]
   )
+  # [CHANGE 2026-10 | Rebecca] draws taken from the simulation result
   parallel_function_results <- sim$parallel_function_results
+  # [CHANGE 2026-10 | audit] A9: iter = number of successful draws
   iter <- sim$iter # final number of SUCCESSFUL draws, per population
 
   # get benchmark results
   benchmark_results <- get_results_benchmark(parallel_function_results,
                                              object, pref_hypo,
                                              pref_hypo_name, quant,
+                                             # [CHANGE 2026-10 | Rebecca] pass the thresholds to get_results_benchmark()
                                              names_quant, nr_hypos,
                                              hypo_rate_threshold = hypo_rate_threshold,
                                              threshold_rlw = threshold_rlw)
 
+  # [CHANGE 2026-10 | Rebecca] iter adequacy check for a fixed iter; otherwise taken from the adaptive simulation
   if (!is.null(user_iter)) {
     # Fixed 'iter': run_benchmark_simulation() does not auto-grow or message
     # in this case, so do the (non-growing) adequacy check here instead.
+    # [CHANGE 2026-10 | audit] N8: adequacy check with the user-specified iter
     bias_check <- check_iter_adequacy(benchmark_results, "pop_es = Observed", user_iter,
                         band = iter_adequacy_band,
                         iter_min = iter_min, iter_step = iter_step, iter_max = iter_max,
@@ -584,6 +632,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     bias_check <- list(median_bias_check_gw = sim$median_bias_check_gw,
                        median_bias_check_lw = sim$median_bias_check_lw)
   }
+  # [/CHANGE 2026-10]
 
   # compute error probability
   error_prob <- calculate_error_probability(object, hypos, pref_hypo,
@@ -603,6 +652,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     group_means_observed = group_means,
     #ratio_group_means.data = ratio_data,
     cohens_f_observed = cohens_f_observed,
+    # [CHANGE 2026-10 | audit] B27/A12: store Cohen's f under alt_group_size and the residual variance
     cohens_f_alt_group_size = cohens_f_alt_group_size,
     res_var = sigma2, # residual error variance (RSS / N) used for Cohen's f
     pop_es = pop_es, 
@@ -611,6 +661,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     #res_var_pop = var_e,
     pref_hypo_name = pref_hypo_name,
     error_prob_pref_hypo = error_prob,
+    # [CHANGE 2026-10 | Rebecca] output restructured: nested benchmarks/pctl_Sample/pctl_medianRefPop/overlap lists; hypothesis_rate + rate_rlw with thresholds; median bias checks
     # Grouped by family (rather than one flat field per output_type x family)
     # so the object doesn't sprawl into ~40 top-level names -- each family is
     # one list, indexed by output_type ("goric_weights", "ratio_goric_weights",
@@ -683,6 +734,8 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     median_bias_check_gw = bias_check$median_bias_check_gw,
     median_bias_check_lw = bias_check$median_bias_check_lw,
     #
+    # [/CHANGE 2026-10]
+    # [CHANGE 2026-10 | audit] A9: successful/requested draws, failed and warned draws with first messages
     # number of successful draws per population (a single number when it is
     # the same for every population); see also iter_requested and the
     # failed/warned draw counts from run_benchmark_simulation().
@@ -692,6 +745,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     n_warned_draws = sim$n_warned_draws,
     draw_errors = sim$draw_errors,
     draw_warnings = sim$draw_warnings
+    # [/CHANGE 2026-10]
   )
 
   class(OUT) <- c("benchmark_means", "benchmark", "list")
@@ -703,6 +757,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
 
 ## asymp
 benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
+                            # [CHANGE 2026-10 | Rebecca] adaptive iter (iter = NULL) with iter_min/iter_step/iter_max, adequacy band and stability tol; thresholds hypo_rate_threshold and threshold_rlw
                             alt_sample_size = NULL, quant = NULL, iter = NULL,
                             control = list(),
                             ncpus = 1, seed = NULL,
@@ -717,11 +772,15 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
                             # rationale -- same argument, same default, same
                             # x$threshold_rlw output field.
                             threshold_rlw = 1, ...) {
+                            # [/CHANGE 2026-10]
 
+  # [CHANGE 2026-10 | audit] N8: comment: adaptive iter stops after two consecutive stable rounds
   # iter = NULL (the default): start at iter_min (500) draws and grow by
   # iter_step (100) at a time, up to iter_max (2000), stopping as soon as the
   # "Observed" population's percentile has been stable for two consecutive
   # rounds -- see run_benchmark_simulation(). A user-supplied numeric
+  # [/CHANGE 2026-10]
+  # [CHANGE 2026-10 | Rebecca] adaptive iter: keep the user-specified iter (NULL = adaptive)
   # 'iter' is used as-is (single fixed-size run, as before).
   user_iter <- iter
 
@@ -735,6 +794,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
                "However, it belongs to the following class(es):", 
                paste(class(object), collapse = ", ")), call. = FALSE)
   }
+  # [CHANGE 2026-10 | audit] B31: check the goric object for NaN weights; B28: a control list with one option is no longer discarded
   check_benchmark_weights(object)
 
   # no user-specified control options: use those of the goric object
@@ -746,7 +806,9 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   
   mix_weights <- attr(object$objectList[[1]]$wt.bar, "method")
   penalty_factor <- object$penalty_factor
+  # [/CHANGE 2026-10]
  
+  # [CHANGE 2026-10 | audit] N8: validate iter, iter_min/step/max, stability tol and band
   validate_iter_args(iter, iter_min = iter_min, iter_step = iter_step,
                      iter_max = iter_max, iter_stability_tol = iter_stability_tol,
                      iter_adequacy_band = iter_adequacy_band)
@@ -754,6 +816,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   if (!is.null(seed)) set.seed(seed)
   if (!exists(".Random.seed", envir = .GlobalEnv)) runif(1)
   
+  # [CHANGE 2026-10 | Rebecca] ncpus > 1: set up a parallel future plan for this call (restored on exit)
   # If ncpus > 1 but no parallel plan is active yet, set one up for the
   # duration of this call (restored automatically on exit) so the
   # future_lapply() calls below actually run in parallel, instead of ncpus
@@ -768,18 +831,21 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     } else {
       future::plan(future::multicore, workers = ncpus)
     }
+  # [/CHANGE 2026-10]
   }
 
   VCOV <- object$VCOV
   # Note that -- assuming an lm object was used -- VCOV is the unbiased cov.mx estimate.
   # It is also mentioned in tutorials, so if user specified it, they could have made this asjustment....
   hypos <- object$hypotheses_usr
+  # [CHANGE 2026-10 | audit] clear error when the hypotheses were given as constraint matrices (no text)
   if (is.null(hypos)) {
     stop("\nrestriktor ERROR: benchmark() requires hypotheses specified as text ",
          "(e.g., 'x1 > x2'); the GORIC(A) object was fitted with hypotheses given ",
          "as constraint matrices, which are not (yet) supported by benchmark().",
          call. = FALSE)
   }
+  # [/CHANGE 2026-10]
   
   if (is.null(pop_est)) {
     check_rhs_constants(object$rhs)
@@ -798,6 +864,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     # In that constraint matrix / hypothesis, the inequalities will be set to equalities.
     # First determine the preferred hypothesis:
     pref_hypo <- which.max(object$result[, 7])
+    # [CHANGE 2026-10 | audit] B4: clear error when the preferred hypothesis has no constraint matrix (ask for pop_est)
     if (pref_hypo > length(object$constraints) || 
         is.null(object$constraints[[pref_hypo]])) {
       stop("\nrestriktor ERROR: The preferred hypothesis is the ", object$result$model[pref_hypo], 
@@ -805,11 +872,13 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
            "estimates cannot be determined. Please specify the population estimates via the ",
            "argument 'pop_est'.", call. = FALSE)
     }
+    # [/CHANGE 2026-10]
     NE <- theta_restricted(theta = est_sample, V = VCOV, R = object$constraints[[pref_hypo]], rhs = object$rhs[[pref_hypo]])
     # Note that VCOV is the unbiased cov.mx estimate.
     pop_est <- matrix(rbind(NE, est_sample), nrow = 2)
     row.names(pop_est) <- c("No-effect", "Observed")
   } else {
+    # [CHANGE 2026-10 | audit] B28: accept pop_est as data.frame / vector; validate numeric matrix without NA
     if (is.data.frame(pop_est)) {
       pop_est <- as.matrix(pop_est)
     }
@@ -821,6 +890,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
       stop("\nrestriktor ERROR: The argument 'pop_est' should be a numeric vector (one ",
            "population) or a numeric matrix / data.frame (one row per population) with ",
            "one column per estimate, without missing values.", call. = FALSE)
+    # [/CHANGE 2026-10]
     }
   }
   
@@ -840,11 +910,13 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
       row.names(pop_est) <- rnames
     }
   }  
+  # [CHANGE 2026-10 | audit] B34: make duplicate population names unique
   rnames <- unique_population_names(rnames, "pop_est")
   row.names(pop_est) <- rnames
   
   colnames(pop_est) <- names(est_sample)
   N <- object$sample_nobs #length(object$model.org$residuals)
+  # [CHANGE 2026-10 | audit] B26: use the sample size of the fitted model (nobs), with a message if object$sample_nobs differs
   # For an object based on a fitted lm model, the sample size is that of the
   # model (nobs(fit)): its VCOV is based on that N (see VCOV.unbiased()),
   # also when a different 'sample_nobs' was given to goric() (accepted with
@@ -864,6 +936,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
       N <- N_model
     }
   }
+  # [/CHANGE 2026-10]
   
   # modeltype
   type <- switch(object$type,
@@ -878,6 +951,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
                  object$type)
   
   
+  # [CHANGE 2026-10 | audit] B26/B37: validate 'sample_size'; a user-specified value is used (with message) instead of silently ignored
   # Original sample size: from the goric object (a fitted model, or
   # sample_nobs given to goric()), else from 'sample_size'. A user-specified
   # 'sample_size' that differs from the object's is used, with a message
@@ -896,6 +970,8 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     }
     N <- sample_size
   }
+  # [/CHANGE 2026-10]
+  # [CHANGE 2026-10 | audit] A10/B37: VCOV rescaled by the ratio of TOTAL sample sizes (scalar, symmetric); validate alt_sample_size; B4: error if N is missing
   # Alternative sample size: the covariance matrix of the estimates scales
   # with the ratio of the TOTAL sample sizes (a single factor, so the result
   # is symmetric like VCOV itself; the design proportions are kept). A vector
@@ -919,8 +995,10 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
            "symmetric, so the covariance matrix of the GORIC(A) object is apparently not ",
            "symmetric.", call. = FALSE)
     }
+  # [/CHANGE 2026-10]
     N <- alt_sample_size
   }
+  # [CHANGE 2026-10 | audit] E2: goricac requires a sample size; sample_nobs = sum(N)
   # The goricac requires the sample size (also for every benchmark draw)
   if (type == "goricac" && (is.null(N) || all(N == 0))) {
     stop("\nrestriktor ERROR: The GORIC(A) object is of type '", object$type, "', so the ",
@@ -930,11 +1008,13 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   }
   # overall sample size (a vector of group sizes is summed, as in goric())
   sample_nobs <- if (is.null(N)) NULL else sum(N)
+  # [/CHANGE 2026-10]
 
   # Herbereken met goric-functie
   object <- goric(
     est_sample,
     VCOV = VCOV,
+    # [CHANGE 2026-10 | audit] E2: sample size passed to the refitted object
     sample_nobs = sample_nobs, # Needed for type = "goricac"
     hypotheses = hypos,
     comparison = comparison,
@@ -942,12 +1022,14 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     control = control,
     mix_weights = mix_weights,
     penalty_factor = penalty_factor,
+    # [CHANGE 2026-10 | audit] N3: pass the prior weights of the goric object
     # same prior weights as in the goric object, so that the preferred
     # hypothesis (and the weights) match those of the goric object
     priorICweights = object$priorICweights,
     Heq = Heq,
     ...
   )
+  # [CHANGE 2026-10 | audit] B31: check the refitted object for NaN weights
   check_benchmark_weights(object, refit = TRUE)
   
   if (is.null(quant)) {
@@ -962,6 +1044,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   
   nr_es  <- nrow(pop_est)
 
+  # [CHANGE 2026-10 | Rebecca] simulation via run_benchmark_simulation() (adaptive iter, parallel, progress messages)
   sim <- run_benchmark_simulation(
     nr_es = nr_es, rnames = rnames, name_prefix = "pop_est = ",
     center_matrix = pop_est, colnames_vec = names(est_sample),
@@ -969,24 +1052,31 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     comparison = comparison, control = control,
     mix_weights = mix_weights, penalty_factor = penalty_factor, Heq = Heq,
     object = object, iter = user_iter,
+    # [CHANGE 2026-10 | audit] E2: same criterion (gorica/goricac) and sample size as the refitted object
     # same criterion (gorica/goricac) and sample size as the refitted object
     type = type, sample_nobs = sample_nobs,
     band = iter_adequacy_band,
     stability_tol = iter_stability_tol,
     iter_min = iter_min, iter_step = iter_step, iter_max = iter_max,
     ...
+  # [/CHANGE 2026-10]
   )
+  # [CHANGE 2026-10 | Rebecca] draws taken from the simulation result
   parallel_function_results <- sim$parallel_function_results
+  # [CHANGE 2026-10 | audit] A9: iter = number of successful draws
   iter <- sim$iter # final number of SUCCESSFUL draws, per population
 
   benchmark_results <- get_results_benchmark(parallel_function_results, object, pref_hypo,
+                                             # [CHANGE 2026-10 | Rebecca] pass the thresholds to get_results_benchmark()
                                              pref_hypo_name, quant, names_quant, nr_hypos,
                                              hypo_rate_threshold = hypo_rate_threshold,
                                              threshold_rlw = threshold_rlw)
 
+  # [CHANGE 2026-10 | Rebecca] iter adequacy check for a fixed iter; otherwise taken from the adaptive simulation
   if (!is.null(user_iter)) {
     # Fixed 'iter': run_benchmark_simulation() does not auto-grow or message
     # in this case, so do the (non-growing) adequacy check here instead.
+    # [CHANGE 2026-10 | audit] N8: adequacy check with the user-specified iter
     bias_check <- check_iter_adequacy(benchmark_results, "pop_est = Observed", user_iter,
                         band = iter_adequacy_band,
                         iter_min = iter_min, iter_step = iter_step, iter_max = iter_max,
@@ -996,6 +1086,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     bias_check <- list(median_bias_check_gw = sim$median_bias_check_gw,
                        median_bias_check_lw = sim$median_bias_check_lw)
   }
+  # [/CHANGE 2026-10]
 
   error_prob <- calculate_error_probability(object, hypos, pref_hypo,
                                             est = est_sample, VCOV, control, ...)
@@ -1009,6 +1100,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     pop_VCOV = VCOV,
     pref_hypo_name = pref_hypo_name, 
     error_prob_pref_hypo = error_prob,
+    # [CHANGE 2026-10 | Rebecca] output restructured: nested benchmarks/pctl_Sample/pctl_medianRefPop/overlap lists; hypothesis_rate + rate_rlw with thresholds; median bias checks
     # Grouped by family (rather than one flat field per output_type x family)
     # so the object doesn't sprawl into ~40 top-level names -- each family is
     # one list, indexed by output_type ("goric_weights", "ratio_goric_weights",
@@ -1081,6 +1173,8 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     median_bias_check_gw = bias_check$median_bias_check_gw,
     median_bias_check_lw = bias_check$median_bias_check_lw,
     #
+    # [/CHANGE 2026-10]
+    # [CHANGE 2026-10 | audit] A9: successful/requested draws, failed and warned draws with first messages
     # see benchmark_means()
     iter = iter,
     iter_requested = sim$iter_requested,
@@ -1088,6 +1182,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     n_warned_draws = sim$n_warned_draws,
     draw_errors = sim$draw_errors,
     draw_warnings = sim$draw_warnings
+    # [/CHANGE 2026-10]
   )
 
   class(OUT) <- c("benchmark_asymp", "benchmark", "list")

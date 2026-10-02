@@ -6,6 +6,7 @@ con_loglik_lm <- function(object, ...) {
   
   # weights are not supported for mlm
   if (ncol(res) == 1L) {
+    # [CHANGE 2026-10 | Rebecca] weights handling moved inside the univariate branch (weights not supported for mlm)
     w <- object$weights
     if (is.null(w)) {
       w <- rep.int(1, n)
@@ -18,6 +19,7 @@ con_loglik_lm <- function(object, ...) {
       }
     }
     #
+    # [/CHANGE 2026-10]
     OUT <- 0.5 * (sum(log(w)) - n * (log(2 * pi) + 1 - log(n) + log(sum(w * res^2))))
   } else if (ncol(res) > 1L) {
     # mlm

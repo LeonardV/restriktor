@@ -6,6 +6,7 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
   if (!output_type %in% c("gorica_weights", "ll_weights")) {
     stop("restriktor ERROR: output_type must be gorica_weights or ll_weights", call. = FALSE)
   }
+  # [CHANGE 2026-10 | audit] B18: clear error for output_type = 'll_weights' on IC-based evSyn objects
   # Log-likelihood weights are only available when the input consisted of
   # estimates, log-likelihood and penalty values, or goric objects (not for
   # IC values, IC weights, or ratios of IC weights).
@@ -16,6 +17,7 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
          "or goric objects; not when it consists of IC values, IC weights, or ratios ",
          "of IC weights. Use output_type = 'gorica_weights' instead.", call. = FALSE)
   }
+  # [/CHANGE 2026-10]
   
   
   # Adjust code when output changes to (method) type specific output names
@@ -56,6 +58,7 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
                                                 cumulative_weights = x$Cumulative_GORICA_weights,
                                                 y_label = ylabel_IC)
     )
+  # [CHANGE 2026-10 | Rebecca] plot also for evSyn_ICratios and evSyn_escalc objects
   } else if (inherits(x, c("evSyn_ICweights", "evSyn_ICratios", "evSyn_escalc"))) {
     data_list <- switch(output_type,
                         "gorica_weights" = list(weight_m = x$GORICA_weight_m, 

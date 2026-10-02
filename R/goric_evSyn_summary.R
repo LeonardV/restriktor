@@ -21,6 +21,7 @@ summary.evSyn <- function(object, ...) {
     type_ev = x[["type_ev"]],
     #n_studies = nrow(x[["GORICA_weight_m"]][,, drop = FALSE]),
     n_studies = x[["n_studies"]], 
+    # [CHANGE 2026-10 | Rebecca] study_weights added to the summary object
     study_weights = x[["study_weights"]],
     hypotheses = x[["hypotheses"]],
     GORICA_weight_m = x[["GORICA_weight_m"]],
@@ -31,6 +32,7 @@ summary.evSyn <- function(object, ...) {
     LL_m = x[["LL_m"]],
     PT_m = x[["PT_m"]],
     Cumulative_GORICA_weights = x[["Cumulative_GORICA_weights"]],
+    # [CHANGE 2026-10 | Rebecca] ICratios elements (Href, ICdiff_m, cumulative ratios/differences) added to the summary object
     Cumulative_GORICA = x[["Cumulative_GORICA"]],
     #
     # If icratios
@@ -39,11 +41,13 @@ summary.evSyn <- function(object, ...) {
     Cumulative_ICdiff = x[["Cumulative_ICdiff"]], # cum diff in IC values versus reference hypo
     Cumulative_ratioICweights = x[["Cumulative_ratioICweights"]], # cum ratios
     GwRatio_m   = x[["GwRatio_m"]] # ratio of IC weights!
+    # [/CHANGE 2026-10]
   )
   
   if (!is.null(x[["PT_m"]])) {
     sequence <- paste0("Study nr.s 1-", 1:ans$n_studies, "   ")
     sequence[1] <- "Study nr.  1   "
+    # [CHANGE 2026-10 | audit] cumulative PT weighted with the study weights (as the cumulative IC values); zero study weights contribute 0
     # Possibly weighted using the study weights (as done for the cumulative IC values)
     study_weights_S <- x[["study_weights"]]
     if (is.null(study_weights_S)) {
@@ -52,9 +56,11 @@ summary.evSyn <- function(object, ...) {
       study_weights_S <- ans$n_studies * study_weights_S / sum(study_weights_S)
     }
     Cumulative_PT <- .evSyn_cum_weighted(x[["PT_m"]], study_weights_S)
+    # [/CHANGE 2026-10]
     Cumulative_PT <- matrix(Cumulative_PT, nrow = nrow(x[["PT_m"]]), 
                             dimnames = list(sequence, colnames(x[["PT_m"]])))
     if (x[["type_ev"]] %in% c("equal", "average")) {
+      # [CHANGE 2026-10 | audit] average over the positively weighted studies only (zero study weights)
       # average over the (positively weighted) studies so far
       Cumulative_PT <- Cumulative_PT / pmax(.evSyn_n_pos(study_weights_S), 1)
     } 
@@ -95,6 +101,7 @@ summary.evSyn <- function(object, ...) {
     final <- rbind(final, fcptv)
   }
   
+  # [CHANGE 2026-10 | Rebecca] ICratios: final ratios of IC weights and differences in IC values added to the Final table
   # If icratios
   if (!is.null(x[["Cumulative_ratioICweights"]])) {
     f_cumICratio <- t(x[["Cumulative_ratioICweights"]]["Final", ])
@@ -110,6 +117,7 @@ summary.evSyn <- function(object, ...) {
                 #paste0("Difference in ", type_label, " values \n", "(versus reference hypothesis ", names(x[["Href"]]), ")")
     final <- rbind(final, f_cumICdiff)
   }
+  # [/CHANGE 2026-10]
   
   ans$Final_Cumulative_results <- final
   
@@ -156,6 +164,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   
   indentation <- "    "  # Four spaces for indentation
   
+  # [CHANGE 2026-10 | audit] B19: label of the reference hypothesis (Href_label) for the ICratios output, by name or index
   # If icratios: label of the reference hypothesis
   if (!is.null(x[["Href"]])) {
     Href_label <- names(x[["Href"]])
@@ -166,6 +175,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   } else {
     Href_label <- ""
   }
+  # [/CHANGE 2026-10]
   
   cat("\nStudy-specific results:\n")
   
@@ -224,9 +234,11 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
     cat("    ---\n")
   }
   
+  # [CHANGE 2026-10 | Rebecca] ICratios: print study-specific ratios of IC weights and differences in IC values
   # If icratios
   if (!is.null(x[["GwRatio_m"]])) {
     cat(paste0("\n    ", "Ratio of ", type_label, " weights",
+               # [CHANGE 2026-10 | audit] B19: reference hypothesis named in the header (Href_label)
                "\n    ", "(versus reference hypothesis ", Href_label, "):\n"))
     formatted_gw <- apply(x[["GwRatio_m"]][,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     input_gw <- cbind(1:S, formatted_gw)
@@ -238,6 +250,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   }
   if (!is.null(x[["ICdiff_m"]])) {
     cat(paste0("\n    ", "Difference in ", type_label, " values",
+               # [CHANGE 2026-10 | audit] B19: reference hypothesis named in the header (Href_label)
                "\n    ", "(versus reference hypothesis ", Href_label, "):\n"))
     formatted_gv <- apply(x[["ICdiff_m"]][,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     input_gv <- cbind(1:S, formatted_gv)
@@ -247,6 +260,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
     cat(paste0(adjusted_output, "\n"), sep = "")
     cat("    ---\n")
   }
+               # [/CHANGE 2026-10]
 
   
   cat("\nCumulative results:\n")
@@ -296,9 +310,11 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
     cat("    ---\n")
   }
   
+  # [CHANGE 2026-10 | Rebecca] ICratios: print cumulative ratios of IC weights and differences in IC values
   # If icratios
   if (!is.null(x[["Cumulative_ratioICweights"]])) {
     cat(paste0("\n    ", "Ratio of ", type_label, " weights",
+               # [CHANGE 2026-10 | audit] B19: reference hypothesis named in the header (Href_label)
                "\n    ", "(versus reference hypothesis ", Href_label, "):\n"))
     formatted_crgw <- apply(x[["Cumulative_ratioICweights"]][1:S, , drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     captured_output <- capture.output(print(formatted_crgw, row.names = TRUE, right = TRUE, quote = "FALSE"))
@@ -310,6 +326,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   # If icratios
   if (!is.null(x[["Cumulative_ICdiff"]])) {
     cat(paste0("\n    ", "Difference in ", type_label, " values",
+               # [CHANGE 2026-10 | audit] B19: reference hypothesis named in the header (Href_label)
                "\n    ", "(versus reference hypothesis ", Href_label, "):\n"))
     formatted_cgv <- apply(x[["Cumulative_ICdiff"]][1:S, , drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     captured_output <- capture.output(print(formatted_cgv, row.names = TRUE, right = TRUE, quote = "FALSE"))
@@ -317,6 +334,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
     cat(paste0(adjusted_output, "\n"), sep = "")
     cat("    ---\n")
   }
+               # [/CHANGE 2026-10]
   
   
   cat("\nFinal results:\n")

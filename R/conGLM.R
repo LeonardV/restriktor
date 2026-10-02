@@ -199,6 +199,7 @@ conGLM.glm <- function(object, constraints = NULL, se = "standard",
                                   control$tol)] <- 0L
     b.restr <- as.vector(b.restr)
       names(b.restr) <- names(b.unrestr)
+    # [CHANGE 2026-10 | audit] B9: no partial matching on $fitted (use $fitted.values)
     fitted <- fit.glmc$fitted.values
     residuals <- residuals(fit.glmc, "working")
     # weights

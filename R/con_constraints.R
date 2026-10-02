@@ -93,10 +93,12 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     parTable$rhs   <- c(parTable$rhs, LIST$rhs)
     parTable$label <- c(parTable$label, rep("", length(lhs)))
 
+    # [CHANGE 2026-10 | Rebecca] comment clarified
     # nr of equality constraints
     meq  <- nrow(con_constraints_ceq_amat(model, constraints = constraints))
     # right-hand-side
     bvec <- con_constraints_rhs_bvec(model, constraints = constraints)
+    # [CHANGE 2026-10 | Rebecca] comment clarified
     # Matrix with all (in)equality constraints,
     # with first meq rows are the equality contraints
     Amat <- con_constraints_con_amat(model, constraints = constraints)
@@ -116,6 +118,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     ## In case of abs() the constraints may incorrectly be considered as non-linear. 
     ## Here, we remove the abs() from the constraint function which is redundant 
     ## for determining if the constraints are linear. 
+    # [CHANGE 2026-10 | audit] A4: TO DO on abs() linearisation vs. range (open decision)
     # TO DO (open methodological decision for the authors): 'abs(x1) < c' is
     #       linearised to a single row whose sign depends on the sign of the
     #       estimate (x1 >= -c when x1 < 0, x1 <= c otherwise), so the penalty
@@ -123,6 +126,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     #       '-c < x1 < c' gives two rows and the penalty of a range (treated as
     #       an equality, e.g., 1.0). Expanding abs(a) < c into 'a < c; -a < c'
     #       would make both notations equivalent (changes penalties for abs()).
+    # [/CHANGE 2026-10]
     
     # check if any abs() function exists in string. 
     if (any(grepl("abs\\(.*\\)", c(LIST$lhs, LIST$rhs)))) {
@@ -153,6 +157,7 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     stop("restriktor ERROR: No restrictions were specified.", call. = FALSE) 
   }
   
+  # [CHANGE 2026-10 | Rebecca] meq/nrow check now also done before removing redundant constraints; more informative error
   # Check before deleting redundant constraints
   if (!(nrow(Amat) == length(bvec))) {
     warning(paste("restriktor WARNING: The number of constraints does not match", 
@@ -161,9 +166,12 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
   if (meq > nrow(Amat)) { 
     stop(sprintf("restriktor ERROR: The number of equality restrictions (meq = %d) cannot exceed the number of constraints (nrow(Amat) = %d).", meq, nrow(Amat)),
          "\n There might be conflicting and perhaps redundant constraints. \n",
+         # [CHANGE 2026-10 | audit] wording of error message completed
          "When deleting those, goric() should be able to evaluate the adjusted set of hypotheses.", call. = FALSE)
   }
+  # [/CHANGE 2026-10]
   
+  # [CHANGE 2026-10 | Rebecca] redundancy removal moved after the check; meq passed to and returned from remove_redundant_constraints()
   # correct user errors, like x1 < 2 & x1 < 1, x1 < 2 is removed to get a 
   # full row-rank matrix.
   # Note: this only deletes duplicated restrictions; 
@@ -176,8 +184,10 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
   if (meq > nrow(Amat)) { 
     stop(sprintf("restriktor ERROR: The number of equality restrictions (meq = %d) cannot exceed the number of constraints (nrow(Amat) = %d).", meq, nrow(Amat)),
          "\n There might be conflicting and perhaps redundant constraints. \n",
+         # [CHANGE 2026-10 | audit] wording of error message completed
          "When deleting those, goric() should be able to evaluate the adjusted set of hypotheses.", call. = FALSE)
   }
+  # [/CHANGE 2026-10]
   
   if (length(CON$ceq.nonlinear.idx) > 0L || length(CON$cin.nonlinear.idx) > 0L) {
     stop("restriktor ERROR: nonlinear (in)equality restrictions are not supported.", call. = FALSE)

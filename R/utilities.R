@@ -307,6 +307,7 @@ robWeights <- function(w, eps = 0.1/length(w), eps1 = 0.001, ...) {
 
 
 format_numeric <- function(x, digits = 3) {
+  # [CHANGE 2026-10 | audit] A5: NA/NaN/Inf guard in format_numeric (print/summary no longer crash)
   # NA, NaN and Inf are printed as such (no error)
   if (length(x) != 1L || is.na(x)) {
     return(if (length(x) == 1L && is.nan(x)) "NaN" else "NA")
@@ -314,6 +315,7 @@ format_numeric <- function(x, digits = 3) {
   if (!is.finite(x)) {
     return(as.character(x))
   }
+  # [/CHANGE 2026-10]
   if (abs(x) <= 1e-8) {
     format(0, nsmall = digits)
   } else if (abs(x) >= 1e3 || abs(x) <= 1e-3) {
@@ -356,9 +358,11 @@ detect_range_restrictions <- function(Amat) {
   return(range_restrictions)
 }
 
+# [CHANGE 2026-10 | Rebecca] comment wording
 # correct mis-specified constraints of format e.g., x1 < 1 & x1 < 2.
 # x1 < 2 is removed since it is redundant. It has no impact on the LPs, but
 # since the redundant matrix is not full row-rank the slower boot method is used. 
+# [CHANGE 2026-10 | audit] R6/B4: rewritten remove_redundant_constraints(): meq argument (default 0L, added by Rebecca in 9906b09) kept and returned; equalities first; sign-flipped duplicates and conflicts between (in)equalities detected
 remove_redundant_constraints <- function(constraints, rhs, meq = 0L) {
   # Note: the first meq rows of constraints are the equality constraints. This 
   # also holds for the returned constraints (needed for, e.g., quadprog).
@@ -444,4 +448,5 @@ remove_redundant_constraints <- function(constraints, rhs, meq = 0L) {
   
   list(constraints = unname(Amat[keep, , drop = FALSE]), 
        rhs = unname(bvec[keep]), meq = sum(eq[keep])) 
+       # [/CHANGE 2026-10]
 }

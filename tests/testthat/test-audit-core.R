@@ -1,3 +1,4 @@
+# [CHANGE 2026-10 | audit] new file: regression tests for the audit findings on the goric core (A1-A3, A5, A13, B1-B5, B8-B10, B14)
 # =============================================================================
 # Tests: regressietests voor de bevindingen van de audit (kern goric)
 # A1, A2, A3, A5, A13, B1, B2, B3, B4, B5, B8, B9, B10, B14

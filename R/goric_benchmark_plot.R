@@ -1,5 +1,6 @@
 plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
                            percentiles = NULL, x_lim = c(), log_scale = FALSE,
+                           # [CHANGE 2026-10 | Rebecca] argument 'alpha' renamed to 'opacity'
                            opacity = 0.50, nrow_grid = NULL, ncol_grid = 1,
                            distr_grid = FALSE, ...) {
 
@@ -8,6 +9,7 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
     stop("\nrestriktor ERROR: Invalid object. The object should be of class 'benchmark'.", call. = FALSE)
   }
 
+  # [CHANGE 2026-10 | Rebecca] accept deprecated 'alpha' (with warning) as alias of 'opacity'
   # 'alpha' was the original name of this argument; renamed to 'opacity' since
   # 'alpha' is also (and more commonly) used for a statistical significance
   # level, which was confusing here where it means plotting transparency and
@@ -26,10 +28,12 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
     }
     ldots$alpha <- NULL
   }
+  # [/CHANGE 2026-10]
 
   # Check if the output_type is valid
   output_type <- match.arg(output_type, c("rgw", "rlw", "gw", "ld"))
 
+  # [CHANGE 2026-10 | Rebecca] output restructured: nested x$benchmarks$<output_type> fields
   #legend_lab <- names(x$benchmarks$goric_weights)
   # first letter to upper-case
   #paste0(toupper(substring(x$type, 1, 1)), substring(x$type, 2))
@@ -37,6 +41,7 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   comparison <- x$comparison
   pref_hypo_name <- x$pref_hypo_name
 
+  # [CHANGE 2026-10 | Rebecca] informative error for benchmark objects with the old flat field names
   # x$benchmarks/x$pctl_Sample/x$pctl_medianRefPop/x$overlap are nested list
   # fields (each keyed by output_type, e.g. x$benchmarks$goric_weights) since
   # the output was restructured this way -- older benchmark_means()/
@@ -58,10 +63,12 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
          ".RData/.rds file. Please rerun benchmark_means()/benchmark_asymp() to get a ",
          "fresh benchmark object, then call plot() on that.", call. = FALSE)
   }
+  # [/CHANGE 2026-10]
 
   # values are extracted from benchmark
   if (is.null(percentiles)) {
     # exclude sample
+    # [CHANGE 2026-10 | Rebecca] nested field x$benchmarks$goric_weights
     percentile_names <- colnames(x$benchmarks$goric_weights[[1]])[-1]
     percentiles <- as.numeric(sub("%", "", percentile_names)) / 100
   }
@@ -69,26 +76,31 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   # Define the labels based on the output_type
   if (output_type == "gw") {
     DATA <- x$combined_values$gw_combined
+    # [CHANGE 2026-10 | Rebecca] nested field x$benchmarks$goric_weights
     sample_value <- x$benchmarks$goric_weights[[1]][1]
     xlabel <- paste(goric_type, "Weights")
     title <- paste0("Benchmark: ", goric_type, "-Weights Distribution for Preferred Hypothesis ", pref_hypo_name)
   } else if (output_type == "rgw") {
     DATA <- x$combined_values$rgw_combined
+    # [CHANGE 2026-10 | Rebecca] nested field x$benchmarks$ratio_goric_weights
     sample_value <- x$benchmarks$ratio_goric_weights[[1]][, 1, drop = FALSE]
     xlabel <- paste("Ratio", goric_type, "Weights")
     title <- paste0("Benchmark: Ratio-", goric_type, "-Weights Distribution for Preferred Hypothesis ", pref_hypo_name)
   } else if (output_type == "rlw") {
     DATA <- x$combined_values$rlw_combined  
+    # [CHANGE 2026-10 | Rebecca] nested field x$benchmarks$ratio_ll_weights
     sample_value <- x$benchmarks$ratio_ll_weights[[1]][, 1, drop = FALSE]
     xlabel <- "Ratio Log-likelihood Weights"
     title <- paste0("Benchmark: Ratio-Log-Likelihood-Weights Distribution for Preferred Hypothesis ", pref_hypo_name)
   } else if (output_type == "ld") {
     DATA <- x$combined_values$ld_combined
+    # [CHANGE 2026-10 | Rebecca] nested field x$benchmarks$difLL
     sample_value <- x$benchmarks$difLL[[1]][, 1, drop = FALSE]
     xlabel <- "Log-likelihood Difference"
     title <- paste0("Benchmark: Log-likelihood-Difference Distribution for Preferred Hypothesis ", pref_hypo_name)
   }
   
+  # [CHANGE 2026-10 | audit] B33: clear error for 1 hypothesis + comparison none (no ratios to plot)
   # A benchmark of a single hypothesis with comparison = "none" has no
   # alternative hypothesis to compare the preferred hypothesis against, so
   # there are no ratios/differences to plot (0-column draw matrices).
@@ -99,6 +111,7 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
          output_type, "'. Use output_type = 'gw' (the GORIC(A) weights) instead.",
          call. = FALSE)
   }
+  # [/CHANGE 2026-10]
 
   # -------------------------------------------------------------------------
   new_combined_values <- lapply(names(DATA), function(list_name) { 
@@ -119,11 +132,13 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
                      times = names(df), 
                      direction = "long")
   row.names(df_long) <- NULL
+  # [CHANGE 2026-10 | audit] E5/B35: Inf ratios (underflow) set to NA for the density plot
   # A ratio (rgw/rlw) can be Inf when the alternative's weight underflows to
   # 0 (see compute_overlap() in goric_benchmark_utilities.R); a density
   # cannot be estimated on such draws, so they are left out of the plot only
   # (a population without any finite draw is reported below).
   df_long$Value[!is.finite(df_long$Value)] <- NA
+  # [/CHANGE 2026-10]
 
   if (inherits(x, "benchmark_asymp")) {
     df_long$Group <- gsub("pop_est", "Population estimates", df_long$Group)
@@ -133,6 +148,7 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   
   # Rename the Group column to replace triple dots with equals sign
   df_long$Group <- factor(df_long$Group, levels = unique(df_long$Group))
+  # [CHANGE 2026-10 | audit] B35: split Group into population/comparison once (also gw); report populations without finite draws instead of silently dropping them
   # population and hypothesis comparison per Group ("<population> (<pref>
   # vs. <alternative>)"); for gw there is no comparison
   if (output_type == "gw") {
@@ -179,10 +195,12 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   # that comparison; the legend names this population (percentile_pop).
   # aggregate() drops a Group whose values are all NA, so a population
   # without finite draws is skipped automatically.
+  # [/CHANGE 2026-10]
   percentile_df <- aggregate(Value ~ Group, data = df_long, function(x) {
     quantile(x, probs = percentiles, names = TRUE, na.rm = TRUE)
   })
   percentile_df <- data.frame(Group = percentile_df$Group, percentile_df$Value, check.names = FALSE)
+  # [CHANGE 2026-10 | audit] B29/B35: percentile lines from the first population with finite draws, labelled by population (percentile_pop)
   percentile_df$Group_pop_values <- sub("\\s*\\(.*\\)", "", percentile_df$Group)
   percentile_df$Group_hypo_comparison <- trimws(gsub("\\(|\\)", "", extract_in_parentheses(as.character(percentile_df$Group))))
   pop_order <- levels(factor(df_long$Group_pop_values, levels = unique(df_long$Group_pop_values)))
@@ -192,7 +210,9 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   percentile_first_group$percentile_pop <- percentile_first_group$Group_pop_values
   percentile_first_group <- percentile_first_group[, c("Group_hypo_comparison", "percentile_pop",
                                                        paste0(percentiles * 100, "%")), drop = FALSE]
+  # [/CHANGE 2026-10]
   
+  # [CHANGE 2026-10 | audit] B35: colours per population (not per Group)
   group_color <- scales::brewer_pal(palette = "Set3")(length(unique(df_long$Group_pop_values)))
   first_group_color <- group_color[1]
 
@@ -206,6 +226,7 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
       first_group_color = first_group_color,
       stringsAsFactors = FALSE
     )
+    # [CHANGE 2026-10 | audit] B29: merge percentiles by comparison instead of positional cbind
     sample_value_df <- merge(sample_value_df, percentile_first_group,
                              by = "Group_hypo_comparison", all.x = TRUE, sort = FALSE)
     df_long$id_Pop <- 1:dim(df_long)[1]
@@ -215,6 +236,7 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
   } else {
     sample_value <- as.vector(sample_value)
     df_long <- suppressWarnings(cbind(df_long, sample_value, 
+                                      # [CHANGE 2026-10 | audit] B29: percentile columns excl. comparison name
                                       percentile_first_group[, -1, drop = FALSE],
                                       first_group_color = first_group_color))
   }
@@ -228,6 +250,7 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
                                title = title,
                                xlabel = xlabel,
                                x_lim = x_lim,
+                               # [CHANGE 2026-10 | Rebecca] 'alpha' renamed to 'opacity'
                                opacity = opacity,
                                distr_grid = distr_grid,
                                percentiles = percentiles,
@@ -249,6 +272,7 @@ plot.benchmark <- function(x, output_type = c("rgw", "rlw", "gw", "ld"),
 
 # benchmark plots
 create_density_plot <- function(plot_df, group_comparison, title, xlabel,
+                                # [CHANGE 2026-10 | Rebecca] 'alpha' renamed to 'opacity'
                                 x_lim = NULL, opacity = 0.5, distr_grid = FALSE,
                                 percentiles = NULL, log_scale = FALSE) {
   
@@ -280,11 +304,13 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
   # 
   percentile_values <- as.numeric(df_subset[, paste0(percentiles*100, "%")][1, ])
   #percentile_labels <- paste0("[", percentiles * 100, "]th Percentile = ", sprintf("%.3f", percentile_values))
+  # [CHANGE 2026-10 | audit] B29: legend names the population of the percentile lines
   # the legend names the population the percentile lines belong to (the
   # first population with finite draws, see plot.benchmark())
   percentile_pop <- df_subset$percentile_pop[1]
   percentile_labels <- paste0(percentiles * 100, "th Percentile (", percentile_pop, ") = ",
                               sprintf("%.3f", percentile_values))
+  # [/CHANGE 2026-10]
   formatted_sample_value <- sprintf("Sample Value = %.3f", unique(df_subset$sample_value)[1])
   
   
@@ -332,6 +358,7 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
         aes(ymin = 0, ymax = after_stat(density)),
         geom = "ribbon",
         position = "identity",
+        # [CHANGE 2026-10 | Rebecca] 'alpha' renamed to 'opacity'
         alpha = opacity, # ggplot2's own stat_density() parameter is named 'alpha' (its transparency aesthetic); fed from our 'opacity' argument
         adjust = 0.5,        # Pas aan als je de gladheid wilt veranderen
         trim = TRUE,
@@ -339,6 +366,7 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
         kernel = "gaussian", # Kernel voor dichtheidschatting
         na.rm = TRUE
       ) +
+    # [CHANGE 2026-10 | Rebecca] 'alpha' renamed to 'opacity'
     #geom_ribbon(aes(ymin = 0, ymax = y), alpha = opacity) +
     geom_segment(data = percentile_df[nrow(percentile_df):1, ], aes(x = percentile_value, xend = percentile_value,
                                            y = 0, yend = Inf, linetype = percentile_label, 
@@ -420,11 +448,13 @@ create_density_plot <- function(plot_df, group_comparison, title, xlabel,
 
 # 
 plot_all_groups <- function(plot_df, groups, title, xlabel, x_lim = NULL,
+                            # [CHANGE 2026-10 | Rebecca] 'alpha' renamed to 'opacity'
                             opacity = 0.5, distr_grid = FALSE,
                             percentiles = NULL, log_scale = FALSE) {
 
   plot_list <- list()
   for (group in groups) {
+    # [CHANGE 2026-10 | Rebecca] 'alpha' renamed to 'opacity'
     plot <- create_density_plot(plot_df, group, title, xlabel, x_lim, opacity,
                                 distr_grid, percentiles, log_scale)
     plot_list[[group]] <- plot

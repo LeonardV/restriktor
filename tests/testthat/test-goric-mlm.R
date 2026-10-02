@@ -1,3 +1,4 @@
+# [CHANGE 2026-10 | audit] new file: tests for goric() on multivariate lm (mlm) objects (M1-M4)
 # =============================================================================
 # Tests: goric() voor multivariate lm-objecten (mlm)
 # =============================================================================

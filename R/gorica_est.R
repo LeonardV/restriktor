@@ -237,6 +237,7 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
   # get parameter table
   paramTable <- parTable(x)
   if (standardized) {
+    # [CHANGE 2026-10 | audit] E4: merge standardized estimates on parameter identity (defined parameters no longer dropped)
     # The rows of standardizedSolution() do not necessarily correspond
     # (by position) to those of parTable() (e.g., ==, <, > and := rows).
     # Therefore, merge on parameter identity (lhs, op, rhs, group, block,
@@ -255,6 +256,7 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
     stop("\nrestriktor ERROR: no standardized estimate could be found for the ",
          "parameter(s): ", paste(paste(paramTable$lhs, paramTable$op, paramTable$rhs)[is.na(paramTable$est.std)], collapse = ", "),
          ".", call. = FALSE)
+         # [/CHANGE 2026-10]
   }
   #
   # Determine output w.r.t. labeled & defined estimates

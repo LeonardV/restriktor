@@ -1,3 +1,4 @@
+# [CHANGE 2026-10 | audit] new file: regression tests for benchmark_means/benchmark_asymp, print and plot (R CMD check suite)
 # =============================================================================
 # Tests: benchmark() (benchmark_means / benchmark_asymp), print en plot
 # =============================================================================

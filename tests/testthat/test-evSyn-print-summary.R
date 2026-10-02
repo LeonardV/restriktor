@@ -644,11 +644,13 @@ test_that("evSyn_ICratios: summary toont GORICA weights, geen LL/PT/GORICA value
   es <- evSyn(object = R_list)
   out <- capture.output(print(summary(es)))
   expect_true(any(grepl("GORICA weights", out)))
+  # [CHANGE 2026-10 | audit] ICratios summary shows differences in GORICA values versus the reference hypothesis
   # ICratios toont alleen verschillen in GORICA values (t.o.v. de referentiehypothese), 
   # geen absolute GORICA values
   expect_false(any(grepl("^\\s*GORICA values", out)))
   expect_true(any(grepl("Difference in GORICA values", out)))
   expect_true(any(grepl("(versus reference hypothesis H", out, fixed = TRUE)))
+  # [/CHANGE 2026-10]
   expect_false(any(grepl("Log-likelihood values", out)))
   expect_false(any(grepl("Penalty term values", out)))
 })

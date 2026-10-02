@@ -444,9 +444,11 @@ GORICA <- list(gorica_Study1$result[,4], gorica_Study2$result[,4],
 # GORICA
 
 # GORICA evidence synthesis
+# [CHANGE 2026-10 | audit] A8: input_type given explicitly (stricter auto-detection of ratios)
 # Note: the input type is given explicitly (IC values that happen to contain a
 # value of 1 could otherwise be mistaken for ratios of IC weights).
 results_Set1_gorica <- evSyn(GORICA, input_type = "icvalues")
+# [/CHANGE 2026-10]
 #
 results_Set1_gorica
 # summary(results_Set1_gorica)
@@ -459,6 +461,7 @@ The results lead us to the same output as above of course.
 In cases where hypotheses names may be confusing, as it is here, it is recommendable that the user utilize the `hypo_names` function argument to make the results more accessible. In this example, the function would be:
 
 ```{r}
+# [CHANGE 2026-10 | audit] A8: input_type given explicitly
 results_Set1_gorica <- evSyn(GORICA, input_type = "icvalues",
                              hypo_names = c("H1.1", "H1.2", "Hu"))
 #
@@ -479,6 +482,7 @@ GORICAweights <- list(gorica_Study1$result[,7], gorica_Study2$result[,7],
 # GORICAweights
 
 # GORICA evidence synthesis
+# [CHANGE 2026-10 | audit] A8: input_type given explicitly
 results_Set1_gw <- evSyn(GORICAweights, input_type = "icweights",
                          hypo_names = c("H1.1", "H1.2", "Hu"))
 #

@@ -15,6 +15,7 @@
 # evSyn_est       <- function(object, ...) UseMethod("evSyn_est")
 # evSyn_LL        <- function(object, ...) UseMethod("evSyn_LL")
 # evSyn_ICvalues  <- function(object, ...) UseMethod("evSyn_ICvalues")
+# [CHANGE 2026-10 | Rebecca] commented-out generic moved (order of the routes)
 # evSyn_ICweights <- function(object, ...) UseMethod("evSyn_ICweights")
 # evSyn_ICratios  <- function(object, ...) UseMethod("evSyn_ICratios")
 # evSyn_escalc    <- function(object, ...) UseMethod("evSyn_escalc")
@@ -31,11 +32,13 @@
 ## object = Ratio IC weights
 
 
+# [CHANGE 2026-10 | Rebecca] TO DO note on wording for type_ev = "average"
 # TO DO when type_ev = "average" then we should not say 'studies' but 'analyses'.
 #       So, messages and labels should be changed then (names of arguments should not).
 
 
 # -------------------------------------------------------------------------
+# [CHANGE 2026-10 | audit] B22: .validate_order_studies replaced by .evSyn_order_studies (study names accepted, clear error); A7/B14: new helper .evSyn_check_list_input (equal numbers of hypotheses per study, no NA/NaN)
 # Helper: validate and process the 'order_studies' argument.
 # Accepts a character string ("input_order", "ascending", "descending"; the
 # default vector of choices is taken as "input_order"), a numeric vector
@@ -192,7 +195,9 @@
   }
   unname(w[ref])
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] B15: new helper .evSyn_priorWeights_compat (deprecated 'priorWeights' -> 'priorICweights' with a warning)
 # -------------------------------------------------------------------------
 # Helper: backwards compatibility for the deprecated argument 'priorWeights'
 # (renamed to 'priorICweights'). 'dots' is the list of arguments passed via '...'.
@@ -209,7 +214,9 @@
           call. = FALSE)
   priorWeights
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] new helper .evSyn_cum_weighted: study-weighted cumulative sums; a study with weight 0 contributes exactly 0 (no 0 * Inf)
 # Helper: cumulative (study-)weighted sums of the rows of M.
 # Row s equals sum_{i <= s} w_i * M[i, ] / mean(w_1, ..., w_s), with w =
 # study_weights_S (which sum to S). This equals the weighting used for the
@@ -234,14 +241,18 @@
   out[denom == 0, ] <- 0
   out
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] new helper .evSyn_n_pos: cumulative number of positively weighted studies
 # Helper: cumulative number of studies with a positive study weight (equals 
 # 1, ..., S when all study weights are positive). Used instead of the number
 # of studies when averaging, such that a study with weight 0 is not counted.
 .evSyn_n_pos <- function(study_weights_S) {
   cumsum(study_weights_S > 0)
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] B21: new helper .evSyn_check_study_weights (central validation via check_weights, names matched to the studies, zero weights allowed)
 # Helper: validate 'study_weights' (length S, non-negative, finite, at least
 # one positive; zero weights are allowed). Returns a list with the study
 # weights (summing to 1 or to S, as before) and the study weights summing to S.
@@ -271,7 +282,9 @@
   list(study_weights = study_weights,
        study_weights_S = S * study_weights / sum(study_weights)) # Now, they sum up to S
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] B2/B21: new helper .evSyn_check_priorICweights (central validation, names matched to the hypotheses or the input names)
 # Helper: validate 'priorICweights' (length NrHypos_incl, non-negative,
 # finite, at least one positive; rescaled such that they sum to 1).
 # When the prior weights carry names, these must be the hypothesis names
@@ -300,7 +313,9 @@
                 what = "one for each hypothesis including a possible failsafe hypothesis",
                 rescale = TRUE)
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] new helper .evSyn_rescale_study_weights: study weights as powers of IC weights (added: sum to #positive studies; average: sum to 1)
 # Helper: rescale the study weights of studies 1, ..., s as used when combining
 # IC weights (i.e., when the IC weights are 'powers'; see evSyn_ICweights): 
 # - added:   summing to the number of positively weighted studies (as if IC 
@@ -320,7 +335,9 @@
     sum(study_weights_S > 0) * w
   }
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] new helper .evSyn_log_prod_weights: products of IC weights on the log scale (no underflow)
 # Helper: (study-)weighted sum of log IC weights over studies, i.e., the log of
 # prod_i W[i, ]^expo[i]. Computed on the log scale to avoid underflow when
 # many studies are combined. A study with exponent 0 contributes nothing
@@ -331,7 +348,9 @@
   terms[expo == 0, ] <- 0
   colSums(terms)
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] B16: new helper .evSyn_cum_IC: cumulative IC values (added/equal/average) with study weights and penalty_factor
 # Helper: cumulative IC values based on the log-likelihood and penalty values 
 # (possibly weighted using the study weights, see .evSyn_cum_weighted), for 
 # the added-, equal-, and average-evidence approach. Row s corresponds to 
@@ -347,7 +366,9 @@
          equal   = -2 * cumLL + penalty_factor * cumPT / s,
          average = (-2 * cumLL + penalty_factor * cumPT) / s)
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] B14: new helper .evSyn_IC_weights_rows: (prior-weighted) IC weights per row via log-sum-exp (ic_weights_log)
 # Helper: (prior-weighted) IC weights for each row of a matrix with IC values,
 # computed on the log scale (see ic_weights_log).
 .evSyn_IC_weights_rows <- function(IC_m, priorICweights = NULL) {
@@ -358,7 +379,9 @@
   }
   out
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] new helper .evSyn_pref_hypo: preferred hypothesis = highest final prior-weighted IC weight
 # Helper: overall preferred hypothesis, i.e., the hypothesis with the highest
 # final (prior-weighted) IC weight. 'IC' is the vector with final IC values
 # (or IC differences); the first hypothesis is taken in case of ties.
@@ -366,7 +389,9 @@
   w <- ic_weights_log(IC, priorICweights)
   which.max(w)
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] new helper .evSyn_align_goric_hypos: goric objects aligned by hypothesis name (and text), not by position
 # Helper: align a list of goric objects to the hypothesis set of the first 
 # object. The hypotheses are identified by their names (x$result$model, i.e., 
 # the user-specified names or H1, H2, ... when unnamed, plus the possible 
@@ -441,7 +466,9 @@
   }
   object
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] B13: new helper .evSyn_check_input_names: named input vectors checked and re-ordered by name across studies; hypo_names mismatch/permutation warned
 # Helper: check the hypothesis names of the input vectors (object), if any.
 # If all studies carry names, these must denote the same set of hypotheses;
 # when the order differs from study 1, the vectors are re-ordered to the order
@@ -489,7 +516,9 @@
   }
   object
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] new helper .evSyn_input_hypo_names: input names accepted as alias for a named priorICweights
 # Helper: the hypothesis names of the input vectors (after
 # .evSyn_check_input_names, i.e., identical across studies), or NULL when
 # (some of) the input vectors are unnamed. These names are accepted as an
@@ -502,7 +531,9 @@
   }
   nms[[1]]
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] B13: new helper .evSyn_warn_hypo_names_permuted
 # Helper: warning when 'hypo_names' consists of the hypothesis names of the
 # input, but in another order. The names in 'hypo_names' are labels that are
 # applied in the order of the input (the hypotheses are not re-ordered), so
@@ -516,7 +547,9 @@
           "input (or leave 'hypo_names' unspecified).",
           call. = FALSE)
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] new helper .evSyn_align_second_input: PT aligned to the (re-ordered) LL values per study by name
 # Helper: align a second, parallel input (e.g., the penalty values 'PT' that 
 # go with the log-likelihood values in 'object') to the (possibly re-ordered, 
 # see .evSyn_check_input_names) 'object', per study. For each study, the names
@@ -560,17 +593,20 @@
   }
   second
 }
+# [/CHANGE 2026-10]
 
 # -------------------------------------------------------------------------
 evSyn <- function(object, input_type = NULL, ...) {
 
   args <- list(...)
 
+  # [CHANGE 2026-10 | audit] B15: deprecated 'priorWeights' mapped to 'priorICweights' in the dispatcher
   # Backwards compatibility: 'priorWeights' is renamed to 'priorICweights'.
   if (!is.null(args[["priorWeights"]])) {
     args$priorICweights <- .evSyn_priorWeights_compat(args[["priorICweights"]], args)
     args$priorWeights <- NULL
   }
+  # [/CHANGE 2026-10]
 
   VCOV <- args$VCOV
   PT   <- args$PT
@@ -617,6 +653,7 @@ evSyn <- function(object, input_type = NULL, ...) {
     return(call_sub(evSyn_escalc, args, object))
   } 
   
+  # [CHANGE 2026-10 | audit] empty list refused; all elements must be numeric (was any())
   if (!is.list(object) || length(object) == 0 ||
       !all(vapply(object, is.numeric, logical(1)))) {
     stop("\nrestriktor ERROR: object must be a list of numeric vectors.", call. = FALSE)
@@ -627,8 +664,10 @@ evSyn <- function(object, input_type = NULL, ...) {
   }
   
   if (!is.null(VCOV)) {
+    # [CHANGE 2026-10 | audit] comment
     # estimates (the number of estimates may differ across studies)
     return(call_sub(evSyn_est, args, object))
+  # [CHANGE 2026-10 | audit] A7/B14/A8: list input validated (.evSyn_check_list_input, also PT); input type inferred by .evSyn_detect_input_type with a message (replaces inline sum-to-1 / last-element-1 detection and per-route 'equal' messages)
   }
   
   # From here on, the input is a list of vectors with log-likelihood values,
@@ -655,7 +694,9 @@ evSyn <- function(object, input_type = NULL, ...) {
                 icvalues  = evSyn_ICvalues)
   return(call_sub(fun, args, object))
 }
+  # [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] A8/B20: new helper .evSyn_detect_input_type (ratios only if all > 0 and a common 1-position; ambiguous input requires input_type)
 # Helper: infer the input type of a list of numeric vectors (one for each
 # study), when 'input_type' is not specified:
 # - 'icweights': all values lie between 0 and 1 and the values of each study
@@ -708,7 +749,9 @@ evSyn <- function(object, input_type = NULL, ...) {
   list(type = "icvalues",
        msg = "The input is treated as IC values (input_type = 'icvalues').")
 }
+# [/CHANGE 2026-10]
 
+# [CHANGE 2026-10 | audit] B23: new helper .evSyn_type_ev_IC ('equal' falls back to 'added' with a message instead of a match.arg error)
 # Helper: for input consisting of IC values, IC weights, or ratios of IC
 # weights, the equal-evidence approach is not possible (there are no separate
 # log-likelihood and penalty values); the added-evidence approach is used
@@ -724,6 +767,7 @@ evSyn <- function(object, input_type = NULL, ...) {
   }
   match.arg(type_ev, c("added", "average"))
 }
+# [/CHANGE 2026-10]
 
 
 # -------------------------------------------------------------------------
@@ -732,13 +776,16 @@ evSyn <- function(object, input_type = NULL, ...) {
 evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
                       type_ev = c("added", "equal", "average"), 
                       comparison = c("unconstrained", "complement", "none"),
+                      # [CHANGE 2026-10 | Rebecca] priorICweights argument
                       hypo_names = c(), priorICweights = NULL,
                       type = c("gorica", "goricac"),
                       order_studies = c("input_order", "ascending", "descending"),
                       study_names = c(),
+                      # [CHANGE 2026-10 | Rebecca] study_weights argument
                       study_sample_nobs = NULL,
                       study_weights = NULL) {
   
+  # [CHANGE 2026-10 | audit] B15: priorWeights compat (removed from dots passed to goric()); Heq: a hypothesis named 'Heq' is dropped and regenerated by goric()
   # Backwards compatibility: 'priorWeights' is renamed to 'priorICweights'.
   # The deprecated argument is removed from the arguments that are passed on
   # to goric() (which does not know it).
@@ -763,7 +810,9 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
       hypotheses <- drop_Heq(hypotheses)
     }
   }
+  # [/CHANGE 2026-10]
   
+  # [CHANGE 2026-10 | audit] regression fix: missing(comparison) evaluated before 'comparison' is assigned
   # Note: missing() must be evaluated before any assignment to 'comparison'.
   comparison_missing <- missing(comparison)
   if (comparison_missing) {
@@ -771,10 +820,12 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
       comparison <- "complement"
     } else {
       comparison <- "unconstrained"
+      # [CHANGE 2026-10 | Rebecca] note on the complement default for lists of single hypotheses
       # Note: in the case of a list in a list,
       # and only one hypothesis in the sub-lists, then:
       # comparison <- "complement"
       # which is done below.
+      # [/CHANGE 2026-10]
     }
   }
   
@@ -836,6 +887,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
          call. = FALSE)
   }
   
+  # [CHANGE 2026-10 | audit] B21/B22: study_weights and order_studies validated via the helpers (replaces the match.arg block)
   # Check the study weights (zero weights are allowed; see .evSyn_cum_weighted)
   study_weights <- .evSyn_check_study_weights(study_weights, S, study_names)
   study_weights_S <- study_weights$study_weights_S # Now, they sum up to S
@@ -844,6 +896,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   # Check the order of the studies (character string, permutation of 1:S, or
   # permutation of the study names)
   order_studies <- .evSyn_order_studies(order_studies, S, study_names)
+  # [/CHANGE 2026-10]
   
   # Ensure hypotheses are nested
   if (!all(vapply(hypotheses, is.list, logical(1)))) {
@@ -885,15 +938,19 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
          call. = FALSE)
   }
   
+  # [CHANGE 2026-10 | Rebecca] comparison = 'complement' when every sub-list holds one hypothesis (fix: only when comparison was not specified)
   # Note: in the case of a list in a list, 
   # and only one hypothesis in the sub-lists, then:
   # comparison <- "complement"
   # BUT only when it was not set to something in the first place!
+  # [CHANGE 2026-10 | audit] regression fix: use comparison_missing (missing() on the local copy was always FALSE)
   if (comparison_missing && all(len_H == 1)) {
     comparison <- "complement"
+  # [CHANGE 2026-10 | audit] regression fix: default 'unconstrained' otherwise
   } else if (comparison_missing) {
     comparison <- "unconstrained"
   }
+  # [/CHANGE 2026-10]
   
   complement_check <- all(len_H == 1)
   if (comparison == "complement") {
@@ -911,6 +968,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   if (comparison == "none") {
     NrHypos_incl <- NrHypos
   }
+  # [CHANGE 2026-10 | audit] A6: Heq only for one hypothesis vs its complement; per-study hypothesis sets aligned by name (error on different names, warning when only some are named) instead of by position
   # Heq is only valid when a single order-restricted hypothesis is compared
   # to its complement (as in goric(), with one warning instead of one per study)
   if (Heq && !(comparison == "complement" && NrHypos == 1)) {
@@ -968,7 +1026,9 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
 
   if (is.null(hypo_names)) {
     element_hypo_names <- ref_names
+  # [/CHANGE 2026-10]
   } else {
+    # [CHANGE 2026-10 | Rebecca] hypo_names validated (length and type)
     if (length(hypo_names) != NrHypos) {
       stop("\nrestriktor ERROR: The argument 'hypo_names' should consist of ", NrHypos, " names, \n",
            "namely one for each specified hypothesis. It now consists of ", length(hypo_names), ".",
@@ -979,10 +1039,13 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
            "Now, (some of) the elements are not characters.",
            call. = FALSE)
     }
+    # [/CHANGE 2026-10]
+    # [CHANGE 2026-10 | audit] B13: warning when hypo_names is a permutation of the hypothesis names
     if (!is.null(ref_names) && setequal(hypo_names, ref_names) &&
         !identical(as.character(hypo_names), ref_names)) {
       .evSyn_warn_hypo_names_permuted(hypo_names, ref_names)
     }
+    # [/CHANGE 2026-10]
     element_hypo_names <- hypo_names
   }
   
@@ -1003,10 +1066,12 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
       names(h)[1:(length(hnames) - 1L)] <- hnames[-max(length(hnames))]  
       return(h)
     })
+    # [CHANGE 2026-10 | audit] Heq: goric() adds the equality-restricted hypothesis first
     if (Heq) {
       # goric() adds the equality-restricted hypothesis (named 'Heq') first
       hnames <- c("Heq", hnames)
     }
+    # [/CHANGE 2026-10]
     ratio.weight_mu <- matrix(data = NA, nrow = S, ncol = 1)
   } else if (comparison == "none") {
     if (!is.null(element_hypo_names)) {
@@ -1044,6 +1109,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     ratio.weight_mu <- matrix(data = NA, nrow = S, ncol = NrHypos_incl)
   }
   
+  # [CHANGE 2026-10 | audit] B2/B21: priorICweights validated and matched by name (hypothesis names accepted as alias)
   # Check the prior IC weights (one for each hypothesis, incl. the failsafe
   # hypothesis; matched by name when named; rescaled to sum to 1). When the
   # hypotheses are named, these names (with 'Heq' and the failsafe hypothesis
@@ -1055,6 +1121,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   }
   priorICweights <- .evSyn_check_priorICweights(priorICweights, NrHypos_incl, hnames,
                                                 input_names = input_names)
+  # [/CHANGE 2026-10]
   
   LL_m <- LL_weights_m <- GORICA_m <- GORICA_weight_m <- PT <- matrix(data = NA, nrow = S, ncol = NrHypos_incl)
   colnames(LL_m) <- colnames(LL_weights_m) <- colnames(GORICA_m) <- colnames(GORICA_weight_m) <- colnames(PT) <- hnames
@@ -1062,6 +1129,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   #
   study_sample_nobs <- unlist(study_sample_nobs) # when it comes from escalc, then it is a list
   for (s in 1:S) {
+    # [CHANGE 2026-10 | audit] goric() called via do.call with dots (without priorWeights); number of returned models checked (Heq)
     # Note: the remaining arguments (dots, i.e., '...' without the deprecated
     # 'priorWeights') are passed on to goric().
     res_goric <- do.call(goric, c(list(object[[s]], VCOV = VCOV[[s]],
@@ -1080,10 +1148,12 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
            if (Heq) " The 'Heq' option cannot be used for this set of hypotheses.",
            call. = FALSE)
     }
+    # [/CHANGE 2026-10]
     
     if (comparison == "unconstrained") {
       ratio.weight_mu[s, ] <- res_goric$ratio.gw[, NrHypos_incl]
     } else if (comparison == "complement") {
+      # [CHANGE 2026-10 | audit] Heq: the order-restricted hypothesis is row 1 + Heq
       # the (single) order-restricted hypothesis versus its complement
       ratio.weight_mu[s, ] <- res_goric$ratio.gw[1 + Heq, NrHypos_incl]
     } 
@@ -1091,29 +1161,35 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     LL_m[s, ] <- res_goric$result$loglik
     LL_weights_m[s, ] <- res_goric$result$loglik.weights
     GORICA_m[s, ] <- res_goric$result[[type]] #res_goric$result$gorica
+    # [CHANGE 2026-10 | audit] B17: open question (prior in study-specific weights)
     # TO DO: open question (Leonard/Rebecca): should study-specific weights include priorICweights in all routes? Currently est/gorica route does not, ICvalues/ICweights routes do.
     GORICA_weight_m[s, ] <- res_goric$result[[paste0(type, ".weights")]]
     PT[s, ] <- res_goric$result$penalty
   }
+  # [CHANGE 2026-10 | audit] penalty_factor taken from the goric() results
   # penalty factor used in goric() (i.e., IC = -2 * LL + penalty_factor * PT)
   penalty_factor <- res_goric$penalty_factor
   if (is.null(penalty_factor)) {
     penalty_factor <- 2
   }
+  # [/CHANGE 2026-10]
   
   orderStudies <- 1:S
   # Check if order of studies should be changed.
   if (is.numeric(order_studies)) {
     # User-specified numeric order vector
+    # [CHANGE 2026-10 | audit] order_studies already validated; drop = FALSE (single study)
     orderStudies <- order_studies
     LL_m <- LL_m[orderStudies, , drop = FALSE]
     LL_weights_m <- LL_weights_m[orderStudies, , drop = FALSE]
     GORICA_m <- GORICA_m[orderStudies, , drop = FALSE]
     GORICA_weight_m <- GORICA_weight_m[orderStudies, , drop = FALSE]
     PT <- PT[orderStudies, , drop = FALSE]
+    # [/CHANGE 2026-10]
   } else if (order_studies %in% c("ascending", "descending")) {
     # Order needs to be changed based on the overall preferred hypothesis.
     # Determine what the overall preferred hypothesis is.
+    # [CHANGE 2026-10 | audit] preferred hypothesis from the final prior-weighted, study-weighted IC weights (same normalisation as the final synthesis)
     # That is, the hypothesis with the highest final (prior-weighted) IC weight.
     OverallGoric <- .evSyn_cum_IC(LL_m, PT, study_weights_S, type_ev, penalty_factor)[S, ]
     OverallPrefHypo <- .evSyn_pref_hypo(OverallGoric, priorICweights)
@@ -1124,11 +1200,13 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     }
     orderStudies <- order(GORICA_weight_m[, OverallPrefHypo], decreasing = decreasing)
     #
+    # [CHANGE 2026-10 | audit] drop = FALSE (single study)
     LL_m <- LL_m[orderStudies, , drop = FALSE]
     LL_weights_m <- LL_weights_m[orderStudies, , drop = FALSE]
     GORICA_m <- GORICA_m[orderStudies, , drop = FALSE]
     GORICA_weight_m <- GORICA_weight_m[orderStudies, , drop = FALSE]
     PT <- PT[orderStudies, , drop = FALSE]
+    # [/CHANGE 2026-10]
   }
   
   # Set rownames (after determining the order of the studies)
@@ -1147,8 +1225,10 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     study_names <- study_names[orderStudies]
   }
   rownames(LL_m) <- rownames(LL_weights_m) <- rownames(GORICA_m) <- rownames(GORICA_weight_m) <- rownames(PT) <- study_names
+  # [CHANGE 2026-10 | audit] ratio.weight_mu re-ordered with the studies
   ratio.weight_mu <- ratio.weight_mu[orderStudies, , drop = FALSE]
   rownames(ratio.weight_mu) <- study_names
+  # [CHANGE 2026-10 | audit] study weights and study_sample_nobs re-ordered with the studies
   # Re-order the study-specific settings as well, such that they match the 
   # (re-ordered) studies and results do not depend on the input order.
   study_weights <- study_weights[orderStudies]
@@ -1156,6 +1236,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   if (!is.null(study_sample_nobs)) {
     study_sample_nobs <- study_sample_nobs[orderStudies]
   }
+  # [/CHANGE 2026-10]
   
   CumulativeLLWeights <- CumulativeGoricaWeights <- CumulativeGorica <- matrix(NA, nrow = S+1, ncol = NrHypos_incl)
   colnames(CumulativeLLWeights) <- colnames(CumulativeGorica) <- colnames(CumulativeGoricaWeights) <- hnames
@@ -1163,6 +1244,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   sequence[1] <- "Study nr.  1   "
   rownames(CumulativeLLWeights) <- rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(sequence, "Final")
   #
+  # [CHANGE 2026-10 | audit] B16: cumulative IC values/weights via .evSyn_cum_IC and log-sum-exp (study weights, penalty_factor, priorICweights); cumulative LL study-weighted and averaged for 'average' (replaces the per-type loops)
   # Cumulative IC values (possibly weighted using study weights):
   # - added:   sum of LL values and sum of PT values,
   # - equal:   sum of LL values and average of PT values,
@@ -1186,9 +1268,11 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   }
   Cumulative_LL <- matrix(Cumulative_LL, nrow = nrow(LL_m), 
                           dimnames = list(sequence, colnames(LL_m)))
+  # [/CHANGE 2026-10]
   
   # cumulative log_likelihood weights
   for (l in 1:S) {
+    # [CHANGE 2026-10 | audit] cumulative LL weights from the (weighted) Cumulative_LL
     CumulativeLL <- -2 * Cumulative_LL[l, ]
     minLL <- min(CumulativeLL)
     CumulativeLLWeights[l, ] <- exp(-0.5*(CumulativeLL-minLL)) / sum(exp(-0.5*(CumulativeLL-minLL)))
@@ -1211,6 +1295,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   
   Final.GORICA.weights <- CumulativeGoricaWeights[S, ]
   Final.ratio.GORICA.weights <- Final.GORICA.weights %*% t(1/Final.GORICA.weights)
+  # [CHANGE 2026-10 | Rebecca] diagonal of the ratio matrix set to 1 (zero weights)
   diag(Final.ratio.GORICA.weights) <- 1 # If a weight is zero, then you get Inf and NaN; this way you get Inf and 1.
   
   rownames(Final.ratio.GORICA.weights) <- hnames
@@ -1218,6 +1303,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   
   # Output
   if (NrHypos == 1 && comparison == "complement") {
+    # [CHANGE 2026-10 | audit] Heq: name of the order-restricted hypothesis
     colnames(ratio.weight_mu) <- c(paste0(hnames[1 + Heq], " vs. ", "Complement"))
     colnames(Final.ratio.LL.weights) <- colnames(Final.ratio.GORICA.weights) <- c(paste0("vs. ", colnames(CumulativeGorica)))
   } else if (comparison == "none") {
@@ -1232,12 +1318,15 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   out <- list(type = type,
               type_ev = type_ev,
               hypotheses = hypotheses,
+              # [CHANGE 2026-10 | Rebecca] priorICweights in the output
               priorICweights = priorICweights,
               n_studies = S,
               order_studies = orderStudies,
               study_names = study_names,
+              # [CHANGE 2026-10 | Rebecca] study_weights in the output
               study_weights = study_weights,
               study_sample_nobs = study_sample_nobs,
+              # [CHANGE 2026-10 | audit] penalty_factor in the output
               penalty_factor = penalty_factor,
               PT_m = PT,
               GORICA_weight_m = GORICA_weight_m, 
@@ -1264,10 +1353,12 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
 # GORIC(A) evidence synthesis based on log likelihood and penalty values
 evSyn_LL <- function(object, ..., PT = list(), 
                      type_ev = c("added", "equal", "average"),
+                     # [CHANGE 2026-10 | Rebecca] priorICweights argument
                      hypo_names = c(), priorICweights = NULL,
                      type = c("goric", "goricc", "gorica", "goricac"),
                      order_studies = c("input_order", "ascending", "descending"),
                      study_names = c(),
+                     # [CHANGE 2026-10 | audit] study_weights and penalty_factor arguments
                      study_weights = NULL,
                      penalty_factor = 2) {
   
@@ -1279,6 +1370,7 @@ evSyn_LL <- function(object, ..., PT = list(),
     type <- "gorica"
   type <- match.arg(type)
   
+  # [CHANGE 2026-10 | audit] B15 priorWeights compat; A7/B14 input checks; penalty_factor validated; B13 names aligned across studies and PT aligned to LL by name
   # Backwards compatibility: 'priorWeights' is renamed to 'priorICweights'.
   priorICweights <- .evSyn_priorWeights_compat(priorICweights, list(...))
 
@@ -1307,19 +1399,24 @@ evSyn_LL <- function(object, ..., PT = list(),
   # The penalty values must match the (possibly re-ordered) log-likelihood 
   # values per study: matched by name when named, otherwise by position.
   PT <- .evSyn_align_second_input(object, PT, name = "PT", object_name = "object")
+  # [/CHANGE 2026-10]
   
   LL_m <- object
   S <- length(LL_m)
   NrHypos <- length(LL_m[[1]]) - 1
+  # [CHANGE 2026-10 | Rebecca] NrHypos_incl
   NrHypos_incl <- NrHypos + 1
   
+  # [CHANGE 2026-10 | audit] B22: order_studies validated via .evSyn_order_studies
   # Check the order of the studies (character string, permutation of 1:S, or
   # permutation of the study names)
   order_studies <- .evSyn_order_studies(order_studies, S, study_names)
   
   if (is.null(hypo_names)) {
+    # [CHANGE 2026-10 | Rebecca] hnames via NrHypos_incl
     hnames <- paste0("H", 1:NrHypos_incl)
   } else {
+    # [CHANGE 2026-10 | Rebecca] hypo_names validated (length and type)
     if (length(hypo_names) != NrHypos_incl) {
       stop("\nrestriktor ERROR: The argument 'hypo_names' should consist of ", NrHypos_incl, " names, \n",
            "namely one for each specified hypothesis. It now consists of ", length(hypo_names), ".",
@@ -1330,23 +1427,30 @@ evSyn_LL <- function(object, ..., PT = list(),
            "Now, (some of) the elements are not characters.",
            call. = FALSE)
     }
+    # [/CHANGE 2026-10]
     hnames <- hypo_names
   }
   
+  # [CHANGE 2026-10 | audit] B2/B21: priorICweights validated and matched by name
   # Check the prior IC weights (one for each hypothesis; matched by name when
   # named; rescaled to sum to 1)
   priorICweights <- .evSyn_check_priorICweights(priorICweights, NrHypos_incl, hnames,
                                                 input_names = input_names)
+  # [/CHANGE 2026-10]
   
+  # [CHANGE 2026-10 | audit] B21: study_weights validated
   # Check the study weights (zero weights are allowed; see .evSyn_cum_weighted)
   study_weights <- .evSyn_check_study_weights(study_weights, S, study_names)
   study_weights_S <- study_weights$study_weights_S # Now, they sum up to S
   study_weights <- study_weights$study_weights
+  # [/CHANGE 2026-10]
   
+  # [CHANGE 2026-10 | audit] unname before rbind; penalty_factor in the IC values
   LL_m <- do.call(rbind, lapply(LL_m, unname))
   PT <- do.call(rbind, lapply(PT, unname))
   IC <- -2 * LL_m + penalty_factor * PT
   #
+  # [CHANGE 2026-10 | audit] B14/B17: study-specific IC weights via log-sum-exp (prior-free; open question noted)
   # TO DO: open question (Leonard/Rebecca): should study-specific weights include priorICweights in all routes? Currently est/gorica route does not, ICvalues/ICweights routes do.
   GORICA_weight_m <- .evSyn_IC_weights_rows(IC)
   
@@ -1355,14 +1459,17 @@ evSyn_LL <- function(object, ..., PT = list(),
   # Check if order of studies should be changed.
   if (is.numeric(order_studies)) {
     # User-specified numeric order vector
+    # [CHANGE 2026-10 | audit] order_studies already validated; drop = FALSE (single study)
     orderStudies <- order_studies
     LL_m <- LL_m[orderStudies, , drop = FALSE]
     PT <- PT[orderStudies, , drop = FALSE]
     IC <- IC[orderStudies, , drop = FALSE]
     GORICA_weight_m <- GORICA_weight_m[orderStudies, , drop = FALSE]
+    # [/CHANGE 2026-10]
   } else if (order_studies %in% c("ascending", "descending")) {
     # Order needs to be changed based on the overall preferred hypothesis.
     # Determine what the overall preferred hypothesis is.
+    # [CHANGE 2026-10 | audit] preferred hypothesis from the final prior-weighted, study-weighted IC weights
     # That is, the hypothesis with the highest final (prior-weighted) IC weight.
     OverallGoric <- .evSyn_cum_IC(LL_m, PT, study_weights_S, type_ev, penalty_factor)[S, ]
     OverallPrefHypo <- .evSyn_pref_hypo(OverallGoric, priorICweights)
@@ -1373,10 +1480,12 @@ evSyn_LL <- function(object, ..., PT = list(),
     }
     orderStudies <- order(GORICA_weight_m[, OverallPrefHypo], decreasing = decreasing)
     #
+    # [CHANGE 2026-10 | audit] drop = FALSE (single study)
     LL_m <- LL_m[orderStudies, , drop = FALSE]
     PT <- PT[orderStudies, , drop = FALSE]
     IC <- IC[orderStudies, , drop = FALSE]
     GORICA_weight_m <- GORICA_weight_m[orderStudies, , drop = FALSE]
+    # [/CHANGE 2026-10]
   }
   
   # Set rownames (after determining the order of the studies)
@@ -1387,11 +1496,13 @@ evSyn_LL <- function(object, ..., PT = list(),
   } else {
     # If suggested study_names:
     # Check if length correct
+    # [CHANGE 2026-10 | Rebecca] study_names length checked
     if (length(study_names) != S) {
       stop("\nrestriktor ERROR: The argument 'study_names' should consist of ", S, " names, \n",
            "namely one for each study. It now consists of ", length(study_names), ".",
            call. = FALSE)
     }
+    # [/CHANGE 2026-10]
     #
     # Re-order
     study_names <- study_names[orderStudies]
@@ -1399,14 +1510,17 @@ evSyn_LL <- function(object, ..., PT = list(),
   rownames(LL_m) <- rownames(PT) <- rownames(IC) <- rownames(GORICA_weight_m) <- study_names
   # Set colnames
   colnames(LL_m) <- colnames(PT) <- colnames(IC) <- colnames(GORICA_weight_m) <- hnames
+  # [CHANGE 2026-10 | audit] study weights re-ordered with the studies
   # Re-order the study weights as well, such that they match the (re-ordered) 
   # studies and results do not depend on the input order.
   study_weights <- study_weights[orderStudies]
   study_weights_S <- study_weights_S[orderStudies]
+  # [/CHANGE 2026-10]
   
   sequence <- paste0("Study nr.s 1-", 1:S, "   ")
   sequence[1] <- "Study nr.  1   "
   #
+  # [CHANGE 2026-10 | audit] B16: cumulative LL study-weighted and averaged for 'average'
   # cumulative log-likelihood values (possibly weighted using study weights,
   # in the same way as for the cumulative IC values)
   # Note: priorICweights are not used for the log-likelihood weights, since 
@@ -1417,6 +1531,7 @@ evSyn_LL <- function(object, ..., PT = list(),
     # the positively weighted studies so far), like the IC and penalty values
     Cumulative_LL <- Cumulative_LL / pmax(.evSyn_n_pos(study_weights_S), 1)
   }
+  # [/CHANGE 2026-10]
   Cumulative_LL <- matrix(Cumulative_LL, nrow = nrow(LL_m), 
                           dimnames = list(sequence, colnames(LL_m)))
   # final cumulative log-likelihood value
@@ -1438,6 +1553,7 @@ evSyn_LL <- function(object, ..., PT = list(),
     delta_LL <- LL - min(LL)
     LL_weights_m[l, ] <- exp(-0.5 * delta_LL) / sum(exp(-0.5 * delta_LL))
     #
+    # [CHANGE 2026-10 | audit] cumulative LL weights from the (weighted) Cumulative_LL
     CumulativeLL <- -2 * Cumulative_LL[l, ]
     minLL <- min(CumulativeLL)
     CumulativeLLWeights[l, ] <- exp(-0.5*(CumulativeLL-minLL)) / sum(exp(-0.5*(CumulativeLL-minLL)))
@@ -1447,11 +1563,13 @@ evSyn_LL <- function(object, ..., PT = list(),
   CumulativeGoricaWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
   rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(sequence, "Final")
   colnames(CumulativeGorica) <- colnames(CumulativeGoricaWeights) <- hnames
+  # [CHANGE 2026-10 | audit] B16: cumulative IC values/weights via .evSyn_cum_IC and log-sum-exp (replaces the per-type loops)
   # Cumulative IC values (possibly weighted using study weights; see .evSyn_cum_IC) 
   # and cumulative IC weights (taking into account possible prior hypothesis 
   # weights; computed on the log scale).
   CumulativeGorica[1:S, ] <- .evSyn_cum_IC(LL_m, PT, study_weights_S, type_ev, penalty_factor)
   CumulativeGoricaWeights[1:S, ] <- .evSyn_IC_weights_rows(CumulativeGorica[1:S, , drop = FALSE], priorICweights)
+  # [/CHANGE 2026-10]
   
   # fill in the final row  
   CumulativeGorica[(S+1), ] <- CumulativeGorica[S, ]
@@ -1461,6 +1579,7 @@ evSyn_LL <- function(object, ..., PT = list(),
   
   Final.GORICA.weights <- CumulativeGoricaWeights[S, ]
   Final.ratio.GORICA.weights <- Final.GORICA.weights %*% t(1/Final.GORICA.weights)
+  # [CHANGE 2026-10 | Rebecca] diagonal of the ratio matrix set to 1 (zero weights)
   diag(Final.ratio.GORICA.weights) <- 1 # If a weight is zero, then you get Inf and NaN; this way you get Inf and 1.
   
   rownames(Final.ratio.LL.weights) <- rownames(Final.ratio.GORICA.weights) <- hnames
@@ -1469,12 +1588,15 @@ evSyn_LL <- function(object, ..., PT = list(),
   out <- list(type = type,
     type_ev = type_ev,
     #hypotheses = hypo_names,
+    # [CHANGE 2026-10 | Rebecca] priorICweights in the output
     priorICweights = priorICweights,
     n_studies = S,
     order_studies = orderStudies,
     study_names = study_names,
+    # [CHANGE 2026-10 | Rebecca] study_weights in the output
     study_weights = study_weights,
     #study_sample_nobs = study_sample_nobs,
+    # [CHANGE 2026-10 | audit] penalty_factor in the output
     penalty_factor = penalty_factor,
     PT_m = PT, 
     GORICA_weight_m = GORICA_weight_m,
@@ -1499,20 +1621,24 @@ evSyn_LL <- function(object, ..., PT = list(),
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on AIC or ORIC or GORIC or GORICA values
 evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"), 
+                           # [CHANGE 2026-10 | Rebecca] priorICweights argument
                            hypo_names = c(), priorICweights = NULL,
                            type = c("goric", "goricc", "gorica", "goricac"),
                            order_studies = c("input_order", "ascending", "descending"),
+                           # [CHANGE 2026-10 | Rebecca] study_weights argument
                            study_names = c(),
                            study_weights = NULL) {
   
   if (missing(type_ev)) 
     type_ev <- "added"
+  # [CHANGE 2026-10 | audit] B23: 'equal' falls back to 'added' with a message
   type_ev <- .evSyn_type_ev_IC(type_ev, "IC values")
   
   if (missing(type)) 
     type <- "gorica"
   type <- match.arg(type)
 
+  # [CHANGE 2026-10 | audit] B15 priorWeights compat; A7/B14 input checks; B13 names aligned across studies
   # Backwards compatibility: 'priorWeights' is renamed to 'priorICweights'.
   priorICweights <- .evSyn_priorWeights_compat(priorICweights, list(...))
 
@@ -1525,72 +1651,90 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
   object <- .evSyn_check_input_names(object, hypo_names)
   # the hypothesis names of the input (if any; accepted for a named 'priorICweights')
   input_names <- .evSyn_input_hypo_names(object)
+  # [/CHANGE 2026-10]
   
   IC <- object
   S  <- length(IC)
   NrHypos <- length(IC[[1]]) - 1
+  # [CHANGE 2026-10 | Rebecca] TO DO notes; NrHypos_incl
   # TO DO waarom -1 (op meerdere plekken), was vast ergens voor nodig.... 
   # TO DO wat ik kan bedenken maar we nu nog niets mee doen:
   # We assume that the last one is the failsafe Hunc
   # If not, users can specify the hypotheses names as well (in 'hypo_names').
   NrHypos_incl <- NrHypos + 1
+  # [/CHANGE 2026-10]
   GORICA_weight_m <- matrix(NA, nrow = S, ncol = (NrHypos + 1))
   
   if (is.null(hypo_names)) {
+    # [CHANGE 2026-10 | Rebecca] hnames via NrHypos_incl; hypo_names validated (length and type)
     #hnames <- paste0("H", 1:NrHypos)
     #hnames <- c(hnames, "unconstrained")
     hnames <- paste0("H", 1:NrHypos_incl)
   } else {
     if (length(hypo_names) != NrHypos_incl) {
+      # [CHANGE 2026-10 | audit] NrHypos_incl in the message
       stop("\nrestriktor ERROR: The argument 'hypo_names' should consist of ", NrHypos_incl, " names, \n",
            "namely one for each specified hypothesis. It now consists of ", length(hypo_names), ".",
            call. = FALSE)
     }
     if (!all(is.character(hypo_names))) {
+      # [CHANGE 2026-10 | audit] NrHypos_incl in the message
       stop("\nrestriktor ERROR: The argument 'hypo_names' should consist of ", NrHypos_incl, " names. \n",
            "Now, (some of) the elements are not characters.",
            call. = FALSE)
     }
+      # [/CHANGE 2026-10]
     hnames <- hypo_names
   }
   
+  # [CHANGE 2026-10 | audit] B2/B21: priorICweights validated and matched by name
   # Check the prior IC weights (one for each hypothesis; matched by name when
   # named; rescaled to sum to 1)
   priorICweights <- .evSyn_check_priorICweights(priorICweights, NrHypos_incl, hnames,
                                                 input_names = input_names)
+  # [/CHANGE 2026-10]
   
+  # [CHANGE 2026-10 | audit] B21: study_weights validated
   # Check the study weights (zero weights are allowed; see .evSyn_cum_weighted)
   study_weights <- .evSyn_check_study_weights(study_weights, S, study_names)
   study_weights_S <- study_weights$study_weights_S # Now, they sum up to S
   study_weights <- study_weights$study_weights
+  # [/CHANGE 2026-10]
   
+  # [CHANGE 2026-10 | audit] B22: order_studies validated via .evSyn_order_studies (replaces the match.arg block)
   # Check the order of the studies (character string, permutation of 1:S, or
   # permutation of the study names)
   order_studies <- .evSyn_order_studies(order_studies, S, study_names)
   
+  # [CHANGE 2026-10 | audit] unname before rbind
   IC <- do.call(rbind, lapply(IC, unname))
   #
+  # [CHANGE 2026-10 | audit] B14: study-specific IC weights via log-sum-exp (replaces the loop)
   GORICA_weight_m <- .evSyn_IC_weights_rows(IC)
   
   orderStudies <- 1:S
   # Check if order of studies should be changed.
   if (is.numeric(order_studies)) {
     # User-specified numeric order vector
+    # [CHANGE 2026-10 | audit] order_studies already validated; drop = FALSE (single study)
     orderStudies <- order_studies
     IC <- IC[orderStudies, , drop = FALSE]
     GORICA_weight_m <- GORICA_weight_m[orderStudies, , drop = FALSE]
   } else if (order_studies %in% c("ascending", "descending")) {
     # Order needs to be changed based on the overall preferred hypothesis.
     # Determine what the overall preferred hypothesis is.
+    # [CHANGE 2026-10 | audit] preferred hypothesis from the final study-weighted IC values
     # That is, the hypothesis with the highest final (prior-weighted) IC weight.
     OverallGoric <- .evSyn_cum_weighted(IC, study_weights_S)[S, ]
     if (type_ev == "average") { 
       # average-evidence approach
+      # [CHANGE 2026-10 | audit] average over the positively weighted studies
       OverallGoric <- OverallGoric / sum(study_weights_S > 0)
     } else {
       # type_ev == "added" (or when "equal", because then it is overruled to be "added")
       type_ev = "added"
     }
+    # [CHANGE 2026-10 | audit] preferred hypothesis = highest prior-weighted IC weight
     OverallPrefHypo <- .evSyn_pref_hypo(OverallGoric, priorICweights)
     if (order_studies == "descending") {
       decreasing = TRUE
@@ -1599,6 +1743,7 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
     }
     orderStudies <- order(GORICA_weight_m[, OverallPrefHypo], decreasing = decreasing)
     #
+    # [CHANGE 2026-10 | audit] drop = FALSE (single study)
     IC <- IC[orderStudies, , drop = FALSE]
     GORICA_weight_m <- GORICA_weight_m[orderStudies, , drop = FALSE]
   }
@@ -1616,24 +1761,29 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
   } else {
     # If suggested study_names:
     # Check if length correct
+    # [CHANGE 2026-10 | Rebecca] study_names length checked
     if (length(study_names) != S) {
       stop("\nrestriktor ERROR: The argument 'study_names' should consist of ", S, " names, \n",
            "namely one for each study. It now consists of ", length(study_names), ".",
            call. = FALSE)
     }
+    # [/CHANGE 2026-10]
     #
     # Re-order
     study_names <- study_names[orderStudies]
   }
   rownames(IC) <- rownames(GORICA_weight_m) <- study_names
+  # [CHANGE 2026-10 | audit] study weights re-ordered with the studies
   # Re-order the study weights as well, such that they match the (re-ordered) 
   # studies and results do not depend on the input order.
   study_weights <- study_weights[orderStudies]
   study_weights_S <- study_weights_S[orderStudies]
+  # [/CHANGE 2026-10]
   sequence <- paste0("Study nr.s 1-", 1:S, "   ")
   sequence[1] <- "Study nr.  1   "
   rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(sequence, "Final")
   #
+  # [CHANGE 2026-10 | audit] cumulative IC values via .evSyn_cum_weighted (study weights, zero weights) and IC weights via log-sum-exp (replaces the per-type loops)
   # Cumulative IC values (possibly weighted using study weights):
   # - added:   sum of IC values (also when "equal", because then it is overruled to be "added"),
   # - average: average of IC values.
@@ -1644,30 +1794,37 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
     CumulativeGorica[1:S, ] <- CumulativeGorica[1:S, , drop = FALSE] / pmax(.evSyn_n_pos(study_weights_S), 1)
   }
   CumulativeGoricaWeights[1:S, ] <- .evSyn_IC_weights_rows(CumulativeGorica[1:S, , drop = FALSE], priorICweights)
+  # [/CHANGE 2026-10]
   
   CumulativeGorica[(S+1), ] <- CumulativeGorica[S, ]
   CumulativeGoricaWeights[(S+1), ] <- CumulativeGoricaWeights[S, ]
   
   Final.GORICA.weights <- CumulativeGoricaWeights[S, ]
   Final.ratio.GORICA.weights <- Final.GORICA.weights %*% t(1/Final.GORICA.weights)
+  # [CHANGE 2026-10 | Rebecca] diagonal of the ratio matrix set to 1 (zero weights)
   diag(Final.ratio.GORICA.weights) <- 1 # If a weight is zero, then you get Inf and NaN; this way you get Inf and 1.
   
   rownames(Final.ratio.GORICA.weights) <- hnames
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hnames)
   
+  # [CHANGE 2026-10 | Rebecca] priorICweights applied to the study-specific IC weights
   # Use priorICweights (i.e., a priori likeliness for each hypotheses)
+  # [CHANGE 2026-10 | audit] sweep() over the columns (no recycling across the wrong dimension); B17 open question noted
   # Note: sweep() multiplies each column (hypothesis) with its own prior weight.
   # TO DO: open question (Leonard/Rebecca): should study-specific weights include priorICweights in all routes? Currently est/gorica route does not, ICvalues/ICweights routes do.
   GORICA_weight_m <- sweep(GORICA_weight_m, 2, priorICweights, "*")
   GORICA_weight_m <- GORICA_weight_m / rowSums(GORICA_weight_m)
+  # [/CHANGE 2026-10]
   
   out <- list(type             = type,
     type_ev           = type_ev,
     #hypotheses       = hypo_names,
+    # [CHANGE 2026-10 | Rebecca] priorICweights in the output
     priorICweights = priorICweights,
     n_studies         = S,
     order_studies     = orderStudies,
     study_names       = study_names,
+    # [CHANGE 2026-10 | Rebecca] study_weights in the output
     study_weights = study_weights,
     #study_sample_nobs = study_sample_nobs,
     GORICA_m          = IC, 
@@ -1693,20 +1850,24 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
 # GORIC(A) evidence synthesis based on AIC or ORIC or GORIC or GORICA weights or 
 # (Bayesian) posterior model probabilities
 evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"), 
+                            # [CHANGE 2026-10 | Rebecca] priorICweights argument (replaces priorWeights)
                             hypo_names = c(), priorICweights = NULL, 
                             type = c("goric", "goricc", "gorica", "goricac"),
                             order_studies = c("input_order", "ascending", "descending"),
+                            # [CHANGE 2026-10 | Rebecca] study_weights argument
                             study_names = c(),
                             study_weights = NULL) {
   
   if (missing(type_ev)) 
     type_ev <- "added"
+  # [CHANGE 2026-10 | audit] B23: 'equal' falls back to 'added' with a message
   type_ev <- .evSyn_type_ev_IC(type_ev, "IC weights")
   
   if (missing(type)) 
     type <- "gorica"
   type <- match.arg(type)
   
+  # [CHANGE 2026-10 | audit] B15 priorWeights compat; A7/B14 input checks; B13 names aligned across studies
   # Backwards compatibility: 'priorWeights' is renamed to 'priorICweights'.
   priorICweights <- .evSyn_priorWeights_compat(priorICweights, list(...))
 
@@ -1719,8 +1880,10 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
   object <- .evSyn_check_input_names(object, hypo_names)
   # the hypothesis names of the input (if any; accepted for a named 'priorICweights')
   input_names <- .evSyn_input_hypo_names(object)
+  # [/CHANGE 2026-10]
   
   Weights <- object
+  # [CHANGE 2026-10 | Rebecca] input checked to be IC weights (between 0 and 1, summing to 1)
   # Check whether weights between 0 and 1 (and sum to 1)
   min0 <- all(abs(vapply(object, min, numeric(1)) >= 0)) 
   max1 <- all(abs(vapply(object, max, numeric(1)) <= 1)) 
@@ -1728,27 +1891,34 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
   if (min0 + max1 + sum1 != 3) {
     text <- paste0("\nrestriktor ERROR: Please check the input. The function expects IC weights, but:. \n",
                    "ICweights are values between 0 and 1 and (per study) sum to 1. \n")
+    # [CHANGE 2026-10 | audit] fix: negated condition (message was given when the check passed)
     if (!min0) {
       text <- paste0(text,
                      "Not all values are >= 0. \n")
     }
+    # [CHANGE 2026-10 | audit] fix: negated condition
     if (!max1) {
       text <- paste0(text,
                      "Not all values are <= 1. \n")
     }
+    # [CHANGE 2026-10 | audit] fix: negated condition (was max1)
     if (!sum1) {
       text <- paste0(text,
                      "For one or more studies, the values do not sum to 1. \n")
     }
     stop(text, call. = FALSE)
   }
+    # [/CHANGE 2026-10]
   
   S <- length(Weights)
+  # [CHANGE 2026-10 | audit] unname before rbind
   Weights <- do.call(rbind, lapply(Weights, unname)) 
   NrHypos <- ncol(Weights)
+  # [CHANGE 2026-10 | Rebecca] NrHypos_incl (prior-weight code replaced by the central check below)
   NrHypos_incl <- NrHypos
   
   if (is.null(hypo_names)) {
+    # [CHANGE 2026-10 | Rebecca] hypo_names validated (length and type)
     hypo_names <- paste0("H", 1:NrHypos) 
   } else {
     if (length(hypo_names) != NrHypos) {
@@ -1761,20 +1931,26 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
            "Now, (some of) the elements are not characters.",
            call. = FALSE)
     }
+    # [/CHANGE 2026-10]
   }
   
+  # [CHANGE 2026-10 | audit] B2/B21: priorICweights validated and matched by name (replaces the match.arg block for order_studies)
   # Check the prior IC weights (one for each hypothesis; matched by name when
   # named; rescaled to sum to 1)
   priorICweights <- .evSyn_check_priorICweights(priorICweights, NrHypos_incl, hypo_names,
                                                 input_names = input_names)
+  # [/CHANGE 2026-10]
   
   
+  # [CHANGE 2026-10 | audit] B21: study_weights validated
   # Check the study weights (zero weights are allowed; see .evSyn_cum_weighted)
   study_weights <- .evSyn_check_study_weights(study_weights, S, study_names)
   study_weights_S <- study_weights$study_weights_S # Now, they sum up to S
   study_weights <- study_weights$study_weights
+  # [/CHANGE 2026-10]
   
   
+  # [CHANGE 2026-10 | audit] B22: order_studies validated via .evSyn_order_studies
   # Check the order of the studies (character string, permutation of 1:S, or
   # permutation of the study names)
   order_studies <- .evSyn_order_studies(order_studies, S, study_names)
@@ -1783,6 +1959,7 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
   # Check if order of studies should be changed.
   if (is.numeric(order_studies)) {
     # User-specified numeric order vector
+    # [CHANGE 2026-10 | audit] order_studies already validated; drop = FALSE (single study)
     orderStudies <- order_studies
     Weights <- Weights[orderStudies, , drop = FALSE]
   } else if (order_studies %in% c("ascending", "descending")) {
@@ -1790,6 +1967,7 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
     # Determine what the overall preferred hypothesis is.
     if (type_ev == "average") { 
       # average-evidence approach
+      # [CHANGE 2026-10 | Rebecca] notes on combining IC weights with study and prior weights (average)
       # IC: Average of IC values, possibly weighted using study weights.
       # ICweights: based on IC values, but take into account possible prior hypothesis weights.
       # Notably, not possible to calculate IC values. Thus:
@@ -1797,6 +1975,8 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
       #            Btw Here the study weights sum to 1, because of taking the average IC values.
       #OverallGoric <- # cannot be determined now.
       #OverallPrefHypo <- which(OverallGoric == max(OverallGoric))
+      # [/CHANGE 2026-10]
+      # [CHANGE 2026-10 | audit] preferred hypothesis on the log scale with rescaled study weights and prior weights (same as the final results; fixes undefined OverallGoric)
       # Computed on the log scale (-2 * log of the weighted product of IC weights
       # is a difference in IC values), including possible prior hypothesis weights.
       # The study weights are rescaled in the same way as for the final results
@@ -1804,16 +1984,21 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
       # hypothesis equals the finally preferred one.
       OverallICdiff <- -2 * .evSyn_log_prod_weights(log(Weights), .evSyn_rescale_study_weights(study_weights_S, type_ev))
       OverallPrefHypo <- .evSyn_pref_hypo(OverallICdiff, priorICweights)
+      # [/CHANGE 2026-10]
     } else {
       # type_ev == "added" (or when "equal", because then it is overruled to be "added")
+      # [CHANGE 2026-10 | Rebecca] notes on combining IC weights with study and prior weights (added)
       # IC: Sum of IC values, possibly weighted using study weights.
       # ICweights: based on IC values, but take into account possible prior hypothesis weights.
       # Notably, not possible to calculate IC values. Thus:
       # ICweights: product of IC weights, where the study and prior weights are now 'powers'.
       #            Btw Here the study weights sum to S, because of taking the average IC values.
+      # [/CHANGE 2026-10]
       type_ev = "added"
+      # [CHANGE 2026-10 | Rebecca] commented-out code
       #OverallGoric <- # cannot be determined now.
       #OverallPrefHypo <- which(OverallGoric == max(OverallGoric))
+      # [CHANGE 2026-10 | audit] preferred hypothesis on the log scale with rescaled study weights and prior weights (fixes undefined OverallGoric)
       # Computed on the log scale (-2 * log of the weighted product of IC weights
       # is a difference in IC values), including possible prior hypothesis weights.
       # The study weights are rescaled in the same way as for the final results
@@ -1821,14 +2006,17 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
       # hypothesis equals the finally preferred one.
       OverallICdiff <- -2 * .evSyn_log_prod_weights(log(Weights), .evSyn_rescale_study_weights(study_weights_S, type_ev))
       OverallPrefHypo <- .evSyn_pref_hypo(OverallICdiff, priorICweights)
+      # [/CHANGE 2026-10]
     }
     if (order_studies == "descending") {
       decreasing = TRUE
     } else {
       decreasing = FALSE
     }
+    # [CHANGE 2026-10 | audit] fix: order on Weights (GORICA_weight_m does not exist in this route)
     orderStudies <- order(Weights[, OverallPrefHypo[1]], decreasing = decreasing)
     #
+    # [CHANGE 2026-10 | audit] drop = FALSE (single study)
     Weights <- Weights[orderStudies, , drop = FALSE]
   }
   #
@@ -1842,20 +2030,24 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
   } else {
     # If suggested study_names:
     # Check if length correct
+    # [CHANGE 2026-10 | Rebecca] study_names length checked
     if (length(study_names) != S) {
       stop("\nrestriktor ERROR: The argument 'study_names' should consist of ", S, " names, \n",
            "namely one for each study. It now consists of ", length(study_names), ".",
            call. = FALSE)
     }
+    # [/CHANGE 2026-10]
     #
     # Re-order
     study_names <- study_names[orderStudies]
   }
   rownames(Weights) <- study_names
+  # [CHANGE 2026-10 | audit] study weights re-ordered with the studies
   # Re-order the study weights as well, such that they match the (re-ordered) 
   # studies and results do not depend on the input order.
   study_weights <- study_weights[orderStudies]
   study_weights_S <- study_weights_S[orderStudies]
+  # [/CHANGE 2026-10]
   
   CumulativeWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos))
   colnames(CumulativeWeights) <- hypo_names
@@ -1863,6 +2055,7 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
   sequence[1] <- "Study nr.  1   "
   rownames(CumulativeWeights) <- c(sequence, "Final")
   #
+  # [CHANGE 2026-10 | audit] cumulative IC weights on the log scale: product of IC weights with rescaled study weights as powers, times priorICweights (replaces the sequential product; no underflow, zero study weights)
   # Cumulative IC weights: product of the IC weights of studies 1 to s, where 
   # the (rescaled) study weights are used as powers, times the prior hypothesis 
   # weights; and then normalized. This is computed on the log scale (-2 * log 
@@ -1881,32 +2074,40 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
     stW <- .evSyn_rescale_study_weights(study_weights_S[1:s], type_ev)
     CumICdiff <- -2 * .evSyn_log_prod_weights(logWeights[1:s, , drop = FALSE], stW)
     CumulativeWeights[s, ] <- ic_weights_log(CumICdiff, priorICweights)
+  # [/CHANGE 2026-10]
   }
   CumulativeWeights[(S+1), ] <- CumulativeWeights[S, ]
   
   Final.weights <- CumulativeWeights[S, ]
   Final.ratio.GORICA.weights <- Final.weights %*% t(1/Final.weights)
+  # [CHANGE 2026-10 | Rebecca] diagonal of the ratio matrix set to 1 (zero weights)
   diag(Final.ratio.GORICA.weights) <- 1 # If a weight is zero, then you get Inf and NaN; this way you get Inf and 1.
   
   rownames(Final.ratio.GORICA.weights) <- hypo_names
   colnames(Final.ratio.GORICA.weights) <- paste0("vs. ", hypo_names)
   
+  # [CHANGE 2026-10 | Rebecca] priorICweights applied to the study-specific IC weights
   # Use priorICweights (i.e., a priori likeliness for each hypotheses)
+  # [CHANGE 2026-10 | audit] sweep() over the columns (no recycling across the wrong dimension); B17 open question noted
   # Note: sweep() multiplies each column (hypothesis) with its own prior weight.
   # TO DO: open question (Leonard/Rebecca): should study-specific weights include priorICweights in all routes? Currently est/gorica route does not, ICvalues/ICweights routes do.
   Weights <- sweep(Weights, 2, priorICweights, "*")
   Weights <- Weights / rowSums(Weights)
+  # [/CHANGE 2026-10]
   
   out <- list(type             = type,
     type_ev           = type_ev,
     #hypotheses       = hypo_names,
+    # [CHANGE 2026-10 | Rebecca] priorICweights in the output
     priorICweights = priorICweights,
     n_studies         = S,
     order_studies     = orderStudies,
     study_names       = study_names,
+    # [CHANGE 2026-10 | Rebecca] study_weights in the output
     study_weights = study_weights, #rep(1/S, S),
     #study_sample_nobs = study_sample_nobs,
     GORICA_weight_m            = Weights,
+    # [CHANGE 2026-10 | audit] logW_m (log IC weights as input) stored for leave1studyout()
     # log of the IC weights as input (per study; without prior IC weights and
     # study weights): -2 * logW_m are differences in IC values (up to a
     # study-specific constant), which is the information needed to re-do the
@@ -1914,6 +2115,7 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
     # of information (underflow) that recovering it from the normalised
     # (prior-weighted) weights would give.
     logW_m                     = logWeights,
+    # [/CHANGE 2026-10]
     Cumulative_GORICA_weights  = CumulativeWeights,
     Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
   
@@ -1927,20 +2129,24 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
 # GORIC(A) evidence synthesis based on the ratio of AIC or ORIC or GORIC or GORICA 
 # weights or (Bayesian) posterior model probabilities
 evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"), 
+                           # [CHANGE 2026-10 | Rebecca] priorICweights argument (replaces priorWeights)
                            hypo_names = c(), priorICweights = NULL, 
                            type = c("goric", "goricc", "gorica", "goricac"),
                            order_studies = c("input_order", "ascending", "descending"),
+                           # [CHANGE 2026-10 | Rebecca] study_weights argument
                            study_names = c(),
                            study_weights = NULL) {
   
   if (missing(type_ev)) 
     type_ev <- "added"
+  # [CHANGE 2026-10 | audit] B23: 'equal' falls back to 'added' with a message
   type_ev <- .evSyn_type_ev_IC(type_ev, "ratios of IC weights")
   
   if (missing(type)) 
     type <- "gorica"
   type <- match.arg(type)
   
+  # [CHANGE 2026-10 | audit] B15 priorWeights compat; A7/B14 input checks; B13 names aligned; Href: common reference hypothesis searched, otherwise ratios rescaled to a common Href (message)
   # Backwards compatibility: 'priorWeights' is renamed to 'priorICweights'.
   priorICweights <- .evSyn_priorWeights_compat(priorICweights, list(...))
 
@@ -1982,13 +2188,18 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
   }
   Href <- unname(Href)
   
+  # [/CHANGE 2026-10]
+  # [CHANGE 2026-10 | Rebecca] Weights are ratios of IC weights
   Weights <- object # Now, ratio of weights 
   S <- length(Weights)
+  # [CHANGE 2026-10 | audit] unname before rbind
   Weights <- do.call(rbind, lapply(Weights, unname))
   NrHypos <- ncol(Weights)
+  # [CHANGE 2026-10 | Rebecca] NrHypos_incl (prior-weight code replaced by the central check below)
   NrHypos_incl <- NrHypos
   
   if (is.null(hypo_names)) {
+    # [CHANGE 2026-10 | Rebecca] hypo_names validated (length and type)
     hypo_names <- paste0("H", 1:NrHypos) 
   } else {
     if (length(hypo_names) != NrHypos) {
@@ -2001,16 +2212,21 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
            "Now, (some of) the elements are not characters.",
            call. = FALSE)
     }
+    # [/CHANGE 2026-10]
   }
   
+  # [CHANGE 2026-10 | audit] name of the reference hypothesis (used in the output headers)
   # Name of the reference hypothesis (used in output headers)
   names(Href) <- hypo_names[Href]
   
   
+  # [CHANGE 2026-10 | audit] B2/B21: priorICweights validated and matched by name
   # Check the prior IC weights (one for each hypothesis; matched by name when
   # named; rescaled to sum to 1)
   priorICweights <- .evSyn_check_priorICweights(priorICweights, NrHypos_incl, hypo_names,
                                                 input_names = input_names)
+  # [/CHANGE 2026-10]
+  # [CHANGE 2026-10 | Rebecca] commented-out code: priorICweights as ratios
   # # If using ratios:
   # # Note that priorICweights is now also a ratio of hypotheses weights.
   # NrHypos_incl <- NrHypos
@@ -2032,12 +2248,16 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
   #        "where all should use the same reference hypothesis (leading to a ratio of 1).",
   #        call. = FALSE)
   # }
+  # [/CHANGE 2026-10]
   
+  # [CHANGE 2026-10 | audit] B21: study_weights validated
   # Check the study weights (zero weights are allowed; see .evSyn_cum_weighted)
   study_weights <- .evSyn_check_study_weights(study_weights, S, study_names)
   study_weights_S <- study_weights$study_weights_S # Now, they sum up to S
   study_weights <- study_weights$study_weights
+  # [/CHANGE 2026-10]
   
+  # [CHANGE 2026-10 | audit] B22: order_studies validated via .evSyn_order_studies
   # Check the order of the studies (character string, permutation of 1:S, or
   # permutation of the study names)
   order_studies <- .evSyn_order_studies(order_studies, S, study_names)
@@ -2046,33 +2266,40 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
   # Check if order of studies should be changed.
   if (is.numeric(order_studies)) {
     # User-specified numeric order vector
+    # [CHANGE 2026-10 | audit] order_studies already validated; drop = FALSE (single study)
     orderStudies <- order_studies
     Weights <- Weights[orderStudies, , drop = FALSE]
   } else if (order_studies %in% c("ascending", "descending")) {
     # Order needs to be changed based on the overall preferred hypothesis.
     # Determine what the overall preferred hypothesis is.
+    # [CHANGE 2026-10 | audit] preferred hypothesis from the study-weighted cumulative IC differences (log scale), as in the final results
     # That is, the hypothesis with the highest final (prior-weighted) IC weight,
     # computed on the log scale (-2 * log of the weighted product of the ratios
     # is a difference in IC values).
     # The same computation as for the final cumulative IC differences below,
     # such that the preferred hypothesis equals the finally preferred one.
     OverallICdiff <- .evSyn_cum_weighted(-2 * log(Weights), study_weights_S)[S, ]
+    # [/CHANGE 2026-10]
     if (type_ev == "average") { 
       # average-evidence approach
+      # [CHANGE 2026-10 | audit] average over the positively weighted studies
       OverallICdiff <- OverallICdiff / sum(study_weights_S > 0)
     } else {
       # type_ev == "added" (or when "equal", because then it is overruled to be "added")
       type_ev = "added"
     }
+    # [CHANGE 2026-10 | audit] preferred hypothesis = highest prior-weighted IC weight (fixes undefined OverallGoric)
     OverallPrefHypo <- .evSyn_pref_hypo(OverallICdiff, priorICweights)
     if (order_studies == "descending") {
       decreasing = TRUE
     } else {
       decreasing = FALSE
     }
+    # [CHANGE 2026-10 | audit] fix: order on the normalised ratios (GORICA_weight_m does not exist in this route)
     # Order based on the study-specific IC weights (i.e., normalized ratios)
     orderStudies <- order((Weights / rowSums(Weights))[, OverallPrefHypo[1]], decreasing = decreasing)
     #
+    # [CHANGE 2026-10 | audit] drop = FALSE (single study)
     Weights <- Weights[orderStudies, , drop = FALSE]
   }
   #
@@ -2086,27 +2313,33 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
   } else {
     # If suggested study_names:
     # Check if length correct
+    # [CHANGE 2026-10 | Rebecca] study_names length checked
     if (length(study_names) != S) {
       stop("\nrestriktor ERROR: The argument 'study_names' should consist of ", S, " names, \n",
            "namely one for each study. It now consists of ", length(study_names), ".",
            call. = FALSE)
     }
+    # [/CHANGE 2026-10]
     #
     # Re-order
     study_names <- study_names[orderStudies]
   }
   rownames(Weights) <- study_names
+  # [CHANGE 2026-10 | audit] study weights re-ordered with the studies
   # Re-order the study weights as well, such that they match the (re-ordered) 
   # studies and results do not depend on the input order.
   study_weights <- study_weights[orderStudies]
   study_weights_S <- study_weights_S[orderStudies]
+  # [/CHANGE 2026-10]
   
   
   sequence <- paste0("Study nr.s 1-", 1:S, "   ")
   sequence[1] <- "Study nr.  1   "
   #
+  # [CHANGE 2026-10 | Rebecca] ICratios output matrices: study-specific weights, cumulative ratios and cumulative IC differences
   studyspecWeights <- matrix(NA, nrow = (S), ncol = (NrHypos))
   colnames(studyspecWeights) <- hypo_names
+  # [CHANGE 2026-10 | audit] rownames = study_names
   rownames(studyspecWeights) <- study_names
   #
   CumulativeRatios <- matrix(NA, nrow = (S+1), ncol = (NrHypos))
@@ -2119,6 +2352,8 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
   colnames(CumulativeRatioWeights) <- hypo_names
   rownames(CumulativeRatioWeights) <- c(sequence, "Final")
   #
+  # [/CHANGE 2026-10]
+  # [CHANGE 2026-10 | audit] IC differences from the ratios; study-specific and cumulative IC weights via log-sum-exp with priorICweights; study-weighted cumulative IC differences; cumulative ratios vs Href (replaces the sequential product)
   # The difference in IC values (vs reference hypothesis) can be determined 
   # based on the ratios; the study-specific IC weights take into account 
   # possible prior hypothesis weights.
@@ -2137,14 +2372,18 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
   CumulativeWeights[1:S, ] <- .evSyn_IC_weights_rows(CumulativeICdiff[1:S, , drop = FALSE], priorICweights)
   # Ratio GORIC(A) weights (vs reference hypothesis)
   CumulativeRatioWeights[1:S, ] <- CumulativeWeights[1:S, , drop = FALSE] / CumulativeWeights[1:S, Href]
+  # [/CHANGE 2026-10]
   
+  # [CHANGE 2026-10 | Rebecca] final row of the cumulative IC differences
   # add final row
   CumulativeICdiff[(S+1), ] <- CumulativeICdiff[S, ] 
   CumulativeWeights[(S+1), ] <- CumulativeWeights[S, ]
+  # [CHANGE 2026-10 | Rebecca] final row of the cumulative ratios
   #
   CumulativeRatioWeights[(S+1), ] <- CumulativeRatioWeights[S, ]
   
   Final.weights <- CumulativeWeights[S, ]
+  # [CHANGE 2026-10 | Rebecca] ratios all vs all; diagonal set to 1 (zero weights)
   # The Final.weights are the ratios of weights vs the reference hypothesis
   Final.ratio.GORICA.weights <- Final.weights %*% t(1/Final.weights) 
   diag(Final.ratio.GORICA.weights) <- 1 # If a weight is zero, then you get Inf and NaN; this way you get Inf and 1.
@@ -2154,12 +2393,14 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
   
   out <- list(type             = type,
     type_ev           = type_ev,
+    # [CHANGE 2026-10 | Rebecca] priorICweights and Href in the output
     ##hypotheses       = hypo_names,
     priorICweights = priorICweights,
     Href = Href, 
     n_studies         = S,
     order_studies     = orderStudies,
     study_names       = study_names,
+    # [CHANGE 2026-10 | Rebecca] ICratios output elements (study_weights, ICdiff_m, GwRatio_m, cumulative ratios/differences)
     study_weights = study_weights, #rep(1/S, S),
     ##study_sample_nobs = study_sample_nobs,
     #GORICA_m          = IC_diff, # diff in IC values versus reference hypo
@@ -2171,6 +2412,7 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
     Cumulative_ICdiff = CumulativeICdiff, # cum diff in IC values versus reference hypo
     Cumulative_GORICA_weights  = CumulativeWeights, # This is cum GORICA weights (so, not cum ratios!)
     Final_ratio_GORICA_weights = Final.ratio.GORICA.weights) # These are the ratios, and all versus all (as usual)
+    # [/CHANGE 2026-10]
   
   class(out) <- c("evSyn_ICratios", "evSyn")
   
@@ -2182,8 +2424,10 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
 # -------------------------------------------------------------------------
 # list with goric objects
 evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"), 
+                         # [CHANGE 2026-10 | Rebecca] priorICweights argument
                          hypo_names = c(), priorICweights = NULL,
                          order_studies = c("input_order", "ascending", "descending"),
+                         # [CHANGE 2026-10 | Rebecca] study_weights argument
                          study_names = c(),
                          study_weights = NULL) {
   
@@ -2191,13 +2435,16 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
     type_ev <- "added"
   type_ev <- match.arg(type_ev)
 
+  # [CHANGE 2026-10 | audit] B15: priorWeights compat (removed from dots passed to evSyn_LL())
   # Backwards compatibility: 'priorWeights' is renamed to 'priorICweights'.
   # The deprecated argument is removed from the arguments passed on to evSyn_LL().
   dots <- list(...)
   priorICweights <- .evSyn_priorWeights_compat(priorICweights, dots)
   dots$priorWeights <- NULL
+  # [/CHANGE 2026-10]
 
   # Check if all objects are of type "con_goric"
+  # [CHANGE 2026-10 | audit] empty or non-list input refused
   if (!is.list(object) || length(object) == 0 ||
       !all(vapply(object, function(x) inherits(x, "con_goric"), logical(1)))) {
     stop("\nrestriktor ERROR: the object must be a list with fitted objects from the goric() function", 
@@ -2210,6 +2457,7 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
          paste(sQuote(unique(object_types)), collapse = ", "), ".",
          call. = FALSE)
   }
+  # [CHANGE 2026-10 | audit] goric objects must share comparison and penalty_factor (penalty_factor via '...' must match); A6: hypotheses aligned by name via .evSyn_align_goric_hypos
   # Check if all objects use the same comparison (unconstrained, complement, none)
   object_comparison <- vapply(object, function(x) {
     if (is.null(x$comparison)) NA_character_ else as.character(x$comparison)
@@ -2249,9 +2497,11 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
   # text), such that the studies are aligned to the hypothesis set of study 1:
   # the log-likelihood and penalty values are NOT taken by position.
   object <- .evSyn_align_goric_hypos(object)
+  # [/CHANGE 2026-10]
   
   # TO DO als small sample, dan ook sample_nobs nodig of kan het zonder?
   
+  # [CHANGE 2026-10 | audit] hypothesis names taken from study 1; B13: permuted hypo_names warned; B21: named priorICweights matched (alias: goric names)
   # Hypothesis names (incl. the possible failsafe hypothesis) from study 1
   model_names <- as.character(object[[1]]$result$model)
   if (is.null(hypo_names)) {
@@ -2273,6 +2523,7 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
                                                 what = "hypotheses (i.e., the column names of the output)",
                                                 alias = model_names)
   }
+  # [/CHANGE 2026-10]
   
   # Create a list for the evSyn_LL.list function
   conList <- list(
@@ -2281,14 +2532,17 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
     PT = lapply(object, function(x) x$result$penalty),
     type_ev = type_ev,
     hypo_names = hypo_names,
+    # [CHANGE 2026-10 | Rebecca] priorICweights passed to evSyn_LL()
     priorICweights = priorICweights,
     order_studies = order_studies,
     study_names = study_names,
+    # [CHANGE 2026-10 | audit] study_weights and penalty_factor passed to evSyn_LL()
     study_weights = study_weights,
     penalty_factor = penalty_factor
   )
   
   # Call the evSyn_LL.list function and return the result
+  # [CHANGE 2026-10 | audit] dots without the deprecated priorWeights
   result <- do.call(evSyn_LL, append(conList, dots))
   # Add the type from the goric objects (evSyn_LL does not carry type)
   result$type <- object[[1]]$type

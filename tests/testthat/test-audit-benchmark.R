@@ -612,3 +612,44 @@ test_that("W5-N-01: benchmark() geeft een duidelijke fout bij hypothesen als con
   expect_error(benchmark(g, iter = 5, seed = 1), "specified as text")
   expect_error(benchmark(g, model_type = "means", iter = 5, seed = 1), "specified as text")
 })
+
+# -----------------------------------------------------------------------------
+# FX6-B: de foutkans (error_prob_pref_hypo) gebruikt de penalty_factor van het object
+# -----------------------------------------------------------------------------
+
+test_that("FX6-B: error_prob_pref_hypo gebruikt de penalty_factor van het goric-object", {
+  est <- c(x = 1, y = 2, z = 3)
+  hyp <- list(H1 = "x < y < z", H2 = "x > y > z")
+  # asymptotische route, penalty_factor = 6: gelijk aan het complement-gewicht
+  # van de voorkeurshypothese met dezelfde penalty_factor (onafhankelijk berekend)
+  g6 <- goric(est, VCOV = diag(3), hypotheses = hyp, type = "gorica", penalty_factor = 6)
+  b6 <- quiet(benchmark(g6, iter = 5, seed = 1))
+  gc6 <- goric(est, VCOV = diag(3), hypotheses = hyp[1], type = "gorica",
+               penalty_factor = 6, comparison = "complement")
+  expect_equal(b6$error_prob_pref_hypo, gc6$result$gorica.weights[2], tolerance = 1e-8)
+  expect_equal(b6$error_prob_pref_hypo, 0.06008665, tolerance = 1e-6)
+  # standaard penalty_factor: ongewijzigd (zelfde waarde als voorheen)
+  g2 <- goric(est, VCOV = diag(3), hypotheses = hyp, type = "gorica")
+  b2 <- quiet(benchmark(g2, iter = 5, seed = 1))
+  gc2 <- goric(est, VCOV = diag(3), hypotheses = hyp[1], type = "gorica", comparison = "complement")
+  expect_equal(b2$error_prob_pref_hypo, gc2$result$gorica.weights[2], tolerance = 1e-8)
+  expect_equal(b2$error_prob_pref_hypo, 0.2528757, tolerance = 1e-6)
+  expect_false(isTRUE(all.equal(b6$error_prob_pref_hypo, b2$error_prob_pref_hypo)))
+  # route met groepsgemiddelden (lm-fit; benchmark herberekent met gorica)
+  hyp_m <- list(H1 = h1_bm, H2 = "group1 > group2 > group3")
+  gm4 <- goric(fit_bm, hypotheses = hyp_m, penalty_factor = 4)
+  bm4 <- quiet(benchmark(gm4, iter = 5, seed = 1))
+  gmc4 <- goric(fit_bm, hypotheses = hyp_m[1], type = "gorica", penalty_factor = 4,
+                comparison = "complement")
+  expect_equal(bm4$error_prob_pref_hypo, gmc4$result$gorica.weights[2], tolerance = 1e-8)
+  gm2 <- goric(fit_bm, hypotheses = hyp_m)
+  bm2 <- quiet(benchmark(gm2, iter = 5, seed = 1))
+  gmc2 <- goric(fit_bm, hypotheses = hyp_m[1], type = "gorica", comparison = "complement")
+  expect_equal(bm2$error_prob_pref_hypo, gmc2$result$gorica.weights[2], tolerance = 1e-8)
+  # object met comparison = 'complement': 1 - gewicht van de voorkeurshypothese
+  gcm <- goric(est, VCOV = diag(3), hypotheses = hyp[1], type = "gorica",
+               penalty_factor = 6, comparison = "complement")
+  bcm <- quiet(benchmark(gcm, iter = 5, seed = 1))
+  expect_equal(bcm$error_prob_pref_hypo, 1 - gcm$result$gorica.weights[1], tolerance = 1e-8)
+  expect_equal(bcm$error_prob_pref_hypo, gc6$result$gorica.weights[2], tolerance = 1e-8)
+})

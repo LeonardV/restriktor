@@ -486,3 +486,82 @@ test_that("W4-N-03: prior-naam 'complement' (kleine letters) wordt geaccepteerd 
   expect_error(suppressMessages(evSyn(list(e1, e2), VCOV = list(V, V), hypotheses = list(Hp = "x > y"),
                                       priorICweights = c(compl = .7, Hp = .3))), "names of 'priorICweights'")
 })
+
+# FX6-A: leave1studyout() herberekent op de logschaal (geen underflow) ------------
+test_that("leave1studyout: icweights met extreme gewichten en priors geeft dezelfde uitkomst als evSyn op S-1 studies", {
+  W <- list(c(1e-250, 1), c(1, 1e-200), c(1, 1e-200), c(.5, .5))
+  p <- c(1e-100, 1)
+  e <- suppressMessages(evSyn(W, input_type = "icweights", priorICweights = p))
+  # de oorspronkelijke log-gewichten (zonder priors) zitten in het object
+  expect_equal(unname(e$logW_m), log(do.call(rbind, W)))
+  l <- leave1studyout(e)
+  # handberekening (logschaal, in eenheden log(10)): weglaten van studie 4
+  #   H1: log(1e-250) + log(1e-100) = -350 log(10); H2: 2 log(1e-200) = -400 log(10)
+  #   -> H1 wint met een factor 1e50; IC-verschillen (-2 log W): (500, 800) log(10)
+  expect_equal(unname(l$OverallGorica[4, ]), c(500, 800) * log(10))
+  expect_equal(unname(l$OverallPrefHypo[, 1]), c("H1", "H2", "H2", "H1"))
+  expect_equal(unname(l$OverallGoricaWeights[4, 1]), 1)
+  expect_equal(log10(l$OverallGoricaWeights[4, 2] / l$OverallGoricaWeights[4, 1]), -50)
+  # weglaten van studie 1: H1: -100 log(10) + log(.5); H2: -400 log(10) + log(.5)
+  expect_equal(log10(l$OverallGoricaWeights[1, 2] / l$OverallGoricaWeights[1, 1]), -300)
+  # weglaten van studie 2 of 3: H1: -350 log(10) + log(.5); H2: -200 log(10) + log(.5)
+  expect_equal(log10(l$OverallGoricaWeights[2, 1] / l$OverallGoricaWeights[2, 2]), -150)
+  expect_equal(log10(l$OverallGoricaWeights[3, 1] / l$OverallGoricaWeights[3, 2]), -150)
+  # gelijk aan evSyn() op de overige studies (vergeleken op de logschaal)
+  for (s in 1:4) {
+    d <- suppressMessages(evSyn(W[-s], input_type = "icweights", priorICweights = p))
+    expect_equal(log(unname(l$OverallGoricaWeights[s, ])), log(final_w(d)))
+  }
+  # een (oud) object zonder de log-gewichten wordt niet uit de genormaliseerde
+  # (prior-gewogen) gewichten gereconstrueerd, maar geeft een duidelijke fout
+  e_old <- e
+  e_old$logW_m <- NULL
+  expect_error(leave1studyout(e_old), "re-create")
+})
+
+test_that("leave1studyout: alle IC-routes en type_ev komen overeen met evSyn op S-1 studies (ook met study_weights)", {
+  W  <- list(c(1e-250, 1, 1e-10), c(1, 1e-200, 1e-5), c(.2, .3, .5), c(1e-20, 1, 1e-20))
+  W  <- lapply(W, function(w) w / sum(w))
+  IC <- lapply(W, function(w) -2 * log(w))
+  R  <- lapply(W, function(w) w / w[2])
+  sw <- c(.5, 1.5, 1, 1)
+  pr <- c(1e-30, .5, .5)
+  inputs <- list(icweights = W, icvalues = IC, icratios = R)
+  for (nm in names(inputs)) {
+    for (te in c("added", "average")) {
+      e <- suppressMessages(evSyn(inputs[[nm]], input_type = nm, type_ev = te,
+                                  priorICweights = pr, study_weights = sw))
+      l <- leave1studyout(e)
+      for (s in 1:4) {
+        d <- suppressMessages(evSyn(inputs[[nm]][-s], input_type = nm, type_ev = te,
+                                    priorICweights = pr, study_weights = sw[-s]))
+        expect_equal(log(unname(l$OverallGoricaWeights[s, ])), log(final_w(d)),
+                     info = paste(nm, te, s))
+        expect_equal(unname(l$OverallPrefHypo[s, 1]),
+                     colnames(d$Cumulative_GORICA_weights)[which.max(final_w(d))],
+                     info = paste(nm, te, s))
+      }
+    }
+  }
+  # icweights, icvalues en icratios geven onderling dezelfde leave-one-out gewichten
+  lw <- leave1studyout(suppressMessages(evSyn(W, input_type = "icweights", priorICweights = pr, study_weights = sw)))
+  lv <- leave1studyout(suppressMessages(evSyn(IC, input_type = "icvalues", priorICweights = pr, study_weights = sw)))
+  lr <- leave1studyout(suppressMessages(evSyn(R, input_type = "icratios", priorICweights = pr, study_weights = sw)))
+  expect_equal(log(lw$OverallGoricaWeights), log(lv$OverallGoricaWeights))
+  expect_equal(log(lw$OverallGoricaWeights), log(lr$OverallGoricaWeights))
+  # est-route, alle type_ev
+  est <- list(c(x = 2, y = 1), c(x = 1.5, y = 1.2), c(x = .5, y = .7))
+  V <- list(diag(2) * .1, diag(2) * .2, diag(2) * .05)
+  H <- list(H1 = "x > y")
+  for (te in c("added", "equal", "average")) {
+    e <- suppressMessages(evSyn(est, VCOV = V, hypotheses = H, type_ev = te,
+                                priorICweights = c(.2, .8), study_weights = c(1, 2, 1)))
+    l <- leave1studyout(e)
+    for (s in 1:3) {
+      d <- suppressMessages(evSyn(est[-s], VCOV = V[-s], hypotheses = H, type_ev = te,
+                                  priorICweights = c(.2, .8), study_weights = c(1, 2, 1)[-s]))
+      expect_equal(unname(l$OverallGoricaWeights[s, ]), final_w(d), info = paste(te, s))
+      expect_equal(unname(l$OverallGorica[s, ]), unname(d$Cumulative_GORICA["Final", ]), info = paste(te, s))
+    }
+  }
+})

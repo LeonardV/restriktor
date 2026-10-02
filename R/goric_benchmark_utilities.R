@@ -1159,14 +1159,24 @@ calculate_error_probability <- function(object, hypos, pref_hypo, est,
       error_prob <- "The unconstrained (i.e., the failsafe) containing all possible orderings is preferred."
     } else {
       H_pref <- hypos[[pref_hypo]]
+      # The preferred hypothesis is compared with its complement using the
+      # same criterion (gorica/gorica(c)), sample size and penalty_factor as
+      # the (refitted) benchmarked object (otherwise, the error probability
+      # would be based on the default penalty_factor). The priorICweights of
+      # the object are not used: they refer to the original set of
+      # hypotheses and do not apply to this two-model comparison (preferred
+      # hypothesis vs its complement), which uses equal prior weights.
+      penalty_factor <- object$penalty_factor
+      if (is.null(penalty_factor)) {
+        penalty_factor <- 2
+      }
       if (is.null(object$model.org)) {
-        # same criterion (gorica/goricac) and sample size as the (refitted)
-        # benchmarked object
         results_goric_pref <- goric(est, VCOV = VCOV,
                                     hypotheses = list(H_pref = H_pref),
                                     comparison = "complement",
                                     type = object$type,
                                     sample_nobs = object$sample_nobs,
+                                    penalty_factor = penalty_factor,
                                     control = control,
                                     ...)
       } else {
@@ -1175,6 +1185,7 @@ calculate_error_probability <- function(object, hypos, pref_hypo, est,
                                     hypotheses = list(H_pref = H_pref),
                                     comparison = "complement",
                                     type = object$type,
+                                    penalty_factor = penalty_factor,
                                     control = control, 
                                     ...)
       }

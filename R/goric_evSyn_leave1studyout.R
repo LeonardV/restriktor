@@ -52,28 +52,26 @@ leave1studyout.evSyn <- function(object, ...) {
   priorICweights <- object$priorICweights
 
   # Input consisting of IC weights or ratios of IC weights: no IC values, but
-  # the differences in IC values (vs a reference hypothesis) can be used,
-  # since these lead to the same IC weights.
+  # the differences in IC values (vs a reference hypothesis, or up to a 
+  # study-specific constant) can be used, since these lead to the same IC 
+  # weights. These are taken from the evSyn object as stored on the log scale
+  # (without prior IC weights and study weights), and never recovered from 
+  # the normalised (prior-weighted) study-specific IC weights: those are 
+  # rounded (underflow to 0 or 1), which would give wrong results.
   IC_is_diff <- FALSE
   if (is.null(IC_m) && !is.null(object$ICdiff_m)) {
     # ratios of IC weights: differences in IC values vs the reference hypothesis
     IC_m <- object$ICdiff_m
     IC_is_diff <- TRUE
-  } else if (is.null(IC_m) && !is.null(ICw_m)) {
-    # IC weights: the study-specific weights in the evSyn object include the
-    # prior IC weights, which are removed here (and included again below).
-    W <- ICw_m[, , drop = FALSE]
-    if (!is.null(priorICweights) && length(priorICweights) == ncol(W)) {
-      W <- sweep(W, 2, ifelse(priorICweights > 0, priorICweights, NA), "/")
-      W[, priorICweights == 0] <- 0
-    }
-    W <- W / rowSums(W)
-    IC_m <- -2 * log(W)
+  } else if (is.null(IC_m) && !is.null(object$logW_m)) {
+    # IC weights: -2 * log of the IC weights as input (see evSyn_ICweights)
+    IC_m <- -2 * object$logW_m
     IC_is_diff <- TRUE
   }
 
   if (is.null(IC_m)) {
-    stop("restriktor ERROR: IC matrix is missing from the evSyn object.")
+    stop("restriktor ERROR: IC matrix (or log IC weights) is missing from the ",
+         "evSyn object; re-create the object with evSyn().")
   }
   if (is.null(ICw_m)) {
     ICw_m <- IC_m

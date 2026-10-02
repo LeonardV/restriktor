@@ -1907,6 +1907,13 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
     study_weights = study_weights, #rep(1/S, S),
     #study_sample_nobs = study_sample_nobs,
     GORICA_weight_m            = Weights,
+    # log of the IC weights as input (per study; without prior IC weights and
+    # study weights): -2 * logW_m are differences in IC values (up to a
+    # study-specific constant), which is the information needed to re-do the
+    # synthesis on the log scale (e.g., in leave1studyout()) without the loss
+    # of information (underflow) that recovering it from the normalised
+    # (prior-weighted) weights would give.
+    logW_m                     = logWeights,
     Cumulative_GORICA_weights  = CumulativeWeights,
     Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
   

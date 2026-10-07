@@ -518,30 +518,46 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     # (one per name in object$objectNames) -- not one for an implicit
     # safeguard row. If the preferred row is such a safeguard (the
     # unconstrained model for an ordinary comparison = "unconstrained"
+    # object, the complement for an ordinary comparison = "complement"
     # object, or the "Complement of <add_Hc>" row for a
     # goric(..., add_Hc = ...) object), pref_hypo points past the end of
     # object$constraints/$rhs, and there is in any case no single
     # constraint matrix for a safeguard row to project the observed
     # estimates onto (theta_restricted() needs one hypothesis's own (R,
     # rhs) to do that). Fall back to a well-defined reference hypothesis
-    # instead -- the add_Hc reference hypothesis itself when there is one
-    # (the natural anchor, since the complement is defined relative to
-    # it), otherwise the first specified hypothesis -- and let the user
-    # know, since this changes what the 'No-effect' population represents.
+    # instead, and let the user know (via 'message' below), since this
+    # changes what the 'No-effect' population represents:
+    #  - add_Hc: the add_Hc reference hypothesis itself -- the natural
+    #    anchor, since the complement is defined relative to it.
+    #  - comparison = "complement": the (only) specified hypothesis --
+    #    goric.R forces comparison from "complement" to "unconstrained"
+    #    whenever more than one hypothesis is specified, so there is
+    #    exactly one to fall back to here.
+    #  - comparison = "unconstrained": the best-supported (highest
+    #    GORIC(A) weight) *among the specified* hypotheses -- not simply
+    #    "the first" one, since the unconstrained safeguard isn't defined
+    #    relative to any single specified hypothesis in particular.
     if (pref_hypo > length(object$constraints)) {
       if (!is.null(object$add_Hc)) {
         fallback_name <- object$add_Hc
         safeguard_desc <- paste0("the complement of ", sQuote(fallback_name))
-      } else {
+        fallback_reason <- "the add_Hc reference hypothesis"
+      } else if (identical(object$comparison, "complement")) {
         fallback_name <- object$objectNames[1]
+        safeguard_desc <- "the complement (of that one hypothesis)"
+        fallback_reason <- "the only specified hypothesis"
+      } else {
+        best_among_specified <- which.max(object$result[seq_along(object$constraints), 7])
+        fallback_name <- object$objectNames[best_among_specified]
         safeguard_desc <- "the unconstrained model"
+        fallback_reason <- "the best-supported (highest GORIC(A) weight) of the specified hypotheses"
       }
       message(paste0(
         "\nrestriktor Message: The preferred hypothesis/model is the safeguard (",
         safeguard_desc, "), which has no constraint matrix of its own to derive ",
         "a 'No-effect' population from. Falling back to ", sQuote(fallback_name),
-        " for this purpose instead. Supply your own 'pop_est' argument if you ",
-        "want a different 'No-effect' population estimate."
+        " (", fallback_reason, ") for this purpose instead. Supply your own ",
+        "'pop_est' argument if you want a different 'No-effect' population estimate."
       ))
       pref_hypo <- which(object$objectNames == fallback_name)
     }

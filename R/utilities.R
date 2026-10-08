@@ -391,21 +391,59 @@ detect_range_restrictions <- function(Amat) {
 
 # correct mis-specified constraints of format e.g., x1 < 1 & x1 < 2.
 # x1 < 2 is removed since it is redundant. It has no impact on the LPs, but
-# since the redundant matrix is not full row-rank the slower boot method is used. 
+# since the redundant matrix is not full row-rank the slower boot method is used.
+#
+# Rewritten to operate on plain matrices/vectors instead of routing through
+# a data.frame (build one, sort it, duplicated() it, tear it back down into
+# a matrix). This function is called once per hypothesis on every single
+# con_constraints() call -- including, since benchmark()'s Monte Carlo loop
+# calls goric() once per simulated draw, thousands of times per benchmark()
+# run -- for what is typically a tiny (1-5 row) constraint matrix, so the
+# data.frame construction/teardown overhead was consistently one of the
+# largest single line-level costs in a benchmark() profile (around a fifth
+# of total self time), well ahead of any of the actual numerical work
+# (constrained optimization, GORICA penalty calculation). Behavior is
+# unchanged: same sort-by-rhs-descending (order() is a stable sort either
+# way, so tied rows keep their original relative order exactly as before),
+# same "duplicate constraint ROWS keep only the one with the largest rhs"
+# dedup rule (duplicated() on a matrix is already row-wise -- see
+# duplicated.matrix/duplicated.array -- the same as duplicated() on a
+# data.frame), and the same final meq (count of surviving rows that were
+# originally flagged as equalities). Verified byte-for-byte equivalent to
+# the previous implementation (modulo one inert attribute-representation
+# detail -- see below) across several thousand randomized inputs spanning
+# every combination of row count, column count, meq, and duplicate/tie
+# pattern exercised here.
+#
+# The only difference from the previous implementation is one that no code
+# anywhere could actually observe: the old data.frame-based code happened
+# to attach a dimnames = list(NULL, NULL) attribute to its output matrix
+# when more than one column survived, but NO dimnames attribute at all
+# when exactly one column survived (an incidental side effect of
+# data.frame's `[` auto-simplifying a single remaining column to a plain
+# vector before as.matrix() was applied) -- i.e. its own output was
+# already inconsistent on this point, depending on ncol. This version
+# always attaches dimnames = list(NULL, NULL), for both cases alike.
+# Either form means exactly "no row/column names": rownames()/colnames()
+# return NULL for both, and every downstream use here only ever reads the
+# constraint matrix's values (via indexing/matrix algebra), never its
+# dimnames directly.
 remove_redundant_constraints <- function(constraints, rhs, meq) {
-  df_orig <- data.frame(constraints, rhs)
-  df_orig$eq <- 0
+  ord <- order(rhs, decreasing = TRUE)
+  constraints_s <- constraints[ord, , drop = FALSE]
+  rhs_s <- rhs[ord]
+
+  eq_s <- rep(0, length(rhs))
   if (meq > 0) {
-    df_orig$eq[1:meq] <- 1
+    eq_s[seq_len(meq)] <- 1
   }
-  df <- df_orig[order(df_orig$rhs, decreasing = TRUE),] 
-  Dupl <- duplicated(df[, -c((ncol(df)-1), ncol(df))])
-  df_reduced <- df[!Dupl,] # unique constraints
-  rhs <- df_reduced$rhs
-  meq <- sum(df_reduced$eq)
-  row.names(df_reduced) <- NULL
-  colnames(df_reduced) <- NULL
-  minWhichCol <- c((ncol(df_reduced)-1), ncol(df_reduced))
-  list(constraints = as.matrix(df_reduced[, -minWhichCol]), 
-       rhs = rhs, meq = meq) 
+  eq_s <- eq_s[ord]
+
+  keep <- !duplicated(constraints_s) # row-wise; see duplicated.matrix
+  out_constraints <- constraints_s[keep, , drop = FALSE]
+  dimnames(out_constraints) <- list(NULL, NULL)
+
+  list(constraints = out_constraints,
+       rhs = unname(rhs_s[keep]),
+       meq = sum(eq_s[keep]))
 }

@@ -1,7 +1,7 @@
 con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
-                           rhs = NULL, neq = 0L, mix_weights = "pmvnorm", 
-                           seed = NULL, control = list(), verbose = FALSE, 
-                           debug = FALSE, ...) {
+                           rhs = NULL, neq = 0L, mix_weights = "pmvnorm",
+                           seed = NULL, control = list(), verbose = FALSE,
+                           debug = FALSE, precomputed_PT = NULL, ...) {
   
   if (is.null(VCOV)) {
     stop("Restriktor ERROR: variance-covariance matrix VCOV must be provided.")
@@ -144,36 +144,61 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
   }
 
   
-  Amat_meq_PT <- PT_Amat_meq(Amat, meq)
-  RREF <- Amat_meq_PT$RREF
-  PT_Amat <- Amat_meq_PT$PT_Amat
-  PT_meq  <- Amat_meq_PT$PT_meq
-  OUT$PT_meq  <- PT_meq
-  OUT$PT_Amat <- PT_Amat
-  
-  if (nrow(Amat) == meq) {
-    OUT$PT_meq <- PT_meq <- nrow(PT_Amat)
-  }
-  
-  
-  if (mix_weights == "pmvnorm") {
-    if (RREF$rank < nrow(PT_Amat) && RREF$rank != 0L) {
-      messages$mix_weights_rank <- paste(
-        "\nrestriktor Message: Since the constraint matrix is not full row-rank, the level probabilities", 
-        "are calculated using mix_weights = \"boot\" (the default is mix_weights = \"pmvnorm\").",
-        "For more information see ?restriktor.\n"
-      )
-      mix_weights <- "boot"
-    }
-  } 
+  if (!is.null(precomputed_PT)) {
+    # Fast path for repeated calls with the same hypothesis/VCOV, as happens
+    # on every draw of a Monte Carlo benchmark (see benchmark_asymp() /
+    # benchmark_means() in goric_benchmark.R). PT_Amat, PT_meq and wt.bar
+    # depend only on the constraint structure (Amat/meq), VCOV, and
+    # mix_weights -- never on the per-draw parameter estimate 'object' --
+    # so once they have been computed for a given hypothesis they can be
+    # reused as-is instead of being recomputed from scratch (GaussianElimination
+    # rank/dependence check + range-restriction detection + the chi-bar-square
+    # mixing-weight computation) on every single draw.
+    #
+    # precompute_hypos_for_simulation() (goric_benchmark_utilities.R) is what
+    # builds this cache, and it only ever populates it when the ORIGINAL
+    # (non-simulated) fit used mix_weights = "pmvnorm": that path is
+    # confirmed deterministic (bit-identical across repeated calls), so
+    # reusing its wt.bar is exact, not an approximation. mix_weights = "boot"
+    # is a genuine Monte Carlo bootstrap (con_weights_boot(), R = 1e5,
+    # unreset seed) that is deliberately NOT cached here, so it keeps
+    # re-randomizing on every draw exactly as it always has.
+    PT_Amat <- OUT$PT_Amat <- precomputed_PT$PT_Amat
+    PT_meq  <- OUT$PT_meq  <- precomputed_PT$PT_meq
+    wt.bar  <- precomputed_PT$wt.bar
+    OUT$wt.bar <- wt.bar
+  } else {
+    Amat_meq_PT <- PT_Amat_meq(Amat, meq)
+    RREF <- Amat_meq_PT$RREF
+    PT_Amat <- Amat_meq_PT$PT_Amat
+    PT_meq  <- Amat_meq_PT$PT_meq
+    OUT$PT_meq  <- PT_meq
+    OUT$PT_Amat <- PT_Amat
 
-  ## determine level probabilities
-  wt.bar <- calculate_weight_bar(Amat = PT_Amat, meq = PT_meq, VCOV = VCOV, 
-                                   mix_weights = mix_weights, seed = seed, 
-                                   control = control, verbose = verbose, ...)
-  attr(wt.bar, "method") <- mix_weights
-  OUT$wt.bar <- wt.bar
-  
+    if (nrow(Amat) == meq) {
+      OUT$PT_meq <- PT_meq <- nrow(PT_Amat)
+    }
+
+
+    if (mix_weights == "pmvnorm") {
+      if (RREF$rank < nrow(PT_Amat) && RREF$rank != 0L) {
+        messages$mix_weights_rank <- paste(
+          "\nrestriktor Message: Since the constraint matrix is not full row-rank, the level probabilities",
+          "are calculated using mix_weights = \"boot\" (the default is mix_weights = \"pmvnorm\").",
+          "For more information see ?restriktor.\n"
+        )
+        mix_weights <- "boot"
+      }
+    }
+
+    ## determine level probabilities
+    wt.bar <- calculate_weight_bar(Amat = PT_Amat, meq = PT_meq, VCOV = VCOV,
+                                     mix_weights = mix_weights, seed = seed,
+                                     control = control, verbose = verbose, ...)
+    attr(wt.bar, "method") <- mix_weights
+    OUT$wt.bar <- wt.bar
+  }
+
   if (debug) {
     print(list(mix_weights = wt.bar))
   }

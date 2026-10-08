@@ -447,22 +447,31 @@ goric.default <- function(object, ..., hypotheses = NULL,
     }
     
     # tolower names Amat and rhs
-    for (i in seq_along(constraints)) { 
+    #
+    # 'wt_bar_cache' is an optional 4th field (not required, and not set by
+    # a normal user-supplied hypothesis list): it is how
+    # precompute_hypos_for_simulation() (goric_benchmark_utilities.R) passes
+    # a previously-computed PT_Amat/PT_meq/wt.bar through to con_gorica_est()
+    # below, so a benchmark() simulation draw can skip recomputing them from
+    # scratch. See the comment on the 'precomputed_PT' argument of
+    # con_gorica_est() (gorica_est.R) for why this is safe.
+    for (i in seq_along(constraints)) {
       names(constraints[[i]]) <- tolower(names(constraints[[i]]))
-      if (any(!names(constraints[[i]]) %in% c("constraints", "rhs", "neq"))) {
+      if (any(!names(constraints[[i]]) %in% c("constraints", "rhs", "neq", "wt_bar_cache"))) {
         stop("\nrestriktor ERROR: The list objects must be named 'constraints', 'rhs' and 'neq', e.g.:
               h1 <- list(constraints = c(0,1,0))
               h2 <- list(constraints = rbind(c(0,1,0), c(0,0,1)), rhs = c(0.5, 1), neq = 0)
-              hypotheses = list(H1 = h1, H2 = h2).", 
+              hypotheses = list(H1 = h1, H2 = h2).",
              call. = FALSE)
       }
     }
     conList <- lapply(constraints, function(constraint) {
-      CALL.restr <- append(list(object      = object,
-                                VCOV        = as.matrix(VCOV),
-                                constraints = constraint$constraints,
-                                rhs         = constraint$rhs,
-                                neq         = constraint$neq), ldots)
+      CALL.restr <- append(list(object         = object,
+                                VCOV           = as.matrix(VCOV),
+                                constraints    = constraint$constraints,
+                                rhs            = constraint$rhs,
+                                neq            = constraint$neq,
+                                precomputed_PT = constraint$wt_bar_cache), ldots)
       do.call("con_gorica_est", CALL.restr)
     })
     names(conList) <- names(constraints)
@@ -771,7 +780,24 @@ goric.default <- function(object, ..., hypotheses = NULL,
   
   if (comparison == "complement") {
     # does def function exists
-    if (!is.null(body(conList[[1]]$CON$def.function))) {
+    #
+    # Guarded with is.function() first (not just !is.null(body(...))):
+    # conList[[1]]$CON is NULL whenever that hypothesis's constraints were
+    # supplied already-parsed (a numeric Amat/rhs/neq list, as
+    # goric_benchmark_utilities.R's per-draw calls now do -- see
+    # precompute_hypos_for_simulation() -- rather than constraint-syntax
+    # text; see con_constraints.R's is.character(constraints) branch), so
+    # $def.function is also NULL there -- and body(NULL) warns ("argument
+    # is not a function") rather than just returning NULL, which would
+    # otherwise incorrectly surface as a warning here. Already-parsed input
+    # is matrix/text-syntax, not restriktor's ':=' defined-parameter
+    # syntax, so it can never actually have a defined parameter to detect;
+    # is.function(...) short-circuits to FALSE first in that case, with the
+    # same end result (no defined parameter) as the pre-existing text-path
+    # logic below, and no change in behavior for actual text input (where
+    # def.function is always a function, never NULL).
+    if (is.function(conList[[1]]$CON$def.function) &&
+        !is.null(body(conList[[1]]$CON$def.function))) {
       betasc_def <- conList[[1]]$CON$def.function(betasc)
       one_vec <- betasc
       one_vec <- one_vec[!duplicated(names(one_vec))]
@@ -794,7 +820,13 @@ goric.default <- function(object, ..., hypotheses = NULL,
     rownames(coefs) <- c(objectnames, "complement")
   } else if (comparison == "unconstrained") {
     b_unrestr <- conList[[1]]$b.unrestr
-    exists_def <- sapply(conList, FUN = function(x) !is.null(body(x$CON$def.function)))
+    # See the matching comment above (comparison == "complement" branch)
+    # for why is.function(...) must be checked before body(...): x$CON is
+    # NULL for an already-parsed (non-character) hypothesis, and body(NULL)
+    # warns instead of just returning NULL.
+    exists_def <- sapply(conList, FUN = function(x) {
+      is.function(x$CON$def.function) && !is.null(body(x$CON$def.function))
+    })
     one_vec <- b_unrestr
     one_vec <- one_vec[!duplicated(names(one_vec))]
 

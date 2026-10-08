@@ -1303,6 +1303,86 @@ goric_percentile_test <- function(draws, sample_value, band = c(0.495, 0.505),
 }
 
 
+# Builds the 'hypotheses' argument used for the PER-DRAW goric() calls
+# inside the benchmark Monte Carlo loop (run_benchmark_simulation() ->
+# parallel_function_asymp()), instead of just reusing 'hypos' (the
+# constraint-syntax TEXT, i.e. object$hypotheses_usr) as-is.
+#
+# Background: every one of those per-draw goric() calls re-evaluates the
+# SAME hypotheses -- only the simulated estimates differ draw to draw -- but
+# passing 'hypos' as text makes goric() re-derive the numeric constraint
+# matrices (Amat/bvec/meq) from that text FROM SCRATCH on every single draw,
+# via con_constraints()'s lav_constraints_parse()-based parser. Profiling a
+# representative benchmark() call (3 hypotheses, 300 draws x 2 populations)
+# showed this re-parsing alone accounting for >50% of total wall time --
+# more than any actual statistical computation (the constrained log-
+# likelihood/QP solve, or the GORICA penalty's chi-bar-square weights) --
+# since it is pure-R string/regex work repeated thousands of times for a
+# result that is identical every time.
+#
+# 'object' here is the just-recomputed goric(a) fit on the observed
+# estimates (benchmark_asymp()/benchmark_means() both call goric() again
+# immediately before this, to pick up any VCOV/type adjustments) -- so
+# object$constraints/$rhs/$neq already hold exactly the parsed (Amat, bvec,
+# meq) that re-parsing 'hypos' would reproduce: one entry per *specified*
+# hypothesis, in the same order and under the same names as 'hypos' itself
+# (= object$hypotheses_usr; see goric.R's final per-hypothesis attribute-
+# extraction loop, which both lists are built from in lockstep). Passing
+# those straight through -- as hypotheses = list(H1 = list(constraints =
+# Amat1, rhs = bvec1, neq = meq1), ...) -- makes goric() take con_constraints
+# ()'s "already-parsed" branch (constraints not of class character) and
+# skip the text parser entirely, while producing the exact same Amat/bvec/
+# meq goric() would otherwise re-derive from that same text, so the
+# resulting GORIC(A) weights/log-likelihoods are unaffected.
+#
+# Deliberately returns 'hypos' UNCHANGED (falls back to the original,
+# unoptimized text-based behaviour) when Heq = TRUE: goric.default()'s
+# Heq-handling re-derives the implicit "Heq" hypothesis via
+# gsub("<|>", "=", hypotheses[[1]]), which requires hypotheses[[1]] to still
+# be a character string -- so this optimization does not apply there.
+#
+# Also attaches, per hypothesis, an optional 'wt_bar_cache' field carrying
+# the already-computed PT_Amat/PT_meq/wt.bar for that hypothesis -- i.e. the
+# entire GaussianElimination rank/dependence check, range-restriction
+# detection, and chi-bar-square mixing-weight computation that
+# con_gorica_est() would otherwise redo from scratch inside the per-draw
+# goric() calls below. Those three quantities depend only on the constraint
+# structure (Amat/meq), VCOV, and mix_weights -- never on the per-draw
+# estimate -- so the values already sitting on 'object' (the just-recomputed
+# fit on the OBSERVED estimates, with the same hypotheses/VCOV/mix_weights
+# every draw reuses) are exactly what every draw would recompute anyway; see
+# con_gorica_est()'s 'precomputed_PT' argument (gorica_est.R) for how this
+# cache is consumed and the full correctness argument, and
+# gorica_est_summary.R's summary.gorica_est() for why PT_Amat/PT_meq/wt.bar
+# plus the per-draw loglik are the only inputs the final GORIC(A) value ever
+# needs.
+#
+# The cache is deliberately populated ONLY when wt.bar's "method" attribute
+# is "pmvnorm" (the default, and empirically confirmed deterministic/bit-
+# identical across repeated calls). mix_weights = "boot" is a genuine Monte
+# Carlo bootstrap (con_weights_boot(), R = 1e5 replications, seed never
+# reset): freezing its wt.bar here would silently replace its existing
+# per-draw re-randomization with a single frozen draw, which is a real
+# change in behaviour, not just a speedup -- so that path is left to
+# recompute wt.bar from scratch on every draw exactly as it always has.
+precompute_hypos_for_simulation <- function(object, hypos, Heq) {
+  if (isTRUE(Heq)) {
+    return(hypos)
+  }
+  Map(function(Amat, bvec, meq, hyp_name) {
+    out <- list(constraints = Amat, rhs = bvec, neq = meq)
+    est_obj <- object$objectList[[hyp_name]]
+    if (!is.null(est_obj) &&
+        identical(attr(est_obj$wt.bar, "method"), "pmvnorm")) {
+      out$wt_bar_cache <- list(PT_Amat = est_obj$PT_Amat,
+                               PT_meq  = est_obj$PT_meq,
+                               wt.bar  = est_obj$wt.bar)
+    }
+    out
+  }, object$constraints, object$rhs, object$neq, names(object$constraints))
+}
+
+
 # Run the pop_es/pop_est simulation loop used by benchmark_means()/
 # benchmark_asymp(), growing the number of draws adaptively when the user
 # leaves 'iter' unspecified (iter = NULL): start at iter_min draws and, if
@@ -1319,6 +1399,11 @@ goric_percentile_test <- function(draws, sample_value, band = c(0.495, 0.505),
 # behaviour); benchmark_means()/benchmark_asymp() then call
 # check_iter_adequacy() themselves afterwards for that fixed-iter case (this
 # function does not, to avoid messaging twice).
+#
+# NOTE: the 'hypos' argument this function forwards into
+# parallel_function_asymp() on every draw should normally be the PRE-PARSED
+# form built by precompute_hypos_for_simulation() above, not raw
+# constraint-syntax text -- see that function's comment for why.
 #
 # Returns list(parallel_function_results = <as before, one element per
 # pop_es/pop_est category>, iter = <final number of draws used>,

@@ -217,8 +217,14 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
       check_add_Hc = FALSE,
       ...
     )
-  
-  
+
+  # Pre-parsed form of 'hypos', reused for every draw inside the Monte Carlo
+  # loop below instead of re-parsing the same constraint-syntax text from
+  # scratch on each one -- see precompute_hypos_for_simulation()'s comment
+  # (goric_benchmark_utilities.R) for why this is safe and how much it
+  # saves. 'hypos' itself (text) is left untouched and still used for the
+  # one-off calculate_error_probability() call below.
+  hypos_for_sim <- precompute_hypos_for_simulation(object, hypos, Heq)
 
   ## Compute observed Cohens f
   cohens_f_observed <- compute_cohens_f(group_means, N, VCOV)
@@ -268,7 +274,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   sim <- run_benchmark_simulation(
     nr_es = nr_es, rnames = rnames, name_prefix = "pop_es = ",
     center_matrix = means_pop_all, colnames_vec = names(group_means),
-    VCOV = VCOV, hypos = hypos, pref_hypo = pref_hypo,
+    VCOV = VCOV, hypos = hypos_for_sim, pref_hypo = pref_hypo,
     comparison = object$comparison, control = control,
     mix_weights = mix_weights, penalty_factor = penalty_factor, Heq = Heq,
     object = object, iter = user_iter,
@@ -497,7 +503,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     # TO determine pop_est, we need the constraint matrix for the preferred hypothesis.
     # In that constraint matrix / hypothesis, the inequalities will be set to equalities.
     # First determine the preferred hypothesis:
-    pref_hypo <- which.max(object$result[, 7])
+    NE_hypo <- which.max(object$result[, 7])
 
     # object$constraints/$rhs only have one entry per *specified* hypothesis
     # (one per name in object$objectNames) -- not one for an implicit
@@ -508,7 +514,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     #  - comparison = "unconstrained": the best-supported (highest
     #    GORIC(A) weight) *among the specified* hypotheses,
     #    rendering a message since this may not be interesting for the user.
-    if (pref_hypo > length(object$constraints)) {
+    if (NE_hypo > length(object$constraints)) {
       if (!is.null(object$add_Hc)) {
         fallback_name <- object$add_Hc
         #safeguard_desc <- paste0("the complement of ", sQuote(fallback_name))
@@ -536,10 +542,10 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
       #   " (", fallback_reason, ") for this purpose instead. Supply your own ",
       #   "'pop_est' argument if you want a different 'No-effect' population estimate."
       # ))
-      hypoNE <- which(object$objectNames == fallback_name)
+      NE_hypo <- which(object$objectNames == fallback_name)
     }
 
-    NE <- theta_restricted(theta = est_sample, V = VCOV, R = object$constraints[[hypoNE]], rhs = object$rhs[[hypoNE]])
+    NE <- theta_restricted(theta = est_sample, V = VCOV, R = object$constraints[[NE_hypo]], rhs = object$rhs[[NE_hypo]])
     # Note that VCOV is the unbiased cov.mx estimate.
     pop_est <- matrix(rbind(NE, est_sample), nrow = 2)
     row.names(pop_est) <- c("No-effect", "Observed")
@@ -617,7 +623,13 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     ...
   )
 
-
+  # Pre-parsed form of 'hypos', reused for every draw inside the Monte Carlo
+  # loop below instead of re-parsing the same constraint-syntax text from
+  # scratch on each one -- see precompute_hypos_for_simulation()'s comment
+  # (goric_benchmark_utilities.R) for why this is safe and how much it
+  # saves. 'hypos' itself (text) is left untouched and still used for the
+  # one-off calculate_error_probability() call below.
+  hypos_for_sim <- precompute_hypos_for_simulation(object, hypos, Heq)
 
   if (is.null(quant)) {
     quant <- c(.05, .35, .50, .65, .95)
@@ -634,7 +646,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   sim <- run_benchmark_simulation(
     nr_es = nr_es, rnames = rnames, name_prefix = "pop_est = ",
     center_matrix = pop_est, colnames_vec = names(est_sample),
-    VCOV = VCOV, hypos = hypos, pref_hypo = pref_hypo,
+    VCOV = VCOV, hypos = hypos_for_sim, pref_hypo = pref_hypo,
     comparison = comparison, control = control,
     mix_weights = mix_weights, penalty_factor = penalty_factor, Heq = Heq,
     object = object, iter = user_iter,

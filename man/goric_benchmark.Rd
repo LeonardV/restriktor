@@ -40,7 +40,8 @@
   \item{pop_es}{A scalar or a vector of population Cohen's f (effect-size) values. 
   By default, it benchmarks ES = 0 (no-effect) and the observed Cohen's f.}
   \item{pop_est}{A 1 x k vector or an n x k matrix of population 
-  estimates to benchmark. By default, all estimates are set to zero (no-effect) 
+  estimates to benchmark. By default, estimates are determined based on replacing 
+  the inequalities by equalities for the best hypothesis (no-effect) 
   and the observed estimates from the sample are used.}
   \item{ratio_pop_means}{A 1 x k vector denoting the relative difference
   between the k group means. Note that a ratio of \code{c(3, 2, 1)} gives the 

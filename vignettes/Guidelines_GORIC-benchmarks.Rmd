@@ -49,9 +49,9 @@ library(restriktor) # for goric function
 # iters = 30 
 ```
 
-<!-- TO DO iets zeggen over aantal iteraties! en nb 100 voor gemak in tutorial -->
+<!-- TO DO iets zeggen over aantal iteraties! en nb 100 voor gemak in tutorial -- nu iets ingebouwd met stoppen!!! -->
 
-<!-- TO DO nu is No effect nog onder de null, maar dat wordt ws onder de boundary, dus alle inequalties worden op equalities gezet. NB Gberuik formule Johnsten en DiNardo daarvoor. -->
+<!-- TO DO nu is No effect nog onder de null, maar dat wordt ws onder de boundary (is het al, maar alleen bij asymp, bij menas is het ES = 0!), dus alle inequalties worden op equalities gezet. NB Gberuik formule Johnsten en DiNardo daarvoor. -->
 
 
 # Introduction

@@ -47,8 +47,7 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
     hypo_rate_threshold <- if (!is.null(x$hypo_rate_threshold)) x$hypo_rate_threshold else 1
   }
   # Same idea, but for the rlw-based 'rate_rlw' column (own
-  # threshold, independent of hypo_rate_threshold -- see
-  # benchmark_means()'s 'threshold_rlw' for the full rationale).
+  # threshold, independent of hypo_rate_threshold.
   if (is.null(threshold_rlw)) {
     threshold_rlw <- if (!is.null(x$threshold_rlw)) x$threshold_rlw else 1
   }
@@ -317,16 +316,9 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
         ncol(x$benchmarks$ratio_goric_weights[[pop_es_name]])
       ] <- overlap_header
     }
-    # TO DO nu bij No-effect ook hypothesis_rate maar die zouden we dacht ik niet meer laten zien omdat het verwarrend is wat het betekent
-    # Is nu juist weer weg, als het goed is.
-    #       daarnaast heeft anders echt beschrijving nodig, want het is steun info hypo onder NE en dan in gehele set?
-    #       Ws overleggen of dit handig is - nu ineens denk ik dat het zo gek nog niet is :-).
     
     if (any(NE_names)) {
-      # Was hardcoded as column -7 (assuming Sample + 5 default quantiles as
-      # columns 1-6, hypothesis_rate as 7); now selected by name instead,
-      # since adding the percentile column shifted hypothesis_rate to column 8
-      # and a positional index would silently drop the wrong column.
+      # selected by name
       x$benchmarks$ratio_goric_weights[NE_names][[1]] <-
         x$benchmarks$ratio_goric_weights[NE_names][[1]][
           , colnames(x$benchmarks$ratio_goric_weights[NE_names][[1]]) != "hypothesis_rate",

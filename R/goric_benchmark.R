@@ -39,28 +39,13 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
                             iter_adequacy_band = c(0.495, 0.505),
                             iter_stability_tol = 1,
                             iter_min = 500, iter_step = 100, iter_max = 2000,
-                            # Threshold q used for the 'hypothesis_rate' output field (rate
-                            # at which each alternative hypothesis's ratio-GORIC(A)-weight
-                            # bootstrap draws exceed q, i.e. how often that alternative is
-                            # preferred over the preferred hypothesis). Stored on the
-                            # returned object as x$hypo_rate_threshold, which
-                            # print.benchmark()'s own 'hypo_rate_threshold' argument
-                            # defaults to -- so a print(x) matches what was used here,
-                            # while still allowing a different threshold to be requested at
-                            # print time (see print.benchmark()) without rerunning the
-                            # bootstrap.
+                            # Threshold q used for the 'hypothesis_rate' output field. 
+                            # Still allowing a different threshold to be requested at
+                            # print time without rerunning the bootstrap.
                             hypo_rate_threshold = 1,
-                            # Same mechanism as 'hypo_rate_threshold' above, but for the
-                            # 'rate_rlw' output field (rate at which each
-                            # alternative's ratio-log-likelihood-weight (rlw) bootstrap
-                            # draws exceed this threshold) -- kept as its own separate
-                            # argument/threshold rather than reusing hypo_rate_threshold,
-                            # since the GORIC(A)-weight and log-likelihood-weight ratios
-                            # need not be evaluated at the same cutoff. Deliberately not
-                            # named/called a "hypothesis rate": unlike rgw, rlw isn't the
-                            # quantity GORIC(A) hypothesis selection is actually based on,
-                            # so that label would be misleading here. Stored on the
-                            # returned object as x$threshold_rlw.
+                            # Same mechanism but for the 'rate_rlw' output field
+                            # Deliberately not named/called a "hypothesis rate": 
+                            # unlike rgw, rlw isn't used (directly) for hypothesis selection.
                             threshold_rlw = 1, ...) {
 
   # iter = NULL (the default): start at 500 draws and grow by 100 at a time,
@@ -516,53 +501,45 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
 
     # object$constraints/$rhs only have one entry per *specified* hypothesis
     # (one per name in object$objectNames) -- not one for an implicit
-    # safeguard row. If the preferred row is such a safeguard (the
-    # unconstrained model for an ordinary comparison = "unconstrained"
-    # object, the complement for an ordinary comparison = "complement"
-    # object, or the "Complement of <add_Hc>" row for a
-    # goric(..., add_Hc = ...) object), pref_hypo points past the end of
-    # object$constraints/$rhs, and there is in any case no single
-    # constraint matrix for a safeguard row to project the observed
-    # estimates onto (theta_restricted() needs one hypothesis's own (R,
-    # rhs) to do that). Fall back to a well-defined reference hypothesis
-    # instead, and let the user know (via 'message' below), since this
-    # changes what the 'No-effect' population represents:
-    #  - add_Hc: the add_Hc reference hypothesis itself -- the natural
-    #    anchor, since the complement is defined relative to it.
-    #  - comparison = "complement": the (only) specified hypothesis --
-    #    goric.R forces comparison from "complement" to "unconstrained"
-    #    whenever more than one hypothesis is specified, so there is
-    #    exactly one to fall back to here.
+    # safeguard row. If the preferred row is such a safeguard, use:
+    #  - add_Hc: the add_Hc reference hypothesis itself,
+    #    since the complement is defined relative to it.
+    #  - comparison = "complement": the (only) specified hypothesis.
     #  - comparison = "unconstrained": the best-supported (highest
-    #    GORIC(A) weight) *among the specified* hypotheses -- not simply
-    #    "the first" one, since the unconstrained safeguard isn't defined
-    #    relative to any single specified hypothesis in particular.
+    #    GORIC(A) weight) *among the specified* hypotheses,
+    #    rendering a message since this may not be interesting for the user.
     if (pref_hypo > length(object$constraints)) {
       if (!is.null(object$add_Hc)) {
         fallback_name <- object$add_Hc
-        safeguard_desc <- paste0("the complement of ", sQuote(fallback_name))
-        fallback_reason <- "the add_Hc reference hypothesis"
+        #safeguard_desc <- paste0("the complement of ", sQuote(fallback_name))
+        #fallback_reason <- "the add_Hc reference hypothesis"
       } else if (identical(object$comparison, "complement")) {
         fallback_name <- object$objectNames[1]
-        safeguard_desc <- "the complement (of that one hypothesis)"
-        fallback_reason <- "the only specified hypothesis"
+        #safeguard_desc <- "the complement (of that one hypothesis)"
+        #fallback_reason <- "the only specified hypothesis"
       } else {
         best_among_specified <- which.max(object$result[seq_along(object$constraints), 7])
         fallback_name <- object$objectNames[best_among_specified]
-        safeguard_desc <- "the unconstrained model"
-        fallback_reason <- "the best-supported (highest GORIC(A) weight) of the specified hypotheses"
+        #safeguard_desc <- "the unconstrained model"
+        #fallback_reason <- "the best-supported (highest GORIC(A) weight) of the specified hypotheses"
+        message(
+          "\nrestriktor Message: The preferred hypothesis is the unconstrained.",
+          "The 'No-effect' population is based on the best hypothesis of the specified ones.",
+          "Supply your own 'pop_est' argument if you want a different 'No-effect' population estimate."
+        )
       }
-      message(paste0(
-        "\nrestriktor Message: The preferred hypothesis/model is the safeguard (",
-        safeguard_desc, "), which has no constraint matrix of its own to derive ",
-        "a 'No-effect' population from. Falling back to ", sQuote(fallback_name),
-        " (", fallback_reason, ") for this purpose instead. Supply your own ",
-        "'pop_est' argument if you want a different 'No-effect' population estimate."
-      ))
-      pref_hypo <- which(object$objectNames == fallback_name)
+      # # Message for all three cases, but only for unc of interest, so done there/above
+      # message(paste0(
+      #   "\nrestriktor Message: The preferred hypothesis/model is the safeguard (",
+      #   safeguard_desc, "), which has no constraint matrix of its own to derive ",
+      #   "a 'No-effect' population from. Falling back to ", sQuote(fallback_name),
+      #   " (", fallback_reason, ") for this purpose instead. Supply your own ",
+      #   "'pop_est' argument if you want a different 'No-effect' population estimate."
+      # ))
+      hypoNE <- which(object$objectNames == fallback_name)
     }
 
-    NE <- theta_restricted(theta = est_sample, V = VCOV, R = object$constraints[[pref_hypo]], rhs = object$rhs[[pref_hypo]])
+    NE <- theta_restricted(theta = est_sample, V = VCOV, R = object$constraints[[hypoNE]], rhs = object$rhs[[hypoNE]])
     # Note that VCOV is the unbiased cov.mx estimate.
     pop_est <- matrix(rbind(NE, est_sample), nrow = 2)
     row.names(pop_est) <- c("No-effect", "Observed")

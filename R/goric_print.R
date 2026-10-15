@@ -235,8 +235,9 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   best_hypo_overlap <- best_hypo_name %in% overlap_hypo
   
   # check if the log-likelihood of models are equal, this means that the hypotheses overlap (i.e., subset)
-  if (length(overlap_hypo) > 0 & !x$Heq) {
-    message("---\nNote: Hypotheses ", paste0(sQuote(overlap_hypo), collapse = " and "), 
+  overlap_note_printed <- length(overlap_hypo) > 0 & !x$Heq
+  if (overlap_note_printed) {
+    message("---\nNote: Hypotheses ", paste0(sQuote(overlap_hypo), collapse = " and "),
             " have equal log-likelihood values. This indicates that they overlap and",
             " that the ratio of their GORIC(A) weights reached its maximum.")
   }
@@ -345,6 +346,17 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
             " use the benchmarks function to investigate whether this is the case.",
             " If so, then this indicates that there is support for their boundary.",
             " More details can be found in 'Decision tree - Interpretation.pdf'",
+            " and/or 'Guidelines output GORIC.html', available from",
+            " https://github.com/rebeccakuiper/Tutorials.")
+  } else if (!overlap_note_printed && length(df$model) > 1) {
+    # None of the loglik-related notes above fired (no exact tie, no
+    # mismatch, no close ratio) -- so, unlike those cases, a general pointer
+    # to check the loglik(.weights) values isn't redundant here and is shown
+    # instead.
+    message("---\nTip: It is advisable to compare the log-likelihood values",
+            " (loglik) and/or weights (loglik.weights) of the best hypothesis",
+            " with that of the other specified/informative hypotheses. More",
+            " details can be found in 'Decision tree - Interpretation.pdf'",
             " and/or 'Guidelines output GORIC.html', available from",
             " https://github.com/rebeccakuiper/Tutorials.")
   }

@@ -159,6 +159,20 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
   text_rgw_log <- paste0("Benchmark: Percentiles of ", orange, "Log(Ratio-of-", goric_type, "-weights)", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
   text_rlw_log <- paste0("Benchmark: Percentiles of ", orange, "Log(Ratio-of-log-likelihood-weights)", blue, " for the Preferred Hypothesis '", pref_hypo, "'")
 
+  # Sub-headers for the two blocks every output_type section below is split
+  # into (see combine_population_tables()/print_block1_table()/
+  # print_block2_table()/print_block_header() in
+  # goric_benchmark_utilities.R): block 1 is the raw "Sample" value plus the
+  # percentile-distribution columns, as ONE shared table across every
+  # population (with "Population" -- shown once per population -- and
+  # "Hypotheses comparison" as leading columns); block 2 is the
+  # percentile-rank comparisons (where the Sample value and the reference
+  # population's median fall within those distributions), the overlap with
+  # the reference population, and the hypothesis/rate column, in the same
+  # combined layout.
+  block1_header <- "Percentiles distributions"
+  block2_header <- "Percentile & overlap comparisons"
+
   cat("\n")
   #cat(strrep("=", 70), "\n")
   cat(paste0(blue, "Benchmark Results", reset), "\n")
@@ -216,6 +230,31 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
     "Overlap with Observed"
   }
 
+  # Reference population used both for the "Overlap with ..." header above
+  # and for combine_population_tables() below (its "(ref. pop.)" suffix on
+  # the printed "Population" column).
+  reference_pop_name <- x$overlap$reference
+
+  # Raw (not percentile) value of the reference population's own median, for
+  # the "Median ref. pop. (<value>)" column-header annotation in block 2 --
+  # see print_block2_table()'s own comment for exactly when this is shown.
+  # Recomputed fresh from x$combined_values (the raw bootstrap draws) rather
+  # than rerunning the bootstrap. Same reference_pop_name used for the
+  # "Overlap with ..." header above.
+  get_median_ref_raw <- function(combined_list) {
+    if (is.null(combined_list) || is.null(reference_pop_name) ||
+        !(reference_pop_name %in% names(combined_list))) {
+      return(NULL)
+    }
+    v <- combined_list[[reference_pop_name]]
+    if (is.null(v)) return(NULL)
+    if (is.null(dim(v))) {
+      median(v, na.rm = TRUE)
+    } else {
+      apply(v, 2, median, na.rm = TRUE)
+    }
+  }
+
   # 'percentiles', if supplied, overrides which percentiles are shown in
   # every section below -- the "Sample" + percentile% columns are recomputed
   # from the raw bootstrap draws stored on the object (x$combined_values), the
@@ -240,6 +279,7 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
   # Print benchmarks for Goric-weights percentiles
   if ("all" %in% output_type || "gw" %in% output_type) {
     x$benchmarks$goric_weights <- recompute_section(x$benchmarks$goric_weights, x$combined_values$gw_combined)
+    median_ref_raw_gw <- get_median_ref_raw(x$combined_values$gw_combined)
     for (pop_es in names(x$benchmarks$goric_weights)) {
       x$benchmarks$goric_weights[[pop_es]] <- cbind(
         x$benchmarks$goric_weights[[pop_es]],
@@ -253,14 +293,15 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
         ncol(x$benchmarks$goric_weights[[pop_es]])
       ] <- overlap_header
     }
+    combined_gw <- combine_population_tables(x$benchmarks$goric_weights, reference_pop_name)
     print_section(
       text_gw,
       function() {
-        for (pop_es in names(x$benchmarks$goric_weights)) {
-          print_rounded_es_value(x$benchmarks$goric_weights[[pop_es]], pop_es,
-                                 model_type, green, reset,
-                                 is_reference = identical(pop_es, x$overlap$reference))
-        }
+        cat("\n")
+        print_block_header(block1_header, blue, reset)
+        print_block1_table(combined_gw)
+        print_block_header(block2_header, blue, reset)
+        print_block2_table(combined_gw, median_ref_raw = median_ref_raw_gw)
       }, nchar(text_gw), text_color = blue, reset = reset
     )
   }
@@ -271,6 +312,7 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
   # printed here; only 'gw' (the GORIC(A) weight) had its own section.
   if ("all" %in% output_type || "lw" %in% output_type) {
     x$benchmarks$ll_weights <- recompute_section(x$benchmarks$ll_weights, x$combined_values$lw_combined)
+    median_ref_raw_lw <- get_median_ref_raw(x$combined_values$lw_combined)
     for (pop_es in names(x$benchmarks$ll_weights)) {
       x$benchmarks$ll_weights[[pop_es]] <- cbind(
         x$benchmarks$ll_weights[[pop_es]],
@@ -284,14 +326,15 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
         ncol(x$benchmarks$ll_weights[[pop_es]])
       ] <- overlap_header
     }
+    combined_lw <- combine_population_tables(x$benchmarks$ll_weights, reference_pop_name)
     print_section(
       text_lw,
       function() {
-        for (pop_es in names(x$benchmarks$ll_weights)) {
-          print_rounded_es_value(x$benchmarks$ll_weights[[pop_es]], pop_es,
-                                 model_type, green, reset,
-                                 is_reference = identical(pop_es, x$overlap$reference))
-        }
+        cat("\n")
+        print_block_header(block1_header, blue, reset)
+        print_block1_table(combined_lw)
+        print_block_header(block2_header, blue, reset)
+        print_block2_table(combined_lw, median_ref_raw = median_ref_raw_lw)
       }, nchar(text_lw), text_color = blue, reset = reset
     )
   }
@@ -299,6 +342,7 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
   # Print benchmarks for ratio Goric-weights percentiles
   if ("all" %in% output_type || "rgw" %in% output_type) {
     x$benchmarks$ratio_goric_weights <- recompute_section(x$benchmarks$ratio_goric_weights, x$combined_values$rgw_combined)
+    median_ref_raw_rgw <- get_median_ref_raw(x$combined_values$rgw_combined)
 
     # Loop over alle sets in both benchmarks_ratio_goric_weights and hypothesis_rate
     for (pop_es_name in names(x$benchmarks$ratio_goric_weights)) {
@@ -316,24 +360,25 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
         ncol(x$benchmarks$ratio_goric_weights[[pop_es_name]])
       ] <- overlap_header
     }
-    
-    if (any(NE_names)) {
-      # selected by name
-      x$benchmarks$ratio_goric_weights[NE_names][[1]] <-
-        x$benchmarks$ratio_goric_weights[NE_names][[1]][
-          , colnames(x$benchmarks$ratio_goric_weights[NE_names][[1]]) != "hypothesis_rate",
-          drop = FALSE]
-    }
-    
+
+    # Note: the "No-effect" population's hypothesis_rate column used to be
+    # dropped outright here (it has no alternative hypothesis to compare
+    # against, so the rate is meaningless there) -- it's no longer dropped:
+    # x$hypothesis_rate[NE_names] was already set to NA above, and
+    # combine_population_tables()/format_value() now render that NA as a
+    # blank cell within the shared "Hypothesis rate" column instead, so
+    # every population keeps the same column set for the combined table
+    # below.
+    combined_rgw <- combine_population_tables(x$benchmarks$ratio_goric_weights, reference_pop_name)
     print_section(
       text_rgw,
       function() {
-        for (pop_es in names(x$benchmarks$ratio_goric_weights)) {
-          print_rounded_es_value(x$benchmarks$ratio_goric_weights[[pop_es]], pop_es,
-                                 model_type, green, reset,
-                                 is_reference = identical(pop_es, x$overlap$reference),
-                                 hypo_rate_threshold = hypo_rate_threshold)
-        }
+        cat("\n")
+        print_block_header(block1_header, blue, reset)
+        print_block1_table(combined_rgw)
+        print_block_header(block2_header, blue, reset)
+        print_block2_table(combined_rgw, hypo_rate_threshold = hypo_rate_threshold,
+                           median_ref_raw = median_ref_raw_rgw)
       }, nchar(text_rgw), text_color = blue, reset = reset
     )
   }
@@ -349,6 +394,7 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
   # column here, matching rlw/ld's (not rgw's) simpler layout.
   if ("all" %in% output_type || "rgw_log" %in% output_type) {
     x$benchmarks$ratio_goric_weights_log <- recompute_section(x$benchmarks$ratio_goric_weights_log, x$combined_values$rgw_log_combined)
+    median_ref_raw_rgw_log <- get_median_ref_raw(x$combined_values$rgw_log_combined)
     for (pop_es in names(x$benchmarks$ratio_goric_weights_log)) {
       x$benchmarks$ratio_goric_weights_log[[pop_es]] <- cbind(
         x$benchmarks$ratio_goric_weights_log[[pop_es]],
@@ -363,14 +409,15 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
         ncol(x$benchmarks$ratio_goric_weights_log[[pop_es]])
       ] <- overlap_header
     }
+    combined_rgw_log <- combine_population_tables(x$benchmarks$ratio_goric_weights_log, reference_pop_name)
     print_section(
       text_rgw_log,
       function() {
-        for (pop_es in names(x$benchmarks$ratio_goric_weights_log)) {
-          print_rounded_es_value(x$benchmarks$ratio_goric_weights_log[[pop_es]], pop_es,
-                                 model_type, green, reset,
-                                 is_reference = identical(pop_es, x$overlap$reference))
-        }
+        cat("\n")
+        print_block_header(block1_header, blue, reset)
+        print_block1_table(combined_rgw_log)
+        print_block_header(block2_header, blue, reset)
+        print_block2_table(combined_rgw_log, median_ref_raw = median_ref_raw_rgw_log)
       }, nchar(text_rgw_log), text_color = blue, reset = reset
     )
   }
@@ -378,6 +425,7 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
   # Print benchmarks for ratio log-likelihood-weights percentiles
   if ("all" %in% output_type || "rlw" %in% output_type) {
     x$benchmarks$ratio_ll_weights <- recompute_section(x$benchmarks$ratio_ll_weights, x$combined_values$rlw_combined)
+    median_ref_raw_rlw <- get_median_ref_raw(x$combined_values$rlw_combined)
     for (pop_es in names(x$benchmarks$ratio_ll_weights)) {
       x$benchmarks$ratio_ll_weights[[pop_es]] <- cbind(
         x$benchmarks$ratio_ll_weights[[pop_es]],
@@ -392,21 +440,19 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
         ncol(x$benchmarks$ratio_ll_weights[[pop_es]])
       ] <- overlap_header
     }
-    if (any(NE_names)) {
-      x$benchmarks$ratio_ll_weights[NE_names][[1]] <-
-        x$benchmarks$ratio_ll_weights[NE_names][[1]][
-          , colnames(x$benchmarks$ratio_ll_weights[NE_names][[1]]) != "rate_rlw",
-          drop = FALSE]
-    }
+    # See the matching comment in the "rgw" section above -- rate_rlw is no
+    # longer dropped for the "No-effect" population; its NA value now prints
+    # blank within the shared "Rate" column instead.
+    combined_rlw <- combine_population_tables(x$benchmarks$ratio_ll_weights, reference_pop_name)
     print_section(
       text_rlw,
       function() {
-        for (pop_es in names(x$benchmarks$ratio_ll_weights)) {
-          print_rounded_es_value(x$benchmarks$ratio_ll_weights[[pop_es]], pop_es,
-                                 model_type, green, reset,
-                                 is_reference = identical(pop_es, x$overlap$reference),
-                                 threshold_rlw = threshold_rlw)
-        }
+        cat("\n")
+        print_block_header(block1_header, blue, reset)
+        print_block1_table(combined_rlw)
+        print_block_header(block2_header, blue, reset)
+        print_block2_table(combined_rlw, threshold_rlw = threshold_rlw,
+                           median_ref_raw = median_ref_raw_rlw)
       }, nchar(text_rlw), text_color = blue, reset = reset
     )
   }
@@ -415,6 +461,7 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
   # same idea as rgw_log above, but for lw/rlw.
   if ("all" %in% output_type || "rlw_log" %in% output_type) {
     x$benchmarks$ratio_ll_weights_log <- recompute_section(x$benchmarks$ratio_ll_weights_log, x$combined_values$rlw_log_combined)
+    median_ref_raw_rlw_log <- get_median_ref_raw(x$combined_values$rlw_log_combined)
     for (pop_es in names(x$benchmarks$ratio_ll_weights_log)) {
       x$benchmarks$ratio_ll_weights_log[[pop_es]] <- cbind(
         x$benchmarks$ratio_ll_weights_log[[pop_es]],
@@ -429,14 +476,15 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
         ncol(x$benchmarks$ratio_ll_weights_log[[pop_es]])
       ] <- overlap_header
     }
+    combined_rlw_log <- combine_population_tables(x$benchmarks$ratio_ll_weights_log, reference_pop_name)
     print_section(
       text_rlw_log,
       function() {
-        for (pop_es in names(x$benchmarks$ratio_ll_weights_log)) {
-          print_rounded_es_value(x$benchmarks$ratio_ll_weights_log[[pop_es]], pop_es,
-                                 model_type, green, reset,
-                                 is_reference = identical(pop_es, x$overlap$reference))
-        }
+        cat("\n")
+        print_block_header(block1_header, blue, reset)
+        print_block1_table(combined_rlw_log)
+        print_block_header(block2_header, blue, reset)
+        print_block2_table(combined_rlw_log, median_ref_raw = median_ref_raw_rlw_log)
       }, nchar(text_rlw_log), text_color = blue, reset = reset
     )
   }
@@ -444,6 +492,7 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
   # Print benchmarks for difference log-likelihood-values percentiles
   if ("all" %in% output_type || "ld" %in% output_type) {
     x$benchmarks$difLL <- recompute_section(x$benchmarks$difLL, x$combined_values$ld_combined)
+    median_ref_raw_ld <- get_median_ref_raw(x$combined_values$ld_combined)
     for (pop_es in names(x$benchmarks$difLL)) {
       x$benchmarks$difLL[[pop_es]] <- cbind(
         x$benchmarks$difLL[[pop_es]],
@@ -457,14 +506,15 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
         ncol(x$benchmarks$difLL[[pop_es]])
       ] <- overlap_header
     }
+    combined_ld <- combine_population_tables(x$benchmarks$difLL, reference_pop_name)
     print_section(
       text_ld,
       function() {
-        for (pop_es in names(x$benchmarks$difLL)) {
-          print_rounded_es_value(x$benchmarks$difLL[[pop_es]], pop_es, model_type,
-                                 green, reset,
-                                 is_reference = identical(pop_es, x$overlap$reference))
-        }
+        cat("\n")
+        print_block_header(block1_header, blue, reset)
+        print_block1_table(combined_ld)
+        print_block_header(block2_header, blue, reset)
+        print_block2_table(combined_ld, median_ref_raw = median_ref_raw_ld)
       }, nchar(text_ld), text_color = blue, reset = reset
     )
   }

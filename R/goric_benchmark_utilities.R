@@ -1588,6 +1588,21 @@ print_section <- function(header, content_printer, nchar, text_color, reset) {
   cat("\n")
 }
 
+# Sub-header printed once above each of the two blocks print.benchmark()
+# splits every output_type's content into (see print_block1_table()/
+# print_block2_table() below) -- "Percentiles distributions" for block 1,
+# "Percentile & overlap comparisons" for block 2 (the actual text is set in
+# print.benchmark() itself, so it's defined in one place). Deliberately a
+# smaller visual step than print_section()'s own header above: that one
+# marks a whole output_type section (e.g. "Benchmark: Percentiles of
+# Ratio-of-GORICA-weights..."), spanning the full table width; this one
+# marks a subdivision *within* that section, so its underline is only as
+# wide as its own text, not the table.
+print_block_header <- function(text, text_color, reset) {
+  cat(paste0(text_color, text, reset), "\n")
+  cat(strrep("-", nchar(text)), "\n")
+}
+
 
 format_value <- function(value) {
   if (is.na(value)) {
@@ -1745,8 +1760,24 @@ format_threshold_display <- function(q) {
 #   5%, 35%, ... (any N%)   -> grouped "Percentiles distributions", showing
 #                              the percentile itself on line 2
 #   Pctl. Sample            -> grouped "Percentiles (pctl.) comparisons",
-#                              "Sample value" on line 2
-#   Pctl. median ref. pop.  -> same group, "Median ref. pop." on line 2
+#                              "Sample value" on line 2 -- followed by the
+#                              actual raw Sample value in parentheses (e.g.
+#                              "Sample value (0.850)") when 'sample_value' is
+#                              supplied (only when the table has exactly one
+#                              row/hypothesis -- see print_rounded_es_value()
+#                              -- since with more than one row that number
+#                              would differ row to row and so can't be
+#                              reduced to one header value; the plain label
+#                              is kept in that case).
+#   Pctl. median ref. pop.  -> same group, "Median ref. pop." on line 2 --
+#                              'sample_value'/'median_ref_value' are no
+#                              longer supplied from print.benchmark() since
+#                              the combined-table redesign (see
+#                              print_block2_table() below) -- these
+#                              parameters are kept here so the raw-value-in-
+#                              parentheses header annotation can be
+#                              reintroduced later if wanted, but currently
+#                              always fall through to the plain label.
 #   hypothesis_rate         -> "Hypothesis rate" / "(rgw > <threshold>)"
 #                              (own two-line header; 'hypo_rate_threshold'
 #                              is the actual q this particular print call
@@ -1777,7 +1808,8 @@ format_threshold_display <- function(q) {
 # Anything unrecognized (shouldn't normally occur) falls back to a blank
 # line 1 and the column's own name on line 2, so nothing is ever dropped.
 header_lines_for_columns <- function(colnames_vec, hypo_rate_threshold = NULL,
-                                     threshold_rlw = NULL) {
+                                     threshold_rlw = NULL, sample_value = NULL,
+                                     median_ref_value = NULL) {
   n <- length(colnames_vec)
   line1 <- character(n)
   line2 <- character(n)
@@ -1792,10 +1824,18 @@ header_lines_for_columns <- function(colnames_vec, hypo_rate_threshold = NULL,
       line2[i] <- cn
     } else if (identical(cn, "Pctl. Sample")) {
       group[i] <- "Percentiles (pctl.) comparisons"
-      line2[i] <- "Sample value"
+      line2[i] <- if (!is.null(sample_value) && !is.na(sample_value)) {
+        paste0("Sample value (", format_value(sample_value), ")")
+      } else {
+        "Sample value"
+      }
     } else if (identical(cn, "Pctl. median ref. pop.")) {
       group[i] <- "Percentiles (pctl.) comparisons"
-      line2[i] <- "Median ref. pop."
+      line2[i] <- if (!is.null(median_ref_value) && !is.na(median_ref_value)) {
+        paste0("Median ref. pop. (", format_value(median_ref_value), ")")
+      } else {
+        "Median ref. pop."
+      }
     } else if (identical(cn, "hypothesis_rate")) {
       line1[i] <- "Hypothesis rate"
       line2[i] <- paste0("(rgw > ", format_threshold_display(hypo_rate_threshold), ")")
@@ -1826,12 +1866,15 @@ header_lines_for_columns <- function(colnames_vec, hypo_rate_threshold = NULL,
 # that). Here, every column width -- and the width each merged group label
 # needs -- is computed and padded by hand up front, so the two header lines
 # and the data stay aligned regardless of getOption("width").
-print_grouped_header_table <- function(formatted_df, rn, hypo_rate_threshold = NULL,
-                                       threshold_rlw = NULL) {
+print_grouped_header_table <- function(formatted_df, leading_cols = list(),
+                                       hypo_rate_threshold = NULL,
+                                       threshold_rlw = NULL, sample_value = NULL,
+                                       median_ref_value = NULL) {
   ncol_ <- ncol(formatted_df)
   colnames_vec <- colnames(formatted_df)
   hdr <- header_lines_for_columns(colnames_vec, hypo_rate_threshold = hypo_rate_threshold,
-                                  threshold_rlw = threshold_rlw)
+                                  threshold_rlw = threshold_rlw, sample_value = sample_value,
+                                  median_ref_value = median_ref_value)
 
   col_w <- vapply(seq_len(ncol_), function(j) {
     max(nchar(hdr$line1[j]), nchar(hdr$line2[j]), nchar(formatted_df[, j]))
@@ -1849,7 +1892,6 @@ print_grouped_header_table <- function(formatted_df, rn, hypo_rate_threshold = N
     }
   }
 
-  rn_w <- max(nchar(rn), 0)
   pad_left <- function(s, w) formatC(s, width = -w)
   pad_center <- function(s, w) {
     total <- w - nchar(s)
@@ -1857,6 +1899,18 @@ print_grouped_header_table <- function(formatted_df, rn, hypo_rate_threshold = N
     right <- total - left
     paste0(strrep(" ", left), s, strrep(" ", right))
   }
+
+  # Leading text columns -- "Population" and "Hypotheses comparison" (see
+  # combine_population_tables()/print_block1_table()/print_block2_table()
+  # below) -- printed before formatted_df's own columns, replacing the old
+  # implicit-rowname display now that "Hypotheses comparison" is an
+  # explicit data column spanning every population's rows in one shared
+  # table. Each gets a simple one-line-worth header (blank line 1, its own
+  # name on line 2), width set by its own widest value.
+  lead_names <- names(leading_cols)
+  lead_w <- vapply(lead_names, function(nm) {
+    as.integer(max(nchar(nm), nchar(leading_cols[[nm]]), 0L))
+  }, integer(1))
 
   # Header line 1, built in column order: a merged group's columns collapse
   # into one centered label spanning their combined width; an ungrouped
@@ -1876,36 +1930,92 @@ print_grouped_header_table <- function(formatted_df, rn, hypo_rate_threshold = N
   }
   line2_parts <- mapply(pad_left, hdr$line2, col_w)
 
-  cat(pad_left("", rn_w), " ", paste(line1_parts, collapse = " "), "\n", sep = "")
-  cat(pad_left("", rn_w), " ", paste(line2_parts, collapse = " "), "\n", sep = "")
+  lead_blank <- vapply(lead_names, function(nm) pad_left("", lead_w[[nm]]), character(1))
+  lead_header <- vapply(lead_names, function(nm) pad_left(nm, lead_w[[nm]]), character(1))
+
+  cat(paste(c(lead_blank, line1_parts), collapse = " "), "\n")
+  cat(paste(c(lead_header, line2_parts), collapse = " "), "\n")
   for (i in seq_len(nrow(formatted_df))) {
-    cat(pad_left(rn[i], rn_w), " ",
-        paste(mapply(pad_left, formatted_df[i, ], col_w), collapse = " "), "\n", sep = "")
+    lead_vals <- vapply(lead_names, function(nm) {
+      pad_left(leading_cols[[nm]][i], lead_w[[nm]])
+    }, character(1))
+    cat(paste(c(lead_vals, mapply(pad_left, formatted_df[i, ], col_w)), collapse = " "), "\n")
   }
 }
 
 
-# called by the benchmark.print() function. is_reference: TRUE when 'pop_es'
-# is the reference population that overlap/pctl_medianRefPop are computed
-# against (see determine_overlap_reference()/x$overlap_reference) -- appends
-# "(Reference population)" to the printed population label, e.g. "Population
-# effect-size = Observed (Reference population)".
-print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset,
-                                   is_reference = FALSE, hypo_rate_threshold = NULL,
-                                   threshold_rlw = NULL) {
-  if (model_type == "benchmark_asymp") {
-    pop_es_value <- gsub("pop_est = ", "", pop_es)
-    label <- "Population estimates"
-  } else {
-    pop_es_value <- gsub("pop_es = ", "", pop_es)
-    label <- "Population effect-size"
-  }
-  if (is_reference) {
-    pop_es_value <- paste0(pop_es_value, " (Reference population)")
-  }
-  cat(sprintf("%s = %s%s%s\n", label, text_color, pop_es_value, reset))
+# Combines each population's own benchmark matrix (already cbind()ed with
+# Sample/percentile/Pctl./Overlap/hypothesis_rate-or-rate_rlw columns -- see
+# print.benchmark()) into ONE shared table spanning every population, for
+# the combined "Population" + "Hypotheses comparison" leading-column layout
+# (replacing the old design where each population got its own small table,
+# printed under its own "Population estimates = ..." label -- see the
+# removed print_population_label() this replaces).
+#
+# Column sets can differ slightly between populations (e.g. hypothesis_rate/
+# rate_rlw used to be dropped outright for the "No-effect" population -- see
+# print.benchmark()'s now-removed NE_names-based column-drop); any column
+# missing from a given population's matrix is filled with NA here, which
+# format_value() already renders as "" (blank), so that population's row(s)
+# simply print blank in that column rather than needing the column dropped.
+#
+# 'population' gives the population label (e.g. "No-effect",
+# "Observed (ref. pop.)" for the reference population -- "pop_es = "/
+# "pop_est = " stripped either way) on each population GROUP's first row
+# only, blank on every subsequent row of that same group, so it's shown
+# once as asked rather than once per row. 'hypotheses' carries each row's
+# own rowname (e.g. "H1 H2") over as plain text, to become the "Hypotheses
+# comparison" column.
+combine_population_tables <- function(benchmarks_by_pop, reference_pop_name) {
+  pop_names <- names(benchmarks_by_pop)
+  labels <- vapply(pop_names, function(nm) {
+    lbl <- gsub("^(pop_es|pop_est) = ", "", nm)
+    if (identical(nm, reference_pop_name)) paste0(lbl, " (ref. pop.)") else lbl
+  }, character(1))
 
-  #formatted_column <- sprintf("%.3f", df)
+  mats <- benchmarks_by_pop
+  all_cols <- unique(unlist(lapply(mats, colnames)))
+  mats <- lapply(mats, function(m) {
+    missing_cols <- setdiff(all_cols, colnames(m))
+    if (length(missing_cols) > 0) {
+      extra <- matrix(NA_real_, nrow = nrow(m), ncol = length(missing_cols),
+                      dimnames = list(rownames(m), missing_cols))
+      m <- cbind(m, extra)
+    }
+    m[, all_cols, drop = FALSE]
+  })
+
+  combined <- do.call(rbind, mats)
+  rownames(combined) <- NULL
+
+  population <- character(nrow(combined))
+  hypotheses <- character(nrow(combined))
+  row_i <- 1
+  for (k in seq_along(mats)) {
+    n <- nrow(mats[[k]])
+    if (n > 0) {
+      population[row_i] <- labels[k]
+      hypotheses[row_i:(row_i + n - 1)] <- rownames(mats[[k]])
+      row_i <- row_i + n
+    }
+  }
+
+  list(data = combined, population = population, hypotheses = hypotheses)
+}
+
+# Formats 'df' (either one population's raw benchmark table, or -- since the
+# combined-table redesign -- the already-combined table spanning every
+# population, as built by combine_population_tables() above) into a
+# character matrix ready to print, and works out which of its columns
+# belong in block 1 ("Sample" + the percentile% columns) vs. block 2
+# (everything else: "Pctl. Sample", "Pctl. median ref. pop.", "Overlap with
+# ...", and hypothesis_rate/rate_rlw) -- see print_block1_table()/
+# print_block2_table() below, which call this once each. Column
+# classification mirrors header_lines_for_columns()
+# exactly, so a column always lands in the same block its header groups it
+# into; block 2's columns are reordered so hypothesis_rate/rate_rlw comes
+# last (it used to sit between the pctl-comparison columns and Overlap).
+format_es_table <- function(df) {
   # The "Overlap with ..." column (if present -- see overlap_column() /
   # print.benchmark()) is formatted with format_overlap_value() instead of
   # format_value(), so its self-overlap entries print as "1" rather than
@@ -1929,8 +2039,95 @@ print_rounded_es_value <- function(df, pop_es, model_type, text_color, reset,
   formatted_df <- do.call(cbind, formatted_cols)
   rownames(formatted_df) <- rownames(df)
   colnames(formatted_df) <- colnames(df)
-  print_grouped_header_table(formatted_df, rownames(df), hypo_rate_threshold = hypo_rate_threshold,
-                             threshold_rlw = threshold_rlw)
+
+  cn <- colnames(formatted_df)
+  block1_idx <- which(cn == "Sample" | grepl("^[0-9.]+%$", cn))
+  block2_idx <- setdiff(seq_along(cn), block1_idx)
+  block2_rank <- function(name) {
+    if (identical(name, "Pctl. Sample")) {
+      1L
+    } else if (identical(name, "Pctl. median ref. pop.")) {
+      2L
+    } else if (grepl("^Overlap with ", name)) {
+      3L
+    } else if (name %in% c("hypothesis_rate", "rate_rlw")) {
+      4L
+    } else {
+      5L
+    }
+  }
+  block2_idx <- block2_idx[order(vapply(cn[block2_idx], block2_rank, integer(1)))]
+
+  list(formatted_df = formatted_df, block1_idx = block1_idx, block2_idx = block2_idx)
+}
+
+# Prints block 1 ("Sample value" + "Percentiles distributions") as ONE
+# shared table spanning every population -- see combine_population_tables()
+# above, which builds 'combined' ($data/$population/$hypotheses) from each
+# population's own cbind()ed matrix. Called once per output_type section,
+# with block 2 (print_block2_table() below) printed as its own separate
+# pass straight after -- i.e. the two blocks are two separate, consecutive
+# tables on screen, rather than each population getting both back-to-back.
+print_block1_table <- function(combined) {
+  built <- format_es_table(combined$data)
+  tbl <- built$formatted_df[, built$block1_idx, drop = FALSE]
+  print_grouped_header_table(
+    tbl,
+    leading_cols = list(Population = combined$population,
+                        "Hypotheses comparison" = combined$hypotheses)
+  )
+  cat("\n")
+}
+
+# Prints block 2 ("Percentiles (pctl.) comparisons" + "Overlap" +
+# hypothesis_rate/rate_rlw, that last column now last) as ONE shared table
+# spanning every population -- the counterpart to print_block1_table()
+# above. 'median_ref_raw' is the reference population's raw (not
+# percentile) statistic, one entry per hypothesis (see get_median_ref_raw()
+# in goric_benchmark_print.R) -- it, like the raw "Sample" value, does NOT
+# vary by population (both are properties of a single hypothesis: "Sample"
+# is the observed-data statistic itself, computed once and reused for every
+# population's own benchmark table; 'median_ref_raw' is the reference
+# population's own median, also computed once and compared against every
+# other population). So the "Sample value (...)"/"Median ref. pop. (...)"
+# header annotation is shown whenever every row of the (now combined)
+# table shares the SAME hypothesis -- i.e. there is only one hypothesis
+# being benchmarked at all, across every population -- in which case that
+# one shared value is pulled straight off the first row (every row has the
+# same value for that hypothesis, so any row would do). With more than one
+# distinct hypothesis in the table the value does differ row to row (by
+# hypothesis, not by population), so it can't be reduced to a single header
+# value, and the plain label is kept instead -- exactly the same condition
+# print_block1_es_value()/print_block2_es_value() used to gate on
+# (nrow(df) == 1 in the old per-population design), just expressed against
+# the combined table's hypotheses instead of a row count.
+print_block2_table <- function(combined, hypo_rate_threshold = NULL,
+                               threshold_rlw = NULL, median_ref_raw = NULL) {
+  built <- format_es_table(combined$data)
+  tbl <- built$formatted_df[, built$block2_idx, drop = FALSE]
+
+  is_single_hypothesis <- length(unique(combined$hypotheses)) == 1
+  sample_value <- if (is_single_hypothesis && "Sample" %in% colnames(combined$data)) {
+    unname(combined$data[1, "Sample"])
+  } else {
+    NULL
+  }
+  median_ref_value <- if (is_single_hypothesis && !is.null(median_ref_raw) &&
+                          length(median_ref_raw) >= 1) {
+    unname(median_ref_raw[1])
+  } else {
+    NULL
+  }
+
+  print_grouped_header_table(
+    tbl,
+    leading_cols = list(Population = combined$population,
+                        "Hypotheses comparison" = combined$hypotheses),
+    sample_value = sample_value,
+    median_ref_value = median_ref_value,
+    hypo_rate_threshold = hypo_rate_threshold,
+    threshold_rlw = threshold_rlw
+  )
   cat("\n")
 }
 

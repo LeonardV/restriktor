@@ -151,8 +151,49 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     }
   }
   
-  cat("Results:\n")
-  print(format(df, digits = digits, scientific = FALSE), 
+  cat("Results:\n\n")
+  # Split the Results table into two blocks: the first with the raw values
+  # (model, loglik, penalty, and the IC value itself), the second with the
+  # corresponding weights (loglik.weights, penalty.weights, IC weight, and,
+  # if present, the IC weight excluding unconstrained/Heq) -- rather than one
+  # wide table mixing both kinds of quantities.
+  values_cols  <- 1:4
+  weights_cols <- c(1, 5:ncol(df))
+
+  # Columns that appear in BOTH blocks -- model, and each raw value paired
+  # with its corresponding weight (loglik/loglik.weights,
+  # penalty/penalty.weights, the IC value/its weight) -- are each given one
+  # shared printed width, so the two tables line up as one consistent grid
+  # when stacked, even though e.g. "loglik" and "loglik.weights" are
+  # different lengths as header text. The optional weights_without_unc/_heq
+  # column, present only in the weights block with no counterpart to align
+  # with, keeps its own natural width.
+  shared_pairs <- list(c(1, 1), c(2, 5), c(3, 6), c(4, 7))
+  widths_by_name <- list()
+  for (pair in shared_pairs) {
+    w <- max(nchar(names(df)[pair]),
+             vapply(df[pair], function(col) max(nchar(col)), integer(1)))
+    for (idx in pair) widths_by_name[[names(df)[idx]]] <- w
+  }
+
+  pad_block <- function(sub_df) {
+    out <- format(sub_df, digits = digits, scientific = FALSE)
+    for (cn in names(out)) {
+      w <- widths_by_name[[cn]]
+      if (!is.null(w)) {
+        out[[cn]] <- sprintf("%*s", w, out[[cn]])
+        names(out)[names(out) == cn] <- sprintf("%*s", w, cn)
+      }
+    }
+    out
+  }
+
+  cat("Values:\n")
+  print(pad_block(df[, values_cols]),
+        print.gap = 2, quote = FALSE)
+  cat("\n")
+  cat("Weights:\n")
+  print(pad_block(df[, weights_cols]),
         print.gap = 2, quote = FALSE)
   #cat("---\n")
   
@@ -200,13 +241,115 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
             " that the ratio of their GORIC(A) weights reached its maximum.")
   }
   if (best_hypo_overlap) {
-    message("Since the best hypothesis overlaps with one or more other hypotheses,", 
-" we recommend evaluating the overlap (or best hypothesis) vs. its complement.", 
-          " Run vignette(\"Guidelines_GORIC_output\") in your console for more", 
+    message("Since the best hypothesis overlaps with one or more other hypotheses,",
+" we recommend evaluating the overlap (or best hypothesis) vs. its complement.",
+          " Run vignette(\"Guidelines_GORIC_output\") in your console for more",
           " information and an example.")
   }
 
-  if (comparison == "unconstrained" && length(df$model) == 2 && 
+  # Does the best hypothesis (by GORIC(A) weight, 'best_hypo') also have the
+  # highest log-likelihood (loglik) value -- among the actual, substantive
+  # hypotheses being compared? With unequal priorICweights, or with penalty
+  # terms that differ enough between hypotheses, the hypothesis with the
+  # highest GORIC(A) weight need not be the one with the highest raw loglik
+  # -- which can be a sign that there isn't enough data to distinguish the
+  # hypotheses well.
+  #
+  # "unconstrained" and "Heq" are deliberately excluded from the comparison
+  # here (though 'best_hypo' itself may still BE one of them): both are
+  # reference/safeguard categories, not substantive alternative hypotheses,
+  # and each can trivially attain the global maximum loglik by construction
+  # (unconstrained always does; Heq is nested inside every order-restricted
+  # hypothesis, so it can never exceed them anyway) -- comparing against
+  # those would make this fire on essentially every analysis with an active
+  # constraint, which isn't the (rarer, more informative) condition intended
+  # here. A tie for the highest loglik among the remaining hypotheses
+  # (best_hypo's own value equal to that maximum, up to floating-point
+  # tolerance) does NOT trigger this -- "the highest" includes a tie for
+  # highest -- and nor does best_hypo's own loglik simply exceeding it (e.g.
+  # when best_hypo IS "unconstrained" or "Heq" itself).
+  reference_categories <- c("unconstrained", "Heq")
+  genuine_idx <- !(x$result$model %in% reference_categories)
+  best_hypo_has_max_loglik <- if (!any(genuine_idx)) {
+    TRUE
+  } else {
+    max_loglik_genuine <- max(x$result$loglik[genuine_idx], na.rm = TRUE)
+    isTRUE(all.equal(x$result$loglik[best_hypo], max_loglik_genuine)) ||
+      x$result$loglik[best_hypo] > max_loglik_genuine
+  }
+
+  # Is the loglik(.weight) of the best hypothesis "close" to that of another
+  # hypothesis -- other than an exact tie (already reported above via
+  # overlap_hypo) and other than the reference/safeguard categories
+  # "unconstrained"/"Heq" (which, like in the mismatch check above, are
+  # excluded rather than flagged the same way -- being close to a trivial
+  # reference category isn't the same kind of finding as being close to
+  # another substantive hypothesis)? Flagged via the RATIO of loglik.weights
+  # ('ratio.lw', the same quantity reported elsewhere) rather than the raw
+  # loglik difference, so the cutoff doesn't depend on the scale of the
+  # data. "Close" here means that ratio falls within [0.9, 1.1] (i.e. within
+  # +/-10%) -- a simple, symmetric-in-practice heuristic rather than a
+  # formal likelihood-ratio/chi-bar-square test: the hypotheses compared
+  # here are order restrictions, not equality constraints, so they are
+  # typically not nested in the way a classical LRT assumes -- a
+  # chi-bar-square-based cutoff would need its own per-pair mixing-weight
+  # computation (as con_pbar()/wt.bar already do for a single hypothesis
+  # vs. its complement) rather than one general-purpose threshold,
+  # considerably more machinery for a print-time heads-up message.
+  close_idx <- integer(0)
+  if (!is.null(x$ratio.lw) && nrow(x$result) > 1) {
+    ratio_lw_best <- x$ratio.lw[best_hypo, ]
+    is_self <- names(ratio_lw_best) == paste0("vs. ", best_hypo_name)
+    is_reference <- x$result$model %in% reference_categories
+    is_exact_tie <- x$result$model %in% overlap_hypo
+    close_idx <- which(!is_self & !is_reference & !is_exact_tie &
+                       ratio_lw_best >= 0.9 & ratio_lw_best <= 1.1)
+  }
+  close_names <- if (length(close_idx) > 0) sQuote(x$result$model[close_idx]) else character(0)
+  close_hypo_text <- if (length(close_names) == 1) {
+    paste0("Hypothesis ", close_names)
+  } else if (length(close_names) > 1) {
+    paste0("Hypotheses ", paste(close_names[-length(close_names)], collapse = ", "),
+          ", and ", close_names[length(close_names)])
+  } else {
+    NULL
+  }
+
+  # These two findings can co-occur (the best hypothesis need not have the
+  # top loglik among the genuine hypotheses AND still be close in loglik to
+  # one or more of them) -- printed as ONE combined message when they do,
+  # rather than two separate ones repeating much of the same context.
+  if (!best_hypo_has_max_loglik && !is.null(close_hypo_text)) {
+    message("---\nNote: Hypothesis ", sQuote(best_hypo_name),
+            " is the best hypothesis but note that it does not have the highest",
+            " log-likelihood (loglik) value. This may indicate that the sample size",
+            " might be too low to base a conclusion on. Additionally, its",
+            " log-likelihood (loglik) value is close to the log-likelihood (loglik)",
+            " value of ", close_hypo_text, ". You may want to use the benchmarks",
+            " function to investigate whether this is the case. If so, then this",
+            " indicates that there is support for their boundary. More details can",
+            " be found in 'Decision tree - Interpretation.pdf' and/or 'Guidelines",
+            " output GORIC.html', available from",
+            " https://github.com/rebeccakuiper/Tutorials.")
+  } else if (!best_hypo_has_max_loglik) {
+    message("---\nNote: Hypothesis ", sQuote(best_hypo_name),
+            " is the best hypothesis but note that it does not have the highest",
+            " log-likelihood (loglik) value. This may indicate that the sample size",
+            " might be too low to base a conclusion on. More details can be found in",
+            " 'Decision tree - Interpretation.pdf' and/or 'Guidelines output GORIC.html',",
+            " available from https://github.com/rebeccakuiper/Tutorials.")
+  } else if (!is.null(close_hypo_text)) {
+    message("---\nNote: The log-likelihood (loglik) value of the best hypothesis",
+            " Hypothesis ", sQuote(best_hypo_name), " is close to the",
+            " log-likelihood (loglik) value of ", close_hypo_text, ". You may want to",
+            " use the benchmarks function to investigate whether this is the case.",
+            " If so, then this indicates that there is support for their boundary.",
+            " More details can be found in 'Decision tree - Interpretation.pdf'",
+            " and/or 'Guidelines output GORIC.html', available from",
+            " https://github.com/rebeccakuiper/Tutorials.")
+  }
+
+  if (comparison == "unconstrained" && length(df$model) == 2 &&
       # If comparison = "complement" and ceq only, than comparison is set to unconstrained internally.
       nrow(x$objectList[[1]]$constraints) != x$objectList[[1]]$neq) { 
     message("---\nAdvise: Are you certain you wish to assess the order-restricted hypothesis", 
@@ -445,8 +588,26 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
               print.gap = 2, quote = FALSE, right = TRUE)
       }
     }
-  } 
-  
+  }
+
+  # Tip pointing at the benchmarks function, for labeling/interpreting the
+  # quantified output above (the ratio(s) of GORIC(A)/loglik/penalty
+  # weights): a ratio on its own (e.g. 5.2) doesn't say how strong that level
+  # of support actually is in this specific setup -- benchmark_means()/
+  # benchmark_asymp() simulate the ratio's own distribution under, among
+  # others, a "no effect" population, which is what such labeling requires.
+  # Shown once, whenever there is more than one hypothesis to compare (i.e.
+  # whenever the Conclusion section above -- which is where a ratio of
+  # weights gets reported -- was printed at all).
+  if (length(df$model) > 1) {
+    message("---\nTip: The benchmarks function can be used to label the height",
+            " of the output, for example, the height of the ratio(s) of weights",
+            " (e.g., to say whether that value denotes medium, high, or very",
+            " large evidence). More details can be found in",
+            " 'Guidelines_GORIC-benchmarks.html', available from",
+            " https://github.com/rebeccakuiper/Tutorials.")
+  }
+
   # # TO DO HIER maak mooier en ms nog onderdeel van een opvraagbare lijst ofzo
   # if (!is.null(ICratio_HbestVsHc) && !is.null(errorProb_Hbest)) {
   #   message(paste0("\nrestriktor Future research information based on a post-hoc analysis: \n",

@@ -46,7 +46,12 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
                             # Same mechanism but for the 'rate_rlw' output field
                             # Deliberately not named/called a "hypothesis rate": 
                             # unlike rgw, rlw isn't used (directly) for hypothesis selection.
-                            threshold_rlw = 1, ...) {
+                            threshold_rlw = 1,
+                            # Prior model probabilities used in the (re-)calculated
+                            # and simulated goric() calls; NULL (default) means: the
+                            # ones of 'object' (object$priorICweights), such that the
+                            # benchmarks are based on the same priors as the sample value.
+                            priorICweights = NULL, ...) {
 
   # iter = NULL (the default): start at 500 draws and grow by 100 at a time,
   # up to 2000, stopping as soon as the "Observed" population's benchmark
@@ -60,6 +65,11 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
 
   mix_weights <- attr(object$objectList[[1]]$wt.bar, "method")
   penalty_factor <- object$penalty_factor
+  # Use the same prior model probabilities as in the goric object (unless
+  # specified otherwise), in the re-calculated and the simulated goric() calls.
+  if (is.null(priorICweights)) {
+    priorICweights <- object$priorICweights
+  }
 
   # Check:
   if (!inherits(object, "con_goric")) {
@@ -200,6 +210,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   object <-
     goric(
       group_means,
+      CI = FALSE, # no CIs needed for the re-calculated object
       VCOV = VCOV, # based on N not N-k
       sample_nobs = sum(N), # Needed for type = "goricac" - daar genoeg aan sum(N) of moet het juist gehele N hebben?
       hypotheses = hypos,
@@ -208,6 +219,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
       control = control,
       mix_weights = mix_weights,
       penalty_factor = penalty_factor,
+      priorICweights = priorICweights,
       #Heq = FALSE,
       Heq = Heq,
       add_Hc = add_Hc,
@@ -277,6 +289,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     VCOV = VCOV, hypos = hypos_for_sim, pref_hypo = pref_hypo,
     comparison = object$comparison, control = control,
     mix_weights = mix_weights, penalty_factor = penalty_factor, Heq = Heq,
+    priorICweights = priorICweights,
     object = object, iter = user_iter,
     es_labels = paste0(es, " (", names(es), ")"),
     band = iter_adequacy_band,
@@ -431,7 +444,12 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
                             # See benchmark_means()'s 'threshold_rlw' for the full
                             # rationale -- same argument, same default, same
                             # x$threshold_rlw output field.
-                            threshold_rlw = 1, ...) {
+                            threshold_rlw = 1,
+                            # Prior model probabilities used in the (re-)calculated
+                            # and simulated goric() calls; NULL (default) means: the
+                            # ones of 'object' (object$priorICweights), such that the
+                            # benchmarks are based on the same priors as the sample value.
+                            priorICweights = NULL, ...) {
 
   # iter = NULL (the default): start at 500 draws and grow by 100 at a time,
   # up to 2000, stopping as soon as the "Observed" population's benchmark
@@ -448,6 +466,11 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   
   mix_weights <- attr(object$objectList[[1]]$wt.bar, "method")
   penalty_factor <- object$penalty_factor
+  # Use the same prior model probabilities as in the goric object (unless
+  # specified otherwise), in the re-calculated and the simulated goric() calls.
+  if (is.null(priorICweights)) {
+    priorICweights <- object$priorICweights
+  }
   
   # Check if object is of class con_goric
   if (!inherits(object, "con_goric")) {
@@ -604,6 +627,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   # Herbereken met goric-functie
   object <- goric(
     est_sample,
+    CI = FALSE, # no CIs needed for the re-calculated object
     VCOV = VCOV,
     sample_nobs = N[1], # Needed for type = "goricac"
     # TO DO, dit is toch maar een getal en als niet dan ws de sum (iig bij anova wel)
@@ -614,6 +638,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     control = control,
     mix_weights = mix_weights,
     penalty_factor = penalty_factor,
+    priorICweights = priorICweights,
     Heq = Heq,
     add_Hc = add_Hc,
     # already checked once on the user's original add_Hc fit; see the NOTE
@@ -649,6 +674,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     VCOV = VCOV, hypos = hypos_for_sim, pref_hypo = pref_hypo,
     comparison = comparison, control = control,
     mix_weights = mix_weights, penalty_factor = penalty_factor, Heq = Heq,
+    priorICweights = priorICweights,
     object = object, iter = user_iter,
     band = iter_adequacy_band,
     stability_tol = iter_stability_tol,

@@ -168,7 +168,35 @@ check.type <- function(type, class, ...)  {
   return(type)
 }
 
-calculate_model_comparison_metrics <- function(x, priorICweights) {
+# Validate the values of user-specified priorICweights (used by goric() and
+# all evSyn functions). Only the values are checked here (numeric, finite,
+# non-negative, positive sum); the required length differs per function and
+# is checked there.
+check_priorICweights_values <- function(priorICweights) {
+  if (!is.numeric(priorICweights) || length(priorICweights) == 0L ||
+      any(!is.finite(priorICweights))) {
+    stop("\nrestriktor ERROR: The argument 'priorICweights' should be a numeric vector ",
+         "with finite values (no NA, NaN, or Inf).", call. = FALSE)
+  }
+  if (any(priorICweights < 0)) {
+    stop("\nrestriktor ERROR: The argument 'priorICweights' should consist of ",
+         "non-negative values (prior model probabilities). ",
+         "Now, (some of) the values are negative.", call. = FALSE)
+  }
+  if (sum(priorICweights) <= 0) {
+    stop("\nrestriktor ERROR: The argument 'priorICweights' should have a positive sum ",
+         "(that is, not all values can be zero).", call. = FALSE)
+  }
+  invisible(TRUE)
+}
+
+# TRUE if the priorICweights do not add up to 1 (up to numerical precision),
+# so that they need to be rescaled.
+priorICweights_need_rescaling <- function(priorICweights) {
+  abs(sum(priorICweights) - 1) > sqrt(.Machine$double.eps)
+}
+
+calculate_model_comparison_metrics <- function(x, priorICweights, penalty_factor = 2) {
   modelnames <- as.character(x$model)
   ## Log-likelihood
   LL = -2 * x$loglik
@@ -176,9 +204,18 @@ calculate_model_comparison_metrics <- function(x, priorICweights) {
   loglik_weights = exp(0.5 * -delta_LL) / sum(exp(0.5 * -delta_LL))
   loglik_rw = loglik_weights %*% t(1/loglik_weights)
   diag(loglik_rw) = 1
-  
+
   ## penalty
-  penalty_weights = exp(-x$penalty) / sum(exp(-x$penalty))
+  # The IC value is -2*loglik + penalty_factor*penalty, so the penalty part
+  # of the IC weight is exp(-0.5 * penalty_factor * penalty). With the
+  # default penalty_factor = 2 this is exp(-penalty), as before. This way,
+  # (loglik weight x penalty weight) stays proportional to the IC weight
+  # (with equal priorICweights) for any penalty_factor.
+  # Note: the priorICweights are deliberately not used in the loglik and
+  # penalty weights; otherwise the prior would be counted twice in
+  # (prior x loglik weight x penalty weight).
+  delta_PT = x$penalty - min(x$penalty)
+  penalty_weights = exp(-0.5 * penalty_factor * delta_PT) / sum(exp(-0.5 * penalty_factor * delta_PT))
   penalty_rw = penalty_weights %*% t(1/penalty_weights)
   diag(penalty_rw) = 1
   
@@ -193,7 +230,7 @@ calculate_model_comparison_metrics <- function(x, priorICweights) {
   mn_unc_idx <- grep("unconstrained", modelnames)
   if (length(modelnames) > 2 && length(mn_unc_idx) > 0 && 
       which.max(goric_weights) != mn_unc_idx) {
-    delta_goric = x$goric[-mn_unc_idx] - min(x$goric[mn_unc_idx])
+    delta_goric = x$goric[-mn_unc_idx] - min(x$goric[-mn_unc_idx])
     priorICweights_adj <- priorICweights[-mn_unc_idx] / sum(priorICweights[-mn_unc_idx])
     goric_weights_without_unc = priorICweights_adj * exp(0.5 * -delta_goric) / 
       sum(priorICweights_adj * exp(0.5 * -delta_goric))

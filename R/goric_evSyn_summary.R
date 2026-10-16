@@ -42,8 +42,7 @@ summary.evSyn <- function(object, ...) {
   )
   
   if (!is.null(x[["PT_m"]])) {
-    sequence <- paste0("Study nr.s 1-", 1:ans$n_studies, "   ")
-    sequence[1] <- "Study nr.  1   "
+    sequence <- .evSyn_sequence_labels(ans$n_studies, x[["type_ev"]])
     Cumulative_PT <- apply(x[["PT_m"]][,, drop = FALSE], 2, cumsum)  
     Cumulative_PT <- matrix(Cumulative_PT, nrow = nrow(x[["PT_m"]]), 
                             dimnames = list(sequence, colnames(x[["PT_m"]])))
@@ -148,13 +147,16 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   
   indentation <- "    "  # Four spaces for indentation
   
-  cat("\nStudy-specific results:\n")
+  # 'Study' or, when type_ev = "average" (multiple analyses of one study), 'Analysis'
+  unit_cap <- .evSyn_unit_label(type_ev)
+  
+  cat(paste0("\n", unit_cap, "-specific results:\n"))
   
   if (!is.null(x[["GORICA_weight_m"]])) {
     cat(paste0("\n    ", type_label, " weights:\n"))
     formatted_gw <- apply(x[["GORICA_weight_m"]][,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     input_gw <- cbind(1:S, formatted_gw)
-    colnames(input_gw)[1] <- "   Study nr."
+    colnames(input_gw)[1] <- paste0("   ", unit_cap, " nr.")
     captured_output <- capture.output(print(input_gw, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
     cat(paste0(adjusted_output, "\n"), sep = "")
@@ -165,7 +167,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
     cat(paste0("\n    ", type_label, " values:\n"))
     formatted_gv <- apply(x[["GORICA_m"]][,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     input_gv <- cbind(1:S, formatted_gv)
-    colnames(input_gv)[1] <- "   Study nr."
+    colnames(input_gv)[1] <- paste0("   ", unit_cap, " nr.")
     captured_output <- capture.output(print(input_gv, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
     cat(paste0(adjusted_output, "\n"), sep = "")
@@ -176,7 +178,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
     cat("\n    Log-likelihood weights:\n")  
     formatted_llw <- apply(x[["LL_weights_m"]][,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     input_llw <- cbind(1:S, formatted_llw)
-    colnames(input_llw)[1] <- "   Study nr."
+    colnames(input_llw)[1] <- paste0("   ", unit_cap, " nr.")
     captured_output <- capture.output(print(input_llw, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
     cat(paste0(adjusted_output, "\n"), sep = "")
@@ -187,7 +189,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
     cat("\n    Log-likelihood values:\n")  
     formatted_llv <- apply(x[["LL_m"]][,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     input_llv <- cbind(1:S, formatted_llv)
-    colnames(input_llv)[1] <- "   Study nr."
+    colnames(input_llv)[1] <- paste0("   ", unit_cap, " nr.")
     captured_output <- capture.output(print(input_llv, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
     cat(paste0(adjusted_output, "\n"), sep = "")
@@ -198,7 +200,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
     cat("\n    Penalty term values:\n")  
     formatted_ptv <- apply(x[["PT_m"]][,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     input_ptv <- cbind(1:S, formatted_ptv)
-    colnames(input_ptv)[1] <- "   Study nr."
+    colnames(input_ptv)[1] <- paste0("   ", unit_cap, " nr.")
     captured_output <- capture.output(print(input_ptv, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
     cat(paste0(adjusted_output, "\n"), sep = "")
@@ -211,7 +213,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
                "\n    ", "(versus reference hypothesis ", names(x[["Href"]]), "):\n"))
     formatted_gw <- apply(x[["GwRatio_m"]][,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     input_gw <- cbind(1:S, formatted_gw)
-    colnames(input_gw)[1] <- "   Study nr."
+    colnames(input_gw)[1] <- paste0("   ", unit_cap, " nr.")
     captured_output <- capture.output(print(input_gw, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
     cat(paste0(adjusted_output, "\n"), sep = "")
@@ -222,7 +224,7 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
                "\n    ", "(versus reference hypothesis ", names(x[["Href"]]), "):\n"))
     formatted_gv <- apply(x[["ICdiff_m"]][,,drop = FALSE], c(1,2), function(x) format_numeric(x, digits = digits))
     input_gv <- cbind(1:S, formatted_gv)
-    colnames(input_gv)[1] <- "   Study nr."
+    colnames(input_gv)[1] <- paste0("   ", unit_cap, " nr.")
     captured_output <- capture.output(print(input_gv, row.names = TRUE, right = TRUE, quote = "FALSE"))
     adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
     cat(paste0(adjusted_output, "\n"), sep = "")

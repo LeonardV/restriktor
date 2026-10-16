@@ -197,7 +197,8 @@ goric_add_complement <- function(ans, add_Hc, hypotheses, objectnames,
   complement_args <- c(
     list(object = object, hypotheses = hypotheses[ref_idx], comparison = "complement",
         type = type, VCOV = VCOV, sample_nobs = sample_nobs,
-        penalty_factor = penalty_factor, control = control, debug = debug),
+        penalty_factor = penalty_factor, control = control, debug = debug,
+        CI = FALSE), # the CIs are computed for the final, combined set only
     ldots_c
   )
   complement_run <- do.call(goric.default, complement_args)
@@ -215,6 +216,9 @@ goric_add_complement <- function(ans, add_Hc, hypotheses, objectnames,
   rownames(df) <- NULL
 
   NrHypos_incl <- num_hypotheses + 1
+  if (!is.null(priorICweights)) {
+    check_priorICweights_values(priorICweights)
+  }
   if (is.null(priorICweights)) {
     priorICweights <- rep(1 / NrHypos_incl, NrHypos_incl)
   } else if (length(priorICweights) != NrHypos_incl) {
@@ -224,12 +228,13 @@ goric_add_complement <- function(ans, add_Hc, hypotheses, objectnames,
       num_hypotheses, " specified hypotheses and one for the complement of ",
       sQuote(ref_name), ". It now consists of ", length(priorICweights), " elements."
     ), call. = FALSE)
-  } else if (sum(priorICweights) != 1) {
+  } else if (priorICweights_need_rescaling(priorICweights)) {
     priorICweights <- priorICweights / sum(priorICweights)
     message("\nrestriktor Message: The argument 'priorICweights' should add up to 1. It has been rescaled accordingly.")
   }
 
-  model_comparison_metrics <- calculate_model_comparison_metrics(df, priorICweights)
+  model_comparison_metrics <- calculate_model_comparison_metrics(df, priorICweights,
+                                                                 penalty_factor = penalty_factor)
 
   df$loglik.weights  <- model_comparison_metrics$loglik_weights
   df$penalty.weights <- model_comparison_metrics$penalty_weights

@@ -10,6 +10,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
                           check_add_Hc = TRUE, # set to FALSE only from within goric_benchmark.R / goric_benchmark_utilities.R.
                           priorICweights = NULL,
                           posthoc = TRUE,
+                          CI = TRUE, CI_level = 0.95, CI_B = 1000L,
                           control = list(), debug = FALSE) {
 
   #TO DO: Ook beste vs complement - zie commented code (met TO DOs)
@@ -48,6 +49,10 @@ goric.default <- function(object, ..., hypotheses = NULL,
   # below uses its own natural default instead.
   priorICweights_add_Hc <- NULL
   if (!is.null(add_Hc)) {
+    if (!is.null(priorICweights)) {
+      # check the values already here, so before the (possibly long) runs below
+      check_priorICweights_values(priorICweights)
+    }
     priorICweights_add_Hc <- priorICweights
     priorICweights <- NULL
   }
@@ -103,16 +108,13 @@ goric.default <- function(object, ..., hypotheses = NULL,
   if (is.null(priorICweights)) {
     priorICweights <- rep(1/(NrHypos_incl), (NrHypos_incl))
   } else {
-    # # Check all values in between 0 and 1 - not done:
-    # # Since we rescale the following check is not needed;
-    # # This allows users to specify the weights in a different manner.
-    # if (any(priorICweights < 0) || any(priorICweights > 0)) {
-    #   stop("\nrestriktor ERROR: The argument 'priorICweights' should consist of ", NrHypos_incl, " elements, \n",
-    #        "where each element is in between 0 and 1 (and they sum to 1).",
-    #        call. = FALSE)
-    # }
+    # Check the values: numeric, finite, non-negative, and a positive sum.
+    # The values do not need to lie in between 0 and 1 or to sum to 1, since
+    # they are rescaled below; this allows users to specify the weights in a
+    # different manner (e.g., c(2, 1, 1)).
+    check_priorICweights_values(priorICweights)
     # To make it sum to 1 (if it not already did)
-    if (sum(priorICweights) != 1) {
+    if (priorICweights_need_rescaling(priorICweights)) {
       priorICweights <- priorICweights / sum(priorICweights) 
       message("\nrestriktor Message: The argument 'priorICweights' should add up to 1. It has been rescaled accordingly.")
     }
@@ -515,6 +517,19 @@ goric.default <- function(object, ..., hypotheses = NULL,
   }
   
   names(conList) <- objectnames
+
+  # GLMs without a dispersion parameter (e.g., poisson, binomial) have no
+  # variance parameter. In summary.restriktor() (restriktor_summary.R), the
+  # GORIC(C) penalty of the hypotheses is therefore lowered by 1 for these
+  # families. The same must be done for the penalty of the unconstrained
+  # hypothesis (PTu) and of the complement (PTc) below; otherwise these are
+  # penalized for a variance parameter that the model does not have.
+  # For the GORICA(C), the 1 (for the variance) is already subtracted for all
+  # models, so nothing extra is needed then.
+  glm_no_dispersion <- inherits(conList[[1]], "conGLM") &&
+    !(ans$model.org$family$family %in% c("gaussian", "Gamma", "inverse.gaussian")) &&
+    type %in% c("goric", "goricc")
+
 # compute complement ------------------------------------------------------
   df.c <- NULL
    if (comparison == "complement") { 
@@ -591,8 +606,11 @@ goric.default <- function(object, ..., hypotheses = NULL,
                                   meq  = conList[[Hm]]$PT_meq, 
                                   type, wt.bar, 
                                   debug = debug, 
-                                  sample.nobs = sample_nobs)   
-  } 
+                                  sample.nobs = sample_nobs)
+  if (glm_no_dispersion) {
+    PTc <- PTc - 1 # no variance parameter; see 'glm_no_dispersion' above
+  }
+  }
    
   
   
@@ -654,6 +672,10 @@ goric.default <- function(object, ..., hypotheses = NULL,
             ## correct PT for gorica(c)
             if (type %in% c("gorica", "goricac")) {
               PTu <- PTu - 1
+            }
+            ## correct PT for GLMs without a variance parameter (goric(c) only)
+            if (glm_no_dispersion) {
+              PTu <- PTu - 1 # see 'glm_no_dispersion' above
             }
             
             if (is.null(PTm)) {
@@ -733,7 +755,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
   ans$objectNames <- objectnames
   
   # calculate LL, PT, goric weights and ratios
-  model_comparison_metrics <- calculate_model_comparison_metrics(df, priorICweights)
+  model_comparison_metrics <- calculate_model_comparison_metrics(df, priorICweights,
+                                                                 penalty_factor = penalty_factor)
   
   df$loglik.weights  <- model_comparison_metrics$loglik_weights
   df$penalty.weights <- model_comparison_metrics$penalty_weights
@@ -890,6 +913,54 @@ goric.default <- function(object, ..., hypotheses = NULL,
   )
   
   class(ans) <- classMappings[[type]]
+
+  # Confidence intervals (CIs) for the GORIC(A) values, weights, and ratios of
+  # weights, via goric_CI() (goric_CI.R) with its recommended method
+  # ("invert": inversion CIs where these apply, parametric-bootstrap
+  # percentile CIs otherwise). CI = FALSE is used for all goric() calls made
+  # internally (e.g., by benchmark() and evSyn()), where the CIs are not needed.
+  # The state of the random number generator is restored afterwards, so that
+  # calling goric() does not change the random numbers drawn after it (and
+  # repeating the same call gives the same CIs).
+  if (isTRUE(CI)) {
+    seed_exists <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+    if (seed_exists) old_seed <- get(".Random.seed", envir = .GlobalEnv)
+    ci <- tryCatch(
+      goric_CI(ans, level = CI_level, method = "invert", B = CI_B),
+      error = function(e) {
+        message("\nrestriktor Message: The confidence intervals could not be computed (",
+                conditionMessage(e), "); use goric_CI() for other options.")
+        NULL
+      })
+    if (seed_exists) {
+      assign(".Random.seed", old_seed, envir = .GlobalEnv)
+    } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+      rm(".Random.seed", envir = .GlobalEnv)
+    }
+    if (!is.null(ci)) {
+      ans$CI <- ci
+      models <- ans$result$model
+      # CIs of the IC values and of the IC weights (rows: hypotheses)
+      ans$IC.CI <- cbind(lower = ci$IC$lower, upper = ci$IC$upper)
+      ans$weights.CI <- cbind(lower = ci$weights$lower, upper = ci$weights$upper)
+      rownames(ans$IC.CI) <- rownames(ans$weights.CI) <- models
+      # lower and upper bounds for the ratios of IC weights, in the same
+      # layout as ans$ratio.gw (row hypothesis versus column hypothesis)
+      M <- length(models)
+      lo <- up <- matrix(1, M, M, dimnames = dimnames(ans$ratio.gw))
+      rd <- ci$ratio_weights
+      for (j in seq_len(nrow(rd))) {
+        m <- match(rd$model[j], models); k <- match(rd$vs[j], models)
+        lo[m, k] <- rd$lower[j]; up[m, k] <- rd$upper[j]
+      }
+      ans$ratio.gw.lower <- lo
+      ans$ratio.gw.upper <- up
+      # description of the CI methods used (per quantity; see goric_CI())
+      # (named character vector: IC values, IC weights, ratios of IC weights)
+      txt <- sub("^  - ", "", goric_CI_method_text(ci)[-1])
+      ans$CI_methods <- stats::setNames(sub("^[^:]+: ", "", txt), sub(":.*$", "", txt))
+    }
+  }
   
   return(ans)
 }

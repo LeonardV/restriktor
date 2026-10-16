@@ -16,12 +16,12 @@
                   group_size = NULL, alt_group_size = NULL, 
                   quant = NULL, iter = 2000, 
                   control = list(), 
-                  ncpus = 1, seed = NULL, \dots)
+                  ncpus = 1, seed = NULL, priorICweights = NULL, \dots)
 
   benchmark_asymp(object, pop_est = NULL, sample_size = NULL, 
                   alt_sample_size = NULL, quant = NULL, iter = 2000, 
                   control = list(), 
-                  ncpus = 1, seed = NULL, \dots)
+                  ncpus = 1, seed = NULL, priorICweights = NULL, \dots)
   
   \method{print}{benchmark}(x, output_type = c("rgw", "gw", "rlw", "ld", "all"), 
                             hypo_rate_threshold = 1, color = TRUE, ...)
@@ -68,11 +68,17 @@
   \item{iter}{The number of iterations for benchmarking. Defaults to \code{2000}.}
   \item{hypo_rate_threshold}{A numeric value specifying the threshold for the 
   hypothesis rate. The function calculates the proportion of ratio-of-goric-weights 
-  that exceeds this threshold. Defaults to 1.}
+  that exceeds this threshold. Defaults to 1. See the note on the hypothesis rate in Details.}
   \item{control}{A list of control parameters. For more information, see details \link{goric}.}
   \item{ncpus}{Number of CPUs to use for parallel processing. Defaults to \code{1}.
   See details for more information.}
   \item{seed}{A seed for random number generation.}
+  \item{priorICweights}{Optional prior model probabilities used in the re-calculated and simulated 
+  GORIC(A) values (and thus in the benchmark GORIC(A) weights and ratios of weights). 
+  By default (\code{NULL}), the ones of \code{object} are used (i.e., \code{object$priorICweights}, 
+  which are equal weights unless specified otherwise in \code{goric}), such that the benchmarks 
+  are based on the same prior model probabilities as the sample values. 
+  See \code{priorICweights} in \link{goric} for the required number of elements.}
   \item{output_type}{A character vector specifying the type of output to print 
   or plot. Options are \code{"all"}, \code{"gw"} (goric(a) weights), 
   \code{"rgw"} (ratio of goric(a) weights), \code{"rlw"} (ratio of log-likelihood values), 
@@ -130,6 +136,37 @@
   \code{future::plan(future::multisession, workers = ncpus)}
   }
 
+
+\section{Note on the hypothesis rate}{
+  The hypothesis rate (\code{hypothesis_rate}) and the rlw rate (\code{rate_rlw}) for
+  the observed population (\code{"Observed"}) are the proportions of draws, generated
+  around the sample estimates (i.e., a parametric bootstrap), in which the preferred
+  hypothesis is supported (ratio of weights > threshold), separately for each
+  comparison (row). When the hypotheses in a row are close, that is, when the ratio
+  of weights is close to the threshold, these rates are unreliable: Preacher and
+  Merkle (2012) showed that such bootstrap proportions depend strongly on the specific
+  sample, and they are not the probability that a replication would prefer the same
+  hypothesis. They are only trustworthy when (nearly) all draws agree, so a rate that
+  is not close to 0 or 1 signals this for that row. There is no established cutoff
+  for 'close'. With the default threshold of 1, 'close' means that the IC values (or
+  weights) of the two hypotheses are close; with another threshold, it means that
+  their ratio of weights is close to that threshold.
+
+  The percentiles of the benchmark distributions are not affected by this (Preacher
+  and Merkle found that percentile intervals of bootstrap distributions of
+  (differences in) IC values perform well), and neither are the rates for other,
+  specified populations: those draws are generated around the specified population
+  values, so their rate is the probability of supporting the preferred hypothesis if
+  that population were true. For confidence intervals of the GORIC(A) values, their
+  differences, weights, and ratios of weights, see \code{\link{goric_CI}}.
+}
+
+
+\references{
+  Preacher, K. J., & Merkle, E. C. (2012). The problem of model selection uncertainty in 
+  structural equation modeling. \emph{Psychological Methods, 17}(1), 1--14. 
+  \doi{10.1037/a0026804}
+}
 
 \value{
   \code{benchmark_means} and \code{benchmark_asymp} return a list of 

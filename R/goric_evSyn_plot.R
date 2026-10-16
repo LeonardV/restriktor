@@ -58,23 +58,28 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
   cumulative_weights <- data_list$cumulative_weights
   y_label <- data_list$y_label
   
+  # 'studies' or, when type_ev = "average" (multiple analyses of one study), 'analyses'
+  unit_low    <- .evSyn_unit_label(x$type_ev, capital = FALSE)
+  units_low   <- .evSyn_unit_label(x$type_ev, plural = TRUE, capital = FALSE)
+  units_cap   <- .evSyn_unit_label(x$type_ev, plural = TRUE)
+  
   # Determine names of hypotheses and studies
   namesH <- colnames(weight_m)
   NrHypos_incl <- ncol(weight_m[,,drop = FALSE])
   S <- nrow(weight_m[,,drop = FALSE])
   if (!is.null(xlab)) {
     if (length(xlab) != S) {
-      stop("restriktor ERROR: Length of xlab (", length(xlab), ") must match the number of studies (", S, ").", call. = FALSE)
+      stop("restriktor ERROR: Length of xlab (", length(xlab), ") must match the number of ", units_low, " (", S, ").", call. = FALSE)
     }
     if (!is.null(xlab_unordered)) {
       message("restriktor Message: Both xlab and xlab_unordered are given, the plot will use xlab.",
-              "Notably, it is assumed that xlab gives the names of the re-ordered studies.")
+              "Notably, it is assumed that xlab gives the names of the re-ordered ", units_low, ".")
     }
     if (!all(x$order_studies == 1:S)){
       # Then, re-ordering happened and xlab should be the names of studies on current x-axis, so the ordered studies.
-      message("restriktor Message: It is assumed that xlab gives the names of the re-ordered studies. ",
-              "If re-ordering took place and you want to enter the names of the unordered studies, then use the xlab_unordered argument.",
-              "The order of the studies can be found via $order_studies.")
+      message("restriktor Message: It is assumed that xlab gives the names of the re-ordered ", units_low, ". ",
+              "If re-ordering took place and you want to enter the names of the unordered ", units_low, ", then use the xlab_unordered argument.",
+              "The order of the ", units_low, " can be found via $order_studies.")
     }
     
     Name_studies <- factor(xlab, levels = xlab) 
@@ -94,7 +99,7 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
   }
   if (!is.null(xlab_unordered) && is.null(xlab)) {
     if (length(xlab_unordered) != S) {
-      stop("restriktor ERROR: Length of xlab_unordered (", length(xlab_unordered), ") must match the number of studies (", S, ").", call. = FALSE)
+      stop("restriktor ERROR: Length of xlab_unordered (", length(xlab_unordered), ") must match the number of ", units_low, " (", S, ").", call. = FALSE)
     }
     Name_studies <- factor(xlab_unordered[x$order_studies], levels = xlab_unordered[x$order_studies]) 
     #angle_x = 30
@@ -110,7 +115,7 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
   } else {
     per_study_df <- data.frame(study = rep(Name_studies, NrHypos_incl),
                                weight = c(weight_m))
-    per_study_df$weight_type <- "per study"
+    per_study_df$weight_type <- paste("per", unit_low)
     times <- 2
   }
   
@@ -146,8 +151,8 @@ plot.evSyn <- function(x, output_type = "gorica_weights",
     ) +
     scale_y_continuous(limits = c(0, 1), n.breaks = 10) +
     scale_x_discrete(expand = c(0, 0.05)) +
-    labs(x = "Studies\n", y = y_label,
-         title = paste("Cumulative", y_label, "and", y_label, "per study"),
+    labs(x = paste0(units_cap, "\n"), y = y_label,
+         title = paste("Cumulative", y_label, "and", y_label, "per", unit_low),
          subtitle = paste(x$type_ev, "Evidence Synthesis results"),
          shape = "", color = "") + 
     guides(color = guide_legend(order = 2),

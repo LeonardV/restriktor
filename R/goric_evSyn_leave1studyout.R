@@ -69,12 +69,34 @@ leave1studyout.evSyn <- function(object, ...) {
   }
   
    
+  # 'Study' or, when type_ev = "average" (multiple analyses of one study), 'Analysis'
+  unit_cap <- .evSyn_unit_label(type_ev)
+  unit_low <- .evSyn_unit_label(type_ev, capital = FALSE)
   if(all(object$study_names == 1:S)) {
-    rownames <- paste0("Leave Study ", object$study_names, " out:")
+    rownames <- paste0("Leave ", unit_cap, " ", object$study_names, " out:")
   } else {
     #rownames <- paste0("Leave '", object$study_names, "' (i.e., study nr. ", 1:S, ") out:")
-    rownames <- paste0("Leave study nr. ", 1:S, " called '", object$study_names, "' out:")
+    rownames <- paste0("Leave ", unit_low, " nr. ", 1:S, " called '", object$study_names, "' out:")
   }
+
+  # Penalty factor (default 2), prior model probabilities (priorICweights),
+  # and study weights, as used in the evidence synthesis itself.
+  penalty_factor <- if (is.null(object$penalty_factor)) 2 else object$penalty_factor
+  priorICweights <- object$priorICweights
+  if (is.null(priorICweights)) {
+    priorICweights <- rep(1 / ncol(IC_m), ncol(IC_m))
+  }
+  study_weights <- object$study_weights
+  if (is.null(study_weights)) {
+    study_weights <- rep(1 / S, S)
+  }
+  # The study weights are stored in the original (input) order of the studies;
+  # re-order them such that they follow the (possibly re-ordered) rows of IC_m.
+  if (!is.null(object$order_studies)) {
+    study_weights <- study_weights[object$order_studies]
+  }
+  # Study weights summing to S (as in the evSyn functions)
+  study_weights_S <- S * study_weights / sum(study_weights)
   
   OverallGoric <- matrix(
     NA_real_,
@@ -114,22 +136,30 @@ leave1studyout.evSyn <- function(object, ...) {
   for (s in seq_len(S)) {
     
     keep <- seq_len(S) != s
-    
-    # TO DO HIER
-    # Evt moet hier dan ook nog penalty_factor in verwerkt worden:
-    # -2 * colSums(LL_m[keep,]) + penalty_factor * colMeans(PT_m[keep,])  
-    # Of hebben we die term alleen in goric() ms
+    nr_keep <- sum(keep)
+
+    # Study weights of the remaining studies, rescaled such that they average
+    # to 1 (as in the evSyn functions, where the weighted sums are divided by
+    # the mean of the study weights of the studies included so far).
+    w_keep <- study_weights_S[keep] / mean(study_weights_S[keep])
+
+    # Same IC as in the evSyn functions, but without study s:
+    # added:   weighted sum of IC values
+    # equal:   -2 x weighted sum of LL values + penalty_factor x weighted average of PT values
+    # average: weighted average of IC values
     OverallGoric[s, ] <- switch(
       type_ev,
-      added   = colSums(IC_m[keep, , drop = FALSE]),
-      equal   = -2 * colSums(LL_m[keep, , drop = FALSE]) +
-        2 * colMeans(PT_m[keep, , drop = FALSE]),
-      average = colMeans(IC_m[keep, , drop = FALSE])
+      added   = colSums(IC_m[keep, , drop = FALSE] * w_keep),
+      equal   = -2 * colSums(LL_m[keep, , drop = FALSE] * w_keep) +
+        penalty_factor * colSums(PT_m[keep, , drop = FALSE] * w_keep) / nr_keep,
+      average = colSums(IC_m[keep, , drop = FALSE] * w_keep) / nr_keep
     )
-    
+
     best <- which(OverallGoric[s, ] == min(OverallGoric[s, ], na.rm = TRUE))
     OverallPrefHypo[s, 1L] <- paste(colnames(IC_m)[best], collapse = ", ")
-    OverallGoricWeights[s, ] <- calc_ICweights(OverallGoric[s, ], hypo_names = colnames(IC_m))$IC_weights
+    # IC weights, taking into account the prior model probabilities (priorICweights)
+    expGW <- priorICweights * exp(-0.5 * (OverallGoric[s, ] - min(OverallGoric[s, ], na.rm = TRUE)))
+    OverallGoricWeights[s, ] <- expGW / sum(expGW)
   }
   
   resultIC <- switch(

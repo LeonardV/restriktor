@@ -2,7 +2,11 @@ summary.gorica_est <- function(object, type, ...) {
   z <- object
   
   ldots <- list(...)
-  
+
+  if (is.null(ldots$penalty_factor)) {
+    ldots$penalty_factor <- 2
+  }
+
   if (!inherits(z, "gorica_est")) {
     stop("object of class ", sQuote(class(z)), " is not supported.")
   }

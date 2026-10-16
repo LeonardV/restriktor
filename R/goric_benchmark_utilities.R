@@ -383,6 +383,7 @@ parallel_function_means <- function(i, N, var_e, means_pop,
       goric(est,
             VCOV = VCOV,
             hypotheses = hypos,
+            CI = FALSE, # no CIs needed for the simulated draws
             comparison = comparison,
             type = "gorica", # TO DO goricac ergens ook (als origineel dan goricc ws)?
             control = control,
@@ -447,6 +448,7 @@ parallel_function_asymp <- function(i, est, VCOV, hypos, pref_hypo, comparison,
       # "should not matter for this" scenario a user can otherwise hit).
       goric(est[i, ], VCOV = VCOV,
             hypotheses = hypos,
+            CI = FALSE, # no CIs needed for the simulated draws
             comparison = comparison,
             type = type,
             control = control,
@@ -1070,6 +1072,7 @@ calculate_error_probability <- function(object, hypos, pref_hypo, est,
       if (is.null(object$model.org)) {
         results_goric_pref <- goric(est, VCOV = VCOV,
                                     hypotheses = list(H_pref = H_pref),
+                                    CI = FALSE,
                                     comparison = "complement",
                                     type = "gorica", 
                                     control = control, 
@@ -1078,6 +1081,7 @@ calculate_error_probability <- function(object, hypos, pref_hypo, est,
         fit_data <- object$model.org
         results_goric_pref <- goric(fit_data,
                                     hypotheses = list(H_pref = H_pref),
+                                    CI = FALSE,
                                     comparison = "complement",
                                     type = object$type,
                                     control = control, 
@@ -1294,7 +1298,7 @@ goric_percentile_test <- function(draws, sample_value, band = c(0.495, 0.505),
 
   H1 <- paste(band[1], "< p <", band[2])
   fit <- goric(est, VCOV = VCOV, hypotheses = list(H1 = H1),
-              comparison = "complement", type = "gorica",
+              comparison = "complement", type = "gorica", CI = FALSE,
               control = control, ...)
   gw_H1 <- fit$result$gorica.weights[fit$result$model == "H1"]
 

@@ -124,6 +124,7 @@ export(print.goric_ICw)
 export(benchmark)
 export(benchmark_means)
 export(benchmark_asymp)
+export(goric_CI) 
 
 S3method(coef, restriktor)
 S3method(model.matrix, restriktor)
@@ -184,3 +185,5 @@ S3method(print, goric_ICw)
 S3method(print, benchmark)
 S3method(plot, benchmark)
 S3method(print, benchmark_plot)
+
+S3method(print, goric_CI)

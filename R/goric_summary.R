@@ -23,6 +23,21 @@ summary.con_goric <- function(object, brief = TRUE,
   df <- data.frame(model = x$result$model, x2)
   
   objectnames <- as.character(df$model)
+
+  # Confidence intervals (if computed by goric(); see goric_CI())
+  has_CI <- !is.null(x$IC.CI) && !is.null(x$weights.CI) && !is.null(x$ratio.gw.lower)
+  if (has_CI) {
+    CI_pct <- paste0(format(100 * x$CI$level), "%")
+    fmt_ci <- function(v) vapply(v, function(val) if (is.na(val)) "" else sprintf(dig, val), character(1))
+    # CI columns right after the IC values (column 4) and the IC weights (column 7)
+    df <- data.frame(df[, 1:4, drop = FALSE],
+                     IC.lower = fmt_ci(x$IC.CI[, "lower"]), IC.upper = fmt_ci(x$IC.CI[, "upper"]),
+                     df[, 5:7, drop = FALSE],
+                     gw.lower = fmt_ci(x$weights.CI[, "lower"]),
+                     gw.upper = fmt_ci(x$weights.CI[, "upper"]),
+                     df[, -(1:7), drop = FALSE], check.names = FALSE, row.names = NULL)
+    names(df)[5:6] <- c("g.lower", "g.upper")
+  }
   
   Amat <- x$constraints
   meq  <- x$neq
@@ -116,11 +131,23 @@ summary.con_goric <- function(object, brief = TRUE,
   cat("Results:\n")  
   print(format(df, digits = digits, scientific = FALSE), 
         print.gap = 2, quote = FALSE, right = TRUE)
+  if (has_CI) {
+    cat(sprintf("\n.lower, .upper: bounds of the %s confidence interval for the %s values (g.xxx) and %s weights (gw.xxx); the CI methods used are stored in $CI_methods.\n",
+                CI_pct, toupper(type), toupper(type)))
+  }
   cat("---\n")
   
   if (comparison == "complement") {
+    ci_c <- ""
+    if (has_CI) {
+      lo <- x$ratio.gw.lower[1, 2]; up <- x$ratio.gw.upper[1, 2]
+      if (!is.na(lo) && !is.na(up)) {
+        ci_c <- paste0(" (", CI_pct, "CI: [", format_value(lo), ", ", format_value(up), "])")
+      }
+    }
     cat("The order-restricted hypothesis", sQuote(objectnames[1]), "has", 
-        sprintf("%.2f", as.numeric(ratio.gw[1,2])), "times more support than its complement.\n\n")
+        sprintf("%.2f", as.numeric(ratio.gw[1,2])), 
+        paste0("times more support than its complement", ci_c, ".\n\n"))
   } 
   
   
@@ -145,6 +172,16 @@ summary.con_goric <- function(object, brief = TRUE,
     } else {
       print(format(ratio.gw, digits = digits, scientific = FALSE, trim = TRUE), 
             print.gap = 2, quote = FALSE, right = TRUE)
+    }
+    if (has_CI) {
+      for (bound in c("lower", "upper")) {
+        cat(sprintf("\n%s bounds of the %s confidence intervals for the ratio %s-weights:\n",
+                    ifelse(bound == "lower", "Lower", "Upper"), CI_pct, toupper(type)))
+        bm <- if (bound == "lower") x$ratio.gw.lower else x$ratio.gw.upper
+        bm_f <- apply(bm, c(1, 2), function(v) if (is.na(v)) "" else format_value(v))
+        dimnames(bm_f) <- dimnames(x$ratio.gw)
+        print(bm_f, print.gap = 2, quote = FALSE, right = TRUE)
+      }
     }
     cat("---\n")
   }

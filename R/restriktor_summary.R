@@ -229,10 +229,17 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
     if (inherits(z, c("conLM", "conRLM", "conMLM"))) {
       ans$goric <- -2*ll + ldots$penalty_factor*PT #-2*(ll - PT) 
     } else if (inherits(z, "conGLM")) {
-      if (!(z$model.org$family$family %in% c("gaussian", "Gamma", "inverse.gaussian"))) {
+      # No dispersion (variance) parameter for, e.g., poisson and binomial:
+      # then, the 1 (for the variance) is subtracted from the GORIC(C) penalty.
+      # For the GORICA(C), that 1 is already subtracted above (for all models),
+      # so it should not be subtracted a second time.
+      if (goric %in% c("goric", "goricc") &&
+          !(z$model.org$family$family %in% c("gaussian", "Gamma", "inverse.gaussian"))) {
         PT <- PT - 1
       }
-      ans$goric <- -2*ll / (1 + ldots$penalty_factor*PT) #-2*ll / (1 + 2*PT)
+      # TO DO Het was '-2*ll / (1 + penalty_factor*PT)', ik neem aan dat dit '-2*ll + penalty_factor*PT' moet zijn. Klopt dat??
+      # TO DO: Of wilde je hier een QAIC-type uitrdruking: −2·ll/ĉ + penalty_factor*PT, with ĉ the overdispersion factor?? Dit is ms sowieso wel een idee…
+      ans$goric <- -2*ll + ldots$penalty_factor*PT #-2*(ll - PT)
     }
     attr(ans$goric, "type")    <- goric
     attr(ans$goric, "penalty") <- PT

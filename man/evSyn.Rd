@@ -173,7 +173,9 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   %the ratio of weights for the reference hypothesis equals 1.
   Notably, the priorICweights will be used in the cumulative and final results of evidence synthesis.
   They will not be used in ordering the studies with 'order_studies' = \code{"ascending"} or \code{"descending"}; 
-  this will be based equal a priori likeliness of the hypotheses.}
+  this will be based equal a priori likeliness of the hypotheses.
+  Notably, with quite unequal priorICweights (or study_weights), 
+  the hypothesis used for sorting/ordering can differ from the one that is preferred in the final weighted result. }
   
   \item{output_type}{a plot option. If "\code{gorica_weights}" (default), 
   a plot with the cumulative goric(a)
@@ -202,7 +204,11 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   'study_sample_nobs' column, which by default is labelled "ni".}
   
   \item{study_weights}{ 
-  a numeric vector specifying the weight for each study, which should sum to 1 or S, with S the number of studies.
+  a numeric vector specifying the weight for each study. 
+  They should sum to 1 or S (the number of studies/analyses);
+  otherwise they are rescaled to add up to 1.
+  It is in the same order as the studies/analyses in \code{object} 
+  (i.e., the input order, also when \code{order_studies} changes the order of the studies in the output).
   If \code{NULL} (default), all studies are assumed to have equal weight. 
   Note that study-specific sample size is already taken into account via 'VCOV'.
   When provided, the study weights will be used to conduct weighted evidence synthesis.
@@ -211,9 +217,12 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   %(i.e., 'input_type' = \code{"icweights"} or \code{"icratios"});
   %then, the study weights cancel out.
   Notably, the study weights will be used in the cumulative and final results of evidence synthesis.
-  They will not be used in ordering the studies with 'order_studies' = \code{"ascending"} or \code{"descending"}; 
-  this will be based on the height of support for each study assuming equal study weights.}
-  
+  They will not be used in the ordering of the studies/analyses itself (which happens if 'order_studies' = \code{"ascending"} or \code{"descending"}). 
+  The re-ordering will be based on the height of support for each study, thus assuming equal study weights.
+  Notably, with quite unequal study_weights (or priorICweights), 
+  the hypothesis used for sorting/ordering can differ from the one that is preferred in the final weighted result. 
+  }
+
   \item{order_studies}{
   either a i) character string or ii) numeric vector:
   i) A character string that determines how studies are ordered in the output and plots. 

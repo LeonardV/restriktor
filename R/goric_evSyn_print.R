@@ -44,7 +44,8 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   } else if (inherits(x, "evSyn_ICratios")) {
     cat(paste("\nInput type 'icratios' detected: "))
     #cat("Ratio of information criteria weights (each vector ends with 1)\n") # Note: not necessary!
-    cat("Ratio of information criteria weights (each study has at least one 1)\n")
+    cat(paste0("Ratio of information criteria weights (each ", 
+               .evSyn_unit_label(x[["type_ev"]], capital = FALSE), " has at least one 1)\n"))
   } 
   
   cat("\n")
@@ -102,4 +103,9 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
 
   
   message(x[["messages"]]$mix_weights)
+  
+  if (!is.null(x[["penalty_factor"]]) && x[["penalty_factor"]] != 2) {
+    message(sprintf("\nrestriktor Message: Note that a penalty factor of %s (default is 2) is used in the calculation of the %s values, that is -2 x log-likelihood + penalty_factor x penalty",
+                    x[["penalty_factor"]], type_label))
+  }
 }

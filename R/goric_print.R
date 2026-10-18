@@ -332,8 +332,10 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   # another substantive hypothesis)? Flagged via the RATIO of loglik.weights
   # ('ratio.lw', the same quantity reported elsewhere) rather than the raw
   # loglik difference, so the cutoff doesn't depend on the scale of the
-  # data. "Close" here means that ratio falls within [0.9, 1.1] (i.e. within
-  # +/-10%) -- a simple, symmetric-in-practice heuristic rather than a
+  # data. "Close" here means that ratio falls within [1/1.1, 1.1] (a
+  # multiplicative band, so that it is symmetric: a ratio r of the best
+  # hypothesis vs. another is close exactly when 1/r, the other vs. the best,
+  # is close; the additive band [0.9, 1.1] was not) -- a simple heuristic rather than a
   # formal likelihood-ratio/chi-bar-square test: the hypotheses compared
   # here are order restrictions, not equality constraints, so they are
   # typically not nested in the way a classical LRT assumes -- a
@@ -348,7 +350,7 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     is_reference <- x$result$model %in% reference_categories
     is_exact_tie <- x$result$model %in% overlap_hypo
     close_idx <- which(!is_self & !is_reference & !is_exact_tie &
-                       ratio_lw_best >= 0.9 & ratio_lw_best <= 1.1)
+                       ratio_lw_best >= 1/1.1 & ratio_lw_best <= 1.1)
   }
   close_names <- if (length(close_idx) > 0) sQuote(x$result$model[close_idx]) else character(0)
   close_hypo_text <- if (length(close_names) == 1) {

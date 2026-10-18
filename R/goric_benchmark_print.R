@@ -64,6 +64,15 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
   # Same recomputation, for the rlw-based rate_rlw column.
   x$rate_rlw <- lapply(x$combined_values$rlw_combined,
                                  calculate_hypothesis_rate, q = threshold_rlw)
+  # Sensitivity check of both rates: discard the draws whose ratio lies in
+  # the multiplicative band [threshold/1.1, threshold*1.1] (the near-ties);
+  # see calculate_hypothesis_rate_band(). Recomputed here as well, so that it
+  # matches the thresholds used in this print call; returned (invisibly) as
+  # x$hypothesis_rate_band and x$rate_rlw_band.
+  x$hypothesis_rate_band <- lapply(x$combined_values$rgw_combined,
+                                   calculate_hypothesis_rate_band, q = hypo_rate_threshold)
+  x$rate_rlw_band <- lapply(x$combined_values$rlw_combined,
+                            calculate_hypothesis_rate_band, q = threshold_rlw)
 
   # no effect names
   # Was c("pop_est = No-effect", "pop_es = 0") -- but benchmark_means() names
@@ -81,6 +90,8 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
   x$hypothesis_rate[NE_names] <- as.numeric(NA)
   # rate_rlw is hidden for "No-effect" for the same reason.
   x$rate_rlw[NE_names] <- as.numeric(NA)
+  x$hypothesis_rate_band[NE_names] <- NULL
+  x$rate_rlw_band[NE_names] <- NULL
   
   # number of failed bootstrap runs
   empty_lists_count <- sapply(x$combined_values$gw_combined, function(x) { 
@@ -519,35 +530,27 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
     )
   }
 
-  # Caution about the hypothesis rate (rgw) and the rlw rate for the
-  # 'Observed' population (shown in the rgw and rlw sections): these are
-  # proportions of draws generated around the sample estimates (i.e., a
-  # parametric bootstrap) in which the preferred hypothesis is supported.
-  # Preacher and Merkle (2012) showed that such bootstrap 'ranking
-  # proportions' are unreliable as estimates of how often a replication
-  # would prefer the same hypothesis: they depend strongly on the specific
-  # sample, especially when the IC values of the hypotheses are close; only
-  # when (nearly) all draws agree are they trustworthy. In contrast,
-  # intervals/percentiles of the bootstrap distributions of (differences in)
-  # IC values do perform well. There is no established cutoff for 'close', so
-  # this is a standard note; the rate itself is the natural check (a rate
-  # not close to 0 or 1 indicates that the IC values are close).
-  # For other (user-specified) populations, the draws are generated around
-  # those population values, so the rate is then a genuine simulation result
-  # (the probability of supporting the hypothesis if that population were
-  # true), and the caution does not apply.
-  rate_shown <- any(c("all", "rgw", "rlw") %in% output_type)
-  obs_present <- any(grepl("Observed", names(x$hypothesis_rate), fixed = TRUE))
-  if (rate_shown && obs_present) {
-    message("---\nNote: The hypothesis rate and the rlw rate for the 'Observed' population are",
-            " the proportions of draws, generated around the sample estimates, in which the",
-            " preferred hypothesis is supported (ratio of weights > threshold). When the",
-            " hypotheses in a row are close, that is, when the ratio of weights is close to the",
-            " threshold, these rates are unreliable: they depend strongly on the specific sample",
-            " (Preacher & Merkle, 2012) and are not the probability that a replication would",
-            " prefer the same hypothesis. A rate that is not close to 0 or 1 signals this for",
-            " that row. The percentiles of the benchmark distributions are not affected, and",
-            " neither are the rates for other (specified) populations.")
+  # Note on the interpretation of the hypothesis rate (rgw) and the rlw rate
+  # (shown in the rgw and rlw sections). For every population, the rate is
+  # the proportion of draws, generated from that population with this sample
+  # size, in which the ratio of weights exceeds the threshold -- i.e., the
+  # power to support the preferred hypothesis if that population were true.
+  # It is not how often a replication would prefer that hypothesis: a
+  # replication comes from the true, unknown population. For the 'Observed'
+  # population, the population values are the sample estimates, so its rate
+  # is an 'observed power': it is itself an estimate that varies from sample
+  # to sample, strongly so when it is not close to 0 or 1 (Preacher & Merkle,
+  # 2012). As a check (not a corrected rate), the rates after discarding the
+  # near-ties (draws with a ratio in [threshold/1.1, threshold*1.1]) are
+  # returned in x$hypothesis_rate_band and x$rate_rlw_band.
+  show_rgw_rate <- any(c("all", "rgw") %in% output_type)
+  show_rlw_rate <- any(c("all", "rlw") %in% output_type)
+  if (show_rgw_rate || show_rlw_rate) {
+    message("---\nNote: The hypothesis rate (hypothesis_rate) denotes how often the",
+            " preferred hypothesis is supported (rgw > threshold) if this population were",
+            " true, with this sample size. Likewise, the rlw rate (rate_rlw) denotes how",
+            " often the ratio of log-likelihood weights exceeds its threshold if this",
+            " population were true, with this sample size.")
   }
 
   return(invisible(x))

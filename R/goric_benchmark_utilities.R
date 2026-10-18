@@ -965,6 +965,19 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   # rate" would be misleading -- it's just the exceedance rate of rlw.
   rate_rlw <- lapply(rlw_combined, calculate_hypothesis_rate, q = threshold_rlw)
 
+  # Sensitivity check for the two rates above (mainly of interest for the
+  # 'Observed' population, see the note printed by print.benchmark()): the
+  # same rates, but computed after discarding the draws whose ratio lies in
+  # the multiplicative band [q/1.1, q*1.1] around the threshold q (the
+  # near-ties). Per population a matrix with, per comparison, the number of
+  # draws with a ratio above q*1.1, the number of draws outside the band, and
+  # their ratio. Not a corrected rate: it only shows how much of the rate is
+  # driven by draws in which the hypotheses are (nearly) equally supported.
+  hypothesis_rate_band <- lapply(rgw_combined, calculate_hypothesis_rate_band,
+                                 q = hypo_rate_threshold)
+  rate_rlw_band <- lapply(rlw_combined, calculate_hypothesis_rate_band,
+                          q = threshold_rlw)
+
   # Overlap (0-1 overlapping coefficient) between the reference population's
   # benchmark distribution and each other population's -- the numeric
   # counterpart of the overlap visible when plotting them together. The
@@ -1028,6 +1041,8 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
     hypo_rate_threshold = hypo_rate_threshold,
     rate_rlw = rate_rlw,
     threshold_rlw = threshold_rlw,
+    hypothesis_rate_band = hypothesis_rate_band,
+    rate_rlw_band = rate_rlw_band,
     combined_values = list(gw_combined = gw_combined,
                            lw_combined = lw_combined,
                            rgw_combined = rgw_combined,
@@ -1578,6 +1593,24 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
 
 calculate_hypothesis_rate <- function(x, q = 1) {
   return(colMeans(x > q))
+}
+
+
+# Hypothesis rate after discarding the draws whose ratio of weights lies in
+# the multiplicative band [q/band, q*band] around the threshold q. Returns a
+# matrix (one row per comparison) with nr_draws_above (draws with ratio >
+# q*band), nr_draws_outside (draws with ratio < q/band or > q*band) and
+# rate = nr_draws_above / nr_draws_outside (NA when no draw is outside the
+# band).
+calculate_hypothesis_rate_band <- function(x, q = 1, band = 1.1) {
+  x <- as.matrix(x)
+  above <- colSums(x > q * band, na.rm = TRUE)
+  outside <- above + colSums(x < q / band, na.rm = TRUE)
+  rate <- ifelse(outside > 0, above / outside, NA_real_)
+  out <- cbind(nr_draws_above = above, nr_draws_outside = outside, rate = rate)
+  rownames(out) <- colnames(x)
+  attr(out, "band") <- c(lower = q / band, upper = q * band)
+  out
 }
 
 

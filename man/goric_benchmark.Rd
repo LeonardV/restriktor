@@ -14,21 +14,33 @@
   
   benchmark_means(object, pop_es = NULL, ratio_pop_means = NULL, 
                   group_size = NULL, alt_group_size = NULL, 
-                  quant = NULL, iter = 2000, 
+                  quant = NULL, iter = NULL, 
                   control = list(), 
-                  ncpus = 1, seed = NULL, priorICweights = NULL, \dots)
+                  ncpus = 1, seed = NULL,
+                  iter_adequacy_band = c(0.495, 0.505),
+                  iter_stability_tol = 1,
+                  iter_min = 500, iter_step = 100, iter_max = 2000,
+                  hypo_rate_threshold = 1,
+                  threshold_rlw = 1, priorICweights = NULL, \dots)
 
   benchmark_asymp(object, pop_est = NULL, sample_size = NULL, 
-                  alt_sample_size = NULL, quant = NULL, iter = 2000, 
+                  alt_sample_size = NULL, quant = NULL, iter = NULL, 
                   control = list(), 
-                  ncpus = 1, seed = NULL, priorICweights = NULL, \dots)
+                  ncpus = 1, seed = NULL,
+                  iter_adequacy_band = c(0.495, 0.505),
+                  iter_stability_tol = 1,
+                  iter_min = 500, iter_step = 100, iter_max = 2000,
+                  hypo_rate_threshold = 1,
+                  threshold_rlw = 1, priorICweights = NULL, \dots)
   
-  \method{print}{benchmark}(x, output_type = c("rgw", "gw", "rlw", "ld", "all"), 
-                            hypo_rate_threshold = 1, color = TRUE, ...)
+  \method{print}{benchmark}(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
+                                               "rgw_log", "rlw_log", "all"),
+                            hypo_rate_threshold = NULL, threshold_rlw = NULL,
+                            color = TRUE, percentiles = NULL, ...)
   
   \method{plot}{benchmark}(x, output_type = c("rgw", "rlw", "gw", "ld"), 
                            percentiles = NULL, x_lim = c(), log_scale = FALSE,
-                           alpha = 0.50, nrow_grid = NULL, ncol_grid = 1, 
+                           opacity = 0.50, nrow_grid = NULL, ncol_grid = 1, 
                            distr_grid = FALSE, ...)
 }
 \arguments{
@@ -65,10 +77,41 @@
   for example, to see the values to which the GORIC(A) weights will converge 
   (and thus to see the maximum value of the weights).}
   \item{quant}{Quantiles for benchmarking results. Defaults 5\%, 35\%, 50\%, 65\%, 95\%.}
-  \item{iter}{The number of iterations for benchmarking. Defaults to \code{2000}.}
+  \item{iter}{The number of iterations (draws) for benchmarking. By default
+  (\code{NULL}), the number of draws is set automatically: the benchmark starts with
+  \code{iter_min} draws and adds \code{iter_step} draws at a time (keeping the earlier
+  ones), until the percentile of the sample value within the benchmark distribution of
+  the \code{"Observed"} population has stabilized (see \code{iter_stability_tol}) or
+  \code{iter_max} draws are reached. If a number is given, exactly that many draws are
+  used; a message is then given if that percentile has not (yet) stabilized.}
+  \item{iter_min}{The number of draws to start with when \code{iter = NULL}. Defaults to
+  \code{500}.}
+  \item{iter_step}{The number of draws added per round when \code{iter = NULL}.
+  Defaults to \code{100}.}
+  \item{iter_max}{The maximum number of draws when \code{iter = NULL}. Defaults to
+  \code{2000}.}
+  \item{iter_stability_tol}{The tolerance, in percentage points, used to decide whether
+  the percentile has stabilized: this is the case when, for both the GORIC(A) weights
+  and the log-likelihood weights, the percentile of the sample value changed by less
+  than \code{iter_stability_tol} after the last \code{iter_step} draws (when
+  \code{iter = NULL}) or over the last 20\% of the draws (when \code{iter} is given).
+  Defaults to \code{1}.}
+  \item{iter_adequacy_band}{A numeric vector of length 2 with the bounds of the band
+  around the median (0.5) used in an informational check of whether the sample value
+  lies at the median of the benchmark distribution of the \code{"Observed"} population
+  (returned as \code{median_bias_check_gw} and \code{median_bias_check_lw}). It is not
+  used to decide on the number of draws. Defaults to \code{c(0.495, 0.505)}.}
   \item{hypo_rate_threshold}{A numeric value specifying the threshold for the 
   hypothesis rate. The function calculates the proportion of ratio-of-goric-weights 
-  that exceeds this threshold. Defaults to 1. See the note on the hypothesis rate in Details.}
+  that exceeds this threshold. Defaults to 1 in \code{benchmark_means} and
+  \code{benchmark_asymp}. In \code{print}, the default (\code{NULL}) uses the threshold
+  stored in the object; another value recomputes the rate for that print call only,
+  without rerunning the benchmark. See the note on the hypothesis rate.}
+  \item{threshold_rlw}{A numeric value specifying the threshold for the rlw rate: the
+  proportion of ratio-of-log-likelihood-weights that exceeds this threshold. Defaults
+  to 1 in \code{benchmark_means} and \code{benchmark_asymp}. In \code{print}, the
+  default (\code{NULL}) uses the threshold stored in the object; another value
+  recomputes the rate for that print call only. See the note on the hypothesis rate.}
   \item{control}{A list of control parameters. For more information, see details \link{goric}.}
   \item{ncpus}{Number of CPUs to use for parallel processing. Defaults to \code{1}.
   See details for more information.}
@@ -86,12 +129,17 @@
   and \code{"rgw"} for plot.}
   \item{color}{If TRUE, the output will include ANSI color coding. Set \code{color = FALSE} 
   when using this function in R Markdown documents to avoid rendering issues with color codes.}
-  \item{alpha}{Alpha refers to the opacity of a geom. Values of alpha range from 0 to 1, with lower values corresponding to more transparent colors.}
+  \item{opacity}{The opacity of the density curves in \code{plot}. Values range from 0
+  to 1, with lower values corresponding to more transparent colors. Defaults to
+  \code{0.50}. (This argument used to be called \code{alpha}; \code{alpha} still works
+  for now, with a deprecation warning, but may be removed in a future version.)}
   \item{nrow_grid}{An integer value representing the number of rows in the grid layout.}
   \item{ncol_grid}{An integer value representing the number of columns in the grid layout.}
   \item{distr_grid}{If TRUE, the facet_grid function is used to create a grid of separate plots for each effect-size (estimates).}
-  \item{percentiles}{A numeric vector specifying the percentiles to be shown. By default 
-  the percentiles are inherited from the quantiles used for benchmarking, see \code{quant}.}
+  \item{percentiles}{A numeric vector specifying the percentiles to be shown (by
+  \code{print} and \code{plot}). By default (\code{NULL}) the percentiles are inherited
+  from the quantiles used for benchmarking, see \code{quant}; other values are
+  recomputed from the stored draws, without rerunning the benchmark.}
   \item{x_lim}{A numeric vector of length 2 specifying the x-axis limits. Defaults to \code{c()}.}
   \item{log_scale}{logical, If TRUE, The x-axis is transformed using a base-10 logarithmic scale.
         This transformation adjusts the way the data is visualized on the x-axis, but does not 
@@ -138,27 +186,35 @@
 
 
 \section{Note on the hypothesis rate}{
-  The hypothesis rate (\code{hypothesis_rate}) and the rlw rate (\code{rate_rlw}) for
-  the observed population (\code{"Observed"}) are the proportions of draws, generated
-  around the sample estimates (i.e., a parametric bootstrap), in which the preferred
-  hypothesis is supported (ratio of weights > threshold), separately for each
-  comparison (row). When the hypotheses in a row are close, that is, when the ratio
-  of weights is close to the threshold, these rates are unreliable: Preacher and
-  Merkle (2012) showed that such bootstrap proportions depend strongly on the specific
-  sample, and they are not the probability that a replication would prefer the same
-  hypothesis. They are only trustworthy when (nearly) all draws agree, so a rate that
-  is not close to 0 or 1 signals this for that row. There is no established cutoff
-  for 'close'. With the default threshold of 1, 'close' means that the IC values (or
-  weights) of the two hypotheses are close; with another threshold, it means that
-  their ratio of weights is close to that threshold.
+  The hypothesis rate (\code{hypothesis_rate}) denotes, per comparison (row), how often
+  the preferred hypothesis is supported (ratio of GORIC(A) weights > threshold) if this
+  population were true, with this sample size. Stated otherwise, it is the power to
+  support the preferred hypothesis given this population and sample size. Likewise, the
+  rlw rate (\code{rate_rlw}) denotes how often the ratio of log-likelihood weights
+  exceeds its threshold if this population were true, with this sample size.
 
-  The percentiles of the benchmark distributions are not affected by this (Preacher
-  and Merkle found that percentile intervals of bootstrap distributions of
-  (differences in) IC values perform well), and neither are the rates for other,
-  specified populations: those draws are generated around the specified population
-  values, so their rate is the probability of supporting the preferred hypothesis if
-  that population were true. For confidence intervals of the GORIC(A) values, their
-  differences, weights, and ratios of weights, see \code{\link{goric_CI}}.
+  For the observed population (\code{"Observed"}), the population values are the
+  sample estimates (i.e., a parametric bootstrap). In that case, \code{hypothesis_rate}
+  also reflects the 'observed power': it is itself an estimate, which varies from sample
+  to sample. This variation in \code{hypothesis_rate} is large when the rate is not
+  close to 0 or 1, that is, when the ratio of weights is often close to the threshold
+  (Preacher & Merkle, 2012). That is, \code{hypothesis_rate} does not denote how often a
+  replication would prefer this hypothesis, since a replication will find different
+  sample estimates.
+
+  As a sensitivity check for the \code{"Observed"} population, the rates when the draws
+  with a ratio of weights between threshold / 1.1 and threshold \eqn{\times}{x} 1.1 (near-ties) are
+  discarded can be found in the output elements \code{hypothesis_rate_band} and
+  \code{rate_rlw_band}: the number of draws with a ratio above threshold \eqn{\times}{x} 1.1 divided
+  by the number of draws outside that band. Notably, this is not a corrected rate, but
+  meant as a check: a clear difference with the rate based on all draws shows that the
+  rate is driven by near-ties.
+
+  The percentiles of the benchmark distributions are not affected by this, also for the
+  \code{"Observed"} population: Preacher and Merkle found that percentile intervals of
+  bootstrap distributions of (differences in) IC values perform well. For confidence
+  intervals of the GORIC(A) values, their differences, weights, and ratios of weights,
+  see \code{\link{goric_CI}}.
 }
 
 
@@ -173,9 +229,18 @@
   class \code{benchmark_means}, \code{benchmark}, and \code{list} or 
   \code{benchmark_asymp}, \code{benchmark}, and \code{list} containing the 
   results of the benchmark analysis.
+  Among others, it contains \code{hypothesis_rate} and \code{rate_rlw} (per
+  population, the rates at the thresholds \code{hypo_rate_threshold} and
+  \code{threshold_rlw}), and \code{hypothesis_rate_band} and \code{rate_rlw_band}
+  (per population, a matrix with, per comparison, \code{nr_draws_above}: the number
+  of draws with a ratio of weights above threshold \eqn{\times}{x} 1.1; \code{nr_draws_outside}:
+  the number of draws outside [threshold / 1.1, threshold \eqn{\times}{x} 1.1]; and \code{rate} =
+  \code{nr_draws_above}/\code{nr_draws_outside}); see the note on the hypothesis rate.
   
-  \code{print.benchmark} does not return a value. It prints formatted benchmark 
-  analysis results to the console.
+  \code{print.benchmark} prints formatted benchmark analysis results to the
+  console and invisibly returns the object, with the rates (including
+  \code{hypothesis_rate_band} and \code{rate_rlw_band}) recomputed at the
+  thresholds used in that print call.
   
   \code{plot.benchmark} returns a gtable object that can be displayed or further 
   customized using various functions from the gridExtra and grid packages. This 
@@ -212,7 +277,8 @@ fit_goric <- goric(anova_result, hypotheses = list(H1 = h1, H2 = h2),
                    comparison = "unconstrained", type = "goric")
 
 # by default: ES = 0 \& ES = observed ES
-# In practice you want to increase the number of iterations (default = 2000).
+# In practice you want more iterations: by default (iter = NULL), the number of
+# iterations is set automatically (from 500 up to at most 2000).
 \donttest{
 # multisession supports windows machines
 # future::plan(future::multisession, workers = 8)

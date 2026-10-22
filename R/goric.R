@@ -10,7 +10,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
                           check_add_Hc = TRUE, # set to FALSE only from within goric_benchmark.R / goric_benchmark_utilities.R.
                           priorICweights = NULL,
                           posthoc = TRUE,
-                          CI = TRUE, CI_level = 0.95, CI_B = 1000L,
+                          CI = FALSE, CI_level = 0.95, CI_B = 1000L,
                           control = list(), debug = FALSE) {
 
   #TO DO: Ook beste vs complement - zie commented code (met TO DOs)

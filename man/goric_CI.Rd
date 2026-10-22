@@ -27,7 +27,7 @@ goric_CI(object, level = 0.95, method = c("invert", "boot", "delta", "mc"),
   CIs for the weights are obtained via Monte Carlo draws from the (multivariate
   normal) distribution of the GORIC(A) values; \code{"boot"} gives
   parametric-bootstrap percentile CIs (see Details), which are recommended when
-  hypotheses are close or (nearly) indistinguishable; \code{"invert"} (default; recommended
+  hypotheses are close or overlap; \code{"invert"} (default; recommended
   in general, see 'Choosing a method' in Details) gives, for
   a hypothesis consisting of only equality constraints or of a single inequality
   constraint versus the unconstrained hypothesis or versus its complement,
@@ -43,9 +43,10 @@ goric_CI(object, level = 0.95, method = c("invert", "boot", "delta", "mc"),
   \item{B}{the number of draws when \code{method = "boot"} or \code{"invert"} (default 1000; also used in \code{\link{goric}}).}
   \item{seed}{an optional seed (for \code{method = "mc"} or \code{"boot"}).
   Note that this sets the seed of the global random number generator.}
-  \item{tol}{tolerance used to determine whether two hypotheses are
-  distinguishable, that is, whether the standard error of the difference in
-  their GORIC(A) values is larger than zero.}
+  \item{tol}{tolerance used to determine whether two hypotheses have the same
+  order-restricted maximum likelihood estimates (or-mle's) in the sample, that is,
+  whether the standard error of the difference in their
+  GORIC(A) values is (numerically) zero.}
   \item{x}{an object of class \code{goric_CI}.}
   \item{digits}{the number of digits to be printed.}
   \item{all_pairs}{if \code{FALSE} (default), the differences in GORIC(A)
@@ -105,7 +106,7 @@ goric_CI(object, level = 0.95, method = c("invert", "boot", "delta", "mc"),
   Hence, in general, \code{method = "invert"} is recommended: it gives the
   inversion CIs where these apply and the bootstrap CIs otherwise. The
   analytic CIs (\code{"delta"}, \code{"mc"}) need no simulation and are fine for
-  clearly distinguishable hypotheses in large samples, but they are too
+  clearly non-overlapping hypotheses in large samples, but they are too
   narrow when hypotheses are close or overlap, which is common for
   order-restricted hypotheses (coverage for differences about .83 to .92,
   for weights as low as .29 to .89).
@@ -125,7 +126,7 @@ goric_CI(object, level = 0.95, method = c("invert", "boot", "delta", "mc"),
     that of their differences. Merkle et al. (2016) first apply Vuong's (1989)
     formal test of distinguishability; that test assumes estimates that are
     not on the boundary of the parameter space, which does not hold for
-    order-restricted estimates, so here pairs are only flagged when their
+    order-restricted maximum likelihood estimates (or-mle's), so here pairs are only flagged when their
     standard error is (numerically) zero (see below). Casewise
     contributions are available for \code{lm} (also with prior weights),
     \code{rlm}, \code{mlm}, and \code{glm} objects (gaussian, poisson, binomial,
@@ -172,13 +173,16 @@ goric_CI(object, level = 0.95, method = c("invert", "boot", "delta", "mc"),
   are far inside such a hypothesis, because its distribution is then
   degenerate).
 
-  \emph{Indistinguishable hypotheses.} The analytic CIs require that the
-  hypotheses are distinguishable. When two hypotheses lead to the same
-  restricted estimates (e.g., a hypothesis and the unconstrained hypothesis
+  \emph{Hypotheses with the same or-mle's.} The analytic CIs require that the
+  hypotheses do not have the same or-mle's in the sample (i.e., are distinguishable, in
+  Vuong's terms). This can only occur for overlapping hypotheses, when the estimates
+  lie in their common part; overlapping hypotheses can also have
+  different or-mle's. When two hypotheses lead to the same order-restricted maximum likelihood estimates
+  (or-mle's; e.g., a hypothesis and the unconstrained hypothesis
   when the estimates are in agreement with that hypothesis), the standard
   error of their difference is zero, while the difference in GORIC(A) values
   is in fact not fixed (it follows a non-normal, chi-bar-square-type
-  distribution). Such pairs are flagged (\code{distinguishable = FALSE}) and get
+  distribution). Such pairs are flagged (\code{same_ormle = TRUE}) and get
   no analytic CI. Also when the true parameters are close to the boundaries of
   the hypotheses (relative to the sample size), the analytic CIs tend to be
   too narrow. In these cases, use \code{method = "boot"}.
@@ -222,7 +226,7 @@ goric_CI(object, level = 0.95, method = c("invert", "boot", "delta", "mc"),
   standard error (\code{SE}), and the lower and upper bound of the CI.}
   \item{difference}{a data frame with, for all ordered pairs of hypotheses
   (\code{model} versus \code{vs}), the difference in GORIC(A) values, its
-  standard error, the CI, whether the hypotheses are distinguishable, and
+  standard error, the CI, whether the hypotheses have the same or-mle's in the sample (\code{same_ormle}), and
   the method used for the CI (\code{CI_method}).}
   \item{weights}{a data frame with the GORIC(A) weights, their CIs, and the
   method used for the CI (\code{CI_method}).}
@@ -230,7 +234,8 @@ goric_CI(object, level = 0.95, method = c("invert", "boot", "delta", "mc"),
   the ratio of GORIC(A) weights and its CI.}
   \item{Sigma}{the estimated covariance matrix of the log-likelihood values.}
   \item{best}{the name of the hypothesis with the highest GORIC(A) weight.}
-  \item{all_distinguishable}{whether all pairs of hypotheses are distinguishable.}
+  \item{any_same_ormle}{whether any pair of hypotheses has the same or-mle's in this
+  sample.}
   Also returned are \code{type}, \code{level}, \code{method}, \code{approach},
   \code{n} (the number of cases used in the casewise approach), \code{B},
   \code{penalty_factor}, and \code{priorICweights}.

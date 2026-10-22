@@ -26,7 +26,7 @@ comparable to the Akaike weights.
       penalty_factor = 2, Heq = FALSE,
       add_Hc = NULL,
       priorICweights = NULL,
-      CI = TRUE, CI_level = 0.95, CI_B = 1000,
+      CI = FALSE, CI_level = 0.95, CI_B = 1000,
       control = list(), debug = FALSE)
 
 \method{goric}{lm}(object, ..., hypotheses = NULL,
@@ -197,14 +197,14 @@ comparable to the Akaike weights.
 
   \item{digits}{the number of significant digits to use when printing.}
 
-  \item{CI}{if \code{TRUE} (default), confidence intervals (CIs) are computed for
+  \item{CI}{if \code{TRUE}, confidence intervals (CIs) are computed for
   the GORIC(A) values, the GORIC(A) weights, and the ratios of GORIC(A) weights,
   using \code{\link{goric_CI}} with its recommended method (\code{method = "invert"}:
   inversion CIs where these apply, and parametric-bootstrap percentile CIs
   otherwise). They are printed as extra columns (lower and upper bound) in the
-  results and, for the ratios of weights, in the conclusion. Set to \code{FALSE}
-  to skip this (e.g., to save time); see \code{\link{goric_CI}} for other
-  options. The state of the random number generator is the same afterwards as
+  results and, for the ratios of weights, in the conclusion. Defaults to
+  \code{FALSE}; the CIs can also be computed afterwards with \code{goric_CI(object)}, see \code{\link{goric_CI}} for
+  other options. The state of the random number generator is the same afterwards as
   without the CIs.}
 
   \item{CI_level}{the confidence level of the CIs (default 0.95).}

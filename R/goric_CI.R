@@ -187,19 +187,19 @@
 #      in large samples (fast, no simulation).
 #
 # -----------------------------------------------------------------------------
-# Important caveat: (in)distinguishable hypotheses
+# Important caveat: overlapping (indistinguishable) hypotheses
 # -----------------------------------------------------------------------------
 # The normal approximation requires that the two hypotheses are
 # distinguishable (omega^2 > 0; Vuong, 1989; Merkle et al., 2016). When two
-# hypotheses lead to the same restricted estimates -- e.g., H1 versus the
+# hypotheses lead to the same order-restricted MLEs (or-mle's) -- e.g., H1 versus the
 # unconstrained hypothesis when the estimates are in agreement with H1, or
 # overlapping hypotheses -- the casewise differences are (asymptotically) zero,
 # SE_mk = 0, and the difference in IC values has a non-normal (chi-bar-square
 # type) distribution with a spread of order 1. A normal-based CI would then
 # wrongly collapse to a point. Such pairs are therefore flagged
-# ('distinguishable = FALSE') and get no analytic CI (NA). The analytic CIs of
+# ('same_ormle = TRUE') and get no analytic CI (NA). The analytic CIs of
 # the weights ignore this extra (order 1) variability as well, so these are
-# too narrow when the set contains indistinguishable hypotheses (a note is
+# too narrow when the set contains overlapping hypotheses (a note is
 # given). The bootstrap (method = "boot") does capture this variability and
 # gives CIs for all pairs.
 #
@@ -392,9 +392,11 @@ goric_CI <- function(object, level = 0.95, method = c("invert", "boot", "delta",
   se_d  <- 2 * sqrt(pmax(var_d, 0))
   dIC   <- IC[pairs$m] - IC[pairs$k]
   log_ratio <- eta[pairs$m] - eta[pairs$k]
-  # distinguishable: SE clearly larger than zero (relative to the IC scale)
+  # same_ormle: the two hypotheses have the same order-restricted MLEs (or-mle's)
+  # in this sample, so that the SE of their difference is (numerically) zero
+  # relative to the IC scale ('indistinguishable' in Vuong's terms).
   scale_ref <- max(1, sqrt(max(abs(diag(Sigma)))))
-  distinguishable <- se_d > tol * scale_ref
+  same_ormle <- !(se_d > tol * scale_ref)
 
   ci_method <- rep(if (use_boot) "boot" else "analytic", nrow(pairs))
   if (use_boot) {
@@ -405,10 +407,10 @@ goric_CI <- function(object, level = 0.95, method = c("invert", "boot", "delta",
       exp(quantile(eta_boot[, pairs$m[j]] - eta_boot[, pairs$k[j]], probs = probs, names = FALSE))
     }, numeric(2)))
   } else {
-    q_d <- cbind(ifelse(distinguishable, dIC - z * se_d, NA_real_),
-                 ifelse(distinguishable, dIC + z * se_d, NA_real_))
-    q_r <- cbind(ifelse(distinguishable, exp(log_ratio - z * se_d / 2), NA_real_),
-                 ifelse(distinguishable, exp(log_ratio + z * se_d / 2), NA_real_))
+    q_d <- cbind(ifelse(!same_ormle, dIC - z * se_d, NA_real_),
+                 ifelse(!same_ormle, dIC + z * se_d, NA_real_))
+    q_r <- cbind(ifelse(!same_ormle, exp(log_ratio - z * se_d / 2), NA_real_),
+                 ifelse(!same_ormle, exp(log_ratio + z * se_d / 2), NA_real_))
   }
 
   # method = "invert": for a hypothesis versus the unconstrained hypothesis or
@@ -430,13 +432,13 @@ goric_CI <- function(object, level = 0.95, method = c("invert", "boot", "delta",
   diff_tab <- data.frame(model = models[pairs$m], vs = models[pairs$k],
                          difference = dIC, SE = se_d,
                          lower = q_d[, 1], upper = q_d[, 2],
-                         distinguishable = distinguishable,
+                         same_ormle = same_ormle,
                          CI_method = ci_method,
                          row.names = NULL, stringsAsFactors = FALSE)
   ratio_tab <- data.frame(model = models[pairs$m], vs = models[pairs$k],
                           ratio = exp(log_ratio),
                           lower = q_r[, 1], upper = q_r[, 2],
-                          distinguishable = distinguishable,
+                          same_ormle = same_ormle,
                           CI_method = ci_method,
                           row.names = NULL, stringsAsFactors = FALSE)
 
@@ -496,7 +498,7 @@ goric_CI <- function(object, level = 0.95, method = c("invert", "boot", "delta",
               IC = IC_tab, difference = diff_tab,
               weights = weight_tab, ratio_weights = ratio_tab,
               best = models[which.max(w)],
-              all_distinguishable = all(distinguishable))
+              any_same_ormle = any(same_ormle))
   class(out) <- "goric_CI"
   out
 }
@@ -920,14 +922,15 @@ print.goric_CI <- function(x, digits = max(3, getOption("digits") - 4),
               ifelse(all_pairs, "", paste0(" (best hypothesis ", x$best, " versus the others)"))))
   print(fmt(x$ratio_weights[sel, , drop = FALSE]), row.names = FALSE, right = TRUE)
 
-  if (!x$all_distinguishable) {
+  if (isTRUE(x$any_same_ormle)) {
     if (x$method %in% c("boot", "invert")) {
-      message("\nrestriktor Note: Some hypotheses lead to the same restricted estimates in this sample ",
-              "(distinguishable = FALSE). For these pairs, only the bootstrap CIs are meaningful ",
-              "(the SE is 0, but the difference in ", type_label, " values is not fixed).")
+      message("\nrestriktor Note: Some hypotheses lead to the same order-restricted maximum ",
+              "likelihood estimates (or-mle's) in this sample (same_ormle = TRUE). For these pairs, ",
+              "only the bootstrap and inversion CIs are meaningful (the SE is 0, but the ",
+              "difference in ", type_label, " values is not fixed).")
     } else {
-      message("\nrestriktor Note: Some hypotheses lead to the same restricted estimates ",
-              "(distinguishable = FALSE), for example, a hypothesis and the unconstrained hypothesis ",
+      message("\nrestriktor Note: Some hypotheses lead to the same order-restricted maximum ",
+              "likelihood estimates (or-mle's) (same_ormle = TRUE), for example, a hypothesis and the unconstrained hypothesis ",
               "when the estimates are in agreement with that hypothesis. For these pairs, the ",
               "difference in ", type_label, " values is not normally distributed and no CI is given. ",
               "The CIs of the weights do not reflect this (order 1) variability and are too narrow then. ",

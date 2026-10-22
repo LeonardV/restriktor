@@ -188,19 +188,16 @@
 \section{Note on the hypothesis rate}{
   The hypothesis rate (\code{hypothesis_rate}) denotes, per comparison (row), how often
   the preferred hypothesis is supported (ratio of GORIC(A) weights > threshold) if this
-  population were true, with this sample size. Stated otherwise, it is the power to
-  support the preferred hypothesis given this population and sample size. Likewise, the
-  rlw rate (\code{rate_rlw}) denotes how often the ratio of log-likelihood weights
-  exceeds its threshold if this population were true, with this sample size.
+  population were true, with this sample size; that is, the power to support the
+  preferred hypothesis under this population. Likewise, the rlw rate
+  (\code{rate_rlw}) denotes how often the ratio of log-likelihood weights exceeds its
+  threshold under this population. For the \code{"No-effect"} population, the rates
+  are not printed, but they are stored in the object.
 
-  For the observed population (\code{"Observed"}), the population values are the
-  sample estimates (i.e., a parametric bootstrap). In that case, \code{hypothesis_rate}
-  also reflects the 'observed power': it is itself an estimate, which varies from sample
-  to sample. This variation in \code{hypothesis_rate} is large when the rate is not
-  close to 0 or 1, that is, when the ratio of weights is often close to the threshold
-  (Preacher & Merkle, 2012). That is, \code{hypothesis_rate} does not denote how often a
-  replication would prefer this hypothesis, since a replication will find different
-  sample estimates.
+  For the \code{"Observed"} population, the population values are the sample
+  estimates. Since these vary from sample to sample, so does its rate. When the rate is
+  close to 0 or 1, this hardly matters; when it is in between, the rate in another
+  sample could be quite different (Preacher & Merkle, 2012).
 
   As a sensitivity check for the \code{"Observed"} population, the rates when the draws
   with a ratio of weights between threshold / 1.1 and threshold \eqn{\times}{x} 1.1 (near-ties) are

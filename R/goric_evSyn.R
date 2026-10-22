@@ -90,6 +90,55 @@
   invisible(TRUE)
 }
 
+# Helper: check the study_weights argument (used by all evSyn functions).
+# - NULL: equal weights (1/S each).
+# - The weights must be S strictly positive, finite numbers.
+# - The weights are NOT transformed: only their relative sizes matter, since
+#   the weighted sums / averages in the evidence synthesis are normalized
+#   (i.e., the results are the same for weights w and c*w with c > 0).
+#   If the weights do not add up to 1 or to S, a message is given such that
+#   the user is aware of this.
+.check_study_weights <- function(study_weights, S, tol = sqrt(.Machine$double.eps)) {
+  if (is.null(study_weights)) {
+    return(rep(1/S, S))
+  }
+  if (!is.numeric(study_weights) || length(study_weights) != S) {
+    stop("\nrestriktor ERROR: The argument 'study_weights' must be a numeric vector containing S = ", S,
+         " values (one for each study).", call. = FALSE)
+  }
+  if (any(!is.finite(study_weights))) {
+    stop("\nrestriktor ERROR: The argument 'study_weights' contains missing or non-finite values.",
+         call. = FALSE)
+  }
+  if (any(study_weights <= 0)) {
+    stop("\nrestriktor ERROR: All values in 'study_weights' must be larger than 0 ",
+         "(now, the following elements are not: ",
+         paste(which(study_weights <= 0), collapse = ", "), "). ",
+         "To exclude a study, leave it out of the input.", call. = FALSE)
+  }
+  sw_sum <- sum(study_weights)
+  if (abs(sw_sum - 1) > tol && abs(sw_sum - S) > tol) {
+    message("\nrestriktor Message: The values in 'study_weights' do not add up to 1 or to S = ", S,
+            " (but to ", format(sw_sum, digits = 4), "). They are not rescaled, since only their ",
+            "relative sizes are used; that is, the results are the same as when they would ",
+            "add up to 1 or S.")
+  }
+  study_weights
+}
+
+# Helper: when two or more hypotheses are equally preferred overall, use the
+# first one (in the order of the hypotheses) to order the studies, with a message.
+.evSyn_pref_for_ordering <- function(OverallPrefHypo, hnames) {
+  if (length(OverallPrefHypo) > 1L) {
+    message("\nrestriktor Message: The hypotheses ",
+            paste(hnames[OverallPrefHypo], collapse = ", "),
+            " are equally preferred overall. The studies are ordered based on the ",
+            "weights of the first one (i.e., ", hnames[OverallPrefHypo[1]], ").")
+    OverallPrefHypo <- OverallPrefHypo[1]
+  }
+  OverallPrefHypo
+}
+
 # -------------------------------------------------------------------------
 evSyn <- function(object, input_type = NULL, ...) {
   
@@ -296,23 +345,10 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
          call. = FALSE)
   }
   
-  if (is.null(study_weights)) {
-    study_weights <- rep(1/S, S)
-  #} else if (length(study_weights) == 1) {
-  #  study_weights <- rep(study_weights, S)
-  #  message("\nrestriktor Message: The argument 'study_weights' contains a single value; all primary studies are assumed to have the same weight.\n",
-  #          "Notably, it makes the most sense to have study_weights = 1/S with S the number of studies, such that weights add up to 1.")
-  } else if (length(study_weights) != S || !is.numeric(study_weights)) {
-    stop("\nrestriktor ERROR: The argument 'study_weights' must be a numeric vector containing S = ", S, " values (one for each study), \n",
-         "which should add up to 1 or S.",
-         #"Alternatively, 'study_weights' can be a scalar if all studies have the weight.",
-         call. = FALSE)
-  }
-  if (sum(study_weights) != 1 && sum(study_weights) != S) {
-    study_weights <- study_weights / sum(study_weights)
-    message("\nrestriktor Message: The argument 'study_weights' should add up to 1 or to S = ", S, ". It has been rescaled accordingly.")
-  }
-  study_weights_S <- S*study_weights # Now, they sum up to S
+  study_weights <- .check_study_weights(study_weights, S)
+  # Study weights rescaled to sum to S (used in the weighted sums below); 
+  # the input study_weights themselves are not transformed.
+  study_weights_S <- S * study_weights / sum(study_weights)
   
   # Ensure hypotheses are nested
   if (!all(vapply(hypotheses, is.list, logical(1)))) {
@@ -524,11 +560,11 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     # User-specified numeric order vector
     .validate_order_studies(order_studies, S)
     orderStudies <- as.integer(order_studies)
-    LL_m <- LL_m[orderStudies,]
-    LL_weights_m <- LL_weights_m[orderStudies,]
-    GORICA_m <- GORICA_m[orderStudies,]
-    GORICA_weight_m <- GORICA_weight_m[orderStudies,]
-    PT <- PT[orderStudies,]
+    LL_m <- LL_m[orderStudies, , drop = FALSE]
+    LL_weights_m <- LL_weights_m[orderStudies, , drop = FALSE]
+    GORICA_m <- GORICA_m[orderStudies, , drop = FALSE]
+    GORICA_weight_m <- GORICA_weight_m[orderStudies, , drop = FALSE]
+    PT <- PT[orderStudies, , drop = FALSE]
     ratio.weight_mu <- ratio.weight_mu[orderStudies, , drop = FALSE]
   } else if (order_studies %in% c("ascending", "descending")) {
     # Order needs to be changed based on the overall preferred hypothesis.
@@ -551,13 +587,14 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     } else {
       decreasing = FALSE
     }
+    OverallPrefHypo <- .evSyn_pref_for_ordering(OverallPrefHypo, hnames)
     orderStudies <- order(GORICA_weight_m[,OverallPrefHypo], decreasing = decreasing)
     #
-    LL_m <- LL_m[orderStudies,]
-    LL_weights_m <- LL_weights_m[orderStudies,]
-    GORICA_m <- GORICA_m[orderStudies,]
-    GORICA_weight_m <- GORICA_weight_m[orderStudies,]
-    PT <- PT[orderStudies,]
+    LL_m <- LL_m[orderStudies, , drop = FALSE]
+    LL_weights_m <- LL_weights_m[orderStudies, , drop = FALSE]
+    GORICA_m <- GORICA_m[orderStudies, , drop = FALSE]
+    GORICA_weight_m <- GORICA_weight_m[orderStudies, , drop = FALSE]
+    PT <- PT[orderStudies, , drop = FALSE]
     ratio.weight_mu <- ratio.weight_mu[orderStudies, , drop = FALSE]
   }
   
@@ -591,7 +628,6 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   rownames(CumulativeLLWeights) <- rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(sequence, "Final")
   #
   sumPT <- sumLL <- 0
-  sum_weights <- study_weights_S[1]
   if (type_ev == "added") { 
     # added-evidence approach
     # IC: Sum of IC values, possibly weighted sum using study weights.
@@ -605,7 +641,6 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
       minGoric <- min(CumulativeGorica[s, ]) 
       expGW <- priorICweights * exp(-0.5*(CumulativeGorica[s, ]-minGoric))
       CumulativeGoricaWeights[s, ] <- expGW / sum(expGW)
-      sum_weights <- sum_weights + study_weights_S[s]
       sumLL <- sumLL * (sum(study_weights_S[1:s])/s)
       sumPT <- sumPT * (sum(study_weights_S[1:s])/s)
     }
@@ -622,7 +657,6 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
       minGoric <- min(CumulativeGorica[s, ])
       expGW <- priorICweights * exp(-0.5*(CumulativeGorica[s, ]-minGoric))
       CumulativeGoricaWeights[s, ] <- expGW / sum(expGW)
-      sum_weights <- sum_weights + study_weights_S[s]
       sumLL <- sumLL * (sum(study_weights_S[1:s])/s)
       sumPT <- sumPT * (sum(study_weights_S[1:s])/s)
     }
@@ -639,25 +673,28 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
       minGoric <- min(CumulativeGorica[s, ])
       expGW <- priorICweights * exp(-0.5*(CumulativeGorica[s, ]-minGoric))
       CumulativeGoricaWeights[s, ] <- expGW / sum(expGW)
-      sum_weights <- sum_weights + study_weights_S[s]
       sumLL <- sumLL * (sum(study_weights_S[1:s])/s)
       sumPT <- sumPT * (sum(study_weights_S[1:s])/s)
     }
   } # else {}
   
-  # cumulative log_likelihood weights
-  sumLL <- 0
-  for (l in 1:S) {
-    sumLL <- sumLL + LL_m[l, ]
-    CumulativeLL <- -2 * sumLL
-    minLL <- min(CumulativeLL)
-    CumulativeLLWeights[l, ] <- exp(-0.5*(CumulativeLL-minLL)) / sum(exp(-0.5*(CumulativeLL-minLL)))
-  }
-  
   # cumulative log-likelihood values
+  # Note: the log-likelihood (LL) values (and penalty values) do not use the 
+  # study weights; those are only used in calculating the IC values and weights.
+  # added & equal: sum of LL values; average: average of LL values.
   Cumulative_LL <- apply(LL_m, 2, cumsum)
   Cumulative_LL <- matrix(Cumulative_LL, nrow = nrow(LL_m), 
                           dimnames = list(sequence, colnames(LL_m)))
+  if (type_ev == "average") {
+    Cumulative_LL <- Cumulative_LL / seq_len(S)
+  }
+  
+  # cumulative log_likelihood weights
+  for (l in 1:S) {
+    CumulativeLL <- -2 * Cumulative_LL[l, ]
+    minLL <- min(CumulativeLL)
+    CumulativeLLWeights[l, ] <- exp(-0.5*(CumulativeLL-minLL)) / sum(exp(-0.5*(CumulativeLL-minLL)))
+  }
   # final cumulative log-likelihood value
   Cumulative_LL_final <- -2*Cumulative_LL[S, , drop = FALSE]
   rownames(Cumulative_LL_final) <- "Final"
@@ -668,6 +705,20 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   Final.ratio.LL.weights <- Final.LL.weights %*% t(1/Final.LL.weights)
   rownames(Final.ratio.LL.weights) <- hnames
   
+  
+  # IC values: -2 x log-likelihood + penalty_factor x penalty, without using 
+  # the study weights (as for the LL and penalty values); the study weights are 
+  # only used in the IC weights (calculated above).
+  # added: sum of LL and of PT; equal: sum of LL, average of PT; average: average of both.
+  cumLL_ic <- apply(LL_m, 2, cumsum); cumLL_ic <- matrix(cumLL_ic, nrow = S)
+  cumPT_ic <- apply(PT, 2, cumsum); cumPT_ic <- matrix(cumPT_ic, nrow = S)
+  if (type_ev == "added") {
+    CumulativeGorica[1:S, ] <- -2 * cumLL_ic + penalty_factor * cumPT_ic
+  } else if (type_ev == "equal") {
+    CumulativeGorica[1:S, ] <- -2 * cumLL_ic + penalty_factor * cumPT_ic / seq_len(S)
+  } else if (type_ev == "average") {
+    CumulativeGorica[1:S, ] <- (-2 * cumLL_ic + penalty_factor * cumPT_ic) / seq_len(S)
+  }
   
   # add final row
   CumulativeGorica[(S+1), ] <- CumulativeGorica[S, ]
@@ -818,23 +869,10 @@ evSyn_LL <- function(object, ..., PT = list(),
     }
   }
   
-  if (is.null(study_weights)) {
-    study_weights <- rep(1/S, S)
-    #} else if (length(study_weights) == 1) {
-    #  study_weights <- rep(study_weights, S)
-    #  message("\nrestriktor Message: The argument 'study_weights' contains a single value; all primary studies are assumed to have the same weight.\n",
-    #          "Notably, it makes the most sense to have study_weights = 1/S with S the number of studies, such that weights add up to 1.")
-  } else if (length(study_weights) != S || !is.numeric(study_weights)) {
-    stop("\nrestriktor ERROR: The argument 'study_weights' must be a numeric vector containing S = ", S, " values (one for each study), \n",
-         "which should add up to 1 or S.",
-         #"Alternatively, 'study_weights' can be a scalar if all studies have the weight.",
-         call. = FALSE)
-  }
-  if (sum(study_weights) != 1 && sum(study_weights) != S) {
-    study_weights <- study_weights / sum(study_weights)
-    message("\nrestriktor Message: The argument 'study_weights' should add up to 1 or to S = ", S, ". It has been rescaled accordingly.")
-  }
-  study_weights_S <- S*study_weights # Now, they sum up to S
+  study_weights <- .check_study_weights(study_weights, S)
+  # Study weights rescaled to sum to S (used in the weighted sums below); 
+  # the input study_weights themselves are not transformed.
+  study_weights_S <- S * study_weights / sum(study_weights)
   
   LL_m <- do.call(rbind, LL_m)
   PT <- do.call(rbind, PT)
@@ -853,10 +891,10 @@ evSyn_LL <- function(object, ..., PT = list(),
     # User-specified numeric order vector
     .validate_order_studies(order_studies, S)
     orderStudies <- as.integer(order_studies)
-    LL_m <- LL_m[orderStudies,]
-    PT <- PT[orderStudies,]
-    IC <- IC[orderStudies,]
-    GORICA_weight_m <- GORICA_weight_m[orderStudies,]
+    LL_m <- LL_m[orderStudies, , drop = FALSE]
+    PT <- PT[orderStudies, , drop = FALSE]
+    IC <- IC[orderStudies, , drop = FALSE]
+    GORICA_weight_m <- GORICA_weight_m[orderStudies, , drop = FALSE]
   } else if (order_studies %in% c("ascending", "descending")) {
     # Order needs to be changed based on the overall preferred hypothesis.
     # Determine what the overall preferred hypothesis is.
@@ -878,12 +916,13 @@ evSyn_LL <- function(object, ..., PT = list(),
     } else {
       decreasing = FALSE
     }
+    OverallPrefHypo <- .evSyn_pref_for_ordering(OverallPrefHypo, hnames)
     orderStudies <- order(GORICA_weight_m[,OverallPrefHypo], decreasing = decreasing)
     #
-    LL_m <- LL_m[orderStudies,]
-    PT <- PT[orderStudies,]
-    IC <- IC[orderStudies,]
-    GORICA_weight_m <- GORICA_weight_m[orderStudies,]
+    LL_m <- LL_m[orderStudies, , drop = FALSE]
+    PT <- PT[orderStudies, , drop = FALSE]
+    IC <- IC[orderStudies, , drop = FALSE]
+    GORICA_weight_m <- GORICA_weight_m[orderStudies, , drop = FALSE]
   }
   
   # The study weights are specified in the original (input) order of the 
@@ -919,6 +958,12 @@ evSyn_LL <- function(object, ..., PT = list(),
   Cumulative_LL <- apply(LL_m, 2, cumsum)
   Cumulative_LL <- matrix(Cumulative_LL, nrow = nrow(LL_m), 
                           dimnames = list(sequence, colnames(LL_m)))
+  # Note: the log-likelihood (LL) values (and penalty values) do not use the 
+  # study weights; those are only used in calculating the IC values and weights.
+  # added & equal: sum of LL values; average: average of LL values.
+  if (type_ev == "average") {
+    Cumulative_LL <- Cumulative_LL / seq_len(S)
+  }
   # final cumulative log-likelihood value
   Cumulative_LL_final <- -2*Cumulative_LL[S, , drop = FALSE]
   minLL <- min(Cumulative_LL_final)
@@ -927,7 +972,6 @@ evSyn_LL <- function(object, ..., PT = list(),
   Final.LL.weights <- Final.LL.weights[,, drop = TRUE]
   Final.ratio.LL.weights <- Final.LL.weights %*% t(1/Final.LL.weights) 
   
-  sumLL <- 0
   LL_weights_m <- matrix(NA, nrow = S, ncol = (NrHypos + 1))
   CumulativeLLWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
   rownames(LL_weights_m) <- study_names
@@ -938,14 +982,12 @@ evSyn_LL <- function(object, ..., PT = list(),
     delta_LL <- LL - min(LL)
     LL_weights_m[l, ] <- exp(-0.5 * delta_LL) / sum(exp(-0.5 * delta_LL))
     #
-    sumLL <- sumLL + LL_m[l, ]
-    CumulativeLL <- -2 * sumLL
+    CumulativeLL <- -2 * Cumulative_LL[l, ]
     minLL <- min(CumulativeLL)
     CumulativeLLWeights[l, ] <- exp(-0.5*(CumulativeLL-minLL)) / sum(exp(-0.5*(CumulativeLL-minLL)))
   }
   
   sumPT <- sumLL <- 0
-  sum_weights <- study_weights_S[1]
   CumulativeGorica <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
   CumulativeGoricaWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
   rownames(CumulativeGorica) <- rownames(CumulativeGoricaWeights) <- c(sequence, "Final")
@@ -961,7 +1003,6 @@ evSyn_LL <- function(object, ..., PT = list(),
       minGoric <- min(CumulativeGorica[s, ])
       expGW <- priorICweights * exp(-0.5*(CumulativeGorica[s, ]-minGoric))
       CumulativeGoricaWeights[s, ] <- expGW / sum(expGW)
-      sum_weights <- sum_weights + study_weights_S[s]
       sumLL <- sumLL * (sum(study_weights_S[1:s])/s)
       sumPT <- sumPT * (sum(study_weights_S[1:s])/s)
     }
@@ -976,7 +1017,6 @@ evSyn_LL <- function(object, ..., PT = list(),
       minGoric <- min(CumulativeGorica[s, ])
       expGW <- priorICweights * exp(-0.5*(CumulativeGorica[s, ]-minGoric))
       CumulativeGoricaWeights[s, ] <- expGW / sum(expGW)
-      sum_weights <- sum_weights + study_weights_S[s]
       sumLL <- sumLL * (sum(study_weights_S[1:s])/s)
       sumPT <- sumPT * (sum(study_weights_S[1:s])/s)
     }
@@ -991,11 +1031,24 @@ evSyn_LL <- function(object, ..., PT = list(),
       minGoric <- min(CumulativeGorica[s, ])
       expGW <- priorICweights * exp(-0.5*(CumulativeGorica[s, ]-minGoric))
       CumulativeGoricaWeights[s, ] <- expGW / sum(expGW)
-      sum_weights <- sum_weights + study_weights_S[s]
       sumLL <- sumLL * (sum(study_weights_S[1:s])/s)
       sumPT <- sumPT * (sum(study_weights_S[1:s])/s)
     }
   } # else {}
+  
+  # IC values: -2 x log-likelihood + penalty_factor x penalty, without using 
+  # the study weights (as for the LL and penalty values); the study weights are 
+  # only used in the IC weights (calculated above).
+  # added: sum of LL and of PT; equal: sum of LL, average of PT; average: average of both.
+  cumLL_ic <- apply(LL_m, 2, cumsum); cumLL_ic <- matrix(cumLL_ic, nrow = S)
+  cumPT_ic <- apply(PT, 2, cumsum); cumPT_ic <- matrix(cumPT_ic, nrow = S)
+  if (type_ev == "added") {
+    CumulativeGorica[1:S, ] <- -2 * cumLL_ic + penalty_factor * cumPT_ic
+  } else if (type_ev == "equal") {
+    CumulativeGorica[1:S, ] <- -2 * cumLL_ic + penalty_factor * cumPT_ic / seq_len(S)
+  } else if (type_ev == "average") {
+    CumulativeGorica[1:S, ] <- (-2 * cumLL_ic + penalty_factor * cumPT_ic) / seq_len(S)
+  }
   
   # fill in the final row  
   CumulativeGorica[(S+1), ] <- CumulativeGorica[S, ]
@@ -1082,12 +1135,12 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
     hnames <- paste0("H", 1:NrHypos_incl)
   } else {
     if (length(hypo_names) != NrHypos_incl) {
-      stop("\nrestriktor ERROR: The argument 'hypo_names' should consist of ", NrHypos, " names, \n",
+      stop("\nrestriktor ERROR: The argument 'hypo_names' should consist of ", NrHypos_incl, " names, \n",
            "namely one for each specified hypothesis. It now consists of ", length(hypo_names), ".",
            call. = FALSE)
     }
     if (!all(is.character(hypo_names))) {
-      stop("\nrestriktor ERROR: The argument 'hypo_names' should consist of ", NrHypos, " names. \n",
+      stop("\nrestriktor ERROR: The argument 'hypo_names' should consist of ", NrHypos_incl, " names. \n",
            "Now, (some of) the elements are not characters.",
            call. = FALSE)
     }
@@ -1116,23 +1169,10 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
     }
   }
   
-  if (is.null(study_weights)) {
-    study_weights <- rep(1/S, S)
-    #} else if (length(study_weights) == 1) {
-    #  study_weights <- rep(study_weights, S)
-    #  message("\nrestriktor Message: The argument 'study_weights' contains a single value; all primary studies are assumed to have the same weight.\n",
-    #          "Notably, it makes the most sense to have study_weights = 1/S with S the number of studies, such that weights add up to 1.")
-  } else if (length(study_weights) != S || !is.numeric(study_weights)) {
-    stop("\nrestriktor ERROR: The argument 'study_weights' must be a numeric vector containing S = ", S, " values (one for each study), \n",
-         "which should add up to 1 or S.",
-         #"Alternatively, 'study_weights' can be a scalar if all studies have the weight.",
-         call. = FALSE)
-  }
-  if (sum(study_weights) != 1 && sum(study_weights) != S) {
-    study_weights <- study_weights / sum(study_weights)
-    message("\nrestriktor Message: The argument 'study_weights' should add up to 1 or to S = ", S, ". It has been rescaled accordingly.")
-  }
-  study_weights_S <- S*study_weights # Now, they sum up to S
+  study_weights <- .check_study_weights(study_weights, S)
+  # Study weights rescaled to sum to S (used in the weighted sums below); 
+  # the input study_weights themselves are not transformed.
+  study_weights_S <- S * study_weights / sum(study_weights)
   
   if (missing(order_studies)) 
     order_studies <- "input_order"
@@ -1154,8 +1194,8 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
     # User-specified numeric order vector
     .validate_order_studies(order_studies, S)
     orderStudies <- as.integer(order_studies)
-    IC <- IC[orderStudies,]
-    GORICA_weight_m <- GORICA_weight_m[orderStudies,]
+    IC <- IC[orderStudies, , drop = FALSE]
+    GORICA_weight_m <- GORICA_weight_m[orderStudies, , drop = FALSE]
   } else if (order_studies %in% c("ascending", "descending")) {
     # Order needs to be changed based on the overall preferred hypothesis.
     # Determine what the overall preferred hypothesis is.
@@ -1174,10 +1214,11 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
     } else {
       decreasing = FALSE
     }
+    OverallPrefHypo <- .evSyn_pref_for_ordering(OverallPrefHypo, hnames)
     orderStudies <- order(GORICA_weight_m[,OverallPrefHypo], decreasing = decreasing)
     #
-    IC <- IC[orderStudies,]
-    GORICA_weight_m <- GORICA_weight_m[orderStudies,]
+    IC <- IC[orderStudies, , drop = FALSE]
+    GORICA_weight_m <- GORICA_weight_m[orderStudies, , drop = FALSE]
   }
   
   CumulativeGorica <- matrix(NA, nrow = (S+1), ncol = (NrHypos + 1))
@@ -1215,7 +1256,6 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
   if (type_ev == "average") { 
     # average-ev approach
     sumIC <- 0
-    sum_weights <- 0 
     for (s in 1:S) {
       #sumIC <- sumIC + IC[s, ]
       sumIC <- (sumIC + IC[s, ]*study_weights_S[s]) / (sum(study_weights_S[1:s])/s)
@@ -1223,23 +1263,25 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
       minGoric <- min(CumulativeGorica[s, ])
       expGW <- priorICweights * exp(-0.5*(CumulativeGorica[s, ]-minGoric))
       CumulativeGoricaWeights[s, ] <- expGW / sum(expGW)
-      sum_weights <- sum_weights + study_weights_S[s]
       sumIC <- sumIC * (sum(study_weights_S[1:s])/s)
     }
   } else {
     # type_ev == "added" (or when "equal", because then it is overruled to be "added")
     sumIC <- 0
-    sum_weights <- 0 
     for (s in 1:S) {
       sumIC <- (sumIC + IC[s, ]*study_weights_S[s]) / (sum(study_weights_S[1:s])/s)
       CumulativeGorica[s, ] <- sumIC
       minGoric <- min(CumulativeGorica[s, ])
       expGW <- priorICweights * exp(-0.5*(CumulativeGorica[s, ]-minGoric))
       CumulativeGoricaWeights[s, ] <- expGW / sum(expGW)
-      sum_weights <- sum_weights + study_weights_S[s]
       sumIC <- sumIC * (sum(study_weights_S[1:s])/s)
     }
   }
+  
+  # IC values: sum (added) or average (average) of the IC values, without using 
+  # the study weights; the study weights are only used in the IC weights (calculated above).
+  cumIC_ic <- matrix(apply(IC, 2, cumsum), nrow = S)
+  CumulativeGorica[1:S, ] <- if (type_ev == "average") cumIC_ic / seq_len(S) else cumIC_ic
   
   CumulativeGorica[(S+1), ] <- CumulativeGorica[S, ]
   CumulativeGoricaWeights[(S+1), ] <- CumulativeGoricaWeights[S, ]
@@ -1369,23 +1411,10 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
   }
   
   
-  if (is.null(study_weights)) {
-    study_weights <- rep(1/S, S)
-    #} else if (length(study_weights) == 1) {
-    #  study_weights <- rep(study_weights, S)
-    #  message("\nrestriktor Message: The argument 'study_weights' contains a single value; all primary studies are assumed to have the same weight.\n",
-    #          "Notably, it makes the most sense to have study_weights = 1/S with S the number of studies, such that weights add up to 1.")
-  } else if (length(study_weights) != S || !is.numeric(study_weights)) {
-    stop("\nrestriktor ERROR: The argument 'study_weights' must be a numeric vector containing S = ", S, " values (one for each study), \n",
-         "which should add up to 1 or S.",
-         #"Alternatively, 'study_weights' can be a scalar if all studies have the weight.",
-         call. = FALSE)
-  }
-  if (sum(study_weights) != 1 && sum(study_weights) != S) {
-    study_weights <- study_weights / sum(study_weights)
-    message("\nrestriktor Message: The argument 'study_weights' should add up to 1 or to S = ", S, ". It has been rescaled accordingly.")
-  }
-  study_weights_S <- S*study_weights # Now, they sum up to S
+  study_weights <- .check_study_weights(study_weights, S)
+  # Study weights rescaled to sum to S (used in the weighted sums below); 
+  # the input study_weights themselves are not transformed.
+  study_weights_S <- S * study_weights / sum(study_weights)
   
   
   if (missing(order_studies)) 
@@ -1400,7 +1429,7 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
     # User-specified numeric order vector
     .validate_order_studies(order_studies, S)
     orderStudies <- as.integer(order_studies)
-    Weights <- Weights[orderStudies,]
+    Weights <- Weights[orderStudies, , drop = FALSE]
   } else if (order_studies %in% c("ascending", "descending")) {
     # Order needs to be changed based on the overall preferred hypothesis.
     # Determine what the overall preferred hypothesis is.
@@ -1435,9 +1464,10 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
     } else {
       decreasing = FALSE
     }
+    OverallPrefHypo <- .evSyn_pref_for_ordering(OverallPrefHypo, hypo_names)
     orderStudies <- order(Weights[,OverallPrefHypo], decreasing = decreasing)
     #
-    Weights <- Weights[orderStudies,]
+    Weights <- Weights[orderStudies, , drop = FALSE]
   }
   #
   # Set colnames
@@ -1479,7 +1509,7 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
     #
     # s = 1 (study 1)
     CumulativeWeights[1, ] <- priorICweights * Weights[1,] / sum(priorICweights * Weights[1,])
-    for (s in 2:S) {
+    for (s in seq_len(S)[-1]) { # (no iterations when S = 1)
       stW <- (study_weights[1:s] / sum(study_weights[1:s]))
       CumW <- priorICweights * apply(Weights[1:s,]^stW, 2, prod)
       CumulativeWeights[s, ] <- CumW / sum(CumW)
@@ -1490,7 +1520,7 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
     # Therefore, use study_weights_S which sum to S not to 1.
     #
     CumulativeWeights[1, ] <- priorICweights * Weights[1,] / sum(priorICweights * Weights[1,])
-    for (s in 2:S) {
+    for (s in seq_len(S)[-1]) { # (no iterations when S = 1)
       stW_s <- s*(study_weights_S[1:s] / sum(study_weights_S[1:s]))
       CumW <- priorICweights * apply(Weights[1:s,]^stW_s, 2, prod)
       CumulativeWeights[s, ] <- CumW / sum(CumW)
@@ -1574,36 +1604,32 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
   #
   # Note that because of a previous step, each study will have at least one 1
   # So, for each study, determine for which hypothesis/-es there is a one:
-  refHypo_s <- lapply(object, function(x){which(x == 1)})
-  Href <- refHypo_s[[1]][1] # first candidate
-  Href_All <- lapply(refHypo_s, function(x){any(x == Href)})
-  test_All <- all(unlist(Href_All))
-  # If not all the same (!test_All), 
-  # then first check other options for Href:
-  if (!test_All && length(refHypo_s[[1]]) > 1) { 
-    # If length(refHypo_s[[1]]) > 1, then there could be other candidate Href's as well
-    teller <- 1
-    while(!test_All && teller <= length(refHypo_s[[1]])){
-      teller <- teller + 1
-      Href <- refHypo_s[[1]][teller]
-      Href_All <- lapply(refHypo_s, function(x){any(x == Href)})
-      test_All <- all(unlist(Href_All))
-    }
-  }
-  # If did not find a Href for which all studies have a one,
-  # transform the input such that all have the same Href:
-  if (!test_All) {
-    #Href <- Mode(as.data.frame(refHypo_s)) # not base function
-    Href <- refHypo_s[[1]][1]
+  refHypo_s <- lapply(object, function(x){unname(which(x == 1))})
+  # Candidates for Href: the hypotheses with a ratio of 1 in the first study.
+  # Href is the first candidate that has a ratio of 1 in all studies.
+  candidates <- refHypo_s[[1]]
+  common <- candidates[vapply(candidates, function(h) {
+    all(vapply(refHypo_s, function(x) h %in% x, logical(1)))
+  }, logical(1))]
+  if (length(common) > 0) {
+    Href <- common[1]
+  } else {
+    # No hypothesis with a ratio of 1 in all studies:
+    # transform the input such that all studies have the same Href, namely
+    # the first candidate of the first study.
+    Href <- candidates[1]
     object <- lapply(object, function(x){x / x[Href]})
-    # 'Weights' (used below) was already created from 'object' above, so it 
-    # must be rescaled as well; otherwise the study-specific ratios (GwRatio_m) 
+    # 'Weights' (used below) was already created from 'object' above, so it
+    # must be rescaled as well; otherwise the study-specific ratios (GwRatio_m)
     # and IC differences (ICdiff_m, Cumulative_ICdiff) are not versus Href.
     Weights <- Weights / Weights[, Href]
     message("\nrestriktor Message: Not all studies used the same reference hypothesis. \n",
-            "Now, evidence synthesis is done using Href = ", Href, " as the reference hypothesis. \n",
+            "Now, evidence synthesis is done using Href = ", hypo_names[Href],
+            " as the reference hypothesis (i.e., all ratios are now versus ", hypo_names[Href], "). \n",
             "Note that the choice for Href does not affect the ratio of final IC weights.")
   }
+  # Name Href by its hypothesis name (used in the output headers)
+  names(Href) <- hypo_names[Href]
   
   
   if (is.null(priorICweights)) {
@@ -1649,23 +1675,10 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
   #        call. = FALSE)
   # }
   
-  if (is.null(study_weights)) {
-    study_weights <- rep(1/S, S)
-    #} else if (length(study_weights) == 1) {
-    #  study_weights <- rep(study_weights, S)
-    #  message("\nrestriktor Message: The argument 'study_weights' contains a single value; all primary studies are assumed to have the same weight.\n",
-    #          "Notably, it makes the most sense to have study_weights = 1/S with S the number of studies, such that weights add up to 1.")
-  } else if (length(study_weights) != S || !is.numeric(study_weights)) {
-    stop("\nrestriktor ERROR: The argument 'study_weights' must be a numeric vector containing S = ", S, " values (one for each study), \n",
-         "which should add up to 1 or S.",
-         #"Alternatively, 'study_weights' can be a scalar if all studies have the weight.",
-         call. = FALSE)
-  }
-  if (sum(study_weights) != 1 && sum(study_weights) != S) {
-    study_weights <- study_weights / sum(study_weights)
-    message("\nrestriktor Message: The argument 'study_weights' should add up to 1 or to S = ", S, ". It has been rescaled accordingly.")
-  }
-  study_weights_S <- S*study_weights # Now, they sum up to S
+  study_weights <- .check_study_weights(study_weights, S)
+  # Study weights rescaled to sum to S (used in the weighted sums below); 
+  # the input study_weights themselves are not transformed.
+  study_weights_S <- S * study_weights / sum(study_weights)
   
   if (missing(order_studies)) 
     order_studies <- "input_order"
@@ -1679,7 +1692,7 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
     # User-specified numeric order vector
     .validate_order_studies(order_studies, S)
     orderStudies <- as.integer(order_studies)
-    Weights <- Weights[orderStudies,]
+    Weights <- Weights[orderStudies, , drop = FALSE]
   } else if (order_studies %in% c("ascending", "descending")) {
     # Order needs to be changed based on the overall preferred hypothesis.
     # Determine what the overall preferred hypothesis is.
@@ -1704,9 +1717,10 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
     }
     # Order based on the study-specific IC weights of the preferred hypothesis 
     # (the ratios of IC weights, normalized per study).
+    OverallPrefHypo <- .evSyn_pref_for_ordering(OverallPrefHypo, hypo_names)
     orderStudies <- order((Weights / rowSums(Weights))[,OverallPrefHypo], decreasing = decreasing)
     #
-    Weights <- Weights[orderStudies,]
+    Weights <- Weights[orderStudies, , drop = FALSE]
   }
   #
   # Set colnames
@@ -1741,7 +1755,7 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
   #
   studyspecWeights <- matrix(NA, nrow = (S), ncol = (NrHypos))
   colnames(studyspecWeights) <- hypo_names
-  rownames(studyspecWeights) <- c(sequence)  
+  rownames(studyspecWeights) <- study_names # study-specific (not cumulative) weights
   #
   CumulativeRatios <- matrix(NA, nrow = (S+1), ncol = (NrHypos))
   CumulativeWeights <- matrix(NA, nrow = (S+1), ncol = (NrHypos))
@@ -1769,7 +1783,6 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
     # can be determined based on the ratios:
     IC_diff <- -2 * log(Weights)
     sumIC_diff <- 0
-    sum_weights <- 0 
     for (s in 1:S) {
       minGoric <- min(IC_diff[s, ])
       expGW <- priorICweights * exp(-0.5*(IC_diff[s, ]-minGoric))
@@ -1781,7 +1794,6 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
       expGW <- priorICweights * exp(-0.5*(CumulativeICdiff[s, ]-minGoric))
       CumulativeWeights[s, ] <- expGW / sum(expGW) 
       CumulativeRatioWeights[s, ] <- CumulativeWeights[s, ] / CumulativeWeights[s, Href] # Ratio GORIC(A) weight
-      sum_weights <- sum_weights + study_weights_S[s]
       sumIC_diff <- sumIC_diff * (sum(study_weights_S[1:s])/s)
     }
   } else {
@@ -1801,7 +1813,6 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
     # can be determined based on the ratios:
     IC_diff <- -2 * log(Weights)
     sumIC_diff <- 0
-    sum_weights <- 0 
     for (s in 1:S) {
       minGoric <- min(IC_diff[s, ])
       expGW <- priorICweights * exp(-0.5*(IC_diff[s, ]-minGoric))
@@ -1813,10 +1824,15 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
       expGW <- priorICweights * exp(-0.5*(CumulativeICdiff[s, ]-minGoric))
       CumulativeWeights[s, ] <- expGW / sum(expGW)
       CumulativeRatioWeights[s, ] <- CumulativeWeights[s, ] / CumulativeWeights[s, Href] # Ratio GORIC(A) weight
-      sum_weights <- sum_weights + study_weights_S[s]
       sumIC_diff <- sumIC_diff * (sum(study_weights_S[1:s])/s)
     }
   }
+  
+  # Differences in IC values (versus Href): sum (added) or average (average), 
+  # without using the study weights; the study weights are only used in the IC 
+  # weights (and ratios of IC weights) calculated above.
+  cumICdiff_ic <- matrix(apply(IC_diff, 2, cumsum), nrow = S)
+  CumulativeICdiff[1:S, ] <- if (type_ev == "average") cumICdiff_ic / seq_len(S) else cumICdiff_ic
   
   # add final row
   CumulativeICdiff[(S+1), ] <- CumulativeICdiff[S, ] 

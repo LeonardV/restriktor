@@ -84,20 +84,49 @@ extract_est_vcov_outcomes <- function(data, outcome_col = NULL,
       
     # Determine the number of outcomes for this trial
     num_outcomes <- nrow(cluster_data)
+    # Note: the columns used for this cluster are stored in 'vi_cols_s', such
+    # that the user-specified 'vi_cols' is not overwritten (and is thus also
+    # used for the next clusters).
     if (num_outcomes > 1) {
-      vi_cols <- paste0("v", 1:num_outcomes, "i")
+      # Multiple outcomes: use the user-specified vi_cols if these consist of
+      # one column per outcome; otherwise, use the escalc-type names v1i, v2i, ...
+      if (length(vi_cols) == num_outcomes && all(vi_cols %in% names(data))) {
+        vi_cols_s <- vi_cols
+      } else {
+        vi_cols_s <- paste0("v", 1:num_outcomes, "i")
+      }
+      if (!all(vi_cols_s %in% names(data))) {
+        stop(paste0("\nrestriktor ERROR: For ", cluster_col, " ", sQuote(cluster_id), ", there are ",
+                    num_outcomes, " outcomes, but the (co)variance columns ",
+                    paste(sQuote(vi_cols_s[!vi_cols_s %in% names(data)]), collapse = ", "),
+                    " are not found in the data. Specify one (co)variance column per outcome ",
+                    "in 'vi_cols' or use the names ", paste(sQuote(paste0("v", 1:num_outcomes, "i")), collapse = ", "), "."),
+             call. = FALSE)
+      }
+    } else {
+      # One outcome: use the first user-specified vi_col (by default, 'vi'); if
+      # that one is not available (or missing) for this cluster, use 'v1i' (if available).
+      if (vi_cols[1] %in% names(data) && !is.na(cluster_data[[vi_cols[1]]][1])) {
+        vi_cols_s <- vi_cols[1]
+      } else if ("v1i" %in% names(data) && !is.na(cluster_data[["v1i"]][1])) {
+        vi_cols_s <- "v1i"
+      } else {
+        stop(paste0("\nrestriktor ERROR: For ", cluster_col, " ", sQuote(cluster_id),
+                    ", no (non-missing) variance is found in column ", sQuote(vi_cols[1]), "."),
+             call. = FALSE)
+      }
     }
-    vcov_matrix <- matrix(0, nrow = num_outcomes, ncol = num_outcomes)
-    rownames(vcov_matrix) <- colnames(vcov_matrix) <- outcomes
-    
+
     # Fill in the variance-covariance matrix
     if (num_outcomes == 1) {
       # Only one outcome: single variance, no covariances
-      vcov_matrix[1, 1] <- cluster_data[[vi_cols[1]]][1]
+      vcov_matrix <- matrix(cluster_data[[vi_cols_s]][1], nrow = 1, ncol = 1)
     } else {
       # Multiple outcomes: fill diagonal with variances and off-diagonals with covariances
-      vcov_matrix <- as.matrix(cluster_data[vi_cols])
+      vcov_matrix <- as.matrix(cluster_data[vi_cols_s])
     }
+    # Label the rows and columns by the outcomes (i.e., the parameter names)
+    rownames(vcov_matrix) <- colnames(vcov_matrix) <- outcomes
     
     # Store the matrix in vcov_blocks list
     vcov_blocks[[paste(cluster_col, cluster_id)]] <- vcov_matrix
@@ -105,4 +134,4 @@ extract_est_vcov_outcomes <- function(data, outcome_col = NULL,
   
   # Return both lists as a named list
   return(list(yi_list = yi_list, vcov_blocks = vcov_blocks, ni_list = ni_list))
-}
+}

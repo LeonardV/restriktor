@@ -204,9 +204,12 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   'study_sample_nobs' column, which by default is labelled "ni".}
   
   \item{study_weights}{ 
-  a numeric vector specifying the weight for each study. 
-  They should sum to 1 or S (the number of studies/analyses);
-  otherwise they are rescaled to add up to 1.
+  a numeric vector specifying the weight for each study; all weights must be larger than 0. 
+  Only the relative sizes of the weights matter: the weights are not rescaled and 
+  the results are the same for, for example, \code{c(1, 2, 1)}, \code{c(.25, .5, .25)}, 
+  and \code{c(.75, 1.5, .75)}. 
+  If the weights do not sum to 1 or S (the number of studies/analyses), 
+  a message is given to make the user aware of this.
   It is in the same order as the studies/analyses in \code{object} 
   (i.e., the input order, also when \code{order_studies} changes the order of the studies in the output).
   If \code{NULL} (default), all studies are assumed to have equal weight. 
@@ -216,7 +219,16 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   %That is, it is not possible when the input consists of IC weights or IC weights ratios
   %(i.e., 'input_type' = \code{"icweights"} or \code{"icratios"});
   %then, the study weights cancel out.
-  Notably, the study weights will be used in the cumulative and final results of evidence synthesis.
+  Notably, the study weights will be used in the cumulative and final results of evidence synthesis, 
+  namely in calculating the (cumulative and final) IC weights (and ratios of IC weights): 
+  in the added-evidence approach, these are based on weighted sums of the IC values; 
+  in the equal-evidence approach, on a weighted sum of the log-likelihood values and a weighted average of the penalty values; 
+  and, in the average-evidence approach, on weighted averages of the IC values.
+  When the input consists of IC weights or ratios of IC weights, the study weights act as powers of these.
+  The study weights are not used in the IC values themselves (which thus still equal 
+  -2 x log-likelihood + penalty_factor x penalty), nor in the log-likelihood and penalty values, 
+  nor in the log-likelihood weights. 
+  Hence, with unequal study weights, the IC weights are not the IC weights of the reported IC values. 
   They will not be used in the ordering of the studies/analyses itself (which happens if 'order_studies' = \code{"ascending"} or \code{"descending"}). 
   The re-ordering will be based on the height of support for each study, thus assuming equal study weights.
   Notably, with quite unequal study_weights (or priorICweights), 
@@ -279,7 +291,10 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   \item{vi_cols}{a character vector specifying the columns in \code{data} that 
   contain the variance and covariance values for each observation. The default is, 
   in the case of one outcome variable, \code{"vi"};
-  in the case of multiple (namely, O) variables, \code{c("v1i", \ldots, "vOi"}.
+  in the case of multiple (namely, O) variables, \code{c("v1i", \ldots, "vOi")}.
+  When specifying other column names for multiple outcomes, give one column per outcome 
+  (otherwise, \code{"v1i"}, \ldots, \code{"vOi"} are used); 
+  for studies with one outcome, the first element of \code{vi_cols} is used.
   For more information, see Example 5 below.
   }
   
@@ -332,15 +347,26 @@ multiple analyses on one dataset.
 \strong{Leave-one-out sensitivity analysis.}
 \code{leave1studyout} repeats the evidence synthesis S times, each time dropping 
 one of the S studies. For each reduced set, the aggregated IC values per hypothesis 
-are computed using the same \code{type_ev} as in the original \code{evSyn} call:
+are computed using the same \code{type_ev} (and the same priorICweights and study_weights) 
+as in the original \code{evSyn} call:
 \itemize{
   \item \code{"added"}: column sums of the IC matrix with study \emph{s} removed.
   \item \code{"equal"}: the column means of the PT matrix minus column sums of the LL matrix with study \emph{s}
     removed.
   \item \code{"average"}: column means of the IC matrix with study \emph{s} removed.
 }
-The hypothesis with the lowest aggregated IC value and thus highest aggregtaed IC weight 
-is identified as the preferred hypothesis for that reduced set. 
+As in \code{evSyn}, the study weights (if specified) are used in calculating the 
+aggregated IC weights, but not in the reported aggregated IC values.
+The hypothesis with the highest aggregated IC weight 
+is identified as the preferred hypothesis for that reduced set 
+(with equal priorICweights and study weights, this is the one with the lowest aggregated IC value). 
+\cr
+When the input of \code{evSyn} consists of IC weights (\code{"icweights"}), 
+the IC weights are aggregated directly (as in \code{evSyn}); 
+no IC values are available and thus reported then.
+When the input consists of ratios of IC weights (\code{"icratios"}), 
+the aggregated differences in IC values versus the reference hypothesis are reported 
+(instead of IC values).
 \cr
 Notably, when leaving a study out, the combined sample size lowers. 
 Therefore, the maximum log-likelihood goes down and thus the IC values go up (become less negative).
@@ -363,14 +389,17 @@ for the theory-based hypotheses.
   \item{\code{OverallGorica} (or \code{OverallGoric}, \code{OverallGoricc}, 
     \code{OverallGoricac})}{a numeric matrix of dimension S x H (studies by 
     hypotheses) containing the aggregated IC values when the corresponding study 
-    is left out. Row names are of the form \code{"Leave '<study name>' out:"}.}
+    is left out. Row names are of the form \code{"Leave '<study name>' out:"}. 
+    Not available when the input of \code{evSyn} consists of IC weights; 
+    when it consists of ratios of IC weights, \code{OverallICdiff} is given instead, containing 
+    the aggregated differences in IC values versus the reference hypothesis.}
   \item{\code{OverallGoricaWeights} (or \code{OverallGoricWeights}, \code{OverallGoriccWeights}, 
     \code{OverallGoricacWeights})}{a numeric matrix of dimension S x H (studies by 
     hypotheses) containing the aggregated IC weights when the corresponding study 
     is left out. Row names are of the form \code{"Leave '<study name>' out:"}.}
   \item{\code{OverallPrefHypo}}{a character matrix of dimension S x 1 giving the 
-    name of the preferred hypothesis (i.e., the one with the lowest aggregated IC 
-    value) for each leave-one-out set.}
+    name of the preferred hypothesis (i.e., the one with the highest aggregated IC 
+    weight) for each leave-one-out set.}
   \item{\code{type_ev}}{the evidence-synthesis approach used, inherited from the 
     input \code{evSyn} object.}
   \item{\code{type}}{the IC type used (\code{"goric"}, \code{"goricc"}, 

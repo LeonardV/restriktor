@@ -47,6 +47,31 @@ leave1studyout.evSyn <- function(object, ...) {
     ICw_m <- object$GORICA_weight_m
   }
   
+  # Input consisting of IC weights or ratios of IC weights: there are no IC
+  # values, but differences in IC values can be derived (these suffice, since
+  # IC weights only depend on differences in IC values between hypotheses):
+  # - IC weights: -2 x log(IC weight) equals the IC value up to a constant per
+  #   study; the stored IC weights include the prior weights (priorICweights),
+  #   so these are removed first.
+  # - Ratios of IC weights: the differences in IC values versus the reference
+  #   hypothesis (ICdiff_m) are stored in the object.
+  # Notably, in that case, the resulting 'IC values' are not reported (only
+  # the IC weights and the preferred hypothesis), or, for ratios, they are
+  # reported as differences in IC values versus the reference hypothesis.
+  IC_type <- "values"
+  if (inherits(object, "evSyn_ICratios")) {
+    IC_m <- object$ICdiff_m
+    IC_type <- "diff"
+  } else if (inherits(object, "evSyn_ICweights")) {
+    prior_m <- object$priorICweights
+    if (is.null(prior_m)) prior_m <- rep(1 / ncol(ICw_m), ncol(ICw_m))
+    W_raw <- sweep(ICw_m, 2, prior_m, "/")
+    W_raw[, prior_m == 0] <- 1 # weight 0 anyway (due to prior of 0); avoids NaN
+    W_raw <- W_raw / rowSums(W_raw)
+    IC_m <- -2 * log(W_raw)
+    IC_type <- "none"
+  }
+
   if (is.null(IC_m)) {
     stop("restriktor ERROR: IC matrix is missing from the evSyn object.")
   }
@@ -143,23 +168,36 @@ leave1studyout.evSyn <- function(object, ...) {
     # the mean of the study weights of the studies included so far).
     w_keep <- study_weights_S[keep] / mean(study_weights_S[keep])
 
-    # Same IC as in the evSyn functions, but without study s:
+    # Same as in the evSyn functions, but without study s:
+    # The IC weights use the study weights (w_keep):
     # added:   weighted sum of IC values
     # equal:   -2 x weighted sum of LL values + penalty_factor x weighted average of PT values
     # average: weighted average of IC values
-    OverallGoric[s, ] <- switch(
+    IC_weighted <- switch(
       type_ev,
       added   = colSums(IC_m[keep, , drop = FALSE] * w_keep),
       equal   = -2 * colSums(LL_m[keep, , drop = FALSE] * w_keep) +
         penalty_factor * colSums(PT_m[keep, , drop = FALSE] * w_keep) / nr_keep,
       average = colSums(IC_m[keep, , drop = FALSE] * w_keep) / nr_keep
     )
+    # The reported IC values do not use the study weights 
+    # (i.e., -2 x LL + penalty_factor x penalty, as in the evSyn functions):
+    OverallGoric[s, ] <- switch(
+      type_ev,
+      added   = colSums(IC_m[keep, , drop = FALSE]),
+      equal   = -2 * colSums(LL_m[keep, , drop = FALSE]) +
+        penalty_factor * colSums(PT_m[keep, , drop = FALSE]) / nr_keep,
+      average = colSums(IC_m[keep, , drop = FALSE]) / nr_keep
+    )
 
-    best <- which(OverallGoric[s, ] == min(OverallGoric[s, ], na.rm = TRUE))
-    OverallPrefHypo[s, 1L] <- paste(colnames(IC_m)[best], collapse = ", ")
     # IC weights, taking into account the prior model probabilities (priorICweights)
-    expGW <- priorICweights * exp(-0.5 * (OverallGoric[s, ] - min(OverallGoric[s, ], na.rm = TRUE)))
+    # and the study weights
+    expGW <- priorICweights * exp(-0.5 * (IC_weighted - min(IC_weighted, na.rm = TRUE)))
     OverallGoricWeights[s, ] <- expGW / sum(expGW)
+    # Preferred hypothesis: the one with the highest IC weight (which equals the 
+    # one with the lowest IC value when the study weights and priorICweights are equal)
+    best <- which(OverallGoricWeights[s, ] == max(OverallGoricWeights[s, ], na.rm = TRUE))
+    OverallPrefHypo[s, 1L] <- paste(colnames(IC_m)[best], collapse = ", ")
   }
   
   resultIC <- switch(
@@ -178,6 +216,14 @@ leave1studyout.evSyn <- function(object, ...) {
     goricac = list(OverallGoricacWeights = OverallGoricWeights)
   )
   
+  if (IC_type == "none") {
+    # IC weights as input: no IC values available
+    resultIC <- NULL
+  } else if (IC_type == "diff") {
+    # Ratios of IC weights as input: differences in IC values versus Href
+    resultIC <- list(OverallICdiff = OverallGoric)
+  }
+
   result <- c(
     resultIC,
     resultICw,

@@ -21,6 +21,8 @@ summary.evSyn <- function(object, ...) {
     type_ev = x[["type_ev"]],
     #n_studies = nrow(x[["GORICA_weight_m"]][,, drop = FALSE]),
     n_studies = x[["n_studies"]], 
+    order_studies = x[["order_studies"]],
+    study_names = x[["study_names"]],
     study_weights = x[["study_weights"]],
     hypotheses = x[["hypotheses"]],
     GORICA_weight_m = x[["GORICA_weight_m"]],
@@ -233,6 +235,17 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
 
   
   cat("\nCumulative results:\n")
+  # The cumulative results are labelled by the position of the studies (i.e., 
+  # 'Study nr.s 1-s'), which is the 'Study nr.' in the study-specific results 
+  # above. If the studies were re-ordered (order_studies), state the order of 
+  # the studies (by study name) such that it is clear which studies are included.
+  ord <- x[["order_studies"]]
+  if (!is.null(ord) && !identical(as.integer(ord), seq_len(S))) {
+    st_names <- x[["study_names"]]
+    if (is.null(st_names)) st_names <- as.character(ord)
+    cat(paste0("    (", .evSyn_unit_label(type_ev, plural = TRUE), " are ordered as: ", 
+               paste0(seq_len(S), " = ", st_names, collapse = ", "), ")\n"))
+  }
   
   if (!is.null(x[["Cumulative_GORICA_weights"]])) {
     cat(paste0("\n    ", type_label, " weights:\n"))
@@ -308,6 +321,17 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
   cat(paste0(adjusted_output, "\n"), sep = "")
   
+  
+  # The study weights are only used in calculating the IC weights; not in the 
+  # IC values (which equal -2 x LL + penalty_factor x penalty), the log-likelihood 
+  # (LL) and penalty values, and the LL weights.
+  sw <- x[["study_weights"]]
+  if (!is.null(sw) && length(unique(round(sw / sum(sw), 12))) > 1) {
+    cat(paste0("\n    Note: The study weights are only used in calculating the ", type_label, 
+               " weights; not in the ", type_label, " values (which equal -2 x LL + penalty_factor x penalty), \n",
+               "    the log-likelihood (LL) and penalty values, and the LL weights. Hence, here, the ", 
+               type_label, " weights are not based on the ", type_label, " values shown.\n"))
+  }
   
   cat("\nFinal ratios:\n")
   

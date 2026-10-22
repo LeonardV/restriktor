@@ -40,21 +40,22 @@ evSyn_est(object, \ldots, VCOV = list(), hypotheses = list(),
           hypo_names = c(), priorICweights = NULL, 
           type = c("gorica", "goricac"), 
           order_studies = c("input_order", "ascending", "descending"),
-          study_names = c(), study_weights = c(), study_sample_nobs = NULL)
+          study_names = c(), study_sample_nobs = NULL, study_weights = NULL,
+          penalty_factor = 2, CI = FALSE, CI_level = 0.95, CI_B = 1000L)
 
 # input: Log-likelihood and penalty values
 evSyn_LL(object, \ldots, PT = list(), type_ev = c("added", "equal", "average"),
          hypo_names = c(), priorICweights = NULL, 
          type = c("goric", "goricc", "gorica", "goricac"),
          order_studies = c("input_order", "ascending", "descending"),
-         study_names = c(), study_weights = c())
+         study_names = c(), study_weights = NULL, penalty_factor = 2)
 
 # input: GORIC(A), ORIC, AIC values
 evSyn_ICvalues(object, \ldots, type_ev = c("added", "average"), 
                hypo_names = c(), priorICweights = NULL, 
                type = c("goric", "goricc", "gorica", "goricac"), 
                order_studies = c("input_order", "ascending", "descending"), 
-               study_names = c(), study_weights = c())
+               study_names = c(), study_weights = NULL)
 
 # input: AIC or ORIC or GORIC or GORICA weights; or (Bayesian) posterior 
 # model probabilities
@@ -62,7 +63,7 @@ evSyn_ICweights(object, \ldots, type_ev = c("added", "average"),
                 hypo_names = c(), priorICweights = NULL, 
                 type = c("goric", "goricc", "gorica", "goricac"),
                 order_studies = c("input_order", "ascending", "descending"), 
-                study_names = c(), study_weights = c())
+                study_names = c(), study_weights = NULL)
 
 # input: Ratio of AIC or ORIC or GORIC or GORICA weights; or 
 # Bayes factors
@@ -70,14 +71,15 @@ evSyn_ICratios(object, \ldots, type_ev = c("added", "average"),
                hypo_names = c(), priorICweights = NULL, 
                type = c("goric", "goricc", "gorica", "goricac"),
                order_studies = c("input_order", "ascending", "descending"), 
-               study_names = c(), study_weights = c())
+               study_names = c(), study_weights = NULL)
 
 # input: result from the goric() function
 # Note that this is a wrapper function for evSyn_LL.
 evSyn_gorica(object, \dots, type_ev = c("added", "equal", "average"), 
              hypo_names = c(), priorICweights = NULL, 
              order_studies = c("input_order", "ascending", "descending"), 
-             study_names = c(), study_weights = c())
+             study_names = c(), study_weights = NULL,
+             CI = FALSE, CI_level = 0.95, CI_B = 1000L)
 
 # input: Result from the escalc() function from the metafor package (or a 
 # regular data.frame using the same labelling). 
@@ -88,7 +90,7 @@ evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", study_sample_nobs = "ni",
 
 \method{print}{evSyn}(x, digits = max(3, getOption("digits") - 4), \dots)
 
-\method{summary}{evSyn}(object, \dots)
+\method{summary}{evSyn}(object, probs = c(0, .25, .50, .75, 1), \dots)
 
 \method{print}{summary.evSyn}(x, digits = max(3, getOption("digits") - 4), \dots)  
 
@@ -198,6 +200,32 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   If \code{NULL} (default), studies are automatically numbered 
   (1, 2, ..., S) following the order determined by \code{order_studies}.}
 
+  \item{penalty_factor}{The penalty factor adjusts the penalty in the GORIC(A) formula
+  (GORIC(A) = -2 x log-likelihood + penalty_factor x penalty); by default, 2. 
+  It is used in all studies and in the evidence synthesis (see also \code{\link{goric}}). 
+  For goric objects as input, the penalty factor used in these objects is used 
+  (which must be the same for all objects).}
+
+  \item{CI}{only for input consisting of (standardized) estimates and their covariance 
+  matrices (input type \code{"est_vcov"} or \code{"escalc"}) or of goric objects 
+  (input type \code{"gorica"}): if \code{TRUE}, confidence 
+  intervals (CIs) are computed for the final (pooled) GORICA values, GORICA weights, and 
+  ratios of GORICA weights, using \code{\link{evSyn_CI}} with the parametric bootstrap 
+  (\code{method = "boot"}). They are printed as extra columns (lower and upper bound) for the 
+  final weights in the print output, as extra rows in the final results of the summary, and, 
+  for the ratios of weights, in the conclusion. Defaults to \code{FALSE}; the CIs can also be 
+  computed afterwards with \code{evSyn_CI(object)}, see \code{\link{evSyn_CI}} for other options 
+  (as \code{\link{goric_CI}} for \code{\link{goric}}). They are not available for 
+  \code{type_ev = "average"} (since the analyses are then dependent) and not for the other input types 
+  (which contain no information about the sampling variability). 
+  The state of the random number generator is the same afterwards as without the CIs. 
+  See also \code{\link{evSyn_forest}} for a forest-type plot of the study-specific and final 
+  ratios of weights with their CIs.}
+
+  \item{CI_level}{the confidence level of the CIs (default 0.95).}
+
+  \item{CI_B}{the number of bootstrap draws (per study) used for the CIs (default 1000).}
+
   \item{study_sample_nobs}{a numeric vector specifying the sample size (\code{n}) 
   for each study; only needed if \code{type = "goricac"}. 
   In case the input is a escalc object (or a dataframe), it is inherited from the 
@@ -300,6 +328,13 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   
   \item{digits}{the number of significant digits to use when printing.}
 
+  \item{probs}{numeric vector of probabilities (in [0, 1]) for the percentiles 
+  that are reported in the variability section of the summary (see Value); 
+  by default, the minimum, first quartile, median, third quartile, and maximum. 
+  For example, \code{probs = c(0, .025, .25, .50, .75, .975, 1)} adds a 95\% range; 
+  notably, with a small number of studies, the 2.5\% and 97.5\% percentiles 
+  lie (very) close to the minimum and maximum.}
+
   \item{\ldots}{This depends on the class of the object.}
 }
 
@@ -383,6 +418,55 @@ studies and to assess the robustness of the overall conclusion.
 \value{An object of class evSyn for which a print, summary and plot function is available. 
 The output comprises, among other things, the cumulative and final evidence 
 for the theory-based hypotheses.
+For confidence intervals for the final (pooled) results (when the input consists of 
+(standardized) estimates and their covariance matrices or of goric objects), see the argument \code{CI} and 
+\code{\link{evSyn_CI}}; for a forest-type plot of the study-specific and final ratios of 
+weights with their CIs, see \code{\link{evSyn_forest}}.
+
+The summary (with at least two studies/analyses) also contains measures of 
+variability over the studies (or analyses), in the element \code{variability}. 
+These are based on the study-specific IC weights (including the priorICweights) 
+and compare the overall best hypothesis (i.e., the one with the highest final IC weight) 
+with each other hypothesis:
+\itemize{
+  \item percentiles (see \code{probs}) of the study-specific IC weights per hypothesis 
+    and of the study-specific ratios of IC weights (best versus each other hypothesis);
+  \item the geometric mean of these ratios (cf. the gP-BF in Klaassen et al., 2018); 
+    for the average-evidence approach, this equals the final ratio of IC weights;
+  \item the evidence rate (ER; Klaassen et al., 2018): the proportion of studies 
+    whose ratio favours the same hypothesis as the geometric mean 
+    (i.e., > 1 when the geometric mean > 1). 
+    An ER near 1 indicates homogeneous studies; Klaassen et al. regard ER >= .9 as sufficient;
+  \item the stability rate (SR; Klaassen et al., 2018): the proportion of studies 
+    whose ratio is more extreme than the geometric mean. 
+    An SR around .5 (Klaassen et al. use .4 to .6) indicates that the ratios are evenly 
+    spread around the geometric mean; below .5, a minority of studies with large ratios 
+    inflates the geometric mean; above .5, a minority of studies with small ratios deflates it;
+  \item the preference rate: the proportion of studies in which the overall best 
+    hypothesis also has the highest study-specific IC weight.
+}
+With unequal study weights, the geometric mean, ER, SR, and preference rate are weighted 
+(i.e., weighted geometric mean and weighted proportions); the percentiles are not.
+Notably, when the best hypothesis overlaps with another one (e.g., the best hypothesis 
+versus the unconstrained hypothesis when the estimates are in agreement with the best one), 
+the ratio of IC weights has an upper bound (determined by the difference in penalties), 
+so that many studies may obtain the same (maximum) ratio; ER and SR should then be 
+interpreted with care.
+When log-likelihood values are available, the number of studies in which the 
+best and the other hypothesis have the same log-likelihood value (column \code{Ceiling}) is reported as well.
+
+Based on these measures, the summary also gives a conclusion (element \code{variability$conclusion}), 
+using the cut-off values suggested by Klaassen et al. (2018): ER >= .90 and .40 <= SR <= .60 
+(which are subjective guidelines, not strict rules). As for the \code{goric} output, this is done in two steps:
+first, the best hypothesis is compared with the failsafe hypothesis (unconstrained or complement), 
+to check whether it is not weak (if the failsafe is the best, all order-restricted hypotheses are weak); 
+second, if it is not weak, it is compared with the other order-restricted hypotheses in the set. 
+For each comparison, the final ratio of IC weights is given, together with the ER and SR verdicts 
+and, if applicable, the number of studies in which the ratio reached its maximum (ceiling).
+If there is no failsafe hypothesis in the set (i.e., no hypothesis labelled 'Unconstrained' or 'Complement'), 
+it is assumed that the hypotheses in the set together cover all possibilities (i.e., the full parameter space); 
+if not, a failsafe hypothesis should be added to the set (preferably the default one). With fewer than 10 studies, a note is given that ER >= .90 then requires 
+that all studies point in the same direction.
 
 \code{leave1studyout.evSyn} returns a named list with the following components:
 \describe{
@@ -407,6 +491,12 @@ for the theory-based hypotheses.
 }
 }
 
+
+\references{
+  Klaassen, F., Zedelius, C. M., Veling, H., Aarts, H., and Hoijtink, H. (2018). 
+  All for one or some for all? Evaluating informative hypotheses using multiple N = 1 studies. 
+  \emph{Behavior Research Methods, 50}, 2276--2291. \doi{10.3758/s13428-017-0992-5}
+}
 
 \author{Leonard Vanbrabant and Rebecca M. Kuiper}
 

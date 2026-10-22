@@ -24,9 +24,9 @@ comparable to the Akaike weights.
       comparison = NULL, type = "goric",
       VCOV = NULL, sample_nobs = NULL,
       penalty_factor = 2, Heq = FALSE,
-      add_Hc = NULL,
-      priorICweights = NULL,
-      CI = FALSE, CI_level = 0.95, CI_B = 1000,
+      add_Hc = NULL, check_add_Hc = TRUE,
+      priorICweights = NULL, posthoc = TRUE,
+      CI = FALSE, CI_level = 0.95, CI_B = 1000L,
       control = list(), debug = FALSE)
 
 \method{goric}{lm}(object, ..., hypotheses = NULL,
@@ -163,6 +163,29 @@ comparable to the Akaike weights.
   This means that all inequality constraints are replaced with equality constraints,
   effectively testing the hypothesis that the parameters satisfy exact equality
   rather than inequality. Defaults to \code{FALSE}.}
+
+  \item{add_Hc}{\code{NULL} (default), or a number or name denoting one of the specified 
+  (order-restricted) hypotheses, the reference hypothesis. If specified, the hypotheses are 
+  evaluated against each other (i.e., as with \code{comparison = "none"}) and, in addition, 
+  the complement of the reference hypothesis is added to the set, in place of the usual 
+  unconstrained (failsafe) hypothesis. The output then contains one extra row, the complement 
+  of the reference hypothesis. This requires at least two specified hypotheses (for one 
+  hypothesis, use \code{comparison = "complement"}). It is only meaningful when all other 
+  specified hypotheses are nested within (i.e., subsets of) the reference hypothesis: the 
+  complement of the reference hypothesis is then also the complement of the whole set. 
+  This is checked (best effort), and a warning is given when it cannot be confirmed 
+  (see also \code{check_add_Hc}). If \code{priorICweights} are specified, they refer to this 
+  final set of hypotheses (i.e., the specified hypotheses and the complement). 
+  See the examples.}
+
+  \item{check_add_Hc}{logical; if \code{TRUE} (default), it is checked (best effort) whether 
+  the other specified hypotheses are nested within the reference hypothesis in \code{add_Hc}, 
+  with a warning if this cannot be confirmed. It is set to \code{FALSE} only internally 
+  (e.g., by \code{\link{benchmark}}), where the check was already done for the original 
+  object (the check depends only on the hypotheses, not on the estimates); 
+  users should keep the default.}
+
+  \item{posthoc}{currently not used; reserved for a future option.}
 
   \item{priorICweights}{vector that represents the prior belief for the specified hypotheses.
   By default, equal prior weights are used (i.e., 1/(#hypotheses)).

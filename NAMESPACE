@@ -61,7 +61,9 @@ importFrom("MASS",
 
 importFrom("utils", packageDescription, capture.output, tail)
 
-importFrom("stats", coef, df.residual, dchisq, dnorm, fitted,
+importFrom("stats", qnorm, plogis, qlogis, ecdf, dbinom, dgamma, dpois,
+           model.offset, model.response,
+           coef, df.residual, dchisq, dnorm, fitted,
            formula, frequency, integrate, median, model.matrix,
            naresid, pchisq, pf, pnorm, printCoefmat, pt, qchisq,
            quantile, rchisq, residuals, rnorm, rt, runif,
@@ -81,7 +83,8 @@ importFrom("ggplot2", ggplot, aes, .data, geom_point, geom_line, geom_hline,them
            scale_fill_brewer, scale_color_manual, coord_cartesian,
            scale_linetype_manual, geom_vline, geom_ribbon, scale_x_continuous,
            facet_grid, scale_x_log10, stat_density, after_stat, scale_fill_manual,
-           ggplot_build, scale_colour_manual)
+           ggplot_build, scale_colour_manual, geom_linerange, scale_shape_manual,
+           scale_size_continuous, facet_wrap)
 
 importFrom("scales", brewer_pal)
 
@@ -119,6 +122,8 @@ export(con_weights_boot)
 export(coef.con_goric)
 export(evSyn, plot.evSyn)
 export(leave1studyout)
+export(evSyn_CI)
+export(evSyn_forest)
 export(calculate_IC_weights, calc_ICweights)
 export(print.goric_ICw)
 export(benchmark)
@@ -187,3 +192,4 @@ S3method(plot, benchmark)
 S3method(print, benchmark_plot)
 
 S3method(print, goric_CI)
+S3method(print, evSyn_CI)

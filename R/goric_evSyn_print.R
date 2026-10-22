@@ -61,7 +61,20 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     rownames(cw) <- colnames(x[["Cumulative_LL_weights"]])
     #colnames(cw) <- c("log-likelihood", type_label)
     colnames(cw) <- c("LL weights", paste0(type_label, " weights"))
+    # Confidence intervals for the final IC weights (if evSyn(..., CI = TRUE); see evSyn_CI())
+    ci <- x[["CI"]]
+    if (!is.null(ci)) {
+      idx <- match(rownames(cw), ci$weights$model)
+      if (!anyNA(idx)) {
+        cw <- cbind(cw, 
+                    lower = sapply(ci$weights$lower[idx], format_numeric, digits = digits),
+                    upper = sapply(ci$weights$upper[idx], format_numeric, digits = digits))
+      }
+    }
     print(cw, print.gap = 2, quote = FALSE, right = TRUE)
+    if (!is.null(ci)) {
+      cat(paste0("\n", .evSyn_CI_note(ci), "\n"))
+    }
     cat("\n")
     cat("---\n")
     #cat("\n")
@@ -100,7 +113,14 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   print(formatted_weights, print.gap = 2, quote = FALSE, right = TRUE)
   cat("\n")
   
-
+  # Measures of variability over the studies (or analyses), incl. conclusion 
+  # (as in the summary; only available with at least two studies/analyses)
+  if (!is.null(x[["n_studies"]]) && x[["n_studies"]] > 1) {
+    cat("---\n")
+    v <- summary.evSyn(x)$variability
+    .evSyn_print_variability(v, type_ev = x[["type_ev"]], type_label = type_label, digits = digits)
+    cat("\n")
+  }
   
   message(x[["messages"]]$mix_weights)
   

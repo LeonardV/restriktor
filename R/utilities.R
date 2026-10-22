@@ -428,16 +428,21 @@ detect_range_restrictions <- function(Amat) {
 # return NULL for both, and every downstream use here only ever reads the
 # constraint matrix's values (via indexing/matrix algebra), never its
 # dimnames directly.
-remove_redundant_constraints <- function(constraints, rhs, meq) {
-  ord <- order(rhs, decreasing = TRUE)
+remove_redundant_constraints <- function(constraints, rhs, meq = 0L) {
+  # The first 'meq' rows are the equality restrictions; they must stay the 
+  # first rows (solve.QP treats the first 'meq' rows as equalities). 
+  # Therefore, the rows are sorted by type first (equalities first) and then 
+  # by rhs (decreasing), such that, of duplicated rows (i.e., with the same 
+  # coefficients), the equality one and otherwise the strictest one 
+  # (i.e., the one with the highest rhs) is kept.
+  eq <- rep(0, length(rhs))
+  if (meq > 0) {
+    eq[seq_len(meq)] <- 1
+  }
+  ord <- order(-eq, -rhs)
   constraints_s <- constraints[ord, , drop = FALSE]
   rhs_s <- rhs[ord]
-
-  eq_s <- rep(0, length(rhs))
-  if (meq > 0) {
-    eq_s[seq_len(meq)] <- 1
-  }
-  eq_s <- eq_s[ord]
+  eq_s <- eq[ord]
 
   keep <- !duplicated(constraints_s) # row-wise; see duplicated.matrix
   out_constraints <- constraints_s[keep, , drop = FALSE]

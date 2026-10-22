@@ -466,7 +466,9 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       diag(goric_rw_without_heq) <- 1L
       colnames(goric_rw_without_heq) <- paste0("vs. ", modelnames)
       goric_rw_without_heq_best_hypo <- goric_rw_without_heq[best_hypo-1, ]
-      goric_rw_without_heq_best_hypo <- goric_rw_without_heq_best_hypo[goric_rw_without_heq_best_hypo != 1]
+      # Filter on the name of the best hypothesis, not on the value 1 (a ratio 
+      # can also equal 1 for another hypothesis, e.g., with equal weights)
+      goric_rw_without_heq_best_hypo <- goric_rw_without_heq_best_hypo[names(goric_rw_without_heq_best_hypo) != paste0("vs. ", best_hypo_name)]
       goric_rw_without_heq_best_hypo <- sapply(goric_rw_without_heq_best_hypo, format_value)
       best_hypos_rest <- paste(df$model[!df$model %in% c(best_hypo_name, "Heq")])
       
@@ -544,7 +546,9 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       diag(goric_rw_without_unc) <- 1L
       colnames(goric_rw_without_unc) <- paste0("vs. ", modelnames)
       goric_rw_without_unc_best_hypo <- goric_rw_without_unc[best_hypo, ]
-      goric_rw_without_unc_best_hypo <- goric_rw_without_unc_best_hypo[goric_rw_without_unc_best_hypo != 1]
+      # Filter on the name of the best hypothesis, not on the value 1 (a ratio 
+      # can also equal 1 for another hypothesis, e.g., with equal weights)
+      goric_rw_without_unc_best_hypo <- goric_rw_without_unc_best_hypo[names(goric_rw_without_unc_best_hypo) != paste0("vs. ", best_hypo_name)]
       goric_rw_without_unc_best_hypo <- sapply(goric_rw_without_unc_best_hypo, format_value)
       best_hypos_rest <- paste(df$model[!df$model %in% c(best_hypo_name, "unconstrained")])
       # Step 1: Check if the best hypothesis in the set is not weak

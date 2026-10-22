@@ -640,11 +640,14 @@ test_that("evSyn_ICweights: summary toont GORICA weights, geen LL/PT/GORICA valu
   expect_false(any(grepl("Penalty term values", out)))
 })
 
-test_that("evSyn_ICratios: summary toont GORICA weights, geen LL/PT/GORICA values", {
+test_that("evSyn_ICratios: summary toont GORICA weights en verschillen in GORICA values, geen LL/PT/GORICA values", {
   es <- evSyn(object = R_list)
   out <- capture.output(print(summary(es)))
   expect_true(any(grepl("GORICA weights", out)))
-  expect_false(any(grepl("GORICA values", out)))
+  # Bij ratio's als input zijn alleen verschillen in GORICA values (t.o.v. de 
+  # referentiehypothese) beschikbaar, geen GORICA values zelf:
+  expect_true(any(grepl("Difference in GORICA values", out)))
+  expect_false(any(grepl("GORICA values", out) & !grepl("Diff(erence|\\.) in GORICA values", out)))
   expect_false(any(grepl("Log-likelihood values", out)))
   expect_false(any(grepl("Penalty term values", out)))
 })

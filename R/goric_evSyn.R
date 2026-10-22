@@ -139,6 +139,31 @@
   OverallPrefHypo
 }
 
+# Helper: add confidence intervals (CIs) for the final (pooled) results to an 
+# evSyn object (evSyn(..., CI = TRUE)), via evSyn_CI() (goric_evSyn_CI.R) with 
+# the parametric bootstrap, as for goric(..., CI = TRUE). 
+# The state of the random number generator is restored afterwards, so that 
+# calling evSyn() does not change the random numbers drawn after it (and 
+# repeating the same call gives the same CIs).
+.evSyn_add_CI <- function(out, CI_level = 0.95, CI_B = 1000L) {
+  seed_exists <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  if (seed_exists) old_seed <- get(".Random.seed", envir = .GlobalEnv)
+  ci <- tryCatch(
+    evSyn_CI(out, level = CI_level, method = "boot", B = CI_B),
+    error = function(e) {
+      message("\nrestriktor Message: The confidence intervals could not be computed (",
+              conditionMessage(e), "); use evSyn_CI() for other options.")
+      NULL
+    })
+  if (seed_exists) {
+    assign(".Random.seed", old_seed, envir = .GlobalEnv)
+  } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+    rm(".Random.seed", envir = .GlobalEnv)
+  }
+  if (!is.null(ci)) out$CI <- ci
+  out
+}
+
 # -------------------------------------------------------------------------
 evSyn <- function(object, input_type = NULL, ...) {
   
@@ -150,7 +175,16 @@ evSyn <- function(object, input_type = NULL, ...) {
   type_ev <- args$type_ev
   
   call_sub <- function(fun, args, object) {
-    do.call(fun, c(list(object), args))
+    res <- do.call(fun, c(list(object), args))
+    # Confidence intervals (CI = TRUE) are only available for input consisting 
+    # of (standardized) estimates and their covariance matrices.
+    if (isTRUE(args$CI) && !inherits(res, c("evSyn_est", "evSyn_gorica"))) {
+      message("\nrestriktor Message: Confidence intervals (CI = TRUE) are only available when the input ",
+              "consists of (standardized) estimates and their covariance matrices (input type 'est_vcov' ",
+              "or 'escalc') or of goric objects (input type 'gorica'); for this type of input, there is no ",
+              "information about the sampling variability.")
+    }
+    res
   }
   
   isGoric <- if (is.list(object)) {
@@ -265,11 +299,13 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
                       study_names = c(),
                       study_sample_nobs = NULL,
                       study_weights = NULL,
-                      penalty_factor = 2) {
+                      penalty_factor = 2,
+                      CI = FALSE, CI_level = 0.95, CI_B = 1000L) {
   
-  comparison_orig <- comparison
+  # Note: missing() must be applied to the argument itself (not to a copy of it)
+  comparison_missing <- missing(comparison)
   .check_penalty_factor(penalty_factor)
-  if (missing(comparison_orig)) {
+  if (comparison_missing) {
     if (length(hypotheses) == 1) {
       comparison <- "complement"
     } else {
@@ -394,7 +430,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   # and only one hypothesis in the sub-lists, then:
   # comparison <- "complement"
   # BUT only when it was not set to something in the first place!
-  if (missing(comparison_orig) && all(len_H == 1)) {
+  if (comparison_missing && all(len_H == 1)) {
     comparison <- "complement"
   }
   
@@ -532,6 +568,9 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   # rownames are set after determining the order of the studies
   #
   study_sample_nobs <- unlist(study_sample_nobs) # when it comes from escalc, then it is a list
+  # The study-specific goric objects are stored (in the input order of the 
+  # studies), such that, e.g., evSyn_CI() can use them.
+  goric_studies <- vector("list", S)
   for (s in 1:S) {
     res_goric <- goric(object[[s]], VCOV = VCOV[[s]],
                        hypotheses = hypotheses[[s]],
@@ -540,6 +579,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
                        sample_nobs = study_sample_nobs[s],
                        penalty_factor = penalty_factor,
                        ...)
+    goric_studies[[s]] <- res_goric
     
     if (comparison == "unconstrained") {
       ratio.weight_mu[s, ] <- res_goric$ratio.gw[, NrHypos_incl]
@@ -784,11 +824,16 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
               Cumulative_LL_weights = CumulativeLLWeights,                  
               ratio_GORICA_weight_mu = ratio.weight_mu, 
               Final_ratio_GORICA_weights = Final.ratio.GORICA.weights,
-              Final_ratio_LL_weights = Final.ratio.LL.weights
+              Final_ratio_LL_weights = Final.ratio.LL.weights,
+              comparison = comparison,
+              goric_studies = goric_studies # in the input order of the studies
   )
   # TO DO welke volgorde en dan in alle functies zo gelijk mogelijk maken ook
   
   class(out) <- c("evSyn_est", "evSyn")
+  
+  # Confidence intervals (CIs) for the final (pooled) results (see .evSyn_add_CI())
+  if (isTRUE(CI)) out <- .evSyn_add_CI(out, CI_level = CI_level, CI_B = CI_B)
   
   return(out)
 }
@@ -1881,7 +1926,8 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
                          hypo_names = c(), priorICweights = NULL,
                          order_studies = c("input_order", "ascending", "descending"),
                          study_names = c(),
-                         study_weights = NULL) {
+                         study_weights = NULL,
+                         CI = FALSE, CI_level = 0.95, CI_B = 1000L) {
   
   if (missing(type_ev)) 
     type_ev <- "added"
@@ -1937,7 +1983,13 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
   result <- do.call(evSyn_LL, append(conList, ldots))
   # Add the type from the goric objects (evSyn_LL does not carry type)
   result$type <- object[[1]]$type
+  # The goric objects are stored (in the input order of the studies), such 
+  # that, e.g., evSyn_CI() and evSyn_forest() can use them.
+  result$goric_studies <- object
   class(result) <- c(class(result), "evSyn_gorica")
+  
+  # Confidence intervals (CIs) for the final (pooled) results (see .evSyn_add_CI())
+  if (isTRUE(CI)) result <- .evSyn_add_CI(result, CI_level = CI_level, CI_B = CI_B)
   
   return(result)
 }

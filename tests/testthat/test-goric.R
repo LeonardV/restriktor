@@ -859,13 +859,39 @@ test_that("edge: fout bij (bijna-)singuliere VCOV", {
 # Edge cases: Heq parameter
 # =============================================================================
 
-test_that("edge: Heq = TRUE met >1 hypothese geeft fout", {
-  expect_error(
-    goric(est_3, VCOV = VCOV_3, type = "gorica",
-          Heq = TRUE,
-          hypotheses = list(H1 = "x1 > x2", H2 = "x2 > x3")),
-    "Heq.*one|one.*hypothesis"
+test_that("edge: Heq = TRUE met >1 hypothese: Heq wordt genegeerd (waarschuwing)", {
+  # Met >1 hypothese is de default comparison 'unconstrained', waarvoor Heq niet 
+  # geldig is: Heq wordt dan genegeerd (met een waarschuwing).
+  expect_warning(
+    result <- goric(est_3, VCOV = VCOV_3, type = "gorica",
+                    Heq = TRUE,
+                    hypotheses = list(H1 = "x1 > x2", H2 = "x2 > x3")),
+    "Heq.*ignored"
   )
+  expect_false(result$Heq)
+  expect_false("Heq" %in% result$result$model)
+})
+
+test_that("edge: Heq = TRUE met >1 hypothese en comparison = 'complement': twee waarschuwingen", {
+  # comparison = 'complement' wordt 'unconstrained' (meerdere hypotheses) en 
+  # daardoor wordt Heq genegeerd.
+  w <- character(0)
+  result <- withCallingHandlers(
+    goric(est_3, VCOV = VCOV_3, type = "gorica", comparison = "complement", Heq = TRUE,
+          hypotheses = list(H1 = "x1 > x2", H2 = "x2 > x3")),
+    warning = function(cnd) { w <<- c(w, conditionMessage(cnd)); invokeRestart("muffleWarning") })
+  expect_true(any(grepl("More than one hypothesis", w)))
+  expect_true(any(grepl("Heq.*ignored", w)))
+  expect_false(result$Heq)
+})
+
+test_that("print: ratio met gelijke gewichten wordt getoond (niet 'NULL')", {
+  # H1 en H2 overlappen (gelijke log-likelihood en penalty), dus de ratio is 1
+  g <- goric(est_3, VCOV = VCOV_3, type = "gorica",
+             hypotheses = list(H1 = "x1 > x2", H2 = "x2 > x3"))
+  out <- capture.output(print(g))
+  expect_false(any(grepl("NULL times", out)))
+  expect_true(any(grepl("is 1.000 times more supported than", out)))
 })
 
 test_that("edge: Heq = TRUE met comparison='unconstrained' geeft waarschuwing", {

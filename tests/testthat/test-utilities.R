@@ -359,6 +359,41 @@ test_that("remove_redundant_constraints: drie redundante restricties", {
   expect_equal(result$rhs, 3)
 })
 
+test_that("remove_redundant_constraints: zonder meq gelijk aan meq = 0", {
+  constraints <- rbind(c(1, 0), c(1, 0), c(0, 1))
+  rhs <- c(1, 2, 0)
+  expect_equal(restriktor:::remove_redundant_constraints(constraints, rhs),
+               restriktor:::remove_redundant_constraints(constraints, rhs, meq = 0))
+})
+
+test_that("remove_redundant_constraints: gelijkheidsrestricties blijven vooraan (met meq)", {
+  # rij 1: x1 = x2 (gelijkheid, rhs 0); rij 2: x3 >= 0.5 (ongelijkheid, hogere rhs)
+  constraints <- rbind(c(1, -1, 0), c(0, 0, 1))
+  rhs <- c(0, 0.5)
+  result <- restriktor:::remove_redundant_constraints(constraints, rhs, meq = 1)
+  expect_equal(result$meq, 1)
+  expect_equal(result$constraints[1, ], c(1, -1, 0))
+  expect_equal(result$rhs, c(0, 0.5))
+})
+
+test_that("remove_redundant_constraints: dubbele rij als gelijkheid en ongelijkheid behoudt de gelijkheid", {
+  constraints <- rbind(c(1, 0), c(1, 0), c(0, 1))
+  rhs <- c(0, 0, 1)
+  result <- restriktor:::remove_redundant_constraints(constraints, rhs, meq = 1)
+  expect_equal(nrow(result$constraints), 2)
+  expect_equal(result$meq, 1)
+  expect_equal(result$constraints[1, ], c(1, 0))
+})
+
+test_that("goric: gelijkheid met ongelijkheid met hogere rhs geeft juiste or-mle's", {
+  # b3 = 1.0 voldoet al aan b3 > 0.5, dus de or-mle van b3 moet 1.0 blijven
+  g <- goric(c(b1 = .2, b2 = .6, b3 = 1.0), VCOV = diag(.01, 3),
+             hypotheses = list(H1 = "b1 == b2; b3 > 0.5"), comparison = "unconstrained")
+  b <- unlist(g$ormle$b.restr["H1", ])
+  expect_equal(unname(b[c("b1", "b2")]), c(.4, .4), tolerance = 1e-6)
+  expect_equal(unname(b["b3"]), 1.0, tolerance = 1e-6)
+})
+
 
 # =============================================================================
 # check_sample_nobs

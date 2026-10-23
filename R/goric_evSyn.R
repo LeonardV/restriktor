@@ -149,7 +149,9 @@
   seed_exists <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
   if (seed_exists) old_seed <- get(".Random.seed", envir = .GlobalEnv)
   ci <- tryCatch(
-    evSyn_CI(out, level = CI_level, method = "boot", B = CI_B),
+    evSyn_CI(out, level = CI_level,
+             method = if (identical(out$type_ev, "average") || !is.null(out$cluster_info)) "mc" else "boot",
+             B = CI_B),
     error = function(e) {
       message("\nrestriktor Message: The confidence intervals could not be computed (",
               conditionMessage(e), "); use evSyn_CI() for other options.")
@@ -164,6 +166,101 @@
   out
 }
 
+# Helper: dependent studies (argument 'cluster' in evSyn()).
+# - dependence = "cluster" (default; two-level evidence synthesis): the studies 
+#   within a cluster (e.g., studies based on overlapping samples, or from the 
+#   same lab or cohort) are dependent, so their evidence is averaged (average 
+#   approach: (weighted) mean of the log-likelihood and penalty values, with 
+#   the study weights rescaled within each cluster); the clusters are 
+#   independent, so their evidence is combined with type_ev ("added" or 
+#   "equal"; the cluster weights are the sums of the study weights). This 
+#   corrects the aggregated evidence itself (no double counting of overlapping 
+#   information) and, via evSyn_CI(), its CIs (the studies within a cluster are 
+#   then treated as fully dependent).
+# - dependence = "rve": the aggregated evidence is that of the studies as such 
+#   (as without 'cluster'), but its CIs (evSyn_CI()) are based on robust 
+#   variance estimation (RVE; cluster-robust, cf. Hedges, Tipton, & Johnson, 
+#   2010), which is robust to unknown dependence within the clusters (and 
+#   includes the heterogeneity of the studies). It requires a sufficient 
+#   number of clusters (about 10 or more).
+# Available for input from which log-likelihood and penalty values are 
+# available (estimates and covariance matrices, goric objects, or LL and PT).
+.evSyn_cluster <- function(res, cluster, dependence = c("cluster", "rve"), args = list()) {
+  dependence <- match.arg(dependence)
+  S <- res$n_studies
+  if (length(cluster) != S) {
+    stop("\nrestriktor ERROR: The argument 'cluster' should contain ", S, " values (one for each study, ",
+         "in the input order of the studies).", call. = FALSE)
+  }
+  if (anyNA(cluster)) stop("\nrestriktor ERROR: The argument 'cluster' contains missing values.", call. = FALSE)
+  if (identical(res$type_ev, "average")) {
+    stop("\nrestriktor ERROR: The argument 'cluster' is not available for type_ev = 'average', since the ",
+         "analyses are then all based on the same data (and thus all dependent) anyway.", call. = FALSE)
+  }
+  if (is.null(res$LL_m) || is.null(res$PT_m)) {
+    stop("\nrestriktor ERROR: The argument 'cluster' is (for now) only available when the input of evSyn() ",
+         "consists of estimates and their covariance matrices, of goric objects, or of log-likelihood ",
+         "and penalty values.", call. = FALSE)
+  }
+  ord <- res$order_studies
+  if (is.null(ord) || length(ord) != S) ord <- seq_len(S)
+  pos <- match(seq_len(S), ord)                 # row of input study i in the (re-)ordered matrices
+  LL_in <- as.matrix(res$LL_m)[pos, , drop = FALSE]
+  PT_in <- as.matrix(res$PT_m)[pos, , drop = FALSE]
+  hnames <- colnames(res$LL_m)
+  sw <- res$study_weights
+  if (is.null(sw)) sw <- rep(1 / S, S)
+  st_names <- res$study_names
+  st_names_in <- if (!is.null(st_names) && length(st_names) == S) st_names[pos] else as.character(seq_len(S))
+  cl <- as.character(cluster)
+  levs <- unique(cl)
+  C <- length(levs)
+  info <- list(cluster = cl, levels = levs, n_clusters = C, dependence = dependence,
+               n_studies = S, study_names = st_names_in, study_weights = sw,
+               study_LL = LL_in, study_PT = PT_in)
+  if (C == S) {
+    message("\nrestriktor Message: Each study forms its own cluster; the studies are thus treated as independent.")
+  }
+  if (dependence == "rve") {
+    if (C < 10) {
+      message("\nrestriktor Message: Robust variance estimation (dependence = 'rve') is based on only ", C,
+              " clusters; with fewer than about 10 clusters, its CIs can be (much) too narrow. ",
+              "Consider dependence = 'cluster' (two-level evidence synthesis).")
+    }
+    res$cluster_info <- info
+    class(res) <- c(setdiff(class(res), "evSyn"), "evSyn_cluster", "evSyn")
+    return(res)
+  }
+  # two-level evidence synthesis: average within clusters, type_ev over clusters
+  LL_c <- PT_c <- matrix(NA_real_, C, length(hnames), dimnames = list(levs, hnames))
+  w_c <- numeric(C)
+  for (j in seq_len(C)) {
+    idx <- which(cl == levs[j])
+    ww <- sw[idx] / sum(sw[idx])
+    LL_c[j, ] <- colSums(LL_in[idx, , drop = FALSE] * ww)
+    PT_c[j, ] <- colSums(PT_in[idx, , drop = FALSE] * ww)
+    w_c[j] <- sum(sw[idx])
+  }
+  ord_arg <- args$order_studies
+  if (is.null(ord_arg) || is.numeric(ord_arg)) ord_arg <- "input_order"
+  res_c <- suppressMessages(evSyn_LL(
+    object = lapply(seq_len(C), function(j) LL_c[j, ]),
+    PT = lapply(seq_len(C), function(j) PT_c[j, ]),
+    type_ev = res$type_ev, hypo_names = hnames,
+    priorICweights = res$priorICweights, type = res$type,
+    order_studies = ord_arg, study_names = levs,
+    study_weights = if (length(unique(round(w_c / sum(w_c), 12))) > 1) w_c else NULL,
+    penalty_factor = if (is.null(res$penalty_factor)) 2 else res$penalty_factor))
+  # keep the information of the study level
+  keep <- c("goric_studies", "study_sample_nobs", "hypotheses", "comparison", "show_variability",
+            "priorICweights_study")
+  for (nm in keep) if (!is.null(res[[nm]])) res_c[[nm]] <- res[[nm]]
+  res_c$type <- res$type
+  res_c$cluster_info <- info
+  class(res_c) <- c(setdiff(class(res), c("evSyn")), "evSyn_cluster", "evSyn")
+  res_c
+}
+
 # -------------------------------------------------------------------------
 evSyn <- function(object, input_type = NULL, ...) {
   
@@ -176,14 +273,49 @@ evSyn <- function(object, input_type = NULL, ...) {
   variability <- isTRUE(args$variability)
   args$variability <- NULL
   
+  # cluster / dependence: dependent studies (see .evSyn_cluster()); not passed 
+  # on to the evSyn_xxx() functions.
+  cluster <- args$cluster
+  args$cluster <- NULL
+  dependence <- if (is.null(args$dependence)) "cluster" else args$dependence
+  args$dependence <- NULL
+  if (!is.null(cluster)) dependence <- match.arg(dependence, c("cluster", "rve"))
+  
+  # MI: whether the analyses are analyses of multiple imputed data sets (only 
+  # with type_ev = "average"; then, the CIs are based on Rubin's rules, see 
+  # evSyn_CI()). Not passed on to the evSyn_xxx() functions, but stored.
+  MI <- isTRUE(args$MI)
+  args$MI <- NULL
+  if (MI && !identical(args$type_ev, "average")) {
+    stop("\nrestriktor ERROR: MI = TRUE (multiple imputation) requires type_ev = 'average', with one ",
+         "analysis per imputed data set.", call. = FALSE)
+  }
+  
   VCOV <- args$VCOV
   PT   <- args$PT
   
   type_ev <- args$type_ev
   
   call_sub <- function(fun, args, object) {
+    CI_req <- isTRUE(args$CI)
+    if ((!is.null(cluster) || MI) && CI_req) args$CI <- FALSE   # computed below
     res <- do.call(fun, c(list(object), args))
     res$show_variability <- variability
+    if (MI) {
+      res$MI <- TRUE
+      if (CI_req && !is.null(res$goric_studies)) {
+        res <- .evSyn_add_CI(res, CI_level = if (is.null(args$CI_level)) 0.95 else args$CI_level,
+                             CI_B = if (is.null(args$CI_B)) 1000L else args$CI_B)
+      }
+    }
+    if (!is.null(cluster)) {
+      res <- .evSyn_cluster(res, cluster, dependence, args)
+      res$show_variability <- variability
+      if (CI_req && (!is.null(res$goric_studies) || dependence == "rve")) {
+        res <- .evSyn_add_CI(res, CI_level = if (is.null(args$CI_level)) 0.95 else args$CI_level,
+                             CI_B = if (is.null(args$CI_B)) 1000L else args$CI_B)
+      }
+    }
     # Confidence intervals (CI = TRUE) are only available for input consisting 
     # of (standardized) estimates and their covariance matrices.
     if (isTRUE(args$CI) && !inherits(res, c("evSyn_est", "evSyn_gorica"))) {

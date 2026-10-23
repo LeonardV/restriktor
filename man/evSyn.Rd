@@ -367,10 +367,43 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   notably, with a small number of studies, the 2.5\% and 97.5\% percentiles 
   lie (very) close to the minimum and maximum.}
 
-  \item{\ldots}{This depends on the class of the object.}
+  \item{\ldots}{This depends on the class of the object. For \code{evSyn}, the arguments of the 
+  \code{evSyn_xxx} function used, and \code{variability} (see above), as well as \code{cluster} and 
+  \code{dependence} for dependent studies: \code{cluster} is a vector with, for each study (in the input 
+  order), the cluster it belongs to (e.g., studies with overlapping samples, or from the same lab or 
+  cohort); \code{dependence} is \code{"cluster"} (default; two-level evidence synthesis) or \code{"rve"} 
+  (robust variance estimation). See \emph{Dependent studies} in Details. Furthermore, \code{MI = TRUE} 
+  (only with \code{type_ev = "average"}) indicates that the analyses are the analyses of \strong{multiple 
+  imputed data sets}; the aggregated results are then those of the average approach, but the CIs 
+  (\code{CI = TRUE} or \code{\link{evSyn_CI}}) are based on Rubin's rules. This is not meant for different 
+  analyses of the same data (e.g., a multiverse analysis). Alternatively, the MI estimates (i.e., the estimates pooled over the imputed data sets) and their 
+  covariance matrix (the total covariance matrix from Rubin's rules) can be used as input to 
+  \code{\link{goric}}.}
 }
 
 \details{
+\subsection{Dependent studies}{
+The added- and equal-evidence approaches assume independent studies. With dependent studies (e.g., 
+studies based on overlapping samples, or from the same lab or cohort), specify their clusters with 
+\code{cluster} (via \code{\ldots} in \code{evSyn}):
+\itemize{
+  \item \code{dependence = "cluster"} (default): two-level evidence synthesis. Within a cluster, the 
+    evidence is averaged (average approach: (weighted) mean of the log-likelihood and penalty values, with 
+    the study weights rescaled within the cluster); over the clusters, which are regarded as independent, 
+    the evidence is combined with \code{type_ev} (added or equal; the cluster weights are the sums of 
+    the study weights). This corrects the aggregated evidence itself (overlapping information is not 
+    counted twice) and its CIs (see \code{\link{evSyn_CI}}, with the argument \code{rho}). The output then 
+    shows the cluster-specific results.
+  \item \code{dependence = "rve"}: the aggregated evidence is that of the studies as such (as without 
+    \code{cluster}), but its CIs are based on robust variance estimation (cluster-robust; Hedges, Tipton, 
+    & Johnson, 2010). These CIs are robust to unknown dependence within the clusters (and also include 
+    the heterogeneity of the studies), but require a sufficient number of clusters (about 10 or more).
+}
+This is (for now) available for input consisting of estimates and their covariance matrices, of goric 
+objects, or of log-likelihood and penalty values, and not for \code{type_ev = "average"} (then, all 
+analyses are based on the same data anyway).
+}
+
 In the \strong{added-evidence} approach, evidence for a central hypothesis/theory 
 from each study or dataset is cumulatively aggregated. 
 This means that for every new study, the log-likelihood and the penalty term are 
@@ -452,7 +485,8 @@ The output comprises, among other things, the cumulative and final evidence
 for the theory-based hypotheses.
 For confidence intervals for the final (aggregated) results (when the input consists of 
 (standardized) estimates and their covariance matrices or of goric objects), see the argument \code{CI} and 
-\code{\link{evSyn_CI}}; for a forest-type plot of the study-specific and final ratios of 
+\code{\link{evSyn_CI}}; for a prediction interval for the ratio of weights in a new study, see 
+\code{\link{evSyn_PI}}; for a forest-type plot of the study-specific and final ratios of 
 weights with their CIs, see \code{\link{evSyn_forest}}.
 
 With \code{variability = TRUE} (see above), the print output and the summary (with at least two 
@@ -531,6 +565,9 @@ that all studies point in the same direction.
   Klaassen, F., Zedelius, C. M., Veling, H., Aarts, H., and Hoijtink, H. (2018). 
   All for one or some for all? Evaluating informative hypotheses using multiple N = 1 studies. 
   \emph{Behavior Research Methods, 50}, 2276--2291. \doi{10.3758/s13428-017-0992-5}
+
+  Hedges, L. V., Tipton, E., and Johnson, M. C. (2010). Robust variance estimation in meta-regression 
+  with dependent effect size estimates. \emph{Research Synthesis Methods, 1}, 39--65.
 }
 
 \author{Leonard Vanbrabant and Rebecca M. Kuiper}

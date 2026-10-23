@@ -490,6 +490,11 @@ summary.evSyn <- function(object, probs = c(0, .25, .50, .75, 1),
                  delta = "delta method",
                  mc    = "delta method, with Monte Carlo draws for the weights",
                  ci$method)
+  if (isTRUE(ci$MI)) {
+    meth <- "multiple imputation: Rubin's rules"
+  } else if (identical(ci$type_ev, "average")) meth <- paste0(meth, "; dependent analyses, rho = ", format(ci$rho))
+  if (identical(ci$dependence, "cluster")) meth <- paste0(meth, "; two-level synthesis, rho = ", format(ci$rho), " within clusters")
+  if (identical(ci$dependence, "rve")) meth <- paste0(meth, "; robust variance estimation over ", ci$n_clusters, " clusters")
   paste0(indent, "(", pct, "CI: confidence intervals for the final (aggregated) ", toupper(ci$type),
          " values and weights, and, in the conclusion, for the final ratios of weights; computed with evSyn_CI() (",
          meth, "). Use evSyn_CI(object) for more details and other options; see ?evSyn_CI.)")

@@ -20,15 +20,16 @@ study-specific evidence).
 \usage{
 evSyn_CI(object, level = 0.95, method = c("boot", "delta", "mc"),
          boot_type = c("auto", "percentile", "centered"),
-         nsim = 10000L, B = 1000L, seed = NULL, tol = 1e-8)
+         nsim = 10000L, B = 1000L, seed = NULL, tol = 1e-8, rho = 1,
+         MI = isTRUE(object$MI))
 
 \method{print}{evSyn_CI}(x, digits = max(3, getOption("digits") - 4),
       all_pairs = FALSE, \dots)
 }
 \arguments{
   \item{object}{an object of class \code{evSyn} from \code{\link{evSyn}}, with
-  (standardized) estimates and their covariance matrices or goric objects as input and
-  \code{type_ev = "added"} or \code{type_ev = "equal"}.}
+  (standardized) estimates and their covariance matrices or goric objects as input (for 
+  \code{dependence = "rve"} in \code{\link{evSyn}}, also log-likelihood and penalty values).}
   \item{level}{the confidence level; by default, 0.95.}
   \item{method}{\code{"boot"} (default): parametric-bootstrap CIs (see \code{boot_type}),
   based on \code{B} draws from N(estimates, VCOV) per study, independently over the
@@ -47,6 +48,20 @@ evSyn_CI(object, level = 0.95, method = c("boot", "delta", "mc"),
   \item{B}{the number of bootstrap draws (per study) for \code{method = "boot"}.}
   \item{seed}{optional seed for the random number generator.}
   \item{tol}{tolerance used to determine whether the standard error of a difference is zero.}
+  \item{rho}{for \code{type_ev = "average"} and for clusters of dependent studies 
+  (\code{cluster} in \code{\link{evSyn}}, with \code{dependence = "cluster"}): the assumed correlation 
+  (in between 0 and 1) between the sampling errors of the log-likelihood values of two analyses (or of 
+  two studies within a cluster). The default, \code{rho = 1}, treats them as fully dependent, which is 
+  the safe (conservative) choice. See Details for guidance; a sensitivity analysis over several values 
+  (e.g., 0, .5, .8, and 1) is recommended. Not used with \code{MI = TRUE}.}
+  \item{MI}{logical; only for \code{type_ev = "average"}: \code{TRUE} when the analyses are the analyses of 
+  \strong{multiple imputed data sets} (one analysis per imputed data set); then, the CIs are based on Rubin's 
+  rules (see Details). This is \strong{not} appropriate for different analyses of the same data (e.g., a 
+  multiverse analysis, or other operationalizations or models), for which \code{MI = FALSE} (default) with 
+  \code{rho} should be used. By default, the value used in \code{\link{evSyn}} (\code{MI = TRUE} there). 
+  Alternatively, the MI estimates (i.e., the estimates pooled over the imputed data sets) and their 
+  covariance matrix (the total covariance matrix from Rubin's rules) can be used as input to 
+  \code{\link{goric}}.}
   \item{x}{an object of class \code{evSyn_CI}.}
   \item{digits}{the number of decimals to print.}
   \item{all_pairs}{logical; if \code{FALSE} (default), the differences and ratios are
@@ -97,10 +112,72 @@ uses the GORICA-type log-likelihood (as in \code{\link{goric_CI}}), with its dra
 at the observed GORIC(C) log-likelihood values; the CIs of the aggregated GORIC(C) values are then
 the analytic (casewise) ones.
 
-The CIs are not available for \code{type_ev = "average"}: the analyses are then based
-on the same data and are thus dependent, so that their sampling variability cannot be
-combined from the analysis-specific results (this would require re-sampling the data
-and re-running all analyses). They are also not available for the other input types
+\subsection{Average approach (\code{type_ev = "average"})}{
+The analyses are then based on the same data and are thus dependent, so their sampling 
+variability cannot simply be added (and they cannot be bootstrapped independently). Their 
+covariances are unknown, and the estimates of the analyses need not be comparable; therefore, the 
+correlation between the sampling errors of the log-likelihood values of two analyses is set to 
+\code{rho}: the covariance matrix of the (weighted) mean of the log-likelihood values is then 
+\deqn{(1 - \rho) \sum_s w_s^2 \Sigma_s + \rho (\sum_s w_s \Sigma_s^{1/2})^2,}
+with \eqn{\Sigma_s} the covariance matrix in analysis \eqn{s} (as in \code{\link{goric_CI}}) and 
+\eqn{w_s} the (rescaled) study weights. With \code{rho = 1} (default), the analyses are treated as 
+fully dependent; this gives the maximal variance and thus conservative CIs. The CIs are based on the 
+delta method (\code{method = "mc"} or \code{"delta"}). Besides the CIs, the between-analysis variability 
+is reported (\code{SD_between}: the standard deviation over the analyses of the GORICA values, of their 
+differences, and, \code{SD_between_log}, of the log ratios of weights). This variability reflects the 
+analysis choices, not sampling variability, and is not part of the CIs. (The analyses are not regarded 
+as multiple imputations, so Rubin's rules are not used.)
+
+Guidance for \code{rho} (the correlation between the sampling errors, not the similarity of the 
+results): analyses that differ only slightly (e.g., an extra covariate or another coding of the same 
+variables) have strongly correlated sampling errors (about .8 to .95); analyses with different measures 
+of the same constructs, typically about .5 to .8; analyses based on different (sub)sets of variables or 
+partly different subsamples, lower (about .3 to .5). Hence, \code{rho = 1} is the worst case rather than 
+the most likely value.
+
+\emph{Multiple imputation} (\code{MI = TRUE}). When the analyses are the analyses of \eqn{m} multiple imputed 
+data sets (and only then; not for a multiverse analysis), the aggregated GORICA values and weights are those of 
+the average approach, but their (co)variance is obtained with Rubin's rules: the total covariance matrix is 
+\eqn{T = \bar W + (1 + 1/m) B}, with \eqn{\bar W} the mean of the within-imputation covariance matrices of 
+the log-likelihood values (as in \code{\link{goric_CI}}) and \eqn{B} the between-imputation covariance matrix 
+(of -1/2 times the GORICA values). The CIs use t quantiles with Rubin's degrees of freedom, 
+\eqn{\nu = (m - 1)(1 + 1/r)^2} with \eqn{r = (1 + 1/m) b / \bar w} for the quantity of interest (reported as 
+\code{df}). Here, the between-imputation variability reflects the uncertainty due to the missing data and is 
+therefore part of the CIs (whereas, for different analyses of the same data, the between-analysis variability 
+reflects the analysis choices and is not part of the CIs). As elsewhere, the normal approximation is 
+inaccurate when hypotheses have the same maximum order-restricted log likelihood in (some of) the imputed 
+data sets. Alternatively, the MI estimates (i.e., the estimates pooled over the imputed data sets with 
+Rubin's rules) and their covariance matrix (the total covariance matrix from Rubin's rules) can be used as 
+input to \code{\link{goric}} (via \code{VCOV}); this evaluates the hypotheses once, on the pooled estimates.
+
+A more exact alternative, which would not need \code{rho}, is a joint case bootstrap (re-running all 
+analyses on the same bootstrap samples of the cases), which requires the data (e.g., fitted models on the 
+same data frame); this is not (yet) available.
+}
+
+\subsection{Dependent studies (\code{cluster} in \code{evSyn})}{
+For clusters of dependent studies (e.g., studies with overlapping samples or from the same lab or 
+cohort), see \code{cluster} and \code{dependence} in \code{\link{evSyn}}:
+\itemize{
+  \item \code{dependence = "cluster"} (two-level evidence synthesis): the evidence is averaged within each 
+    cluster and combined over the (independent) clusters; the covariance matrix of a cluster is obtained as 
+    in the average approach above, with \code{rho} the correlation between the sampling errors of the 
+    studies within a cluster. For overlapping samples, \code{rho} is roughly the proportion of shared 
+    participants, \eqn{n_{shared} / \sqrt{n_1 n_2}}; for studies from the same lab or cohort but with 
+    different participants, the sampling errors are (nearly) independent (\code{rho} about 0 to .2), and the 
+    dependence mainly regards shared heterogeneity.
+  \item \code{dependence = "rve"} (robust variance estimation; cf. Hedges, Tipton, & Johnson, 2010): the 
+    aggregated evidence is that of the studies as such, and its covariance matrix is the cluster-robust one 
+    (based on the residuals of the study-specific log-likelihood values around their (weighted) mean, 
+    summed per cluster, with the small-sample factor C/(C - 1) and t(C - 1) quantiles, with C the number of 
+    clusters). These CIs are robust to unknown dependence within the clusters, but also include the 
+    heterogeneity of the studies, and require a sufficient number of clusters (about 10 or more).
+}
+In both cases, the bootstrap cannot be used (the studies are not independent), and \code{method = "mc"} 
+is used instead.
+}
+
+The CIs are not available for the other input types
 of \code{\link{evSyn}} (log-likelihood and penalty values, IC values, IC weights, or
 ratios of IC weights), since these contain no information about the sampling variability
 (for goric objects, the estimates and their covariance matrix are stored in the objects).
@@ -115,10 +192,20 @@ An object of class \code{evSyn_CI}, a list with, among others:
   ordered pairs of hypotheses, their CIs, and \code{n_same_loglik}.}
 \item{Sigma_values, Sigma_eta}{the covariance matrices of the aggregated log-likelihood values,
   without and with study weights, respectively.}
+\item{MI, df_MI}{whether Rubin's rules (multiple imputation) are used, and the corresponding degrees of 
+  freedom (also given as the column \code{df} in the tables).}
+\item{rho, dependence, n_clusters, df}{for the average approach and for dependent studies: the 
+  correlation used, the type of dependence (\code{"cluster"} or \code{"rve"}), the number of clusters, 
+  and the degrees of freedom of the t quantiles (\code{Inf}: normal quantiles).}
 \item{best}{the hypothesis with the highest aggregated GORICA weight.}
 }
+\references{
+Hedges, L. V., Tipton, E., & Johnson, M. C. (2010). Robust variance estimation in meta-regression with 
+dependent effect size estimates. \emph{Research Synthesis Methods, 1}, 39--65.
+}
 \seealso{\code{\link{evSyn}} (with the argument \code{CI = TRUE}, the CIs are computed and
-printed by \code{evSyn} itself), \code{\link{evSyn_forest}} (forest-type plot), \code{\link{goric_CI}}}
+printed by \code{evSyn} itself), \code{\link{evSyn_forest}} (forest-type plot), 
+\code{\link{evSyn_PI}} (prediction interval for a new study), \code{\link{goric_CI}}}
 \author{Rebecca M. Kuiper}
 \examples{
 # Three studies with estimates of three (standardized) parameters
@@ -130,4 +217,9 @@ H <- list(H1 = "b1 > b2 > b3", H2 = "b1 > b2 = b3")
 res <- evSyn(est, VCOV = vcov, hypotheses = H)
 evSyn_CI(res, B = 200, seed = 1)       # parametric bootstrap
 evSyn_CI(res, method = "delta")       # delta method
+
+# Average approach (analyses of the same data): sensitivity to rho
+res_av <- evSyn(est, VCOV = vcov, hypotheses = H, type_ev = "average")
+evSyn_CI(res_av, rho = 1, seed = 1)
+evSyn_CI(res_av, rho = 0.5, seed = 1)
 }

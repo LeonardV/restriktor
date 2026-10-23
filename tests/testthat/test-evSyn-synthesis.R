@@ -156,7 +156,7 @@ test_that("leave1studyout() works for IC weights and IC ratios (with priors and 
 # -----------------------------------------------------------------------------
 test_that("variability: geometric mean, ER, and SR", {
   r <- fit_ev(type_ev = "average")
-  v <- summary(r)$variability
+  v <- evSyn_variability(r)
   W <- r$GORICA_weight_m
   R12 <- W[, 1] / W[, 2]
   gm <- exp(mean(log(R12)))
@@ -166,18 +166,26 @@ test_that("variability: geometric mean, ER, and SR", {
   expect_equal(unname(v$ratios_rates[1, "SR"]), if (gm >= 1) mean(R12 > gm) else mean(R12 < gm))
   # weighted versions
   rw <- fit_ev(type_ev = "average", study_weights = sw_ev, order_studies = "descending")
-  vw <- summary(rw)$variability
+  vw <- summary(rw, variability = TRUE)$variability
   w <- sw_ev[rw$order_studies] / sum(sw_ev)
   Rw <- rw$GORICA_weight_m[, 1] / rw$GORICA_weight_m[, 2]
   expect_equal(unname(vw$ratios_rates[1, "Geom. mean"]), unname(rw$Final_ratio_GORICA_weights[1, 2]),
                tolerance = 1e-8)
   expect_equal(unname(vw$ratios_rates[1, "ER"]), sum(w * (Rw > 1)), tolerance = 1e-10)
   # no variability section with one study
-  expect_null(summary(suppressMessages(evSyn(est_ev[1], VCOV = vcov_ev[1], hypotheses = H_ev)))$variability)
+  expect_null(summary(suppressMessages(evSyn(est_ev[1], VCOV = vcov_ev[1], hypotheses = H_ev)),
+                      variability = TRUE)$variability)
+  expect_message(v1 <- evSyn_variability(suppressMessages(evSyn(est_ev[1], VCOV = vcov_ev[1], hypotheses = H_ev))),
+                 "at least two")
+  expect_null(v1)
 })
 
 test_that("conclusion: two steps with a failsafe; assumption text without a failsafe", {
-  out <- capture.output(print(summary(fit_ev())))
+  # by default (variability = FALSE), no variability section in print and summary
+  expect_false(any(grepl("^Conclusion \\(incl. variability", capture.output(print(summary(fit_ev()))))))
+  expect_false(any(grepl("^Variability over", capture.output(print(fit_ev())))))
+  # with variability = TRUE
+  out <- capture.output(print(summary(fit_ev(variability = TRUE))))
   expect_true(any(grepl("^Conclusion \\(incl. variability", out)))
   expect_true(any(grepl("Step 1", out)))
   expect_true(any(grepl("ER >= 0.90 and 0.40 <= SR <= 0.60", out)))
@@ -185,11 +193,14 @@ test_that("conclusion: two steps with a failsafe; assumption text without a fail
   i <- grep("\\(Ceiling:", out)
   expect_true(length(i) == 1 && out[i - 1] == "")
   # print() shows the variability section and conclusion as well
-  out_p <- capture.output(print(fit_ev()))
+  out_p <- capture.output(print(fit_ev(variability = TRUE)))
+  # the separate function gives the same section
+  out_v <- capture.output(print(evSyn_variability(fit_ev())))
+  expect_true(any(grepl("^Conclusion \\(incl. variability", out_v)))
   expect_true(any(grepl("^Conclusion \\(incl. variability", out_p)))
   # no failsafe in the set (IC weights input with default names)
   W <- rows_to_list(fit_ev()$GORICA_weight_m)
-  out2 <- paste(capture.output(print(summary(evSyn(W)))), collapse = " ")
+  out2 <- paste(capture.output(print(summary(evSyn(W, variability = TRUE)))), collapse = " ")
   expect_match(out2, "cover all possibilities")
 })
 
@@ -214,8 +225,7 @@ test_that("evSyn_CI() with one study equals goric_CI()", {
   expect_equal(a$ratio_weights$upper, b$ratio_weights$upper, tolerance = 1e-8)
 })
 
-test_that("evSyn_CI() is not available for type_ev = 'average' or input without estimates", {
-  expect_error(evSyn_CI(fit_ev(type_ev = "average")), "not available for type_ev = 'average'")
+test_that("evSyn_CI() is not available for input without estimates", {
   expect_error(evSyn_CI(evSyn(rows_to_list(fit_ev()$GORICA_weight_m))), "only available")
 })
 
@@ -269,4 +279,206 @@ test_that("evSyn_forest() returns a ggplot with the study-specific and final rat
   da <- attr(pa, "forest_data")
   expect_true(all(is.na(da$lower[da$kind == "pooled"])))
   expect_error(evSyn_forest(evSyn(rows_to_list(W))), "only available")
+})
+
+# -----------------------------------------------------------------------------
+# Centered bootstrap, scientific notation, prior weights
+# -----------------------------------------------------------------------------
+test_that("evSyn_CI(): boot_type 'auto' uses the centered bootstrap from 5 studies onwards", {
+  r5 <- fit_ev()                                   # 5 studies
+  ci5 <- evSyn_CI(r5, B = 100, seed = 1)
+  expect_identical(ci5$boot_type, "centered")
+  expect_true(all(ci5$ratio_weights$CI_method == "boot (centered)"))
+  r3 <- suppressMessages(evSyn(est_ev[1:3], VCOV = vcov_ev[1:3], hypotheses = H_ev))
+  expect_identical(evSyn_CI(r3, B = 100, seed = 1)$boot_type, "percentile")
+  ci_p <- evSyn_CI(r5, B = 100, seed = 1, boot_type = "percentile")
+  expect_identical(ci_p$boot_type, "percentile")
+  # the point values do not depend on the type of CI
+  expect_equal(ci5$weights$gorica.weights, ci_p$weights$gorica.weights)
+  expect_true(all(ci5$weights$lower <= ci5$weights$upper))
+  expect_true("n_same_loglik" %in% names(ci5$ratio_weights))
+})
+
+test_that("CI tables print large values in scientific notation", {
+  expect_identical(restriktor:::.format_CI_number(123456.789, digits = 3), "1.23e+05")
+  expect_identical(restriktor:::.format_CI_number(12.3456, digits = 3), "12.346")
+  r <- fit_ev()
+  out <- capture.output(print(evSyn_CI(r, B = 100, seed = 1)))
+  expect_false(any(grepl("[0-9]{6,}\\.[0-9]", out)))
+})
+
+test_that("goric_CI(): same_loglik and the exact lower bound at s = 0 (equality-only hypothesis)", {
+  set.seed(3)
+  g <- goric(c(b1 = 0.01, b2 = -0.02, b3 = 0.015), VCOV = diag(0.04, 3),
+             hypotheses = list(H1 = "b1 = b2 = b3"), comparison = "unconstrained")
+  ci <- goric_CI(g, method = "invert", B = 500)
+  expect_true("same_loglik" %in% names(ci$difference))
+  j <- which(ci$difference$model == "H1" & ci$difference$vs == "unconstrained")
+  # exact expected difference at s = 0: 2 equalities + 2 x (PT_H1 - PT_u)
+  exact0 <- 2 + 2 * (g$result$penalty[1] - g$result$penalty[2])
+  expect_equal(ci$difference$lower[j], exact0, tolerance = 1e-10)
+})
+
+test_that("priorICweights: extra column in goric print/summary and row/column in evSyn output", {
+  g <- goric(est_ev[[1]], VCOV = vcov_ev[[1]], hypotheses = H_ev, priorICweights = c(.5, .3, .2))
+  out <- capture.output(print(g))
+  expect_true(any(grepl("prior.gorica.weights", out, fixed = TRUE)))
+  out_s <- capture.output(summary(g))
+  expect_true(any(grepl("prior.gorica.weights", out_s, fixed = TRUE)))
+  g0 <- goric(est_ev[[1]], VCOV = vcov_ev[[1]], hypotheses = H_ev)
+  expect_false(any(grepl("prior.gorica.weights", capture.output(print(g0)), fixed = TRUE)))
+  r <- fit_ev(priorICweights = c(.5, .3, .2))
+  expect_true(any(grepl("prior GORICA weights", capture.output(print(r)))))
+  expect_true("prior GORICA weights" %in% rownames(summary(r)$Final_Cumulative_results))
+  expect_false(any(grepl("prior GORICA weights", capture.output(print(fit_ev())))))
+})
+
+test_that("prior IC weights are used once (aggregated results), not in the study-specific weights", {
+  pr <- c(.5, .3, .2)
+  r0 <- fit_ev(); r <- fit_ev(priorICweights = pr)
+  # study-specific IC weights: the same as without prior IC weights
+  expect_equal(unname(r$GORICA_weight_m), unname(r0$GORICA_weight_m), tolerance = 1e-12)
+  # final weights: prior IC weights times the final weights without them (renormalized)
+  w <- pr * final_w(r0); expect_equal(final_w(r), w / sum(w), tolerance = 1e-10)
+  # added approach, equal study weights: final ratio = prior ratio x product of study-specific ratios
+  W <- r$GORICA_weight_m
+  expect_equal(final_w(r)[1] / final_w(r)[3], (pr[1] / pr[3]) * prod(W[, 1] / W[, 3]), tolerance = 1e-8)
+  # same for IC weights as input
+  rw <- suppressMessages(evSyn(rows_to_list(r0$GORICA_weight_m), priorICweights = pr))
+  expect_equal(unname(rw$GORICA_weight_m), unname(r0$GORICA_weight_m), tolerance = 1e-10)
+  expect_equal(unname(rw$Cumulative_GORICA_weights["Final", ]), final_w(r), tolerance = 1e-8)
+})
+
+test_that("priorICweights_study (not active for now) gives the earlier behaviour when switched on", {
+  pr <- c(.5, .3, .2)
+  r_new <- fit_ev(priorICweights = pr)
+  ns <- asNamespace("restriktor")
+  old <- get(".evSyn_priorICweights_study", envir = ns)
+  assignInNamespace(".evSyn_priorICweights_study", TRUE, ns = "restriktor")
+  on.exit(assignInNamespace(".evSyn_priorICweights_study", old, ns = "restriktor"))
+  r_old <- fit_ev(priorICweights = pr)
+  W <- sweep(r_new$GORICA_weight_m, 2, pr, "*"); W <- W / rowSums(W)
+  expect_equal(unname(r_old$GORICA_weight_m), unname(W), tolerance = 1e-10)
+  expect_equal(final_w(r_old), final_w(r_new), tolerance = 1e-12)  # aggregated results unchanged
+  expect_true(isTRUE(r_old$priorICweights_study)); expect_false(isTRUE(r_new$priorICweights_study))
+})
+
+# -----------------------------------------------------------------------------
+# Prediction interval, average-approach CIs, dependent studies
+# -----------------------------------------------------------------------------
+test_that("evSyn_PI() gives a prediction interval (per observation, ceiling, average)", {
+  r <- fit_ev(study_sample_nobs = rep(100, S_ev))
+  pi <- evSyn_PI(r, B = 200, seed = 1)
+  expect_s3_class(pi, "evSyn_PI")
+  expect_false(anyNA(pi$PI$lower))
+  expect_true(all(pi$PI$lower <= pi$PI$ratio_typical + 1e-12 & pi$PI$ratio_typical <= pi$PI$upper + 1e-12))
+  expect_true(all(pi$PI$P_favours_best >= 0 & pi$PI$P_favours_best <= 1))
+  expect_true(pi$per_obs)
+  # ceiling: the PI of the best (nested) hypothesis versus the unconstrained one is capped at its maximum
+  j <- which(tolower(pi$PI$vs) == "unconstrained")
+  g1 <- r$goric_studies[[1]]
+  ceil <- exp(-(g1$result$penalty[1] - g1$result$penalty[3]))
+  expect_true(pi$PI$upper[j] <= ceil * (1 + 1e-8))
+  # no sample sizes: raw scale (with a note when printed)
+  pi0 <- evSyn_PI(fit_ev(), B = 200, seed = 1)
+  expect_false(pi0$per_obs)
+  expect_output(suppressMessages(print(pi0)), "prediction interval")
+  # wider for 'observed' than for 'true'
+  pit <- evSyn_PI(r, B = 200, seed = 1, type = "true")
+  k <- which(tolower(pi$PI$vs) != "unconstrained")[1]
+  expect_true(pi$PI$upper[k] / pi$PI$lower[k] >= pit$PI$upper[k] / pit$PI$lower[k] - 1e-8)
+  # average approach: another analysis of the same data
+  pa <- evSyn_PI(fit_ev(type_ev = "average"))
+  expect_identical(pa$type, "another analysis")
+})
+
+test_that("evSyn_CI() for the average approach: rho, between-analysis SDs", {
+  ra <- fit_ev(type_ev = "average")
+  c1 <- suppressMessages(evSyn_CI(ra, seed = 1))
+  c0 <- suppressMessages(evSyn_CI(ra, rho = 0, seed = 1))
+  expect_identical(c1$method, "mc"); expect_equal(c1$rho, 1)
+  expect_true(all(c1$IC$SE >= c0$IC$SE - 1e-12))
+  expect_true("SD_between" %in% names(c1$IC)); expect_true("SD_between_log" %in% names(c1$ratio_weights))
+  # rho = 1, one dimension: SE of the mean = mean of the SEs
+  S1 <- lapply(ra$goric_studies, function(g) suppressMessages(goric_CI(g, method = "delta"))$Sigma)
+  se_mean <- 2 * mean(sapply(S1, function(S) sqrt(S[1, 1])))
+  expect_equal(c1$IC$SE[1], se_mean, tolerance = 1e-8)
+  # evSyn(..., CI = TRUE) works for the average approach
+  rci <- suppressMessages(fit_ev(type_ev = "average", CI = TRUE))
+  expect_false(is.null(rci$CI))
+  expect_error(evSyn_CI(ra, rho = 2))
+})
+
+test_that("dependent studies: two-level synthesis (cluster) and RVE", {
+  cl <- c(1, 1, 2, 3, 3)
+  r  <- fit_ev()
+  rc <- suppressMessages(fit_ev(cluster = cl))
+  expect_s3_class(rc, "evSyn_cluster")
+  expect_equal(rc$n_studies, 3)
+  # cluster level = average of the studies within a cluster (LL), then added over clusters
+  LL <- r$LL_m[match(1:5, r$order_studies), ]
+  LLc <- rbind(colMeans(LL[1:2, ]), LL[3, ], colMeans(LL[4:5, ]))
+  expect_equal(unname(colSums(LLc)), unname(colSums(rc$LL_m)), tolerance = 1e-10)
+  # each study its own cluster: same as without clusters
+  r1 <- suppressMessages(fit_ev(cluster = 1:5))
+  expect_equal(final_w(r1), final_w(r), tolerance = 1e-10)
+  # CIs: mc with rho; RVE keeps the point evidence of the studies as such
+  ci <- suppressMessages(evSyn_CI(rc, seed = 1))
+  expect_identical(ci$dependence, "cluster")
+  rr <- suppressMessages(fit_ev(cluster = cl, dependence = "rve"))
+  expect_equal(final_w(rr), final_w(r), tolerance = 1e-10)
+  cr <- suppressMessages(evSyn_CI(rr, seed = 1))
+  expect_identical(cr$dependence, "rve"); expect_equal(cr$df, 2)
+  # PI with clusters: the clusters are the units
+  pc <- evSyn_PI(rc, B = 100, seed = 1)
+  expect_true(pc$clusters)
+  expect_error(suppressMessages(fit_ev(type_ev = "average", cluster = cl)))
+  expect_error(suppressMessages(fit_ev(cluster = c(1, 2))))
+})
+
+test_that("multiple imputation (MI = TRUE): average results, Rubin's rules for the CIs", {
+  ra  <- fit_ev(type_ev = "average")
+  rmi <- suppressMessages(fit_ev(type_ev = "average", MI = TRUE, CI = TRUE))
+  expect_true(isTRUE(rmi$MI))
+  expect_equal(final_w(rmi), final_w(ra), tolerance = 1e-12)       # same aggregated results
+  ci <- rmi$CI
+  expect_true(ci$MI); expect_true("df" %in% names(ci$difference))
+  # Rubin: T = W + (1 + 1/m) B (on the LL scale), for the first IC value
+  m <- S_ev
+  W <- mean(sapply(ra$goric_studies, function(g) suppressMessages(goric_CI(g, method = "delta"))$Sigma[1, 1]))
+  Lt <- sapply(ra$goric_studies, function(g) g$result$loglik[1] - g$result$penalty[1])
+  expect_equal(ci$IC$SE[1], 2 * sqrt(W + (1 + 1 / m) * var(Lt)), tolerance = 1e-8)
+  expect_error(suppressMessages(fit_ev(MI = TRUE)))                  # only for type_ev = "average"
+  expect_error(suppressMessages(evSyn_CI(fit_ev(), MI = TRUE)))
+})
+
+test_that("evSyn_PI(): heterogeneity measures (tau, I2, Q) on the per-observation scale", {
+  r <- fit_ev(study_sample_nobs = c(50, 100, 100, 200, 400))
+  pi <- evSyn_PI(r, B = 200, seed = 1)
+  h <- pi$heterogeneity
+  expect_true(all(c("tau", "tau_logratio", "I2", "Q", "Q_df", "Q_p", "n_med") %in% names(h)))
+  expect_equal(h$n_med[1], 100)
+  ok <- h$k >= 2
+  expect_true(all(h$I2[ok] >= 0 & h$I2[ok] <= 1))
+  expect_equal(h$tau_logratio[ok], h$n_med[ok] * h$tau[ok])
+  expect_true(all(h$Q_p[ok] >= 0 & h$Q_p[ok] <= 1))
+  expect_output(print(pi), "median sample size")
+})
+
+test_that("evSyn_PI(): heterogeneity based on the signed distance uses all studies", {
+  r <- fit_ev(study_sample_nobs = rep(100, S_ev))
+  pi <- evSyn_PI(r, B = 200, seed = 1)
+  hs <- pi$heterogeneity_sd
+  expect_false(is.null(hs))
+  expect_equal(hs$k, S_ev)                                  # all studies
+  expect_equal(hs$n_inside + hs$n_outside <= S_ev, TRUE)
+  expect_true(hs$I2 >= 0 && hs$I2 <= 1)
+  expect_equal(hs$tau_distance, sqrt(hs$n_med) * hs$tau)
+  # signed distance: positive inside, negative outside (study 1)
+  g <- r$goric_studies[[1]]
+  gc <- suppressMessages(goric(g$b.unrestr, VCOV = g$VCOV, hypotheses = list(H = H_ev[[pi$best]]),
+                               comparison = "complement"))
+  inside <- gc$result$loglik[1] > gc$result$loglik[2]
+  expect_true(is.logical(inside))
+  expect_output(suppressMessages(print(pi)), "signed distance")
 })

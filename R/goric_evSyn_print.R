@@ -46,6 +46,24 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     #cat("Ratio of information criteria weights (each vector ends with 1)\n") # Note: not necessary!
     cat(paste0("Ratio of information criteria weights (each ", 
                .evSyn_unit_label(x[["type_ev"]], capital = FALSE), " has at least one 1)\n"))
+  }
+  if (isTRUE(x[["MI"]])) {
+    cat(paste0("\nMultiple imputation: the ", x[["n_studies"]], " analyses are analyses of multiple imputed data sets ",
+               "(average approach; the CIs, if requested, are based on Rubin's rules).\n"))
+  }
+  # Dependent studies (argument 'cluster')
+  ci_info <- x[["cluster_info"]]
+  if (!is.null(ci_info)) {
+    if (identical(ci_info$dependence, "cluster")) {
+      cat(paste0("\nTwo-level evidence synthesis: the ", ci_info$n_studies, " studies form ", ci_info$n_clusters,
+                 " clusters of dependent studies; the evidence is averaged within each cluster and ",
+                 "then combined (", x[["type_ev"]], " approach) over the clusters, which are treated as independent. ",
+                 "The cluster-specific results are shown below.\n"))
+    } else {
+      cat(paste0("\nThe ", ci_info$n_studies, " studies form ", ci_info$n_clusters, " clusters of dependent ",
+                 "studies; the aggregated evidence is that of the studies as such, but its CIs are based on ",
+                 "robust variance estimation (RVE).\n"))
+    }
   } 
   
   cat("\n")

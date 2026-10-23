@@ -11,6 +11,8 @@
 \alias{print.evSyn}
 \alias{print.summary.evSyn}
 \alias{summary.evSyn}
+\alias{evSyn_variability}
+\alias{print.evSyn_variability}
 \alias{plot.evSyn}
 \alias{evSyn}
 \alias{leave1studyout}
@@ -21,6 +23,14 @@
 \description{GORIC(A) evidence synthesis aggregates the evidence for theory-based 
 hypotheses from multiple studies that may use diverse designs to investigate the 
 same central theory.
+
+With \code{CI = TRUE} (or afterwards with \code{\link{evSyn_CI}}), confidence intervals are 
+computed for the final (aggregated) results. This regards the confidence interval of the aggregated evidence, not of pooled parameter 
+estimates (as done in meta-analysis). Since aggregated evidence changes with the combined sample size, the 
+aggregated evidence and its interval may be at another location than the study-/analysis-specific 
+evidence and their intervals (it is not a weighted average, as it is for pooled parameter estimates; 
+so, unlike in a meta-analysis, the aggregated evidence does not need to lie in between the 
+study-specific evidence).
 
 The function \code{leave1studyout} performs a leave-one-study-out sensitivity (outlier) analysis 
 on a fitted \code{evSyn} object: it re-runs the evidence synthesis S times, each 
@@ -90,7 +100,12 @@ evSyn_escalc(data, yi_col = "yi", vi_cols = "vi", study_sample_nobs = "ni",
 
 \method{print}{evSyn}(x, digits = max(3, getOption("digits") - 4), \dots)
 
-\method{summary}{evSyn}(object, probs = c(0, .25, .50, .75, 1), \dots)
+\method{summary}{evSyn}(object, probs = c(0, .25, .50, .75, 1), 
+        variability = isTRUE(object[["show_variability"]]), \dots)
+
+evSyn_variability(object, probs = c(0, .25, .50, .75, 1))
+
+\method{print}{evSyn_variability}(x, digits = max(3, getOption("digits") - 4), \dots)
 
 \method{print}{summary.evSyn}(x, digits = max(3, getOption("digits") - 4), \dots)  
 
@@ -165,10 +180,11 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   \item{hypo_names}{character vector for labelling the hypotheses. By default, the
   names are set to H1, H2, \ldots}
 
-  \item{priorICweights}{vector that represents the prior belief for the specified hypotheses. 
-  By default, equal prior weights are used (i.e., 1/(#hypotheses)). 
-  Notably, in case the prior weights do not sum to 1, it will be rescaled such that it does; 
-  the prior weights thus reflect relative a priori likeliness of the hypotheses.
+  \item{priorICweights}{vector of prior IC weights, which represent the prior belief for the specified hypotheses. 
+  By default, equal prior IC weights are used (i.e., 1/(#hypotheses)). 
+  Notably, in case the prior IC weights do not sum to 1, they will be rescaled such that they do; 
+  the prior IC weights thus reflect the relative a priori likeliness of the hypotheses, and can be seen as 
+  prior model 'probabilities'/likeliness.
   %% For now, like this; if code changes, then perhaps:
   %In the case of ratios of IC weights ('icratios'), the ratio of prior weights should be given.
   %In that case, they do not sum to 1; and 
@@ -177,7 +193,18 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   They will not be used in ordering the studies with 'order_studies' = \code{"ascending"} or \code{"descending"}; 
   this will be based equal a priori likeliness of the hypotheses.
   Notably, with quite unequal priorICweights (or study_weights), 
-  the hypothesis used for sorting/ordering can differ from the one that is preferred in the final weighted result. }
+  the hypothesis used for sorting/ordering can differ from the one that is preferred in the final weighted result. 
+  When the prior IC weights are unequal (i.e., specified by the user), they are shown in the print output 
+  (as a column, e.g., \code{prior GORICA weights}, right before the final IC weights) and in the summary 
+  (as a row right before the final IC weights). Notably, they are used in the cumulative and final (aggregated) IC weights and 
+  their ratios, but not in the study-specific IC weights and ratios (nor in the measures of variability based on 
+  these), the IC values, the log-likelihood and penalty values, and the log-likelihood weights. Hence, the 
+  study-specific results reflect the data of each study only, and the prior IC weights are counted once in the 
+  aggregated results (for the added approach with equal study weights, the final ratio of IC weights equals the 
+  ratio of the prior IC weights times the product of the study-specific ratios of IC weights).}
+  %% TO DO: an argument priorICweights_study (not active for now; see .evSyn_priorICweights_study in
+  %% goric_evSyn.R): if TRUE, the prior IC weights are also used in the study-specific IC weights (and ratios)
+  %% and thus in the measures of variability (as in earlier versions).
   
   \item{output_type}{a plot option. If "\code{gorica_weights}" (default), 
   a plot with the cumulative goric(a)
@@ -209,9 +236,9 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   \item{CI}{only for input consisting of (standardized) estimates and their covariance 
   matrices (input type \code{"est_vcov"} or \code{"escalc"}) or of goric objects 
   (input type \code{"gorica"}): if \code{TRUE}, confidence 
-  intervals (CIs) are computed for the final (pooled) GORICA values, GORICA weights, and 
-  ratios of GORICA weights, using \code{\link{evSyn_CI}} with the parametric bootstrap 
-  (\code{method = "boot"}). They are printed as extra columns (lower and upper bound) for the 
+  intervals (CIs) of the aggregated evidence are computed, that is, for the final (aggregated) GORICA 
+  values, GORICA weights, and ratios of GORICA weights, using \code{\link{evSyn_CI}} with the parametric 
+  bootstrap (\code{method = "boot"}). They are printed as extra columns (lower and upper bound) for the 
   final weights in the print output, as extra rows in the final results of the summary, and, 
   for the ratios of weights, in the conclusion. Defaults to \code{FALSE}; the CIs can also be 
   computed afterwards with \code{evSyn_CI(object)}, see \code{\link{evSyn_CI}} for other options 
@@ -328,6 +355,11 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   
   \item{digits}{the number of significant digits to use when printing.}
 
+  \item{variability}{logical; in \code{evSyn} (passed via \code{\ldots}): if \code{TRUE}, the measures 
+  of variability over the studies (or analyses) and the corresponding conclusion are shown in the 
+  print and summary output (see Value); defaults to \code{FALSE}. In \code{summary}, this can be 
+  overruled. These measures can also be obtained afterwards with \code{evSyn_variability(object)}.}
+
   \item{probs}{numeric vector of probabilities (in [0, 1]) for the percentiles 
   that are reported in the variability section of the summary (see Value); 
   by default, the minimum, first quartile, median, third quartile, and maximum. 
@@ -418,14 +450,17 @@ studies and to assess the robustness of the overall conclusion.
 \value{An object of class evSyn for which a print, summary and plot function is available. 
 The output comprises, among other things, the cumulative and final evidence 
 for the theory-based hypotheses.
-For confidence intervals for the final (pooled) results (when the input consists of 
+For confidence intervals for the final (aggregated) results (when the input consists of 
 (standardized) estimates and their covariance matrices or of goric objects), see the argument \code{CI} and 
 \code{\link{evSyn_CI}}; for a forest-type plot of the study-specific and final ratios of 
 weights with their CIs, see \code{\link{evSyn_forest}}.
 
-The summary (with at least two studies/analyses) also contains measures of 
-variability over the studies (or analyses), in the element \code{variability}. 
-These are based on the study-specific IC weights (including the priorICweights) 
+With \code{variability = TRUE} (see above), the print output and the summary (with at least two 
+studies/analyses) also contain measures of variability over the studies (or analyses); in the 
+summary, these are stored in the element \code{variability}. These measures (and the conclusion 
+below) can also be obtained with \code{evSyn_variability(object)}, which returns an object of class 
+\code{evSyn_variability} (for which a print function is available). 
+These are based on the study-specific IC weights (without the prior IC weights; see \code{priorICweights}) 
 and compare the overall best hypothesis (i.e., the one with the highest final IC weight) 
 with each other hypothesis:
 \itemize{

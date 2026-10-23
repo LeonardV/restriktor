@@ -38,6 +38,20 @@ summary.con_goric <- function(object, brief = TRUE,
                      df[, -(1:7), drop = FALSE], check.names = FALSE, row.names = NULL)
     names(df)[5:6] <- c("g.lower", "g.upper")
   }
+  # Prior IC weights (priorICweights; shown when they are unequal, i.e., when 
+  # specified by the user): an extra column right before the IC weights.
+  prior_w <- x$priorICweights
+  show_prior <- !is.null(prior_w) && length(prior_w) == nrow(df) &&
+    length(unique(round(prior_w, 12))) > 1
+  if (show_prior) {
+    icw_col <- which(names(df) == paste0(type, ".weights"))[1]
+    if (!is.na(icw_col)) {
+      pr_df <- data.frame(sprintf(dig, prior_w), stringsAsFactors = FALSE)
+      names(pr_df) <- paste0("prior.", type, ".weights")   # e.g., prior.goric.weights
+      df <- data.frame(df[, 1:(icw_col - 1), drop = FALSE], pr_df,
+                       df[, icw_col:ncol(df), drop = FALSE], check.names = FALSE, row.names = NULL)
+    }
+  }
   
   Amat <- x$constraints
   meq  <- x$neq
@@ -131,9 +145,17 @@ summary.con_goric <- function(object, brief = TRUE,
   cat("Results:\n")  
   print(format(df, digits = digits, scientific = FALSE), 
         print.gap = 2, quote = FALSE, right = TRUE)
+  if (show_prior) {
+    cat(sprintf("\nprior.%s.weights: the prior %s weights (argument priorICweights), which are used in the %s weights (and their ratios), not in the %s values.\n",
+                type, toupper(type), toupper(type), toupper(type)))
+  }
   if (has_CI) {
     cat(sprintf("\n.lower, .upper: bounds of the %s confidence interval for the %s values (g.xxx) and %s weights (gw.xxx); the CI methods used are stored in $CI_methods.\n",
                 CI_pct, toupper(type), toupper(type)))
+    if (show_prior) {
+      cat(sprintf("Note: the CIs of the %s weights (and their ratios) include the prior %s weights (priorICweights), those of the %s values do not; hence, conclusions based on the CIs of the values and of the weights may differ.\n",
+                  toupper(type), toupper(type), toupper(type)))
+    }
   }
   cat("---\n")
   

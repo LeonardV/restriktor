@@ -9,13 +9,17 @@ goric.default <- function(object, ..., hypotheses = NULL,
                           add_Hc = NULL,
                           check_add_Hc = TRUE, # set to FALSE only from within goric_benchmark.R / goric_benchmark_utilities.R.
                           priorICweights = NULL,
-                          posthoc = TRUE,
+                          posthoc = TRUE, # currently not used; see the TO DO (posthoc) below
                           CI = FALSE, CI_level = 0.95, CI_B = 1000L,
                           control = list(), debug = FALSE) {
 
   #TO DO: Ook beste vs complement - zie commented code (met TO DOs)
   #TO DO: Default doen, maar wel argument (posthoc = T), en dan in benchmarks en evt een simulatie study uit. 
   #       Of posthoc functie.
+  # TO DO (posthoc)
+  # Make both a function and a possible input argument.
+  # Add a conclusion text.
+  # When available, then also mention this functionality in the output perhaps
   # Leonard kijkt hier eerst naar!
   
 

@@ -51,6 +51,20 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   cat("\n")
   cat("---\n")
   
+  # Prior IC weights (priorICweights): shown when they are unequal (i.e., specified by the user)
+  prior_w <- x[["priorICweights"]]
+  show_prior <- !is.null(prior_w) && !is.null(x[["Cumulative_GORICA_weights"]]) &&
+    length(prior_w) == ncol(x[["Cumulative_GORICA_weights"]]) &&
+    length(unique(round(prior_w, 12))) > 1
+  if (show_prior) {
+    pr_fmt <- sapply(prior_w, format_numeric, digits = digits)
+    pr_name <- paste0("prior ", type_label, " weights")   # e.g., prior GORICA weights
+    prior_note <- paste0("(", pr_name, ": the priorICweights, which are used in the ", type_label,
+                         if (isTRUE(x[["priorICweights_study"]])) " weights (study-specific, cumulative, and final) and their ratios, but not in the " else
+                           " weights (cumulative and final) and their ratios, but not in the study-specific ones (nor in the measures of variability based on these), the ",
+                         type_label, " values, the log-likelihood (LL) and penalty values, and the LL weights.)")
+  }
+  
   if (!is.null(x[["Cumulative_LL_weights"]]) && !is.null(x[["Cumulative_GORICA_weights"]])) {
     cat(paste0("\nFinal log-likelihood (LL) & ", type_label,  " weights:\n"))
     clw <- sapply(x[["Cumulative_LL_weights"]]["Final", , drop = FALSE], 
@@ -61,6 +75,11 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     rownames(cw) <- colnames(x[["Cumulative_LL_weights"]])
     #colnames(cw) <- c("log-likelihood", type_label)
     colnames(cw) <- c("LL weights", paste0(type_label, " weights"))
+    # Prior IC weights (priorICweights; shown when unequal): column right before the IC weights
+    if (show_prior) {
+      pr_m <- matrix(pr_fmt, ncol = 1, dimnames = list(NULL, pr_name))
+      cw <- cbind(cw[, 1, drop = FALSE], pr_m, cw[, -1, drop = FALSE])
+    }
     # Confidence intervals for the final IC weights (if evSyn(..., CI = TRUE); see evSyn_CI())
     ci <- x[["CI"]]
     if (!is.null(ci)) {
@@ -72,6 +91,7 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       }
     }
     print(cw, print.gap = 2, quote = FALSE, right = TRUE)
+    if (show_prior) cat(paste0("\n", prior_note, "\n"))
     if (!is.null(ci)) {
       cat(paste0("\n", .evSyn_CI_note(ci), "\n"))
     }
@@ -101,7 +121,12 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     cw <- as.data.frame(cw)
     rownames(cw) <- colnames(x[["Cumulative_GORICA_weights"]])
     colnames(cw) <- paste0(type_label, " weights") #NULL #paste0("Final ", type_label, " weights")
+    if (show_prior) {
+      pr_df <- data.frame(pr_fmt, stringsAsFactors = FALSE); names(pr_df) <- pr_name
+      cw <- data.frame(pr_df, cw, check.names = FALSE, row.names = rownames(cw))
+    }
     print(cw, print.gap = 2, quote = FALSE, right = TRUE, col.names = FALSE)
+    if (show_prior) cat(paste0("\n", prior_note, "\n"))
     #write.table(format(cw, justify="right"), col.names = FALSE, quote = F, sep = "              ")
     cat("\n")
     cat("---\n")
@@ -114,10 +139,11 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   cat("\n")
   
   # Measures of variability over the studies (or analyses), incl. conclusion 
-  # (as in the summary; only available with at least two studies/analyses)
-  if (!is.null(x[["n_studies"]]) && x[["n_studies"]] > 1) {
+  # (as in the summary; only when requested, i.e., evSyn(..., variability = TRUE), 
+  # and with at least two studies/analyses; see also evSyn_variability())
+  if (isTRUE(x[["show_variability"]]) && !is.null(x[["n_studies"]]) && x[["n_studies"]] > 1) {
     cat("---\n")
-    v <- summary.evSyn(x)$variability
+    v <- suppressMessages(evSyn_variability(x))
     .evSyn_print_variability(v, type_ev = x[["type_ev"]], type_label = type_label, digits = digits)
     cat("\n")
   }

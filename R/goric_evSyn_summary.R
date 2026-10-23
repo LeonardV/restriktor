@@ -1,5 +1,6 @@
 # Helper: measures of variability over the studies (or analyses), based on the 
-# study-specific IC weights (as reported, so including the priorICweights).
+# study-specific IC weights (as reported, so without the prior IC weights (priorICweights), which are
+# only used in the aggregated results).
 # The overall best hypothesis is the one with the highest final (cumulative) IC 
 # weight; it is compared with each other hypothesis via the ratio of IC weights.
 #   - Percentiles (by default, min, Q1, median, Q3, max) of the study-specific 
@@ -73,7 +74,7 @@
   # Ceiling: number of studies in which the ratio reached its maximum, that is, 
   # in which the best hypothesis and the other one have the same log-likelihood 
   # value (they overlap there); the ratio then only reflects the difference in 
-  # penalties (and priors). Only available when log-likelihood values are available.
+  # penalties. Only available when log-likelihood values are available.
   if (!is.null(LL)) {
     LL <- as.matrix(LL)
     ceil <- vapply(others, function(k) {
@@ -160,7 +161,7 @@
       txt <- c(txt, paste0("    Notably, on average (geometric mean of the ratios = ", fmt(gm), "), ",
                            sQuote(other), " has more support than ", sQuote(best), " in the ", units,
                            "; this holds in ", pct(ER), " of the ", units, " (ER = ", fmt(ER), "). ",
-                           "The final preference for ", sQuote(best), " is due to the priorICweights and/or study weights."))
+                           "The final preference for ", sQuote(best), " is due to the prior IC weights (priorICweights) and/or the study weights."))
     }
     # ER verdict
     if (ER >= ER_cut - eps) {
@@ -279,7 +280,51 @@
   out
 }
 
-summary.evSyn <- function(object, probs = c(0, .25, .50, .75, 1), ...) {
+# -------------------------------------------------------------------------
+# Measures of variability over the studies (or analyses) and the corresponding 
+# conclusion, for an evSyn object (see also evSyn(..., variability = TRUE)).
+evSyn_variability <- function(object, probs = c(0, .25, .50, .75, 1)) {
+  if (!inherits(object, "evSyn")) {
+    stop("\nrestriktor ERROR: The object should be of class 'evSyn' ",
+         "(i.e., output from the evSyn() function).", call. = FALSE)
+  }
+  if (!is.numeric(probs) || any(is.na(probs)) || any(probs < 0 | probs > 1)) {
+    stop("\nrestriktor ERROR: The argument 'probs' should contain probabilities (in between 0 and 1).",
+         call. = FALSE)
+  }
+  x <- object
+  type_label <- if (!is.null(x[["type"]])) toupper(x[["type"]]) else "GORICA"
+  S <- x[["n_studies"]]
+  if (is.null(x[["GORICA_weight_m"]]) || is.null(S) || S < 2) {
+    message("\nrestriktor Message: Measures of variability require at least two ",
+            .evSyn_unit_label(x[["type_ev"]], plural = TRUE, capital = FALSE), ".")
+    return(invisible(NULL))
+  }
+  # based on the study-specific IC weights; the study weights (in input order) 
+  # are re-ordered to follow the (possibly re-ordered) studies.
+  sw_var <- x[["study_weights"]]
+  if (!is.null(sw_var) && !is.null(x[["order_studies"]])) sw_var <- sw_var[x[["order_studies"]]]
+  final_w_var <- if (!is.null(x[["Cumulative_GORICA_weights"]])) x[["Cumulative_GORICA_weights"]]["Final", ] else NULL
+  v <- .evSyn_variability(x[["GORICA_weight_m"]], final_w_var, study_weights = sw_var, probs = probs,
+                          LL = x[["LL_m"]])
+  if (is.null(v)) return(invisible(NULL))
+  # Conclusion based on these measures (with the cut-off values of Klaassen et al., 2018)
+  v$conclusion <- .evSyn_variability_conclusion(v, final_w_var, type_label = type_label,
+                                                type_ev = x[["type_ev"]], S = S, CI = x[["CI"]])
+  v$type_ev <- x[["type_ev"]]
+  v$type_label <- type_label
+  class(v) <- "evSyn_variability"
+  v
+}
+
+print.evSyn_variability <- function(x, digits = max(3, getOption("digits") - 4), ...) {
+  .evSyn_print_variability(x, type_ev = x$type_ev, type_label = x$type_label, digits = digits)
+  invisible(x)
+}
+
+
+summary.evSyn <- function(object, probs = c(0, .25, .50, .75, 1),
+                          variability = isTRUE(object[["show_variability"]]), ...) {
   x <- object
   class(x) <- NULL
   
@@ -355,6 +400,12 @@ summary.evSyn <- function(object, probs = c(0, .25, .50, .75, 1), ...) {
     fcgw <- t(x[["Cumulative_GORICA_weights"]]["Final", ])
     rownames(fcgw) <- paste0(type_label, " weights")
     colnames(fcgw)  <- colnames(x[["Cumulative_GORICA_weights"]])
+    # Prior IC weights (priorICweights; shown when unequal): row right before the IC weights
+    prior_w <- x[["priorICweights"]]
+    if (!is.null(prior_w) && length(prior_w) == ncol(fcgw) && length(unique(round(prior_w, 12))) > 1) {
+      fpw <- matrix(prior_w, nrow = 1, dimnames = list(paste0("prior ", type_label, " weights"), colnames(fcgw)))
+      final <- rbind(final, fpw)
+    }
     final <- rbind(final, fcgw)
     final <- rbind(final, ci_rows("weights", colnames(fcgw)))
   }
@@ -404,27 +455,18 @@ summary.evSyn <- function(object, probs = c(0, .25, .50, .75, 1), ...) {
   ans$Final_Cumulative_results <- final
   ans$CI <- x[["CI"]]
   
+  ans$priorICweights_study <- x[["priorICweights_study"]] # not active for now (see .evSyn_priorICweights_study)
   ans$Ratio_GORICA_weight_mu <- x[["ratio_GORICA_weight_mu"]]
   ans$Ratio_GORICA_weight_mc <- x[["ratio_GORICA_weight_mc"]]
   ans$Final_ratio_GORICA_weights <- x[["Final_ratio_GORICA_weights"]]
   ans$Final_ratio_LL_weights <- x[["Final_ratio_LL_weights"]]
   
-  # Measures of variability over the studies (or analyses), based on the 
-  # study-specific IC weights; the study weights (in input order) are re-ordered 
-  # to follow the (possibly re-ordered) studies.
-  sw_var <- x[["study_weights"]]
-  if (!is.null(sw_var) && !is.null(x[["order_studies"]])) sw_var <- sw_var[x[["order_studies"]]]
-  final_w_var <- if (!is.null(x[["Cumulative_GORICA_weights"]])) x[["Cumulative_GORICA_weights"]]["Final", ] else NULL
-  ans$variability <- if (!is.null(x[["GORICA_weight_m"]])) {
-    .evSyn_variability(x[["GORICA_weight_m"]], final_w_var, study_weights = sw_var, probs = probs,
-                       LL = x[["LL_m"]])
+  # Measures of variability over the studies (or analyses), incl. conclusion: 
+  # only when requested (evSyn(..., variability = TRUE) or summary(..., variability = TRUE));
+  # see evSyn_variability().
+  ans$variability <- if (isTRUE(variability) && !is.null(x[["n_studies"]]) && x[["n_studies"]] > 1) {
+    suppressMessages(evSyn_variability(object, probs = probs))
   } else NULL
-  # Conclusion based on these measures (with the cut-off values of Klaassen et al., 2018)
-  if (!is.null(ans$variability)) {
-    ans$variability$conclusion <- .evSyn_variability_conclusion(
-      ans$variability, final_w_var, type_label = type_label, 
-      type_ev = x[["type_ev"]], S = x[["n_studies"]], CI = x[["CI"]])
-  }
   
   ans$messages <- list(mix_weights = x[["messages"]]$mix_weights)
   class(ans) <- "summary.evSyn"
@@ -448,7 +490,7 @@ summary.evSyn <- function(object, probs = c(0, .25, .50, .75, 1), ...) {
                  delta = "delta method",
                  mc    = "delta method, with Monte Carlo draws for the weights",
                  ci$method)
-  paste0(indent, "(", pct, "CI: confidence intervals for the final (pooled) ", toupper(ci$type),
+  paste0(indent, "(", pct, "CI: confidence intervals for the final (aggregated) ", toupper(ci$type),
          " values and weights, and, in the conclusion, for the final ratios of weights; computed with evSyn_CI() (",
          meth, "). Use evSyn_CI(object) for more details and other options; see ?evSyn_CI.)")
 }
@@ -702,6 +744,12 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   captured_output <- capture.output(print(formatted_final, row.names = TRUE, right = TRUE, quote = "FALSE"))
   adjusted_output <- gsub("^", indentation, captured_output, perl = TRUE)
   cat(paste0(adjusted_output, "\n"), sep = "")
+  if (any(grepl("^prior .* weights$", rownames(x[["Final_Cumulative_results"]])))) {
+    cat(paste0("\n    (prior ", type_label, " weights: the priorICweights, which are used in the ", type_label,
+               if (isTRUE(x[["priorICweights_study"]])) " weights (study-specific, cumulative, and final) and their ratios, but not in the " else
+                           " weights (cumulative and final) and their ratios, but not in the study-specific ones (nor in the measures of variability based on these), the ",
+               type_label, " values, the log-likelihood and penalty values, and the log-likelihood weights.)\n"))
+  }
   if (!is.null(x[["CI"]])) {
     cat(paste0("\n", .evSyn_CI_note(x[["CI"]], indent = "    "), "\n"))
   }

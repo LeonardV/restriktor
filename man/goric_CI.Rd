@@ -44,7 +44,7 @@ goric_CI(object, level = 0.95, method = c("invert", "boot", "delta", "mc"),
   \item{seed}{an optional seed (for \code{method = "mc"} or \code{"boot"}).
   Note that this sets the seed of the global random number generator.}
   \item{tol}{tolerance used to determine whether two hypotheses have the same
-  order-restricted maximum likelihood estimates (or-mle's) in the sample, that is,
+  maximum order-restricted log likelihood (i.e., loglik in \code{\link{goric}}) in the sample, that is,
   whether the standard error of the difference in their
   GORIC(A) values is (numerically) zero.}
   \item{x}{an object of class \code{goric_CI}.}
@@ -58,12 +58,12 @@ goric_CI(object, level = 0.95, method = c("invert", "boot", "delta", "mc"),
   Let \eqn{IC_m = -2 \ell_m + c\, PT_m} be the GORIC(A) value of hypothesis
   \eqn{m}, with \eqn{\ell_m} the (order-restricted) log-likelihood, \eqn{PT_m}
   the penalty, and \eqn{c} the penalty factor (\code{penalty_factor},
-  default 2). With prior model probabilities \eqn{p_m} (\code{priorICweights}),
+  default 2). With prior IC weights \eqn{p_m} (\code{priorICweights}; prior model 'probabilities'),
   let \eqn{\eta_m = \log p_m - IC_m/2}; then the GORIC(A) weights are
   \eqn{w_m = \exp(\eta_m) / \sum_k \exp(\eta_k)} and the ratio of weights is
   \eqn{w_m / w_k = \exp(\eta_m - \eta_k)}. The penalties do not depend on the
-  outcome values (and the priors are fixed), so all sampling variability
-  comes from the log-likelihood values; the penalty factor and priors as used
+  outcome values (and the prior IC weights are fixed), so all sampling variability
+  comes from the log-likelihood values; the penalty factor and prior IC weights as used
   in \code{object} are taken into account.
 
   \emph{Weights and ratios of weights.} Since the weights and the ratios of
@@ -126,7 +126,7 @@ goric_CI(object, level = 0.95, method = c("invert", "boot", "delta", "mc"),
     that of their differences. Merkle et al. (2016) first apply Vuong's (1989)
     formal test of distinguishability; that test assumes estimates that are
     not on the boundary of the parameter space, which does not hold for
-    order-restricted maximum likelihood estimates (or-mle's), so here pairs are only flagged when their
+    order-restricted maximum likelihood estimates, so here pairs are only flagged when their
     standard error is (numerically) zero (see below). Casewise
     contributions are available for \code{lm} (also with prior weights),
     \code{rlm}, \code{mlm}, and \code{glm} objects (gaussian, poisson, binomial,
@@ -160,7 +160,10 @@ goric_CI(object, level = 0.95, method = c("invert", "boot", "delta", "mc"),
   and the CI for the expected difference \eqn{E[T]} (and, via
   \eqn{\exp(\log(p_m/p_k) - E[T]/2)}, for the ratio of weights) follows. For
   only equality constraints, this is exactly the noncentrality-parameter
-  inversion. For hypotheses with two or more inequality constraints (e.g.,
+  inversion; when a limit of the noncentrality is 0 (the boundary of its parameter 
+  space), the exact expected difference is used, namely the number of (linearly 
+  independent) equality constraints plus \code{penalty_factor} times the difference 
+  in penalties (instead of its Monte Carlo estimate). For hypotheses with two or more inequality constraints (e.g.,
   \eqn{\mu_1 < \mu_2 < \mu_3}), the distribution also depends on the location
   along the boundary and this reduction does not hold (in a simulation, the
   coverage was then very poor), so the bootstrap CI is used for those pairs;
@@ -173,16 +176,18 @@ goric_CI(object, level = 0.95, method = c("invert", "boot", "delta", "mc"),
   are far inside such a hypothesis, because its distribution is then
   degenerate).
 
-  \emph{Hypotheses with the same or-mle's.} The analytic CIs require that the
-  hypotheses do not have the same or-mle's in the sample (i.e., are distinguishable, in
+  \emph{Hypotheses with the same maximum order-restricted log likelihood.} The analytic CIs 
+  require that the hypotheses do not have the same maximum order-restricted log likelihood 
+  (i.e., loglik in \code{\link{goric}}) in the sample (i.e., are distinguishable, in
   Vuong's terms). This can only occur for overlapping hypotheses, when the estimates
-  lie in their common part; overlapping hypotheses can also have
-  different or-mle's. When two hypotheses lead to the same order-restricted maximum likelihood estimates
-  (or-mle's; e.g., a hypothesis and the unconstrained hypothesis
+  lie in their common part (then, they lead to the same order-restricted maximum likelihood 
+  estimates); overlapping hypotheses can also have a different maximum order-restricted log 
+  likelihood. When two hypotheses have the same maximum order-restricted log likelihood
+  (e.g., a hypothesis and the unconstrained hypothesis
   when the estimates are in agreement with that hypothesis), the standard
   error of their difference is zero, while the difference in GORIC(A) values
   is in fact not fixed (it follows a non-normal, chi-bar-square-type
-  distribution). Such pairs are flagged (\code{same_ormle = TRUE}) and get
+  distribution). Such pairs are flagged (\code{same_loglik = TRUE}) and get
   no analytic CI. Also when the true parameters are close to the boundaries of
   the hypotheses (relative to the sample size), the analytic CIs tend to be
   too narrow. In these cases, use \code{method = "boot"}.
@@ -214,6 +219,19 @@ goric_CI(object, level = 0.95, method = c("invert", "boot", "delta", "mc"),
   coverage for the weight of \eqn{H} was .05 to .82 for \code{"delta"}, .61 to
   .95 for \code{"boot"}, and .96 to .98 for \code{"invert"}.
 
+  A larger simulation study (three parameters; true values inside, on the boundary of, 
+  and outside the hypotheses; \eqn{n} = 25, 100, 400 per group; available in the folder 
+  \code{experiments/coverage_CI} of the source code) showed coverages of .94 to .97 for 
+  the inversion CIs (where these apply) and .93 to .99 for the bootstrap CIs of a hypothesis 
+  versus its complement or the unconstrained hypothesis. Notably, for two order-restricted 
+  hypotheses that overlap at a boundary (e.g., \eqn{\mu_1 > \mu_2 > \mu_3} versus 
+  \eqn{\mu_1 > \mu_2 = \mu_3}), the bootstrap CI of their difference (and ratio of weights) 
+  can be somewhat too narrow when the true parameters are on or near that boundary 
+  (coverage about .86 to .91), since the bootstrap distribution is then shifted relative 
+  to the sampling distribution. When the CIs are degenerate (e.g., two hypotheses with the 
+  same maximum order-restricted log likelihood in nearly all samples), they reduce to (nearly) 
+  a point, which is the expected value up to a negligible difference.
+
   The CIs concern the sampling variability of the GORIC(A) values (and their
   differences, weights, and ratios) as estimates of their population
   counterparts; they are not posterior intervals. The penalties (and the
@@ -226,7 +244,8 @@ goric_CI(object, level = 0.95, method = c("invert", "boot", "delta", "mc"),
   standard error (\code{SE}), and the lower and upper bound of the CI.}
   \item{difference}{a data frame with, for all ordered pairs of hypotheses
   (\code{model} versus \code{vs}), the difference in GORIC(A) values, its
-  standard error, the CI, whether the hypotheses have the same or-mle's in the sample (\code{same_ormle}), and
+  standard error, the CI, whether the hypotheses have the same maximum order-restricted log 
+  likelihood (i.e., loglik in \code{\link{goric}}) in the sample (\code{same_loglik}), and
   the method used for the CI (\code{CI_method}).}
   \item{weights}{a data frame with the GORIC(A) weights, their CIs, and the
   method used for the CI (\code{CI_method}).}
@@ -234,8 +253,8 @@ goric_CI(object, level = 0.95, method = c("invert", "boot", "delta", "mc"),
   the ratio of GORIC(A) weights and its CI.}
   \item{Sigma}{the estimated covariance matrix of the log-likelihood values.}
   \item{best}{the name of the hypothesis with the highest GORIC(A) weight.}
-  \item{any_same_ormle}{whether any pair of hypotheses has the same or-mle's in this
-  sample.}
+  \item{any_same_loglik}{whether any pair of hypotheses has the same maximum order-restricted 
+  log likelihood (i.e., loglik in \code{\link{goric}}) in this sample.}
   Also returned are \code{type}, \code{level}, \code{method}, \code{approach},
   \code{n} (the number of cases used in the casewise approach), \code{B},
   \code{penalty_factor}, and \code{priorICweights}.

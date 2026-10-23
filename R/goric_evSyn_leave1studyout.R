@@ -51,8 +51,10 @@ leave1studyout.evSyn <- function(object, ...) {
   # values, but differences in IC values can be derived (these suffice, since
   # IC weights only depend on differences in IC values between hypotheses):
   # - IC weights: -2 x log(IC weight) equals the IC value up to a constant per
-  #   study; the stored IC weights include the prior weights (priorICweights),
-  #   so these are removed first.
+  #   study; the stored (study-specific) IC weights do not include the prior 
+  #   IC weights (priorICweights), which are used in the aggregated results only
+  #   (unless priorICweights_study = TRUE, which is not active for now; then 
+  #   these are removed first).
   # - Ratios of IC weights: the differences in IC values versus the reference
   #   hypothesis (ICdiff_m) are stored in the object.
   # Notably, in that case, the resulting 'IC values' are not reported (only
@@ -63,10 +65,13 @@ leave1studyout.evSyn <- function(object, ...) {
     IC_m <- object$ICdiff_m
     IC_type <- "diff"
   } else if (inherits(object, "evSyn_ICweights")) {
-    prior_m <- object$priorICweights
-    if (is.null(prior_m)) prior_m <- rep(1 / ncol(ICw_m), ncol(ICw_m))
-    W_raw <- sweep(ICw_m, 2, prior_m, "/")
-    W_raw[, prior_m == 0] <- 1 # weight 0 anyway (due to prior of 0); avoids NaN
+    W_raw <- ICw_m
+    if (isTRUE(object$priorICweights_study)) { # not active for now
+      prior_m <- object$priorICweights
+      if (is.null(prior_m)) prior_m <- rep(1 / ncol(ICw_m), ncol(ICw_m))
+      W_raw <- sweep(ICw_m, 2, prior_m, "/")
+      W_raw[, prior_m == 0] <- 1 # weight 0 anyway (due to prior of 0); avoids NaN
+    }
     W_raw <- W_raw / rowSums(W_raw)
     IC_m <- -2 * log(W_raw)
     IC_type <- "none"

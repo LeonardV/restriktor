@@ -44,6 +44,10 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   # #                          al wordt die tabel dan wel nog weer langer... dus ws niet doen, 
   # #                          dan ook minder duidelijk dat het posthoc is...
   # #          Wel opvraagbaar laten zijn!
+  # TO DO (posthoc)
+  # Make both a function and a possible input argument.
+  # Add a conclusion text.
+  # When available, then also mention this functionality in the output perhaps
   
   
   dig <- paste0("%6.", digits, "f")
@@ -210,6 +214,24 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
 
   values_df  <- pad_block(df[, values_cols])
   weights_df <- pad_block(df[, weights_cols])
+  # Prior IC weights (priorICweights; shown when they are unequal, i.e., when 
+  # specified by the user): an extra column right before the IC weights in the 
+  # Weights block, with an empty column at the same position in the Values block 
+  # (such that the columns of both blocks still correspond).
+  prior_w <- x$priorICweights
+  show_prior <- !is.null(prior_w) && length(prior_w) == nrow(df) &&
+    length(unique(round(prior_w, 12))) > 1
+  if (show_prior) {
+    pr_name <- paste0("prior.", type, ".weights")   # e.g., prior.goric.weights
+    pw <- sprintf(dig, prior_w)
+    w_pr <- max(nchar(c(pw, pr_name)))
+    pr_col <- data.frame(sprintf("%*s", w_pr, pw), stringsAsFactors = FALSE)
+    names(pr_col) <- sprintf("%*s", w_pr, pr_name)
+    empty_col <- data.frame(rep(strrep(" ", w_pr), nrow(df)), stringsAsFactors = FALSE)
+    names(empty_col) <- strrep(" ", w_pr)
+    weights_df <- cbind(weights_df[, 1:3, drop = FALSE], pr_col, weights_df[, -(1:3), drop = FALSE])
+    values_df  <- cbind(values_df[, 1:3, drop = FALSE], empty_col, values_df[, -(1:3), drop = FALSE])
+  }
   if (has_CI) {
     # CI columns right after the IC values and right after the IC weights
     g_lo  <- fmt_ci(x$IC.CI[, "lower"]);      g_up  <- fmt_ci(x$IC.CI[, "upper"])
@@ -227,17 +249,26 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     values_df[[up$na]] <- up$a
     w_ci <- data.frame(lo$b, up$b, stringsAsFactors = FALSE)
     names(w_ci) <- c(lo$nb, up$nb)
-    weights_df <- cbind(weights_df[, 1:4, drop = FALSE], w_ci,
-                        weights_df[, -(1:4), drop = FALSE])
+    n_left <- 4 + show_prior   # model, loglik.weights, penalty.weights, (prior IC weights,) IC weights
+    weights_df <- cbind(weights_df[, 1:n_left, drop = FALSE], w_ci,
+                        weights_df[, -(1:n_left), drop = FALSE])
   }
   cat("Values:\n")
   print(values_df, print.gap = 2, quote = FALSE)
   cat("\n")
   cat("Weights:\n")
   print(weights_df, print.gap = 2, quote = FALSE)
+  if (show_prior) {
+    cat(sprintf("\nprior.%s.weights: the prior %s weights (argument priorICweights), which are used in the %s weights (and their ratios), not in the %s values.\n",
+                type, toupper(type), toupper(type), toupper(type)))
+  }
   if (has_CI) {
     cat(sprintf("\n.lower, .upper: bounds of the %s confidence interval for the %s values (g.xxx) and %s weights (gw.xxx); the CI methods used are stored in $CI_methods.\n",
                 CI_pct, toupper(type), toupper(type)))
+    if (show_prior) {
+      cat(sprintf("Note: the CIs of the %s weights (and their ratios) include the prior %s weights (priorICweights), those of the %s values do not; hence, conclusions based on the CIs of the values and of the weights may differ.\n",
+                  toupper(type), toupper(type), toupper(type)))
+    }
   }
   #cat("---\n")
   
@@ -700,7 +731,10 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   if (best_hypo_IC != best_hypo) {
     message(paste0("\nrestriktor Note: The best hypothesis ", best_hypo_name, " is based on the highest IC weight. \n",
                    "Based on the (smallest) IC values, the best hypothesis is ", best_hypo_IC_name, ". \n",
-                   "This difference in conclusion is due to the specified priorICweights."))
+                   "This difference in conclusion is due to the specified priorICweights.",
+                   if (has_CI) paste0(" Likewise, conclusions based on the CIs of the IC values and on ",
+                                      "those of the IC weights (and their ratios) may differ, since only ",
+                                      "the latter include the prior IC weights (priorICweights).") else ""))
   }
   
   if (x$penalty_factor != 2) {

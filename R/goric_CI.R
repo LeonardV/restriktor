@@ -191,13 +191,14 @@
 # -----------------------------------------------------------------------------
 # The normal approximation requires that the two hypotheses are
 # distinguishable (omega^2 > 0; Vuong, 1989; Merkle et al., 2016). When two
-# hypotheses lead to the same order-restricted MLEs (or-mle's) -- e.g., H1 versus the
+# hypotheses have the same maximum order-restricted log likelihood (i.e., loglik in
+# goric(); because they lead to the same order-restricted MLEs) -- e.g., H1 versus the
 # unconstrained hypothesis when the estimates are in agreement with H1, or
 # overlapping hypotheses -- the casewise differences are (asymptotically) zero,
 # SE_mk = 0, and the difference in IC values has a non-normal (chi-bar-square
 # type) distribution with a spread of order 1. A normal-based CI would then
 # wrongly collapse to a point. Such pairs are therefore flagged
-# ('same_ormle = TRUE') and get no analytic CI (NA). The analytic CIs of
+# ('same_loglik = TRUE') and get no analytic CI (NA). The analytic CIs of
 # the weights ignore this extra (order 1) variability as well, so these are
 # too narrow when the set contains overlapping hypotheses (a note is
 # given). The bootstrap (method = "boot") does capture this variability and
@@ -392,11 +393,12 @@ goric_CI <- function(object, level = 0.95, method = c("invert", "boot", "delta",
   se_d  <- 2 * sqrt(pmax(var_d, 0))
   dIC   <- IC[pairs$m] - IC[pairs$k]
   log_ratio <- eta[pairs$m] - eta[pairs$k]
-  # same_ormle: the two hypotheses have the same order-restricted MLEs (or-mle's)
-  # in this sample, so that the SE of their difference is (numerically) zero
+  # same_loglik: the two hypotheses have the same maximum order-restricted log
+  # likelihood (i.e., loglik in goric()) in this sample (since they lead to the 
+  # same order-restricted MLEs), so that the SE of their difference is (numerically) zero
   # relative to the IC scale ('indistinguishable' in Vuong's terms).
   scale_ref <- max(1, sqrt(max(abs(diag(Sigma)))))
-  same_ormle <- !(se_d > tol * scale_ref)
+  same_loglik <- !(se_d > tol * scale_ref)
 
   ci_method <- rep(if (use_boot) "boot" else "analytic", nrow(pairs))
   if (use_boot) {
@@ -407,10 +409,10 @@ goric_CI <- function(object, level = 0.95, method = c("invert", "boot", "delta",
       exp(quantile(eta_boot[, pairs$m[j]] - eta_boot[, pairs$k[j]], probs = probs, names = FALSE))
     }, numeric(2)))
   } else {
-    q_d <- cbind(ifelse(!same_ormle, dIC - z * se_d, NA_real_),
-                 ifelse(!same_ormle, dIC + z * se_d, NA_real_))
-    q_r <- cbind(ifelse(!same_ormle, exp(log_ratio - z * se_d / 2), NA_real_),
-                 ifelse(!same_ormle, exp(log_ratio + z * se_d / 2), NA_real_))
+    q_d <- cbind(ifelse(!same_loglik, dIC - z * se_d, NA_real_),
+                 ifelse(!same_loglik, dIC + z * se_d, NA_real_))
+    q_r <- cbind(ifelse(!same_loglik, exp(log_ratio - z * se_d / 2), NA_real_),
+                 ifelse(!same_loglik, exp(log_ratio + z * se_d / 2), NA_real_))
   }
 
   # method = "invert": for a hypothesis versus the unconstrained hypothesis or
@@ -432,13 +434,13 @@ goric_CI <- function(object, level = 0.95, method = c("invert", "boot", "delta",
   diff_tab <- data.frame(model = models[pairs$m], vs = models[pairs$k],
                          difference = dIC, SE = se_d,
                          lower = q_d[, 1], upper = q_d[, 2],
-                         same_ormle = same_ormle,
+                         same_loglik = same_loglik,
                          CI_method = ci_method,
                          row.names = NULL, stringsAsFactors = FALSE)
   ratio_tab <- data.frame(model = models[pairs$m], vs = models[pairs$k],
                           ratio = exp(log_ratio),
                           lower = q_r[, 1], upper = q_r[, 2],
-                          same_ormle = same_ormle,
+                          same_loglik = same_loglik,
                           CI_method = ci_method,
                           row.names = NULL, stringsAsFactors = FALSE)
 
@@ -498,7 +500,7 @@ goric_CI <- function(object, level = 0.95, method = c("invert", "boot", "delta",
               IC = IC_tab, difference = diff_tab,
               weights = weight_tab, ratio_weights = ratio_tab,
               best = models[which.max(w)],
-              any_same_ormle = any(same_ormle))
+              any_same_loglik = any(same_loglik))
   class(out) <- "goric_CI"
   out
 }
@@ -731,7 +733,15 @@ goric_CI_invert <- function(object, models, pairs, level, B, penalty_factor = 2)
       }
       s_L <- solve_s(1 - alpha / 2)
       s_U <- solve_s(alpha / 2)
-      done[[key]] <- c(mean(T_at(s_L)), mean(T_at(s_U)))
+      # For an equality-only hypothesis, s = 0 is the boundary of the parameter 
+      # space of s; when a limit equals 0, the expected difference is known exactly: 
+      # T - c * (PT_m - PT_k) is then central chi-square with q = rank(Amat) 
+      # degrees of freedom, so E_0[T] = q + c * (PT_m - PT_k). This exact value is 
+      # used instead of its Monte Carlo estimate (which would otherwise lie above 
+      # or below the true value about half of the time when the hypothesis is true).
+      exact0 <- if (nrow(sm$Amat) == sm$neq) qr(sm$Amat)$rank + cPT else NA_real_
+      E_T <- function(s) if (!is.na(exact0) && s <= 0) exact0 else mean(T_at(s))
+      done[[key]] <- c(E_T(s_L), E_T(s_U))
     }
     ci <- done[[key]]
     out[j, ] <- if (sgn == 1) ci else rev(-ci)
@@ -900,12 +910,7 @@ print.goric_CI <- function(x, digits = max(3, getOption("digits") - 4),
                 ifelse(x$method == "delta", "delta method on the logit scale", "Monte Carlo")))
   }
 
-  fmt <- function(df) {
-    num <- vapply(df, is.numeric, logical(1))
-    df[num] <- lapply(df[num], function(v) formatC(v, digits = digits, format = "f"))
-    df[] <- lapply(df, function(v) { v[v == "NA"] <- "-"; v })
-    df
-  }
+  fmt <- function(df) .format_CI_table(df, digits = digits)
 
   cat(sprintf("\n%s values:\n", type_label))
   print(fmt(x$IC), row.names = FALSE, right = TRUE)
@@ -922,20 +927,27 @@ print.goric_CI <- function(x, digits = max(3, getOption("digits") - 4),
               ifelse(all_pairs, "", paste0(" (best hypothesis ", x$best, " versus the others)"))))
   print(fmt(x$ratio_weights[sel, , drop = FALSE]), row.names = FALSE, right = TRUE)
 
-  if (isTRUE(x$any_same_ormle)) {
+  if (isTRUE(x$any_same_loglik)) {
     if (x$method %in% c("boot", "invert")) {
-      message("\nrestriktor Note: Some hypotheses lead to the same order-restricted maximum ",
-              "likelihood estimates (or-mle's) in this sample (same_ormle = TRUE). For these pairs, ",
+      message("\nrestriktor Note: Some hypotheses have the same maximum order-restricted log ",
+              "likelihood (i.e., loglik in goric()) in this sample (same_loglik = TRUE). For these pairs, ",
               "only the bootstrap and inversion CIs are meaningful (the SE is 0, but the ",
               "difference in ", type_label, " values is not fixed).")
     } else {
-      message("\nrestriktor Note: Some hypotheses lead to the same order-restricted maximum ",
-              "likelihood estimates (or-mle's) (same_ormle = TRUE), for example, a hypothesis and the unconstrained hypothesis ",
+      message("\nrestriktor Note: Some hypotheses have the same maximum order-restricted log ",
+              "likelihood (i.e., loglik in goric()) (same_loglik = TRUE), for example, a hypothesis and the unconstrained hypothesis ",
               "when the estimates are in agreement with that hypothesis. For these pairs, the ",
               "difference in ", type_label, " values is not normally distributed and no CI is given. ",
               "The CIs of the weights do not reflect this (order 1) variability and are too narrow then. ",
               "Use method = \"boot\" instead.")
     }
+  }
+  if (!is.null(x$priorICweights) && length(unique(round(x$priorICweights, 12))) > 1) {
+    message("\nrestriktor Note: Unequal prior IC weights (priorICweights) are used. These are part of ",
+            "the ", type_label, " weights and the ratios of ", type_label, " weights (and their CIs), ",
+            "but not of the ", type_label, " values and their differences (and their CIs). ",
+            "Hence, conclusions based on the (CIs of the) ", type_label, " values may differ from ",
+            "those based on the (CIs of the) ", type_label, " weights.")
   }
   if (x$type %in% c("gorica", "goricac") && !(x$method %in% c("boot", "invert"))) {
     message("\nrestriktor Note: The CI of a single ", type_label, " value is based on ",
@@ -994,4 +1006,27 @@ goric_CI_method_text <- function(ci) {
     paste0("  - ", IC_lab, " values: ", ic_m),
     paste0("  - ", IC_lab, " weights: ", w_txt),
     paste0("  - ratios of ", IC_lab, " weights: ", r_txt))
+}
+
+# -----------------------------------------------------------------------------
+# Helper: format the numeric columns of a CI table (used by print.goric_CI() and 
+# print.evSyn_CI()): fixed notation, but scientific notation for (absolute) 
+# values of 1000 or larger and for values smaller than 0.001 (other than 0); 
+# integer columns (e.g., counts) are kept as they are; NA is shown as "-".
+.format_CI_number <- function(v, digits = 3) {
+  vapply(v, function(x) {
+    if (is.na(x)) return("NA")
+    if (!is.finite(x)) return(as.character(x))
+    if (abs(x) >= 1000 || (abs(x) < 0.001 && x != 0)) {
+      formatC(x, digits = max(2, digits - 1), format = "e")
+    } else {
+      formatC(x, digits = digits, format = "f")
+    }
+  }, character(1))
+}
+.format_CI_table <- function(df, digits = 3) {
+  num <- vapply(df, function(v) is.numeric(v) && !is.integer(v), logical(1))
+  df[num] <- lapply(df[num], .format_CI_number, digits = digits)
+  df[] <- lapply(df, function(v) { v[v == "NA"] <- "-"; v })
+  df
 }

@@ -3,12 +3,12 @@
 # estimates and their covariance matrices (input type 'est_vcov' or 'escalc'):
 # per study the ratio of GORICA weights (best hypothesis versus another one)
 # with its confidence interval (CI; from goric_CI()), and at the bottom the
-# final (pooled) ratio with its CI (from evSyn_CI()).
+# aggregated (pooled) ratio with its CI (from evSyn_CI()).
 # =============================================================================
 
 evSyn_forest <- function(object, vs = NULL, best = NULL, level = 0.95,
                          method_study = c("invert", "boot", "delta"),
-                         method_pooled = c("boot", "delta", "mc"),
+                         method_aggregated = c("boot", "delta", "mc"),
                          B = 1000L, seed = NULL, ...) {
 
   if (!inherits(object, "evSyn") || !inherits(object, c("evSyn_est", "evSyn_gorica")) ||
@@ -19,7 +19,7 @@ evSyn_forest <- function(object, vs = NULL, best = NULL, level = 0.95,
          call. = FALSE)
   }
   method_study  <- match.arg(method_study)
-  method_pooled <- match.arg(method_pooled)
+  method_aggregated <- match.arg(method_aggregated)
   if (!is.null(seed)) set.seed(seed)
 
   type_label <- toupper(object$type)
@@ -59,9 +59,10 @@ evSyn_forest <- function(object, vs = NULL, best = NULL, level = 0.95,
   if (is.null(sw)) sw <- rep(1 / S, S)
   sw <- sw / sum(sw)
 
-  # Study-specific CIs (goric_CI); the study-specific goric objects are based on
-  # equal prior weights, so the ratios (and their bounds) are multiplied by the
-  # ratio of the priorICweights, as for the study-specific weights in evSyn.
+  # Study-specific CIs (goric_CI); as the study-specific weights in evSyn, the 
+  # study-specific ratios do not include the prior IC weights (priorICweights);
+  # those are used in the aggregated ratio only. For goric objects as input, 
+  # possible prior IC weights used in these objects are removed.
   study_rows <- list()
   for (pos in seq_len(S)) {
     s <- ord[pos]
@@ -72,30 +73,32 @@ evSyn_forest <- function(object, vs = NULL, best = NULL, level = 0.95,
     for (k in vs) {
       kk <- match(k, hn)
       j <- which(rd$model == mg[b] & rd$vs == mg[kk])
-      # ratio of the evSyn priors, divided by that of the priors used in the goric object
+      # remove the ratio of the prior IC weights used in the goric object (if any)
       pg <- g$priorICweights
       if (is.null(pg) || length(pg) != M) pg <- rep(1 / M, M)
-      pr <- (prior[b] / prior[kk]) / (pg[b] / pg[kk])
+      pr <- 1 / (pg[b] / pg[kk])
+      # not active for now: also use the prior IC weights in the study-specific ratios
+      if (isTRUE(object$priorICweights_study)) pr <- pr * prior[b] / prior[kk]
       study_rows[[length(study_rows) + 1L]] <- data.frame(
         comparison = paste0(best, " vs. ", k), label = st_names[pos], kind = "study",
         ratio = rd$ratio[j] * pr, lower = rd$lower[j] * pr, upper = rd$upper[j] * pr,
-        same_fit = isTRUE(rd$same_ormle[j]), study_weight = sw[s],
+        same_fit = isTRUE(rd$same_loglik[j]), study_weight = sw[s],
         stringsAsFactors = FALSE)
     }
   }
   df <- do.call(rbind, study_rows)
 
-  # Pooled CIs (evSyn_CI; re-used from evSyn(..., CI = TRUE) when possible)
+  # Aggregated CIs (evSyn_CI; re-used from evSyn(..., CI = TRUE) when possible)
   pooled_note <- NULL
   ci_p <- NULL
   if (type_ev == "average") {
-    pooled_note <- paste0("No CI for the final ratio, since the ", units,
+    pooled_note <- paste0("No CI for the aggregated ratio, since the ", units,
                           " (multiple analyses of the same data) are dependent.")
   } else if (!is.null(object$CI) && isTRUE(all.equal(object$CI$level, level)) &&
-             object$CI$method == method_pooled) {
+             object$CI$method == method_aggregated) {
     ci_p <- object$CI
   } else {
-    ci_p <- evSyn_CI(object, level = level, method = method_pooled, B = B)
+    ci_p <- evSyn_CI(object, level = level, method = method_aggregated, B = B)
   }
   pooled_rows <- lapply(vs, function(k) {
     fin <- final_w[best] / final_w[k]
@@ -104,29 +107,36 @@ evSyn_forest <- function(object, vs = NULL, best = NULL, level = 0.95,
       j <- which(ci_p$ratio_weights$model == best & ci_p$ratio_weights$vs == k)
       lo <- ci_p$ratio_weights$lower[j]; up <- ci_p$ratio_weights$upper[j]
     }
-    data.frame(comparison = paste0(best, " vs. ", k), label = "Final (pooled)", kind = "pooled",
+    data.frame(comparison = paste0(best, " vs. ", k), label = "Aggregated (pooled)", kind = "pooled",
                ratio = unname(fin), lower = lo, upper = up, same_fit = FALSE, study_weight = NA_real_,
                stringsAsFactors = FALSE)
   })
   df <- rbind(df, do.call(rbind, pooled_rows))
   df$comparison <- factor(df$comparison, levels = paste0(best, " vs. ", vs))
-  # first study on top, the pooled result at the bottom
-  df$label <- factor(df$label, levels = rev(c(st_names, "Final (pooled)")))
-  df$point_type <- ifelse(df$kind == "pooled", "Final (pooled)",
-                          ifelse(df$same_fit, paste0(unit_cap, ": same fit (ratio at a bound if nested)"),
+  # first study on top, the aggregated result at the bottom
+  df$label <- factor(df$label, levels = rev(c(st_names, "Aggregated (pooled)")))
+  df$point_type <- ifelse(df$kind == "pooled", "Aggregated (pooled)",
+                          ifelse(df$same_fit, paste0(unit_cap, ": same LL (ratio at a bound if nested)"),
                                  unit_cap))
 
   weighted <- length(unique(round(sw, 12))) > 1
   pct <- paste0(format(100 * level), "%")
   cap <- paste0("Horizontal lines: ", pct, " CIs (", units, ": goric_CI(), method = '", method_study,
-                if (is.null(ci_p)) "" else paste0("'; final: evSyn_CI(), method = '", ci_p$method), "').\n",
+                if (is.null(ci_p)) "" else paste0("'; aggregated: evSyn_CI(), method = '", ci_p$method), "').\n",
                 "Dashed line: ratio = 1 (equal support).")
   if (weighted) cap <- paste0(cap, "\nPoint size: study weight.")
-  if (length(unique(prior)) > 1) cap <- paste0(cap, "\nThe ratios include the ratio of the priorICweights.")
+  if (length(unique(prior)) > 1) {
+    cap <- paste0(cap, if (isTRUE(object$priorICweights_study)) {
+      "\nThe ratios include the ratio of the prior IC weights (priorICweights)."
+    } else {
+      paste0("\nThe aggregated ratio includes the ratio of the prior IC weights (priorICweights); the ",
+             .evSyn_unit_label(type_ev, capital = FALSE), "-specific ratios do not.")
+    })
+  }
   if (!is.null(pooled_note)) cap <- paste0(cap, "\n", pooled_note)
 
   shape_vals <- c(16, 1, 18)
-  names(shape_vals) <- c(unit_cap, paste0(unit_cap, ": same fit (ratio at a bound if nested)"), "Final (pooled)")
+  names(shape_vals) <- c(unit_cap, paste0(unit_cap, ": same LL (ratio at a bound if nested)"), "Aggregated (pooled)")
   shape_vals <- shape_vals[names(shape_vals) %in% unique(df$point_type)]
 
   p <- ggplot(df, aes(y = .data[["label"]], x = .data[["ratio"]])) +
@@ -150,13 +160,17 @@ evSyn_forest <- function(object, vs = NULL, best = NULL, level = 0.95,
       if (is.na(v)) return(NA_character_)
       format(v, scientific = abs(log10(v)) > 5, drop0trailing = TRUE, trim = TRUE)
     }, character(1))) +
-    scale_shape_manual(values = shape_vals) +
+    scale_shape_manual(values = shape_vals, breaks = names(shape_vals)) +
+    # legend symbols in the same colours as in the plot (aggregated result in orange)
+    guides(shape = guide_legend(override.aes = list(
+      colour = ifelse(names(shape_vals) == "Aggregated (pooled)", "#D95F02", "black"),
+      size = ifelse(names(shape_vals) == "Aggregated (pooled)", 4, 3)))) +
     scale_colour_manual(values = c(study = "black", pooled = "#D95F02"), guide = "none") +
     { if (weighted) scale_size_continuous(range = c(1.5, 5), guide = "none") } +
     facet_wrap(~ comparison, scales = "free_x") +
     labs(x = paste0("Ratio of ", type_label, " weights (log scale)"), y = NULL, shape = NULL,
          title = paste0("Ratio of ", type_label, " weights per ",
-                        .evSyn_unit_label(type_ev, capital = FALSE), " and final (pooled) ratio"),
+                        .evSyn_unit_label(type_ev, capital = FALSE), " and aggregated (pooled) ratio"),
          subtitle = paste(type_ev, "Evidence Synthesis results"),
          caption = cap) +
     theme(

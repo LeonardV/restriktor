@@ -6,12 +6,19 @@ Creates a forest-type plot for a GORICA evidence synthesis (\code{\link{evSyn}})
 (standardized) estimates and their covariance matrices (input type \code{"est_vcov"} or
 \code{"escalc"}) or on goric objects (input type \code{"gorica"}): per study, the ratio of GORICA weights of the best hypothesis versus another
 hypothesis with its confidence interval (CI; from \code{\link{goric_CI}}), and, at the bottom,
-the final (pooled) ratio with its CI (from \code{\link{evSyn_CI}}).
+the aggregated (pooled) ratio with its CI (from \code{\link{evSyn_CI}}).
+
+Notably, the final interval regards the confidence interval of the aggregated evidence, not of pooled 
+parameter estimates (as done in meta-analysis). Since aggregated evidence changes with the combined 
+sample size, the aggregated evidence and its interval may be at another location than the study-/analysis-specific 
+evidence and their intervals (it is not a weighted average, as it is for pooled parameter estimates; 
+so, unlike in a forest plot of a meta-analysis, the final ratio does not need to lie in between the 
+study-specific ratios).
 }
 \usage{
 evSyn_forest(object, vs = NULL, best = NULL, level = 0.95,
              method_study = c("invert", "boot", "delta"),
-             method_pooled = c("boot", "delta", "mc"),
+             method_aggregated = c("boot", "delta", "mc"),
              B = 1000L, seed = NULL, \dots)
 }
 \arguments{
@@ -24,7 +31,7 @@ evSyn_forest(object, vs = NULL, best = NULL, level = 0.95,
   \item{level}{the confidence level; by default, 0.95.}
   \item{method_study}{the method used for the study-specific CIs, see \code{\link{goric_CI}};
   by default, its recommended method \code{"invert"}.}
-  \item{method_pooled}{the method used for the CI of the final (pooled) ratio, see
+  \item{method_aggregated}{the method used for the CI of the aggregated (pooled) ratio, see
   \code{\link{evSyn_CI}}; by default, \code{"boot"}. When the evSyn object already contains
   CIs (\code{evSyn(..., CI = TRUE)}) with the same level and method, these are used.}
   \item{B}{the number of bootstrap draws (per study).}
@@ -35,13 +42,13 @@ evSyn_forest(object, vs = NULL, best = NULL, level = 0.95,
 The studies are shown in the same order and with the same labels as in the evSyn object
 (see \code{order_studies} and \code{study_names} in \code{\link{evSyn}}). The x-axis has a
 log scale, and a dashed line denotes a ratio of 1 (equal support). With unequal study weights,
-the size of the study points reflects the study weights. The study-specific ratios include the
-ratio of the prior weights (\code{priorICweights}) used in \code{evSyn}, as do the study-specific
-weights in \code{evSyn} (for goric objects as input, the prior weights used in these objects are
-replaced by those).
+the size of the study points reflects the study weights. As the study-specific
+weights in \code{evSyn}, the study-specific ratios do not include the prior IC weights
+(\code{priorICweights}); the aggregated ratio does (for goric objects as input, possible prior IC
+weights used in these objects are removed from the study-specific ratios).
 
-Open points denote studies in which the two hypotheses have the same fit (i.e., the same
-order-restricted MLEs). If one of the two hypotheses is contained in the other (e.g., a
+Open points denote studies in which the two hypotheses have the same fit (i.e., the same 
+maximum order-restricted log likelihood, LL in \code{\link{evSyn}}). If one of the two hypotheses is contained in the other (e.g., a
 hypothesis in the unconstrained hypothesis), the ratio is then at its bound (determined by the
 difference in penalties): its maximum if the best hypothesis is contained in the other one, and
 its minimum otherwise; this bound also bounds the CI.

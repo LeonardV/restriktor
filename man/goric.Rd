@@ -187,12 +187,18 @@ comparable to the Akaike weights.
 
   \item{posthoc}{currently not used; reserved for a future option.}
 
-  \item{priorICweights}{vector that represents the prior belief for the specified hypotheses.
-  By default, equal prior weights are used (i.e., 1/(#hypotheses)).
-  In case the prior weights do not sum to 1, it will be rescaled such that it does;
-  the prior weights thus reflect relative a priori likeliness of the hypotheses.
+  \item{priorICweights}{vector of prior IC weights, which represent the prior belief for the specified hypotheses.
+  By default, equal prior IC weights are used (i.e., 1/(#hypotheses)).
+  In case the prior IC weights do not sum to 1, they will be rescaled such that they do;
+  the prior IC weights thus reflect the relative a priori likeliness of the hypotheses, and can be seen as
+  prior model 'probabilities'/likeliness.
   Notably, the priorICweights will be used in the determining the (ratios of) IC weights;
-  so, not in the other output, like the IC values but also not the log likelihood weights or penalty weights.}
+  so, not in the other output, like the IC values but also not the log likelihood weights or penalty weights.
+  When the prior IC weights are unequal (i.e., specified by the user), they are shown in the print and 
+  summary output as an extra column (e.g., \code{prior.goric.weights} or \code{prior.gorica.weights}) right 
+  before the IC weights. When CIs are 
+  computed (\code{CI = TRUE}), the CIs of the IC weights and their ratios include the prior IC weights, 
+  those of the IC values do not; hence, conclusions based on these CIs may differ.}
 
   \item{missing}{the default setting for objects of class "lm" is \code{"none"}
   (listwise deletion): all cases with missing values are removed from the data

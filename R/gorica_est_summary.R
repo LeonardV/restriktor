@@ -16,6 +16,21 @@ summary.gorica_est <- function(object, type, ...) {
   wt.bar  <- z$wt.bar
   
   ans     <- z$model.org
+  
+  # number of nuisance parameters (d; parameters of the model that are not in
+  # the estimate vector) and of response variables (q > 1 for estimates of an
+  # mlm), see penalty_goric() (goric_penalty.R). Only the GORICAC depends on
+  # these: the GORICA penalty is the GORIC penalty minus d.
+  n_nuis <- ldots$nr_nuis_param
+  n_resp <- ldots$n_resp
+  if (is.null(n_resp)) n_resp <- 1L
+  if (is.null(n_nuis)) {
+    if (type == "goricac") {
+      stop("\nrestriktor ERROR: the argument 'nr_nuis_param' (number of nuisance ",
+           "parameters) is needed when type = 'goricac'.", call. = FALSE)
+    }
+    n_nuis <- n_resp * (n_resp + 1) / 2
+  }
   ## compute goric
   if (!(attr(wt.bar, "method") == "none")) {  
     ## REF: Kuiper, R.M.; Hoijtink, H.J.A.; Silvapulle, M. J. (2012) 
@@ -25,18 +40,22 @@ summary.gorica_est <- function(object, type, ...) {
                           meq         = meq, 
                           LP          = wt.bar, 
                           correction  = FALSE, 
-                          sample.nobs = NULL)
+                          sample.nobs = NULL,
+                          n_resp      = n_resp,
+                          n_nuis      = n_nuis)
       if (type == "gorica") {
-        PT <- PT - 1
+        PT <- PT - n_nuis
       }
     } else if (type %in% c("goricc", "goricac")) {
       PT <- penalty_goric(Amat        = Amat, 
                           meq         = meq, 
                           LP          = wt.bar, 
                           correction  = TRUE, 
-                          sample.nobs = ldots$sample.nobs)
+                          sample.nobs = ldots$sample.nobs,
+                          n_resp      = n_resp,
+                          n_nuis      = n_nuis)
       if (type == "goricac") {
-        PT <- PT - 1
+        PT <- PT - n_nuis
       }
     } else {
       stop("restriktor ERROR: unable to compute penalty term value.")  

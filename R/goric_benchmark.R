@@ -15,15 +15,11 @@ benchmark <- function(object, model_type = c("asymp", "means"), ...) {
   }
 
   if (model_type == "means") {
-    # Check if the model has an intercept. Since the goric function accepts both
-    # a model/fit or only estimates+VCOV, we cannot rely on the original model fit.
-    # So we only check if the names of the vector with parameter estimates includes
-    # the word \(Intercept\).
-    has_intercept <- detect_intercept(object)
-    if (has_intercept) {
-      stop("\nrestriktor ERROR: A model with an intercept is not allowed for model_type = means. ",
-           "Please refit the model without an intercept.")
-    }
+    # An intercept is allowed when goric() was run on an lm object: the
+    # group means are then derived from the parameters (see
+    # setup_means_benchmark() and group_means()). Without an lm object, the
+    # estimates must be the group means themselves (no intercept); this is
+    # checked in setup_means_benchmark().
     benchmark_means(object, ...)
   } else if (model_type == "asymp") {
     benchmark_asymp(object, ...)
@@ -110,85 +106,28 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   # this caused: a dimension mismatch in benchmark()).
   add_Hc <- object$add_Hc
 
-  # Unrestricted (adjusted) group_means
-  group_means <- object$b.unrestr
-  # number of groups
+  # Group means, group sizes, and the link between the group means and the
+  # parameters: group means = L %*% est. The model may contain an intercept,
+  # multiple factors and/or covariates when goric() was run on an lm object;
+  # see setup_means_benchmark() (goric_benchmark_utilities.R).
+  setup <- setup_means_benchmark(object, group_size = group_size,
+                                 alt_group_size = alt_group_size)
+  est <- setup$est            # parameter estimates (hypotheses are on these)
+  VCOV <- setup$VCOV          # their covariance matrix (based on N, not N-k)
+  L <- setup$L
+  N <- setup$N                # group sizes (alt_group_size, if specified)
+  s2 <- setup$s2              # residual variance per group
+  group_means <- setup$group_means
   ngroups <- length(group_means)
-
-  # original model fit (if exists)
-  form_model_org <- formula(object$model.org)
-
-  
-  # # Number of subjects per group
-  # NOTE: This is needed to rescale vcov based on alt_group_size.
-  #       and also for calculating Cohens f. 
-  fitLM <- object$model.org
-  # multiple factors: full interaction-cell counts, no matter how many factors
-  # or what they're called, using only positional indexing
-  # table() returns an object of class "table" which -- even for a single
-  # factor -- carries a 'dim' attribute (it's a 1-D array, not a plain
-  # vector). Left as-is, N (set to N_lm below whenever the user doesn't
-  # supply group_size) keeps that 'dim' attribute, and R's arithmetic
-  # requires two objects that both have a 'dim' attribute to have matching
-  # dims -- so VCOV * (N - 1) in compute_cohens_f() (VCOV a ngroups x ngroups
-  # matrix, N a length-ngroups "table") fails with "non-conformable arrays",
-  # even though N and VCOV are perfectly conformable as plain vector/matrix.
-  # c() strips the table's 'dim'/'dimnames'/class down to a plain named
-  # vector (keeping the counts and names, i.e. the flattened cell order,
-  # exactly as they were) so N behaves like the ordinary vector it's treated
-  # as everywhere else (the group_size = <scalar> and group_size = <vector>
-  # paths below already produce plain vectors, not tables).
-  N_lm <- c(do.call(table, fitLM$model[-1]))
-  ## marginal group sizes per factor
-  #N_lm <- lapply(fitLM$model[-1], table)
-  ##colSums(model.matrix(object$model.org))
-  if (!is.null(group_size)) { # So, user specified it as input
-    if (length(group_size) == 1) {
-      N <- rep(group_size, ngroups) 
-    } else { # if vector and not scalar
-      if (length(group_size) == ngroups) {
-        N <- group_size
-      } else { # so, length incorrect
-        print(paste0("The argument 'group-size' should be of lenght 1 or of length ", ngroups, 
-                     ". It is currently of length ", length(group_size), ". Namely, it equals: "))
-        print(group_size)
-        stop("\nrestriktor ERROR: The argument 'group-size' should be a scalar 
-             if all groups have the same size (e.g., group_size = 100) or a vector with for each group its group size (e.g., group_size = c(75, 100, 120)).", call. = FALSE)
-      }
-    }
-    # Check whether same as obtained from lm object.
-    if (all(N != N_lm)) {
-      message("\nrestriktor Message: The argument 'group-size' differs from the group sizes retreived from the lm object. The function proceded with the user-specified 'group_size'.", call. = FALSE)
-      print("Notably, based on group_size, N = ")
-      print(N)
-      print("and, based on the lm object, N = ")
-      print(N_lm)
-    }
-  } else { # so, not user specified
-    N <- N_lm
+  if (!is.null(ratio_pop_means) && length(ratio_pop_means) != ngroups) {
+    stop("\nrestriktor ERROR: 'ratio_pop_means' should be of length ", ngroups,
+         " (the number of groups: ", paste(names(group_means), collapse = ", "),
+         ").", call. = FALSE)
   }
-  #stop("\nrestriktor ERROR: please specify the group-size; e.g., group_size = 100.", call. = FALSE)
-  
+  # The sample gorica(c) value must also be adjusted when alt_group_size is
+  # specified; therefore, below, a new goric-object is fitted with est,
+  # VCOV, and (if goricac) N.
 
-  VCOV <- VCOV_orig <- object$VCOV # Is already based on N (so, not N-k)
-  
-  # If alt_group_size specified, adjust VCOV accordingly
-  # Notably, VCOV is based on N not N-k (i.e., sum(N) - ngroups)
-  if (!is.null(alt_group_size)) {
-  
-    if (length(alt_group_size) != 1 && length(alt_group_size) != ngroups) {
-      return(paste0("The argument alt_group_size should be of length 1 or ",
-                    ngroups, " (or NULL) but not of length ", length(alt_group_size), "."))
-    }
-    VCOV <- VCOV_orig * N / alt_group_size
-    N <- alt_group_size
-    #
-    # The sample gorica(c) value must also be adjusted, 
-    # thus we need to fit a new goric-object
-    # with est, VCOV = new VCOV, and (if goricac) N = new N (so alt_group_size).
-  }
-  
-  
   # (re-)calculate gorica(c) if:
   # - goric(c) not yet gorica(c)
   # - if adjusted sample size
@@ -197,11 +136,15 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   # If needed, adjust type from goric(c) to gorica(c)
   type <- switch(object$type,
                  "goric" = {
-                   message("\nrestriktor Message: 'goric' has been converted to 'gorica'.")
+                   message("\nrestriktor Message: 'goric' has been converted to 'gorica': the benchmarks are based on ",
+                           "the estimates and their covariance matrix. For the penalties of the GORIC(A)(C), ",
+                           "see the argument 'type' in ?goric.")
                    "gorica"
                  },
                  "goricc" = {
-                   message("\nrestriktor Message: 'goricc' has been converted to 'goricac'.")
+                   message("\nrestriktor Message: 'goricc' has been converted to 'goricac': the benchmarks are based on ",
+                           "the estimates and their covariance matrix. For the penalties of the GORIC(A)(C), ",
+                           "see the argument 'type' in ?goric.")
                    "goricac"
                  },
                  object$type)
@@ -209,10 +152,12 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   # (re-)calculate gorica(c)
   object <-
     goric(
-      group_means,
+      est,
       CI = FALSE, # no CIs needed for the re-calculated object
       VCOV = VCOV, # based on N not N-k
       sample_nobs = sum(N), # Needed for type = "goricac" - daar genoeg aan sum(N) of moet het juist gehele N hebben?
+      # number of nuisance parameters of the original model (type = "goricac")
+      nr_nuis_param = nr_nuis_param_object(object),
       hypotheses = hypos,
       comparison = object$comparison,
       type = type,
@@ -224,7 +169,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
       Heq = Heq,
       add_Hc = add_Hc,
       # already checked once on the user's original add_Hc fit; see the
-      # NOTE above parallel_function_asymp()'s internal goric() call in
+      # NOTE above parallel_benchmark_draw()'s internal goric() call in
       # goric_benchmark_utilities.R for the full rationale.
       check_add_Hc = FALSE,
       ...
@@ -238,8 +183,8 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   # one-off calculate_error_probability() call below.
   hypos_for_sim <- precompute_hypos_for_simulation(object, hypos, Heq)
 
-  ## Compute observed Cohens f
-  cohens_f_observed <- compute_cohens_f(group_means, N, VCOV)
+  ## Compute observed Cohens f (of the group means)
+  cohens_f_observed <- compute_cohens_f_s2(group_means, N, s2)
 
   # effect size population
   if (is.null(pop_es)) {
@@ -265,10 +210,18 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   es <- pop_es
   nr_es <- length(es)
 
-  #means_pop_all <- compute_population_means(pop_es, ratio_pop_means, var_e, ngroups)
-  means_pop_all <- t(sapply(pop_es, function(x) generate_scaled_means(group_means, target_f = x, N, VCOV)))
-  colnames(means_pop_all) <- colnames(coef(object))
-  rownames(means_pop_all) <- paste0("pop_es = ", pop_es)
+  # Population values of the parameters (used in the simulation) such that
+  # the implied group means have effect size pop_es and the same pattern as
+  # the observed group means; see generate_pop_parameters().
+  est_pop_all <- t(sapply(pop_es, function(x) {
+    generate_pop_parameters(est, L, N, s2, target_f = x,
+                            ratio_pop_means = ratio_pop_means)
+  }))
+  colnames(est_pop_all) <- names(est)
+  rownames(est_pop_all) <- paste0("pop_es = ", pop_es)
+  # implied population group means
+  means_pop_all <- est_pop_all %*% t(L)
+  colnames(means_pop_all) <- names(group_means)
 
   # preferred hypothesis
   pref_hypo <- which.max(object$result[, 7])
@@ -281,11 +234,12 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     names_quant <- c("Sample", paste0(as.character(quant*100), "%"))
   }
 
-  # TO DO dus niet ook goricac (evt type = type?); als default en het dus wel
-  # kan, dan ook 'sample_nobs' nodig toch...
+  # The draws use the same type (gorica or goricac) as the sample value.
   sim <- run_benchmark_simulation(
+    type = type, sample_nobs = sum(N),
+    nr_nuis_param = nr_nuis_param_object(object),
     nr_es = nr_es, rnames = rnames, name_prefix = "pop_es = ",
-    center_matrix = means_pop_all, colnames_vec = names(group_means),
+    center_matrix = est_pop_all, colnames_vec = names(est),
     VCOV = VCOV, hypos = hypos_for_sim, pref_hypo = pref_hypo,
     comparison = object$comparison, control = control,
     mix_weights = mix_weights, penalty_factor = penalty_factor, Heq = Heq,
@@ -324,7 +278,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
 
   # compute error probability
   error_prob <- calculate_error_probability(object, hypos, pref_hypo,
-                                            est = group_means,
+                                            est = est,
                                             VCOV, control, ...)
 
   # residual error variance
@@ -336,13 +290,16 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     type = object$type,
     comparison = object$comparison,
     ngroups = ngroups,
-    group_size = N,
+    group_size = group_size_matrix(N, setup$definitions),
     group_means_observed = group_means,
     #ratio_group_means.data = ratio_data,
     cohens_f_observed = cohens_f_observed,
     #res_var_observed = var_e_data,
     pop_es = pop_es, 
     pop_group_means = means_pop_all,
+    pop_parameters = est_pop_all,
+    group_means_definitions = setup$definitions,
+    continuous_vars = setup$continuous_vars,
     ratio_pop_means = ratio_pop_means,
     #res_var_pop = var_e,
     pref_hypo_name = pref_hypo_name,
@@ -520,7 +477,9 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   # this caused: a dimension mismatch in benchmark()).
   add_Hc <- object$add_Hc
   type <- object$type
-  est_sample <- object$b.unrestr
+  # (for an mlm, the coefficient matrix becomes a named vector, in the order
+  # of VCOV; see mlm_coef_vector())
+  est_sample <- mlm_coef_vector(object$b.unrestr)
   n_coef <- length(est_sample)
   
   if (is.null(pop_est)) {
@@ -603,11 +562,15 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   # modeltype
   type <- switch(object$type,
                  "goric" = {
-                   message("\nrestriktor Message: 'goric' has been converted to 'gorica'.")
+                   message("\nrestriktor Message: 'goric' has been converted to 'gorica': the benchmarks are based on ",
+                           "the estimates and their covariance matrix. For the penalties of the GORIC(A)(C), ",
+                           "see the argument 'type' in ?goric.")
                    "gorica"
                  },
                  "goricc" = {
-                   message("\nrestriktor Message: 'goricc' has been converted to 'goricac'.")
+                   message("\nrestriktor Message: 'goricc' has been converted to 'goricac': the benchmarks are based on ",
+                           "the estimates and their covariance matrix. For the penalties of the GORIC(A)(C), ",
+                           "see the argument 'type' in ?goric.")
                    "goricac"
                  },
                  object$type)
@@ -632,6 +595,8 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     CI = FALSE, # no CIs needed for the re-calculated object
     VCOV = VCOV,
     sample_nobs = N[1], # Needed for type = "goricac"
+    # number of nuisance parameters of the original model (type = "goricac")
+    nr_nuis_param = nr_nuis_param_object(object),
     # TO DO, dit is toch maar een getal en als niet dan ws de sum (iig bij anova wel)
     #sample_nobs = sum(N), # Needed for type = "goricac" - daar genoeg aan sum(N) of moet het juist gehele N hebben?
     hypotheses = hypos,
@@ -644,7 +609,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     Heq = Heq,
     add_Hc = add_Hc,
     # already checked once on the user's original add_Hc fit; see the NOTE
-    # above parallel_function_asymp()'s internal goric() call in
+    # above parallel_benchmark_draw()'s internal goric() call in
     # goric_benchmark_utilities.R for the full rationale.
     check_add_Hc = FALSE,
     ...
@@ -670,7 +635,10 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   
   nr_es  <- nrow(pop_est)
 
+  # The draws use the same type (gorica or goricac) as the sample value.
   sim <- run_benchmark_simulation(
+    type = type, sample_nobs = N[1],
+    nr_nuis_param = nr_nuis_param_object(object),
     nr_es = nr_es, rnames = rnames, name_prefix = "pop_est = ",
     center_matrix = pop_est, colnames_vec = names(est_sample),
     VCOV = VCOV, hypos = hypos_for_sim, pref_hypo = pref_hypo,

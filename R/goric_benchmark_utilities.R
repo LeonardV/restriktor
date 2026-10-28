@@ -205,6 +205,16 @@ combine_matrices_cbind <- function(lst) {
 }
 
 
+# Number of nuisance parameters of a goric object, for the internal goric()
+# re-calculations on its estimates (only used for type = "goricac"). Objects
+# from before 'nr_nuis_param' existed get the then implicit value of 1.
+nr_nuis_param_object <- function(object) {
+  nr <- object$nr_nuis_param
+  if (is.null(nr)) nr <- 1
+  nr
+}
+
+
 # model_type = "means" ----------------------------------------------------
 detect_intercept <- function(model) {
   coefficients <- model$b.unrestr
@@ -223,15 +233,11 @@ detect_intercept <- function(model) {
   }
 }
 
-# Compute Cohen's f based on group_means, N, and VCOV
+# Compute Cohen's f based on group_means, N, and VCOV (with VCOV the
+# covariance matrix of the group means, based on N; so VCOV_jj = s2_j / N_j);
+# see compute_cohens_f_s2() for the formula.
 compute_cohens_f <- function(group_means, N, VCOV) {
-  total_mean <- sum(group_means * N) / sum(N)
-  ss_between <- sum(N * (group_means - total_mean)^2)
-  cov_matrix <- VCOV * (N - 1) # covmx based on N instead of N-1
-  ss_within <- sum(N * diag(cov_matrix)) # equates: summing over i = 1 to N
-  cohens_f <- sqrt(ss_between/ss_within)
-  
-  return(cohens_f)
+  compute_cohens_f_s2(group_means, N, s2 = diag(VCOV) * N)
 }
 
 
@@ -300,6 +306,214 @@ generate_scaled_means <- function(group_means, target_f, N, VCOV) {
   return(new_means)
 }
 
+# General (group-means based) set-up for model_type = "means" ------------------
+#
+# The benchmark for means is defined in terms of the group (cell) means and
+# their effect size (Cohen's f), but the simulation itself is done on the
+# parameters of the model ('est', the ones the hypotheses are specified on).
+# The two are linked by the matrix L: group means = L %*% est.
+#  - For an lm object, L comes from group_means(), so the model may contain an
+#    intercept, multiple factors (with or without interaction) and/or
+#    continuous covariates (set to 0; i.e., adjusted means at 0).
+#  - Otherwise (e.g., goric on estimates + VCOV), the estimates are taken to be
+#    the group means themselves (L = identity); then the group sizes must be
+#    given via 'group_size', and there should be no intercept.
+setup_means_benchmark <- function(object, group_size = NULL,
+                                  alt_group_size = NULL) {
+  est <- object$b.unrestr
+  VCOV <- object$VCOV
+  fit <- object$model.org
+
+  use_lm <- inherits(fit, "lm") && !inherits(fit, "mlm")
+  if (inherits(fit, "mlm") || is.matrix(est)) {
+    stop("\nrestriktor ERROR: model_type = \"means\" is not (yet) available ",
+         "for multivariate models (mlm), since Cohen's f is defined for one ",
+         "outcome. Use model_type = \"asymp\".", call. = FALSE)
+  }
+  if (use_lm && inherits(fit, "glm") && family(fit)$family != "gaussian") {
+    stop("\nrestriktor ERROR: model_type = \"means\" is only available for ",
+         "linear models (or a gaussian glm). Use model_type = \"asymp\".",
+         call. = FALSE)
+  }
+
+  if (use_lm) {
+    gm <- tryCatch(group_means(fit), error = function(e) e)
+    if (inherits(gm, "error")) {
+      stop("\nrestriktor ERROR: model_type = \"means\" requires grouping ",
+           "variables (factors) in the model; none were found. ",
+           "Use model_type = \"asymp\".", call. = FALSE)
+    }
+    L <- gm$L
+    if (ncol(L) != length(est)) {
+      stop("\nrestriktor ERROR: the group means could not be linked to the ",
+           "parameter estimates.", call. = FALSE)
+    }
+    colnames(L) <- names(est)
+    N_lm <- gm$table$n
+    names(N_lm) <- rownames(L)
+    # residual variance (ML, i.e., based on N), in line with VCOV
+    w <- weights(fit)
+    if (is.null(w)) w <- rep(1, length(residuals(fit)))
+    sigma2 <- sum(w * residuals(fit)^2) / length(residuals(fit))
+    cont_vars <- gm$continuous_vars
+    definitions <- gm$table
+  } else {
+    if (detect_intercept(object)) {
+      stop("\nrestriktor ERROR: A model with an intercept is not allowed for ",
+           "model_type = means when no lm object is available. Please refit ",
+           "the model without an intercept or use the lm object in goric().",
+           call. = FALSE)
+    }
+    if (is.null(group_size)) {
+      stop("\nrestriktor ERROR: please specify the group sizes via ",
+           "'group_size' (e.g., group_size = 100).", call. = FALSE)
+    }
+    L <- diag(length(est))
+    dimnames(L) <- list(names(est), names(est))
+    N_lm <- NULL
+    sigma2 <- NULL
+    cont_vars <- character(0)
+    definitions <- NULL
+  }
+  ngroups <- nrow(L)
+
+  # group sizes
+  if (!is.null(group_size)) {
+    if (length(group_size) == 1L) {
+      N <- rep(group_size, ngroups)
+    } else if (length(group_size) == ngroups) {
+      N <- group_size
+    } else {
+      stop("\nrestriktor ERROR: The argument 'group_size' should be a scalar ",
+           "if all groups have the same size (e.g., group_size = 100) or a ",
+           "vector with for each of the ", ngroups, " groups its group size.",
+           call. = FALSE)
+    }
+    if (!is.null(N_lm) && any(N != N_lm)) {
+      message("\nrestriktor Message: The argument 'group_size' differs from ",
+              "the group sizes retrieved from the lm object (",
+              paste(N_lm, collapse = ", "), "). The function proceeds with ",
+              "the user-specified 'group_size'.")
+    }
+  } else {
+    N <- N_lm
+  }
+  names(N) <- rownames(L)
+
+  # per-group residual variance (s2_j), used in Cohen's f
+  if (is.null(sigma2)) {
+    # estimates are the group means: VCOV_jj = s2_j / N_j
+    s2 <- diag(VCOV) * N
+  } else {
+    s2 <- rep(sigma2, ngroups)
+  }
+
+  # alternative group sizes: rescale VCOV (of the parameters)
+  if (!is.null(alt_group_size)) {
+    if (length(alt_group_size) != 1L && length(alt_group_size) != ngroups) {
+      stop("\nrestriktor ERROR: The argument 'alt_group_size' should be of ",
+           "length 1 or ", ngroups, " (or NULL) but not of length ",
+           length(alt_group_size), ".", call. = FALSE)
+    }
+    N_new <- if (length(alt_group_size) == 1L) rep(alt_group_size, ngroups) else alt_group_size
+    ratio <- N_new / N
+    if (isTRUE(all.equal(min(ratio), max(ratio)))) {
+      # all groups change by the same factor
+      VCOV <- VCOV / ratio[1]
+    } else if (!use_lm) {
+      # estimates are the group means: VCOV_jj = s2_j / N_j
+      VCOV <- VCOV * sqrt(outer(N, N) / outer(N_new, N_new))
+    } else if (length(cont_vars) == 0L &&
+               qr(crossprod(L, N * L))$rank == ncol(L)) {
+      # only grouping variables: VCOV = sigma2 * (L' diag(N) L)^{-1}
+      VCOV <- sigma2 * solve(crossprod(L, N_new * L))
+      dimnames(VCOV) <- list(names(est), names(est))
+    } else {
+      stop("\nrestriktor ERROR: for a model with continuous covariates, ",
+           "'alt_group_size' can only change all group sizes by the same ",
+           "factor.", call. = FALSE)
+    }
+    N <- N_new
+    names(N) <- rownames(L)
+  }
+
+  list(est = est, VCOV = VCOV, L = L, N = N, s2 = s2,
+       group_means = drop(L %*% est), continuous_vars = cont_vars,
+       definitions = definitions, from_lm = use_lm)
+}
+
+# Group sizes as a 1 x k matrix with informative column names: the name of
+# the group mean followed by the levels of the grouping variables, e.g.,
+# "mu_12 (supp = OJ, dose = 1)" (if available, else the name only).
+group_size_matrix <- function(N, definitions = NULL) {
+  labs <- names(N)
+  if (!is.null(definitions) && identical(definitions$name, names(N))) {
+    lev_cols <- setdiff(names(definitions), c("name", "definition", "n"))
+    if (length(lev_cols) > 0L) {
+      lev_txt <- apply(definitions[, lev_cols, drop = FALSE], 1, function(z) {
+        paste(lev_cols, "=", trimws(z), collapse = ", ")
+      })
+      labs <- paste0(names(N), " (", lev_txt, ")")
+    }
+  }
+  matrix(as.vector(N), nrow = 1L, dimnames = list("group size", labs))
+}
+
+# Cohen's f of the group means 'mu' with group sizes N and per-group
+# residual variances s2 (based on N, i.e., ML; so s2_j * N_j is the
+# within sum of squares of group j):
+#   f^2 = SSB / SSW = sum_j N_j (mu_j - mu_w)^2 / sum_j N_j s2_j,
+# with mu_w the weighted (by N) mean of the group means. For an lm object,
+# SSW is the residual sum of squares (RSS).
+compute_cohens_f_s2 <- function(mu, N, s2) {
+  mu_w <- sum(N * mu) / sum(N)
+  ss_between <- sum(N * (mu - mu_w)^2)
+  ss_within <- sum(N * s2)
+  sqrt(ss_between / ss_within)
+}
+
+# Population parameter values such that the implied group means have
+# effect size target_f, while keeping the pattern of the observed group
+# means (or of ratio_pop_means, if specified):
+#   mu_pop = mu_w + c * (pattern - mean_w(pattern)), c = target_f / f_pattern
+# (f is linear in c), with mu_w the weighted mean of the observed group means.
+# The parameters are changed along the minimal-norm direction that yields
+# mu_pop, so parameters that do not enter the group means (e.g., of
+# covariates) are left at their estimates.
+generate_pop_parameters <- function(est, L, N, s2, target_f,
+                                    ratio_pop_means = NULL) {
+  mu <- drop(L %*% est)
+  mu_w <- sum(N * mu) / sum(N)
+  # pattern of the population group means: the observed one, or the one
+  # given by the user via ratio_pop_means
+  pattern <- if (is.null(ratio_pop_means)) mu else ratio_pop_means
+  pattern_c <- pattern - sum(N * pattern) / sum(N)
+  f_pattern <- compute_cohens_f_s2(pattern, N, s2)
+  if (target_f == 0) {
+    cc <- 0
+  } else {
+    if (f_pattern == 0) {
+      stop("\nrestriktor ERROR: the (observed or specified) group means are ",
+           "all equal, so they cannot be scaled to a population effect size ",
+           "> 0.", call. = FALSE)
+    }
+    cc <- target_f / f_pattern
+  }
+  mu_pop <- mu_w + cc * pattern_c
+  # parameters: minimal-norm change in the direction of the group means
+  delta <- drop(MASS::ginv(L) %*% (mu_pop - mu))
+  if (max(abs(L %*% delta - (mu_pop - mu))) > 1e-8 * max(1, abs(mu))) {
+    stop("\nrestriktor ERROR: these population group means cannot be ",
+         "represented by the model (e.g., a main-effects model cannot ",
+         "represent every pattern of cell means, or the model has no ",
+         "intercept nor full coding of a factor).", call. = FALSE)
+  }
+  out <- est + delta
+  names(out) <- names(est)
+  out
+}
+
+
 # Compute the population means based on the input parameters
 # compute_population_means <- function(pop_es, ratio_pop_means, var_e, ngroups) {
 #   means_pop_all <- matrix(NA, ncol = ngroups, nrow = length(pop_es))
@@ -327,105 +541,14 @@ generate_scaled_means <- function(group_means, target_f, N, VCOV) {
 #   return(means_pop_all)  
 # }
 
-# this function is called from the goric_benchmark_anova() function
-parallel_function_means <- function(i, N, var_e, means_pop,
-                                    hypos, pref_hypo, comparison, ngroups, sample,
-                                    control, form_model_org, mix_weights,
-                                    penalty_factor, ...) {
+# One benchmark draw (both model_type = "means" and "asymp") ---------------
 
-  # Sample residuals
-  #epsilon <- rnorm(sum(N), sd = sqrt(var_e/sum(N)))
-  # TO DO ws delete:
-  #VCOV <- diag(ngroups)
-  #diag(VCOV) <- var_e
-  # TO DO bovenstaande neemt nu gelijke varianties, wat niet klopt als ongelijke groepsgroottes
-  # TO DO deze functie wordt denk ik niet meer gebruikt...
-  VCOV <- diag(var_e, ngroups) * N[1]/N
-  est <- as.vector(mvtnorm::rmvnorm(n = 1, mean = means_pop, sigma = VCOV))
-  names(est) <- names(means_pop)
-
-  # original model formula
-  # if (length(form_model_org) > 0) {
-  #   model <- form_model_org
-  #   lhs <- all.vars(model)[1]
-  #   sample[[lhs]] <- as.matrix(sample[, 2:(1 + ngroups)]) %*% matrix(means_pop,
-  #                                                                    nrow = ngroups) + epsilon
-  #   df_boot <- data.frame(lhs = sample[[lhs]], sample[, 2:(1 + ngroups)])
-  #   colnames(df_boot)[1] <- lhs
-  #
-  #   has_intercept <- attr(terms(model), "intercept") == 1
-  #   rhs <- as.character(attr(terms(model), "term.labels"))
-  #
-  #   # Create the RHS with all other variables and optionally the intercept
-  #   if (has_intercept) {
-  #     new_rhs <- "."
-  #   } else {
-  #     new_rhs <- "-1 + ."
-  #   }
-  #
-  #   # Create the new formula
-  #   new_model <- as.formula(paste(lhs, "~", new_rhs))
-  # } else {
-  #   new_model <- y ~ 0 + .
-  #   # Generate data
-  #   sample$y <- as.matrix(sample[, 2:(1 + ngroups)]) %*% matrix(means_pop,
-  #                                                               nrow = ngroups) + epsilon
-  #   df_boot <- data.frame(y = sample$y, sample[, 2:(1 + ngroups)])
-  # }
-
-
-  # Obtain fit
-  #fit_boot <- lm(new_model, data = df_boot)
-
-  results_goric <- tryCatch(
-    {
-      # Voer de goric functie uit
-      goric(est,
-            VCOV = VCOV,
-            hypotheses = hypos,
-            CI = FALSE, # no CIs needed for the simulated draws
-            comparison = comparison,
-            type = "gorica", # TO DO goricac ergens ook (als origineel dan goricc ws)?
-            control = control,
-            mix_weights = mix_weights,
-            ...)
-    },
-    error = function(e) {
-      # error message
-      message(paste("\nrestriktor ERROR: Error in iteration", i, ":", e$message))
-      return(NULL)
-    },
-    warning = function(w) {
-      # warning message
-      message(paste("\nrestriktor WARNING: Warning in iteration", i, ":", w$message))
-      return(NULL)
-    }
-  )
-
-  if (is.null(results_goric)) {
-    return(NULL)
-  }
-
-  # Return the relevant results
-  ld_names <- names(results_goric$ratio.gw[pref_hypo, ])
-  ld <- results_goric$result$loglik[pref_hypo] - results_goric$result$loglik
-  names(ld) <- ld_names
-
-  list(
-    #test  = attr(results.goric$objectList[[results.goric$objectNames]]$wt.bar, "mvtnorm"),
-    gw  = results_goric$result[pref_hypo, 7], # goric(a) weight
-    lw  = results_goric$result$loglik.weights[pref_hypo], # (unpenalized) log-likelihood weight
-    rgw = results_goric$ratio.gw[pref_hypo, ], # ratio goric(a) weights
-    rlw = results_goric$ratio.lw[pref_hypo, ], # ratio log-likelihood weights
-    ld  = ld # loglik difference
-  )
-}
-
-
-# model_type = "asymp" ----------------------------------------------------
-
-# this function is called from the benchmark_asymp() function
-parallel_function_asymp <- function(i, est, VCOV, hypos, pref_hypo, comparison,
+# Computes the GORIC(A) results of the preferred hypothesis for one simulated
+# estimate vector (row i of 'est', drawn in run_benchmark_simulation() from
+# N(population values, VCOV)); the draws are run in parallel there (via
+# future_lapply()). The two model types only differ in how the population
+# values are chosen (effect sizes of the group means vs. pop_est).
+parallel_benchmark_draw <- function(i, est, VCOV, hypos, pref_hypo, comparison,
                                     type, control, mix_weights, penalty_factor, ...) {  
   results_goric <- tryCatch(
     {
@@ -1324,7 +1447,7 @@ goric_percentile_test <- function(draws, sample_value, band = c(0.495, 0.505),
 
 # Builds the 'hypotheses' argument used for the PER-DRAW goric() calls
 # inside the benchmark Monte Carlo loop (run_benchmark_simulation() ->
-# parallel_function_asymp()), instead of just reusing 'hypos' (the
+# parallel_benchmark_draw()), instead of just reusing 'hypos' (the
 # constraint-syntax TEXT, i.e. object$hypotheses_usr) as-is.
 #
 # Background: every one of those per-draw goric() calls re-evaluates the
@@ -1420,7 +1543,7 @@ precompute_hypos_for_simulation <- function(object, hypos, Heq) {
 # function does not, to avoid messaging twice).
 #
 # NOTE: the 'hypos' argument this function forwards into
-# parallel_function_asymp() on every draw should normally be the PRE-PARSED
+# parallel_benchmark_draw() on every draw should normally be the PRE-PARSED
 # form built by precompute_hypos_for_simulation() above, not raw
 # constraint-syntax text -- see that function's comment for why.
 #
@@ -1437,7 +1560,19 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
                                      es_labels = rnames,
                                      iter_min = 500, iter_step = 100,
                                      iter_max = 2000, band = c(0.495, 0.505),
-                                     stability_tol = 1, ...) {
+                                     stability_tol = 1,
+                                     type = "gorica", sample_nobs = NULL,
+                                     nr_nuis_param = NULL, ...) {
+
+  # The draws use the same type as the sample value (the re-calculated
+  # 'object'): "gorica", or "goricac" (then also with the same sample size and
+  # number of nuisance parameters), such that the sample value and the
+  # benchmark distributions are based on the same penalty.
+  extra_goricac <- if (identical(type, "goricac")) {
+    list(sample_nobs = sample_nobs, nr_nuis_param = nr_nuis_param)
+  } else {
+    list()
+  }
 
   auto_iter <- is.null(iter)
   sample_gw <- object$result[pref_hypo, 7]
@@ -1485,13 +1620,15 @@ run_benchmark_simulation <- function(nr_es, rnames, name_prefix, center_matrix,
         # Wrapper function for future_lapply
         wrapper_function_asymp <- function(i) {
           p() # Update progress
-          parallel_function_asymp(i,
-                                  est = est_full, VCOV = VCOV,
-                                  hypos = hypos, pref_hypo = pref_hypo,
-                                  comparison = comparison, type = "gorica",
-                                  control = control, mix_weights = mix_weights,
-                                  penalty_factor = penalty_factor,
-                                  Heq = Heq, ...)
+          do.call(parallel_benchmark_draw,
+                  c(list(i,
+                         est = est_full, VCOV = VCOV,
+                         hypos = hypos, pref_hypo = pref_hypo,
+                         comparison = comparison, type = type,
+                         control = control, mix_weights = mix_weights,
+                         penalty_factor = penalty_factor,
+                         Heq = Heq),
+                    extra_goricac, list(...)))
         }
 
         new_results <- future_lapply(

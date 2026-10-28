@@ -1,16 +1,70 @@
-## compute asymptotic and small sample penalty term value for the goric(a)
+## Penalty terms of the GORIC(A)(C) ------------------------------------------
+##
+## Notation: N = sample size (number of subjects), l = number of free
+## (regression) parameters in the estimate vector (averaged over with the
+## level probabilities LP_l), d = number of nuisance parameters (parameters of
+## the model that are not in the estimate vector, e.g., (co)variances, or
+## coefficients that are left out of 'est'), K_l = l + d, and, for a
+## multivariate regression (mlm), q = number of response variables (then
+## d = q(q+1)/2).
+##
+##   GORIC  : sum_l LP_l * K_l                         (= d + sum_l LP_l * l)
+##   GORICC : sum_l LP_l * N K_l / (N - K_l - 1)
+##            (mlm: sum_l LP_l * N K_l / (N - l/q - q - 1); Bedrick and Tsai,
+##            1994, Biometrics, 50, 226-231)
+##   GORICA : sum_l LP_l * l                           (= GORIC - d)
+##   GORICAC: sum_l LP_l * [N K_l / (N - K_l - 1) - d] (= GORICC - d)
+##
+## For a univariate regression (d = 1), the GORICC term is the usual
+## N (l + 1) / (N - l - 2). The GORICA(C) penalties are obtained by
+## subtracting d from the GORIC(C) penalties (in the callers): then the
+## nuisance parameters do not count asymptotically, but they do affect the
+## small sample correction (via K_l).
+
+# small sample (AICc-type) penalty for f free parameters, d nuisance
+# parameters, and q responses (q > 1: multivariate regression, mlm)
+small_sample_PT <- function(f, N, n_nuis = 1, n_resp = 1L) {
+  if (n_resp > 1L) {
+    N * (f + n_nuis) / (N - f / n_resp - n_resp - 1)
+  } else if (n_nuis == 1) {
+    N * (f + 1) / (N - f - 2) # the usual expression (univariate regression)
+  } else {
+    N * (f + n_nuis) / (N - f - n_nuis - 1)
+  }
+}
+
+# number of nuisance parameters (d) and responses (q) of a fitted restriktor
+# object (lm, mlm, rlm, glm): the (co)variance/dispersion parameters, since
+# all regression coefficients are in the estimate vector.
+nuisance_info_restriktor <- function(z) {
+  if (inherits(z, "conMLM")) {
+    q <- NCOL(residuals(z$model.org))
+    list(n_nuis = q * (q + 1) / 2, n_resp = q)
+  } else if (inherits(z, "conGLM")) {
+    has_disp <- z$model.org$family$family %in% c("gaussian", "Gamma", "inverse.gaussian")
+    list(n_nuis = as.numeric(has_disp), n_resp = 1L)
+  } else {
+    list(n_nuis = 1, n_resp = 1L)
+  }
+}
+
+## compute the penalty term value of the GORIC(C) (see above); the callers
+## subtract n_nuis for the GORICA(C).
 penalty_goric <- function(Amat, meq, LP, correction = FALSE, 
-                          sample.nobs = NULL, ...) {
+                          sample.nobs = NULL, n_resp = 1L, n_nuis = NULL, ...) {
 
   num_cols <- ncol(Amat)
   method <- attr(LP, "method")
+  if (is.null(n_nuis)) {
+    n_nuis <- n_resp * (n_resp + 1) / 2 # (co)variance parameters
+  }
   
   compute_PT <- function(lPT_values) {
     if (correction) {
       N <- sample.nobs
-      return(sum(((N * (lPT_values + 1) / (N - lPT_values - 2))) * LP))
+      return(sum(small_sample_PT(lPT_values, N, n_nuis, n_resp) * LP))
     } else {
-      return(1 + sum(lPT_values * LP))
+      return(n_nuis + sum(lPT_values * LP))
     }
   }
   
@@ -69,46 +123,49 @@ penalty_goric <- function(Amat, meq, LP, correction = FALSE,
 
 
 penalty_complement_goric <- function(Amat, meq, type, wt.bar, 
-                                     sample.nobs = NULL, debug = FALSE) {
+                                     sample.nobs = NULL, debug = FALSE,
+                                     n_resp = 1L, n_nuis = NULL) {
+  # n_nuis: number of nuisance parameters (d); n_resp: number of response
+  # variables (q > 1 for an mlm); see penalty_goric()
+  if (is.null(n_nuis)) {
+    n_nuis <- n_resp * (n_resp + 1) / 2
+  }
   # compute the number of free parameters f in the complement
   p <- ncol(Amat)
   # rank q1
   #lq1 <- qr(Amat.ciq)$rank
   lq1 <- qr(Amat)$rank - meq
   
-  # compute penalty term value PTc
+  idx <- length(wt.bar)
+  if (attr(wt.bar, "method") == "boot") {
+    w_c <- wt.bar[idx-meq]
+  } else if (attr(wt.bar, "method") == "pmvnorm") {
+    w_c <- wt.bar[idx]
+  } else {
+    stop("restriktor ERROR: no level probabilities (chi-bar-square weights) found.")
+  }
+  
+  # compute penalty term value PTc (of the GORIC(C))
   if (type %in% c("goric", "gorica")) {
-    idx <- length(wt.bar)
-    if (attr(wt.bar, "method") == "boot") {
-      PTc <- as.numeric(1 + p - wt.bar[idx-meq] * lq1)  
-    } else if (attr(wt.bar, "method") == "pmvnorm") {
-      PTc <- as.numeric(1 + p - wt.bar[idx] * lq1) 
-    } else {
-      stop("restriktor ERROR: no level probabilities (chi-bar-square weights) found.")
-    }
+    PTc <- as.numeric(n_nuis + p - w_c * lq1)
   } else if (type %in% c("goricc", "goricac")) {
-    idx <- length(wt.bar) 
     if (is.null(sample.nobs)) {
       stop("restriktor ERROR: the argument sample.nobs is not found.")
     }
     N <- sample.nobs
-    # small sample correction
-    if (attr(wt.bar, "method") == "boot") {
-      PTc <- 1 + wt.bar[idx-meq] * (N * (p - lq1) + (p - lq1) + 2) / (N - (p - lq1) - 2) + 
-        (1 - wt.bar[idx-meq]) * (N * p + p + 2) / (N - p - 2)
-    } else if (attr(wt.bar, "method") == "pmvnorm") {
-      PTc <- 1 + wt.bar[idx] * (N * (p - lq1) + (p - lq1) + 2) / (N - (p - lq1) - 2) + 
-        (1 - wt.bar[idx]) * (N * p + p + 2) / (N - p - 2) 
-    } 
+    # small sample correction: mixture of the penalty with p - lq1 and with
+    # p free parameters
+    PTc <- as.numeric(w_c * small_sample_PT(p - lq1, N, n_nuis, n_resp) +
+                        (1 - w_c) * small_sample_PT(p, N, n_nuis, n_resp))
   }
   
   if (debug) {
     cat("penalty term value =", PTc, "\n")
   }
   
-  # correction for gorica(c): -1 because no 
+  # gorica(c): the nuisance parameters are not counted (asymptotically)
   if (type %in% c("gorica", "goricac")) {
-    PTc <- PTc - 1
+    PTc <- PTc - n_nuis
   }
   
   return(PTc)

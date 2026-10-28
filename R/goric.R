@@ -9,6 +9,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
                           add_Hc = NULL,
                           check_add_Hc = TRUE, # set to FALSE only from within goric_benchmark.R / goric_benchmark_utilities.R.
                           priorICweights = NULL,
+                          nr_nuis_param = NULL,
                           posthoc = TRUE, # currently not used; see the TO DO (posthoc) below
                           CI = FALSE, CI_level = 0.95, CI_B = 1000L,
                           control = list(), debug = FALSE) {
@@ -267,48 +268,29 @@ goric.default <- function(object, ..., hypotheses = NULL,
   # create output list
   ans <- list()
   
+  # number of nuisance parameters (only needed for type = "goricac" when
+  # estimates are the input; for a fitted model it is derived from the model).
+  # Internally (e.g., from benchmark()), it may carry the number of response
+  # variables of an mlm as attribute "n_resp".
+  if (!is.null(nr_nuis_param)) {
+    if (!is.numeric(nr_nuis_param) || length(nr_nuis_param) != 1L ||
+        is.na(nr_nuis_param) || nr_nuis_param < 0) {
+      stop("\nrestriktor ERROR: 'nr_nuis_param' must be a single number >= 0.",
+           call. = FALSE)
+    }
+  }
+  nr_nuis_n_resp <- attr(nr_nuis_param, "n_resp")
+  if (is.null(nr_nuis_n_resp)) nr_nuis_n_resp <- 1L
+  
   object_class <- class(object)
   
   if (any(object_class %in% c("aov","lm","rlm","glm","mlm")) && isConChar) { 
-    # TO DO in mlm geeft coef() een matrix, je moet dan as.vector doen (coef.named.vector(...)).
-    #       Maakt dat in dit deel nog uit? Ik zie het niet, graag ff checken of dat klopt.
-    #       Dan ook in volgende 'if' evt.
-    # TO DO voor mlm krijg je  namen die niet werken in goric... Hoe dat aanpassen?
-    # TO DO maak geschikt voor mlm!
-    #class(fit)
-    #[1] "mlm" "lm" 
-    #c(coef(fit)) # per DV de param
-    #c(t(coef(fit))) # per param de waardes voor de DVs
-    #vcov(fit) # per DV de param
-    #
-    #
-    # TO DO CHECK
-    # als lm en dan multivariate (dus cbind(Y1, Y2) ~ x1 + x2 oid)
-    # Dan werkt het volgens mij niet. Dat is trouwens dan ook mlm!
-    # Komt iig door naamgeving van parameters 
-    # (dan ook geen vector van estimates met coef() en dus gorica ook niet makkelijk)
-    # Als we namen zouden toestaan (evt iets aangepast zoals bij intercept en interactie),
-    # zou het dan wel werken? Kortom, multivar wel ingebouwd? (goric wel voor afgeleid...)
-    # We kunnen as.vector doen en dan met als namen de predictoren dan een "." en dan de DV namen.
-    #a <- rownames(coef(fit1.lm.mv))
-    #b <- colnames(coef(fit1.lm.mv))
-    #paste0(a, ".", rep(b, each = length(a)))
-    # of ws logischer: de namen van vcov:
-    #rownames(vcov(fit1.lm.mv))
-    # Dat gebruikt dan eerst DV dan een : (maar die kan dan ws niet...) en dan predictor naam.
-    #
-    #
-    # stop("'logLik.lm' does not support multiple responses")
-    # goric_compute_loglik_complement.R#26
-    # Zie ook comments daar.
-    #
-    # 
-    # TO DO check sample_nobs en N, moet bij iig mlm dan
-    # aantal DVs keer zijn (of de ander juist niet)
-    #
-    #
-    # Ondertussen een error, maar die ms al door andere code-wijzigingen komt:
-    #Error in fBody[[i]] : no such index at level 2
+    # mlm (multivariate lm): the coefficient matrix is turned into a named
+    # vector where needed (see mlm_coef_vector()), with the names of
+    # vcov(object) and ':' replaced by '.' (e.g., 'y1.x1', 'y1..Intercept.');
+    # the log-likelihood is computed with con_loglik_lm() (see
+    # loglik_unrestr_lm()), and the penalties count the q(q+1)/2 residual
+    # (co)variances (see penalty_goric()).
     
     
     # standard errors are not needed
@@ -424,6 +406,15 @@ goric.default <- function(object, ..., hypotheses = NULL,
     } else if (type %in% c("goricac")) {
       sample_nobs <- check_sample_nobs(sample_nobs) # take sum in case of group sizes
     }
+    if (is.null(nr_nuis_param) && type %in% c("goricac")) {
+      stop(paste("\nrestriktor ERROR: the argument nr_nuis_param is not found,",
+                 "which is needed when type = 'goricac' and estimates (and their",
+                 "covariance matrix) are the input. It is the number of nuisance",
+                 "parameters: the parameters in the model that are not in the",
+                 "estimate vector (e.g., the residual variance, other variance",
+                 "components, or regression coefficients that are not included)."),
+           call. = FALSE)
+    }
     
     # fit restriktor object for each hypothesis
     conList <- lapply(constraints, function(constraint) {
@@ -442,7 +433,9 @@ goric.default <- function(object, ..., hypotheses = NULL,
                                                      type           = type,
                                                      sample.nobs    = sample_nobs,
                                                      penalty_factor = penalty_factor,
-                                                     priorICweights   = priorICweights)) 
+                                                     priorICweights   = priorICweights,
+                                                     nr_nuis_param  = as.vector(nr_nuis_param),
+                                                     n_resp         = nr_nuis_n_resp)) 
   } else if ("numeric" %in% object_class && !isConChar) {
     
     if (is.null(sample_nobs) && type %in% c("goricac")) {
@@ -450,6 +443,15 @@ goric.default <- function(object, ..., hypotheses = NULL,
                  "which is needed when type = 'goricac'."), call. = FALSE)
     } else if (type %in% c("goricac")) {
       sample_nobs <- check_sample_nobs(sample_nobs) # take sum in case of group sizes
+    }
+    if (is.null(nr_nuis_param) && type %in% c("goricac")) {
+      stop(paste("\nrestriktor ERROR: the argument nr_nuis_param is not found,",
+                 "which is needed when type = 'goricac' and estimates (and their",
+                 "covariance matrix) are the input. It is the number of nuisance",
+                 "parameters: the parameters in the model that are not in the",
+                 "estimate vector (e.g., the residual variance, other variance",
+                 "components, or regression coefficients that are not included)."),
+           call. = FALSE)
     }
     
     # tolower names Amat and rhs
@@ -486,7 +488,9 @@ goric.default <- function(object, ..., hypotheses = NULL,
                                                      type           = type,
                                                      sample.nobs    = sample_nobs,
                                                      penalty_factor = penalty_factor,
-                                                     priorICweights   = priorICweights)) 
+                                                     priorICweights   = priorICweights,
+                                                     nr_nuis_param  = as.vector(nr_nuis_param),
+                                                     n_resp         = nr_nuis_n_resp)) 
   } else {
     stop("\nrestriktor ERROR: I don't know how to handle an object of class ", paste0(class(object)[1]))
   }
@@ -522,17 +526,29 @@ goric.default <- function(object, ..., hypotheses = NULL,
   
   names(conList) <- objectnames
 
-  # GLMs without a dispersion parameter (e.g., poisson, binomial) have no
-  # variance parameter. In summary.restriktor() (restriktor_summary.R), the
-  # GORIC(C) penalty of the hypotheses is therefore lowered by 1 for these
-  # families. The same must be done for the penalty of the unconstrained
-  # hypothesis (PTu) and of the complement (PTc) below; otherwise these are
-  # penalized for a variance parameter that the model does not have.
-  # For the GORICA(C), the 1 (for the variance) is already subtracted for all
-  # models, so nothing extra is needed then.
-  glm_no_dispersion <- inherits(conList[[1]], "conGLM") &&
-    !(ans$model.org$family$family %in% c("gaussian", "Gamma", "inverse.gaussian")) &&
-    type %in% c("goric", "goricc")
+  # Number of nuisance parameters (d) and of response variables (q) for the
+  # penalties of the complement and the unconstrained hypothesis (those of the
+  # hypotheses are computed in summary()); see penalty_goric()
+  # (goric_penalty.R): the GORIC(C) penalty counts d (e.g., the variance;
+  # none for a binomial or poisson glm; q(q+1)/2 for an mlm), and the
+  # GORICA(C) penalty is the GORIC(C) penalty minus d.
+  if (inherits(conList[[1]], "restriktor")) {
+    if (!is.null(nr_nuis_param)) {
+      message("\nrestriktor Message: the argument 'nr_nuis_param' is ignored, since ",
+              "the number of nuisance parameters is derived from the fitted model.")
+    }
+    nuis <- nuisance_info_restriktor(conList[[1]])
+  } else {
+    n_nuis_est <- if (is.null(nr_nuis_param)) {
+      nr_nuis_n_resp * (nr_nuis_n_resp + 1) / 2
+    } else {
+      as.vector(nr_nuis_param)
+    }
+    nuis <- list(n_nuis = n_nuis_est, n_resp = nr_nuis_n_resp)
+  }
+  n_nuis_pt <- nuis$n_nuis
+  n_resp_pt <- nuis$n_resp
+  ans$nr_nuis_param <- structure(n_nuis_pt, n_resp = n_resp_pt)
 
 # compute complement ------------------------------------------------------
   df.c <- NULL
@@ -610,10 +626,9 @@ goric.default <- function(object, ..., hypotheses = NULL,
                                   meq  = conList[[Hm]]$PT_meq, 
                                   type, wt.bar, 
                                   debug = debug, 
-                                  sample.nobs = sample_nobs)
-  if (glm_no_dispersion) {
-    PTc <- PTc - 1 # no variance parameter; see 'glm_no_dispersion' above
-  }
+                                  sample.nobs = sample_nobs,
+                                  n_resp = n_resp_pt,
+                                  n_nuis = n_nuis_pt)
   }
    
   
@@ -645,7 +660,8 @@ goric.default <- function(object, ..., hypotheses = NULL,
                 # observed-data log-likelihood of the unrestricted (saturated) model
                 llu <- conList[[1]]$fiml$loglik.unrestr
               } else {
-                llu <- logLik(ans$model.org)
+                # (logLik.lm does not support multiple responses (mlm))
+                llu <- loglik_unrestr_lm(ans$model.org)
               }
             } else if (type %in% c("gorica", "goricac")) {
                 llm <- unlist(lapply(conList, function(x) { 
@@ -659,7 +675,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
             }
             
             if (type %in% c("goric", "gorica")) {
-              PTu <- 1 + ncol(VCOV)
+              PTu <- n_nuis_pt + ncol(VCOV)
             } else if (type %in% c("goricc", "goricac")) {
               
               if (is.null(sample_nobs)) {
@@ -670,16 +686,12 @@ goric.default <- function(object, ..., hypotheses = NULL,
               }
               N <- sample_nobs
               # unconstrained penalty
-              PTu <- ( (N * (ncol(VCOV) + 1) / (N - ncol(VCOV) - 2) ) ) 
+              PTu <- small_sample_PT(ncol(VCOV), N, n_nuis_pt, n_resp_pt)
             }
             
-            ## correct PT for gorica(c)
+            ## gorica(c): the nuisance parameters are not counted (asymptotically)
             if (type %in% c("gorica", "goricac")) {
-              PTu <- PTu - 1
-            }
-            ## correct PT for GLMs without a variance parameter (goric(c) only)
-            if (glm_no_dispersion) {
-              PTu <- PTu - 1 # see 'glm_no_dispersion' above
+              PTu <- PTu - n_nuis_pt
             }
             
             if (is.null(PTm)) {
@@ -792,17 +804,19 @@ goric.default <- function(object, ..., hypotheses = NULL,
  
   
   # list all object estimates
-  coefs_list <- lapply(conList, function(x) coef(x, which = "restr"))
-  # # TO DO mlm:
-  # if ("conMLM" %in% class(conList[[1]])) {
-  #   coefs_list <- lapply(coefs_list, function(x) {
-  #     est_vec <- as.vector(x)
-  #     # TO DO geef namen, maar nu hier vcov niet bekend....
-  #     names(est_vec) <- rownames(vcov(conList[[1]]))
-  #     return(est_vec)
-  #   }
-  #   )
-  # } 
+  # (for mlm, the coefficient matrices are turned into named vectors, with
+  # the same names as used in the hypotheses; see mlm_coef_vector())
+  coefs_list <- lapply(conList, function(x) {
+    if (inherits(x, "conMLM")) {
+      b <- mlm_coef_vector(x$b.restr)
+      if (is.function(x$CON$def.function) && !is.null(body(x$CON$def.function))) {
+        b <- c(b, x$CON$def.function(b))
+      }
+      b
+    } else {
+      coef(x, which = "restr")
+    }
+  })
   coefs <- list_to_df_rows(coefs_list) 
   
   if (comparison == "complement") {
@@ -825,6 +839,7 @@ goric.default <- function(object, ..., hypotheses = NULL,
     # def.function is always a function, never NULL).
     if (is.function(conList[[1]]$CON$def.function) &&
         !is.null(body(conList[[1]]$CON$def.function))) {
+      betasc <- mlm_coef_vector(betasc)
       betasc_def <- conList[[1]]$CON$def.function(betasc)
       one_vec <- betasc
       one_vec <- one_vec[!duplicated(names(one_vec))]
@@ -839,14 +854,14 @@ goric.default <- function(object, ..., hypotheses = NULL,
       # values whenever the two disagree.
       coefs <- rbind_named_row(coefs, one_vec_full)
     } else {
-      one_vec <- betasc
+      one_vec <- mlm_coef_vector(betasc)
       one_vec <- one_vec[!duplicated(names(one_vec))]
       one_vec_full <- c(one_vec, rep(NA_real_, ncol(coefs) - length(one_vec)))
       coefs <- rbind_named_row(coefs, one_vec_full)
     }
     rownames(coefs) <- c(objectnames, "complement")
   } else if (comparison == "unconstrained") {
-    b_unrestr <- conList[[1]]$b.unrestr
+    b_unrestr <- mlm_coef_vector(conList[[1]]$b.unrestr)
     # See the matching comment above (comparison == "complement" branch)
     # for why is.function(...) must be checked before body(...): x$CON is
     # NULL for an already-parsed (non-character) hypothesis, and body(NULL)
@@ -858,7 +873,12 @@ goric.default <- function(object, ..., hypotheses = NULL,
     one_vec <- one_vec[!duplicated(names(one_vec))]
 
     if (any(exists_def)) {
-      betas_unc_def <- sapply(conList[exists_def], FUN = function(x) x$CON$def.function(b_unrestr))
+      # lapply + unlist (not sapply): sapply returns a matrix (or a list,
+      # when the hypotheses define different numbers of ':=' parameters),
+      # which loses the names of the defined parameters and then
+      # misaligns/breaks rbind_named_row() below.
+      betas_unc_def <- unlist(unname(lapply(conList[exists_def], FUN = function(x) x$CON$def.function(b_unrestr))))
+      betas_unc_def <- betas_unc_def[!duplicated(names(betas_unc_def))]
       one_vec_full <- c(one_vec, betas_unc_def)
       coefs <- rbind_named_row(coefs, one_vec_full)
     } else {
@@ -905,7 +925,10 @@ goric.default <- function(object, ..., hypotheses = NULL,
                                 # above) that goric.default()'s own
                                 # 'allowed' argument whitelist would reject
                                 # if forwarded back into it recursively.
-                                ldots = list(...))
+                                # (nr_nuis_param is a formal argument, so it
+                                # is not in '...'; it is passed on explicitly)
+                                ldots = c(list(...),
+                                          list(nr_nuis_param = nr_nuis_param)))
   }
 
   # Assign class based on type\
@@ -1053,9 +1076,14 @@ goric.lm <- function(object, ..., hypotheses = NULL,
     objectList$missing     <- NULL
     objectList$auxiliary   <- NULL
     if (is.null(objectList$sample_nobs)) {
-      objectList$sample_nobs <- length(residuals(object))
+      # NROW (not length): for an mlm, residuals() is an N x q matrix
+      objectList$sample_nobs <- NROW(residuals(object))
     }
   }
+  # group means (e.g., 'mu_12') used in the hypotheses: add their
+  # definitions in terms of the lm parameters; see group_means()
+  hypotheses <- expand_group_means_lm(object, hypotheses)
+
     objectList$hypotheses  <- hypotheses
     objectList$comparison  <- comparison
     objectList$type        <- type
@@ -1151,6 +1179,18 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
   # Voeg extra argumenten toe aan de objectList
   extraArgs <- list(...)
   objectList <- c(objectList, extraArgs)
+
+  # number of nuisance parameters (needed for type = "goricac"), unless
+  # specified by the user; see penalty_goric() (goric_penalty.R)
+  objectList <- add_nr_nuis_param(objectList, type, function() {
+    # free parameters of the model that are not involved in the hypotheses
+    # (defined parameters (:=) are not free parameters)
+    pt <- parTable(object)
+    free_labels <- unique(c(pt$label[pt$free > 0L & pt$label != ""],
+                            pt$plabel[pt$free > 0L]))
+    n_involved_free <- sum(names(est$estimate)[involved] %in% free_labels)
+    max(0, lavInspect(object, what = "npar") - n_involved_free)
+  })
   
   # Roep de goric.default functie aan met de samengestelde lijst
   res <- do.call(goric.default, objectList)
@@ -1243,6 +1283,15 @@ goric.rma <- function(object, ..., hypotheses = NULL,
   # Voeg extra argumenten toe aan de objectList
   extraArgs <- list(...)
   objectList <- c(objectList, extraArgs)
+
+  # number of nuisance parameters (needed for type = "goricac"), unless
+  # specified by the user; see penalty_goric() (goric_penalty.R)
+  objectList <- add_nr_nuis_param(objectList, type, function() {
+    # rma.uni: the between-study variance tau^2 (none for an equal/fixed-
+    # effects model); for other models (e.g., rma.mv), it must be specified
+    if (inherits(object, "rma.mv") || !is.null(object$alpha)) return(NULL)
+    if (object$method %in% c("FE", "EE", "CE")) 0 else 1
+  })
   
   # Roep de goric.default functie aan met de samengestelde lijst
   res <- do.call(goric.default, objectList)
@@ -1299,6 +1348,11 @@ goric.nlmerMod <- function(object, ..., hypotheses = NULL,
   # Voeg extra argumenten toe aan de objectList
   extraArgs <- list(...)
   objectList <- c(objectList, extraArgs)
+
+  # number of nuisance parameters (needed for type = "goricac"), unless
+  # specified by the user; see penalty_goric() (goric_penalty.R)
+  # (variance components + residual variance)
+  objectList <- add_nr_nuis_param(objectList, type, function() length(object@theta) + 1)
   
   # Roep de goric.default functie aan met de samengestelde lijst
   res <- do.call(goric.default, objectList)
@@ -1346,6 +1400,14 @@ goric.glmerMod <- function(object, ..., hypotheses = NULL,
   # Voeg extra argumenten toe aan de objectList
   extraArgs <- list(...)
   objectList <- c(objectList, extraArgs)
+
+  # number of nuisance parameters (needed for type = "goricac"), unless
+  # specified by the user; see penalty_goric() (goric_penalty.R)
+  objectList <- add_nr_nuis_param(objectList, type, function() {
+    # variance components (+ dispersion parameter, if any)
+    length(object@theta) +
+      as.numeric(family(object)$family %in% c("gaussian", "Gamma", "inverse.gaussian"))
+  })
   
   # Roep de goric.default functie aan met de samengestelde lijst
   res <- do.call(goric.default, objectList)
@@ -1392,6 +1454,11 @@ goric.lmerMod <- function(object, ..., hypotheses = NULL,
   # Voeg extra argumenten toe aan de objectList
   extraArgs <- list(...)
   objectList <- c(objectList, extraArgs)
+
+  # number of nuisance parameters (needed for type = "goricac"), unless
+  # specified by the user; see penalty_goric() (goric_penalty.R)
+  # (variance components + residual variance)
+  objectList <- add_nr_nuis_param(objectList, type, function() length(object@theta) + 1)
   
   # Roep de goric.default functie aan met de samengestelde lijst
   res <- do.call(goric.default, objectList)
@@ -1461,4 +1528,19 @@ goric.effectlite <- function(object, ..., hypotheses = NULL,
   res <- do.call(goric.default, objectList)
   
   res
+}
+
+
+# For type = "goricac" with a fitted model of another class than lm (whose
+# estimates are passed on to goric.default()): derive the number of nuisance
+# parameters (nr_nuis_param) from the model, unless the user specified it.
+# If it cannot be derived (NULL), goric.default() asks the user for it.
+add_nr_nuis_param <- function(objectList, type, nuis_fun) {
+  if (identical(type, "goricac") && is.null(objectList$nr_nuis_param)) {
+    nr <- tryCatch(nuis_fun(), error = function(e) NULL)
+    if (!is.null(nr)) {
+      objectList$nr_nuis_param <- nr
+    }
+  }
+  objectList
 }

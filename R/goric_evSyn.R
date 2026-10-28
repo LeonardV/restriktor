@@ -451,6 +451,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
                       order_studies = c("input_order", "ascending", "descending"),
                       study_names = c(),
                       study_sample_nobs = NULL,
+                      study_nr_nuis_param = NULL,
                       study_weights = NULL,
                       penalty_factor = 2,
                       CI = FALSE, CI_level = 0.95, CI_B = 1000L) {
@@ -532,6 +533,23 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     stop("\nrestriktor ERROR: The argument 'study_sample_nobs' must be a numeric vector containing S = ", S, " values (one for each study). \n",
          "Alternatively, 'study_sample_nobs' can be a scalar if all studies have the same sample size.",
          call. = FALSE)
+  }
+  
+  # number of nuisance parameters per study (needed for the GORICAC)
+  if (type == "goricac") {
+    if (is.null(study_nr_nuis_param)) {
+      stop("\nrestriktor ERROR: To compute the GORICAC, the argument 'study_nr_nuis_param' is required: ",
+           "the number of nuisance parameters per primary study, that is, the number of parameters in ",
+           "the study's model that are not in its estimate vector (e.g., the residual variance). ",
+           "It can be a scalar if it is the same for all studies.",
+           call. = FALSE)
+    }
+    if (length(study_nr_nuis_param) == 1L) {
+      study_nr_nuis_param <- rep(study_nr_nuis_param, S)
+    } else if (length(study_nr_nuis_param) != S) {
+      stop("\nrestriktor ERROR: The argument 'study_nr_nuis_param' must be a scalar or a numeric vector containing S = ",
+           S, " values (one for each study).", call. = FALSE)
+    }
   }
   
   study_weights <- .check_study_weights(study_weights, S)
@@ -730,6 +748,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
                        CI = FALSE, # CIs per study are not needed here
                        type = type, comparison = comparison,
                        sample_nobs = study_sample_nobs[s],
+                       nr_nuis_param = if (type == "goricac") study_nr_nuis_param[s] else NULL,
                        penalty_factor = penalty_factor,
                        ...)
     goric_studies[[s]] <- res_goric
@@ -976,6 +995,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
               study_names = study_names,
               study_weights = study_weights,
               study_sample_nobs = study_sample_nobs,
+              study_nr_nuis_param = study_nr_nuis_param,
               PT_m = PT,
               GORICA_weight_m = GORICA_weight_m, 
               LL_weights_m = LL_weights_m,

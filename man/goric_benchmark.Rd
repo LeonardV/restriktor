@@ -45,8 +45,11 @@
 }
 \arguments{
   \item{object}{An object of class \code{con_goric} (a GORIC(A) object from the \code{goric} function).}
-  \item{model_type}{If "means", the model parameters reflect (adjusted) means, else
-  model_type = "asymp" (default). See details for more information about \code{asymp}.}
+  \item{model_type}{If "means", the benchmarks are based on the (adjusted) group
+  means, else model_type = "asymp" (default). For "means" with a GORIC(A) object
+  based on an \code{lm} object, the model may contain an intercept, multiple
+  factors and/or covariates: the group means are then derived from the
+  parameters (see \code{\link{group_means}}). See details for more information.}
   \item{x}{An object of class \code{benchmark} (i.e., of class
   \code{benchmark_means} or \code{benchmark_asymp}).}
   \item{pop_es}{A scalar or a vector of population Cohen's f (effect-size) values. 
@@ -58,7 +61,9 @@
   \item{ratio_pop_means}{A 1 x k vector denoting the relative difference
   between the k group means. Note that a ratio of \code{c(3, 2, 1)} gives the 
   same as \code{c(1, 0, -1)}, as the consecutive relative differences are 1 in 
-  both ratios. By default, the relative differences from the data are used.}
+  both ratios. By default, the relative differences from the data are used.
+  The order of the groups is that of \code{group_means(model)} (in the output:
+  \code{names(group_means_observed)}).}
   \item{group_size}{If the GORICA object is based on estimates and their covariance 
   matrix (instead of on a model/fit object), this should be a 1 x k vector 
   or a scalar to denote the group sizes. If a scalar is specified, it is assumed 
@@ -160,6 +165,25 @@
   \code{benchmark_means} benchmarks the group means of a given GORIC(A) object 
   by evaluating various population effect sizes and comparing the observed 
   group means against these benchmarks.
+  The effect size is Cohen's f of the group means \eqn{\mu_j} (with group
+  sizes \eqn{N_j}): \eqn{f^2 = SSB / SSW = \sum_j N_j (\mu_j - \bar{\mu})^2 / \sum_j N_j s^2_j},
+  with \eqn{\bar{\mu}} the weighted mean of the group means and \eqn{s^2_j}
+  the residual variance (based on N, so that SSW is the residual sum of
+  squares). If the GORIC(A) object is based on estimates and their covariance
+  matrix, \eqn{s^2_j = N_j} times the variance of the j-th estimate, so then
+  the covariance matrix should be based on N (not N - k).
+  The population group means are \eqn{\bar{\mu} + c (\mu_j - \bar{\mu})}
+  (or based on \code{ratio_pop_means}), with \eqn{c} such that their effect
+  size equals \code{pop_es}. If the GORIC(A) object is based on an \code{lm}
+  object, the group means are derived from the parameters via
+  \code{\link{group_means}}, such that the model may contain an intercept,
+  multiple factors (with or without interaction) and/or covariates (the group
+  means are then adjusted means at 0 for the covariates). The data are then
+  simulated for the parameters of the model (the ones in the hypotheses),
+  where the population values of the parameters are such that they imply the
+  population group means. If the GORIC(A) object is based on estimates and
+  their covariance matrix, the estimates should be the group means (so, no
+  intercept) and \code{group_size} should be specified.
   \code{benchmark_asymp} benchmarks the population estimates of a given 
   GORIC(A) object by evaluating various population estimates and comparing them 
   against the observed estimates.

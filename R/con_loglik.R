@@ -40,3 +40,14 @@ con_loglik_glm <- function(x) {
 }
 
 
+
+
+# log-likelihood of the unrestricted model; logLik.lm does not support
+# multiple responses, so for an mlm con_loglik_lm() is used
+loglik_unrestr_lm <- function(object) {
+  if (inherits(object, "mlm")) {
+    con_loglik_lm(object)
+  } else {
+    logLik(object)
+  }
+}

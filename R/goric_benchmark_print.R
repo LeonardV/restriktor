@@ -201,8 +201,31 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
     cat(sprintf("Number of Parameters: %s%s%s\n", green, ngroups, reset))
   }
   if (inherits(x, "benchmark_means")) {
-    cat(sprintf("Group Sizes: %s%s%s\n", green, paste(group_size, collapse = ", "), reset))
-    cat(sprintf("Ratio of Population Means: %s%s%s\n", green, paste(sprintf("%.3f", ratio_pop_means), collapse = ", "), reset))
+    gm_obs <- x$group_means_observed
+    if (!is.null(gm_obs)) {
+      # one row per group: its name, the levels of the grouping variables
+      # (if available), the group size, and the observed group mean
+      gtab <- data.frame(group = names(gm_obs), stringsAsFactors = FALSE)
+      defs <- x$group_means_definitions
+      if (!is.null(defs) && identical(defs$name, names(gm_obs))) {
+        lev_cols <- setdiff(names(defs), c("name", "definition", "n"))
+        gtab <- cbind(gtab, defs[, lev_cols, drop = FALSE])
+      }
+      gtab$size <- as.vector(group_size)
+      gtab$mean <- sprintf("%.3f", gm_obs)
+      cat("Groups (size and observed mean):\n")
+      out_lines <- capture.output(print(gtab, row.names = FALSE, right = FALSE))
+      cat(paste0("  ", green, out_lines, reset, collapse = "\n"), "\n")
+    } else {
+      cat(sprintf("Group Sizes: %s%s%s\n", green, paste(group_size, collapse = ", "), reset))
+    }
+    if (length(x$continuous_vars) > 0L) {
+      cat(sprintf("Group means are adjusted means at 0 for: %s%s%s\n", green,
+                  paste(x$continuous_vars, collapse = ", "), reset))
+    }
+    if (!is.null(ratio_pop_means)) {
+      cat(sprintf("Ratio of Population Means: %s%s%s\n", green, paste(sprintf("%.3f", ratio_pop_means), collapse = ", "), reset))
+    }
     cat(sprintf("Population Effect-Sizes (Cohens f): %s%s%s\n", green,  paste(formatted_values, collapse = ", "), reset))
     cat(sprintf("Observed Effect-Size (Cohens f): %s%s%s\n", green, sprintf("%.3f", cohens_f_observed), reset))
   } else {

@@ -194,24 +194,36 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
     }
     
     # compute penalty term based on simulated level probabilities (wt.bar)
-    # The value 1 is the penalty for estimating the variance/dispersion parameter.
+    # The GORIC(C) penalty counts the nuisance parameters (d): the variance
+    # (lm, rlm, gaussian/Gamma/inverse.gaussian glm: d = 1), none for, e.g.,
+    # a binomial or poisson glm (d = 0), or the q(q+1)/2 parameters of the
+    # residual covariance matrix of an mlm. The GORICA(C) penalty is the
+    # GORIC(C) penalty minus d; see penalty_goric() (goric_penalty.R).
+    nuis <- nuisance_info_restriktor(z)
+    n_resp <- nuis$n_resp
+    n_nuis <- nuis$n_nuis
     if (goric %in% c("goric", "gorica")) {
       PT <- penalty_goric(Amat        = ans$PT_Amat,  
                           meq         = ans$PT_meq, 
                           LP          = wt.bar, 
                           correction  = FALSE, 
-                          sample.nobs = NULL)
+                          sample.nobs = NULL,
+                          n_resp      = n_resp,
+                          n_nuis      = n_nuis)
       if (goric == "gorica") {
-        PT <- PT - 1 
+        PT <- PT - n_nuis 
       }
     } else if (goric %in% c("goricc", "goricac")) {
       PT <- penalty_goric(Amat        = ans$PT_Amat, 
                           meq         = ans$PT_meq, 
                           LP          = wt.bar, 
                           correction  = TRUE, 
-                          sample.nobs = length(r))
+                          # NROW (not length): for an mlm, r is an N x q matrix
+                          sample.nobs = NROW(r),
+                          n_resp      = n_resp,
+                          n_nuis      = n_nuis)
       if (goric == "goricac") {
-        PT <- PT - 1 
+        PT <- PT - n_nuis 
       }
     } else {
       stop("restriktor ERROR: ", sQuote(goric), ": unknown goric method.")  
@@ -230,13 +242,8 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
       ans$goric <- -2*ll + ldots$penalty_factor*PT #-2*(ll - PT) 
     } else if (inherits(z, "conGLM")) {
       # No dispersion (variance) parameter for, e.g., poisson and binomial:
-      # then, the 1 (for the variance) is subtracted from the GORIC(C) penalty.
-      # For the GORICA(C), that 1 is already subtracted above (for all models),
-      # so it should not be subtracted a second time.
-      if (goric %in% c("goric", "goricc") &&
-          !(z$model.org$family$family %in% c("gaussian", "Gamma", "inverse.gaussian"))) {
-        PT <- PT - 1
-      }
+      # this is taken care of via the number of nuisance parameters (d = 0)
+      # above (nuisance_info_restriktor()).
       # TO DO Het was '-2*ll / (1 + penalty_factor*PT)', ik neem aan dat dit '-2*ll + penalty_factor*PT' moet zijn. Klopt dat??
       # TO DO: Of wilde je hier een QAIC-type uitrdruking: −2·ll/ĉ + penalty_factor*PT, with ĉ the overdispersion factor?? Dit is ms sowieso wel een idee…
       ans$goric <- -2*ll + ldots$penalty_factor*PT #-2*(ll - PT)

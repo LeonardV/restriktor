@@ -20,9 +20,12 @@ g2 <- goric(est2, VCOV = VCOV2, type = "gorica", hypotheses = H1)
 g3 <- goric(est3, VCOV = VCOV3, type = "gorica", hypotheses = H1)
 
 # Goric objecten (type = "goricac")
-g1c <- goric(est1, VCOV = VCOV1, type = "goricac", hypotheses = H1, sample_nobs = 50)
-g2c <- goric(est2, VCOV = VCOV2, type = "goricac", hypotheses = H1, sample_nobs = 50)
-g3c <- goric(est3, VCOV = VCOV3, type = "goricac", hypotheses = H1, sample_nobs = 50)
+g1c <- goric(est1, VCOV = VCOV1, type = "goricac", hypotheses = H1, sample_nobs = 50,
+             nr_nuis_param = 1)
+g2c <- goric(est2, VCOV = VCOV2, type = "goricac", hypotheses = H1, sample_nobs = 50,
+             nr_nuis_param = 1)
+g3c <- goric(est3, VCOV = VCOV3, type = "goricac", hypotheses = H1, sample_nobs = 50,
+             nr_nuis_param = 1)
 
 # LL en PT uit de goric objecten
 LL_list <- list(g1$result$loglik, g2$result$loglik, g3$result$loglik)
@@ -473,7 +476,8 @@ test_that("evSyn_est: type = 'gorica' is aanwezig in het resultaat", {
 
 test_that("evSyn_est: type = 'goricac' is aanwezig in het resultaat", {
   es <- evSyn(object = list(est1, est2, est3), VCOV = list(VCOV1, VCOV2, VCOV3),
-              hypotheses = H1, type = "goricac", study_sample_nobs = c(50, 50, 50))
+              hypotheses = H1, type = "goricac", study_sample_nobs = c(50, 50, 50),
+              study_nr_nuis_param = 1)
   expect_equal(es[["type"]], "goricac")
 })
 
@@ -539,7 +543,8 @@ test_that("evSyn_est (gorica): print toont 'GORICA' label", {
 
 test_that("evSyn_est (goricac): print toont 'GORICAC' label", {
   es <- evSyn(object = list(est1, est2, est3), VCOV = list(VCOV1, VCOV2, VCOV3),
-              hypotheses = H1, type = "goricac", study_sample_nobs = c(50, 50, 50))
+              hypotheses = H1, type = "goricac", study_sample_nobs = c(50, 50, 50),
+              study_nr_nuis_param = 1)
   out <- capture.output(print(es))
   expect_true(any(grepl("GORICAC", out)))
 })

@@ -205,7 +205,7 @@ test_that("goric type = 'goricac' vereist sample_nobs", {
 
 test_that("goric type = 'goricac' met sample_nobs werkt", {
   result <- goric(est_3, VCOV = VCOV_3, type = "goricac",
-                  sample_nobs = 90,
+                  sample_nobs = 90, nr_nuis_param = 1,
                   hypotheses = list(H1 = "x1 > x2 > x3"))
   expect_s3_class(result, "con_goric")
   expect_equal(result$type, "goricac")
@@ -645,7 +645,7 @@ test_that("goric.CTmeta: type='goric' wordt omgezet naar gorica", {
 
 test_that("goric.CTmeta: type='goricc' wordt omgezet naar goricac", {
   expect_message(
-    result <- goric(ct_obj, type = "goricc",
+    result <- goric(ct_obj, type = "goricc", nr_nuis_param = 1,
                     hypotheses = list(H1 = "phi1 > phi2 > phi3")),
     "GORICAC"
   )
@@ -655,7 +655,7 @@ test_that("goric.CTmeta: type='goricc' wordt omgezet naar goricac", {
 
 test_that("goric.CTmeta: goricac gebruikt sum(N) als sample_nobs", {
   expect_message(
-    result <- goric(ct_obj, type = "goricac",
+    result <- goric(ct_obj, type = "goricac", nr_nuis_param = 1,
                     hypotheses = list(H1 = "phi1 > phi2 > phi3")),
     "vb|covariance"
   )
@@ -985,7 +985,7 @@ test_that("edge: penalty_factor = Inf geeft grote IC-waarden", {
 test_that("edge: sample_nobs als vector wordt gesommeerd (goricac)", {
   expect_message(
     result <- goric(est_3, VCOV = VCOV_3, type = "goricac",
-                    sample_nobs = c(30, 30, 30),
+                    sample_nobs = c(30, 30, 30), nr_nuis_param = 1,
                     hypotheses = list(H1 = "x1 > x2 > x3")),
     "group sizes|total"
   )

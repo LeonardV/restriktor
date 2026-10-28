@@ -138,7 +138,7 @@ test_that("goric.numeric gorica met gecorreleerde VCOV", {
 
 test_that("goric.numeric goricac met sample_nobs", {
   result <- goric(est_3, VCOV = VCOV_3, type = "goricac",
-                  sample_nobs = 90,
+                  sample_nobs = 90, nr_nuis_param = 1,
                   hypotheses = list(H1 = "x1 > x2 > x3"))
   expect_equal(result$type, "goricac")
   # goricac penalty > gorica penalty

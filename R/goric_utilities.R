@@ -52,7 +52,6 @@ coef_named_vector <- function(x, VCOV = NULL, ...)  {
     est <- as.vector(coef(x))
     if (is.null(VCOV)) {
       names(est) <- rownames(vcov(x))
-      # TO DO dit werkt niet, er is niet alleen : maar ook _ en laatste mag ws niet (runt iig niet)
     } else { 
       # TO DO eigenlijk nog checken of rownames bestaan
       names(est) <- rownames(VCOV)
@@ -60,10 +59,9 @@ coef_named_vector <- function(x, VCOV = NULL, ...)  {
     message("\nrestriktor Message: The coefficients from the fitted model have been converted into a vector. ",
             "The coefficient names are taken from the row names of the covariance matrix (vcov). ",
             "Use these names when specifying hypotheses. ",
-            "Note: replace any ':' characters with '.' in hypothesis labels."
+            "Note: replace any ':' characters with '.' in hypothesis labels ",
+            "(e.g., 'y1:x1' becomes 'y1.x1' and 'y1:(Intercept)' becomes 'y1..Intercept.')."
             )
-    # TO DO mlm: ws nog zeggen dat intercept dan wordt: DV..Intercept.
-    # TO DO mlm: Werkt dit wel voor mlm, bij mij volgens mij niet....
   } else {
     est <- coef(x)
   }

@@ -162,7 +162,7 @@ goric_add_complement <- function(ans, add_Hc, hypotheses, objectnames,
   # numeric-estimate-vector input mode those internal calls use, has been
   # observed to raise a spurious/inconsistent extra warning that isn't
   # meaningful here, which would otherwise discard that draw entirely (see
-  # goric_benchmark_utilities.R's parallel_function_asymp()).
+  # goric_benchmark_utilities.R's parallel_benchmark_draw()).
   not_confirmed <- if (!isTRUE(check_add_Hc)) {
     character(0)
   } else {

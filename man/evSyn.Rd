@@ -50,7 +50,8 @@ evSyn_est(object, \ldots, VCOV = list(), hypotheses = list(),
           hypo_names = c(), priorICweights = NULL, 
           type = c("gorica", "goricac"), 
           order_studies = c("input_order", "ascending", "descending"),
-          study_names = c(), study_sample_nobs = NULL, study_weights = NULL,
+          study_names = c(), study_sample_nobs = NULL, 
+          study_nr_nuis_param = NULL, study_weights = NULL,
           penalty_factor = 2, CI = FALSE, CI_level = 0.95, CI_B = 1000L)
 
 # input: Log-likelihood and penalty values
@@ -257,6 +258,12 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   for each study; only needed if \code{type = "goricac"}. 
   In case the input is a escalc object (or a dataframe), it is inherited from the 
   'study_sample_nobs' column, which by default is labelled "ni".}
+  
+  \item{study_nr_nuis_param}{a numeric vector (or a scalar, if the same for all
+  studies) specifying for each study the number of nuisance parameters, that
+  is, the number of parameters in the study's model that are not in its
+  estimate vector (e.g., the residual variance); only needed if
+  \code{type = "goricac"}. See \code{nr_nuis_param} in \code{\link{goric}}.}
   
   \item{study_weights}{ 
   a numeric vector specifying the weight for each study; all weights must be larger than 0. 

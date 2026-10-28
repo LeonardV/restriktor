@@ -25,7 +25,7 @@ comparable to the Akaike weights.
       VCOV = NULL, sample_nobs = NULL,
       penalty_factor = 2, Heq = FALSE,
       add_Hc = NULL, check_add_Hc = TRUE,
-      priorICweights = NULL, posthoc = TRUE,
+      priorICweights = NULL, nr_nuis_param = NULL, posthoc = TRUE,
       CI = FALSE, CI_level = 0.95, CI_B = 1000L,
       control = list(), debug = FALSE)
 
@@ -105,9 +105,19 @@ comparable to the Akaike weights.
   descriptions, where the syntax can be specified as a literal
   string enclosed by single quotes. Only the names of \code{coef(model)} or
   \code{names(vector)} can be used as names. See details for more information.
-  Note that objects of class "mlm" do not (yet) support this method.
-  % TO DO ik gebruik nu rijnamen van vcov en dan moet gebruiker evt : vervangen door ..
-  %       Werkt dat? Zo ja, dan kan deze opmerking gewijzigd worden.
+  For objects of class "mlm", the parameter names are those of the row names
+  of \code{vcov(model)} with ':' replaced by '.' (e.g., \code{y1.x1} for
+  predictor \code{x1} of response \code{y1}).
+  For an mlm with q response variables, the GORIC(C) penalty counts the
+  q(q+1)/2 parameters of the residual covariance matrix (instead of 1 variance
+  parameter), and the GORICC uses the small sample correction of Bedrick and
+  Tsai (1994, Biometrics, 50, 226-231); the GORICA(C) does not count these
+  (nuisance) parameters.
+  For objects of class "lm" (incl. "aov" and "glm"), the group means
+  (e.g., \code{mu_12}) can also be used in the hypotheses, also when the
+  model contains an intercept and/or multiple factors; their definitions in
+  terms of the parameters are added automatically. Use
+  \code{\link{group_means}(model)} to see the notation of these group means.
 
   Second, the hypothesis syntax consists of a matrix \eqn{R} (or a vector in
   case of one constraint) and defines the left-hand side of the constraint
@@ -136,7 +146,25 @@ comparable to the Akaike weights.
   or the biased one obtained via the vcov function (e.g., for a \code{lavaan} object).
   In the latter case, a corresponding message will be printed.
   If \code{"goricc"} or \code{"goricac"},
-  then the small-sample-size correction is applied.}
+  then the small-sample-size correction is applied.
+  
+  The penalties are (with \eqn{N} the sample size, \eqn{l} the number of
+  free parameters in the estimate vector, averaged over with the level
+  probabilities \eqn{LP_l}, \eqn{d} the number of nuisance parameters,
+  i.e., parameters of the model that are not in the estimate vector, and
+  \eqn{K_l = l + d}):
+  GORIC: \eqn{\sum_l LP_l K_l}; 
+  GORICC: \eqn{\sum_l LP_l N K_l / (N - K_l - 1)};
+  GORICA: \eqn{\sum_l LP_l l};
+  GORICAC: \eqn{\sum_l LP_l [N K_l / (N - K_l - 1) - d]}.
+  So, the GORICA(C) penalty is the GORIC(C) penalty minus \eqn{d}: the
+  nuisance parameters do not count (asymptotically), but they do affect the
+  small-sample correction. For a (univariate) regression model, \eqn{d = 1}
+  (the residual variance), giving the GORICC term \eqn{N (l + 1) / (N - l - 2)};
+  for a binomial or poisson glm, \eqn{d = 0}. For a multivariate regression
+  (mlm) with \eqn{q} response variables, \eqn{d = q(q+1)/2} (the residual
+  covariance matrix) and \eqn{N - K_l - 1} is replaced by
+  \eqn{N - l/q - q - 1} (Bedrick and Tsai, 1994, Biometrics, 50, 226-231).}
 
   \item{VCOV}{variance-covariance matrix. Only needed if object is of class 'numeric' (and, therefore,
   \code{type = "gorica"} or \code{type = "goricac"}).
@@ -151,6 +179,18 @@ comparable to the Akaike weights.
   the number of observations are inherited from the fitted object.
   In case a vector is given, it is assumed that those are group sizes;
   then, their sum is used as the number of observations.}
+
+  \item{nr_nuis_param}{the number of nuisance parameters, that is, the number
+  of parameters in the model that are not in the estimate vector (e.g., the
+  residual variance, other variance components, or regression coefficients
+  that are not included in the estimate vector). Only used if
+  \code{type = "goricac"} (see \code{type} for the penalty), and then needed
+  if the input consists of estimates and their covariance matrix. For a fitted
+  model object, it is derived from the model (lm, mlm, glm: the (co)variance or
+  dispersion parameters; lmerMod, nlmerMod, glmerMod: the variance components
+  (and residual variance or dispersion); rma.uni: tau^2; lavaan: the free
+  parameters not involved in the hypotheses); for other objects (e.g., rma.mv,
+  CTmeta, effectlite), it must be specified.}
 
   \item{penalty_factor}{The penalty factor adjusts the penalty in the GORIC(A) formula
   (GORIC(A) = -2 x log-likelihood + penalty_factor x penalty).

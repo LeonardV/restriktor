@@ -18,6 +18,7 @@ Description: Allow for easy-to-use testing or evaluating of linear equality and 
 Depends: R(>= 4.0.0)
 Imports: boot, lavaan(>= 0.6-10), MASS, mvtnorm, tmvtnorm, quadprog, nnls, ggplot2, future, future.apply, progressr, scales, gridExtra
 License: GPL (>= 2)
+Encoding: UTF-8
 LazyData: yes
 URL: https://restriktor.org
 NeedsCompilation: no

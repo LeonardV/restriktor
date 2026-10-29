@@ -1118,10 +1118,30 @@ get_results_benchmark <- function(x, object, pref_hypo, pref_hypo_name,
   overlap_reference_pop <- reference_pop_name
   overlap_gw  <- compute_overlap_vs_observed(gw_combined)
   overlap_lw  <- compute_overlap_vs_observed(lw_combined)
-  overlap_rgw <- compute_overlap_vs_observed_matrix(rgw_combined)
-  overlap_rlw <- compute_overlap_vs_observed_matrix(rlw_combined)
+  # rgw/rlw themselves are RATIOS and can span many orders of magnitude --
+  # especially under the "Observed" population, when the preferred
+  # hypothesis is strongly supported, its ratio against an alternative can
+  # run into the thousands or more, while the same ratio under e.g.
+  # "No effect"/"No inequalities" typically stays small. compute_overlap()
+  # evaluates both populations' kernel densities on ONE shared grid spanning
+  # their combined range; with that much of a scale mismatch, a fixed-size
+  # grid can't resolve either distribution, and the resulting overlap
+  # integral can overshoot 1 by orders of magnitude (not the rare, tiny
+  # numerical overshoot its defensive min(..., 1) cap was written for) --
+  # which that cap then silently turns into a misleadingly "perfectly
+  # overlapping" 1, even when the two distributions barely overlap at all.
+  # The log-ratio draws (rgw_log/rlw_log) don't have this scale problem --
+  # the same reason they're used elsewhere for these ratios, see the
+  # rgw_log/rlw_log computation note above -- so the already-computed
+  # log-scale overlap is reused here for rgw/rlw too, rather than computing
+  # (and exposing, via $overlap$ratio_goric_weights/$ratio_ll_weights) a
+  # second, numerically unreliable raw-scale version. print.benchmark()
+  # labels this column "Overlap with Observed (log scale)" for output_type
+  # "rgw"/"rlw" accordingly (see overlap_header_log_scale there).
   overlap_rgw_log <- compute_overlap_vs_observed_matrix(rgw_log_combined)
   overlap_rlw_log <- compute_overlap_vs_observed_matrix(rlw_log_combined)
+  overlap_rgw <- overlap_rgw_log
+  overlap_rlw <- overlap_rlw_log
   overlap_ld  <- compute_overlap_vs_observed_matrix(ld_combined)
 
   OUT <- list(

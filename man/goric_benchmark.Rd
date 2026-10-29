@@ -52,12 +52,16 @@
   parameters (see \code{\link{group_means}}). See details for more information.}
   \item{x}{An object of class \code{benchmark} (i.e., of class
   \code{benchmark_means} or \code{benchmark_asymp}).}
-  \item{pop_es}{A scalar or a vector of population Cohen's f (effect-size) values. 
-  By default, it benchmarks ES = 0 (no-effect) and the observed Cohen's f.}
-  \item{pop_est}{A 1 x k vector or an n x k matrix of population 
-  estimates to benchmark. By default, estimates are determined based on replacing 
-  the inequalities by equalities for the best hypothesis (no-effect) 
-  and the observed estimates from the sample are used.}
+  \item{pop_es}{A scalar or a vector of population Cohen's f (effect-size) values.
+  By default, it benchmarks ES = 0 (labelled \code{"No effect"} in the output,
+  since Cohen's f = 0 is a true absence of effect) and the observed Cohen's f.}
+  \item{pop_est}{A 1 x k vector or an n x k matrix of population
+  estimates to benchmark. By default, estimates are determined based on replacing
+  the inequalities by equalities for the best hypothesis (labelled
+  \code{"No inequalities"} in the output -- not \code{"No effect"}, since setting
+  the inequality constraints to equalities is not the same as a true absence of
+  effect: the equality-constrained point can still represent a real, nonzero
+  effect) and the observed estimates from the sample are used.}
   \item{ratio_pop_means}{A 1 x k vector denoting the relative difference
   between the k group means. Note that a ratio of \code{c(3, 2, 1)} gives the 
   same as \code{c(1, 0, -1)}, as the consecutive relative differences are 1 in 
@@ -215,8 +219,9 @@
   population were true, with this sample size; that is, the power to support the
   preferred hypothesis under this population. Likewise, the rlw rate
   (\code{rate_rlw}) denotes how often the ratio of log-likelihood weights exceeds its
-  threshold under this population. For the \code{"No-effect"} population, the rates
-  are not printed, but they are stored in the object.
+  threshold under this population. For the baseline population (\code{"No effect"}
+  for \code{benchmark_means}, \code{"No inequalities"} for \code{benchmark_asymp}),
+  the rates are not printed, but they are stored in the object.
 
   For the \code{"Observed"} population, the population values are the sample
   estimates. Since these vary from sample to sample, so does its rate. When the rate is
@@ -257,7 +262,26 @@
   of draws with a ratio of weights above threshold \eqn{\times}{x} 1.1; \code{nr_draws_outside}:
   the number of draws outside [threshold / 1.1, threshold \eqn{\times}{x} 1.1]; and \code{rate} =
   \code{nr_draws_above}/\code{nr_draws_outside}); see the note on the hypothesis rate.
-  
+
+  It also contains \code{overlap}, a list with the overlap coefficient (0-1; 1 =
+  fully overlapping distributions, 0 = no overlap at all) between each
+  population's benchmark distribution and the reference population's
+  (\code{"Observed"} when that category is present, else the last population
+  supplied -- see \code{overlap$reference}), with one entry per output type:
+  \code{goric_weights}, \code{ll_weights}, \code{ratio_goric_weights},
+  \code{ratio_ll_weights}, \code{ratio_goric_weights_log},
+  \code{ratio_ll_weights_log}, and \code{difLL}. For \code{ratio_goric_weights}
+  and \code{ratio_ll_weights}, this overlap is computed on the LOG-ratio draws
+  rather than the raw-ratio draws shown in those same tables: a ratio of weights
+  can span many orders of magnitude (especially under the \code{"Observed"}
+  population, when the preferred hypothesis is strongly supported), which makes a
+  density-based overlap computed on the raw scale numerically unreliable, while
+  the log scale does not have this problem. This is why \code{print.benchmark}
+  labels that column "Overlap with Observed (log scale)" for
+  \code{output_type = "rgw"}/\code{"rlw"} -- its value is identical to
+  \code{ratio_goric_weights_log}'s/\code{ratio_ll_weights_log}'s own overlap
+  (which needs no such label, since that table is already on the log scale).
+
   \code{print.benchmark} prints formatted benchmark analysis results to the
   console and invisibly returns the object, with the rates (including
   \code{hypothesis_rate_band} and \code{rate_rlw_band}) recomputed at the
@@ -327,7 +351,7 @@ print(benchmark_results_mean_es)
 fit_gorica <- goric(anova_result, hypotheses = list(h1=h1), 
                     comparison = "complement", type = "gorica")
 
-# by default: no-effect \& estimates from the sample are used
+# by default: the "No inequalities" population \& estimates from the sample are used
 benchmark_results_asymp <- benchmark(fit_gorica, sample_size = 30, iter = 5,
                                      model_type = "asymp")
 print(benchmark_results_asymp)

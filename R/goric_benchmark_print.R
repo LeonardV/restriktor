@@ -74,21 +74,22 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
   x$rate_rlw_band <- lapply(x$combined_values$rlw_combined,
                             calculate_hypothesis_rate_band, q = threshold_rlw)
 
-  # no effect names
-  # Was c("pop_est = No-effect", "pop_es = 0") -- but benchmark_means() names
-  # this category "pop_es = No-effect" (matching benchmark_asymp's
-  # "pop_est = No-effect"), never "pop_es = 0", so this never matched for
-  # benchmark_means objects and the hypothesis_rate column was never hidden
-  # for their No-effect category.
+  # no effect / no inequalities names
+  # benchmark_means() names this baseline category "pop_es = No effect"
+  # (ES = 0 -- genuinely no effect); benchmark_asymp() names its own
+  # baseline category "pop_est = No inequalities" (the inequality
+  # constraints replaced by equalities, which is not the same thing as "no
+  # effect" -- the equality-constrained point can still represent a real,
+  # nonzero effect).
   #
   # This NA-ing (and the column-drop further below) only ever affects what
   # gets printed/returned by THIS print() call's local copy of x -- the
   # object's own x$hypothesis_rate field (set by benchmark_means()/
-  # benchmark_asymp()) keeps the real computed value for "No-effect" too,
-  # for a user who wants it without it being printed.
-  NE_names <- names(x$hypothesis_rate) %in% c("pop_est = No-effect", "pop_es = No-effect")
+  # benchmark_asymp()) keeps the real computed value for this baseline
+  # category too, for a user who wants it without it being printed.
+  NE_names <- names(x$hypothesis_rate) %in% c("pop_est = No inequalities", "pop_es = No effect")
   x$hypothesis_rate[NE_names] <- as.numeric(NA)
-  # rate_rlw is hidden for "No-effect" for the same reason.
+  # rate_rlw is hidden for the baseline category for the same reason.
   x$rate_rlw[NE_names] <- as.numeric(NA)
   x$hypothesis_rate_band[NE_names] <- NULL
   x$rate_rlw_band[NE_names] <- NULL
@@ -264,6 +265,17 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
     "Overlap with Observed"
   }
 
+  # Used only for the plain "rgw"/"rlw" sections: their table itself is on
+  # the raw-ratio scale, but the "Overlap with ..." value shown there is
+  # computed on the LOG-ratio draws instead (see the overlap_rgw/overlap_rlw
+  # computation note in goric_benchmark_utilities.R -- the raw-ratio scale
+  # makes the density-based overlap numerically unreliable), so the column
+  # is labelled accordingly to avoid the value looking like it was computed
+  # on the same scale as the rest of that table. The "rgw_log"/"rlw_log"
+  # sections keep the plain overlap_header: there, the table and the
+  # overlap value are already on the same (log) scale.
+  overlap_header_log_scale <- paste0(overlap_header, " (log scale)")
+
   # Reference population used both for the "Overlap with ..." header above
   # and for combine_population_tables() below (its "(ref. pop.)" suffix on
   # the printed "Population" column).
@@ -392,7 +404,7 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
       )
       colnames(x$benchmarks$ratio_goric_weights[[pop_es_name]])[
         ncol(x$benchmarks$ratio_goric_weights[[pop_es_name]])
-      ] <- overlap_header
+      ] <- overlap_header_log_scale
     }
 
     # Note: the "No-effect" population's hypothesis_rate column used to be
@@ -472,7 +484,7 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
       )
       colnames(x$benchmarks$ratio_ll_weights[[pop_es]])[
         ncol(x$benchmarks$ratio_ll_weights[[pop_es]])
-      ] <- overlap_header
+      ] <- overlap_header_log_scale
     }
     # See the matching comment in the "rgw" section above -- rate_rlw is no
     # longer dropped for the "No-effect" population; its NA value now prints

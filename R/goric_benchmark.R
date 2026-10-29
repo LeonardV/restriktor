@@ -189,7 +189,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
   # effect size population
   if (is.null(pop_es)) {
     pop_es <- c(0, cohens_f_observed)
-    names(pop_es) <- c("No-effect", "Observed")
+    names(pop_es) <- c("No effect", "Observed")
   } else {
     pop_es <- sort(pop_es)
   }
@@ -514,8 +514,8 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
         #fallback_reason <- "the best-supported (highest GORIC(A) weight) of the specified hypotheses"
         message(
           "\nrestriktor Message: The preferred hypothesis is the unconstrained.",
-          "The 'No-effect' population is based on the best hypothesis of the specified ones.",
-          "Supply your own 'pop_est' argument if you want a different 'No-effect' population estimate."
+          "The 'No inequalities' population is based on the best hypothesis of the specified ones.",
+          "Supply your own 'pop_est' argument if you want a different 'No inequalities' population estimate."
         )
       }
       # # Message for all three cases, but only for unc of interest, so done there/above
@@ -532,7 +532,12 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     NE <- theta_restricted(theta = est_sample, V = VCOV, R = object$constraints[[NE_hypo]], rhs = object$rhs[[NE_hypo]])
     # Note that VCOV is the unbiased cov.mx estimate.
     pop_est <- matrix(rbind(NE, est_sample), nrow = 2)
-    row.names(pop_est) <- c("No-effect", "Observed")
+    # Named "No inequalities" rather than "No effect": this population is
+    # constructed by replacing the inequality constraints of the best
+    # hypothesis by equalities (see theta_restricted() above), which is not
+    # the same as a true absence of effect -- the equality-constrained point
+    # can still represent a real, nonzero effect.
+    row.names(pop_est) <- c("No inequalities", "Observed")
   } else {
     if (is.vector(pop_est)) {
       pop_est <- matrix(pop_est, nrow = 1, ncol = length(pop_est))

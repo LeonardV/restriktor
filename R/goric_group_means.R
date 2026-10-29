@@ -48,6 +48,9 @@ group_means <- function(object, labels = c("number", "abbrev", "level"),
   group_vars <- pred_vars[is_group]
   cont_vars  <- pred_vars[!is_group]
 
+  # warn if a factor seems to be coded by hand with numeric columns
+  check_hand_coded_factors(mf, group_vars, cont_vars)
+
   if (length(group_vars) == 0L) {
     stop("\nrestriktor ERROR: no grouping variables (factors, dummies or ",
          "other variables with two values) found in the model.", call. = FALSE)
@@ -265,8 +268,14 @@ expand_group_means_lm <- function(object, hypotheses, prefix = "mu") {
   if (!grepl(prefix, txt, fixed = TRUE)) return(hypotheses)
   syn <- character(0)
   for (lab in c("number", "abbrev", "level")) {
-    gm <- tryCatch(suppressWarnings(group_means(object, labels = lab,
-                                                prefix = prefix)),
+    # (warnings, e.g., on factors coded by hand, are shown once: for the
+    # first notation only)
+    gm <- tryCatch(if (lab == "number") {
+                     group_means(object, labels = lab, prefix = prefix)
+                   } else {
+                     suppressWarnings(group_means(object, labels = lab,
+                                                  prefix = prefix))
+                   },
                    error = function(e) NULL)
     if (!is.null(gm)) {
       syn <- c(syn, gm$syntax[setdiff(names(gm$syntax), names(syn))])
@@ -314,4 +323,61 @@ mlm_coef_vector <- function(b) {
                      paste0(rep(colnames(b), each = nrow(b)), ":",
                             rep(rownames(b), times = ncol(b))))
   out
+}
+
+
+# Warn when a factor seems to be coded by hand with several numeric columns
+# instead of being one factor:
+# 1. effects coding by hand: numeric predictors taking (only) the values
+#    -1, 0, 1; these are treated as continuous (set to 0), so the groups of
+#    that factor are missed;
+# 2. dummy coding by hand: 2-valued numeric predictors that never take their
+#    higher value at the same time (mutually exclusive); then all
+#    combinations are formed, including non-existing groups (n = 0).
+check_hand_coded_factors <- function(mf, group_vars, cont_vars) {
+  advice <- paste0(
+    "Use one factor for these columns instead (e.g., lm(y ~ f), with f a factor). ",
+    "For the group means, it does not matter whether dummy or effects coding is ",
+    "used; if you also want effects-coded estimates, additionally specify the ",
+    "contrasts, e.g., lm(y ~ f, contrasts = list(f = \"contr.sum\")).")
+  # 1. effects coding by hand
+  eff <- cont_vars[vapply(cont_vars, function(v) {
+    x <- mf[[v]]
+    is.numeric(x) && is.null(dim(x)) &&
+      setequal(unique(x[!is.na(x)]), c(-1, 0, 1))
+  }, logical(1))]
+  if (length(eff) > 0L) {
+    warning("\nrestriktor WARNING: the variable(s) ",
+            paste(sQuote(eff), collapse = ", "),
+            " only take on the values -1, 0, and 1, so they seem to be ",
+            "effects-coded columns of a factor coded by hand. They are now ",
+            "treated as continuous variables (set to 0), so the groups of that ",
+            "factor are not distinguished. ", advice, call. = FALSE)
+  }
+  # 2. dummy coding by hand: mutually exclusive 2-valued numeric variables
+  num2 <- group_vars[vapply(group_vars, function(v) {
+    x <- mf[[v]]
+    is.numeric(x) && is.null(dim(x))
+  }, logical(1))]
+  if (length(num2) >= 2L) {
+    hi <- lapply(num2, function(v) mf[[v]] == max(mf[[v]], na.rm = TRUE))
+    names(hi) <- num2
+    excl <- character(0)
+    for (a in seq_along(num2)) {
+      for (b in seq_along(num2)) {
+        if (a < b && !any(hi[[a]] & hi[[b]], na.rm = TRUE)) {
+          excl <- union(excl, num2[c(a, b)])
+        }
+      }
+    }
+    if (length(excl) > 0L) {
+      warning("\nrestriktor WARNING: the variable(s) ",
+              paste(sQuote(excl), collapse = ", "),
+              " never take on their higher value at the same time, so they ",
+              "seem to be dummy-coded columns of a factor coded by hand. Then, ",
+              "also non-existing groups (with n = 0) are formed. ", advice,
+              call. = FALSE)
+    }
+  }
+  invisible(NULL)
 }

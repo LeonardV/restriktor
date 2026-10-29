@@ -53,8 +53,20 @@ means at a value of 0 for the continuous predictors (center these predictors
 to obtain the adjusted means at their average value).
 
 The group means are computed from the model matrix, so they are correct for
-any coding (contrasts), with or without intercept and with or without
-interactions. For a main-effects model (no interaction), the group means are
+any coding (contrasts; e.g., dummy coding, which is the default in R, or
+effects coding via \code{contrasts = list(f = "contr.sum")}), with or without
+intercept and with or without interactions. The coding only affects the
+estimates (and thus the definitions), not the resulting group means.
+
+Grouping variables must be factors (or 2-valued variables). If a factor is
+coded by hand with several numeric columns (dummy or effects coding), use one
+factor instead; if effects-coded estimates are wanted as well, additionally
+specify the contrasts (e.g., \code{lm(y ~ f, contrasts = list(f = "contr.sum"))}).
+A warning is given when this seems to be the case: when numeric predictors
+only take on the values -1, 0, and 1 (effects coding by hand; these would be
+treated as continuous), or when 2-valued numeric predictors never take on
+their higher value at the same time (dummy coding by hand; this would also
+form non-existing groups, with n = 0). For a main-effects model (no interaction), the group means are
 the means implied by that model (not the observed cell means).
 
 The coefficient names in the definitions follow the restriktor notation,

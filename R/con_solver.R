@@ -146,22 +146,58 @@ con_solver_glm <- function(X, y, Amat, bvec, meq,
 
 
 # compute restricted estimates based on unrestricted estimates and vcov
+#
+# The QP is solved on a rescaled problem, because solve.QP() can wrongly report
+# "constraints are inconsistent, no solution!" when the parameters are on very
+# different scales (e.g. a quadratic time effect with time in days, giving
+# variances of order 1e-9 next to order 1). Rescaling does not change the
+# problem:
+#  - parameters are standardised by their standard errors, s = sqrt(diag(VCOV)):
+#      theta = S theta_s, with S = diag(s), so VCOV becomes the correlation
+#      matrix R = S^-1 VCOV S^-1 and Amat becomes Amat S;
+#  - each constraint row (and its rhs) is divided by its Euclidean norm.
+# The solution is transformed back (theta = S theta_s); the objective value,
+# the active set (iact) and the feasibility region are unchanged. The Lagrange
+# multipliers are transformed back to the original constraint scale.
 con_solver_gorica <- function(est, VCOV, Amat, bvec, meq) {
-    
+
     VCOV <- as.matrix(VCOV)
-    invVCOV <- solve(VCOV)
-    #invVCOV <- ginv(VCOV)
-    #invVCOV <- chol2inv(chol(VCOV))
-    
-    Dmat <- 2 * invVCOV 
-    dvec <- 2 * (est %*% invVCOV)
-    
-    out.qp <- solve.QP(Dmat = Dmat, 
-                       dvec = dvec, 
-                       Amat = t(Amat),
-                       bvec = bvec, 
+    Amat <- as.matrix(Amat)
+    est  <- c(est)
+
+    # 1. standardise the parameters
+    s <- sqrt(diag(VCOV))
+    if (any(!is.finite(s)) || any(s <= 0)) {
+      s <- rep(1, length(est)) # cannot standardise; solve the original problem
+    }
+    R      <- VCOV / tcrossprod(s)        # = S^-1 VCOV S^-1
+    est_s  <- est / s
+    Amat_s <- sweep(Amat, 2, s, `*`)      # = Amat S
+
+    # 2. normalise the constraint rows (and their rhs)
+    rnorm_A <- sqrt(rowSums(Amat_s^2))
+    rnorm_A[rnorm_A == 0] <- 1
+    Amat_s <- Amat_s / rnorm_A
+    bvec_s <- bvec / rnorm_A
+
+    invR <- solve(R)
+    #invR <- ginv(R)
+    #invR <- chol2inv(chol(R))
+
+    Dmat <- 2 * invR
+    dvec <- 2 * (est_s %*% invR)
+
+    out.qp <- solve.QP(Dmat = Dmat,
+                       dvec = dvec,
+                       Amat = t(Amat_s),
+                       bvec = bvec_s,
                        meq  = meq)
+
+    # 3. back-transform to the original parameter / constraint scale
     out <- out.qp
-    
+    out$solution               <- c(out.qp$solution * s)
+    out$unconstrained.solution <- c(out.qp$unconstrained.solution * s)
+    out$Lagrangian             <- out.qp$Lagrangian / rnorm_A
+
     out
 }

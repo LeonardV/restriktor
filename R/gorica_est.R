@@ -133,7 +133,7 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
                 b.unrestr   = b.unrestr,
                 b.restr     = b.restr,
                 loglik      = ll.restr, 
-                Sigma       = VCOV, # TO DO Ergens Sigma nodig?
+                Sigma       = VCOV, # same as VCOV; kept for consistency with restriktor objects (which store Sigma)
                 VCOV        = VCOV,
                 constraints = Amat, 
                 rhs         = bvec, 
@@ -284,8 +284,12 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
   nr_defined <- sum(paramTable$op == ":=")
   # Note that defined parameters are always based on labeled parameters.
   #
-  ## remove any duplicate labels
-  # TO DO When does this happen - is it needed?
+  ## duplicate labels (removed below)
+  # This happens when the same label is used for more than one parameter in
+  # the lavaan model (e.g., 'y ~ a*x1 + a*x2'), which constrains these
+  # parameters to be equal. Then, the estimates (and their (co)variances) are
+  # identical, such that only the first one is kept; otherwise, the
+  # covariance matrix would be singular.
 
   
   # Extract (un)standardized estimates
@@ -319,6 +323,14 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
   colnames(out$VCOV) <- rownames(out$VCOV) <- labels_free
 
   out$rhs <- paramTable$rhs
+  
+  # remove duplicate labels (see above); unlabeled parameters ("") are kept
+  dup <- duplicated(labels_free) & labels_free != ""
+  if (any(dup)) {
+    out$estimate <- out$estimate[!dup]
+    out$VCOV     <- out$VCOV[!dup, !dup, drop = FALSE]
+    out$rhs      <- out$rhs[!dup]
+  }
   
   out
 }

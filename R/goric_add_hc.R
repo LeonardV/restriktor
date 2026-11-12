@@ -198,7 +198,8 @@ goric_add_complement <- function(ans, add_Hc, hypotheses, objectnames,
     list(object = object, hypotheses = hypotheses[ref_idx], comparison = "complement",
         type = type, VCOV = VCOV, sample_nobs = sample_nobs,
         penalty_factor = penalty_factor, control = control, debug = debug,
-        CI = FALSE), # the CIs are computed for the final, combined set only
+        CI = FALSE, # the CIs are computed for the final, combined set only
+        posthoc = FALSE), # the post-hoc analysis is done for the final, combined set only
     ldots_c
   )
   complement_run <- do.call(goric.default, complement_args)

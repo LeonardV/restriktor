@@ -225,7 +225,21 @@ comparable to the Akaike weights.
   object (the check depends only on the hypotheses, not on the estimates); 
   users should keep the default.}
 
-  \item{posthoc}{currently not used; reserved for a future option.}
+  \item{posthoc}{logical; if \code{TRUE} (default), a post-hoc analysis is performed in which
+  the best hypothesis in the set (i.e., the one with the highest GORIC(A) weight) is also
+  evaluated against its complement, via \code{\link{goric_posthoc}}. This gives the ratio of
+  GORIC(A) weights of the best hypothesis versus its complement and the conditional error
+  probability (the GORIC(A) weight of the complement). By default, this is only done when
+  there is more than one specified hypothesis and one of these is the best (so, not the
+  unconstrained hypothesis, a complement, or Heq); otherwise, it is skipped without a message.
+  When \code{posthoc = TRUE} is specified explicitly, it is also done for a single specified
+  hypothesis (if it is the best and is not already compared to its complement), and the
+  reason is reported when it is not applicable. The result is stored in \code{$posthoc} and
+  shown by \code{print()} and \code{summary()}. Since the hypothesis is selected based on the
+  data, this is exploratory information (e.g., for future research). Use
+  \code{posthoc = FALSE} to switch it off, for example, in simulations (it requires an
+  additional analysis). The same analysis can be performed afterwards with
+  \code{goric_posthoc(<goric object>)}.}
 
   \item{priorICweights}{vector of prior IC weights, which represent the prior belief for the specified hypotheses.
   By default, equal prior IC weights are used (i.e., 1/(#hypotheses)).
@@ -394,6 +408,8 @@ of the CIs for the ratios of weights, in the same layout as \code{$ratio.gw}),
 values, the GORIC(A) weights, and the ratios of GORIC(A) weights), and
 \code{$CI} (the full \code{\link{goric_CI}} object, including the CIs for
 the differences in GORIC(A) values and the method used per CI).
+If a post-hoc analysis is performed (see \code{posthoc}), it also contains \code{$posthoc}, an object of class
+\code{goric_posthoc} (see \code{\link{goric_posthoc}}).
 }
 
 

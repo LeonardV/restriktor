@@ -150,10 +150,6 @@ leave1studyout.evSyn <- function(object, ...) {
       rownames,
       colnames(ICw_m)
     )
-    # TO DO Als weight bijna een, dan geeft het 1 en bijv niet 1.000 of .999.
-    #       Ik denk dat je met 1 denkt dat het exact 1 is... 
-    #       Graag aanpassen, maar hoe&Waar?
-    # TO DO Sowieso overal kijken naar hoeveel decimalen printen....
   )
   
   OverallPrefHypo <- matrix(
@@ -245,6 +241,37 @@ leave1studyout.evSyn <- function(object, ...) {
   class(result) <- "leave1studyout.evSyn"
   
   result
+}
+
+
+# Print method: the IC values and IC weights are printed with a fixed number
+# of decimals (as in print.con_goric() and print.evSyn()), such that, e.g., a 
+# weight of 0.99996 is printed as 1.000 (and not as 1, which suggests that it 
+# is exactly 1).
+print.leave1studyout.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
+  fmt <- function(m) {
+    out <- m
+    out[] <- vapply(m, function(v) if (is.na(v)) "" else sprintf(paste0("%.", digits, "f"), v),
+                    character(1))
+    out
+  }
+  type_ev <- x$type_ev
+  cat(sprintf("restriktor (%s): leave-one-study-out results (%s evidence synthesis)\n",
+              packageDescription("restriktor", fields = "Version"), type_ev))
+  num_elements <- setdiff(names(x), c("OverallPrefHypo", "type_ev", "type"))
+  labels <- c(OverallGoric = "IC values (GORIC)", OverallGoricc = "IC values (GORICC)",
+              OverallGorica = "IC values (GORICA)", OverallGoricac = "IC values (GORICAC)",
+              OverallICdiff = "Differences in IC values (versus the reference hypothesis)",
+              OverallGoricWeights = "IC weights (GORIC)", OverallGoriccWeights = "IC weights (GORICC)",
+              OverallGoricaWeights = "IC weights (GORICA)", OverallGoricacWeights = "IC weights (GORICAC)")
+  for (el in num_elements) {
+    lab <- if (!is.null(labels[el]) && !is.na(labels[el])) labels[el] else el
+    cat("\n", lab, ":\n", sep = "")
+    print(fmt(x[[el]]), quote = FALSE, right = TRUE, print.gap = 2)
+  }
+  cat("\nPreferred hypothesis:\n")
+  print(x$OverallPrefHypo, quote = FALSE, right = FALSE)
+  invisible(x)
 }
 
 # TO DO:

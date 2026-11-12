@@ -10,21 +10,14 @@ goric.default <- function(object, ..., hypotheses = NULL,
                           check_add_Hc = TRUE, # set to FALSE only from within goric_benchmark.R / goric_benchmark_utilities.R.
                           priorICweights = NULL,
                           nr_nuis_param = NULL,
-                          posthoc = TRUE, # currently not used; see the TO DO (posthoc) below
+                          posthoc = TRUE, # best hypothesis vs its complement; see goric_posthoc()
                           CI = FALSE, CI_level = 0.95, CI_B = 1000L,
                           control = list(), debug = FALSE) {
 
-  #TO DO: Ook beste vs complement - zie commented code (met TO DOs)
-  #TO DO: Default doen, maar wel argument (posthoc = T), en dan in benchmarks en evt een simulatie study uit. 
-  #       Of posthoc functie.
-  # TO DO (posthoc)
-  # Make both a function and a possible input argument.
-  # Add a conclusion text.
-  # When available, then also mention this functionality in the output perhaps
-  # Leonard kijkt hier eerst naar!
-  
-
-  
+  # Was 'posthoc' specified by the user (or is the default used)? With the
+  # default, the post-hoc analysis is skipped silently when not applicable;
+  # when the user specified posthoc = TRUE, the reason is reported instead.
+  posthoc_specified <- !missing(posthoc)
 
   if (is.null(hypotheses) || !is.list(hypotheses)) {
     stop(paste("\nrestriktor ERROR: The 'hypotheses' argument is missing or not a list.",
@@ -35,13 +28,50 @@ goric.default <- function(object, ..., hypotheses = NULL,
   if (!is.numeric(penalty_factor) || length(penalty_factor) != 1L || is.na(penalty_factor) || penalty_factor < 0) {
     stop("\nrestriktor ERROR: the penalty factor must be a single number >= 0.", call. = FALSE)
   }
-  
+
+  if (!is.logical(posthoc) || length(posthoc) != 1L || is.na(posthoc)) {
+    stop("\nrestriktor ERROR: the argument 'posthoc' must be TRUE or FALSE.", call. = FALSE)
+  }
+
   # Heq kan uit benchmarks komen met hypotheses$Heq al aanwezig. Staat altijd als eerste.
   if (isTRUE(Heq) && !is.null(hypotheses$Heq)) {
     hypotheses <- hypotheses[-1]
   }
   
   num_hypotheses <- length(hypotheses)
+
+  # A numeric matrix of estimates (e.g., coefficients of a multivariate 
+  # model) is turned into a named vector, since the names are needed in the
+  # hypotheses: the names are taken from the row names of VCOV (if 
+  # available), otherwise they are made from the row and column names of the
+  # matrix (as 'row.column', in the same order as as.vector()).
+  if (is.matrix(object) && is.numeric(object)) {
+    est_vec <- as.vector(object)
+    vcov_names <- if (!is.null(VCOV)) rownames(as.matrix(VCOV)) else NULL
+    if (!is.null(vcov_names) && length(vcov_names) == length(est_vec)) {
+      names(est_vec) <- vcov_names
+    } else if (!is.null(rownames(object)) && !is.null(colnames(object))) {
+      names(est_vec) <- paste0(rep(rownames(object), times = ncol(object)), ".",
+                               rep(colnames(object), each = nrow(object)))
+    } else {
+      stop("\nrestriktor ERROR: The estimates are a matrix without (row and column) names, ",
+           "and VCOV has no row names. Please provide a named vector of estimates.",
+           call. = FALSE)
+    }
+    message("\nrestriktor Message: The matrix of estimates has been converted into a vector, ",
+            "with names: ", paste(names(est_vec), collapse = ", "), ". ",
+            "Use these names when specifying hypotheses.")
+    object <- est_vec
+  }
+
+  # The input needed to re-run goric() for a (sub)set of these hypotheses,
+  # as done by goric_posthoc() (the best hypothesis versus its complement).
+  # For a fitted model (e.g., lm), the object itself is not stored again,
+  # since it is already available as ans$model.org.
+  rerun_args <- list(object = if (is.numeric(object)) object else NULL,
+                     hypotheses = hypotheses, VCOV = VCOV,
+                     sample_nobs = sample_nobs, nr_nuis_param = nr_nuis_param,
+                     control = control, ldots = list(...))
 
   # add_Hc combines the user-specified hypotheses (compared among
   # themselves) with the complement of one of them (by default the first,
@@ -76,7 +106,6 @@ goric.default <- function(object, ..., hypotheses = NULL,
   }
   
   comparison <- match.arg(comparison, c("unconstrained", "complement", "none"))
-  # TO DO add: complement_1stHypo oid
   
     # complement met meerdere hypotheses => forceren naar unconstrained
   if (comparison == "complement" && num_hypotheses > 1L) {
@@ -209,7 +238,9 @@ goric.default <- function(object, ..., hypotheses = NULL,
     "comparison","type","hypotheses","auxiliary","VCOV","sample_nobs","object",
     "missing","lower","upper","algorithm","burn.in.samples","start.values","thinning",
     #
-    "penalty_factor", "Heq", "add_Hc", "priorICweights", "se" # TO DO welke hier van nodig - ik kreeg foutmelding door geen se te hebben hieronder
+    # 'se' is set internally (ldots$se <- "none", standard errors are not
+    # needed) and can be passed on in internal goric() calls, so it must be allowed
+    "penalty_factor", "Heq", "add_Hc", "priorICweights", "se"
   )
   
   unknown <- setdiff(names(ldots), allowed)
@@ -558,14 +589,11 @@ goric.default <- function(object, ..., hypotheses = NULL,
     # unrestricted estimates
     #if (inherits(object, "numeric")) {
     if (inherits(conList[[Hm]]$b.unrestr, "numeric")) {
-      #b.unrestr <- object
-      # TO DO - hier gaat het fout als selectie param in hypo
+      # The (named) unrestricted estimates are taken from the fitted 
+      # hypothesis (not from 'object'), which also works when only a 
+      # selection of the parameters is used in the hypothesis. A matrix of 
+      # estimates has already been turned into a named vector above.
       b.unrestr <- conList[[Hm]]$b.unrestr
-      #
-      # TO DO Wat als object niet een vector is?
-      #       NB Als: b.unrestr <- as.vector(object)
-      #          dan heb je geen namen meer (die juist wel in hypo terug moeten komen)
-      #          Bij een matrix dan die col of row names uitlezen en gebruiken, of obv vcov!
     } else {
       b.unrestr <- coef_named_vector(ans$model.org)
     }
@@ -988,38 +1016,38 @@ goric.default <- function(object, ..., hypotheses = NULL,
       ans$CI_methods <- stats::setNames(sub("^[^:]+: ", "", txt), sub(":.*$", "", txt))
     }
   }
+
+  ans$rerun_args <- rerun_args
+
+  # Post-hoc analysis: the best hypothesis versus its complement (see
+  # goric_posthoc() in goric_posthoc.R). It is performed by default
+  # (posthoc = TRUE), but then skipped (silently) when there is only one
+  # specified hypothesis, or when the best hypothesis is not one of the
+  # specified hypotheses (but, e.g., the unconstrained hypothesis, a
+  # complement, or Heq). If the user explicitly specified posthoc = TRUE,
+  # the post-hoc analysis is performed whenever applicable, and otherwise
+  # the reason is stored (and printed). All goric() calls made internally
+  # (e.g., by benchmark(), evSyn(), and add_Hc) use posthoc = FALSE.
+  if (isTRUE(posthoc)) {
+    best_name_ph <- as.character(ans$result$model[which.max(ans$result[, 7])])
+    run_ph <- posthoc_specified ||
+      (num_hypotheses > 1L && best_name_ph %in% setdiff(ans$objectNames, "Heq"))
+    if (run_ph) {
+      ph <- tryCatch(
+        goric_posthoc(ans),
+        error = function(e) {
+          message("\nrestriktor Message: The post-hoc analysis (best hypothesis versus its ",
+                  "complement) could not be performed (", conditionMessage(e), ").")
+          NULL
+        })
+      if (!is.null(ph) && (posthoc_specified || isTRUE(ph$applicable))) {
+        ans$posthoc <- ph
+      }
+    }
+  }
   
   return(ans)
 }
-
-# TO DO HIER
-# maak obv onderstaande code de mogelijkheid tot comparison = compl_1stHypo oid.
-# Geeft wel message dat dit alleen zinnig is als andere gespecificeerd hypo's in 1e hypo vallen;
-# dan is compl van 1e hypo nl compl van set en dat ws liever dan dan de unc.
-# Dan 2x goric runnen en dan samennemen:
-#
-# # Evaluate all hypotheses with unconstrained (default):
-# set.seed(123)
-# goric_allHunc <- goric(..., hypotheses = list(...)))
-# # Also evaluate 1st hypo vs its complement (default):
-# set.seed(123)
-# goric_H1Hc <- goric(..., hypotheses = list(H... = H...))
-# # Combine these results:
-# goric_all <- matrix(NA, nrow = 4, ncol = 6)
-# nameCompl <- paste0("complement of ", goric_H1Hc$result$model[1])
-# rownames(goric_all) <- c(goric_allHunc$result$model[1:3], nameCompl)
-# colnames(goric_all) <- colnames(goric_allHunc$result[2:7])
-# goric_all[,1] <- c(goric_allHunc$result$loglik[1:3], goric_H1Hc$result$loglik[2])
-# goric_all[,2] <- c(goric_allHunc$result$penalty[1:3], goric_H1Hc$result$penalty[2])
-# goric_all[,3] <- c(goric_allHunc$result$gorica[1:3], goric_H1Hc$result$gorica[2])
-# goric_all[,4] <- calc_ICweights(-2*c(goric_allHunc$result$loglik[1:3], goric_H1Hc$result$loglik[2]))$IC_weights
-# goric_all[,5] <- calc_ICweights(2*c(goric_allHunc$result$penalty[1:3], goric_H1Hc$result$penalty[2]))$IC_weights
-# goric_all[,6] <- calc_ICweights(c(goric_allHunc$result$gorica[1:3], goric_H1Hc$result$gorica[2]))$IC_weights
-# # Ratio of GORICA weights:
-# GWs <- calc_ICweights(c(goric_allHunc$result$gorica[1:3], goric_H1Hc$result$gorica[2]))
-# GWs$ratio_IC_weights
-
-
 
 
 # object of class lm ------------------------------------------------------
@@ -1047,7 +1075,6 @@ goric.lm <- function(object, ..., hypotheses = NULL,
 
   # only one object of class lm is allowed
   isLm <- unlist(lapply(objectList, function(x) class(x)[1] %in% c("aov", "lm", "glm", "rlm")))
-  # TO DO werkte voor rlm niet, zie evt TO DOs in conRLM (wordt via restriktor functie in LL bepaling aangeroepen)
   if (sum(isLm) > 1L) {
     stop(paste("\nrestriktor ERROR: multiple objects of class lm found, only 1 is allowed."), call. = FALSE)
   }
@@ -1111,7 +1138,8 @@ goric.numeric <- function(object, ..., hypotheses = NULL,
   
   # Maak de objectList aan en voeg de vereiste elementen toe
   objectList <- list(
-    object = c(object),
+    # a matrix of estimates is kept as is and turned into a named vector in goric.default()
+    object = if (is.matrix(object)) object else c(object),
     VCOV = VCOV,
     hypotheses = hypotheses,
     comparison = comparison,
@@ -1480,21 +1508,31 @@ goric.effectlite <- function(object, ..., hypotheses = NULL,
   type <- check.type(type, class = "effectlite") # "EffectLiteR") 
   
   est <- object@results@est[colnames(object@results@vcov.def)]
-  constr <- con_constraints(
-    model       = est, #object@results@est, #[colnames(object@results@vcov.def)],
-    VCOV        = object@results@vcov.def,
-    constraints = hypotheses
-  )
+  # message on which parameter names can be used in the hypotheses
+  ELR_names_message <- paste0(
+    "The hypotheses should be specified using the effectlite parameter names; \n",
+    "that is, one or more of the following parameter names: ",
+    paste(colnames(object@results@vcov.def), collapse = ", "), ".")
+  constr <- tryCatch(
+    con_constraints(
+      model       = est,
+      VCOV        = object@results@vcov.def,
+      constraints = hypotheses
+    ),
+    error = function(e) {
+      if (grepl("unknown label", conditionMessage(e))) {
+        stop(paste0("restriktor ERROR: ", sub("^.*?ERROR: ", "", conditionMessage(e)), "\n",
+                    ELR_names_message), call. = FALSE)
+      }
+      stop(e)
+    })
   
   Amat <- constr$Amat
   involved <- colSums(abs(Amat)) != 0
   
   if (!any(involved)) {
-    # TO DO al eerder is er de melding "unknown label(s)..." daar al toevoegen dat het uit 'die opties' moet komen....
-    ELR_message <- paste0("restriktor ERROR: No parameters involved in the hypotheses. \n",
-         "The hypotheses should be specified using the effectlite parameter names; \n",
-         "that is, one or more parameter names from ", colnames(object@results@vcov.def), ".")
-    stop(ELR_message, call. = FALSE)
+    stop(paste0("restriktor ERROR: No parameters involved in the hypotheses. \n",
+                ELR_names_message), call. = FALSE)
   }
   
   # message VCOV
@@ -1503,7 +1541,10 @@ goric.effectlite <- function(object, ..., hypotheses = NULL,
   
   # sample_nobs (needed for type = "goricac")
   if (type == "goricac") {
-    N <- sum(object@results@est$N) # TO DO check:
+    # total sample size: the effectlite parameter 'N' (the number of 
+    # observations used in the analysis)
+    N <- as.numeric(object@results@est["N"])
+    if (is.na(N)) N <- lavInspect(object@results@lavresults, what = "ntotal")
     sample_nobs <- check_N_with_sample_nobs(N, sample_nobs)
   }
   
@@ -1523,6 +1564,18 @@ goric.effectlite <- function(object, ..., hypotheses = NULL,
   # Voeg extra argumenten toe aan de objectList
   extraArgs <- list(...)
   objectList <- c(objectList, extraArgs)
+  
+  # number of nuisance parameters (needed for type = "goricac"), unless
+  # specified by the user: the free parameters of the underlying lavaan model
+  # that are not involved in the hypotheses (as in goric.lavaan())
+  objectList <- add_nr_nuis_param(objectList, type, function() {
+    lav <- object@results@lavresults
+    pt <- parTable(lav)
+    free_labels <- unique(c(pt$label[pt$free > 0L & pt$label != ""],
+                            pt$plabel[pt$free > 0L]))
+    n_involved_free <- sum(names(est)[involved] %in% free_labels)
+    max(0, lavInspect(lav, what = "npar") - n_involved_free)
+  })
   
   # Roep de goric.default functie aan met de samengestelde lijst
   res <- do.call(goric.default, objectList)

@@ -154,6 +154,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
     goric(
       est,
       CI = FALSE, # no CIs needed for the re-calculated object
+      posthoc = FALSE, # no post-hoc analysis needed for the re-calculated object
       VCOV = VCOV, # based on N not N-k
       sample_nobs = sum(N), # Needed for type = "goricac" - daar genoeg aan sum(N) of moet het juist gehele N hebben?
       # number of nuisance parameters of the original model (type = "goricac")
@@ -598,6 +599,7 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   object <- goric(
     est_sample,
     CI = FALSE, # no CIs needed for the re-calculated object
+    posthoc = FALSE, # no post-hoc analysis needed for the re-calculated object
     VCOV = VCOV,
     sample_nobs = N[1], # Needed for type = "goricac"
     # number of nuisance parameters of the original model (type = "goricac")

@@ -354,7 +354,7 @@ evSyn_PI <- function(object, vs = NULL, best = NULL, level = 0.95, n_new = NULL,
     g <- goric_list[[s]]
     gc <- suppressMessages(suppressWarnings(
       goric(g$b.unrestr, VCOV = g$VCOV, hypotheses = list(Hb = hb), comparison = "complement",
-            type = "gorica", penalty_factor = pf)))
+            type = "gorica", penalty_factor = pf, posthoc = FALSE)))
     LL <- gc$result$loglik; PT <- gc$result$penalty
     D  <- LL[1] - LL[2]
     s_obs[s] <- sgn * sign(D) * sqrt(2 * abs(D))

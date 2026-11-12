@@ -17,9 +17,9 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   cat(sprintf("restriktor (%s): %s Evidence Synthesis results:\n", 
               packageDescription("restriktor", fields = "Version"), x[["type_ev"]]))
   
+  # an additional message (if any) stored in the evSyn object
   if (!is.null(x[["messageAdded"]])) {
     cat(x[["messageAdded"]])
-    # TO DO
   }
   
   # Display input type information

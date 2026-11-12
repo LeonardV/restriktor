@@ -567,8 +567,22 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     stop("\nrestriktor ERROR: The argument 'VCOV' must be a list of covariance matrices corresponding to the (standardized) parameter estimates of interest.",
          call. = FALSE)
   } 
-  # TO DO check of square matrices in list, kan evt door nu fout in goric() te laten gebeuren, maar
-  #       dan is het meegeven van study nr wel fijn!
+  # check per study whether VCOV is a square matrix of the same dimension as
+  # the number of estimates (such that the study number can be reported)
+  for (s in seq_len(S)) {
+    V_s <- as.matrix(VCOV[[s]])
+    if (nrow(V_s) != ncol(V_s)) {
+      stop("\nrestriktor ERROR: The covariance matrix (VCOV) of study ", s, 
+           " is not a square matrix (it is ", nrow(V_s), " x ", ncol(V_s), ").",
+           call. = FALSE)
+    }
+    if (nrow(V_s) != length(object[[s]])) {
+      stop("\nrestriktor ERROR: The covariance matrix (VCOV) of study ", s, " is ", 
+           nrow(V_s), " x ", ncol(V_s), ", while the number of estimates in that study is ",
+           length(object[[s]]), ". These should correspond.",
+           call. = FALSE)
+    }
+  }
   
   if ( !is.list(hypotheses) && length(hypotheses) == 0 ) {
     stop("\nrestriktor ERROR: hypotheses must be a list.", call. = FALSE)  
@@ -746,6 +760,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
     res_goric <- goric(object[[s]], VCOV = VCOV[[s]],
                        hypotheses = hypotheses[[s]],
                        CI = FALSE, # CIs per study are not needed here
+                       posthoc = FALSE, # post-hoc analyses per study are not needed here
                        type = type, comparison = comparison,
                        sample_nobs = study_sample_nobs[s],
                        nr_nuis_param = if (type == "goricac") study_nr_nuis_param[s] else NULL,
@@ -1350,11 +1365,14 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
   
   IC <- object
   S  <- length(IC)
+  # NrHypos: the number of specified hypotheses, that is, all but the last 
+  # one, which is assumed to be the safeguard hypothesis (e.g., the 
+  # unconstrained); NrHypos_incl (= NrHypos + 1): the total number of 
+  # hypotheses, including the safeguard. The '- 1' (and '+ 1') thus only 
+  # separates the safeguard from the specified hypotheses; all computations 
+  # use all NrHypos_incl hypotheses. If the last one is not the safeguard,
+  # users can specify the names of the hypotheses in 'hypo_names'.
   NrHypos <- length(IC[[1]]) - 1
-  # TO DO waarom -1 (op meerdere plekken), was vast ergens voor nodig.... 
-  # TO DO wat ik kan bedenken maar we nu nog niets mee doen:
-  # We assume that the last one is the failsafe Hunc
-  # If not, users can specify the hypotheses names as well (in 'hypo_names').
   NrHypos_incl <- NrHypos + 1
   GORICA_weight_m <- matrix(NA, nrow = S, ncol = (NrHypos + 1))
   
@@ -1547,10 +1565,6 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
     Cumulative_GORICA_weights  = CumulativeGoricaWeights,
     Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
   
-  # if (!is.null(messageAdded)) {
-  #   out <- append(out, messageAdded)
-  #   # TO DO dit is ws nodig als message meegeven, doe ook bij andere varianten dan nog
-  # }
   
   class(out) <- c("evSyn_ICvalues", "evSyn")
   
@@ -2141,8 +2155,27 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
          paste(sQuote(unique(object_types)), collapse = ", "), ".",
          call. = FALSE)
   }
-  # TO DO als small sample, dan ook sample_nobs nodig of kan het zonder?
-  # TO DO check of in elke zelfde aantal hypotheses (met evt controle of failsafe ook - dit als message dan), anders werkt het ook niet
+  # Note: for the small-sample versions (goricc, goricac), the sample sizes are
+  # not needed here, since the (small-sample) penalties are already computed 
+  # per study in the goric objects (and these are used below).
+  #
+  # Check whether all goric objects contain the same number of hypotheses 
+  # (including the safeguard), and give a message if the names of the 
+  # hypotheses or the safeguards (unconstrained or complement) differ.
+  nr_hypos_objects <- vapply(object, function(x) nrow(x$result), integer(1))
+  if (length(unique(nr_hypos_objects)) > 1) {
+    stop("\nrestriktor ERROR: All goric objects must contain the same number of hypotheses ",
+         "(including the safeguard hypothesis). Found: ",
+         paste0("study ", seq_along(object), ": ", nr_hypos_objects, collapse = "; "), ".",
+         call. = FALSE)
+  }
+  hypo_names_objects <- lapply(object, function(x) as.character(x$result$model))
+  if (!all(vapply(hypo_names_objects, identical, logical(1), hypo_names_objects[[1]]))) {
+    message("\nrestriktor Message: The names of the hypotheses (and/or the safeguard ",
+            "hypotheses) differ across the goric objects. Please make sure that the hypotheses ",
+            "are in the same order in each study (the evidence is synthesized per position, ",
+            "that is, the first hypotheses of all studies, the second ones, etc.).")
+  }
   
   # The penalty factor used in the goric objects (default 2); this must be 
   # the same for all objects, and it is used in the evidence synthesis as well.

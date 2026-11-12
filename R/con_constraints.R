@@ -87,7 +87,10 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     LIST$op  <- op
     LIST$rhs <- rhs #c(LIST$rhs, rhs) 
     
-    # TO DO waarom onderstaande nodig?
+    # The constraints are added to the parameter table, such that (1) the check
+    # below on unsupported constraint syntax (e.g., remaining '<', '>', or '='
+    # in lhs or rhs) can be performed, and (2) the parameter table that is 
+    # stored in the output (e.g., in restriktor objects) also contains them.
     parTable$lhs   <- c(parTable$lhs, LIST$lhs)
     parTable$op    <- c(parTable$op, LIST$op)
     parTable$rhs   <- c(parTable$rhs, LIST$rhs)

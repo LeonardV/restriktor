@@ -44,18 +44,27 @@ coef.gorica_est <- function(object, ..., which = c("restr", "unrestr"))  {
 }
 
 coef_named_vector <- function(x, VCOV = NULL, ...)  {
-  # TO DO wat als vcov niet bestaat of nog niet matrix (maar bijv dpo)?
-  # ms zelfs suppressWarnings(vcov(...)) gebruiken dan
   if (!is.vector(coef(x))) {
     # Some fit objects (like mlm) render matrices (>1 x >1 matrices).
     # So, if not a vector, make it one, with names(!) coming from vcov.
     est <- as.vector(coef(x))
+    # The covariance matrix may not exist (then NULL) or may not be a base 
+    # matrix (e.g., a dpoMatrix from the Matrix package); as.matrix() keeps 
+    # the row and column names.
     if (is.null(VCOV)) {
-      names(est) <- rownames(vcov(x))
-    } else { 
-      # TO DO eigenlijk nog checken of rownames bestaan
-      names(est) <- rownames(VCOV)
+      VCOV <- tryCatch(as.matrix(suppressWarnings(vcov(x))), error = function(e) NULL)
+    } else {
+      VCOV <- as.matrix(VCOV)
     }
+    vcov_names <- rownames(VCOV)
+    if (is.null(vcov_names)) vcov_names <- colnames(VCOV)
+    if (is.null(vcov_names) || length(vcov_names) != length(est)) {
+      stop("\nrestriktor ERROR: The coefficients of the fitted model are not a vector, and ",
+           "their names cannot be obtained from the (row or column) names of its covariance ",
+           "matrix (vcov). Please provide a named vector of estimates and their covariance ",
+           "matrix (VCOV) instead.", call. = FALSE)
+    }
+    names(est) <- vcov_names
     message("\nrestriktor Message: The coefficients from the fitted model have been converted into a vector. ",
             "The coefficient names are taken from the row names of the covariance matrix (vcov). ",
             "Use these names when specifying hypotheses. ",
@@ -101,18 +110,17 @@ VCOV.unbiased <- function(model.org, sample_nobs = NULL, ...)  {
     # Btw if est & VCOV are used instead of fitted object, then their gorica results differ...
     N_min_k <- model.org$df.residual
     N <- N_min_k + model.org$rank
-    VCOV <- vcov(model.org) * N_min_k / N
+    VCOV <- as.matrix(vcov(model.org)) * N_min_k / N
   } else if (!is.null(model.org$x) && !is.null(model.org$rank)) { 
     # Note: In rlm object model.org$df.residual is NA
     # Use cov.mx based on N not N-k, such that output goric and gorica are the same
     # Btw if est & VCOV are used instead of fitted object, then their gorica results differ...
     N <- dim(model.org$x)[1] 
     N_min_k <- N - model.org$rank
-    VCOV <- vcov(model.org)*N_min_k/N
+    VCOV <- as.matrix(vcov(model.org)) * N_min_k / N
   } else {
-    VCOV <- vcov(model.org)
-    # TO DO Voor als dpoMatrix (kan dat hierboven ook gebeuren?), dan ws:
-    #as.matrix(suppressWarnings(vcov(object))) # Behoud dit zijn namen ook?
+    # as.matrix(): in case vcov() renders, e.g., a dpoMatrix (the names are kept)
+    VCOV <- as.matrix(suppressWarnings(vcov(model.org)))
     message(
     "\nrestriktor Message: The covariance matrix of the estimates was obtained via ",
     "'vcov()'. This represents the biased (restricted) sample covariance matrix, ",

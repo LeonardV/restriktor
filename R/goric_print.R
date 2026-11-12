@@ -3,53 +3,6 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   type <- x$type
   comparison <- x$comparison
   
-  # # TO DO HIER
-  # # Determine best hypo vs its complement (and thus conditional error prob.),
-  # # but only if it is not Hunc or when complement&Heq not Hc.
-  # best_Hypo_ICw <- which.max(x$result$goric.weights)
-  # best_Hypo_ICw_name <- x$result$model[best_Hypo_ICw]
-  # messagePrW <- FALSE
-  # if ( (comparison != "complement" && best_Hypo_ICw_name != "unconstrained") || (x$Heq && best_Hypo_ICw_name != "complement") ) {
-  #   Hypo_best <- unlist(x$hypotheses_usr[best_Hypo_ICw], use.names = F)
-  #   if (any(x$priorICweights != x$priorICweights[1])) {
-  #     priorICweights_best <- c(x$priorICweights[best_Hypo_ICw], 1-x$priorICweights[best_Hypo_ICw]) 
-  #     messagePrW <- TRUE
-  #     # TO DO make note mbt hoe priorICweights gemaakt nu! als niet vooraf gelijk dan
-  #   } else {
-  #     priorICweights_best <- c(0.5, 0.5)
-  #   }
-  #   inputList <- list(x$model.org, #x$objectList$H1,
-  #                       type = type, sample_nobs = x$sample_nobs,
-  #                     hypotheses = list(Hbest = Hypo_best),
-  #                     comparison = "complement",
-  #                     priorICweights = priorICweights_best,
-  #                     Heq = FALSE,
-  #                     penalty_factor = x$penalty_factor) 
-  #   goric_HbestVsHc <- do.call(goric.default, inputList)
-  #   #
-  #   ICratio_HbestVsHc <- goric_HbestVsHc$ratio.gw[1,2]
-  #   errorProb_Hbest <- goric_HbestVsHc$result$goric.weights[2]
-  # } else if (comparison == "complement" && !x$Heq) {
-  #   # If already H1 vs Hc, then we can also report on cond. error prob.
-  #   ICratio_HbestVsHc <- NULL # Null, such that Future info does not appear in output
-  #   errorProb_Hbest <- x$result$goric.weights[2]
-  # } else {
-  #   ICratio_HbestVsHc <- NULL
-  #   errorProb_Hbest <- NULL
-  # }
-  # # TO DO HIER Verwerk bovenstaande in output (print en summary)
-  # # print: dan had dit ms al eerder gedaan moeten worden?
-  # # summary: hieronder poging, maar niet mooi nog.
-  # # Gedachte (maar ws niet): Ms ook onderdeel van 'goric_object$result' laten zijn, 
-  # #                          al wordt die tabel dan wel nog weer langer... dus ws niet doen, 
-  # #                          dan ook minder duidelijk dat het posthoc is...
-  # #          Wel opvraagbaar laten zijn!
-  # TO DO (posthoc)
-  # Make both a function and a possible input argument.
-  # Add a conclusion text.
-  # When available, then also mention this functionality in the output perhaps
-  
-  
   dig <- paste0("%6.", digits, "f")
   IC_lab <- toupper(type) # e.g., GORIC, GORICA, GORICC, GORICAC (used in the text)
   #x2 <- lapply(x$result[-1], sprintf, fmt = dig)
@@ -318,7 +271,12 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   }
   if (best_hypo_overlap) {
     message("Since the best hypothesis overlaps with one or more other hypotheses,",
-" we recommend evaluating the overlap (or best hypothesis) vs. its complement.",
+" we recommend evaluating the overlap (or best hypothesis) vs. its complement",
+if (isTRUE(x$posthoc$applicable)) {
+  " (for the best hypothesis, see the post-hoc analysis below)."
+} else {
+  " (for the best hypothesis, this can be done with goric_posthoc())."
+},
           " Run vignette(\"Guidelines_GORIC_output\") in your console for more",
           " information and an example.")
   }
@@ -481,14 +439,6 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
       result <- paste(numbers[1], "/", numbers[2], "= 1", sep = " ")
       cat("The order-restricted hypothesis", sQuote(objectnames[1]), "and the complement have equal support:", result)      
     }
-    # cat(paste0("---\nThe order-restricted hypothesis ", objectname1, 
-    #            " has ", support_ratio, " times more support than its complement.\n\n"))
-    #
-    # # TO DO HIER maak mooier en ms nog onderdeel van een opvraagbare lijst ofzo
-    # if (!is.null(errorProb_Hbest)) {
-    #   message(paste0("\nThe conditional error probability, that is, the probability ",
-    #   "(given the data) that this conclusion is incorrect, is ", round(errorProb_Hbest, 2), "."))
-    # }
   } else if (comparison == "complement" && x$Heq) { 
     modelnames <- x$result$model[!x$result$model == "Heq"]
     if (best_hypo_name != "Heq") {
@@ -692,6 +642,13 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     }
   }
 
+  # Post-hoc analysis (if performed; see goric()'s argument posthoc): the best
+  # hypothesis versus its complement; see goric_posthoc() (goric_posthoc.R).
+  if (!is.null(x$posthoc)) {
+    cat("---")
+    print(x$posthoc, digits = digits)
+  }
+
   # Tip pointing at the benchmarks function, for labeling/interpreting the
   # quantified output above (the ratio(s) of GORIC(A)/loglik/penalty
   # weights): a ratio on its own (e.g. 5.2) doesn't say how strong that level
@@ -710,18 +667,6 @@ print.con_goric <- function(x, digits = max(3, getOption("digits") - 4), ...) {
             " https://github.com/rebeccakuiper/Tutorials.")
   }
 
-  # # TO DO HIER maak mooier en ms nog onderdeel van een opvraagbare lijst ofzo
-  # if (!is.null(ICratio_HbestVsHc) && !is.null(errorProb_Hbest)) {
-  #   message(paste0("\nrestriktor Future research information based on a post-hoc analysis: \n",
-  #   "The best hypothesis ", best_hypo_name, " is ", round(ICratio_HbestVsHc, 2), 
-  #   "times more likely than its complement. \n",
-  #   "The conditional error probability, that is, the probability ",
-  #   "(given the data) that this conclusion is incorrect, is ", round(errorProb_Hbest, 2), "."))
-  #   #
-  #   if (messagePrW) {
-  #     message(paste0("\nThis result is based on rescaling the priorICweights to: ", priorICweights_best))
-  #   }
-  # }
   
   # Above the best hypothesis is determined based on ICweights.
   # In the case of unequal priorICweights, this can differ from conclusion based on ICvalues.

@@ -208,6 +208,13 @@ summary.con_goric <- function(object, brief = TRUE,
     cat("---\n")
   }
   
+  # Post-hoc analysis (if performed; see goric()'s argument posthoc); see
+  # goric_posthoc() (goric_posthoc.R).
+  if (!is.null(x$posthoc)) {
+    print(x$posthoc, digits = digits)
+    cat("---\n")
+  }
+  
   if (!is.null(x$ratio.lw)) {
     cat("\nRatio loglik-weights:\n")
     ratio.lw <- apply(x$ratio.lw, 2, sprintf, fmt = dig)

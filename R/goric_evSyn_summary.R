@@ -469,12 +469,12 @@ summary.evSyn <- function(object, probs = c(0, .25, .50, .75, 1),
   } else NULL
   
   ans$messages <- list(mix_weights = x[["messages"]]$mix_weights)
+  # an additional message (if any) stored in the evSyn object; it is shown 
+  # by print() and by the print method of the summary
+  ans$messageAdded <- x[["messageAdded"]]
   class(ans) <- "summary.evSyn"
   
   ans
-  
-  # TO DO x$messageAdded
-  
 }
 
 
@@ -797,10 +797,9 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   cat("\n")
   message(x[["messages"]]$mix_weights)
   
-  # # TO DO
-  # if (!is.null(x[["messageAdded"]])) {
-  #   cat("\n")
-  #   message(x[["messageAdded"]])
-  # }
+  if (!is.null(x[["messageAdded"]])) {
+    cat("\n")
+    message(x[["messageAdded"]])
+  }
   
 }

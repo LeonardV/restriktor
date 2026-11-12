@@ -189,8 +189,11 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
   #cat(strrep("=", 70), "\n")
   cat(paste0(blue, "Benchmark Results", reset), "\n")
   cat(strrep("-", 70), "\n")
-  # TO DO Geef ook het aantal iteraties (iter) wat gebruikt is.
   cat(sprintf("Preferred Hypothesis: %s%s%s\n", green, pref_hypo, reset))
+  # number of draws (iterations) used per benchmark population
+  if (!is.null(x$iter)) {
+    cat(sprintf("Number of iterations (draws) per benchmark: %s%s%s\n", green, x$iter, reset))
+  }
   cat(sprintf("Error probability Preferred Hypothesis vs. Complement: %s%s%s\n", green, error_prob_pref_hypo, reset))
   if (inherits(x, "benchmark_means")) {
     cat(sprintf("Number of Groups: %s%s%s\n", green, ngroups, reset))

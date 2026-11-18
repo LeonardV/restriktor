@@ -52,8 +52,8 @@ as will become clear in the second example.
  
 
 Three types of approaches to evidence aggregation are possible: "equal", "added", and "average". The latter should be used when doing a multiverse analysis and, thus, when the aim is to average results from multiple analysis on one data set (due to different operationalization choices). The other two can be used when aggregating results from multiple studies.  
-In case of an equal-evidence approach, evidence from N = 5 studies with n = 100 observations (with support for the central theory) is the same as obtaining evidence from 1 study with n = 5 * 100 = 500 observations (with support for the central theory) -- as in a meta-analysis. In the added-evidence approach, the evidence aggregated from N = 5 studies with n = 100 observations (with support for the central theory) is stronger than if the data came from a single study with n = 5 * 100 = 500 observations (with support for the central theory).  
-For ease, this tutorial only shows code for the added approach, but one can easily adjust it to the equal approach by specifying "type = 'equal'" in the `evSyn` function.
+In the added-evidence approach (default), the evidence aggregated from N = 5 studies with n = 100 observations (with support for the central theory) is stronger than if the data came from a single study with n = 5 * 100 = 500 observations (with support for the central theory): it quantifies the support for the central theory being true in each of the studies. The equal-evidence approach takes a data-pooling perspective (the fit parts are summed, while the penalty parts are averaged). However, it only renders the same results as one study with n = 500 observations (i.e., as the GORIC(A) on the pooled data or on fixed-effect meta-analyzed estimates) when the studies render (nearly) the same estimates; otherwise, it is biased towards the failsafe hypothesis, and more so when more studies are combined, while this bias decreases when the sample size per study increases (Kuiper, submitted). Therefore, also inspect the study-specific and cumulative log-likelihood weights (via `summary`).  
+Therefore, the added-evidence approach is recommended for combining conceptual replications and, when the studies can be pooled, additionally the GORIC(A) on meta-analyzed estimates. This tutorial shows code for the added approach; one can adjust it to the equal approach by specifying "type_ev = 'equal'" in the `evSyn` function.
 
 
 Notes:  
@@ -119,7 +119,7 @@ Using the created lists and hypothesis, run `evSyn` and obtain the results for G
 ```{r, message=FALSE, warning=FALSE}
 evSyn_trust <- evSyn(estimates, VCOV = covmats, 
                      hypotheses = list(Hpos = Hpos),
-                     # type = 'added', # default
+                     # type_ev = 'added', # default
                      comparison = 'complement')
 
 evSyn_trust
@@ -237,7 +237,7 @@ In the first set, H1.1 and H1.2 are investigated together, as if these are the h
 results_Set1 <- evSyn(object = estimates, VCOV = covmats,
                       hypotheses = list(H1.1 = H1.1, H1.2 = H1.2)
                       #comparison = "unconstrained" # default
-                      #type = "added" # default
+                      #type_ev = "added" # default
                       )
 
 results_Set1
@@ -411,7 +411,7 @@ As show above, one can use estimates and their variance-covariance matrices as i
 results_Set1 <- evSyn(object = estimates, VCOV = covmats,
                       hypotheses = list(H1.1 = H1.1, H1.2 = H1.2)
                       #comparison = "unconstrained" # default
-                      #type = "added" # default
+                      #type_ev = "added" # default
                       )
 
 results_Set1
@@ -516,7 +516,7 @@ PT_Set1  <- list(gorica_Study1$result[,3], gorica_Study2$result[,3],
 
 # GORICA evidence synthesis
 results_Set1_LLandPT <- evSyn(LL_Set1, PT = PT_Set1,
-                            #type = "added", # Default
+                            #type_ev = "added", # Default
                             hypo_names = c("H1.1", "H1.2", "Hu"))
 #
 results_Set1_LLandPT

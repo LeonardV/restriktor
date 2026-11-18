@@ -24,6 +24,11 @@
 hypotheses from multiple studies that may use diverse designs to investigate the 
 same central theory.
 
+Two approaches are available for combining studies: the added-evidence approach 
+(default; recommended for combining conceptual replications) and the equal-evidence 
+approach (motivated by a data-pooling perspective). The latter only equals 
+data pooling when the studies render (nearly) the same estimates; see Details.
+
 With \code{CI = TRUE} (or afterwards with \code{\link{evSyn_CI}}), confidence intervals are 
 computed for the final (aggregated) results. This regards the confidence interval of the aggregated evidence, not of pooled parameter 
 estimates (as done in meta-analysis). Since aggregated evidence changes with the combined sample size, the 
@@ -151,10 +156,13 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   
   \item{x}{an object of class \code{evSyn}}
 
-  \item{type_ev}{type of evidence-synthesis approach: Equal-evidence approach 
-  (\code{type_ev = "equal"}), Added-evidence approach (\code{type_ev = "added"}), or
-  Average-evidence approach (\code{type_ev = "average"}). See details for more 
-  information. Notably, when the input is a list of i) GORIC(A) values, ii) GORIC(A) weights, 
+  \item{type_ev}{type of evidence-synthesis approach: Added-evidence approach 
+  (\code{type_ev = "added"}; default), Equal-evidence approach (\code{type_ev = "equal"}), or
+  Average-evidence approach (\code{type_ev = "average"}). For combining (conceptual 
+  replication) studies, the added-evidence approach is recommended; when the studies can 
+  be pooled, one can additionally apply the GORIC(A) to meta-analyzed estimates. 
+  The average-evidence approach is meant for multiple analyses of the same data 
+  (e.g., a multiverse analysis). See details for more information. Notably, when the input is a list of i) GORIC(A) values, ii) GORIC(A) weights, 
   or iii) ratios of GORIC(A) weights, equal-evidence approach is not possible 
   (the added-evidence approach is then used instead).}
 
@@ -411,30 +419,74 @@ objects, or of log-likelihood and penalty values, and not for \code{type_ev = "a
 analyses are based on the same data anyway).
 }
 
-In the \strong{added-evidence} approach, evidence for a central hypothesis/theory 
-from each study or dataset is cumulatively aggregated. 
+In the \strong{added-evidence} approach (default), evidence for a central hypothesis/theory 
+from each study or dataset is cumulatively aggregated (Kuiper & Clapper, 2025). 
 This means that for every new study, the log-likelihood and the penalty term are 
 added to the cumulative totals. Stated differently, the (cumulative) IC weights 
-are used as an a priori weigth for the next study.
+are used as a priori weights for the next study. Hence (with equal prior IC weights and 
+study weights), the final ratio of IC weights equals the product of the study-specific 
+ratios. The aggregated evidence thus quantifies the support for the central theory being 
+true in each of the studies; this is stronger than if the data were combined into 
+a single study (when that would be possible).
 \cr 
-Opt for this approach when you believe that the 
-aggregated evidence from multiple studies is stronger than if the data were combined 
-into a single study (when that would be possible).
+This approach is recommended for combining conceptual replications, that is, studies that 
+address the same central theory but may differ in, for example, design, operationalization, 
+or population. 
+Notably, when (many) underpowered studies are combined, it can support the smallest, but 
+incorrect, hypothesis. Therefore, also inspect the study-specific and cumulative 
+log-likelihood weights (\code{LL_weights_m} and \code{Cumulative_LL_weights}, shown by 
+\code{summary}): when the preferred hypothesis does not have the highest log-likelihood 
+weight, the support for it stems from its smaller penalty, which may indicate 
+underpowered studies (Kuiper, submitted).
 
-The \strong{equal-evidence} approach also aggregates the cumulative evidence 
-central hypothesis/theory but as if the data were combined into a single study 
-(when that would be possible).  
-In that way, it is comparable to meta-analysis but without the need that the 
-data can be combined. 
-This means that for every new study, the log-likelihood 
-part (reflecting the fit of the hypothesis to the data) is added to the 
-cumulative total, while the penalty part (reflecting the size of the hypothesis) 
-is averaged. Because of this, this approach can only be used when there is 
-information about the log-likelihood and penalty (and not only the IC values or 
-weights).
+The \strong{equal-evidence} approach is motivated by a data-pooling perspective: 
+for every new study, the log-likelihood part (reflecting the fit of the hypothesis 
+to the data) is added to the cumulative total, while the penalty part (reflecting the 
+size of the hypothesis) is averaged. Because of this, this approach can only be used 
+when there is information about the log-likelihood and penalty (and not only the IC 
+values or weights).
+With equal prior IC weights and study weights, the final ratio of IC weights of 
+\eqn{H_m} versus \eqn{H_{m'}} equals that of the added-evidence approach divided by 
+\eqn{\exp\{\frac{S-1}{S} \sum_s (PT_{s,m'} - PT_{s,m})\}}{exp((S-1)/S * sum_s (PT_{s,m'} - PT_{s,m}))}, with \eqn{S} the number of 
+studies and \eqn{PT} the penalty values. Hence, when \eqn{H_m} is smaller than \eqn{H_{m'}} 
+(e.g., an order-restricted hypothesis versus its complement or the unconstrained), the 
+equal-evidence approach renders less support for \eqn{H_m}; for equally complex 
+hypotheses, both approaches render the same results.
 \cr
-Choose this method when you view the combined evidence from multiple studies as 
-equivalent to that from a single, larger study.
+Notably, the equal-evidence approach renders the same results as the GORIC(A) on the 
+pooled data (or, equivalently, on fixed-effect meta-analyzed estimates) only when 
+the studies render (nearly) the same estimates. When the study-specific estimates 
+differ (e.g., due to sampling variability), the summed fit part allows for 
+study-specific parameter values, while this flexibility is not penalized (since the 
+penalty is averaged). Then, it is biased towards the larger, failsafe hypothesis 
+(unconstrained or complement), and more so when more studies are combined: with a 
+few studies, it is a conservative approach; with many (small) studies, it can even 
+prefer the failsafe when the central theory is true (Kuiper, submitted).
+\cr
+This bias decreases when the sample size per study increases: the study-specific 
+estimates are then more often (and more clearly) in agreement with the true hypothesis 
+and the fit differences grow with the sample size, such that the summed fit part favors 
+the true hypothesis and the equal-evidence approach comes closer to data pooling. 
+How large the sample size per study must be depends on the setting. For example, in a 
+simulation with 20 studies, each with three ordered standardized regression coefficients 
+(ratio 3:2:1, with a medium overall effect size: \eqn{R^2 \approx .13}{R^2 = .13}, i.e., 
+\eqn{f^2 = .15}{f^2 = .15}; so, adjacent coefficients differ by only about .09), the true 
+order-restricted hypothesis was preferred over its complement in 35\% of the replications 
+with 85 observations per study, in 67\% with 150, and in all replications with 300 or more 
+(Kuiper, submitted).
+\cr
+Therefore, inspect the study-specific and cumulative log-likelihood weights 
+(\code{LL_weights_m} and \code{Cumulative_LL_weights}, shown by \code{summary}): 
+when many studies render a lower log-likelihood weight for the central theory than for 
+the failsafe (i.e., estimates not in agreement with the central theory), the studies are 
+probably underpowered, and the equal-evidence results are then likely to be biased 
+towards the failsafe.
+\cr
+Hence, when the studies can be pooled (i.e., have the same design and parameters), it is 
+recommended to (additionally) apply the GORIC(A) to the meta-analyzed estimates (e.g., 
+\code{goric} on an \code{rma} object from the \pkg{metafor} package; fixed-effect for 
+common effects, random-effects for average effects), instead of using the 
+equal-evidence approach.
 
 The \strong{average-evidence} method can be conceptualized as a form of multiverse 
 analysis. When faced with a single dataset, there are often numerous analytical 
@@ -569,6 +621,13 @@ that all studies point in the same direction.
 
 
 \references{
+  Kuiper, R. M., and Clapper, E.-B. (2025). Aggregating evidence for a central theory from 
+  diverse studies using the generalized order-restricted information criterion. 
+  \emph{Psychological Methods}. Advance online publication. \doi{10.1037/met0000755}
+
+  Kuiper, R. M. (submitted). Two types of overall evidence for a central theory using an 
+  AIC-type criterion.
+
   Klaassen, F., Zedelius, C. M., Veling, H., Aarts, H., and Hoijtink, H. (2018). 
   All for one or some for all? Evaluating informative hypotheses using multiple N = 1 studies. 
   \emph{Behavior Research Methods, 50}, 2276--2291. \doi{10.3758/s13428-017-0992-5}

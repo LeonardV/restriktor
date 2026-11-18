@@ -6,11 +6,15 @@
 # 5. Output from gorica function
 # 6. Output from escalc (metafor package)
 
-# In case of an equal-evidence approach, aggregating evidence from, say, 5 studies 
-# with n=100 observations is the same as obtaining evidence from 1 study 
-# (as if it was possible) with n=500 observations (like meta-analysis does).
-# In the added-evidence approach, the aggregated evidence from, says, 5 studies 
-# is stronger than as if the data were combined (as if that was possible).
+# In the added-evidence approach (default), the aggregated evidence from, say, 5 studies 
+# is stronger than as if the data were combined (as if that was possible): it quantifies 
+# the support for the central theory being true in each of the studies.
+# In the equal-evidence approach (data-pooling perspective: LL summed, PT averaged), 
+# aggregating evidence from, say, 5 studies with n=100 observations is the same as 
+# obtaining evidence from 1 study with n=500 observations (i.e., the GORIC(A) on pooled 
+# data or on fixed-effect meta-analyzed estimates) ONLY when the studies render (nearly) 
+# the same estimates; otherwise, it is biased towards the failsafe hypothesis 
+# (Kuiper, submitted).
 
 # evSyn_est       <- function(object, ...) UseMethod("evSyn_est")
 # evSyn_LL        <- function(object, ...) UseMethod("evSyn_LL")

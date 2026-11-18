@@ -1,0 +1,12 @@
+comp S=5 tau=0.00: coverage 1.000 (n=200); mean P(fav) 0.868 vs observed 0.970
+unc S=5 tau=0.00: coverage 0.945 (n=200); mean P(fav) 0.717 vs observed 0.650
+comp S=10 tau=0.00: coverage 0.995 (n=200); mean P(fav) 0.908 vs observed 0.985
+unc S=10 tau=0.00: coverage 0.930 (n=200); mean P(fav) 0.701 vs observed 0.590
+comp S=20 tau=0.00: coverage 0.980 (n=200); mean P(fav) 0.922 vs observed 0.985
+unc S=20 tau=0.00: coverage 0.950 (n=200); mean P(fav) 0.710 vs observed 0.550
+comp S=5 tau=0.10: coverage 0.950 (n=200); mean P(fav) 0.756 vs observed 0.800
+unc S=5 tau=0.10: coverage 0.903 (n=196); mean P(fav) 0.648 vs observed 0.515
+comp S=10 tau=0.10: coverage 0.915 (n=200); mean P(fav) 0.788 vs observed 0.825
+unc S=10 tau=0.10: coverage 0.955 (n=200); mean P(fav) 0.632 vs observed 0.480
+comp S=20 tau=0.10: coverage 0.945 (n=200); mean P(fav) 0.838 vs observed 0.885
+unc S=20 tau=0.10: coverage 0.915 (n=200); mean P(fav) 0.620 vs observed 0.540

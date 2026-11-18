@@ -1,0 +1,426 @@
+---
+title: "Coverage of the confidence intervals of evSyn_CI()"
+subtitle: "A simulation study for the pooled results of a GORICA evidence synthesis"
+author: "restriktor"
+date: "`r format(Sys.Date())`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    code_folding: show
+params:
+  run_simulation: false
+  R: 400
+  B: 500
+  nsim_target: 100000
+  workers: 2
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.width = 9, fig.height = 5.5)
+library(restriktor)
+library(ggplot2)
+results_file <- "coverage_evSyn_CI_results.rds"
+```
+
+# Aim
+
+`evSyn_CI()` gives confidence intervals (CIs) for the pooled (final) results of a GORICA
+evidence synthesis: the pooled GORICA values, the differences in pooled GORICA values, the
+pooled GORICA weights, and the ratios of pooled GORICA weights. This simulation study
+evaluates the coverage of these CIs for the two available approaches:
+
+* `method = "boot"` (default): parametric bootstrap, drawing per study from N(estimates, VCOV),
+  independently over the studies, and taking percentiles of the pooled quantities;
+* `method = "delta"`: normal-based (delta-method) CIs, with the covariance matrix of the pooled
+  log-likelihood values as the sum of the study-specific ones (and the CIs of the weights on the
+  logit scale).
+
+# Design
+
+## Data-generating model
+
+Each study estimates three (standardized) parameters, say three group means with unit variance
+and $n$ observations per group. The estimates of study $s$ are drawn as
+$\hat\theta_s \sim N(\theta, V)$, with $V = \mathrm{diag}(1/n, 1/n, 1/n)$; this is exactly the
+(asymptotic) model underlying the GORICA. The studies are independent and have the same true
+parameters $\theta$ (no heterogeneity).
+
+## Hypotheses
+
+Two sets of hypotheses are evaluated:
+
+* **Set A**: $H_1: \theta_1 > \theta_2 > \theta_3$ and $H_2: \theta_1 > \theta_2 = \theta_3$,
+  with the unconstrained hypothesis as failsafe (the default for more than one hypothesis);
+* **Set B**: $H_1: \theta_1 > \theta_2 > \theta_3$ versus its complement
+  (the default for one hypothesis).
+
+## Conditions
+
+```{r conditions}
+thetas <- list(
+  inside   = c(b1 = 0.4, b2 = 0.2, b3 = 0.0),  # in H1, not in H2
+  boundary = c(b1 = 0.2, b2 = 0.0, b3 = 0.0),  # on the boundary of H1 and in H2: overlap
+  outside  = c(b1 = 0.0, b2 = 0.2, b3 = 0.4),  # in the opposite order
+  null     = c(b1 = 0.0, b2 = 0.0, b3 = 0.0)   # all equal
+)
+hypo_sets <- list(
+  A = list(H1 = "b1 > b2 > b3", H2 = "b1 > b2 = b3"),  # failsafe: unconstrained
+  B = list(H1 = "b1 > b2 > b3")                        # failsafe: complement
+)
+conditions <- expand.grid(theta = names(thetas), n = c(25, 100), S = c(3, 10),
+                          type_ev = c("added", "equal"), hypo_set = names(hypo_sets),
+                          stringsAsFactors = FALSE)
+# The equal-evidence approach is only evaluated for set A (for the differences and
+# ratios, it gives the same CIs as the added-evidence approach up to a constant).
+conditions <- conditions[!(conditions$hypo_set == "B" & conditions$type_ev == "equal"), ]
+rownames(conditions) <- NULL
+nrow(conditions)
+```
+
+This gives `r nrow(conditions)` conditions: 4 true parameter vectors $\times$ 2 sample sizes per
+group ($n$ = 25, 100) $\times$ 2 numbers of studies ($S$ = 3, 10) $\times$ the evidence-synthesis
+approach (added; equal for set A) $\times$ 2 sets of hypotheses. Each condition is replicated
+$R$ = `r params$R` times, with $B$ = `r params$B` bootstrap draws per study. With $R$ = `r params$R`,
+the Monte Carlo standard error of an estimated coverage of .95 is
+`r round(sqrt(.95 * .05 / params$R), 3)`, so estimated coverages in between
+`r round(.95 - 2 * sqrt(.95 * .05 / params$R), 3)` and `r round(.95 + 2 * sqrt(.95 * .05 / params$R), 3)`
+are in line with a coverage of .95.
+
+## Estimand
+
+As for `goric_CI()`, the population counterparts of the GORICA values are their *expected* values,
+$E[\mathrm{GORICA}_m] = \log|2\pi V| + E[D_m] + 2\,PT_m$, with $D_m$ the squared Mahalanobis
+distance of the estimates to $H_m$ and $PT_m$ the (fixed) penalty. For the pooled results
+(equal prior weights and equal study weights):
+
+* added: $E[\mathrm{GORICA}^{pool}_m] = S \cdot E[\mathrm{GORICA}_m]$;
+* equal: $E[\mathrm{GORICA}^{pool}_m] = S \cdot (E[\mathrm{GORICA}_m] - 2\,PT_m) + 2\,PT_m$
+  (log-likelihoods summed, penalty averaged).
+
+The target values of the differences, the weights, and the ratios of weights follow from these
+expected pooled values. The expected values are obtained by Monte Carlo at the true parameters
+(`r format(params$nsim_target, big.mark = ",")` draws).
+
+```{r targets-functions}
+# Expected GORICA values (per hypothesis) for one study with estimates ~ N(theta, V)
+expected_IC <- function(theta, V, hyps, nsim) {
+  g <- goric(theta, VCOV = V, hypotheses = hyps)   # object at the true parameters
+  models <- as.character(g$result$model)
+  draws <- restriktor:::goric_CI_boot(g, models, B = nsim)
+  list(EIC = colMeans(draws), PT = g$result$penalty)
+}
+
+# Target values for the pooled results (equal priors, equal study weights)
+pooled_targets <- function(E, S, type_ev, pf = 2) {
+  EIC <- if (type_ev == "added") S * E$EIC else S * (E$EIC - pf * E$PT) + pf * E$PT
+  eta <- -EIC / 2
+  w <- exp(eta - max(eta)); w <- w / sum(w)
+  list(IC = EIC, weights = w,
+       diff  = outer(EIC, EIC, "-"),          # [m, k] = IC_m - IC_k
+       ratio = exp(outer(eta, eta, "-")))     # [m, k] = w_m / w_k
+}
+```
+
+## One replication
+
+For each replication, $S$ studies are generated, `evSyn()` is run, and the CIs of both methods are
+computed. For each quantity, it is recorded whether the CI contains the target value, whether the CI
+is missing (the delta method gives no CI for a difference/ratio when the two hypotheses have the same
+order-restricted MLEs in *all* studies), and the width of the CI (on the log scale for ratios).
+
+```{r one-rep}
+one_rep <- function(cond, tg, B) {
+  theta <- thetas[[cond$theta]]; hyps <- hypo_sets[[cond$hypo_set]]
+  n <- cond$n; S <- cond$S
+  V <- diag(1 / n, 3)
+  est <- lapply(seq_len(S), function(s) setNames(theta + rnorm(3, 0, sqrt(1 / n)), names(theta)))
+  r <- suppressMessages(evSyn(est, VCOV = rep(list(V), S), hypotheses = hyps, type_ev = cond$type_ev))
+  out <- list()
+  for (method in c("boot", "delta")) {
+    ci <- suppressMessages(evSyn_CI(r, method = method, B = B))
+    M <- nrow(ci$IC)
+    # ratios and differences: hypothesis 1 (H1) versus the others
+    for (k in 2:M) {
+      j <- which(ci$ratio_weights$model == ci$IC$model[1] & ci$ratio_weights$vs == ci$IC$model[k])
+      lo <- ci$ratio_weights$lower[j]; up <- ci$ratio_weights$upper[j]; tt <- tg$ratio[1, k]
+      out[[length(out) + 1]] <- data.frame(method = method, quantity = "ratio",
+        comparison = paste0("H1 vs. ", c("H2", "failsafe")[min(k - 1, 2)][1]),
+        covered = !is.na(lo) && lo <= tt && tt <= up, missing = is.na(lo),
+        width = if (is.na(lo)) NA else log(up) - log(lo))
+      lo <- ci$difference$lower[j]; up <- ci$difference$upper[j]; tt <- tg$diff[1, k]
+      out[[length(out) + 1]] <- data.frame(method = method, quantity = "difference",
+        comparison = paste0("H1 vs. ", c("H2", "failsafe")[min(k - 1, 2)][1]),
+        covered = !is.na(lo) && lo <= tt && tt <= up, missing = is.na(lo),
+        width = if (is.na(lo)) NA else up - lo)
+    }
+    # weight of H1
+    lo <- ci$weights$lower[1]; up <- ci$weights$upper[1]; tt <- tg$weights[1]
+    out[[length(out) + 1]] <- data.frame(method = method, quantity = "weight", comparison = "H1",
+      covered = !is.na(lo) && lo <= tt && tt <= up, missing = is.na(lo),
+      width = if (is.na(lo)) NA else up - lo)
+  }
+  out <- do.call(rbind, out)
+  # in set B, the second hypothesis is the failsafe (complement)
+  if (cond$hypo_set == "B") out$comparison[out$comparison == "H1 vs. H2"] <- "H1 vs. failsafe"
+  out
+}
+```
+
+## Running the simulation
+
+The simulation is run in parallel over the replications (with `future.apply`). It is only run
+when the parameter `run_simulation` is `TRUE`; otherwise, the saved results are used.
+
+```{r run, eval = params$run_simulation}
+library(future.apply)
+plan(multisession, workers = params$workers)
+set.seed(2026)
+res <- vector("list", nrow(conditions))
+for (i in seq_len(nrow(conditions))) {
+  cond <- conditions[i, ]
+  V <- diag(1 / cond$n, 3)
+  E <- expected_IC(thetas[[cond$theta]], V, hypo_sets[[cond$hypo_set]], nsim = params$nsim_target)
+  tg <- pooled_targets(E, cond$S, cond$type_ev)
+  reps <- future_lapply(seq_len(params$R), function(r) one_rep(cond, tg, params$B),
+                        future.seed = TRUE, future.packages = "restriktor",
+                        future.globals = list(one_rep = one_rep, cond = cond, tg = tg,
+                                              thetas = thetas, hypo_sets = hypo_sets, params = params))
+  reps <- do.call(rbind, reps)
+  res[[i]] <- cbind(cond[rep(1, nrow(reps)), , drop = FALSE], reps, row.names = NULL)
+}
+plan(sequential)
+res <- do.call(rbind, res)
+saveRDS(list(res = res, params = params, sessionInfo = sessionInfo()), results_file)
+```
+
+# Results
+
+```{r load}
+sim <- readRDS(results_file)
+res <- sim$res
+summ <- aggregate(cbind(coverage = covered, missing = missing) ~ theta + n + S + type_ev +
+                    hypo_set + method + quantity + comparison, data = res, FUN = mean)
+wid <- aggregate(width ~ theta + n + S + type_ev + hypo_set + method + quantity + comparison,
+                 data = res, FUN = median)
+names(wid)[names(wid) == "width"] <- "median_width"
+summ <- merge(summ, wid, all.x = TRUE)
+summ$theta <- factor(summ$theta, levels = names(thetas))
+mcse <- sqrt(.95 * .05 / sim$params$R)
+```
+
+The results are based on R = `r sim$params$R` replications per condition and B = `r sim$params$B`
+bootstrap draws per study. The gray band in the figures denotes .95 $\pm$ 2 Monte Carlo standard errors.
+A CI that is missing (delta method, see above) is counted as not covering the target value.
+
+## Ratios of GORICA weights
+
+```{r fig-ratio, fig.height = 7}
+plot_cov <- function(d, title) {
+  ggplot(d, aes(x = theta, y = coverage, colour = method, shape = factor(S))) +
+    annotate("rect", xmin = -Inf, xmax = Inf, ymin = .95 - 2 * mcse, ymax = .95 + 2 * mcse,
+             alpha = .25, fill = "gray60") +
+    geom_hline(yintercept = .95, linetype = "dashed") +
+    geom_point(size = 2.5, position = position_dodge(width = .5)) +
+    facet_grid(comparison + hypo_set ~ type_ev + n, labeller = label_both) +
+    coord_cartesian(ylim = c(min(.5, min(d$coverage)), 1)) +
+    labs(x = "True parameters", y = "Coverage", shape = "S", colour = "Method", title = title) +
+    theme_bw() + theme(axis.text.x = element_text(angle = 30, hjust = 1))
+}
+plot_cov(subset(summ, quantity == "ratio"), "Coverage of the CIs of the ratios of pooled GORICA weights")
+```
+
+## Differences in GORICA values
+
+```{r fig-diff, fig.height = 7}
+plot_cov(subset(summ, quantity == "difference"), "Coverage of the CIs of the differences in pooled GORICA values")
+```
+
+## GORICA weight of H1
+
+```{r fig-weight, fig.height = 4.5}
+plot_cov(subset(summ, quantity == "weight"), "Coverage of the CIs of the pooled GORICA weight of H1")
+```
+
+## Tables
+
+```{r tables}
+tab <- summ[order(summ$quantity, summ$hypo_set, summ$comparison, summ$type_ev, summ$theta, summ$n, summ$S, summ$method), ]
+tab$coverage <- round(tab$coverage, 3); tab$missing <- round(tab$missing, 3)
+tab$median_width <- round(tab$median_width, 2)
+knitr::kable(tab, row.names = FALSE)
+```
+
+## Overall summary
+
+```{r overall}
+overall <- aggregate(cbind(coverage = covered, missing = missing) ~ method + quantity, data = res, FUN = mean)
+overall$coverage <- round(overall$coverage, 3); overall$missing <- round(overall$missing, 3)
+knitr::kable(overall)
+```
+
+# Diagnostics: degenerate CIs
+
+The coverage is evaluated strictly (the target value must lie in the CI). When both hypotheses 
+have the same order-restricted MLEs in (nearly) all studies, the sampling distribution of their 
+difference is (nearly) a point mass, and so is its CI; the expected value then differs from that 
+point by a negligible amount, which a strict evaluation counts as non-coverage. For the condition 
+with the lowest coverage for H1 versus H2 with $S$ = 3 (parameters in the opposite order, $n$ = 100), 
+the CIs were recomputed while storing their bounds, and the coverage was also evaluated with a small 
+tolerance (0.1 on the scale of the difference in GORICA values, i.e., about 5\% on the scale of the 
+ratio of weights):
+
+```{r diag-code, eval = FALSE}
+# Diagnostic for the evSyn_CI() condition with a low (strict) coverage for H1 versus H2
+# (parameters in the opposite order, S = 3, n = 100): strict versus tolerant coverage and degenerate CIs.
+suppressPackageStartupMessages(library(restriktor))
+set.seed(5)
+R <- 200; B <- 500; tol <- 0.1; S <- 3; n <- 100
+th <- c(b1 = 0, b2 = .2, b3 = .4); V <- diag(1 / n, 3)
+H <- list(H1 = "b1 > b2 > b3", H2 = "b1 > b2 = b3")
+g0 <- goric(th, VCOV = V, hypotheses = H)
+EIC <- colMeans(restriktor:::goric_CI_boot(g0, as.character(g0$result$model), B = 2e5))
+target <- S * (EIC[1] - EIC[2])
+b <- t(replicate(R, {
+  est <- lapply(1:S, function(s) setNames(th + rnorm(3, 0, sqrt(1 / n)), names(th)))
+  ci <- evSyn_CI(suppressMessages(evSyn(est, VCOV = rep(list(V), S), hypotheses = H)), B = B)$difference
+  j <- which(ci$model == "H1" & ci$vs == "H2"); c(ci$lower[j], ci$upper[j])
+}))
+d <- data.frame(S = S, n = n, comparison = "H1 vs. H2", theta = "outside", target = target,
+                strict = mean(b[, 1] <= target & target <= b[, 2]),
+                tolerant = mean(b[, 1] - tol <= target & target <= b[, 2] + tol),
+                degenerate = mean(b[, 2] - b[, 1] < 1e-6))
+print(d, row.names = FALSE)
+saveRDS(d, "diag_evSyn_CI.rds")
+```
+
+```{r diag-results}
+knitr::kable(readRDS("diag_evSyn_CI.rds"), digits = 3, row.names = FALSE)
+```
+
+So, this low (strict) coverage is an artifact of degenerate (point) CIs: with the tolerance, the 
+coverage is 1. The undercoverage for the best hypothesis versus the failsafe with $S$ = 10 is not 
+such an artifact: it is removed by centering the bootstrap draws (see the next section).
+
+# A possible improvement: centering the bootstrap
+
+The undercoverage of the bootstrap with $S$ = 10 studies has a clear cause. For a difference in 
+GORICA values $T$, the bootstrap draws $T^*$ (around the estimates) are shifted relative to the 
+sampling distribution of $T$ (around the true parameters): in a study, the projection of a 
+bootstrap draw adds, on average, roughly the number of active restrictions to $D_m$ 
+(see also `?goric_CI`). In one study, this shift is small relative to the spread of $T$. In the 
+pooled results, however, the shifts add up over the studies (they grow with $S$), whereas the spread 
+grows with $\sqrt{S}$ only. Hence, the percentile CI is increasingly shifted with more studies.
+
+A natural correction is to center the bootstrap draws: estimate the shift by 
+$\bar{T}^* - T_{obs}$ and remove it. Two versions were evaluated in a smaller simulation (the 
+pooled difference H1 versus the failsafe, added evidence, $n$ = 25, R = 250, B = 500), using the 
+same bootstrap draws for all three versions:
+
+* `percentile`: the current CI, the percentiles of $T^*$;
+* `centered_perc`: $T_{obs} + [q_{.025}, q_{.975}]$ of $Z = T^* - \bar{T}^*$;
+* `centered_basic`: $T_{obs} - [q_{.975}, q_{.025}]$ of $Z = T^* - \bar{T}^*$ (reversed, as in the 
+  basic bootstrap).
+
+```{r proto-code, eval = FALSE}
+suppressPackageStartupMessages(library(restriktor))
+set.seed(11)
+R <- 250; B <- 500
+thetas <- list(null = c(b1 = 0, b2 = 0, b3 = 0), boundary = c(b1 = .2, b2 = 0, b3 = 0),
+               outside = c(b1 = 0, b2 = .2, b3 = .4), inside = c(b1 = .4, b2 = .2, b3 = 0))
+hs <- list(A = list(H1 = "b1 > b2 > b3", H2 = "b1 > b2 = b3"), B = list(H1 = "b1 > b2 > b3"))
+out <- list()
+for (hn in names(hs)) for (tn in names(thetas)) for (S in c(3, 10)) {
+  n <- 25; V <- diag(1 / n, 3); th <- thetas[[tn]]
+  g0 <- goric(th, VCOV = V, hypotheses = hs[[hn]]); mods <- as.character(g0$result$model); M <- length(mods)
+  EIC <- colMeans(restriktor:::goric_CI_boot(g0, mods, B = 1e5))
+  target <- S * (EIC[1] - EIC[M])                         # pooled difference H1 vs failsafe (added)
+  cov <- matrix(NA, R, 3, dimnames = list(NULL, c("percentile", "centered_perc", "centered_basic")))
+  for (r in 1:R) {
+    Tobs <- 0; Tb <- 0
+    for (s in 1:S) {
+      g <- goric(th + rnorm(3, 0, sqrt(1 / n)), VCOV = V, hypotheses = hs[[hn]])
+      ICb <- restriktor:::goric_CI_boot(g, mods, B = B)
+      Tobs <- Tobs + (g$result$gorica[1] - g$result$gorica[M])
+      Tb <- Tb + (ICb[, 1] - ICb[, M])
+    }
+    q <- quantile(Tb, c(.025, .975)); Z <- Tb - mean(Tb)
+    qz <- quantile(Z, c(.025, .975))
+    cov[r, ] <- c(q[1] <= target & target <= q[2],
+                  Tobs + qz[1] <= target & target <= Tobs + qz[2],
+                  Tobs - qz[2] <= target & target <= Tobs - qz[1])
+  }
+  out[[length(out) + 1]] <- data.frame(set = hn, theta = tn, S = S, t(colMeans(cov)))
+  print(tail(out, 1)[[1]], row.names = FALSE)
+}
+saveRDS(do.call(rbind, out), "proto_centered.rds")
+```
+
+```{r proto-results}
+proto <- readRDS("proto_centered.rds")
+knitr::kable(proto, digits = 3, row.names = FALSE,
+             caption = "Coverage of the CI of the pooled difference H1 versus the failsafe")
+```
+
+Centering removes the undercoverage with $S$ = 10 (coverage .96 to 1.00), but neither centered 
+version is uniformly good: the centered percentile version is conservative in nearly all conditions 
+(coverage close to 1, so the CIs are too wide), and the centered basic version undercovers somewhat 
+with $S$ = 3 in some conditions (.89 to .92). The reason is that, near the boundaries of the 
+hypotheses, the shift (and the shape of the distribution) depends on where the true parameters 
+are, so it is not estimated exactly by the shift at the estimates. This is the same reason why 
+`goric_CI()` uses an inversion of the sampling distribution where possible.
+
+# Conclusions
+
+```{r conclusions-data, include = FALSE}
+cov_rng <- function(m, q) {
+  d <- subset(summ, method == m & quantity == q)
+  sprintf("%.3f to %.3f", min(d$coverage), max(d$coverage))
+}
+```
+
+The coverages (ranges over all conditions) are:
+
+* ratios of weights: bootstrap `r cov_rng("boot", "ratio")`; delta method `r cov_rng("delta", "ratio")`;
+* differences in GORICA values: bootstrap `r cov_rng("boot", "difference")`; delta method `r cov_rng("delta", "difference")`;
+* weight of H1: bootstrap `r cov_rng("boot", "weight")`; delta method `r cov_rng("delta", "weight")`.
+
+**Bootstrap (`method = "boot"`, the default).** With $S$ = 3 studies, the coverage is close to 
+.95 or somewhat conservative in nearly all conditions (ratios of weights: .93 to 1.00 per condition), 
+with one exception: H1 versus H2 when the parameters are in the opposite order and $n$ = 100 (.66), 
+which is an artifact of degenerate (point) CIs (with a small tolerance, the coverage is 1; see 
+"Diagnostics"). 
+With $S$ = 10 studies, the CIs undercover for the best hypothesis versus the failsafe (the 
+unconstrained hypothesis or the complement): about .74 to .78 when all parameters are equal, .79 to 
+.92 on the boundary of H1, .79 to .87 when the parameters are in the opposite order, and .83 to .96 
+when H1 holds (better with the larger $n$). For H1 versus H2, the coverage with $S$ = 10 is fine 
+(.93 to .99). The undercoverage increases with the number of studies, because the shift of the 
+bootstrap distribution adds up over the studies (see the previous section). The coverage does not 
+differ between the added- and equal-evidence approach.
+
+**Delta method (`method = "delta"`).** The delta method undercovers in many conditions (overall 
+.81 for the ratios), in particular when hypotheses overlap (have the same order-restricted MLEs) 
+in (some of) the studies, as expected: the differences in GORICA values are then not normally 
+distributed. For example, for H1 versus the unconstrained hypothesis when H1 holds, the coverage is 
+.35 to .74, and for H1 versus H2 when the parameters are in the opposite order, the CI is often 
+missing (both hypotheses then have the same fit in all studies). For the weight of H1, the delta 
+method performs better (about .83 to .99 per condition).
+
+**Recommendations.**
+
+* Keep the bootstrap as the default of `evSyn_CI()`, but note in the documentation that its CIs 
+  can be (too) narrow when many studies are pooled, especially for the best hypothesis versus the 
+  failsafe and when the true parameters are on the boundary of the hypotheses.
+* With many studies, a centered bootstrap removes most of the undercoverage (see the previous 
+  section). It could be offered as an option (or as the default for, say, $S \geq 5$), but it is 
+  conservative or slightly anti-conservative in some conditions, so this choice deserves a further 
+  look (e.g., a pooled version of the inversion method of `goric_CI()`).
+* Use the delta method only for clearly distinguishable hypotheses (no overlap in any study).
+
+
+# Session information
+
+```{r session}
+sim$sessionInfo
+```

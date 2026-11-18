@@ -1,0 +1,182 @@
+This is restriktor 0.7
+Please report any bugs to info@restriktor.org
+restriktor (0.7): added Evidence Synthesis results:
+
+Input type 'est_vcov' detected: Parameter estimates and covariance matrix
+
+---
+
+Final log-likelihood (LL) & GORICA weights:
+            LL weights  GORICA weights  lower  upper
+H1            1.62e-07         2.4e-05  0.000  0.914
+Complement       1.000           1.000  0.086  1.000
+
+(95%CI: confidence intervals for the final (aggregated) GORICA values and weights, and, in the conclusion, for the final ratios of weights; computed with evSyn_CI() (parametric bootstrap, B = 1000 draws per study, independently over the studies). Use evSyn_CI(object) for more details and other options; see ?evSyn_CI.)
+
+---
+
+Ratio final GORICA weights:
+              vs. H1  vs. Complement
+H1             1.000         2.4e-05
+Complement  4.16e+04           1.000
+
+---
+
+Variability over the studies (overall best hypothesis: Complement):
+
+    Study-specific GORICA weights (percentiles):
+                    Min   25% Median   75%   Max
+    H1         1.59e-06 0.221  0.789 0.825 0.846
+    Complement    0.154 0.175  0.211 0.779 1.000
+    ---
+
+    Study-specific ratios of GORICA weights (percentiles):
+                        Min   25% Median    75%      Max
+    Complement vs. H1 0.182 0.212  0.268 19.117 6.27e+05
+    ---
+
+    Geometric mean, evidence rate (ER), and stability rate (SR) of these ratios:
+                      Geom. mean    ER    SR Ceiling
+    Complement vs. H1      5.886 0.333 0.333   0.000
+
+    (Ceiling: number of studies in which both hypotheses have the same log-likelihood value, so that the ratio only reflects the difference in penalties.)
+
+    Preference rate (proportion of studies in which Complement has the highest GORICA weight): 0.333
+
+    Note: ER is the proportion of studies whose ratio favours the same hypothesis as the geometric mean (ER near 1: homogeneous studies); 
+    SR is the proportion of studies whose ratio is more extreme than the geometric mean (SR near .5: ratios evenly spread around it; 
+    below .5: a few large ratios inflate it; above .5: a few small ratios deflate it); see Klaassen et al. (2018).
+    ---
+
+Conclusion (incl. variability over the studies):
+- The failsafe hypothesis 'Complement' has the highest final GORICA weight.
+  As a result, the order-restricted hypotheses are considered weak, and
+  inspecting their relative support is not meaningful.
+- The variability over the studies for this conclusion ('Complement' versus
+  each order-restricted hypothesis):
+  * Final: 'Complement' has 4.16e+04 times more support than 'H1' (95%CI:
+    [0.09, 3.28e+09]).
+    In 33% of the studies (ER = 0.33), 'Complement' has more support than
+    'H1'.
+    Since ER < 0.90, the studies are not homogeneous for this comparison: 67%
+    of the studies point in the other direction. Hence, the final result may
+    not hold for every study; inspect the study-specific results (and
+    possible moderators).
+    Since SR (= 0.33) < 0.40, a minority of studies with relatively large
+    ratios inflates the geometric mean; the typical study shows less support
+    than the average suggests.
+- In 33% of the studies, 'Complement' also has the highest study-specific
+  GORICA weight (preference rate).
+Note: The cut-off values ER >= 0.90 and 0.40 <= SR <= 0.60 are those
+suggested by Klaassen et al. (2018); they are subjective guidelines, not
+strict rules.
+Note: With S = 6 studies, ER can only take the values 0, 1/6, ..., 1; so ER
+>= 0.90 requires that all studies point in the same direction, and one study
+changes ER (and SR) by 0.17.
+
+
+restriktor (0.7): added Evidence Synthesis results:
+
+Input type 'est_vcov' detected: Parameter estimates and covariance matrix
+
+---
+
+Final log-likelihood (LL) & GORICA weights:
+               LL weights  GORICA weights     lower  upper
+H1                  0.015           0.944     0.136  1.000
+H2               1.09e-08        4.97e-06     0.000  0.711
+Unconstrained       0.985           0.056  4.38e-05  0.863
+
+(95%CI: confidence intervals for the final (aggregated) GORICA values and weights, and, in the conclusion, for the final ratios of weights; computed with evSyn_CI() (parametric bootstrap, B = 1000 draws per study, independently over the studies). Use evSyn_CI(object) for more details and other options; see ?evSyn_CI.)
+
+---
+
+Ratio final GORICA weights:
+                 vs. H1    vs. H2  vs. Unconstrained
+H1                1.000   1.9e+05             16.990
+H2             5.26e-06     1.000           8.94e-05
+Unconstrained     0.059  1.12e+04              1.000
+
+---
+
+Variability over the studies (overall best hypothesis: H1):
+
+    Study-specific GORICA weights (percentiles):
+                    Min   25% Median   75%   Max
+    H1            0.114 0.402  0.725 0.742 0.751
+    H2            0.015 0.027  0.049 0.133 0.414
+    Unconstrained 0.224 0.229  0.233 0.276 0.727
+    ---
+
+    Study-specific ratios of GORICA weights (percentiles):
+                           Min   25% Median    75%    Max
+    H1 vs. H2            0.717 3.768 15.088 29.666 49.119
+    H1 vs. Unconstrained 0.156 1.569  3.211  3.211  3.211
+    ---
+
+    Geometric mean, evidence rate (ER), and stability rate (SR) of these ratios:
+                         Geom. mean    ER    SR Ceiling
+    H1 vs. H2                 7.583 0.667 0.667   2.000
+    H1 vs. Unconstrained      1.603 0.833 0.667   4.000
+
+    (Ceiling: number of studies in which both hypotheses have the same log-likelihood value, so that the ratio only reflects the difference in penalties.)
+
+    Preference rate (proportion of studies in which H1 has the highest GORICA weight): 0.667
+
+    Note: ER is the proportion of studies whose ratio favours the same hypothesis as the geometric mean (ER near 1: homogeneous studies); 
+    SR is the proportion of studies whose ratio is more extreme than the geometric mean (SR near .5: ratios evenly spread around it; 
+    below .5: a few large ratios inflate it; above .5: a few small ratios deflate it); see Klaassen et al. (2018).
+    ---
+
+Conclusion (incl. variability over the studies):
+- Step 1: The order-restricted hypothesis 'H1' is the best in the set, as it
+  has the highest final GORICA weight. Since it has a higher weight than the
+  failsafe hypothesis 'Unconstrained', it is not considered weak:
+  * Final: 'H1' has 16.99 times more support than 'Unconstrained' (95%CI:
+    [0.16, 2.28e+04]).
+    In 83% of the studies (ER = 0.83), 'H1' has more support than
+    'Unconstrained'.
+    Since ER < 0.90, the studies are not homogeneous for this comparison: 17%
+    of the studies point in the other direction. Hence, the final result may
+    not hold for every study; inspect the study-specific results (and
+    possible moderators).
+    In 4 of the 6 studies, 'H1' and 'Unconstrained' have the same fit
+    (log-likelihood value), so that the ratio only reflects the difference in
+    penalties (i.e., in complexity) there. This happens when the estimates
+    are in agreement with both hypotheses. Since 'H1' is contained in
+    'Unconstrained', this ratio is its maximum (ceiling): it cannot become
+    larger in these studies, whatever the sample size.
+    Because of this ceiling, SR (= 0.67) is not informative for this
+    comparison.
+    Notably, since ER < 0.90, 'H1' is weak (i.e., not better than
+    'Unconstrained') in some studies; keep this in mind in Step 2.
+- Step 2: We can now inspect the relative support for 'H1' against the other
+  order-restricted hypotheses:
+  * Final: 'H1' has 1.90e+05 times more support than 'H2' (95%CI: [1.84,
+    2.43e+09]).
+    In 67% of the studies (ER = 0.67), 'H1' has more support than 'H2'.
+    Since ER < 0.90, the studies are not homogeneous for this comparison: 33%
+    of the studies point in the other direction. Hence, the final result may
+    not hold for every study; inspect the study-specific results (and
+    possible moderators).
+    In 2 of the 6 studies, 'H1' and 'H2' have the same fit (log-likelihood
+    value), so that the ratio only reflects the difference in penalties
+    (i.e., in complexity) there. This happens when the estimates are in
+    agreement with both hypotheses. If one of the two hypotheses is contained
+    in the other, this ratio is at its bound (whatever the sample size): its
+    maximum (ceiling) if 'H1' is contained in 'H2', and its minimum if 'H2'
+    is contained in 'H1'.
+    Because of this (possible) bound, interpret SR (= 0.67) with care.
+    Since SR (= 0.67) > 0.60, a minority of studies with relatively small
+    ratios deflates the geometric mean; the typical study shows more support
+    than the average suggests.
+- In 67% of the studies, 'H1' also has the highest study-specific GORICA
+  weight (preference rate).
+Note: The cut-off values ER >= 0.90 and 0.40 <= SR <= 0.60 are those
+suggested by Klaassen et al. (2018); they are subjective guidelines, not
+strict rules.
+Note: With S = 6 studies, ER can only take the values 0, 1/6, ..., 1; so ER
+>= 0.90 requires that all studies point in the same direction, and one study
+changes ER (and SR) by 0.17.
+
+

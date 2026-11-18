@@ -1,0 +1,400 @@
+---
+title: "Coverage of the confidence intervals of goric_CI()"
+subtitle: "A simulation study for the GORICA values, differences, weights, and ratios of weights"
+author: "restriktor"
+date: "`r format(Sys.Date())`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    code_folding: show
+params:
+  run_simulation: false
+  R: 300
+  B: 1000
+  nsim_target: 100000
+  workers: 2
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.width = 9, fig.height = 5.5)
+library(restriktor)
+library(ggplot2)
+results_file <- "coverage_goric_CI_results.rds"
+```
+
+# Aim
+
+`goric_CI()` gives confidence intervals (CIs) for the GORIC(A) values, the differences in GORIC(A)
+values, the GORIC(A) weights, and the ratios of GORIC(A) weights of one study (one `goric` object).
+This simulation study evaluates the coverage of these CIs for the three main approaches:
+
+* `method = "invert"` (default): inversion of the sampling distribution of the difference in
+  GORICA values, for a hypothesis versus the unconstrained hypothesis or its complement when the
+  hypothesis consists of equality restrictions only or of one inequality restriction; for the other
+  pairs (and the weights, with more than two hypotheses), the parametric bootstrap is used;
+* `method = "boot"`: parametric-bootstrap percentile CIs, based on draws from N(estimates, VCOV);
+* `method = "delta"`: normal-based (delta-method) CIs, with the CIs of the weights on the logit scale.
+
+# Design
+
+## Data-generating model
+
+The study estimates three (standardized) parameters, say three group means with unit variance and
+$n$ observations per group. The estimates are drawn as $\hat\theta \sim N(\theta, V)$, with
+$V = \mathrm{diag}(1/n, 1/n, 1/n)$; this is exactly the (asymptotic) model underlying the GORICA.
+
+## Hypotheses
+
+* **Set A**: $H_1: \theta_1 > \theta_2 > \theta_3$ and $H_2: \theta_1 > \theta_2 = \theta_3$,
+  with the unconstrained hypothesis as failsafe;
+* **Set B**: $H_1: \theta_1 > \theta_2 > \theta_3$ versus its complement
+  (two inequality restrictions: the inversion does not apply, so the bootstrap is used);
+* **Set C**: $H_1: \theta_1 > \theta_2$ versus its complement
+  (one inequality restriction: the inversion applies);
+* **Set D**: $H_1: \theta_1 = \theta_2 = \theta_3$ versus the unconstrained hypothesis
+  (equality restrictions only: the inversion applies).
+
+## Conditions
+
+```{r conditions}
+thetas <- list(
+  inside   = c(b1 = 0.4, b2 = 0.2, b3 = 0.0),  # in H1 of sets A, B, C; not in H2 (set A) or H1 (set D)
+  boundary = c(b1 = 0.2, b2 = 0.0, b3 = 0.0),  # on the boundary of H1 (sets A, B) and in H2 (set A)
+  outside  = c(b1 = 0.0, b2 = 0.2, b3 = 0.4),  # in the opposite order
+  null     = c(b1 = 0.0, b2 = 0.0, b3 = 0.0)   # all equal: on the boundary of all H1's, in H1 of set D
+)
+hypo_sets <- list(
+  A = list(hypotheses = list(H1 = "b1 > b2 > b3", H2 = "b1 > b2 = b3"), comparison = "unconstrained"),
+  B = list(hypotheses = list(H1 = "b1 > b2 > b3"), comparison = "complement"),
+  C = list(hypotheses = list(H1 = "b1 > b2"), comparison = "complement"),
+  D = list(hypotheses = list(H1 = "b1 = b2 = b3"), comparison = "unconstrained")
+)
+conditions <- expand.grid(theta = names(thetas), n = c(25, 100, 400), hypo_set = names(hypo_sets),
+                          stringsAsFactors = FALSE)
+nrow(conditions)
+```
+
+This gives `r nrow(conditions)` conditions: 4 true parameter vectors $\times$ 3 sample sizes per
+group ($n$ = 25, 100, 400) $\times$ 4 sets of hypotheses. Each condition is replicated
+$R$ = `r params$R` times, with $B$ = `r params$B` draws for the bootstrap and the inversion.
+With $R$ = `r params$R`, the Monte Carlo standard error of an estimated coverage of .95 is
+`r round(sqrt(.95 * .05 / params$R), 3)`, so estimated coverages in between
+`r round(.95 - 2 * sqrt(.95 * .05 / params$R), 3)` and `r round(.95 + 2 * sqrt(.95 * .05 / params$R), 3)`
+are in line with a coverage of .95.
+
+## Estimand
+
+The population counterparts of the GORICA values are their *expected* values,
+$E[\mathrm{GORICA}_m] = \log|2\pi V| + E[D_m] + 2\,PT_m$, with $D_m$ the squared Mahalanobis
+distance of the estimates to $H_m$ and $PT_m$ the (fixed) penalty (see `?goric_CI`). The target
+values of the differences, the weights (equal prior weights), and the ratios of weights follow from
+these expected values. They are obtained by Monte Carlo at the true parameters
+(`r format(params$nsim_target, big.mark = ",")` draws).
+
+```{r targets-functions}
+expected_IC <- function(theta, V, hs, nsim) {
+  g <- goric(theta, VCOV = V, hypotheses = hs$hypotheses, comparison = hs$comparison)
+  models <- as.character(g$result$model)
+  draws <- restriktor:::goric_CI_boot(g, models, B = nsim)
+  EIC <- colMeans(draws)
+  eta <- -EIC / 2
+  w <- exp(eta - max(eta)); w <- w / sum(w)
+  list(IC = EIC, weights = w, diff = outer(EIC, EIC, "-"), ratio = exp(outer(eta, eta, "-")))
+}
+```
+
+## One replication
+
+For each replication, the estimates are generated, `goric()` is run, and the CIs of the three methods
+are computed. For H1 versus each other hypothesis (ratio of weights and difference in GORICA values),
+for the weight of H1, and for the GORICA value of H1, it is recorded whether the CI contains the target
+value, whether the CI is missing (the delta method gives no CI for a difference/ratio when the two
+hypotheses have the same order-restricted MLEs), the width of the CI (on the log scale for ratios),
+and which CI method was actually used (for `"invert"`, the bootstrap is used for non-eligible pairs).
+
+```{r one-rep}
+one_rep <- function(cond, tg, B) {
+  theta <- thetas[[cond$theta]]; hs <- hypo_sets[[cond$hypo_set]]; n <- cond$n
+  V <- diag(1 / n, 3)
+  est <- setNames(theta + rnorm(3, 0, sqrt(1 / n)), names(theta))
+  g <- goric(est, VCOV = V, hypotheses = hs$hypotheses, comparison = hs$comparison)
+  models <- as.character(g$result$model); M <- length(models)
+  lab <- function(k) if (models[k] %in% c("unconstrained", "complement")) "H1 vs. failsafe" else paste0("H1 vs. ", models[k])
+  out <- list()
+  for (method in c("invert", "boot", "delta")) {
+    ci <- suppressMessages(suppressWarnings(goric_CI(g, method = method, B = B)))
+    for (k in 2:M) {
+      j <- which(ci$ratio_weights$model == models[1] & ci$ratio_weights$vs == models[k])
+      lo <- ci$ratio_weights$lower[j]; up <- ci$ratio_weights$upper[j]; tt <- tg$ratio[1, k]
+      out[[length(out) + 1]] <- data.frame(method = method, quantity = "ratio", comparison = lab(k),
+        used = ci$ratio_weights$CI_method[j],
+        covered = !is.na(lo) && lo <= tt && tt <= up, missing = is.na(lo),
+        width = if (is.na(lo)) NA else log(up) - log(lo))
+      lo <- ci$difference$lower[j]; up <- ci$difference$upper[j]; tt <- tg$diff[1, k]
+      out[[length(out) + 1]] <- data.frame(method = method, quantity = "difference", comparison = lab(k),
+        used = ci$difference$CI_method[j],
+        covered = !is.na(lo) && lo <= tt && tt <= up, missing = is.na(lo),
+        width = if (is.na(lo)) NA else up - lo)
+    }
+    lo <- ci$weights$lower[1]; up <- ci$weights$upper[1]; tt <- tg$weights[1]
+    out[[length(out) + 1]] <- data.frame(method = method, quantity = "weight", comparison = "H1",
+      used = ci$weights$CI_method[1],
+      covered = !is.na(lo) && lo <= tt && tt <= up, missing = is.na(lo),
+      width = if (is.na(lo)) NA else up - lo)
+    lo <- ci$IC$lower[1]; up <- ci$IC$upper[1]; tt <- tg$IC[1]
+    out[[length(out) + 1]] <- data.frame(method = method, quantity = "value", comparison = "H1",
+      used = if (method == "delta") "analytic" else "boot",
+      covered = !is.na(lo) && lo <= tt && tt <= up, missing = is.na(lo),
+      width = if (is.na(lo)) NA else up - lo)
+  }
+  do.call(rbind, out)
+}
+```
+
+## Running the simulation
+
+The simulation is run in parallel over the replications (with `future.apply`). It is only run
+when the parameter `run_simulation` is `TRUE`; otherwise, the saved results are used.
+
+```{r run, eval = params$run_simulation}
+library(future.apply)
+plan(multisession, workers = params$workers)
+# Each condition is saved separately (in 'partial_dir'), such that an interrupted run can be 
+# resumed: conditions that are already done are read from file.
+partial_dir <- "coverage_goric_CI_partial"
+dir.create(partial_dir, showWarnings = FALSE)
+res <- vector("list", nrow(conditions))
+for (i in seq_len(nrow(conditions))) {
+  f <- file.path(partial_dir, sprintf("condition_%02d.rds", i))
+  if (file.exists(f)) { res[[i]] <- readRDS(f); next }
+  set.seed(2026 + i)
+  cond <- conditions[i, ]
+  tg <- expected_IC(thetas[[cond$theta]], diag(1 / cond$n, 3), hypo_sets[[cond$hypo_set]],
+                    nsim = params$nsim_target)
+  reps <- future_lapply(seq_len(params$R), function(r) one_rep(cond, tg, params$B),
+                        future.seed = TRUE, future.packages = "restriktor",
+                        future.globals = list(one_rep = one_rep, cond = cond, tg = tg,
+                                              thetas = thetas, hypo_sets = hypo_sets, params = params))
+  reps <- do.call(rbind, reps)
+  res[[i]] <- cbind(cond[rep(1, nrow(reps)), , drop = FALSE], reps, row.names = NULL)
+  saveRDS(res[[i]], f)
+}
+plan(sequential)
+res <- do.call(rbind, res)
+saveRDS(list(res = res, params = params, sessionInfo = sessionInfo()), results_file)
+```
+
+# Results
+
+```{r load}
+sim <- readRDS(results_file)
+res <- sim$res
+res$used_inversion <- res$used == "invert"
+summ <- aggregate(cbind(coverage = covered, missing = missing, inverted = used_inversion) ~
+                    theta + n + hypo_set + method + quantity + comparison, data = res, FUN = mean)
+wid <- aggregate(width ~ theta + n + hypo_set + method + quantity + comparison, data = res, FUN = median)
+names(wid)[names(wid) == "width"] <- "median_width"
+summ <- merge(summ, wid, all.x = TRUE)
+summ$theta <- factor(summ$theta, levels = names(thetas))
+mcse <- sqrt(.95 * .05 / sim$params$R)
+done <- unique(res[, c("theta", "n", "hypo_set")])
+```
+
+**Note.** The results below are based on `r nrow(done)` of the `r nrow(conditions)` conditions. The 
+remaining conditions (all for set D: equality restrictions only) could not be run in the available 
+time; running this Rmd with `run_simulation = TRUE` completes them (the conditions that are already 
+done are read from the folder `coverage_goric_CI_partial`).
+
+The results are based on R = `r sim$params$R` replications per condition and B = `r sim$params$B`
+draws. The gray band in the figures denotes .95 $\pm$ 2 Monte Carlo standard errors. A CI that is
+missing (delta method, see above) is counted as not covering the target value. The column
+`inverted` in the tables gives the proportion of replications in which the inversion was used
+(for `method = "invert"`).
+
+## Ratios of GORICA weights
+
+```{r fig-ratio, fig.height = 8}
+plot_cov <- function(d, title) {
+  ggplot(d, aes(x = theta, y = coverage, colour = method, shape = factor(n))) +
+    annotate("rect", xmin = -Inf, xmax = Inf, ymin = .95 - 2 * mcse, ymax = .95 + 2 * mcse,
+             alpha = .25, fill = "gray60") +
+    geom_hline(yintercept = .95, linetype = "dashed") +
+    geom_point(size = 2.5, position = position_dodge(width = .6)) +
+    facet_wrap(~ hypo_set + comparison, labeller = label_both) +
+    coord_cartesian(ylim = c(min(.5, min(d$coverage)), 1)) +
+    labs(x = "True parameters", y = "Coverage", shape = "n", colour = "Method", title = title) +
+    theme_bw() + theme(axis.text.x = element_text(angle = 30, hjust = 1))
+}
+plot_cov(subset(summ, quantity == "ratio"), "Coverage of the CIs of the ratios of GORICA weights (H1 versus the others)")
+```
+
+## Differences in GORICA values
+
+```{r fig-diff, fig.height = 8}
+plot_cov(subset(summ, quantity == "difference"), "Coverage of the CIs of the differences in GORICA values (H1 versus the others)")
+```
+
+## GORICA weight of H1
+
+```{r fig-weight, fig.height = 6}
+plot_cov(subset(summ, quantity == "weight"), "Coverage of the CIs of the GORICA weight of H1")
+```
+
+## GORICA value of H1
+
+```{r fig-value, fig.height = 6}
+plot_cov(subset(summ, quantity == "value"), "Coverage of the CIs of the GORICA value of H1")
+```
+
+## Tables
+
+```{r tables}
+tab <- summ[order(summ$quantity, summ$hypo_set, summ$comparison, summ$theta, summ$n, summ$method), ]
+num <- c("coverage", "missing", "inverted")
+tab[num] <- lapply(tab[num], round, 3)
+tab$median_width <- round(tab$median_width, 2)
+knitr::kable(tab, row.names = FALSE)
+```
+
+## Overall summary
+
+```{r overall}
+overall <- aggregate(cbind(coverage = covered, missing = missing) ~ method + quantity, data = res, FUN = mean)
+overall$coverage <- round(overall$coverage, 3); overall$missing <- round(overall$missing, 3)
+knitr::kable(overall)
+```
+
+# Diagnostics: degenerate CIs and the boundary of the parameter space
+
+The coverage is evaluated strictly (the target value must lie in the CI). For the conditions with a 
+(strict) coverage below .90, the CIs were recomputed while storing their bounds, to see whether the 
+CIs miss the target or whether this is an artifact of the evaluation:
+
+* when two hypotheses have the same order-restricted MLEs in (nearly) all samples (e.g., H1 and the 
+  unconstrained hypothesis when H1 clearly holds), the sampling distribution of their difference is 
+  (nearly) a point mass, and so is its CI; the expected value then differs from that point by a 
+  negligible amount, which a strict evaluation counts as non-coverage;
+* for an equality-only hypothesis that is true (set D, all parameters equal), the noncentrality is 
+  on the boundary of its parameter space ($s = 0$); the lower bound of the inversion CI is then the 
+  expected difference at $s = 0$, which equals the target value, but is computed from $B$ draws, so 
+  that it lies above or below the target about half of the time.
+
+Therefore, the coverage was also evaluated with a small tolerance (0.1 on the scale of the 
+difference in GORICA values, i.e., about 5\% on the scale of the ratio of weights), and the share of 
+degenerate (point) CIs and of CIs above/below the target were recorded:
+
+```{r diag-code, eval = FALSE}
+# Diagnostics for the conditions with a (strict) coverage below .90 in the goric_CI() simulation:
+# strict coverage, coverage with a small tolerance, and the share of degenerate (point) CIs.
+suppressPackageStartupMessages(library(restriktor))
+set.seed(4)
+R <- 200; B <- 1000; tol <- 0.1   # tolerance on the scale of the difference in GORICA values
+thetas <- list(inside = c(b1 = .4, b2 = .2, b3 = 0), boundary = c(b1 = .2, b2 = 0, b3 = 0),
+               outside = c(b1 = 0, b2 = .2, b3 = .4), null = c(b1 = 0, b2 = 0, b3 = 0))
+sets <- list(A = list(hypotheses = list(H1 = "b1 > b2 > b3", H2 = "b1 > b2 = b3"), comparison = "unconstrained"),
+             C = list(hypotheses = list(H1 = "b1 > b2"), comparison = "complement"),
+             D = list(hypotheses = list(H1 = "b1 = b2 = b3"), comparison = "unconstrained"))
+cases <- data.frame(
+  set      = c("A", "A", "A", "A", "A", "C", "C", "D"),
+  theta    = c("boundary", "null", "outside", "inside", "inside", "boundary", "inside", "null"),
+  n        = c(100, 100, 100, 400, 25, 100, 100, 25),
+  quantity = c("H1 vs. H2", "H1 vs. H2", "H1 vs. H2", "H1 vs. failsafe", "H1 vs. failsafe",
+               "value H1", "value H1", "H1 vs. failsafe"),
+  method   = c("boot", "boot", "boot", "boot", "boot", "boot", "boot", "invert"),
+  stringsAsFactors = FALSE)
+out <- list()
+for (i in seq_len(nrow(cases))) {
+  cs <- cases[i, ]; hs <- sets[[cs$set]]; th <- thetas[[cs$theta]]; V <- diag(1 / cs$n, 3)
+  g0 <- goric(th, VCOV = V, hypotheses = hs$hypotheses, comparison = hs$comparison)
+  mods <- as.character(g0$result$model)
+  EIC <- colMeans(restriktor:::goric_CI_boot(g0, mods, B = 2e5))
+  k <- if (cs$quantity == "H1 vs. H2") 2 else length(mods)
+  target <- if (cs$quantity == "value H1") EIC[1] else EIC[1] - EIC[k]
+  b <- t(replicate(R, {
+    g <- goric(th + rnorm(3, 0, sqrt(1 / cs$n)), VCOV = V, hypotheses = hs$hypotheses, comparison = hs$comparison)
+    ci <- suppressMessages(goric_CI(g, method = cs$method, B = B))
+    if (cs$quantity == "value H1") c(ci$IC$lower[1], ci$IC$upper[1])
+    else { j <- which(ci$difference$model == mods[1] & ci$difference$vs == mods[k])
+           c(ci$difference$lower[j], ci$difference$upper[j]) }
+  }))
+  out[[i]] <- cbind(cs, target = target,
+                    strict = mean(b[, 1] <= target & target <= b[, 2]),
+                    tolerant = mean(b[, 1] - tol <= target & target <= b[, 2] + tol),
+                    degenerate = mean(b[, 2] - b[, 1] < 1e-6),
+                    below = mean(target < b[, 1] - tol), above = mean(target > b[, 2] + tol))
+  print(out[[i]], row.names = FALSE)
+}
+saveRDS(do.call(rbind, out), "diag_goric_CI.rds")
+```
+
+```{r diag-results}
+knitr::kable(readRDS("diag_goric_CI.rds"), digits = 3, row.names = FALSE)
+```
+
+# Conclusions
+
+```{r conclusions-data, include = FALSE}
+cov_rng <- function(m, q) {
+  d <- subset(summ, method == m & quantity == q)
+  sprintf("%.3f to %.3f", min(d$coverage), max(d$coverage))
+}
+```
+
+The coverages (ranges over all conditions) are:
+
+* ratios of weights: inversion `r cov_rng("invert", "ratio")`; bootstrap `r cov_rng("boot", "ratio")`;
+  delta method `r cov_rng("delta", "ratio")`;
+* differences in GORICA values: inversion `r cov_rng("invert", "difference")`; bootstrap
+  `r cov_rng("boot", "difference")`; delta method `r cov_rng("delta", "difference")`;
+* weight of H1: inversion `r cov_rng("invert", "weight")`; bootstrap `r cov_rng("boot", "weight")`;
+  delta method `r cov_rng("delta", "weight")`;
+* GORICA value of H1: bootstrap `r cov_rng("boot", "value")`; delta method `r cov_rng("delta", "value")`.
+
+Note that, for most of the lowest strict coverages, the diagnostics above show that these are 
+artifacts of the evaluation (degenerate CIs, or a lower bound at the boundary $s = 0$); with a small 
+tolerance, their coverage is .93 to 1.
+
+**Inversion (`method = "invert"`, the default).** Where the inversion applies (sets C and D), it 
+gives the best coverage: .94 to .97 for H1 versus its complement with one inequality restriction 
+(set C), and .94 to .96 for an equality-only hypothesis versus the unconstrained hypothesis (set D), 
+except when that hypothesis is true: the strict coverage is then about .5, but this is the boundary 
+artifact described above (with a tolerance: .93 to .96). For the other pairs, the inversion method 
+uses the bootstrap, so its results equal those of the bootstrap.
+
+**Bootstrap (`method = "boot"`).** For H1 versus its complement with two inequality restrictions 
+(set B), the coverage is .93 to .99. For H1 versus the unconstrained hypothesis (set A), it is .91 to 
+.99, apart from a degenerate-CI artifact (H1 clearly true, $n$ = 400). For two order-restricted 
+hypotheses that overlap at a boundary (H1 versus H2 in set A), the bootstrap undercovers when the 
+parameters are on or near that boundary: .86 to .91 (also with a tolerance, about .90), because the 
+bootstrap distribution is then shifted upward (the target lies below the CI); this is the same shift 
+that leads to undercoverage of the pooled CIs in `evSyn_CI()` with many studies. Where the inversion 
+applies (set C), the bootstrap is slightly anti-conservative for small samples (.91 to .96). For the 
+weights, the bootstrap coverage is .92 to 1.
+
+**Delta method (`method = "delta"`).** The delta method undercovers in most conditions (overall 
+.70 for the ratios), because the differences in GORICA values are not normally distributed when 
+hypotheses overlap or the parameters are near the boundaries; it should only be used for clearly 
+distinguishable hypotheses in large samples, as stated in `?goric_CI`.
+
+**Single GORICA values.** The CIs of a single GORICA value are of less interest (only relative 
+values matter), and their strict coverage is low in some conditions, but this is (mostly) the 
+degenerate-CI artifact (with a tolerance: 1).
+
+**Recommendations.**
+
+* Keep `method = "invert"` as the default.
+* In `goric_CI_invert()`, use the exact expected difference at the boundary when the lower limit 
+  of the noncentrality is $s = 0$ for an equality-only hypothesis (namely, the number of equality 
+  restrictions plus penalty_factor $\times$ the difference in penalties), instead of the Monte Carlo 
+  estimate; this removes the boundary artifact.
+* Mention in `?goric_CI` that, for two order-restricted hypotheses that overlap at a boundary, the 
+  bootstrap CI can be somewhat too narrow (coverage about .90) when the parameters are near that boundary.
+
+
+# Session information
+
+```{r session}
+sim$sessionInfo
+```

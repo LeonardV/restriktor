@@ -66,6 +66,15 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     }
   } 
   
+  # Re-ordered studies (argument 'order_studies'): the study-specific and cumulative 
+  # output follows this order; show the position of these studies in the input
+  ord <- x[["order_studies"]]
+  if (!is.null(ord) && !identical(as.integer(ord), seq_along(ord))) {
+    cat(paste0("\nThe studies are re-ordered (argument 'order_studies'): the study-specific and cumulative ",
+               "output follows this order. Position of these studies in the input: ",
+               paste(ord, collapse = ", "), " (see $order_studies).\n"))
+  }
+  
   cat("\n")
   cat("---\n")
   

@@ -317,7 +317,10 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   ii) A numeric vector with length the number of studies (S). 
   This vector then gives the ordering of studies to be used, which one could base on, 
   say, year of the study.
-  Notably, when order_studies equals "input_order", the ordering 1:S is used.}
+  Notably, when order_studies equals "input_order", the ordering 1:S is used.
+  All study-specific and cumulative output is returned in this order; 
+  the element \code{order_studies} of the output gives, for each row, the position of that study in the input 
+  (see Value).}
   
   \item{xlab}{a vector specifying custom labels for the x-axis (be aware that 
   study ordering may be changed based on \code{order_studies}). The length of 
@@ -542,6 +545,20 @@ studies and to assess the robustness of the overall conclusion.
 \value{An object of class evSyn for which a print, summary and plot function is available. 
 The output comprises, among other things, the cumulative and final evidence 
 for the theory-based hypotheses.
+
+The study-specific and cumulative output follows the order of the studies set by \code{order_studies}. 
+In particular (depending on the type of input, not all elements are available):
+\describe{
+  \item{\code{order_studies}}{an integer vector of length S (the number of studies) giving, 
+    for each row of the study-specific output, the position of that study in the input. 
+    It equals 1:S for \code{order_studies = "input_order"}.}
+  \item{\code{study_names}}{the study names in the order of \code{$order_studies}.}
+  \item{\code{GORICA_weight_m}, \code{LL_weights_m}, \code{GORICA_m}, \code{LL_m}, \code{PT_m}}{study-specific 
+    S x H matrices (studies by hypotheses), with rows in the order of \code{$order_studies}.}
+  \item{\code{Cumulative_GORICA_weights}, \code{Cumulative_LL_weights}}{(S + 1) x H matrices with the 
+    cumulative results over the studies in the order of \code{$order_studies}; the last row 
+    (\code{"Final"}) contains the final results (notably, the final row does not depend on the order).}
+}
 For confidence intervals for the final (aggregated) results (when the input consists of 
 (standardized) estimates and their covariance matrices or of goric objects), see the argument \code{CI} and 
 \code{\link{evSyn_CI}}; for a prediction interval for the ratio of weights in a new study, see 

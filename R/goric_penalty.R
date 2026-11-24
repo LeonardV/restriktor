@@ -82,6 +82,18 @@ penalty_goric <- function(Amat, meq, LP, correction = FALSE,
            min_col <- num_cols - nrow(Amat)
            max_col <- num_cols - meq
            lPT_values <- min_col:max_col
+           # safeguard: weights of length ncol + 1 belong to the levels 0:ncol
+           # (e.g. after a fallback to the bootstrap); otherwise lPT_values * LP
+           # would be recycled and the penalty would be wrong.
+           if (length(LP) != length(lPT_values)) {
+             if (length(LP) == num_cols + 1L) {
+               lPT_values <- 0:num_cols
+             } else {
+               stop("restriktor ERROR: the number of level probabilities (", length(LP),
+                    ") does not match the number of levels (", length(lPT_values), ").",
+                    call. = FALSE)
+             }
+           }
            return(compute_PT(lPT_values))
          },
          stop("Unknown method specified in LP attribute.")

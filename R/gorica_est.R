@@ -195,7 +195,8 @@ con_gorica_est <- function(object, constraints = NULL, VCOV = NULL,
     wt.bar <- calculate_weight_bar(Amat = PT_Amat, meq = PT_meq, VCOV = VCOV,
                                      mix_weights = mix_weights, seed = seed,
                                      control = control, verbose = verbose, ...)
-    attr(wt.bar, "method") <- mix_weights
+    # keep the label "boot" if calculate_weight_bar() fell back to the bootstrap
+    if (is.null(attr(wt.bar, "method"))) attr(wt.bar, "method") <- mix_weights
     OUT$wt.bar <- wt.bar
   }
 

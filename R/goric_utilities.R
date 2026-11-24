@@ -363,6 +363,10 @@ calculate_weight_bar <- function(Amat, meq, VCOV, mix_weights, seed, control,
                                                      5000L, control$chunk_size),
                                  verbose = verbose, ...)
       attr(wt.bar, "mix_weights_bootstrap_limit") <- control$mix_weights_bootstrap_limit   
+      # the weights are now based on the bootstrap: label them as such, so that
+      # the callers (and penalty_goric()) use the levels 0:ncol(VCOV), which
+      # belong to the boot weights (and not the 'pmvnorm' levels).
+      attr(wt.bar, "method") <- "boot"
     } 
   }
   return(wt.bar)

@@ -185,7 +185,7 @@ print.goric_posthoc <- function(x, digits = max(3, getOption("digits") - 4), ...
              sprintf("%.3f", x$error_prob), ".\n"))
   cat(paste0("Note: The hypothesis is selected based on the data; hence, this is a post-hoc ",
              "(exploratory) result, which can be used to inform future research, ",
-             "but not as a confirmatory test.\n"))
+             "but not as a confirmatory evaluation.\n"))
   if (isTRUE(x$priorICweights_rescaled)) {
     cat(paste0("Note: The prior ", IC_lab, " weights (priorICweights) used here are ",
                paste(sprintf("%.3f", x$priorICweights), collapse = " and "),

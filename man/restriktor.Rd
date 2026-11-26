@@ -50,6 +50,10 @@ restriktor(object, constraints = NULL, \dots)
   string enclosed by single quotes. Only the names of \code{coef(model)}
   can be used as names. See details for more information. Note that
   objects of class "mlm" do not (yet) support this method. 
+  Constraints can also be specified in terms of an effect size like Cohen's d, 
+  using \code{sd} (the residual standard deviation of the fitted model), for 
+  example, \code{'g2 - g1 > 0.2*sd'}; see the argument \code{hypotheses} in 
+  \code{\link{goric}} for details.
   
   Second, the constraint syntax consists of a matrix \eqn{R} (or a vector in 
   case of one constraint) and defines the left-hand side of the 

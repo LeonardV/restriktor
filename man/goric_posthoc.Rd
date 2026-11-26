@@ -48,7 +48,7 @@ goric_posthoc(object, priorICweights = NULL, ...)
 
   Since the best hypothesis is selected based on the data, the result is
   exploratory (post-hoc) and can be used to inform future research, but it is
-  not a confirmatory test.
+  not a confirmatory evaluation.
 }
 \value{
   An object of class \code{goric_posthoc}, a list with:

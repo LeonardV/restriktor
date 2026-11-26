@@ -52,7 +52,7 @@ evSyn(object, input_type = NULL, \ldots)
 evSyn_est(object, \ldots, VCOV = list(), hypotheses = list(),
           type_ev = c("added", "equal", "average"), 
           comparison = c("unconstrained", "complement", "none"),
-          hypo_names = c(), priorICweights = NULL, 
+          hypo_names = c(), priorICweights = NULL, priorICweights_study = FALSE,
           type = c("gorica", "goricac"), 
           order_studies = c("input_order", "ascending", "descending"),
           study_names = c(), study_sample_nobs = NULL, 
@@ -61,14 +61,14 @@ evSyn_est(object, \ldots, VCOV = list(), hypotheses = list(),
 
 # input: Log-likelihood and penalty values
 evSyn_LL(object, \ldots, PT = list(), type_ev = c("added", "equal", "average"),
-         hypo_names = c(), priorICweights = NULL, 
+         hypo_names = c(), priorICweights = NULL, priorICweights_study = FALSE,
          type = c("goric", "goricc", "gorica", "goricac"),
          order_studies = c("input_order", "ascending", "descending"),
          study_names = c(), study_weights = NULL, penalty_factor = 2)
 
 # input: GORIC(A), ORIC, AIC values
 evSyn_ICvalues(object, \ldots, type_ev = c("added", "average"), 
-               hypo_names = c(), priorICweights = NULL, 
+               hypo_names = c(), priorICweights = NULL, priorICweights_study = FALSE,
                type = c("goric", "goricc", "gorica", "goricac"), 
                order_studies = c("input_order", "ascending", "descending"), 
                study_names = c(), study_weights = NULL)
@@ -76,7 +76,7 @@ evSyn_ICvalues(object, \ldots, type_ev = c("added", "average"),
 # input: AIC or ORIC or GORIC or GORICA weights; or (Bayesian) posterior 
 # model probabilities
 evSyn_ICweights(object, \ldots, type_ev = c("added", "average"), 
-                hypo_names = c(), priorICweights = NULL, 
+                hypo_names = c(), priorICweights = NULL, priorICweights_study = FALSE,
                 type = c("goric", "goricc", "gorica", "goricac"),
                 order_studies = c("input_order", "ascending", "descending"), 
                 study_names = c(), study_weights = NULL)
@@ -84,7 +84,7 @@ evSyn_ICweights(object, \ldots, type_ev = c("added", "average"),
 # input: Ratio of AIC or ORIC or GORIC or GORICA weights; or 
 # Bayes factors
 evSyn_ICratios(object, \ldots, type_ev = c("added", "average"), 
-               hypo_names = c(), priorICweights = NULL, 
+               hypo_names = c(), priorICweights = NULL, priorICweights_study = FALSE,
                type = c("goric", "goricc", "gorica", "goricac"),
                order_studies = c("input_order", "ascending", "descending"), 
                study_names = c(), study_weights = NULL)
@@ -92,7 +92,7 @@ evSyn_ICratios(object, \ldots, type_ev = c("added", "average"),
 # input: result from the goric() function
 # Note that this is a wrapper function for evSyn_LL.
 evSyn_gorica(object, \dots, type_ev = c("added", "equal", "average"), 
-             hypo_names = c(), priorICweights = NULL, 
+             hypo_names = c(), priorICweights = NULL, priorICweights_study = FALSE,
              order_studies = c("input_order", "ascending", "descending"), 
              study_names = c(), study_weights = NULL,
              CI = FALSE, CI_level = 0.95, CI_B = 1000L)
@@ -129,7 +129,14 @@ xlab_unordered = NULL, angle_x = 30, \dots)
       \item a list of vectors with GORIC(A) values;
       \item a list of vectors with GORIC(A) weights;
       \item a list of vectors with ratios of GORIC(A) weights (versus a reference hypothesis / central theory);
-      \item a list of objects of class goric;
+      \item a list of objects of class goric (output of \code{\link{goric}}, one per study), 
+      for example, when the studies are analysed with \code{goric()} on fitted models (e.g., \code{lm} 
+      or \code{lavaan} objects). Then, the log-likelihood and penalty values (and the penalty factor) of 
+      these objects are used (as with the input type \code{"ll_pt"}). All objects should contain the same 
+      hypotheses, in the same order, and the same safeguard hypothesis: it is checked that they 
+      contain the same number of hypotheses (an error otherwise), and a message is given if the names of 
+      the hypotheses differ (since the evidence is synthesized per position, that is, the first 
+      hypotheses of all studies, the second ones, etc.);
       \item a data.frame of class escalc from the \pkg{metafor} package or a regular data.frame using the same labelling;
     }
     In the case of the first or last option, \code{evSyn} will calculate the GORICA (incl. log-likelihood and penalty) for each study using \code{goric}.
@@ -187,7 +194,9 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   Note that the complement can only be computed for one model/hypothesis at a time.} 
 
   \item{hypo_names}{character vector for labelling the hypotheses. By default, the
-  names are set to H1, H2, \ldots}
+  names are set to H1, H2, \ldots; for a list of goric objects as input, the names of the 
+  hypotheses in the first goric object are used (e.g., including \code{unconstrained} or 
+  \code{complement} for the safeguard hypothesis).}
 
   \item{priorICweights}{vector of prior IC weights, which represent the prior belief for the specified hypotheses. 
   By default, equal prior IC weights are used (i.e., 1/(#hypotheses)). 
@@ -210,10 +219,22 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   these), the IC values, the log-likelihood and penalty values, and the log-likelihood weights. Hence, the 
   study-specific results reflect the data of each study only, and the prior IC weights are counted once in the 
   aggregated results (for the added approach with equal study weights, the final ratio of IC weights equals the 
-  ratio of the prior IC weights times the product of the study-specific ratios of IC weights).}
-  %% TO DO: an argument priorICweights_study (not active for now; see .evSyn_priorICweights_study in
-  %% goric_evSyn.R): if TRUE, the prior IC weights are also used in the study-specific IC weights (and ratios)
-  %% and thus in the measures of variability (as in earlier versions).
+  ratio of the prior IC weights times the product of the study-specific ratios of IC weights). 
+  To also use them in the study-specific results, see \code{priorICweights_study}.}
+
+  \item{priorICweights_study}{logical; only relevant with unequal prior IC weights (\code{priorICweights}). 
+  If \code{FALSE} (default), the prior IC weights are only used in the cumulative and final (aggregated) 
+  IC weights and their ratios; the study-specific IC weights and ratios of IC weights (and the measures of 
+  variability and the plots based on these) then reflect the data of each study only. 
+  If \code{TRUE}, the prior IC weights are also used in the study-specific IC weights and ratios of IC 
+  weights, and thus in the measures of variability and the plots (\code{plot()}, \code{evSyn_forest()}) 
+  based on these. Then, the study-specific results are on the same footing as the final ones, which can 
+  make it easier to see how the final result comes about (e.g., when a hypothesis with a high prior IC 
+  weight is preferred in the final result, but not in the separate studies based on the data only).
+  In both cases, the cumulative and final IC weights use the prior IC weights only \emph{once} (not once 
+  per study): these are not computed from the study-specific IC weights, but from the (weighted) sums 
+  (or averages) of the IC values, to which the prior IC weights are added once. Hence, the final results 
+  do not depend on this argument. The print output and the summary state which choice is used.}
   
   \item{output_type}{a plot option. If "\code{gorica_weights}" (default), 
   a plot with the cumulative goric(a)
@@ -364,7 +385,7 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   \item{vi_cols}{a character vector specifying the columns in \code{data} that 
   contain the variance and covariance values for each observation. The default is, 
   in the case of one outcome variable, \code{"vi"};
-  in the case of multiple (namely, O) variables, \code{c("v1i", \ldots, "vOi")}.
+  in the case of multiple (namely, O) variables, \code{c("v1i", ..., "vOi")}.
   When specifying other column names for multiple outcomes, give one column per outcome 
   (otherwise, \code{"v1i"}, \ldots, \code{"vOi"} are used); 
   for studies with one outcome, the first element of \code{vi_cols} is used.
@@ -373,7 +394,7 @@ xlab_unordered = NULL, angle_x = 30, \dots)
   
   \item{digits}{the number of significant digits to use when printing.}
 
-  \item{variability}{logical; in \code{evSyn} (passed via \code{\ldots}): if \code{TRUE}, the measures 
+  \item{variability}{logical; in \code{evSyn} (passed via \code{...}): if \code{TRUE}, the measures 
   of variability over the studies (or analyses) and the corresponding conclusion are shown in the 
   print and summary output (see Value); defaults to \code{FALSE}. In \code{summary}, this can be 
   overruled. These measures can also be obtained afterwards with \code{evSyn_variability(object)}.}
@@ -403,7 +424,7 @@ xlab_unordered = NULL, angle_x = 30, \dots)
 \subsection{Dependent studies}{
 The added- and equal-evidence approaches assume independent studies. With dependent studies (e.g., 
 studies based on overlapping samples, or from the same lab or cohort), specify their clusters with 
-\code{cluster} (via \code{\ldots} in \code{evSyn}):
+\code{cluster} (via \code{...} in \code{evSyn}):
 \itemize{
   \item \code{dependence = "cluster"} (default): two-level evidence synthesis. Within a cluster, the 
     evidence is averaged (average approach: (weighted) mean of the log-likelihood and penalty values, with 
@@ -545,6 +566,16 @@ studies and to assess the robustness of the overall conclusion.
 \value{An object of class evSyn for which a print, summary and plot function is available. 
 The output comprises, among other things, the cumulative and final evidence 
 for the theory-based hypotheses.
+
+The output elements are in the same order for all types of input (elements that do not exist 
+for a given type of input or \code{type_ev} are skipped): the settings (e.g., \code{type}, 
+\code{type_ev}, \code{comparison}, \code{hypotheses}, \code{penalty_factor}, \code{priorICweights}), 
+the studies (\code{n_studies}, \code{order_studies}, \code{study_names}, \code{study_weights}, and 
+sample sizes), the study-specific values (\code{LL_m}, \code{PT_m}, \code{GORICA_m}) and then weights 
+(\code{LL_weights_m}, \code{GORICA_weight_m}), the cumulative values (\code{Cumulative_LL}, 
+\code{Cumulative_GORICA}) and then weights (\code{Cumulative_LL_weights}, 
+\code{Cumulative_GORICA_weights}), the final ratios of weights (\code{Final_ratio_LL_weights}, 
+\code{Final_ratio_GORICA_weights}), and the study-specific goric objects (\code{goric_studies}).
 
 The study-specific and cumulative output follows the order of the studies set by \code{order_studies}. 
 In particular (depending on the type of input, not all elements are available):
@@ -909,6 +940,22 @@ evS_Gv <- evSyn(goric.values,
                 hypo_names = colnames(myGORICs))
 evS_Gv
 plot(evS_Gv)
+
+
+## Example 5b: based on goric objects (e.g., from goric() on fitted models)
+
+# For example, per study a fitted lm object (here, simulated data of three 
+# studies with three groups), evaluated with goric():
+set.seed(123)
+goric_list <- lapply(1:3, function(s) {
+  d <- data.frame(g = gl(3, 30), 
+                  y = rnorm(90, mean = rep(c(0, 0.3, 0.6), each = 30)))
+  goric(lm(y ~ g - 1, data = d), 
+        hypotheses = list(H1 = "g1 < g2 < g3", H2 = "g1 = g2 < g3"))
+})
+# Evidence synthesis (added-evidence)
+evS_goric <- evSyn(goric_list)
+evS_goric
 
 
 ## Example 6: based on an escalc object

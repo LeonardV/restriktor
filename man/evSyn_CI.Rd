@@ -21,7 +21,7 @@ study-specific evidence).
 evSyn_CI(object, level = 0.95, method = c("boot", "delta", "mc"),
          boot_type = c("auto", "percentile", "centered"),
          nsim = 10000L, B = 1000L, seed = NULL, tol = 1e-8, rho = 1,
-         MI = isTRUE(object$MI))
+         MI = isTRUE(object$MI), data = NULL, fit_fun = NULL)
 
 \method{print}{evSyn_CI}(x, digits = max(3, getOption("digits") - 4),
       all_pairs = FALSE, \dots)
@@ -62,6 +62,15 @@ evSyn_CI(object, level = 0.95, method = c("boot", "delta", "mc"),
   Alternatively, the MI estimates (i.e., the estimates pooled over the imputed data sets) and their 
   covariance matrix (the total covariance matrix from Rubin's rules) can be used as input to 
   \code{\link{goric}}.}
+  \item{data}{for \code{type_ev = "average"}: the full data set (a data frame with one row per 
+  case), from which all analyses are obtained. Together with \code{fit_fun}, this gives a 
+  \emph{joint case bootstrap} (see Details), instead of the approach with \code{rho}.}
+  \item{fit_fun}{for \code{type_ev = "average"}, together with \code{data}: a function of a data set 
+  (with the same columns as \code{data}) that re-runs \emph{all} analyses and returns a list with one 
+  element per analysis (in the same order as in \code{\link{evSyn}}), each a list with the (named) 
+  estimates (\code{est}) and their covariance matrix (\code{VCOV}), as used as input in 
+  \code{\link{evSyn}}. Each analysis can use its own variables, subsample (e.g., exclusion criteria), 
+  and model.}
   \item{x}{an object of class \code{evSyn_CI}.}
   \item{digits}{the number of decimals to print.}
   \item{all_pairs}{logical; if \code{FALSE} (default), the differences and ratios are
@@ -135,6 +144,20 @@ of the same constructs, typically about .5 to .8; analyses based on different (s
 partly different subsamples, lower (about .3 to .5). Hence, \code{rho = 1} is the worst case rather than 
 the most likely value.
 
+\emph{Joint case bootstrap} (arguments \code{data} and \code{fit_fun}). When the full data set is 
+available, the dependence between the analyses does not need to be assumed (via \code{rho}): the cases 
+(rows) of the full data set are resampled (with replacement), and \emph{all} analyses are re-run on the 
+\emph{same} bootstrap sample, each with its own variables and choices (as specified in \code{fit_fun}). 
+The analyses need not use the same variables: they are dependent because they are based on the same 
+cases, and that is what is resampled. Hence, the bootstrap distribution of the averaged log-likelihood 
+values (and thus of the averaged GORICA values, their differences, the GORICA weights, and their ratios) 
+reflects both the sampling variability of each analysis and the (actual) dependence between the analyses. 
+As for the other CIs, the penalties (and prior IC weights) are fixed, and the CIs are percentile or 
+centered bootstrap CIs (see \code{boot_type}). \code{fit_fun} applied to \code{data} should render 
+the estimates used in \code{\link{evSyn}} (this is checked); bootstrap samples in which 
+\code{fit_fun} fails are skipped (their number is reported). This takes \code{B} times the time of 
+running all analyses.
+
 \emph{Multiple imputation} (\code{MI = TRUE}). When the analyses are the analyses of \eqn{m} multiple imputed 
 data sets (and only then; not for a multiverse analysis), the aggregated GORICA values and weights are those of 
 the average approach, but their (co)variance is obtained with Rubin's rules: the total covariance matrix is 
@@ -197,6 +220,8 @@ An object of class \code{evSyn_CI}, a list with, among others:
 \item{rho, dependence, n_clusters, df}{for the average approach and for dependent studies: the 
   correlation used, the type of dependence (\code{"cluster"} or \code{"rve"}), the number of clusters, 
   and the degrees of freedom of the t quantiles (\code{Inf}: normal quantiles).}
+\item{joint, n_failed}{whether the joint case bootstrap is used (see \code{data} and \code{fit_fun}), 
+  and the number of bootstrap samples that failed (and were skipped).}
 \item{best}{the hypothesis with the highest aggregated GORICA weight.}
 }
 \references{
@@ -222,4 +247,23 @@ evSyn_CI(res, method = "delta")       # delta method
 res_av <- evSyn(est, VCOV = vcov, hypotheses = H, type_ev = "average")
 evSyn_CI(res_av, rho = 1, seed = 1)
 evSyn_CI(res_av, rho = 0.5, seed = 1)
+
+# Average approach with the data available: joint case bootstrap, here for 
+# a multiverse of three analyses of the same data (different covariates and 
+# exclusion criteria); all analyses are re-run on each bootstrap sample.
+set.seed(10)
+n <- 150
+dat <- data.frame(x1 = rnorm(n), x2 = rnorm(n), x3 = rnorm(n))
+dat$y <- 0.4 * dat$x1 + 0.2 * dat$x2 + 0.1 * dat$x3 + rnorm(n)
+fit_fun <- function(d) {
+  m1 <- lm(y ~ x1 + x2, data = d)
+  m2 <- lm(y ~ x1 + x2 + x3, data = d)
+  m3 <- lm(y ~ x1 + x2, data = d[abs(d$y) < 3, ])
+  lapply(list(m1, m2, m3), function(m) 
+    list(est = coef(m)[c("x1", "x2")], VCOV = vcov(m)[c("x1", "x2"), c("x1", "x2")]))
+}
+fits <- fit_fun(dat)
+res_mv <- evSyn(lapply(fits, `[[`, "est"), VCOV = lapply(fits, `[[`, "VCOV"),
+                hypotheses = list(H1 = "x1 > x2 > 0"), type_ev = "average")
+evSyn_CI(res_mv, data = dat, fit_fun = fit_fun, B = 200, seed = 1)
 }

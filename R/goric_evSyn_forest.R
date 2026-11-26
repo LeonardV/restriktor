@@ -77,7 +77,7 @@ evSyn_forest <- function(object, vs = NULL, best = NULL, level = 0.95,
       pg <- g$priorICweights
       if (is.null(pg) || length(pg) != M) pg <- rep(1 / M, M)
       pr <- 1 / (pg[b] / pg[kk])
-      # not active for now: also use the prior IC weights in the study-specific ratios
+      # priorICweights_study = TRUE: also use the prior IC weights in the study-specific ratios
       if (isTRUE(object$priorICweights_study)) pr <- pr * prior[b] / prior[kk]
       study_rows[[length(study_rows) + 1L]] <- data.frame(
         comparison = paste0(best, " vs. ", k), label = st_names[pos], kind = "study",

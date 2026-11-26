@@ -686,11 +686,32 @@ if (isTRUE(x$posthoc$applicable)) {
     message(sprintf("\nrestriktor Message: Note that a penalty factor of %s (default is 2) is used in the calculation of the %s value, that is -2 x log-likelihood + penalty_factor x penalty",
                     x$penalty_factor, x$type))
   }
+  
+  # The warnings and messages that were given when running goric() (see 
+  # goric() in goric.R): the warnings are repeated here, and for the messages
+  # it is said how these can be seen (since both are easily missed, for 
+  # example, in a long Rmd file).
+  print_run_output(x)
 }
 
-# TO DO print ook de warnings hier nog eens, anders mis je die ms
-#       Kijk of messages en/of warnings en zag dan onderaan dat die er zijn en geef dan de code om die te zien!
-# Ws zeg dat er messgaes zijn en zeg hoe die in te zien.
-# vang ze dus op en geef ze niet direct (niet tijdens runnen en niet bij print).
-#
-# TO DO veel output (bvb warnings, conclusion) is doorlopende tekst zonder 'line breaks' en dus in de pdf zie je maar de helft; het is beter om line breaks toe te voegen, zodat de output nooit meer is dan 76 karakters.
+print_run_output <- function(x) {
+  n_w <- length(x$run_warnings)
+  n_m <- length(x$run_messages)
+  if (n_w == 0 && n_m == 0) return(invisible(NULL))
+  cat("---\n")
+  if (n_w > 0) {
+    cat(sprintf("Note: %d warning%s %s given when running goric():\n", n_w,
+                if (n_w > 1) "s" else "", if (n_w > 1) "were" else "was"))
+    for (i in seq_len(n_w)) {
+      cat(paste0(i, ". ", x$run_warnings[i], "\n"))
+    }
+  }
+  if (n_m > 0) {
+    cat(paste0("Note: ", n_m, " message", if (n_m > 1) "s" else "", " ", 
+               if (n_m > 1) "were" else "was", " given when running goric(). ",
+               "To see ", if (n_m > 1) "these" else "it", ", use:\n",
+               "  cat(<goric object>$run_messages, sep = \"\\n\\n\")\n"))
+  }
+  invisible(NULL)
+}
+

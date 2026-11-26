@@ -349,14 +349,10 @@ test_that("prior IC weights are used once (aggregated results), not in the study
   expect_equal(unname(rw$Cumulative_GORICA_weights["Final", ]), final_w(r), tolerance = 1e-8)
 })
 
-test_that("priorICweights_study (not active for now) gives the earlier behaviour when switched on", {
+test_that("priorICweights_study = TRUE gives the earlier behaviour (prior in the study-specific weights)", {
   pr <- c(.5, .3, .2)
   r_new <- fit_ev(priorICweights = pr)
-  ns <- asNamespace("restriktor")
-  old <- get(".evSyn_priorICweights_study", envir = ns)
-  assignInNamespace(".evSyn_priorICweights_study", TRUE, ns = "restriktor")
-  on.exit(assignInNamespace(".evSyn_priorICweights_study", old, ns = "restriktor"))
-  r_old <- fit_ev(priorICweights = pr)
+  r_old <- fit_ev(priorICweights = pr, priorICweights_study = TRUE)
   W <- sweep(r_new$GORICA_weight_m, 2, pr, "*"); W <- W / rowSums(W)
   expect_equal(unname(r_old$GORICA_weight_m), unname(W), tolerance = 1e-10)
   expect_equal(final_w(r_old), final_w(r_new), tolerance = 1e-12)  # aggregated results unchanged

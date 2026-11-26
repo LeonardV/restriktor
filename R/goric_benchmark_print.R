@@ -194,7 +194,10 @@ print.benchmark <- function(x, output_type = c("rgw", "gw", "lw", "rlw", "ld",
   if (!is.null(x$iter)) {
     cat(sprintf("Number of iterations (draws) per benchmark: %s%s%s\n", green, x$iter, reset))
   }
-  cat(sprintf("Error probability Preferred Hypothesis vs. Complement: %s%s%s\n", green, error_prob_pref_hypo, reset))
+  # (based on the GORICA(C), like the benchmarks: benchmark() re-computes the
+  # GORICA(C) from the estimates and their covariance matrix)
+  cat(sprintf("Error probability Preferred Hypothesis vs. Complement (based on the %s): %s%s%s\n",
+              goric_type, green, error_prob_pref_hypo, reset))
   if (inherits(x, "benchmark_means")) {
     cat(sprintf("Number of Groups: %s%s%s\n", green, ngroups, reset))
   } else {

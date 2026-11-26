@@ -152,7 +152,7 @@
     txt <- paste0("  * Final: ", sQuote(best), " has ", fmt(fin),
                   " times more support than ", sQuote(other), ci_txt(best, other), ".")
     if (is.na(gm) || is.na(ER)) {
-      return(c(txt, "    (The variability over the studies could not be determined for this comparison.)"))
+      return(c(txt, paste0("    (The variability over the ", units, " could not be determined for this comparison.)")))
     }
     if (gm >= 1) {
       txt <- c(txt, paste0("    In ", pct(ER), " of the ", units, " (ER = ", fmt(ER), "), ",
@@ -455,7 +455,7 @@ summary.evSyn <- function(object, probs = c(0, .25, .50, .75, 1),
   ans$Final_Cumulative_results <- final
   ans$CI <- x[["CI"]]
   
-  ans$priorICweights_study <- x[["priorICweights_study"]] # not active for now (see .evSyn_priorICweights_study)
+  ans$priorICweights_study <- x[["priorICweights_study"]] # see the argument priorICweights_study of evSyn()
   ans$Ratio_GORICA_weight_mu <- x[["ratio_GORICA_weight_mu"]]
   ans$Ratio_GORICA_weight_mc <- x[["ratio_GORICA_weight_mc"]]
   ans$Final_ratio_GORICA_weights <- x[["Final_ratio_GORICA_weights"]]
@@ -485,14 +485,17 @@ summary.evSyn <- function(object, probs = c(0, .25, .50, .75, 1),
 .evSyn_CI_note <- function(ci, indent = "") {
   pct <- paste0(format(100 * ci$level), "%")
   meth <- switch(ci$method,
-                 boot  = paste0("parametric bootstrap, B = ", ci$B,
+                 boot  = if (isTRUE(ci$joint)) {
+                   paste0("joint case bootstrap, B = ", ci$B, " bootstrap samples of the cases, ",
+                          "with all analyses re-run on each sample")
+                 } else paste0("parametric bootstrap, B = ", ci$B,
                                 " draws per study, independently over the studies"),
                  delta = "delta method",
                  mc    = "delta method, with Monte Carlo draws for the weights",
                  ci$method)
   if (isTRUE(ci$MI)) {
     meth <- "multiple imputation: Rubin's rules"
-  } else if (identical(ci$type_ev, "average")) meth <- paste0(meth, "; dependent analyses, rho = ", format(ci$rho))
+  } else if (identical(ci$type_ev, "average") && !isTRUE(ci$joint)) meth <- paste0(meth, "; dependent analyses, rho = ", format(ci$rho))
   if (identical(ci$dependence, "cluster")) meth <- paste0(meth, "; two-level synthesis, rho = ", format(ci$rho), " within clusters")
   if (identical(ci$dependence, "rve")) meth <- paste0(meth, "; robust variance estimation over ", ci$n_clusters, " clusters")
   paste0(indent, "(", pct, "CI: confidence intervals for the final (aggregated) ", toupper(ci$type),
@@ -751,8 +754,8 @@ print.summary.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...
   cat(paste0(adjusted_output, "\n"), sep = "")
   if (any(grepl("^prior .* weights$", rownames(x[["Final_Cumulative_results"]])))) {
     cat(paste0("\n    (prior ", type_label, " weights: the priorICweights, which are used in the ", type_label,
-               if (isTRUE(x[["priorICweights_study"]])) " weights (study-specific, cumulative, and final) and their ratios, but not in the " else
-                           " weights (cumulative and final) and their ratios, but not in the study-specific ones (nor in the measures of variability based on these), the ",
+               if (isTRUE(x[["priorICweights_study"]])) " weights (study-specific (priorICweights_study = TRUE), and cumulative and final, where they are used only once, not once per study) and their ratios, as well as in the measures of variability and the plots based on these, but not in the " else
+                           " weights (cumulative and final) and their ratios, but not in the study-specific ones (nor in the measures of variability and the plots based on these; see the argument priorICweights_study), the ",
                type_label, " values, the log-likelihood and penalty values, and the log-likelihood weights.)\n"))
   }
   if (!is.null(x[["CI"]])) {

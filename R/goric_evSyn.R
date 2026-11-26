@@ -35,8 +35,41 @@
 ## object = Ratio IC weights
 
 
-# TO DO when type_ev = "average" then we should not say 'studies' but 'analyses'.
-#       So, messages and labels should be changed then (names of arguments should not).
+# Note: when type_ev = "average" (multiple analyses of one data set), the 
+# messages and labels say 'analyses' instead of 'studies' (see 
+# .evSyn_unit_label()); the names of the arguments are not changed.
+
+
+# -------------------------------------------------------------------------
+# Helper: the order of the elements in the output of the evSyn functions, 
+# which is the same for all of them (elements that do not exist for a given
+# type of input or type_ev are skipped):
+#   settings  -> studies -> per study (values, then weights) -> 
+#   cumulative (values, then weights) -> final (ratios of weights) -> extras.
+# Elements not in this list (e.g., CIs added later) come at the end, in 
+# their original order. Printing is not affected (it uses the names).
+.evSyn_output_order <- c(
+  # settings
+  "type", "type_ev", "comparison", "hypotheses", "hypo_names", "Href", 
+  "penalty_factor", "priorICweights", "priorICweights_study",
+  # studies
+  "n_studies", "order_studies", "study_names", "study_weights", 
+  "study_sample_nobs", "study_nr_nuis_param",
+  # per study: values, then weights
+  "LL_m", "PT_m", "GORICA_m", "ICdiff_m", 
+  "LL_weights_m", "GORICA_weight_m", "GwRatio_m",
+  # cumulative: values, then weights
+  "Cumulative_LL", "Cumulative_GORICA", "Cumulative_ICdiff",
+  "Cumulative_LL_weights", "Cumulative_GORICA_weights", "Cumulative_ratioICweights",
+  # final: ratios of weights
+  "Final_ratio_LL_weights", "Final_ratio_GORICA_weights", "ratio_GORICA_weight_mu",
+  # extras
+  "goric_studies"
+)
+.evSyn_order_output <- function(out) {
+  known <- intersect(.evSyn_output_order, names(out))
+  out[c(known, setdiff(names(out), known))]
+}
 
 
 # -------------------------------------------------------------------------
@@ -252,6 +285,7 @@
     PT = lapply(seq_len(C), function(j) PT_c[j, ]),
     type_ev = res$type_ev, hypo_names = hnames,
     priorICweights = res$priorICweights, type = res$type,
+    priorICweights_study = isTRUE(res$priorICweights_study),
     order_studies = ord_arg, study_names = levs,
     study_weights = if (length(unique(round(w_c / sum(w_c), 12))) > 1) w_c else NULL,
     penalty_factor = if (is.null(res$penalty_factor)) 2 else res$penalty_factor))
@@ -434,23 +468,32 @@ evSyn <- function(object, input_type = NULL, ...) {
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on the (standardized) parameter estimates and 
 # the covariance matrix
-# TO DO (priorICweights_study): make this an input argument of evSyn() (not 
-# active for now; therefore, a fixed value is used in the evSyn functions).
+# Prior IC weights in the study-specific results (argument priorICweights_study)
 # - FALSE (default): the prior IC weights (priorICweights) are used once, in the 
 #   cumulative and final (aggregated) IC weights (and their ratios); not in the 
 #   study-specific IC weights (and ratios of IC weights), and thus not in the 
-#   measures of variability based on these.
+#   measures of variability and the plots based on these. The study-specific 
+#   results then reflect the data of each study only.
 # - TRUE: the prior IC weights are also used in the study-specific IC weights 
-#   (and ratios of IC weights), and thus in the measures of variability (as in 
-#   earlier versions). 
-# When it becomes an argument, add it to the evSyn functions (and the Rd file), 
-# replacing 'priorICweights_study <- .evSyn_priorICweights_study' in these.
-.evSyn_priorICweights_study <- FALSE
+#   (and ratios of IC weights), and thus in the measures of variability and the
+#   plots based on these, such that the study-specific results are on the same 
+#   footing as the final ones. The cumulative and final IC weights still use the
+#   prior IC weights only ONCE (not once per study): these are not computed from
+#   the study-specific IC weights, but from the (weighted) sums of the IC values.
+# Check of the argument (a single TRUE or FALSE):
+.evSyn_check_priorICweights_study <- function(priorICweights_study) {
+  if (!is.logical(priorICweights_study) || length(priorICweights_study) != 1L || 
+      is.na(priorICweights_study)) {
+    stop("\nrestriktor ERROR: The argument 'priorICweights_study' should be TRUE or FALSE.", 
+         call. = FALSE)
+  }
+  priorICweights_study
+}
 
 evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
                       type_ev = c("added", "equal", "average"), 
                       comparison = c("unconstrained", "complement", "none"),
-                      hypo_names = c(), priorICweights = NULL,
+                      hypo_names = c(), priorICweights = NULL, priorICweights_study = FALSE,
                       type = c("gorica", "goricac"),
                       order_studies = c("input_order", "ascending", "descending"),
                       study_names = c(),
@@ -974,10 +1017,10 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
   # weights were also used in the study-specific results, they would be counted 
   # S times in the product of these.)
   # The per-study goric() calls above are run without the prior IC weights.
-  priorICweights_study <- .evSyn_priorICweights_study # TO DO: input argument (not active for now)
+  priorICweights_study <- .evSyn_check_priorICweights_study(priorICweights_study)
   if (priorICweights_study) {
-    # Not active for now (see .evSyn_priorICweights_study): also use the prior 
-    # IC weights in the study-specific IC weights and ratios of IC weights.
+    # priorICweights_study = TRUE: also use the prior IC weights in the 
+    # study-specific IC weights and ratios of IC weights.
     GORICA_weight_m[] <- sweep(GORICA_weight_m, 2, priorICweights, "*")
     GORICA_weight_m[] <- GORICA_weight_m / rowSums(GORICA_weight_m)
     if (comparison == "unconstrained") {
@@ -1007,7 +1050,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
               type_ev = type_ev,
               hypotheses = hypotheses,
               priorICweights = priorICweights,
-              priorICweights_study = priorICweights_study, # TO DO: input argument (not active for now)
+              priorICweights_study = priorICweights_study,
               penalty_factor = penalty_factor,
               n_studies = S,
               order_studies = orderStudies,
@@ -1030,8 +1073,8 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
               comparison = comparison,
               goric_studies = goric_studies # in the input order of the studies
   )
-  # TO DO welke volgorde en dan in alle functies zo gelijk mogelijk maken ook
-  
+  # same order of the output elements in all evSyn functions
+  out <- .evSyn_order_output(out)
   class(out) <- c("evSyn_est", "evSyn")
   
   # Confidence intervals (CIs) for the final (aggregated) results (see .evSyn_add_CI())
@@ -1045,7 +1088,7 @@ evSyn_est <- function(object, ..., VCOV = list(), hypotheses = list(),
 # GORIC(A) evidence synthesis based on log likelihood and penalty values
 evSyn_LL <- function(object, ..., PT = list(), 
                      type_ev = c("added", "equal", "average"),
-                     hypo_names = c(), priorICweights = NULL,
+                     hypo_names = c(), priorICweights = NULL, priorICweights_study = FALSE,
                      type = c("goric", "goricc", "gorica", "goricac"),
                      order_studies = c("input_order", "ascending", "descending"),
                      study_names = c(),
@@ -1313,8 +1356,8 @@ evSyn_LL <- function(object, ..., PT = list(),
   # The prior IC weights (priorICweights) are used once, in the cumulative and 
   # final (aggregated) IC weights; not in the study-specific IC weights (as for 
   # the other input types; see the explanation in evSyn_est).
-  priorICweights_study <- .evSyn_priorICweights_study # TO DO: input argument (not active for now)
-  if (priorICweights_study) { # not active for now (see .evSyn_priorICweights_study)
+  priorICweights_study <- .evSyn_check_priorICweights_study(priorICweights_study)
+  if (priorICweights_study) { # also use the prior IC weights in the study-specific IC weights
     GORICA_weight_m[] <- sweep(GORICA_weight_m, 2, priorICweights, "*")
     GORICA_weight_m[] <- GORICA_weight_m / rowSums(GORICA_weight_m)
   }
@@ -1323,7 +1366,7 @@ evSyn_LL <- function(object, ..., PT = list(),
     type_ev = type_ev,
     #hypotheses = hypo_names,
     priorICweights = priorICweights,
-    priorICweights_study = priorICweights_study, # TO DO: input argument (not active for now)
+    priorICweights_study = priorICweights_study,
     penalty_factor = penalty_factor,
     n_studies = S,
     order_studies = orderStudies,
@@ -1343,6 +1386,8 @@ evSyn_LL <- function(object, ..., PT = list(),
     Final_ratio_LL_weights = Final.ratio.LL.weights
   )
   
+  # same order of the output elements in all evSyn functions
+  out <- .evSyn_order_output(out)
   class(out) <- c("evSyn_LL", "evSyn")
   
   return(out)
@@ -1353,7 +1398,7 @@ evSyn_LL <- function(object, ..., PT = list(),
 # -------------------------------------------------------------------------
 # GORIC(A) evidence synthesis based on AIC or ORIC or GORIC or GORICA values
 evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"), 
-                           hypo_names = c(), priorICweights = NULL,
+                           hypo_names = c(), priorICweights = NULL, priorICweights_study = FALSE,
                            type = c("goric", "goricc", "gorica", "goricac"),
                            order_studies = c("input_order", "ascending", "descending"),
                            study_names = c(),
@@ -1547,8 +1592,8 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
   # The prior IC weights (priorICweights) are used once, in the cumulative and 
   # final (aggregated) IC weights; not in the study-specific IC weights (as for 
   # the other input types; see the explanation in evSyn_est).
-  priorICweights_study <- .evSyn_priorICweights_study # TO DO: input argument (not active for now)
-  if (priorICweights_study) { # not active for now (see .evSyn_priorICweights_study)
+  priorICweights_study <- .evSyn_check_priorICweights_study(priorICweights_study)
+  if (priorICweights_study) { # also use the prior IC weights in the study-specific IC weights
     GORICA_weight_m[] <- sweep(GORICA_weight_m, 2, priorICweights, "*")
     GORICA_weight_m[] <- GORICA_weight_m / rowSums(GORICA_weight_m)
   }
@@ -1557,7 +1602,7 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
     type_ev           = type_ev,
     #hypotheses       = hypo_names,
     priorICweights = priorICweights,
-    priorICweights_study = priorICweights_study, # TO DO: input argument (not active for now)
+    priorICweights_study = priorICweights_study,
     n_studies         = S,
     order_studies     = orderStudies,
     study_names       = study_names,
@@ -1570,6 +1615,8 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
     Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
   
   
+  # same order of the output elements in all evSyn functions
+  out <- .evSyn_order_output(out)
   class(out) <- c("evSyn_ICvalues", "evSyn")
   
   return(out)
@@ -1582,7 +1629,7 @@ evSyn_ICvalues <- function(object, ..., type_ev = c("added", "average"),
 # GORIC(A) evidence synthesis based on AIC or ORIC or GORIC or GORICA weights or 
 # (Bayesian) posterior model probabilities
 evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"), 
-                            hypo_names = c(), priorICweights = NULL, 
+                            hypo_names = c(), priorICweights = NULL, priorICweights_study = FALSE,
                             type = c("goric", "goricc", "gorica", "goricac"),
                             order_studies = c("input_order", "ascending", "descending"),
                             study_names = c(),
@@ -1789,8 +1836,8 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
   # The prior IC weights (priorICweights) are used once, in the cumulative and 
   # final (aggregated) IC weights; not in the study-specific IC weights (as for 
   # the other input types; see the explanation in evSyn_est).
-  priorICweights_study <- .evSyn_priorICweights_study # TO DO: input argument (not active for now)
-  if (priorICweights_study) { # not active for now (see .evSyn_priorICweights_study)
+  priorICweights_study <- .evSyn_check_priorICweights_study(priorICweights_study)
+  if (priorICweights_study) { # also use the prior IC weights in the study-specific IC weights
     Weights[] <- sweep(Weights, 2, priorICweights, "*")
   }
   Weights[] <- Weights / rowSums(Weights)
@@ -1799,7 +1846,7 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
     type_ev           = type_ev,
     #hypotheses       = hypo_names,
     priorICweights = priorICweights,
-    priorICweights_study = priorICweights_study, # TO DO: input argument (not active for now)
+    priorICweights_study = priorICweights_study,
     n_studies         = S,
     order_studies     = orderStudies,
     study_names       = study_names,
@@ -1809,6 +1856,8 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
     Cumulative_GORICA_weights  = CumulativeWeights,
     Final_ratio_GORICA_weights = Final.ratio.GORICA.weights)
   
+  # same order of the output elements in all evSyn functions
+  out <- .evSyn_order_output(out)
   class(out) <- c("evSyn_ICweights", "evSyn")
   
   return(out)
@@ -1819,7 +1868,7 @@ evSyn_ICweights <- function(object, ..., type_ev = c("added", "average"),
 # GORIC(A) evidence synthesis based on the ratio of AIC or ORIC or GORIC or GORICA 
 # weights or (Bayesian) posterior model probabilities
 evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"), 
-                           hypo_names = c(), priorICweights = NULL, 
+                           hypo_names = c(), priorICweights = NULL, priorICweights_study = FALSE,
                            type = c("goric", "goricc", "gorica", "goricac"),
                            order_studies = c("input_order", "ascending", "descending"),
                            study_names = c(),
@@ -2009,7 +2058,7 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
   sequence <- .evSyn_sequence_labels(S, type_ev)
   #
   studyspecWeights <- matrix(NA, nrow = (S), ncol = (NrHypos))
-  priorICweights_study <- .evSyn_priorICweights_study # TO DO: input argument (not active for now)
+  priorICweights_study <- .evSyn_check_priorICweights_study(priorICweights_study)
   colnames(studyspecWeights) <- hypo_names
   rownames(studyspecWeights) <- study_names # study-specific (not cumulative) weights
   #
@@ -2041,7 +2090,7 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
     sumIC_diff <- 0
     for (s in 1:S) {
       minGoric <- min(IC_diff[s, ])
-      # study-specific: without the prior IC weights (unless priorICweights_study = TRUE; not active for now)
+      # study-specific: without the prior IC weights (unless priorICweights_study = TRUE)
       expGW <- (if (priorICweights_study) priorICweights else 1) * exp(-0.5*(IC_diff[s, ]-minGoric))
       studyspecWeights[s, ] <- expGW / sum(expGW)
       #
@@ -2072,7 +2121,7 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
     sumIC_diff <- 0
     for (s in 1:S) {
       minGoric <- min(IC_diff[s, ])
-      # study-specific: without the prior IC weights (unless priorICweights_study = TRUE; not active for now)
+      # study-specific: without the prior IC weights (unless priorICweights_study = TRUE)
       expGW <- (if (priorICweights_study) priorICweights else 1) * exp(-0.5*(IC_diff[s, ]-minGoric))
       studyspecWeights[s, ] <- expGW / sum(expGW)
       #
@@ -2110,7 +2159,7 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
     type_ev           = type_ev,
     ##hypotheses       = hypo_names,
     priorICweights = priorICweights,
-    priorICweights_study = priorICweights_study, # TO DO: input argument (not active for now)
+    priorICweights_study = priorICweights_study,
     Href = Href, 
     n_studies         = S,
     order_studies     = orderStudies,
@@ -2127,6 +2176,8 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
     Cumulative_GORICA_weights  = CumulativeWeights, # This is cum GORICA weights (so, not cum ratios!)
     Final_ratio_GORICA_weights = Final.ratio.GORICA.weights) # These are the ratios, and all versus all (as usual)
   
+  # same order of the output elements in all evSyn functions
+  out <- .evSyn_order_output(out)
   class(out) <- c("evSyn_ICratios", "evSyn")
   
   return(out)
@@ -2137,7 +2188,7 @@ evSyn_ICratios <- function(object, ..., type_ev = c("added", "average"),
 # -------------------------------------------------------------------------
 # list with goric objects
 evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"), 
-                         hypo_names = c(), priorICweights = NULL,
+                         hypo_names = c(), priorICweights = NULL, priorICweights_study = FALSE,
                          order_studies = c("input_order", "ascending", "descending"),
                          study_names = c(),
                          study_weights = NULL,
@@ -2174,11 +2225,20 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
          call. = FALSE)
   }
   hypo_names_objects <- lapply(object, function(x) as.character(x$result$model))
-  if (!all(vapply(hypo_names_objects, identical, logical(1), hypo_names_objects[[1]]))) {
+  names_differ <- !all(vapply(hypo_names_objects, identical, logical(1), hypo_names_objects[[1]]))
+  if (names_differ) {
     message("\nrestriktor Message: The names of the hypotheses (and/or the safeguard ",
             "hypotheses) differ across the goric objects. Please make sure that the hypotheses ",
             "are in the same order in each study (the evidence is synthesized per position, ",
-            "that is, the first hypotheses of all studies, the second ones, etc.).")
+            "that is, the first hypotheses of all studies, the second ones, etc.).",
+            if (length(hypo_names) == 0) paste0(" The names of the first goric object are used: ",
+                                                paste(hypo_names_objects[[1]], collapse = ", "), ".") else "")
+  }
+  # Names of the hypotheses: by default (if 'hypo_names' is not specified), 
+  # those of the first goric object (e.g., including 'unconstrained' or 
+  # 'complement' for the safeguard hypothesis).
+  if (length(hypo_names) == 0) {
+    hypo_names <- hypo_names_objects[[1]]
   }
   
   # The penalty factor used in the goric objects (default 2); this must be 
@@ -2206,6 +2266,7 @@ evSyn_gorica <- function(object, ..., type_ev = c("added", "equal", "average"),
     type_ev = type_ev,
     hypo_names = hypo_names,
     priorICweights = priorICweights,
+    priorICweights_study = priorICweights_study,
     order_studies = order_studies,
     study_names = study_names,
     study_weights = study_weights,

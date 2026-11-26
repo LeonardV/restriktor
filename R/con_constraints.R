@@ -23,6 +23,10 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
   
   if (is.character(constraints)) {
     
+    # 'sd' in the hypotheses (e.g., 'g2 - g1 > 0.2*sd'): replaced by the 
+    # (residual) standard deviation of the fitted model; see con_sd_substitute()
+    constraints <- con_sd_substitute(constraints, model, parTable)
+    
     constraints_usr <- constraints
     
     # these operators are typical lavaan operators and are not allowed in the
@@ -30,7 +34,6 @@ con_constraints <- function(model, VCOV, est, constraints, bvec = NULL, meq = 0L
     # in the fitted object of class lavaan. 
     operators <- c("=~", "<~", "~*~", "~~", "~", "\\|", "%")
     
-    # TO DO bouw ook 'sd' in en dan kan je hypo obv zeg 0.2*sd specificeren
     if (any(grepl(paste(operators, collapse = "|"), constraints)) || any(grepl("[><]{2,}", constraints))) {
         stop(
         paste(
@@ -258,4 +261,114 @@ con_constraints_rhs_bvec <- function(object, constraints = NULL) {
                                theta       = lavpartable$est)
 
   c(CON$ceq.rhs, CON$cin.rhs)
+}
+
+
+# 'sd' in hypotheses ---------------------------------------------------------
+# Hypotheses can be specified in terms of an effect size, like Cohen's d, 
+# using 'sd': for example, 'g2 - g1 > 0.2*sd' denotes that the difference 
+# between the means of groups 2 and 1 is at least small (d = (mu2 - mu1)/sd
+# of at least 0.2). Here, 'sd' is replaced by the residual standard deviation
+# of the fitted model, which (in an ANOVA model) is the pooled within-group 
+# standard deviation used in Cohen's d. With covariates, it is the residual
+# standard deviation given the covariates. For a multivariate model (mlm), 
+# there is one per outcome, denoted by 'sd.<outcome>' (e.g., 'sd.y1').
+# This is only available for fitted model objects (lm, aov, mlm, rlm, and 
+# glm with family gaussian); with estimates as input, one can plug in the 
+# value oneself (e.g., 'g2 - g1 > 0.2*1.5').
+con_sd_substitute <- function(constraints, model, parTable = NULL) {
+  pattern <- "(?<![A-Za-z0-9._])sd(\\.[A-Za-z0-9_]+)?(?![A-Za-z0-9._(])"
+  if (!any(grepl(pattern, constraints, perl = TRUE))) return(constraints)
+  tokens <- unique(unlist(regmatches(constraints, gregexpr(pattern, constraints, perl = TRUE))))
+  # a parameter (label) called 'sd' (or 'sd.<...>') is not replaced
+  labels <- if (!is.null(parTable)) parTable$label else character(0)
+  tokens <- setdiff(tokens, labels)
+  if (length(tokens) == 0L) return(constraints)
+  
+  # Check that 'sd' is used as an effect-size cut-off (as in Cohen's d): each 
+  # (part of a) constraint with 'sd' should contain at least one parameter 
+  # (so, not, e.g., 'sd > 2'), and 'sd' should not multiply a parameter (so,
+  # not, e.g., 'g2 - g1 > sd*g3'); allowed are, e.g., 'g2 - g1 > 0.2*sd' and 
+  # '(g2 - g1)/sd > 0.2'.
+  params <- labels[!is.na(labels) & labels != ""]
+  esc <- function(x) gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", x)
+  par_core <- if (length(params) > 0) {
+    paste0("(", paste(esc(params[order(-nchar(params))]), collapse = "|"), ")")
+  } else NULL
+  par_re <- if (!is.null(par_core)) paste0("(?<![A-Za-z0-9._])", par_core, "(?![A-Za-z0-9._])") else NULL
+  tok_re <- paste0("(", paste(gsub(".", "\\\\.", tokens, fixed = TRUE), collapse = "|"), ")")
+  parts <- trimws(unlist(strsplit(constraints, "[;\n]")))
+  parts <- parts[grepl(paste0("(?<![A-Za-z0-9._])", tok_re, "(?![A-Za-z0-9._(])"), parts, perl = TRUE)]
+  sd_use <- paste0("'sd' should be used as an effect-size cut-off (as in Cohen's d), that is, a ",
+                   "number times sd (e.g., 'g2 - g1 > 0.2*sd') or a difference divided by sd ",
+                   "(e.g., '(g2 - g1)/sd > 0.2').")
+  for (p in parts) {
+    if (!is.null(par_re) && !grepl(par_re, p, perl = TRUE)) {
+      stop(paste0("restriktor ERROR: The constraint '", p, "' does not contain any parameter. ", sd_use),
+           call. = FALSE)
+    }
+    if (!is.null(par_re)) {
+      # sd * parameter (or '('), parameter (or ')') * sd, and sd / parameter (or '(');
+      # a number times or divided by sd (e.g., 0.2*sd or sd/2) is fine
+      mult <- c(paste0(tok_re, "\\s*\\*\\s*(\\(|", par_core, "(?![A-Za-z0-9._]))"),
+                paste0("(\\)|(?<![A-Za-z0-9._])", par_core, ")\\s*\\*\\s*", tok_re),
+                paste0(tok_re, "\\s*/\\s*(\\(|", par_core, "(?![A-Za-z0-9._]))"))
+      if (any(vapply(mult, function(re) grepl(re, p, perl = TRUE), logical(1)))) {
+        stop(paste0("restriktor ERROR: In the constraint '", p, "', 'sd' multiplies (or is divided by) ",
+                    "a parameter. ", sd_use), call. = FALSE)
+      }
+    }
+  }
+  
+  if (is.numeric(model)) {
+    stop(paste0("restriktor ERROR: 'sd' in the hypotheses (", paste(tokens, collapse = ", "), 
+                ") can only be used with a fitted model object (e.g., lm), from which the ",
+                "(residual) standard deviation is taken. With estimates as input, please ",
+                "plug in the value of the standard deviation yourself (e.g., 'g2 - g1 > 0.2*1.5')."),
+         call. = FALSE)
+  }
+  # (residual) standard deviation(s) of the fitted model
+  if (inherits(model, "rlm")) {
+    sds <- model$s
+  } else if (inherits(model, "glm") && !identical(family(model)$family, "gaussian")) {
+    stop(paste0("restriktor ERROR: 'sd' in the hypotheses is only available for models with a ",
+                "residual standard deviation, which is not the case for a glm with family '",
+                family(model)$family, "'."), call. = FALSE)
+  } else {
+    sds <- tryCatch(stats::sigma(model), error = function(e) NULL)
+  }
+  if (is.null(sds) || !is.numeric(sds) || anyNA(sds)) {
+    stop("restriktor ERROR: 'sd' in the hypotheses cannot be used for this model, since its ",
+         "residual standard deviation cannot be obtained.", call. = FALSE)
+  }
+  multi <- length(sds) > 1L
+  if (multi && is.null(names(sds))) names(sds) <- paste0("y", seq_along(sds))
+  
+  values <- vapply(tokens, function(tok) {
+    if (tok == "sd") {
+      if (multi) {
+        stop(paste0("restriktor ERROR: The model has more than one outcome; please use 'sd.<outcome>' ",
+                    "in the hypotheses, that is, one of: ", 
+                    paste0("sd.", names(sds), collapse = ", "), "."), call. = FALSE)
+      }
+      return(unname(sds[1]))
+    }
+    outc <- sub("^sd\\.", "", tok)
+    if (!multi || !(outc %in% names(sds))) {
+      stop(paste0("restriktor ERROR: '", tok, "' in the hypotheses is unknown. ",
+                  if (multi) paste0("Please use one of: ", paste0("sd.", names(sds), collapse = ", "), ".")
+                  else "Please use 'sd'."), call. = FALSE)
+    }
+    unname(sds[outc])
+  }, numeric(1))
+  
+  for (i in seq_along(tokens)) {
+    pat_i <- paste0("(?<![A-Za-z0-9._])", gsub(".", "\\.", tokens[i], fixed = TRUE), 
+                    "(?![A-Za-z0-9._(])")
+    constraints <- gsub(pat_i, format(values[i], digits = 15), constraints, perl = TRUE)
+  }
+  message(paste0("\nrestriktor Message: In the hypotheses, ",
+                 paste0("'", tokens, "' is replaced by ", format(values, digits = 4), collapse = "; "),
+                 ", that is, the residual standard deviation of the model (as in Cohen's d)."))
+  constraints
 }

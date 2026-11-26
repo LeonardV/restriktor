@@ -257,9 +257,6 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
   # create empty list
   out <- list()
   
-  # TO DO gorica obv lavaan labels?
-
-  
   # get parameter table
   paramTable <- parTable(x)
   if (standardized) {
@@ -274,6 +271,14 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
   #
   # Determine output w.r.t. labeled & defined estimates
   labels_free <- paramTable$label
+  # Parameters without a (user-specified) label get a name based on lavaan's
+  # own name of the parameter (e.g., 'y~x1', 'f1=~x2', 'x1~~x2', 'y~1'), 
+  # made suitable for the hypotheses in restriktor (see lav_restriktor_names()); 
+  # e.g., 'y.on.x1', 'f1.by.x2', 'x1.with.x2', 'y.int'. In the hypotheses, 
+  # both the lavaan names and these names can be used (see goric.lavaan()).
+  lav_names <- lav_restriktor_names(paramTable)
+  unlabeled <- labels_free == ""
+  labels_free[unlabeled] <- lav_names$restriktor[unlabeled]
   # Check
   if (length(labels_free) == 0) {
     error_message <- paste0(
@@ -324,14 +329,83 @@ con_gorica_est_lav <- function(x, standardized = FALSE, ...) {
   colnames(out$VCOV) <- rownames(out$VCOV) <- labels_free
 
   out$rhs <- paramTable$rhs
+  # free (estimated) parameters; defined parameters (:=) are not free
+  out$free <- paramTable$free > 0L
+  # lavaan names (e.g., 'y~x1') of the unlabeled parameters and the 
+  # corresponding names used here (e.g., 'y.on.x1')
+  out$lavaan_names <- stats::setNames(lav_names$lavaan[unlabeled], 
+                                      lav_names$restriktor[unlabeled])
   
-  # remove duplicate labels (see above); unlabeled parameters ("") are kept
+  # remove duplicate labels (see above)
   dup <- duplicated(labels_free) & labels_free != ""
   if (any(dup)) {
     out$estimate <- out$estimate[!dup]
     out$VCOV     <- out$VCOV[!dup, !dup, drop = FALSE]
     out$rhs      <- out$rhs[!dup]
+    out$free     <- out$free[!dup]
   }
   
   out
+}
+
+
+# Names of lavaan parameters ----------------------------------------------
+# lavaan's own name of a parameter is 'lhs op rhs' (e.g., 'y~x1', 'f1=~x2', 
+# 'x1~~x2', 'y~1', 'x1|t1'), with '.g2', '.g3', etc. added for the groups 
+# other than the first one (as in coef() of a lavaan object). These names
+# cannot be used in the hypotheses as such, since the operators (e.g., '~') 
+# are not allowed there. Therefore, a name is made that can be used:
+#   '=~' -> '.by.', '~~' -> '.with.', '~*~' -> '.scale.', '~1' -> '.int', 
+#   '~'  -> '.on.', '|'  -> '.thr.', 
+# and ':' (e.g., in interaction terms) is replaced by '.'.
+lav_restriktor_names <- function(paramTable) {
+  lhs <- paramTable$lhs
+  op  <- paramTable$op
+  rhs <- paramTable$rhs
+  rhs[op == "~1"] <- ""
+  lav <- paste0(lhs, op, rhs)
+  op_r <- c("=~" = ".by.", "~~" = ".with.", "~*~" = ".scale.", "~1" = ".int",
+            "~" = ".on.", "|" = ".thr.", "<~" = ".form.", ":=" = "")
+  res <- paste0(lhs, ifelse(op %in% names(op_r), op_r[op], "."), rhs)
+  res[op == ":="] <- lhs[op == ":="]
+  res <- gsub(":", ".", res, fixed = TRUE)
+  # groups (other than the first one)
+  if (!is.null(paramTable$group)) {
+    g <- paramTable$group
+    sfx <- ifelse(!is.na(g) & g > 1L, paste0(".g", g), "")
+    lav <- paste0(lav, sfx)
+    res <- paste0(res, sfx)
+  }
+  list(lavaan = lav, restriktor = res)
+}
+
+
+# Replace lavaan names of parameters (e.g., 'y~x1', also with spaces, like 
+# 'y ~ x1') in text-based hypotheses by the names used in restriktor (e.g., 
+# 'y.on.x1'); see lav_restriktor_names(). 'lavaan_names' is a named vector 
+# (names: restriktor names; values: lavaan names).
+lav_translate_hypotheses <- function(hypotheses, lavaan_names) {
+  if (length(lavaan_names) == 0) return(hypotheses)
+  # longest names first, such that, e.g., 'y~x10' is replaced before 'y~x1'
+  ord <- order(nchar(lavaan_names), decreasing = TRUE)
+  lavaan_names <- lavaan_names[ord]
+  esc <- function(x) gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", x)
+  patterns <- vapply(lavaan_names, function(nm) {
+    # allow spaces around the operator
+    parts <- regmatches(nm, regexec("^(.*?)(=~|~~|~\\*~|~|<~|\\|)(.*)$", nm))[[1]]
+    if (length(parts) == 4L) {
+      paste0("(?<![A-Za-z0-9._])", esc(parts[2]), "\\s*", esc(parts[3]), "\\s*", 
+             esc(parts[4]), "(?![A-Za-z0-9._])")
+    } else {
+      paste0("(?<![A-Za-z0-9._])", esc(nm), "(?![A-Za-z0-9._])")
+    }
+  }, character(1))
+  translate <- function(h) {
+    if (!is.character(h)) return(h)
+    for (i in seq_along(patterns)) {
+      h <- gsub(patterns[i], names(lavaan_names)[i], h, perl = TRUE)
+    }
+    h
+  }
+  lapply(hypotheses, translate)
 }

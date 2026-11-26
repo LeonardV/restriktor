@@ -47,8 +47,8 @@
 # of this interval.
 #
 # The study-specific ratios do not include the prior IC weights (as the
-# study-specific weights in evSyn); unless priorICweights_study = TRUE (which
-# is not active for now).
+# study-specific weights in evSyn); unless priorICweights_study = TRUE (then,
+# they are also used in the study-specific weights).
 # =============================================================================
 
 evSyn_PI <- function(object, vs = NULL, best = NULL, level = 0.95, n_new = NULL,

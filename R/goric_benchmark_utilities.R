@@ -1206,10 +1206,11 @@ calculate_error_probability <- function(object, hypos, pref_hypo, est,
   # Error probability based on complement of preferred hypothesis in data
   nr_hypos <- dim(object$result)[1]
   if (nr_hypos == 2 && object$comparison == "complement") { 
+    # Note: 'object' is the GORICA(C) object that benchmark() re-computes
+    # from the estimates and their covariance matrix (also when goric() was 
+    # run with type = "goric(c)"), so the error probability is based on the
+    # GORICA(C), like the benchmarks themselves.
     if (object$type == 'goric') {
-      # TO DO also here re-run with GORICA, as we do for sample value as well?
-      #       is ws al opgelost als we goric en gorica resultaten gelijk maken!!!
-      #       Dus dan laten staan + re-run met gorica niet nodig dan ook!
       error_prob <- 1 - object$result$goric.weights[pref_hypo]
     } else {
       error_prob <- 1 - object$result$gorica.weights[pref_hypo]

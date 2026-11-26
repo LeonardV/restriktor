@@ -70,8 +70,11 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   # output follows this order; show the position of these studies in the input
   ord <- x[["order_studies"]]
   if (!is.null(ord) && !identical(as.integer(ord), seq_along(ord))) {
-    cat(paste0("\nThe studies are re-ordered (argument 'order_studies'): the study-specific and cumulative ",
-               "output follows this order. Position of these studies in the input: ",
+    units_ord <- .evSyn_unit_label(x[["type_ev"]], plural = TRUE, capital = FALSE)
+    unit_ord  <- .evSyn_unit_label(x[["type_ev"]], capital = FALSE)
+    cat(paste0("\nThe ", units_ord, " are re-ordered (argument 'order_studies'): the ", unit_ord, 
+               "-specific and cumulative output follows this order. Position of these ", units_ord, 
+               " in the input: ",
                paste(ord, collapse = ", "), " (see $order_studies).\n"))
   }
   
@@ -87,8 +90,8 @@ print.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
     pr_fmt <- sapply(prior_w, format_numeric, digits = digits)
     pr_name <- paste0("prior ", type_label, " weights")   # e.g., prior GORICA weights
     prior_note <- paste0("(", pr_name, ": the priorICweights, which are used in the ", type_label,
-                         if (isTRUE(x[["priorICweights_study"]])) " weights (study-specific, cumulative, and final) and their ratios, but not in the " else
-                           " weights (cumulative and final) and their ratios, but not in the study-specific ones (nor in the measures of variability based on these), the ",
+                         if (isTRUE(x[["priorICweights_study"]])) " weights (study-specific (priorICweights_study = TRUE), and cumulative and final, where they are used only once, not once per study) and their ratios, as well as in the measures of variability and the plots based on these, but not in the " else
+                           " weights (cumulative and final) and their ratios, but not in the study-specific ones (nor in the measures of variability and the plots based on these; see the argument priorICweights_study), the ",
                          type_label, " values, the log-likelihood (LL) and penalty values, and the LL weights.)")
   }
   

@@ -51,15 +51,20 @@
 # aggregated results, since its one-dimensional reduction is based on one vector
 # of estimates; then, the bootstrap is used.
 #
-# Not available for type_ev = "average": the analyses are then based on the
-# same data and are thus dependent, so that their sampling (co)variances
-# cannot be added (and they cannot be bootstrapped independently).
+# For type_ev = "average" (multiple analyses of one data set, e.g., a 
+# multiverse analysis), the analyses are based on the same data and are thus 
+# dependent, so that their sampling (co)variances cannot be added and they 
+# cannot be bootstrapped independently. Then, by default, the analyses are 
+# treated as dependent with correlation rho (see below). When the data and a
+# function that re-runs all analyses are available (arguments 'data' and 
+# 'fit_fun'), a joint case bootstrap is used instead (see 
+# .evSyn_joint_boot() below).
 # =============================================================================
 
 evSyn_CI <- function(object, level = 0.95, method = c("boot", "delta", "mc"),
                      boot_type = c("auto", "percentile", "centered"),
                      nsim = 10000L, B = 1000L, seed = NULL, tol = 1e-8, rho = 1,
-                     MI = isTRUE(object$MI)) {
+                     MI = isTRUE(object$MI), data = NULL, fit_fun = NULL) {
 
   if (!inherits(object, "evSyn")) {
     stop("\nrestriktor ERROR: The object should be of class 'evSyn' ",
@@ -92,8 +97,44 @@ evSyn_CI <- function(object, level = 0.95, method = c("boot", "delta", "mc"),
             "the parametric bootstrap (method = 'boot') is used instead.")
     method <- "boot"
   }
+  method_specified <- !missing(method)
   method <- match.arg(method)
   type_ev <- object$type_ev
+  
+  # Joint case bootstrap (type_ev = "average", with 'data' and 'fit_fun'); see
+  # .evSyn_joint_boot() below for the reasoning.
+  joint <- !is.null(data) || !is.null(fit_fun)
+  if (joint) {
+    if (is.null(data) || is.null(fit_fun)) {
+      stop("\nrestriktor ERROR: For the joint case bootstrap, both 'data' (the full data set) and ",
+           "'fit_fun' (a function that re-runs all analyses on a data set) are needed.", call. = FALSE)
+    }
+    if (!identical(type_ev, "average")) {
+      stop("\nrestriktor ERROR: The joint case bootstrap (arguments 'data' and 'fit_fun') is meant for ",
+           "type_ev = 'average', that is, for multiple analyses of the same data set. For independent ",
+           "studies, the studies are bootstrapped independently (method = 'boot').", call. = FALSE)
+    }
+    if (isTRUE(MI)) {
+      stop("\nrestriktor ERROR: The joint case bootstrap is not available for multiple imputation ",
+           "(MI = TRUE); then, Rubin's rules are used.", call. = FALSE)
+    }
+    if (!is.null(cl_info)) {
+      stop("\nrestriktor ERROR: The joint case bootstrap is not available together with the argument ",
+           "'cluster' in evSyn().", call. = FALSE)
+    }
+    if (!is.data.frame(data) && !is.matrix(data)) {
+      stop("\nrestriktor ERROR: The argument 'data' should be a data frame (or matrix) with one row ",
+           "per case.", call. = FALSE)
+    }
+    if (!is.function(fit_fun)) {
+      stop("\nrestriktor ERROR: The argument 'fit_fun' should be a function.", call. = FALSE)
+    }
+    if (method_specified && method != "boot") {
+      message("\nrestriktor Message: With 'data' and 'fit_fun', the joint case bootstrap is used ",
+              "(method = 'boot').")
+    }
+    method <- "boot"
+  }
   # Average approach: the analyses are based on the same data and are thus 
   # dependent. Their covariances are unknown (and the estimates of the analyses 
   # need not be comparable), so the analyses are treated as fully dependent: the 
@@ -103,8 +144,9 @@ evSyn_CI <- function(object, level = 0.95, method = c("boot", "delta", "mc"),
   # the delta method (with Monte Carlo draws for the weights) is used. The 
   # between-analysis variability (B) is reported separately; it reflects the 
   # analysis choices, not sampling variability, and is not part of the CIs.
-  # TO DO: joint case bootstrap (re-running all analyses on the same bootstrap 
-  # samples) when the data are available.
+  # When the data are available (arguments 'data' and 'fit_fun'), a joint case 
+  # bootstrap is used instead (re-running all analyses on the same bootstrap 
+  # samples); see .evSyn_joint_boot().
   if (!is.null(cl_info) && method == "boot") {
     message("\nrestriktor Message: With dependent studies (argument 'cluster' in evSyn()), the studies ",
             "cannot be bootstrapped independently; method = 'mc' is used",
@@ -129,7 +171,7 @@ evSyn_CI <- function(object, level = 0.95, method = c("boot", "delta", "mc"),
             "(method = 'mc').")
     method <- "mc"
   }
-  if (type_ev == "average" && method == "boot") {
+  if (type_ev == "average" && method == "boot" && !joint) {
     message("\nrestriktor Message: For type_ev = 'average', the analyses are dependent and cannot be ",
             "bootstrapped independently; method = 'mc' is used (with a correlation of rho = ", format(rho),
             " between the sampling errors of the analyses).")
@@ -262,6 +304,15 @@ evSyn_CI <- function(object, level = 0.95, method = c("boot", "delta", "mc"),
       message("\nrestriktor Message: With multiple imputation, the imputed data sets should have equal ",
               "(study) weights; Rubin's rules are applied without weights.")
     }
+  } else if (type_ev == "average" && joint) {
+    # joint case bootstrap: the covariance matrices of the (weighted) mean of 
+    # the log-likelihood values are obtained from the bootstrap draws
+    jb <- .evSyn_joint_boot(goric_list, models_g, data = data, fit_fun = fit_fun, B = B)
+    LL_joint <- jb$LL                                       # B x S x M
+    LLbar_v <- apply(LL_joint, c(1, 3), mean)               # B x M
+    LLbar_w <- apply(sweep(LL_joint, 2, a / S, "*"), c(1, 3), sum)
+    Sigma_v <- stats::cov(LLbar_v)
+    Sigma_w <- stats::cov(LLbar_w)
   } else if (type_ev == "average") {
     # dependent analyses, with correlation rho between their (log-likelihood) 
     # sampling errors (rho = 1: fully dependent): covariance matrix of the 
@@ -322,7 +373,14 @@ evSyn_CI <- function(object, level = 0.95, method = c("boot", "delta", "mc"),
       quantile(x, probs = probs, names = FALSE)
     }
   }
-  if (use_boot) {
+  if (use_boot && joint) {
+    # Joint case bootstrap (average approach): per bootstrap sample, the mean 
+    # (and the weighted mean) over the analyses of the IC values
+    IC_vals_b <- sweep(-2 * apply(LL_joint, c(1, 3), sum), 2, pf * colSums(PT_s), "+") / S
+    IC_w_b    <- sweep(-2 * apply(sweep(LL_joint, 2, a, "*"), c(1, 3), sum), 2, 
+                       pf * colSums(PT_s * a), "+") / S
+    eta_b <- sweep(-IC_w_b / 2, 2, log(prior), "+")
+  } else if (use_boot) {
     # Bootstrap draws per study (independent over the studies):
     # IC*_s = const_s + D*_s + c * PT_s, so LL*_s = -(IC*_s - c * PT_s) / 2
     IC_vals_b <- matrix(0, B, M); IC_w_b <- matrix(0, B, M)
@@ -377,8 +435,9 @@ evSyn_CI <- function(object, level = 0.95, method = c("boot", "delta", "mc"),
     q_r <- cbind(ifelse(!same_all, exp(log_ratio - z_d * se_dw / 2), NA_real_),
                  ifelse(!same_all, exp(log_ratio + z_d * se_dw / 2), NA_real_))
   }
-  ci_method <- rep(if (use_boot) { if (boot_type == "centered") "boot (centered)" else "boot" } else "analytic", 
-                   nrow(pairs))
+  ci_method <- rep(if (use_boot) { 
+    paste0(if (joint) "joint boot" else "boot", if (boot_type == "centered") " (centered)" else "")
+  } else "analytic", nrow(pairs))
   diff_tab <- data.frame(model = models[pairs$m], vs = models[pairs$k],
                          difference = dIC, SE = se_d,
                          lower = q_d[, 1], upper = q_d[, 2],
@@ -430,7 +489,7 @@ evSyn_CI <- function(object, level = 0.95, method = c("boot", "delta", "mc"),
   }
   weight_tab <- data.frame(model = models, weight = w,
                            lower = ww[, 1], upper = ww[, 2],
-                           CI_method = rep(if (identical(boot_type, "centered")) "boot (centered)" else method, M),
+                           CI_method = rep(if (use_boot) ci_method[1] else method, M),
                            row.names = NULL, stringsAsFactors = FALSE)
   names(weight_tab)[2] <- paste0(type, ".weights")
 
@@ -457,7 +516,8 @@ evSyn_CI <- function(object, level = 0.95, method = c("boot", "delta", "mc"),
               penalty_factor = pf, priorICweights = prior, study_weights = sw,
               Sigma_values = Sigma_v, Sigma_eta = Sigma_w,
               dependence = if (is.null(cl_info)) NULL else cl_info$dependence,
-              rho = if ((type_ev == "average" && !MI) || two_level) rho else NULL,
+              rho = if ((type_ev == "average" && !MI && !joint) || two_level) rho else NULL,
+              joint = joint, n_failed = if (joint) jb$n_failed else NULL,
               MI = MI, df_MI = if (MI) list(IC = df_IC, difference = df_d) else NULL,
               n_clusters = if (is.null(cl_info)) NULL else cl_info$n_clusters, df = df_t,
               IC = IC_tab, difference = diff_tab,
@@ -478,7 +538,12 @@ print.evSyn_CI <- function(x, digits = max(3, getOption("digits") - 4),
               pct, type_label))
   units <- .evSyn_unit_label(x$type_ev, plural = TRUE, capital = FALSE)
   cat(sprintf("(%s evidence synthesis of %s %s; %s)\n", x$type_ev, x$n_studies, units,
-              switch(x$method,
+              if (isTRUE(x$joint)) {
+                paste0("joint case bootstrap ",
+                       if (identical(x$boot_type, "centered")) "CIs centered at the observed values (basic bootstrap)" else "percentile CIs",
+                       ", B = ", x$B, " bootstrap samples of the cases, with all analyses re-run on each sample",
+                       if (isTRUE(x$n_failed > 0)) paste0(" (", x$n_failed, " samples failed and were skipped)") else "")
+              } else switch(x$method,
                      boot  = paste0("parametric-bootstrap ", 
                                     if (identical(x$boot_type, "centered")) "CIs centered at the observed values (basic bootstrap)" else "percentile CIs",
                                     ", B = ", x$B,
@@ -492,6 +557,10 @@ print.evSyn_CI <- function(x, digits = max(3, getOption("digits") - 4),
                "the aggregated values and weights are those of the average approach, and their CIs are based on ",
                "Rubin's rules: total variance = within-imputation variance + (1 + 1/m) x between-imputation ",
                "variance, with t quantiles with Rubin's degrees of freedom (df).)\n"))
+  } else if (x$type_ev == "average" && isTRUE(x$joint)) {
+    cat(paste0("(The analyses are based on the same data and are dependent: in each bootstrap sample of the ",
+               "cases (rows) of the full data set, all analyses are re-run (each with its own variables and ",
+               "choices), such that the dependence between the analyses is kept.)\n"))
   } else if (x$type_ev == "average") {
     cat(paste0("(The analyses are based on the same data and are dependent: the CIs assume a correlation of rho = ",
                format(x$rho), " between the sampling errors of the analyses",
@@ -592,4 +661,146 @@ print.evSyn_CI <- function(x, digits = max(3, getOption("digits") - 4),
   Abar <- Reduce(`+`, Map(function(S, w1) w1 * sqrtm(S), Sig_list, w))
   full <- Abar %*% Abar
   (1 - rho) * indep + rho * (full + t(full)) / 2
+}
+
+
+# -----------------------------------------------------------------------------
+# Joint case bootstrap for the average approach (type_ev = "average").
+#
+# Reasoning: In the average approach, the analyses are different analyses of 
+# the same data (e.g., in a multiverse analysis, with different choices of 
+# variables, exclusion criteria, or models). They are thus dependent, but their
+# dependence (i.e., the covariances between the estimates of different 
+# analyses) is unknown. Therefore, they cannot be bootstrapped independently 
+# (that would ignore the dependence and render too narrow CIs), and, without 
+# the data, the analyses are treated as dependent with correlation rho (rho = 1:
+# fully dependent, which is conservative). 
+# When the full data set is available, the dependence can be kept by a joint 
+# case bootstrap: the cases (rows) of the full data set are resampled (with 
+# replacement), and ALL analyses are re-run on the SAME bootstrap sample, each
+# with its own variables and choices (as specified in 'fit_fun'). The analyses
+# need not use the same variables: they all come from the same cases, which is
+# what makes them dependent and what is resampled. The bootstrap distribution 
+# of the averaged log-likelihood values (and thus of the averaged IC values, 
+# their differences, the IC weights, and their ratios) then reflects both the 
+# sampling variability of each analysis and the dependence between them.
+# As in the other CIs of evSyn_CI(), the penalties (and priors) are fixed.
+#
+# 'fit_fun' is a function of a data set (with the same columns as 'data') that 
+# returns a list with one element per analysis (in the order of the analyses in
+# evSyn()), each a list with the (named) estimates ('est') and their covariance
+# matrix ('VCOV'), like the input of evSyn().
+#
+# Returns a list with LL (a B x S x M array of the log-likelihood values of 
+# the M hypotheses in the S analyses, per bootstrap sample) and n_failed (the 
+# number of bootstrap samples in which fit_fun() failed, which are skipped).
+.evSyn_joint_boot <- function(goric_list, models_g, data, fit_fun, B) {
+  S <- length(goric_list)
+  M <- length(models_g[[1]])
+  ll_funs <- lapply(seq_len(S), function(s) .evSyn_LL_gorica_fun(goric_list[[s]], models_g[[s]]))
+  
+  # extract and check the output of fit_fun() for one data set
+  get_fits <- function(dat) {
+    fits <- fit_fun(dat)
+    if (!is.list(fits) || length(fits) != S) {
+      stop("\nrestriktor ERROR: 'fit_fun' should return a list with one element per analysis (", S, 
+           " analyses), each a list with the estimates ('est') and their covariance matrix ('VCOV').",
+           call. = FALSE)
+    }
+    lapply(seq_len(S), function(s) {
+      fs <- fits[[s]]
+      est <- fs$est; V <- as.matrix(fs$VCOV)
+      b0 <- c(goric_list[[s]]$b.unrestr)
+      if (is.null(est) || is.null(fs$VCOV) || length(est) != length(b0) || any(dim(V) != length(b0))) {
+        stop("\nrestriktor ERROR: For analysis ", s, ", 'fit_fun' should return the estimates ('est') ",
+             "and their covariance matrix ('VCOV'), with ", length(b0), " parameters (as in evSyn()).",
+             call. = FALSE)
+      }
+      # same order of the parameters as in the analysis in evSyn() (if named)
+      if (!is.null(names(est)) && !is.null(names(b0)) && all(names(b0) %in% names(est))) {
+        ord <- match(names(b0), names(est))
+        est <- est[ord]; V <- V[ord, ord, drop = FALSE]
+      }
+      list(est = unname(est), VCOV = unname(V))
+    })
+  }
+  
+  # check: fit_fun() on the original data should render the estimates used in evSyn()
+  fits0 <- get_fits(data)
+  differs <- vapply(seq_len(S), function(s) {
+    b0 <- c(goric_list[[s]]$b.unrestr)
+    max(abs(fits0[[s]]$est - b0)) > 1e-6 * max(1, abs(b0))
+  }, logical(1))
+  if (any(differs)) {
+    warning("\nrestriktor WARNING: For analysis ", paste(which(differs), collapse = ", "), 
+            ", 'fit_fun' applied to 'data' does not render the estimates used in evSyn(); please ",
+            "check that 'fit_fun' re-runs the analyses (in the same order) as used in evSyn().", 
+            call. = FALSE)
+  }
+  # GORIC(C) objects: the bootstrap uses the GORICA-type log-likelihood, shifted
+  # such that it is centered at the observed GORIC(C) log-likelihood values (as
+  # in the parametric bootstrap of evSyn_CI()); for GORICA(C), the shift is zero.
+  shift <- t(vapply(seq_len(S), function(s) {
+    goric_list[[s]]$result$loglik - ll_funs[[s]](c(goric_list[[s]]$b.unrestr), 
+                                                 as.matrix(goric_list[[s]]$VCOV))
+  }, numeric(M)))
+  if (M == 1L) shift <- t(shift)
+  
+  n <- nrow(data)
+  LL <- array(NA_real_, dim = c(B, S, M))
+  n_failed <- 0L
+  for (b in seq_len(B)) {
+    idx <- sample.int(n, n, replace = TRUE)
+    fits <- tryCatch(suppressWarnings(get_fits(data[idx, , drop = FALSE])), error = function(e) NULL)
+    if (is.null(fits)) { n_failed <- n_failed + 1L; next }
+    ok <- TRUE
+    for (s in seq_len(S)) {
+      ll <- tryCatch(ll_funs[[s]](fits[[s]]$est, fits[[s]]$VCOV), error = function(e) NULL)
+      if (is.null(ll) || any(!is.finite(ll))) { ok <- FALSE; break }
+      LL[b, s, ] <- ll + shift[s, ]
+    }
+    if (!ok) { n_failed <- n_failed + 1L; LL[b, , ] <- NA_real_ }
+  }
+  keep <- stats::complete.cases(matrix(LL, nrow = B))
+  if (sum(keep) < 2L) {
+    stop("\nrestriktor ERROR: The joint case bootstrap failed (in ", n_failed, " of the ", B, 
+         " bootstrap samples, 'fit_fun' or the computation of the log-likelihood values failed).",
+         call. = FALSE)
+  }
+  if (n_failed > 0L) {
+    message("\nrestriktor Message: In ", n_failed, " of the ", B, " bootstrap samples, 'fit_fun' or the ",
+            "computation of the log-likelihood values failed; these samples are skipped.")
+  }
+  list(LL = LL[keep, , , drop = FALSE], n_failed = n_failed)
+}
+
+# The GORICA-type log-likelihood values of the hypotheses of a goric object 
+# for given estimates (th) and covariance matrix (V): -(log det(2 pi V) + D)/2,
+# with D the squared Mahalanobis distance from th to (the closest point of) the
+# hypothesis (as in goric_CI_boot()); the constraints are those of the goric 
+# object.
+.evSyn_LL_gorica_fun <- function(object, models) {
+  specs <- goric_CI_row_specs(object, models)
+  for (j in seq_along(specs)) {
+    if (specs[[j]]$kind == "complement") {
+      specs[[j]]$pieces <- goric_CI_complement_pieces(specs[[j]])
+    }
+  }
+  tol <- sqrt(.Machine$double.eps)
+  function(th, V) {
+    Vinv <- solve(V)
+    const <- as.numeric(determinant(2 * pi * V, logarithm = TRUE)$modulus)
+    D <- vapply(specs, function(sp) {
+      if (sp$kind == "unconstrained") return(0)
+      if (sp$kind == "hypothesis") return(goric_CI_proj_D(th, Vinv, sp$Amat, sp$rhs, sp$neq))
+      if (is.null(sp$pieces)) return(0)
+      A <- sp$pieces[[1]]$Amat_full; bb <- sp$pieces[[1]]$rhs_full; meq <- sp$pieces[[1]]$meq_full
+      Ath <- drop(A %*% th) - bb
+      viol_eq   <- meq > 0L && any(abs(Ath[seq_len(meq)]) > tol)
+      viol_ineq <- any(Ath[setdiff(seq_along(Ath), seq_len(meq))] < -tol)
+      if (viol_eq || viol_ineq) return(0)
+      min(vapply(sp$pieces, function(pc) goric_CI_proj_D(th, Vinv, pc$Amat, pc$rhs, pc$neq), numeric(1)))
+    }, numeric(1))
+    -(const + D) / 2
+  }
 }

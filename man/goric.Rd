@@ -71,13 +71,27 @@ comparable to the Akaike weights.
     \item a fitted unconstrained object of class \code{aov}, \code{lm}, \code{glm}, \code{rlm} or \code{mlm}.
     \item a numeric (named) vector containing the unconstrained estimates resulting from any
     statistical analysis.
-    \item a fitted object of class \code{lavaan}. See examples on how to specify the hypotheses.
+    \item a fitted object of class \code{lavaan}. See examples on how to specify the hypotheses: 
+    using the labels of the parameters (e.g., \code{a} in \code{y ~ a*x1}), the names of 
+    defined parameters (\code{:=}), or, for parameters without a label, lavaan's own names 
+    (e.g., \code{y~x1}, \code{f1=~x2}, \code{x1~~x2}, \code{y~1}, with \code{.g2} etc. 
+    added for the second and further groups, as in \code{coef()}), or the corresponding 
+    names in restriktor (\code{y.on.x1}, \code{f1.by.x2}, \code{x1.with.x2}, \code{y.int}). 
+    lavaan's own names can be used exactly as lavaan writes them, with or without spaces 
+    around the operator (e.g., \code{y~x1} or \code{y ~ x1}, and \code{y~x1:x2} for an 
+    interaction); in the names in restriktor, any ':' is replaced by '.' (e.g., 
+    \code{y.on.x1.x2}). The available names are listed in the error message when an 
+    unknown name is used.
     \item a fitted object of class \code{CTmeta}.
     \item a fitted object of class \code{rma}.
     \item a fitted object of class \code{nlmerMod}.
     \item a fitted object of class \code{glmerMod}.
     \item a fitted object of class \code{lmerMod}.
-    \item a fitted object of class \code{effectlite}.
+    \item a fitted object of class \code{effectlite} (from the EffectLiteR package). The 
+    hypotheses are specified using the effectlite parameter names (e.g., \code{adjmean0}). 
+    For a tutorial, see 'Tutorial_GORICA_restriktor_EffectLiteR' (html and pdf) and the 
+    example R code in the folder 'GORICA for EffectLiteR' on 
+    \url{https://github.com/rebeccakuiper/Tutorials}.
   }
   }
 
@@ -108,6 +122,22 @@ comparable to the Akaike weights.
   For objects of class "mlm", the parameter names are those of the row names
   of \code{vcov(model)} with ':' replaced by '.' (e.g., \code{y1.x1} for
   predictor \code{x1} of response \code{y1}).
+  Hypotheses can also be specified in terms of an effect size like Cohen's d,
+  using \code{sd}: for example, \code{'g2 - g1 > 0.2*sd'} denotes that the
+  difference between the means of groups 2 and 1 is at least small (i.e., 
+  (mu2 - mu1)/sd is at least 0.2). Then, \code{sd} is replaced by the residual 
+  standard deviation of the fitted model (\code{sigma(model)}), which, in an 
+  ANOVA model, is the pooled within-group standard deviation used in Cohen's d
+  (with covariates, it is the residual standard deviation given the covariates).
+  For an mlm, use \code{sd.<outcome>} (e.g., \code{sd.y1}); using \code{sd} for an mlm
+  gives an error that lists these names. It is checked that \code{sd} is used as an 
+  effect-size cut-off: a number times \code{sd} (e.g., \code{0.2*sd} or \code{sd/2}) or a 
+  difference divided by \code{sd} (e.g., \code{'(g2 - g1)/sd > 0.2'}); a constraint without 
+  parameters (e.g., \code{'sd > 2'}) or with \code{sd} times (or divided by) a parameter 
+  (e.g., \code{'g2 - g1 > sd*g3'}) gives an error. This is available for
+  fitted objects of class lm, aov, mlm, rlm, and glm with family gaussian; with 
+  estimates as input, the value of the standard deviation can be used directly 
+  (e.g., \code{'g2 - g1 > 0.2*1.5'}).
   For an mlm with q response variables, the GORIC(C) penalty counts the
   q(q+1)/2 parameters of the residual covariance matrix (instead of 1 variance
   parameter), and the GORICC uses the small sample correction of Bedrick and
@@ -410,6 +440,15 @@ values, the GORIC(A) weights, and the ratios of GORIC(A) weights), and
 the differences in GORIC(A) values and the method used per CI).
 If a post-hoc analysis is performed (see \code{posthoc}), it also contains \code{$posthoc}, an object of class
 \code{goric_posthoc} (see \code{\link{goric_posthoc}}).
+The messages and warnings that were given when running \code{goric()} are
+stored in \code{$run_messages} and \code{$run_warnings}; \code{print()} and
+\code{summary()} repeat the warnings and say how the messages can be seen
+(e.g., via \code{cat(<goric object>$run_messages, sep = "\n\n")}).
+Long lines of text in the output (e.g., in the conclusion, messages, and 
+warnings) are wrapped at 76 characters, such that the output is fully 
+visible in, for example, a pdf made from an Rmd file; this width can be 
+changed with \code{options(restriktor.linewidth = ...)}, where 
+\code{options(restriktor.linewidth = Inf)} switches it off.
 }
 
 
@@ -469,6 +508,10 @@ model.lav <- "y ~ 1 + a*x1 + b*x2 + c*x3 + x4"
 # fit.lav <- sem(model, data = DATA)
 # define hypothesis syntax
 hypotheses = list(h1 = 'a > b > c')
+# parameters without a label (here, the one of x4) can be used via their 
+# lavaan name (or the corresponding name in restriktor):
+hypotheses = list(h1 = 'a > y~x4')    # or: 'a > y.on.x4' 
+
 # if needed absolute values can be used.
 hypotheses = list(h1 = 'abs(a) > abs(b) > abs(c)')
 

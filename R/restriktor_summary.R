@@ -244,8 +244,12 @@ summary.restriktor <- function(object, bootCIs = TRUE, bty = "perc",
       # No dispersion (variance) parameter for, e.g., poisson and binomial:
       # this is taken care of via the number of nuisance parameters (d = 0)
       # above (nuisance_info_restriktor()).
-      # TO DO Het was '-2*ll / (1 + penalty_factor*PT)', ik neem aan dat dit '-2*ll + penalty_factor*PT' moet zijn. Klopt dat??
-      # TO DO: Of wilde je hier een QAIC-type uitrdruking: −2·ll/ĉ + penalty_factor*PT, with ĉ the overdispersion factor?? Dit is ms sowieso wel een idee…
+      # Note: this was '-2*ll / (1 + penalty_factor*PT)', which is now corrected
+      # to the GORIC: '-2*ll + penalty_factor*PT' (as for the other models).
+      # Idea for the future: a QAIC-type expression for overdispersed GLMs
+      # (e.g., poisson, binomial): -2*ll/c + penalty_factor*PT, with c the
+      # overdispersion factor (and then +1 in the penalty for estimating c).
+      # TO DO: Leonard check (QAIC-type GORIC for overdispersed GLMs).
       ans$goric <- -2*ll + ldots$penalty_factor*PT #-2*(ll - PT)
     }
     attr(ans$goric, "type")    <- goric

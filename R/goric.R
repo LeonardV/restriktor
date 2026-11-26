@@ -1,4 +1,41 @@
-goric <- function(object, ...) { UseMethod("goric") }
+# goric() collects the messages and warnings that are given during the 
+# analysis (they are still shown as usual), and stores them in the output 
+# ($run_messages and $run_warnings), such that print() can repeat the 
+# warnings and say how to see the messages (which are easily missed, for 
+# example, in a long Rmd file). For goric() calls within a goric() call (e.g.,
+# for the post-hoc analysis or add_Hc), the messages and warnings are only 
+# collected by the outer call.
+goric <- function(object, ...) {
+  # The methods are called from the environment of the caller of goric() 
+  # (by evaluating the call there), such that parent.frame() in a method 
+  # (e.g., to find the data of an arima object) is that of the user, as with
+  # a direct call of UseMethod().
+  cl <- sys.call()
+  cl[[1L]] <- goric_dispatch
+  env <- parent.frame()
+  if (isTRUE(getOption("restriktor.collecting_output"))) {
+    return(eval(cl, env))
+  }
+  old_opt <- options(restriktor.collecting_output = TRUE)
+  on.exit(options(old_opt), add = TRUE)
+  run_messages <- character(0)
+  run_warnings <- character(0)
+  res <- withCallingHandlers(
+    eval(cl, env),
+    message = function(m) {
+      run_messages <<- c(run_messages, trimws(conditionMessage(m)))
+    },
+    warning = function(w) {
+      run_warnings <<- c(run_warnings, trimws(conditionMessage(w)))
+    })
+  if (inherits(res, "con_goric")) {
+    res$run_messages <- run_messages
+    res$run_warnings <- run_warnings
+  }
+  res
+}
+
+goric_dispatch <- function(object, ...) { UseMethod("goric") }
 
 
 goric.default <- function(object, ..., hypotheses = NULL,
@@ -624,7 +661,16 @@ goric.default <- function(object, ..., hypotheses = NULL,
   }
   
   # compute log-likelihood for complement
-  # moet dit obv PT_Amat en PT_meq? TO DO
+  # Note: the log-likelihood of the complement is based on the original 
+  # constraints (Amat, meq), since it is the maximum of the likelihood in 
+  # the region of the complement, which is defined by these constraints. 
+  # PT_Amat and PT_meq (in which range restrictions are treated as 
+  # equalities and linearly dependent rows are removed) are only used for 
+  # the penalty, both for the hypotheses and for the complement (see 
+  # penalty_complement_goric() below), such that the penalties are 
+  # comparable: the penalty of the complement is then (always) lower than 
+  # that of the unconstrained hypothesis (which equals the number of 
+  # parameters, plus the number of nuisance parameters for the goric(c)).
   LL_c <- compute_complement_likelihood(ans$model.org, VCOV,
                                         Amat, Amat.ciq, Amat.ceq,
                                         bvec, bvec.ciq, bvec.ceq,
@@ -1175,22 +1221,54 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
     stop("restriktor ERROR: The argument `hypotheses` must be supplied.", call. = FALSE)
   }
   
-  constr <- con_constraints(
-    model       = est$estimate,
-    VCOV        = est$VCOV,
-    constraints = hypotheses
-  )
+  # Parameters without a label can be used in the hypotheses via their lavaan 
+  # names (e.g., 'y~x1' or 'y ~ x1'), which are replaced here by the names 
+  # used in restriktor (e.g., 'y.on.x1'); see lav_restriktor_names().
+  hypotheses <- lav_translate_hypotheses(hypotheses, est$lavaan_names)
+  
+  # message on which names can be used in the hypotheses
+  lav_names_message <- paste0(
+    "The hypotheses should be specified using the labels of the parameters in the ",
+    "lavaan model (e.g., 'a' in 'y ~ a*x1'), the names of defined parameters (:=), or, ",
+    "for parameters without a label, their lavaan names (e.g., 'y~x1' or 'y ~ x1') or the ",
+    "corresponding names in restriktor (e.g., 'y.on.x1'; any ':' is replaced by '.'). ",
+    "The available names are: ",
+    paste(ifelse(names(est$estimate) %in% names(est$lavaan_names),
+                 paste0(names(est$estimate), " (", 
+                        est$lavaan_names[names(est$estimate)], ")"),
+                 names(est$estimate)), collapse = ", "), ".")
+  # a remaining lavaan operator means an unknown (lavaan) name
+  hypo_txt <- unlist(Filter(is.character, hypotheses))
+  if (length(hypo_txt) > 0 && any(grepl("~|\\|", hypo_txt))) {
+    stop(paste0("restriktor ERROR: The hypotheses contain one or more lavaan names of ",
+                "parameters that are not in the model (or that have a label, which should then ",
+                "be used): ", paste(hypo_txt[grepl("~|\\|", hypo_txt)], collapse = "; "), ".\n",
+                lav_names_message), call. = FALSE)
+  }
+  constr <- tryCatch(
+    con_constraints(
+      model       = est$estimate,
+      VCOV        = est$VCOV,
+      constraints = hypotheses
+    ),
+    error = function(e) {
+      if (grepl("unknown label", conditionMessage(e))) {
+        stop(paste0("restriktor ERROR: ", sub("^.*?ERROR: ", "", conditionMessage(e)), "\n",
+                    lav_names_message), call. = FALSE)
+      }
+      stop(e)
+    })
   
   Amat <- constr$Amat
   involved <- colSums(abs(Amat)) != 0
   
   if (!any(involved)) {
-    stop("restriktor ERROR: No parameters involved in the hypotheses.", call. = FALSE)
+    stop(paste0("restriktor ERROR: No parameters involved in the hypotheses.\n", 
+                lav_names_message), call. = FALSE)
   }
   
   # message VCOV
   message.VCOV()
-  # TO DO opvangen in algemeen message list oid
   
   objectList <- list(
     object = est$estimate[involved],                 
@@ -1212,11 +1290,9 @@ goric.lavaan <- function(object, ..., hypotheses = NULL,
   # specified by the user; see penalty_goric() (goric_penalty.R)
   objectList <- add_nr_nuis_param(objectList, type, function() {
     # free parameters of the model that are not involved in the hypotheses
-    # (defined parameters (:=) are not free parameters)
-    pt <- parTable(object)
-    free_labels <- unique(c(pt$label[pt$free > 0L & pt$label != ""],
-                            pt$plabel[pt$free > 0L]))
-    n_involved_free <- sum(names(est$estimate)[involved] %in% free_labels)
+    # (defined parameters (:=) are not free parameters; est$free indicates 
+    # which estimates are free, also for parameters without a label)
+    n_involved_free <- sum(est$free[involved])
     max(0, lavInspect(object, what = "npar") - n_involved_free)
   })
   
@@ -1241,8 +1317,11 @@ goric.CTmeta <- function(object, ..., hypotheses = NULL,
   
   # sample_nobs (needed for type = "goricac")
   if (type == "goricac") {
-    N <- sum(object$N) # or object$NrStudies # TO DO check:
-    # Sample sizes for each study - of juist aantal studies!!!!
+    # The total sample size (sum of the sample sizes of the primary studies):
+    # the overall estimates are (inverse-variance) weighted averages of the
+    # study-specific estimates, so their covariance matrix is implicitly 
+    # based on the combined sample size (as if the data were pooled).
+    N <- sum(object$N)
     sample_nobs <- check_N_with_sample_nobs(N, sample_nobs)
   }
   
@@ -1290,9 +1369,24 @@ goric.rma <- function(object, ..., hypotheses = NULL,
   
   # sample_nobs (needed for type = "goricac")
   if (type == "goricac") {
-    N <- N <- sum(object$ni) # or length(object$ni) # TO DO check:
-    # Sample sizes for each study - of juist aantal studies!!!!
-    sample_nobs <- check_N_with_sample_nobs(N, sample_nobs)
+    # The total sample size (sum of the sample sizes of the primary studies,
+    # 'ni' in the rma object): the overall estimates are (inverse-variance)
+    # weighted averages of the study-specific estimates, so their covariance
+    # matrix is implicitly based on the combined sample size. Note: 'ni' is 
+    # only available when the sample sizes were given to rma() (or escalc()).
+    if (is.null(object$ni) || anyNA(object$ni)) {
+      if (is.null(sample_nobs)) {
+        stop("\nrestriktor ERROR: For type = 'goricac', the (total) sample size is needed, ",
+             "but the rma object does not contain the sample sizes of the studies ('ni'). ",
+             "Please provide the total sample size via 'sample_nobs', or provide the ",
+             "sample sizes to rma() (argument 'ni').", call. = FALSE)
+      }
+      N <- sample_nobs
+    } else {
+      N <- sum(object$ni)
+      sample_nobs <- check_N_with_sample_nobs(N, sample_nobs)
+    }
+    sample_nobs <- N
   }
   
   # Maak de objectList aan en voeg de vereiste elementen toe
@@ -1329,10 +1423,64 @@ goric.rma <- function(object, ..., hypotheses = NULL,
 
 
 
-## lme4
-# glmerMod, lmerMod, nlmerMod
-# TO DO dit kan ws een functie worden toch? 
-#       Maar wellicht op termijn wel verschillen in de 3 (of nu ook al)?
+## lme4 -------------------------------------------------------------------
+# Objects of class lmerMod, glmerMod, and nlmerMod are handled by one shared 
+# function (goric_merMod()); the methods only differ in the class name and 
+# in the number of nuisance parameters (needed for type = "goricac").
+
+# Shared function for lme4 objects (lmerMod, glmerMod, nlmerMod)
+goric_merMod <- function(object, ..., hypotheses = NULL, comparison = NULL,
+                         type = "gorica", sample_nobs = NULL, debug = FALSE,
+                         class_name, nuis_fun) {
+  
+  # Check on type and possibly change
+  type <- check.type(type, class = class_name) 
+  
+  # message VCOV
+  message.VCOV()
+  # Note: the covariance matrix of the random effects can be obtained with 
+  # VarCorr(); see https://lmiratrix.github.io/MLM/lmer_extract.html
+  
+  # sample_nobs (needed for type = "goricac")
+  if (type == "goricac") {
+    N <- nobs(object)
+    sample_nobs <- check_N_with_sample_nobs(N, sample_nobs)
+  }
+  
+  # covariance matrix of the fixed effects (a dpoMatrix, which is made a 
+  # matrix in goric.default())
+  VCOV_fe <- suppressWarnings(vcov(object))
+  
+  # Maak de objectList aan en voeg de vereiste elementen toe
+  objectList <- list(
+    # object@beta equals fixef(object), but without names: these are added below
+    object = object@beta,  
+    VCOV = VCOV_fe,
+    sample_nobs = sample_nobs,
+    hypotheses = hypotheses,
+    comparison = comparison,
+    type = type,
+    debug = debug
+  )
+  
+  attr(objectList$object, "class_org") <- class_name
+  
+  # Label 'object = object@beta' (using the names of the covariance matrix 
+  # obtained above, such that vcov() is not called again; that would repeat 
+  # its warnings)
+  names(objectList$object) <- colnames(VCOV_fe)
+  
+  # Voeg extra argumenten toe aan de objectList
+  extraArgs <- list(...)
+  objectList <- c(objectList, extraArgs)
+  
+  # number of nuisance parameters (needed for type = "goricac"), unless
+  # specified by the user; see penalty_goric() (goric_penalty.R)
+  objectList <- add_nr_nuis_param(objectList, type, nuis_fun)
+  
+  # Roep de goric.default functie aan met de samengestelde lijst
+  do.call(goric.default, objectList)
+}
 
 
 # object of class nlmerMod -----------------------------------------------------
@@ -1341,51 +1489,11 @@ goric.nlmerMod <- function(object, ..., hypotheses = NULL,
                            type = "gorica", 
                            VCOV = NULL, sample_nobs = NULL,
                            debug = FALSE) {
-  
-  # Check on type and possibly change
-  type <- check.type(type, class = "nlmerMod") 
-  
-  # message VCOV
-  message.VCOV()
-  # Note We can get the Variance-Covariance matrix of the random effects (ranef()) 
-  # with VarCorr; see https://lmiratrix.github.io/MLM/lmer_extract.html
-  
-  # sample_nobs (needed for type = "goricac")
-  if (type == "goricac") {
-    N <- nobs(object)
-    sample_nobs <- check_N_with_sample_nobs(N, sample_nobs)
-  }
-  
-  # Maak de objectList aan en voeg de vereiste elementen toe
-  objectList <- list(
-    object = object@beta,  
-    # object@beta equals fixef(object); latter contains labels.
-    VCOV = suppressWarnings(vcov(object)), # dpoMatrix, will be made a matrix in goric.default
-    sample_nobs = sample_nobs,
-    hypotheses = hypotheses,
-    comparison = comparison,
-    type = type,
-    debug = debug
-  )
-
-  attr(objectList$object, "class_org") <- "nlmerMod"
-  
-  # Label 'object = object@beta' (not needed when: 'object = fixef(object)')
-  names(objectList$object) <- colnames(vcov(object))
-  
-  # Voeg extra argumenten toe aan de objectList
-  extraArgs <- list(...)
-  objectList <- c(objectList, extraArgs)
-
-  # number of nuisance parameters (needed for type = "goricac"), unless
-  # specified by the user; see penalty_goric() (goric_penalty.R)
-  # (variance components + residual variance)
-  objectList <- add_nr_nuis_param(objectList, type, function() length(object@theta) + 1)
-  
-  # Roep de goric.default functie aan met de samengestelde lijst
-  res <- do.call(goric.default, objectList)
-  
-  res
+  goric_merMod(object, ..., hypotheses = hypotheses, comparison = comparison,
+               type = type, sample_nobs = sample_nobs, debug = debug,
+               class_name = "nlmerMod",
+               # variance components + residual variance
+               nuis_fun = function() length(object@theta) + 1)
 }
 
 
@@ -1395,52 +1503,14 @@ goric.glmerMod <- function(object, ..., hypotheses = NULL,
                            type = "gorica", 
                            VCOV = NULL, sample_nobs = NULL,
                            debug = FALSE) {
-  
-  # Check on type and possibly change
-  type <- check.type(type, class = "glmerMod") 
-  
-  # message VCOV
-  message.VCOV()
-  
-  # sample_nobs (needed for type = "goricac")
-  if (type == "goricac") {
-    N <- nobs(object)
-    sample_nobs <- check_N_with_sample_nobs(N, sample_nobs)
-  }
-  
-  # Maak de objectList aan en voeg de vereiste elementen toe
-  objectList <- list(
-    object = object@beta, 
-    # object@beta equals fixef(object); latter contains labels.
-    VCOV = suppressWarnings(vcov(object)), 
-    sample_nobs = sample_nobs,
-    hypotheses = hypotheses,
-    comparison = comparison,
-    type = type,
-    debug = debug
-  )
-
-  attr(objectList$object, "class_org") <- "glmerMod"
-  
-  # Label 'object = object@beta' (not needed when: 'object = fixef(object)')
-  names(objectList$object) <- colnames(vcov(object))
-  
-  # Voeg extra argumenten toe aan de objectList
-  extraArgs <- list(...)
-  objectList <- c(objectList, extraArgs)
-
-  # number of nuisance parameters (needed for type = "goricac"), unless
-  # specified by the user; see penalty_goric() (goric_penalty.R)
-  objectList <- add_nr_nuis_param(objectList, type, function() {
-    # variance components (+ dispersion parameter, if any)
-    length(object@theta) +
-      as.numeric(family(object)$family %in% c("gaussian", "Gamma", "inverse.gaussian"))
-  })
-  
-  # Roep de goric.default functie aan met de samengestelde lijst
-  res <- do.call(goric.default, objectList)
-  
-  res
+  goric_merMod(object, ..., hypotheses = hypotheses, comparison = comparison,
+               type = type, sample_nobs = sample_nobs, debug = debug,
+               class_name = "glmerMod",
+               # variance components (+ dispersion parameter, if any)
+               nuis_fun = function() {
+                 length(object@theta) +
+                   as.numeric(family(object)$family %in% c("gaussian", "Gamma", "inverse.gaussian"))
+               })
 }
 
 
@@ -1449,49 +1519,11 @@ goric.lmerMod <- function(object, ..., hypotheses = NULL,
                           comparison = NULL, type = "gorica", 
                           VCOV = NULL, sample_nobs = NULL,
                           debug = FALSE) {
-  
-  # Check on type and possibly change
-  type <- check.type(type, class = "lmerMod") 
-  
-  # message VCOV
-  message.VCOV()
-  
-  # sample_nobs (needed for type = "goricac")
-  if (type == "goricac") {
-    N <- nobs(object)
-    sample_nobs <- check_N_with_sample_nobs(N, sample_nobs)
-  }
-  
-  # Maak de objectList aan en voeg de vereiste elementen toe
-  objectList <- list(
-    object = object@beta, 
-    # object@beta equals fixef(object); latter contains labels.
-    VCOV = suppressWarnings(vcov(object)), 
-    sample_nobs = sample_nobs,
-    hypotheses = hypotheses,
-    comparison = comparison,
-    type = type,
-    debug = debug
-  )
-
-  attr(objectList$object, "class_org") <- "lmerMod"
-  
-  # Label 'object = object@beta' (not needed when: 'object = fixef(object)')
-  names(objectList$object) <- colnames(vcov(object))
-  
-  # Voeg extra argumenten toe aan de objectList
-  extraArgs <- list(...)
-  objectList <- c(objectList, extraArgs)
-
-  # number of nuisance parameters (needed for type = "goricac"), unless
-  # specified by the user; see penalty_goric() (goric_penalty.R)
-  # (variance components + residual variance)
-  objectList <- add_nr_nuis_param(objectList, type, function() length(object@theta) + 1)
-  
-  # Roep de goric.default functie aan met de samengestelde lijst
-  res <- do.call(goric.default, objectList)
-  
-  res
+  goric_merMod(object, ..., hypotheses = hypotheses, comparison = comparison,
+               type = type, sample_nobs = sample_nobs, debug = debug,
+               class_name = "lmerMod",
+               # variance components + residual variance
+               nuis_fun = function() length(object@theta) + 1)
 }
 
 
@@ -1500,8 +1532,9 @@ goric.effectlite <- function(object, ..., hypotheses = NULL,
                              comparison = NULL, type = "gorica", 
                              sample_nobs = NULL, debug = FALSE) {
    
-  #TO DO 
-  #In Rd file: Bij effectlite ms refereren naar vignette / tutorial of ook een example.
+  # For a tutorial, see 'Tutorial_GORICA_restriktor_EffectLiteR' and the folder
+  # 'GORICA for EffectLiteR' on https://github.com/rebeccakuiper/Tutorials
+  # (referred to in goric.Rd).
 
     
   # Check on type and possibly change
@@ -1537,7 +1570,6 @@ goric.effectlite <- function(object, ..., hypotheses = NULL,
   
   # message VCOV
   message.VCOV()
-  # TO DO opvangen in algemeen message list oid
   
   # sample_nobs (needed for type = "goricac")
   if (type == "goricac") {

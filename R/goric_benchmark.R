@@ -156,7 +156,7 @@ benchmark_means <- function(object, pop_es = NULL, ratio_pop_means = NULL,
       CI = FALSE, # no CIs needed for the re-calculated object
       posthoc = FALSE, # no post-hoc analysis needed for the re-calculated object
       VCOV = VCOV, # based on N not N-k
-      sample_nobs = sum(N), # Needed for type = "goricac" - daar genoeg aan sum(N) of moet het juist gehele N hebben?
+      sample_nobs = sum(N), # Needed for type = "goricac": the total sample size (sum of the group sizes)
       # number of nuisance parameters of the original model (type = "goricac")
       nr_nuis_param = nr_nuis_param_object(object),
       hypotheses = hypos,
@@ -417,8 +417,16 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
   # 'iter' is used as-is (single fixed-size run, as before).
   user_iter <- iter
 
-  # TO DO als in means nog 'group_size' argument dan ms hier zeggen dat dat sample_size moet zijn?
-  #       NB alleen nodig als alt_sample_size nodig is...
+  # 'group_size' and 'alt_group_size' are arguments for model_type = "means"
+  # (ANOVA models, i.e., group means); here, the (total) sample size is
+  # given by 'sample_size' and 'alt_sample_size'.
+  ldots_bm <- list(...)
+  if (any(c("group_size", "alt_group_size") %in% names(ldots_bm))) {
+    stop("\nrestriktor ERROR: The arguments 'group_size' and 'alt_group_size' are only used ",
+         "for model_type = \"means\" (i.e., an ANOVA model with group means). For ",
+         "model_type = \"asymp\", please use 'sample_size' and 'alt_sample_size' ",
+         "(the total sample size) instead.", call. = FALSE)
+  }
     
   if (length(control) == 1) {
     control <- object$objectList[[1]]$control
@@ -601,11 +609,12 @@ benchmark_asymp <- function(object, pop_est = NULL, sample_size = NULL,
     CI = FALSE, # no CIs needed for the re-calculated object
     posthoc = FALSE, # no post-hoc analysis needed for the re-calculated object
     VCOV = VCOV,
-    sample_nobs = N[1], # Needed for type = "goricac"
+    # Needed for type = "goricac": the total sample size, which is a single 
+    # number here (object$sample_nobs, sample_size, or alt_sample_size); for 
+    # model_type = "means", the sum of the group sizes is used instead.
+    sample_nobs = N[1],
     # number of nuisance parameters of the original model (type = "goricac")
     nr_nuis_param = nr_nuis_param_object(object),
-    # TO DO, dit is toch maar een getal en als niet dan ws de sum (iig bij anova wel)
-    #sample_nobs = sum(N), # Needed for type = "goricac" - daar genoeg aan sum(N) of moet het juist gehele N hebben?
     hypotheses = hypos,
     comparison = comparison,
     type = type,

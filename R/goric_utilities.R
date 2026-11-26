@@ -126,8 +126,8 @@ VCOV.unbiased <- function(model.org, sample_nobs = NULL, ...)  {
     "'vcov()'. This represents the biased (restricted) sample covariance matrix, ",
     "not the unbiased version based on the full sample size ('N')."
     )
-# TO DO als pdf van Rmd file maak, dan loopt dit door....
-    # is dan ms toch een Rmd instelling....
+    # (long text is wrapped at getOption("restriktor.linewidth", 76) 
+    # characters; see output_wrap.R)
     }
   # Check on N
   #if(!is.null(N) && sample_nobs != N) {

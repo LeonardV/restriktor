@@ -53,7 +53,7 @@ leave1studyout.evSyn <- function(object, ...) {
   # - IC weights: -2 x log(IC weight) equals the IC value up to a constant per
   #   study; the stored (study-specific) IC weights do not include the prior 
   #   IC weights (priorICweights), which are used in the aggregated results only
-  #   (unless priorICweights_study = TRUE, which is not active for now; then 
+  #   (unless priorICweights_study = TRUE; then 
   #   these are removed first).
   # - Ratios of IC weights: the differences in IC values versus the reference
   #   hypothesis (ICdiff_m) are stored in the object.
@@ -66,7 +66,7 @@ leave1studyout.evSyn <- function(object, ...) {
     IC_type <- "diff"
   } else if (inherits(object, "evSyn_ICweights")) {
     W_raw <- ICw_m
-    if (isTRUE(object$priorICweights_study)) { # not active for now
+    if (isTRUE(object$priorICweights_study)) { # prior IC weights in the study-specific weights
       prior_m <- object$priorICweights
       if (is.null(prior_m)) prior_m <- rep(1 / ncol(ICw_m), ncol(ICw_m))
       W_raw <- sweep(ICw_m, 2, prior_m, "/")
@@ -225,13 +225,29 @@ leave1studyout.evSyn <- function(object, ...) {
     resultIC <- list(OverallICdiff = OverallGoric)
   }
 
+  # Combined sample size of the remaining studies (N_tot), if the sample 
+  # sizes of the studies are available (e.g., 'study_sample_nobs'). The IC
+  # values depend on it (see the note in the print method), the IC weights 
+  # are comparable across the rows.
+  N_tot <- NULL
+  N_s <- object$study_sample_nobs
+  if (!is.null(N_s) && length(N_s) == S && is.numeric(unlist(N_s))) {
+    N_s <- as.numeric(unlist(N_s))
+    # sample sizes are stored in the input order; follow the order of the rows
+    if (!is.null(object$order_studies)) N_s <- N_s[object$order_studies]
+    N_tot <- matrix(vapply(seq_len(S), function(s) sum(N_s[-s]), numeric(1)),
+                    ncol = 1L, dimnames = list(rownames, "N_tot"))
+  }
+
+  # Order: the IC weights first (these are to be inspected, since they are 
+  # comparable across the rows), then the preferred hypothesis, the combined
+  # sample size (if available), and the IC values (which depend on N_tot).
   result <- c(
-    resultIC,
     resultICw,
-    list(
-      OverallPrefHypo = OverallPrefHypo,
-      type_ev = type_ev
-    )
+    list(OverallPrefHypo = OverallPrefHypo),
+    if (!is.null(N_tot)) list(N_tot = N_tot),
+    resultIC,
+    list(type_ev = type_ev)
   )
   
   if (!type_missing) {
@@ -244,10 +260,12 @@ leave1studyout.evSyn <- function(object, ...) {
 }
 
 
-# Print method: the IC values and IC weights are printed with a fixed number
-# of decimals (as in print.con_goric() and print.evSyn()), such that, e.g., a 
-# weight of 0.99996 is printed as 1.000 (and not as 1, which suggests that it 
-# is exactly 1).
+# Print method: the IC weights first, then the preferred hypothesis, the 
+# combined sample size of the remaining studies (N_tot, if available), and the 
+# IC values (with a note that these depend on N_tot). The IC values and IC 
+# weights are printed with a fixed number of decimals (as in print.con_goric()
+# and print.evSyn()), such that, e.g., a weight of 0.99996 is printed as 1.000 
+# (and not as 1, which suggests that it is exactly 1).
 print.leave1studyout.evSyn <- function(x, digits = max(3, getOption("digits") - 4), ...) {
   fmt <- function(m) {
     out <- m
@@ -256,26 +274,49 @@ print.leave1studyout.evSyn <- function(x, digits = max(3, getOption("digits") - 
     out
   }
   type_ev <- x$type_ev
-  cat(sprintf("restriktor (%s): leave-one-study-out results (%s evidence synthesis)\n",
-              packageDescription("restriktor", fields = "Version"), type_ev))
-  num_elements <- setdiff(names(x), c("OverallPrefHypo", "type_ev", "type"))
-  labels <- c(OverallGoric = "IC values (GORIC)", OverallGoricc = "IC values (GORICC)",
-              OverallGorica = "IC values (GORICA)", OverallGoricac = "IC values (GORICAC)",
-              OverallICdiff = "Differences in IC values (versus the reference hypothesis)",
-              OverallGoricWeights = "IC weights (GORIC)", OverallGoriccWeights = "IC weights (GORICC)",
-              OverallGoricaWeights = "IC weights (GORICA)", OverallGoricacWeights = "IC weights (GORICAC)")
-  for (el in num_elements) {
-    lab <- if (!is.null(labels[el]) && !is.na(labels[el])) labels[el] else el
+  unit_low <- .evSyn_unit_label(type_ev, capital = FALSE)
+  units_low <- .evSyn_unit_label(type_ev, plural = TRUE, capital = FALSE)
+  cat(sprintf("restriktor (%s): leave-one-%s-out results (%s evidence synthesis)\n",
+              packageDescription("restriktor", fields = "Version"), unit_low, type_ev))
+  IC_lab <- if (is.null(x$type)) "IC" else toupper(x$type)
+  
+  # 1. IC weights
+  w_el <- grep("Weights$", names(x), value = TRUE)
+  for (el in w_el) {
+    cat("\n", IC_lab, " weights (based on the remaining ", units_low, "):\n", sep = "")
+    print(fmt(x[[el]]), quote = FALSE, right = TRUE, print.gap = 2)
+  }
+  
+  # 2. preferred hypothesis
+  cat("\nPreferred hypothesis:\n")
+  print(x$OverallPrefHypo, quote = FALSE, right = FALSE)
+  
+  # 3. combined sample size of the remaining studies
+  if (!is.null(x$N_tot)) {
+    cat("\nCombined sample size of the remaining ", units_low, " (N_tot):\n", sep = "")
+    print(x$N_tot, quote = FALSE, right = TRUE, print.gap = 2)
+  }
+  
+  # 4. IC values (or differences in IC values)
+  ic_el <- intersect(c("OverallGoric", "OverallGoricc", "OverallGorica", 
+                       "OverallGoricac", "OverallICdiff"), names(x))
+  for (el in ic_el) {
+    lab <- if (el == "OverallICdiff") {
+      "Differences in IC values (versus the reference hypothesis)"
+    } else {
+      paste0(IC_lab, " values")
+    }
+    if (!is.null(x$N_tot)) lab <- paste0(lab, " (dependent on N_tot)")
     cat("\n", lab, ":\n", sep = "")
     print(fmt(x[[el]]), quote = FALSE, right = TRUE, print.gap = 2)
   }
-  cat("\nPreferred hypothesis:\n")
-  print(x$OverallPrefHypo, quote = FALSE, right = FALSE)
+  if (length(ic_el) > 0) {
+    cat(paste0("\nNote: The ", IC_lab, " values are aggregated over the remaining ", units_low, 
+               ", so they change when a ", unit_low, " is left out, and the size of that ",
+               "change depends on, among others, the sample size of that ", unit_low, 
+               ". Hence, the ", IC_lab, " values cannot be compared across the ",
+               "rows; inspect the ", IC_lab, " weights instead to see the influence of each ", 
+               unit_low, ".\n"))
+  }
   invisible(x)
 }
-
-# TO DO:
-# NB som gaat sowieso omlaag en het hangt van N af hoeveel!!!
-# Dus eigenlijk zou je ook voorspelling moeten geven
-# en/of verdisconteren!
-

@@ -316,4 +316,7 @@ summary.con_goric <- function(object, brief = TRUE,
   }
   #cat("\n")
   #message(x$messages$mix_weights)
+  
+  # the warnings and messages given when running goric() (see goric_print.R)
+  print_run_output(object)
 }

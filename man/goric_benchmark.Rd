@@ -92,7 +92,11 @@
   ones), until the percentile of the sample value within the benchmark distribution of
   the \code{"Observed"} population has stabilized (see \code{iter_stability_tol}) or
   \code{iter_max} draws are reached. If a number is given, exactly that many draws are
-  used; a message is then given if that percentile has not (yet) stabilized.}
+  used; a message is then given if that percentile has not (yet) stabilized (see
+  \code{iter_stability_tol}). If there is no \code{"Observed"} population (i.e., when
+  \code{pop_es} or \code{pop_est} is specified without a population named
+  \code{"Observed"}), the stopping rule cannot be applied and \code{iter_min} draws are
+  used (when \code{iter = NULL}).}
   \item{iter_min}{The number of draws to start with when \code{iter = NULL}. Defaults to
   \code{500}.}
   \item{iter_step}{The number of draws added per round when \code{iter = NULL}.
@@ -123,6 +127,8 @@
   recomputes the rate for that print call only. See the note on the hypothesis rate.}
   \item{control}{A list of control parameters. For more information, see details \link{goric}.}
   \item{ncpus}{Number of CPUs to use for parallel processing. Defaults to \code{1}.
+  To determine the number of cores of your machine, one can use
+  \code{parallel::detectCores()}; then use (at most) that number minus one or two.
   See details for more information.}
   \item{seed}{A seed for random number generation.}
   \item{priorICweights}{Optional prior model probabilities used in the re-calculated and simulated 
@@ -132,10 +138,15 @@
   are based on the same prior model probabilities as the sample values. 
   See \code{priorICweights} in \link{goric} for the required number of elements.}
   \item{output_type}{A character vector specifying the type of output to print 
-  or plot. Options are \code{"all"}, \code{"gw"} (goric(a) weights), 
-  \code{"rgw"} (ratio of goric(a) weights), \code{"rlw"} (ratio of log-likelihood values), 
-  and \code{"ld"} (log-likelihood difference). Defaults to \code{"rgw"} for print 
-  and \code{"rgw"} for plot.}
+  or plot. Options are \code{"gw"} (GORIC(A) weights), \code{"lw"} (log-likelihood
+  weights; print only), \code{"rgw"} (ratio of GORIC(A) weights), \code{"rlw"} (ratio of
+  log-likelihood weights, which equals the ratio of the likelihood values and
+  \eqn{\exp}{exp} of the difference in log-likelihood values), \code{"ld"}
+  (difference in log-likelihood values), \code{"rgw_log"} and \code{"rlw_log"} (natural
+  logarithm of the ratio of GORIC(A) weights and of the ratio of log-likelihood weights,
+  respectively; print only), and \code{"all"} (all of these; print only). Defaults to
+  \code{"rgw"} for both print and plot. In \code{plot}, only one output type is plotted
+  at a time; use \code{log_scale = TRUE} to plot the ratios on a log10 scale.}
   \item{color}{If TRUE, the output will include ANSI color coding. Set \code{color = FALSE} 
   when using this function in R Markdown documents to avoid rendering issues with color codes.}
   \item{opacity}{The opacity of the density curves in \code{plot}. Values range from 0
@@ -200,16 +211,29 @@
   
   The benchmark function leverages the \pkg{future} package for parallel processing, 
   allowing users to speed up computations by distributing tasks across multiple 
-  cores or machines. If the user does not specify a parallelization plan using 
-  \code{future::plan()}, the package will choose an appropriate strategy based 
-  on the user's operating system. Specifically, on Windows, the package defaults 
-  to using \code{multisession}, which creates separate R sessions for each 
-  parallel task. On Unix-like systems (such as Linux and macOS), the package 
-  defaults to \code{multicore}, which uses forked R processes to avoid the 
-  overhead of setting up separate R sessions.
+  cores or machines. If \code{ncpus > 1} and the user did not specify a 
+  parallelization plan (i.e., the current plan is \code{sequential}, the default), 
+  a plan with \code{ncpus} workers is set up for the duration of the call (and the 
+  original plan is restored afterwards), based on the user's operating system: 
+  on Windows, \code{multisession}, which creates separate R sessions for each 
+  parallel task; on Unix-like systems (such as Linux and macOS), \code{multicore}, 
+  which uses forked R processes to avoid the overhead of setting up separate R 
+  sessions. 
   
-  The \code{plan()} must be specified before running the benchmark function, e.g.,
-  \code{future::plan(future::multisession, workers = ncpus)}
+  Alternatively, the user can specify a plan before running the benchmark 
+  function, e.g., \code{future::plan(future::multisession, workers = 4)}; such a 
+  plan is then used as is (and \code{ncpus} is ignored).
+
+  The number of draws (iterations) per population is set by \code{iter}. By default
+  (\code{iter = NULL}), it is determined automatically: starting with \code{iter_min}
+  (500) draws, \code{iter_step} (100) draws are added at a time (keeping the earlier
+  ones), until the percentile of the sample value within the benchmark distribution of
+  the \code{"Observed"} population has stabilized, that is, changed by less than
+  \code{iter_stability_tol} (1) percentage point after the last \code{iter_step} draws,
+  for both the GORIC(A) weights and the log-likelihood weights; or until \code{iter_max}
+  (2000) draws are reached. A message reports the number of draws used. Note that this
+  percentile is not expected to be near 50; it is only used to check whether the
+  benchmarks have stabilized.
   }
 
 
@@ -322,9 +346,12 @@ fit_goric <- goric(anova_result, hypotheses = list(H1 = h1, H2 = h2),
                    comparison = "unconstrained", type = "goric")
 
 # by default: ES = 0 \& ES = observed ES
-# In practice you want more iterations: by default (iter = NULL), the number of
-# iterations is set automatically (from 500 up to at most 2000).
+# Note: In these examples, a very small number of iterations (iter) is used to
+# limit the computing time. In practice, use the default (iter = NULL): the 
+# number of iterations is then set automatically (from 500 up to at most 2000).
 \donttest{
+# Parallel computing: e.g., use ncpus = parallel::detectCores() - 2, or set a
+# plan yourself beforehand:
 # multisession supports windows machines
 # future::plan(future::multisession, workers = 8)
 # multicore supports unix machines
